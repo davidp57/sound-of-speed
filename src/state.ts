@@ -4,6 +4,7 @@ import { Loop } from './core/loop'
 import { AudioEngine, type AudioStatus } from './core/audio/engine'
 import { analyzeSample, type SampleAnalysis } from './core/audio/analyze'
 import { MediaSession, ScreenLock } from './core/session'
+import { Offline, type OfflineStatus } from './core/offline'
 import { Engine, type EngineState } from './core/engine/engine'
 import { Gearbox, type GearboxState, type ShiftMode } from './core/drivetrain/gearbox'
 import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditioner'
@@ -63,6 +64,7 @@ const loop = new Loop()
 const audio = new AudioEngine()
 const screenLock = new ScreenLock()
 const mediaSession = new MediaSession()
+const offline = new Offline()
 
 export const sourceKind = ref<SourceKind>('simulator')
 export const sourceStatus = ref<SourceStatus>('idle')
@@ -78,6 +80,7 @@ export const screenLockSupported = screenLock.supported
 export const screenLockHeld = ref(false)
 export const screenLockError = ref('')
 export const keepScreenOn = ref(false)
+export const offlineStatus = ref<OfflineStatus>({ ...offline.status })
 
 export const telemetry = shallowRef<Telemetry>({
   speed: {
@@ -322,6 +325,43 @@ export function stop(): void {
   loop.stop()
   isRunning.value = false
 }
+
+/** Adresses des échantillons du profil actif, telles que le cache les connaît. */
+const sampleUrls = computed(() =>
+  activeProfile.value.layers
+    .filter((layer) => layer.enabled && layer.file)
+    .map((layer) => `/audio/${activeProfile.value.sampleDir}/${layer.file}`),
+)
+
+offline.onChange((status) => {
+  offlineStatus.value = status
+})
+
+/**
+ * Prépare l'application à fonctionner sans réseau.
+ *
+ * Appelé au démarrage : le service worker s'installe, puis on lui demande ce
+ * qu'il a déjà des échantillons du profil courant.
+ */
+export async function initOffline(): Promise<void> {
+  await offline.register()
+  offline.watch(sampleUrls.value)
+}
+
+/** Met en cache tous les échantillons du profil, sans attendre d'en avoir besoin. */
+export function prepareOffline(): void {
+  offline.prepare()
+}
+
+export async function promptInstall(): Promise<void> {
+  await offline.promptInstall()
+}
+
+export function applyUpdate(): void {
+  offline.applyUpdate()
+}
+
+watch(sampleUrls, (urls) => offline.watch(urls))
 
 function refreshAudioStatus(): void {
   audioStatus.value = { ...audio.status, repaired: [...audio.status.repaired] }

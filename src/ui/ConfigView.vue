@@ -10,6 +10,9 @@ import {
   activeProfile,
   addProfile,
   analyzeLayerFile,
+  offlineStatus,
+  prepareOffline,
+  promptInstall,
   deleteProfile,
   duplicateActive,
   profileList,
@@ -191,6 +194,11 @@ async function analyzeAll(): Promise<void> {
   }
 }
 
+/** Taille lisible, pour l'état du cache hors réseau. */
+function megabytes(bytes: number): string {
+  return `${(bytes / 1048576).toFixed(1)} Mo`
+}
+
 function candidateTitle(candidate: { firingHz: number; relativeScore: number }): string {
   return `${candidate.firingHz.toFixed(0)} Hz d'allumage · score ${candidate.relativeScore.toFixed(2)}`
 }
@@ -233,6 +241,49 @@ function applyCandidate(index: number, rpm: number): void {
       <p class="note">
         Chemin relatif au dossier d'échantillons. Il n'est jamais versionné : remplacer
         son contenu suffit à changer de banque sonore, sans toucher au code.
+      </p>
+    </section>
+
+    <section class="panel wide">
+      <h2>Hors réseau</h2>
+      <p class="note">
+        Une voiture traverse des zones sans couverture, et une application chargée
+        depuis Internet n'y démarre pas. Une fois les échantillons en cache, tout
+        fonctionne sans connexion — et le serveur n'a plus besoin d'être joignable
+        pour rouler, seulement pour mettre à jour.
+      </p>
+
+      <div class="offline">
+        <div class="offline-state">
+          <span :class="{ warn: !offlineStatus.active }">
+            {{ offlineStatus.active ? 'Prise en charge active' : 'Prise en charge inactive' }}
+          </span>
+          <span>
+            {{ offlineStatus.cachedFiles }} / {{ offlineStatus.totalFiles }} échantillons en cache
+            <template v-if="offlineStatus.cachedBytes > 0">
+              · {{ megabytes(offlineStatus.cachedBytes) }}
+            </template>
+          </span>
+          <span v-if="offlineStatus.installed">Lancée depuis l'écran d'accueil</span>
+          <span v-else-if="!offlineStatus.online" class="warn">Hors réseau</span>
+        </div>
+
+        <div class="offline-actions">
+          <button
+            :disabled="offlineStatus.caching || !offlineStatus.active || offlineStatus.totalFiles === 0"
+            @click="prepareOffline()"
+          >
+            {{ offlineStatus.caching ? 'Mise en cache…' : 'Préparer hors réseau' }}
+          </button>
+          <button v-if="offlineStatus.installable" @click="promptInstall()">
+            Installer sur l'écran d'accueil
+          </button>
+        </div>
+      </div>
+
+      <p v-if="offlineStatus.error" class="error">{{ offlineStatus.error }}</p>
+      <p v-else-if="!offlineStatus.supported" class="note">
+        Ce navigateur ne prend pas en charge le fonctionnement hors réseau.
       </p>
     </section>
 
@@ -597,6 +648,32 @@ td {
 td input[type='number'] {
   width: 6rem;
   text-align: right;
+}
+
+.offline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.offline-state {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.offline-state .warn {
+  color: var(--warn);
+}
+
+.offline-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .layer-actions {

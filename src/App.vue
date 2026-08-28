@@ -5,6 +5,8 @@ import ConfigView from './ui/ConfigView.vue'
 import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
 import {
+  applyUpdate,
+  offlineStatus,
   setBrake,
   setThrottle,
   shiftDown,
@@ -147,6 +149,14 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
+    <div v-if="offlineStatus.updateReady" class="banner">
+      <span>Une nouvelle version est prête.</span>
+      <button @click="applyUpdate()">Recharger</button>
+    </div>
+    <div v-else-if="!offlineStatus.online" class="banner offline">
+      Hors réseau — l'application tourne sur ce qui est en cache.
+    </div>
+
     <main class="content">
       <DriveView v-if="tab === 'drive' || immersive" :immersive="immersive" />
       <TelemetryView v-else-if="tab === 'telemetry'" />
@@ -209,6 +219,29 @@ onBeforeUnmount(() => {
 
 .escape:hover {
   opacity: 1;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.45rem 1rem;
+  background: var(--accent);
+  color: #17130a;
+  font-size: 0.9rem;
+}
+
+.banner button {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: transparent;
+  color: inherit;
+  padding: 0.2rem 0.7rem;
+}
+
+.banner.offline {
+  background: var(--panel-alt);
+  color: var(--muted);
 }
 
 .content {

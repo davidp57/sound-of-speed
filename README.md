@@ -10,6 +10,8 @@ qu'on sauvegarde, exporte et recharge.
 - [Les trois écrans](#les-trois-écrans)
 - [Démarrer en développement](#démarrer-en-développement)
 - [Installation sur un NAS Synology](#installation-sur-un-nas-synology)
+- [En voiture](#en-voiture)
+- [Hors réseau](#hors-réseau)
 - [Référence des réglages](#référence-des-réglages)
 - [Les échantillons](#les-échantillons)
 - [Comment ça marche](#comment-ça-marche)
@@ -50,13 +52,20 @@ npm install
 npm run dev
 ```
 
-Le serveur écoute sur toutes les interfaces, **en HTTPS**. Depuis un téléphone sur
-le même réseau, ouvrir `https://<adresse-du-poste>:5173` — le certificat est
-auto-signé, le téléphone demande donc de confirmer une fois.
+Pour tester depuis un téléphone sur le même réseau :
 
-> **L'HTTPS n'est pas optionnel.** La géolocalisation, le verrou d'écran et
-> l'AudioWorklet ne fonctionnent que dans un « contexte sécurisé ». `localhost`
-> en fait partie, mais **pas** une adresse de réseau local en clair. En `http://`,
+```bash
+npm run dev:mobile
+```
+
+Le serveur passe alors en HTTPS et écoute sur toutes les interfaces : ouvrir
+`https://<adresse-du-poste>:5173`. Le certificat est auto-signé, le téléphone
+demande donc de confirmer une fois.
+
+> **Le chiffrement n'est pas décoratif.** La géolocalisation, le verrou d'écran,
+> le service worker et l'AudioWorklet n'existent que dans un « contexte
+> sécurisé ». `localhost` en est un même en clair — d'où le `npm run dev`
+> ordinaire — mais **pas** une adresse de réseau local. En `http://192.168.x.x`,
 > la page s'affiche normalement et le GPS refuse de démarrer, sans message.
 
 Au clavier, source « Simulateur » :
@@ -70,10 +79,12 @@ Au clavier, source « Simulateur » :
 Autres commandes :
 
 ```bash
+npm run dev:mobile   # idem, en HTTPS, pour tester depuis un téléphone
 npm run build        # produit dist/
 npm run typecheck    # vérification TypeScript stricte
 npm run transcode    # compresse les échantillons en FLAC
 npm run deploy       # recopie le build vers le NAS
+npm run icons        # régénère les icônes de l'application
 ```
 
 ---
@@ -232,6 +243,62 @@ Portainer en cochant *Re-pull image and redeploy*.
 
 ---
 
+## En voiture
+
+**Mode conduite** — le bouton du même nom escamote la barre d'onglets, passe en
+plein écran, porte les chiffres à toute la hauteur disponible et remplace les
+commandes par quatre grandes cibles.
+
+**Session média** — l'application apparaît sur l'écran verrouillé et dans le
+panneau de notifications, avec le nom du profil, sa configuration et une pochette
+dessinée à la volée. Les commandes au volant et les boutons de casque coupent et
+rétablissent le son.
+
+**Verrou d'écran** — sans lui, l'écran s'éteint au bout de quelques dizaines de
+secondes et l'on perd de vue la vitesse. Le système le relâche à chaque passage
+en arrière-plan et ne le rend pas au retour : il est donc redemandé à chaque fois
+que la page redevient visible. Quand il est refusé, la raison s'affiche à
+l'écran — un verrou qui échoue en silence est indiscernable d'un verrou absent.
+
+**Reprise après suspension** — le système suspend le contexte audio quand
+l'application reste longtemps en arrière-plan, ou quand un appel prend la sortie
+audio. Il ne le relance jamais seul.
+
+---
+
+## Hors réseau
+
+Une voiture traverse des zones sans couverture, et une application chargée depuis
+Internet n'y démarre pas. Un service worker met en cache l'application et les
+échantillons : une fois cela fait, tout fonctionne sans connexion, et le serveur
+n'a plus besoin d'être joignable pour rouler — seulement pour mettre à jour.
+
+Dans l'écran **Configuration**, section *Hors réseau* :
+
+- **Préparer hors réseau** met en cache tous les échantillons du profil sans
+  attendre d'en avoir besoin, et affiche ce qui est déjà disponible. À faire
+  avant de partir, plutôt que de découvrir sur la route qu'une couche manque.
+- **Installer sur l'écran d'accueil** propose l'installation quand le navigateur
+  l'autorise. L'application s'ouvre alors en plein écran, sans barre d'adresse.
+
+Une bannière signale une version plus récente prête à être chargée, ou la perte
+du réseau.
+
+### Vérifié comment
+
+Le scénario a été déroulé en conditions réelles sur le build de production :
+première visite, préparation, **arrêt du serveur**, rechargement. L'application
+démarre, les cinq couches se chargent et le son sort — serveur éteint.
+
+Ce test a révélé un défaut qui serait resté invisible autrement. Les serveurs
+répondent volontiers `Vary: Origin` sur les fichiers statiques ; une réponse
+enregistrée depuis une requête sans en-tête `Origin` ne correspond alors plus à
+la même adresse demandée avec — ce qui est le cas du script de l'application, que
+Vite déclare `crossorigin`. Résultat : un cache complet, et une page blanche.
+Les recherches dans le cache se font donc avec `ignoreVary`.
+
+---
+
 ## Référence des réglages
 
 Tout est dans l'écran **Configuration**, appliqué immédiatement.
@@ -370,6 +437,7 @@ src/
   core/
     loop.ts              cadence unique, avec repli quand la page est masquée
     session.ts           verrou d'écran et session média du système
+    offline.ts           service worker, mise en cache, installation
     speed/
       source.ts          interface commune aux trois sources
       simulator.ts       vitesse au clavier, pour travailler sur un poste fixe
@@ -385,6 +453,8 @@ src/
     preset/              schéma d'un profil, valeurs par défaut, persistance
   ui/                    les trois écrans
   state.ts               assemblage et télémétrie
+public/sw.js             service worker
+public/icons/            icônes, produites par npm run icons
 public/audio/            échantillons, non versionnés
 docker/                  piles Portainer et configuration nginx
 scripts/                 compression FLAC, déploiement
@@ -471,7 +541,7 @@ chaque essai.
 | 4 | Analyse des échantillons dans l'éditeur | fait |
 | 5 | Écran de la voiture, session média, verrou d'écran | fait |
 | 6 | Déploiement sur NAS, HTTPS en développement | fait |
-| 7 | Application installable et utilisable hors réseau | en cours |
+| 7 | Application installable et utilisable hors réseau | fait |
 
 ### Ce qui n'est pas vérifié
 
