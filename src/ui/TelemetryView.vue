@@ -6,6 +6,7 @@ import { computeMix } from '../core/audio/mix'
 import { rpmAtSpeed } from '../core/preset/defaults'
 import {
   activeProfile,
+  audioStatus,
   isRecording,
   playTrace,
   recordedCount,
@@ -178,6 +179,43 @@ function onRateChange(event: Event): void {
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <section class="panel">
+      <h2>Son</h2>
+      <ValueRow label="État" :value="audioStatus.phase" :warn="audioStatus.phase === 'error'" />
+      <ValueRow label="Contexte" :value="audioStatus.contextState" />
+      <ValueRow
+        label="Échantillonnage"
+        :value="audioStatus.sampleRate || '—'"
+        :unit="audioStatus.sampleRate ? 'Hz' : ''"
+      />
+      <ValueRow
+        label="Horloge audio"
+        :value="audioStatus.clockRunning ? 'fil audio' : 'affichage'"
+        hint="Sur le fil audio, la cadence survit à l'écran éteint. Sur l'affichage, elle est gelée en arrière-plan."
+        :warn="audioStatus.phase === 'ready' && !audioStatus.clockRunning"
+      />
+      <ValueRow label="Couches chargées" :value="`${audioStatus.loaded} / ${audioStatus.total}`" />
+      <ValueRow
+        label="Niveau de sortie"
+        :value="audioStatus.outputLevel.toFixed(4)"
+        :bar="audioStatus.outputLevel * 4"
+        hint="Valeur efficace mesurée après le limiteur. À zéro alors que le son est actif, c'est que tous les gains sont retombés."
+      />
+      <ValueRow
+        label="Crête"
+        :value="audioStatus.outputPeak.toFixed(3)"
+        :bar="audioStatus.outputPeak"
+        :warn="audioStatus.outputPeak >= 0.999"
+        hint="À 1,000, la sortie écrête : baisser le volume général."
+      />
+      <ValueRow
+        label="Boucles recollées"
+        :value="audioStatus.repaired.join(', ') || '—'"
+        hint="Échantillons dont les extrémités ne se rejoignaient pas : un fondu a été appliqué pour supprimer le clic."
+      />
+      <ValueRow v-if="audioStatus.error" label="Erreur" :value="audioStatus.error" warn />
     </section>
 
     <section class="panel wide">

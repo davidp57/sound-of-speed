@@ -1,6 +1,7 @@
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { Loop } from './core/loop'
+import { AudioEngine, type AudioStatus } from './core/audio/engine'
 import { Engine, type EngineState } from './core/engine/engine'
 import { Gearbox, type GearboxState, type ShiftMode } from './core/drivetrain/gearbox'
 import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditioner'
@@ -57,6 +58,7 @@ const gearbox = new Gearbox(activeProfile.value.drivetrain, activeProfile.value.
 const engine = new Engine(activeProfile.value.engine, activeProfile.value.mix)
 const recorder = new TraceRecorder()
 const loop = new Loop()
+const audio = new AudioEngine()
 
 export const sourceKind = ref<SourceKind>('simulator')
 export const sourceStatus = ref<SourceStatus>('idle')
@@ -66,6 +68,8 @@ export const isRecording = ref(false)
 export const recordedCount = ref(0)
 export const traces = ref<Trace[]>([])
 export const replayProgress = ref(0)
+export const audioStatus = ref<AudioStatus>({ ...audio.status })
+export const isMuted = ref(false)
 
 export const telemetry = shallowRef<Telemetry>({
   speed: {
@@ -167,6 +171,19 @@ function step(dt: number): void {
     throttle: sourceKind.value === 'simulator' ? simulator.getThrottle() : null,
   })
 
+  if (isMuted.value) audio.mute()
+  else audio.update(profile, engineState)
+
+  // Le niveau de sortie change à chaque image ; le reste du statut ne bouge
+  // qu'aux transitions, et est rafraîchi par `refreshAudioStatus`.
+  if (audio.isReady) {
+    audioStatus.value = {
+      ...audioStatus.value,
+      outputLevel: audio.status.outputLevel,
+      outputPeak: audio.status.outputPeak,
+    }
+  }
+
   if (sourceKind.value === 'replay') replayProgress.value = replay.progress
 
   telemetry.value = {
@@ -180,15 +197,44 @@ function step(dt: number): void {
 loop.add(step)
 
 /**
- * Suspend la cadence sans arrêter la source, pour reprendre la main sur le temps
- * depuis le banc de mise au point. `stop()`, lui, coupe aussi la source.
+ * Choix de la cadence.
+ *
+ * Dès que l'horloge du fil audio tourne, c'est elle qui bat la mesure et la
+ * boucle d'affichage s'efface : le fil audio n'est ni gelé ni ralenti quand la
+ * page passe en arrière-plan, contrairement aux images et aux minuteurs. Sans
+ * cette bascule, le son se figerait à l'instant où l'écran s'éteint — c'est-à-dire
+ * exactement pendant qu'on roule.
  */
+function syncDriver(): void {
+  if (manualTiming) return
+  const audioDriven = audio.status.clockRunning && audio.isReady
+  if (audioDriven) {
+    loop.stop()
+    audio.onClockTick = step
+  } else {
+    audio.onClockTick = null
+    if (isRunning.value) loop.start()
+  }
+}
+
+audio.onClockTick = null
+
+/**
+ * Suspend toute cadence — affichage comme fil audio — sans arrêter la source ni
+ * démonter le son. Le banc de mise au point reprend alors la main sur le temps.
+ * `stop()`, lui, coupe aussi la source.
+ */
+let manualTiming = false
+
 export function pauseLoop(): void {
+  manualTiming = true
   loop.stop()
+  audio.onClockTick = null
 }
 
 export function resumeLoop(): void {
-  if (isRunning.value) loop.start()
+  manualTiming = false
+  syncDriver()
 }
 
 /**
@@ -212,6 +258,24 @@ watch(
   { deep: true, immediate: true },
 )
 
+/**
+ * Signature des couches : ce qui, dans un profil, impose de relire les fichiers.
+ * Bouger un gain ou un régime d'ancrage n'en fait pas partie — ces réglages
+ * s'appliquent sans toucher aux buffers, ce qui est tout l'intérêt d'un éditeur
+ * qui travaille pendant que le son tourne.
+ */
+const sampleSignature = computed(() => {
+  const profile = activeProfile.value
+  const layers = profile.layers.map((l) => `${l.key}:${l.file}:${l.enabled}`).join('|')
+  return `${profile.sampleDir}#${layers}`
+})
+
+watch(sampleSignature, () => {
+  if (audio.isReady || audio.status.phase === 'loading') {
+    void audio.load(activeProfile.value).then(refreshAudioStatus)
+  }
+})
+
 watch(profiles, (list) => saveProfiles(list), { deep: true })
 watch(selectedId, (id) => {
   saveSelectedId(id)
@@ -228,6 +292,25 @@ export function stop(): void {
   currentSource().stop()
   loop.stop()
   isRunning.value = false
+}
+
+function refreshAudioStatus(): void {
+  audioStatus.value = { ...audio.status, repaired: [...audio.status.repaired] }
+  syncDriver()
+}
+
+/**
+ * Démarre le son. Doit partir d'un geste de l'utilisateur : les navigateurs
+ * refusent d'ouvrir un contexte audio autrement, et l'échec est silencieux.
+ */
+export async function activateAudio(): Promise<void> {
+  await audio.activate(activeProfile.value)
+  refreshAudioStatus()
+}
+
+export function setMuted(value: boolean): void {
+  isMuted.value = value
+  if (value) audio.mute()
 }
 
 export function setSource(kind: SourceKind): void {

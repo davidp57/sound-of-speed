@@ -4,6 +4,7 @@ dist/
 *.local
 
 # Échantillons moteur : jamais versionnés.
-# Le dossier est une entrée remplaçable, le code n'y référence rien en dur.
-audio/
+# Servis par Vite depuis public/, mais rien n'y est référencé en dur — chaque
+# profil déclare son sous-dossier et la liste de ses couches.
+public/audio/
 tsconfig.tsbuildinfo

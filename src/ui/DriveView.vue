@@ -2,8 +2,12 @@
 import { computed, ref } from 'vue'
 
 import {
+  activateAudio,
   activeProfile,
+  audioStatus,
+  isMuted,
   isRunning,
+  setMuted,
   setBrake,
   setShiftMode,
   setSimulatedSpeed,
@@ -41,6 +45,19 @@ function onSlider(event: Event): void {
   sliderSpeed.value = value
   setSimulatedSpeed(value)
 }
+
+const audioLabel = computed(() => {
+  switch (audioStatus.value.phase) {
+    case 'loading':
+      return `Chargement ${audioStatus.value.loaded}/${audioStatus.value.total}`
+    case 'ready':
+      return 'Son actif'
+    case 'error':
+      return 'Son en erreur'
+    default:
+      return 'Activer le son'
+  }
+})
 
 const rpmPercent = computed(() => {
   const { rpm } = telemetry.value.engine
@@ -91,6 +108,36 @@ const rpmPercent = computed(() => {
     </section>
 
     <section class="controls">
+      <div class="group">
+        <span class="label">Son</span>
+        <button
+          :class="{ 'is-active': audioStatus.phase === 'ready' }"
+          :disabled="audioStatus.phase === 'loading'"
+          @click="activateAudio()"
+        >
+          {{ audioLabel }}
+        </button>
+        <button
+          v-if="audioStatus.phase === 'ready'"
+          :aria-pressed="isMuted"
+          @click="setMuted(!isMuted)"
+        >
+          Muet
+        </button>
+        <label v-if="audioStatus.phase === 'ready'" class="volume">
+          Volume
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            :value="activeProfile.mix.masterGain"
+            @input="activeProfile.mix.masterGain = Number(($event.target as HTMLInputElement).value)"
+          />
+        </label>
+      </div>
+      <p v-if="audioStatus.phase === 'error'" class="hint warn">{{ audioStatus.error }}</p>
+
       <div class="group">
         <span class="label">Boîte</span>
         <button :aria-pressed="!manual" @click="setShiftMode('auto')">Auto</button>
@@ -243,6 +290,14 @@ const rpmPercent = computed(() => {
 .slider {
   display: block;
   color: var(--muted);
+}
+
+.volume {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  flex: 1 1 12rem;
 }
 
 .hint {
