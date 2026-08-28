@@ -34,12 +34,47 @@ mode manuel.
 | 2 | Modèle moteur et boîte de vitesses | fait |
 | 3 | Moteur audio à échantillons, transcodage, calage des boucles | fait |
 | 4 | Analyse des échantillons dans l'éditeur | fait |
-| 5 | Adaptation à l'écran de la voiture, Media Session, audio en arrière-plan | à faire |
+| 5 | Écran de la voiture, session média, verrou d'écran | fait |
 
 Le son fonctionne. L'écran de télémétrie affiche le mixage appliqué à chaque
 image — gain et vitesse de lecture de chaque couche, poids des familles, niveau
 de sortie mesuré après le limiteur — ce qui rend le réglage vérifiable à l'œil
 autant qu'à l'oreille.
+
+## En voiture
+
+**Mode conduite** — le bouton du même nom escamote la barre d'onglets, passe en
+plein écran, porte les chiffres à toute la hauteur disponible et remplace les
+commandes par quatre grandes cibles. On en sort par une croix discrète, placée
+là pour qu'on n'en sorte pas par mégarde.
+
+**Session média** — l'application apparaît sur l'écran verrouillé et dans le
+panneau de notifications, avec le nom du profil, sa configuration et une pochette
+dessinée à la volée. Les commandes au volant et les boutons de casque coupent et
+rétablissent le son.
+
+**Verrou d'écran** — sans lui, l'écran s'éteint au bout de quelques dizaines de
+secondes et l'on perd de vue la vitesse. Le système le relâche à chaque passage
+en arrière-plan et ne le rend pas au retour : il est donc redemandé à chaque fois
+que la page redevient visible. Quand il est refusé, la raison s'affiche à
+l'écran — un verrou qui échoue en silence est indiscernable d'un verrou absent.
+
+**Reprise après suspension** — le système suspend le contexte audio quand
+l'application reste longtemps en arrière-plan, ou quand un appel prend la sortie
+audio. Il ne le relance jamais seul.
+
+### Ce qui reste à vérifier sur route
+
+Deux points n'ont pas pu être validés depuis un poste de développement, et ne le
+seront qu'en roulant :
+
+- **Le verrou d'écran.** Le code est en place, mais le navigateur de test refuse
+  la permission (`NotAllowedError`), y compris sur un appel direct à l'API. Rien
+  ne prouve donc qu'il fonctionne, seulement qu'il échoue proprement.
+- **Le GPS écran éteint.** `watchPosition` continue de recevoir des positions
+  tant que la page vit, mais les systèmes mobiles espacent fortement les mesures
+  quand l'écran s'éteint. C'est précisément à cela que sert le verrou d'écran, et
+  c'est pourquoi les deux se testent ensemble.
 
 ## Architecture
 
@@ -54,6 +89,7 @@ src/
       replay.ts          rejeu d'une trace enregistrée, et son enregistreur
       conditioner.ts     fenêtre glissante, extrapolation, ressort amorti
     engine/engine.ts     régime, charge, rupteur
+    session.ts           verrou d'écran et session média du système
     drivetrain/gearbox.ts  rapports, passages automatiques et manuels
     audio/
       mix.ts             gains et vitesses de lecture des couches (fonction pure)

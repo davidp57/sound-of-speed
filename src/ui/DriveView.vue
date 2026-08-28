@@ -7,6 +7,11 @@ import {
   audioStatus,
   isMuted,
   isRunning,
+  keepScreenOn,
+  screenLockError,
+  screenLockHeld,
+  screenLockSupported,
+  setKeepScreenOn,
   setMuted,
   setBrake,
   setShiftMode,
@@ -21,6 +26,8 @@ import {
   telemetry,
   type SourceKind,
 } from '../state'
+
+withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
 
 const SOURCES: { id: SourceKind; label: string }[] = [
   { id: 'simulator', label: 'Simulateur' },
@@ -67,8 +74,8 @@ const rpmPercent = computed(() => {
 </script>
 
 <template>
-  <div class="drive">
-    <section class="sources">
+  <div class="drive" :class="{ immersive }">
+    <section v-if="!immersive" class="sources">
       <button
         v-for="entry in SOURCES"
         :key="entry.id"
@@ -107,7 +114,18 @@ const rpmPercent = computed(() => {
       </div>
     </section>
 
-    <section class="controls">
+    <section v-if="immersive" class="immersive-controls">
+      <button :aria-pressed="isMuted" @click="setMuted(!isMuted)">
+        {{ isMuted ? 'Muet' : 'Son' }}
+      </button>
+      <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
+        {{ manual ? 'Manuelle' : 'Auto' }}
+      </button>
+      <button :disabled="!manual" @click="shiftDown()">−</button>
+      <button :disabled="!manual" @click="shiftUp()">+</button>
+    </section>
+
+    <section v-else class="controls">
       <div class="group">
         <span class="label">Son</span>
         <button
@@ -137,6 +155,17 @@ const rpmPercent = computed(() => {
         </label>
       </div>
       <p v-if="audioStatus.phase === 'error'" class="hint warn">{{ audioStatus.error }}</p>
+
+      <div v-if="screenLockSupported" class="group">
+        <span class="label">Écran</span>
+        <button :aria-pressed="keepScreenOn" @click="setKeepScreenOn(!keepScreenOn)">
+          Garder allumé
+        </button>
+        <span v-if="keepScreenOn && screenLockHeld" class="hint">actif</span>
+        <span v-else-if="keepScreenOn" class="hint warn">
+          {{ screenLockError || 'Verrou non obtenu.' }}
+        </span>
+      </div>
 
       <div class="group">
         <span class="label">Boîte</span>
@@ -308,6 +337,45 @@ const rpmPercent = computed(() => {
 
 .hint.warn {
   color: var(--warn);
+}
+
+/*
+ * Mode conduite : les chiffres occupent toute la hauteur disponible et les
+ * boutons deviennent des cibles qu'on atteint sans regarder.
+ */
+.drive.immersive {
+  height: 100%;
+  gap: 0.5rem;
+  max-width: none;
+  padding: 0.5rem;
+}
+
+.drive.immersive .readout {
+  flex: 1;
+  align-items: stretch;
+}
+
+.drive.immersive .cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: none;
+  background: transparent;
+}
+
+.drive.immersive .value {
+  font-size: clamp(4rem, 18vh, 12rem);
+}
+
+.immersive-controls {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.immersive-controls button {
+  padding: 1.1rem 0.5rem;
+  font-size: 1.05rem;
 }
 
 @media (max-width: 620px) {

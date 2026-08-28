@@ -3,6 +3,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { Loop } from './core/loop'
 import { AudioEngine, type AudioStatus } from './core/audio/engine'
 import { analyzeSample, type SampleAnalysis } from './core/audio/analyze'
+import { MediaSession, ScreenLock } from './core/session'
 import { Engine, type EngineState } from './core/engine/engine'
 import { Gearbox, type GearboxState, type ShiftMode } from './core/drivetrain/gearbox'
 import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditioner'
@@ -60,6 +61,8 @@ const engine = new Engine(activeProfile.value.engine, activeProfile.value.mix)
 const recorder = new TraceRecorder()
 const loop = new Loop()
 const audio = new AudioEngine()
+const screenLock = new ScreenLock()
+const mediaSession = new MediaSession()
 
 export const sourceKind = ref<SourceKind>('simulator')
 export const sourceStatus = ref<SourceStatus>('idle')
@@ -71,6 +74,10 @@ export const traces = ref<Trace[]>([])
 export const replayProgress = ref(0)
 export const audioStatus = ref<AudioStatus>({ ...audio.status })
 export const isMuted = ref(false)
+export const screenLockSupported = screenLock.supported
+export const screenLockHeld = ref(false)
+export const screenLockError = ref('')
+export const keepScreenOn = ref(false)
 
 export const telemetry = shallowRef<Telemetry>({
   speed: {
@@ -246,6 +253,20 @@ export function advanceManually(dtSeconds: number, steps: number): void {
   for (let i = 0; i < steps; i += 1) step(dtSeconds)
 }
 
+// Au retour au premier plan, deux choses peuvent avoir été perdues sans que rien
+// ne le signale : le contexte audio, suspendu par le système, et le verrou
+// d'écran, relâché d'office. Les deux se redemandent ici.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return
+    void audio.resumeIfSuspended().then((resumed) => {
+      if (resumed) refreshAudioStatus()
+    })
+    screenLockHeld.value = screenLock.held
+    if (screenLock.held) screenLockError.value = ''
+  })
+}
+
 // Toute modification du profil est répercutée à chaud dans les modules : c'est
 // ce qui permet de régler un paramètre pendant que le son tourne.
 watch(
@@ -277,6 +298,13 @@ watch(sampleSignature, () => {
   }
 })
 
+watch(
+  () => [activeProfile.value.name, activeProfile.value.engine.cylinders] as const,
+  () => {
+    if (audio.isReady) void syncMediaSession()
+  },
+)
+
 watch(profiles, (list) => saveProfiles(list), { deep: true })
 watch(selectedId, (id) => {
   saveSelectedId(id)
@@ -307,6 +335,35 @@ function refreshAudioStatus(): void {
 export async function activateAudio(): Promise<void> {
   await audio.activate(activeProfile.value)
   refreshAudioStatus()
+
+  mediaSession.setHandlers({
+    onPlay: () => setMuted(false),
+    onPause: () => setMuted(true),
+  })
+  await syncMediaSession()
+  mediaSession.setPlaying(!isMuted.value)
+}
+
+/** Titre et sous-titre affichés par le système sur l'écran verrouillé. */
+async function syncMediaSession(): Promise<void> {
+  const profile = activeProfile.value
+  const gears = profile.drivetrain.gearRatios.length
+  await mediaSession.setProfile(
+    profile.name,
+    `${profile.engine.cylinders} cylindres · ${gears} rapport${gears > 1 ? 's' : ''}`,
+  )
+}
+
+/**
+ * Verrou d'écran : sans lui, l'écran s'éteint au bout de quelques dizaines de
+ * secondes et l'on perd de vue la vitesse et le rapport engagé, en conduite.
+ */
+export async function setKeepScreenOn(value: boolean): Promise<void> {
+  keepScreenOn.value = value
+  if (value) await screenLock.enable()
+  else await screenLock.disable()
+  screenLockHeld.value = screenLock.held
+  screenLockError.value = value ? screenLock.lastError : ''
 }
 
 /**
@@ -337,6 +394,7 @@ export async function analyzeLayerFile(
 export function setMuted(value: boolean): void {
   isMuted.value = value
   if (value) audio.mute()
+  mediaSession.setPlaying(!value)
 }
 
 export function setSource(kind: SourceKind): void {

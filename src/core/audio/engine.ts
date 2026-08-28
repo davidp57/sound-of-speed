@@ -326,6 +326,28 @@ export class AudioEngine {
     this.status.outputPeak = peak
   }
 
+  /**
+   * Relance le contexte s'il a été suspendu.
+   *
+   * Le système suspend le contexte quand l'application passe longuement en
+   * arrière-plan, ou quand un appel prend la main sur la sortie audio. Il ne le
+   * relance jamais de lui-même : sans cette reprise, le son ne revient plus.
+   */
+  async resumeIfSuspended(): Promise<boolean> {
+    const context = this.context
+    if (!context) return false
+    // Lecture indirecte : l'état change pendant l'attente, alors que le
+    // rétrécissement de type opéré par un test direct resterait figé sur la
+    // valeur d'avant.
+    const readState = (): AudioContextState => context.state
+    if (readState() !== 'suspended') return false
+
+    await context.resume().catch(() => undefined)
+    const state = readState()
+    this.status.contextState = state
+    return state === 'running'
+  }
+
   /** Coupe le son sans démonter le contexte : les couches restent chargées. */
   mute(): void {
     if (!this.context) return

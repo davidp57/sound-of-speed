@@ -19,6 +19,36 @@ type Tab = 'drive' | 'telemetry' | 'config'
 
 const tab = ref<Tab>('drive')
 
+/**
+ * Mode conduite.
+ *
+ * Sur un écran de bord, tout ce qui n'est pas la vitesse, le rapport et le régime
+ * est du bruit — et une barre d'onglets est une invitation à toucher l'écran en
+ * roulant. Ce mode l'escamote, agrandit les chiffres et élargit les cibles
+ * tactiles. On en sort par une zone volontairement discrète, pour ne pas en
+ * sortir par accident.
+ */
+const immersive = ref(false)
+
+async function toggleImmersive(): Promise<void> {
+  immersive.value = !immersive.value
+  try {
+    if (immersive.value && !document.fullscreenElement) {
+      await document.documentElement.requestFullscreen()
+    } else if (!immersive.value && document.fullscreenElement) {
+      await document.exitFullscreen()
+    }
+  } catch {
+    // Plein écran refusé — c'est courant sur un navigateur embarqué. La mise en
+    // page immersive s'applique quand même, ce qui est l'essentiel.
+  }
+}
+
+/** Sortie du plein écran par la touche d'échappement du navigateur. */
+function onFullscreenChange(): void {
+  if (!document.fullscreenElement && immersive.value) immersive.value = false
+}
+
 const TABS: { id: Tab; label: string }[] = [
   { id: 'drive', label: 'Conduite' },
   { id: 'telemetry', label: 'Télémétrie' },
@@ -83,6 +113,7 @@ onMounted(() => {
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('keyup', onKeyUp)
   window.addEventListener('blur', releaseControls)
+  document.addEventListener('fullscreenchange', onFullscreenChange)
   start()
 })
 
@@ -90,13 +121,14 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
   window.removeEventListener('keyup', onKeyUp)
   window.removeEventListener('blur', releaseControls)
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
   stop()
 })
 </script>
 
 <template>
-  <div class="shell">
-    <header class="bar">
+  <div class="shell" :class="{ immersive }">
+    <header v-if="!immersive" class="bar">
       <nav class="tabs">
         <button
           v-for="entry in TABS"
@@ -107,16 +139,23 @@ onBeforeUnmount(() => {
           {{ entry.label }}
         </button>
       </nav>
-      <button class="power" :class="{ 'is-active': isRunning }" @click="isRunning ? stop() : start()">
-        {{ isRunning ? 'En marche' : 'Arrêté' }}
-      </button>
+      <div class="right">
+        <button @click="toggleImmersive()">Conduite</button>
+        <button class="power" :class="{ 'is-active': isRunning }" @click="isRunning ? stop() : start()">
+          {{ isRunning ? 'En marche' : 'Arrêté' }}
+        </button>
+      </div>
     </header>
 
     <main class="content">
-      <DriveView v-if="tab === 'drive'" />
+      <DriveView v-if="tab === 'drive' || immersive" :immersive="immersive" />
       <TelemetryView v-else-if="tab === 'telemetry'" />
       <ConfigView v-else />
     </main>
+
+    <button v-if="immersive" class="escape" title="Quitter le mode conduite" @click="toggleImmersive()">
+      ×
+    </button>
   </div>
 </template>
 
@@ -142,8 +181,34 @@ onBeforeUnmount(() => {
   gap: 0.4rem;
 }
 
+.right {
+  display: flex;
+  gap: 0.4rem;
+}
+
 .power {
   min-width: 8rem;
+}
+
+.immersive .content {
+  padding: 0;
+}
+
+.escape {
+  position: fixed;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  line-height: 1;
+  font-size: 1.2rem;
+  opacity: 0.35;
+  background: transparent;
+}
+
+.escape:hover {
+  opacity: 1;
 }
 
 .content {
