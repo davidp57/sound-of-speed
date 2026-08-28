@@ -1,0 +1,33 @@
+# Variante : Portainer construit l'image lui-même depuis le dépôt.
+#
+# À utiliser via Stacks > Add stack > Repository, en pointant sur ce fichier.
+# Plus rien à recopier à la main : un `git push` puis « Update the stack » suffit.
+# C'est le chemin à préférer une fois les réglages figés ; pendant la mise au
+# point, la pile à volumes de `docker-compose.yml` évite de reconstruire à chaque
+# essai.
+#
+# Le dépôt étant privé, Portainer demande une authentification : utiliser un
+# jeton d'accès personnel GitHub à la place du mot de passe, avec la seule
+# portée `repo`.
+
+services:
+  speed:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: speed:latest
+    container_name: speed
+    restart: unless-stopped
+    ports:
+      - "8088:80"
+    volumes:
+      # Les échantillons restent dehors : ils ne sont pas dans le dépôt, et une
+      # image qui les contiendrait se redistribuerait avec eux.
+      - /volume1/docker/speed/audio:/usr/share/nginx/html/audio:ro
+      # Décommenter avec l'authentification de docker/nginx.conf :
+      # - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/index.html"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

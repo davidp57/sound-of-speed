@@ -1,14 +1,46 @@
 # Speed
 
-Une voix de moteur pour une voiture qui n'en a pas. L'application lit la vitesse
-réelle au GPS, en déduit un régime et un rapport engagé, et pilotera avec ça un
-moteur sonore à échantillons.
+Une voix de moteur pour une voiture qui n'en a pas.
 
-Trois écrans : la **conduite** (vitesse, rapport, régime), la **télémétrie** (tout
-ce qui alimente le son) et la **configuration** (chaque paramètre, réglable
-pendant que ça tourne, avec sauvegarde et chargement de profils).
+L'application lit la vitesse réelle au GPS, en déduit un régime moteur et un
+rapport engagé, et pilote avec ça un moteur sonore à échantillons. Tout est
+réglable pendant que le son tourne, et les réglages se rangent dans des profils
+qu'on sauvegarde, exporte et recharge.
 
-## Démarrer
+- [Les trois écrans](#les-trois-écrans)
+- [Démarrer en développement](#démarrer-en-développement)
+- [Installation sur un NAS Synology](#installation-sur-un-nas-synology)
+- [Référence des réglages](#référence-des-réglages)
+- [Les échantillons](#les-échantillons)
+- [Comment ça marche](#comment-ça-marche)
+- [Banc de mise au point](#banc-de-mise-au-point)
+- [État du projet](#état-du-projet)
+
+---
+
+## Les trois écrans
+
+**Conduite** — la vitesse, le rapport, le régime. Le choix de la source
+(simulateur, GPS, rejeu), l'activation du son, le volume, la boîte automatique ou
+manuelle, et le verrou d'écran. Un bouton **Conduite** bascule en plein écran :
+la barre disparaît, les chiffres occupent toute la hauteur, les commandes
+deviennent quatre grandes cibles. On en sort par une croix discrète, placée là
+pour qu'on n'en sorte pas par mégarde en roulant.
+
+**Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
+lissage, pente, accélération, qualité du signal GPS, régime, charge, état de la
+transmission, régime que donnerait chaque rapport, gain et vitesse de lecture de
+chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
+les traces.
+
+**Configuration** — les quelque trente-cinq paramètres, en curseur et en saisie,
+appliqués immédiatement. La gestion des profils et l'analyse des échantillons.
+
+Aucune animation nulle part : les valeurs changent, rien ne bouge pour le plaisir.
+
+---
+
+## Démarrer en développement
 
 ```bash
 npm install
@@ -18,222 +50,265 @@ npm install
 npm run dev
 ```
 
-Le serveur écoute sur toutes les interfaces, **en HTTPS** : depuis un téléphone
-sur le même réseau, ouvrir `https://<adresse-du-poste>:5173`. Le certificat est
+Le serveur écoute sur toutes les interfaces, **en HTTPS**. Depuis un téléphone sur
+le même réseau, ouvrir `https://<adresse-du-poste>:5173` — le certificat est
 auto-signé, le téléphone demande donc de confirmer une fois.
 
-L'HTTPS n'est pas optionnel ici. La géolocalisation, le verrou d'écran et
-l'AudioWorklet ne sont accessibles que depuis un « contexte sécurisé » : c'est le
-cas de `localhost`, mais pas d'une adresse de réseau local en clair. En `http://`,
-la page s'affiche normalement et le GPS refuse de démarrer.
+> **L'HTTPS n'est pas optionnel.** La géolocalisation, le verrou d'écran et
+> l'AudioWorklet ne fonctionnent que dans un « contexte sécurisé ». `localhost`
+> en fait partie, mais **pas** une adresse de réseau local en clair. En `http://`,
+> la page s'affiche normalement et le GPS refuse de démarrer, sans message.
 
-Au clavier, en source « Simulateur » : flèches **haut** et **bas** pour
-l'accélérateur et le frein, flèches **gauche** et **droite** pour les rapports en
-mode manuel.
+Au clavier, source « Simulateur » :
 
-## Où en est le projet
+| Touche | Effet |
+|---|---|
+| ↑ | Accélérateur |
+| ↓ | Frein |
+| ← → | Descendre / monter un rapport, en mode manuel |
 
-| Lot | Contenu | État |
+Autres commandes :
+
+```bash
+npm run build        # produit dist/
+npm run typecheck    # vérification TypeScript stricte
+npm run transcode    # compresse les échantillons en FLAC
+npm run deploy       # recopie le build vers le NAS
+```
+
+---
+
+## Installation sur un NAS Synology
+
+C'est le déploiement pour lequel le projet est outillé. Le NAS est déjà allumé,
+son proxy inversé sait obtenir un certificat, et l'hébergement reste chez soi —
+ce qui règle du même coup la question des échantillons, puisque rien n'est publié
+sur Internet.
+
+Deux chemins mènent au même résultat.
+
+| | **Volumes** | **Image** |
 |---|---|---|
-| 0 | Squelette, boucle, écrans, simulateur clavier | fait |
-| 1 | Conditionnement du signal, GPS, enregistrement et rejeu de traces | fait |
-| 2 | Modèle moteur et boîte de vitesses | fait |
-| 3 | Moteur audio à échantillons, transcodage, calage des boucles | fait |
-| 4 | Analyse des échantillons dans l'éditeur | fait |
-| 5 | Écran de la voiture, session média, verrou d'écran | fait |
+| Ce que fait Portainer | Lance `nginx:alpine` tel quel | Construit l'image depuis le dépôt Git |
+| Mise à jour du site | `npm run build && npm run deploy` | Un `git push`, puis redéployer la pile |
+| Ce qu'il faut | Un partage accessible depuis le poste | Un accès du NAS au dépôt privé |
+| Quand le préférer | Pour démarrer, et pendant les réglages | Une fois les réglages figés |
 
-Le son fonctionne. L'écran de télémétrie affiche le mixage appliqué à chaque
-image — gain et vitesse de lecture de chaque couche, poids des familles, niveau
-de sortie mesuré après le limiteur — ce qui rend le réglage vérifiable à l'œil
-autant qu'à l'oreille.
+La suite décrit le chemin **Volumes**, qui demande le moins de pièces mobiles.
+Le chemin **Image** est décrit [plus bas](#variante-construire-limage-depuis-le-dépôt).
 
-## Déployer
+### 1. Préparer les dossiers sur le NAS
+
+Dans File Station, créer l'arborescence suivante :
+
+```
+/volume1/docker/speed/
+  dist/          (vide pour l'instant)
+  audio/
+    procar/      les fichiers d'échantillons
+  nginx.conf     copié depuis docker/nginx.conf du dépôt
+```
+
+Le dossier `audio/` est volontairement séparé du build : il sera monté
+par-dessus. Changer de banque sonore consistera à y déposer d'autres fichiers,
+sans rien reconstruire ni redéployer.
+
+### 2. Construire et envoyer le site
+
+Sur le poste de développement :
 
 ```bash
 npm run build
 ```
 
-Produit un `dist/` entièrement statique : aucun serveur applicatif, aucune base,
-aucune variable d'environnement. N'importe quel hébergement de fichiers convient,
-à une condition — **HTTPS obligatoire**, pour la même raison qu'en développement.
+Déclarer une fois pour toutes où se trouve le NAS. Le plus simple sous Windows
+est de monter le partage en lecteur réseau, puis :
 
-Vite recopie `public/audio/` dans le build : les échantillons pèsent donc 8,7 Mo
-des 8,8 Mo produits. C'est ce détail qui commande le choix de l'hébergement, et
-il vaut mieux le regarder en face : mettre ce dossier en ligne, c'est le
-redistribuer. Tant qu'il contient des fichiers qui ne sont pas les vôtres,
-l'hébergement doit rester privé — un accès protégé, ou pas d'hébergement du tout.
-
-Si le site est servi depuis un sous-chemin plutôt que la racine d'un domaine,
-renseigner `base` dans `vite.config.ts`.
-
-### Sur un NAS Synology
-
-C'est le déploiement pour lequel le projet est outillé : le NAS est déjà allumé,
-son proxy inversé sait obtenir un certificat, et l'hébergement reste chez soi —
-ce qui règle du même coup la question des échantillons, puisque rien n'est publié.
-
-**Sur le NAS**, préparer un dossier et y déposer trois choses :
-
-```
-/volume1/docker/speed/
-  dist/        le build, recopié depuis le poste
-  audio/       les échantillons, déposés une fois
-  nginx.conf   copié depuis docker/nginx.conf
+```bash
+setx SPEED_DEPLOY_TARGET "Z:\docker\speed\dist"
 ```
 
-**Dans Portainer**, créer une pile à partir de `docker/docker-compose.yml`. Elle
-utilise l'image officielle `nginx:alpine` : il n'y a **aucune image à
-construire**. Tout arrive par des volumes, y compris la configuration.
-
-Les échantillons sont montés séparément, par-dessus le build. Ils ne transitent
-donc ni par une image ni par un dépôt, et changer de banque sonore se fait en
-déposant des fichiers.
-
-**Dans DSM**, Panneau de configuration › Portail des applications › Proxy
-inversé : source en HTTPS sur le nom du NAS, destination en HTTP vers
-`localhost:8088`. Le certificat s'obtient dans Sécurité › Certificat.
-
-Ensuite, chaque itération de réglage tient en deux commandes :
+Ensuite, à chaque itération :
 
 ```bash
 npm run build && npm run deploy
 ```
 
-`deploy` recopie le build vers le chemin déclaré dans `SPEED_DEPLOY_TARGET`, en
-laissant le dossier `audio` intact. Le conteneur sert les nouveaux fichiers sans
+`deploy` recopie le build **sans toucher au dossier `audio`** — l'écraser
+romprait le montage. Le conteneur sert les nouveaux fichiers immédiatement, sans
 redémarrage.
 
-**Si le service est joignable depuis l'extérieur**, activer l'authentification
-prévue dans `docker/nginx.conf` : sans elle, l'adresse est publique, et les
-échantillons avec elle.
+### 3. Créer la pile dans Portainer
 
-### Une image autonome
+Portainer › **Stacks** › **Add stack** › **Web editor**, nommer la pile `speed`,
+et coller le contenu de `docker/docker-compose.yml`.
 
-`Dockerfile` construit une image complète, échantillons exclus. Elle n'est pas
-nécessaire au départ — la pile ci-dessus obtient le même résultat sans rien
-construire — et le devient si le projet part sur un dépôt distant avec
-construction automatique, ou s'il faut pouvoir revenir à une version précise sans
-retrouver le build correspondant.
+Vérifier avant de déployer :
 
-### La limite de tout hébergement
+| À vérifier | Pourquoi |
+|---|---|
+| Le port `8088` | Il peut déjà servir sur le NAS. Le changer ici si Portainer se plaint |
+| Les chemins `/volume1/docker/speed/…` | Le nom du volume peut différer selon le modèle |
 
-Une voiture traverse des zones sans réseau. Une application chargée depuis
-Internet n'y démarre pas, et les 8,7 Mo d'échantillons se retéléchargent à chaque
-visite tant que rien ne les met en cache. Y répondre demande d'en faire une
-application installable, avec ses échantillons stockés localement — ce n'est pas
-fait, et c'est la suite naturelle du projet.
+Déployer. Le service répond alors sur `http://<ip-du-nas>:8088` — en clair, et
+uniquement depuis le réseau local. C'est normal à ce stade : le GPS ne marchera
+pas encore, faute de HTTPS.
 
-## En voiture
+### 4. Publier en HTTPS avec le proxy inversé
 
-**Mode conduite** — le bouton du même nom escamote la barre d'onglets, passe en
-plein écran, porte les chiffres à toute la hauteur disponible et remplace les
-commandes par quatre grandes cibles. On en sort par une croix discrète, placée
-là pour qu'on n'en sorte pas par mégarde.
+DSM › **Panneau de configuration** › **Portail des applications** › **Proxy
+inversé** › **Créer** :
 
-**Session média** — l'application apparaît sur l'écran verrouillé et dans le
-panneau de notifications, avec le nom du profil, sa configuration et une pochette
-dessinée à la volée. Les commandes au volant et les boutons de casque coupent et
-rétablissent le son.
+| Champ | Valeur |
+|---|---|
+| Description | Speed |
+| Protocole source | **HTTPS** |
+| Nom d'hôte source | `speed.<votre-nom>.synology.me` |
+| Port source | `443` |
+| Protocole destination | **HTTP** |
+| Nom d'hôte destination | `localhost` |
+| Port destination | `8088` |
 
-**Verrou d'écran** — sans lui, l'écran s'éteint au bout de quelques dizaines de
-secondes et l'on perd de vue la vitesse. Le système le relâche à chaque passage
-en arrière-plan et ne le rend pas au retour : il est donc redemandé à chaque fois
-que la page redevient visible. Quand il est refusé, la raison s'affiche à
-l'écran — un verrou qui échoue en silence est indiscernable d'un verrou absent.
+Le nom DDNS s'obtient dans **Accès externe** › **DDNS** s'il n'existe pas déjà.
 
-**Reprise après suspension** — le système suspend le contexte audio quand
-l'application reste longtemps en arrière-plan, ou quand un appel prend la sortie
-audio. Il ne le relance jamais seul.
+Puis DSM › **Panneau de configuration** › **Sécurité** › **Certificat** : obtenir
+un certificat Let's Encrypt pour ce nom d'hôte, et l'affecter à ce service dans
+**Paramètres**.
 
-### Ce qui reste à vérifier sur route
+### 5. Rendre le service joignable en voiture
 
-Deux points n'ont pas pu être validés depuis un poste de développement, et ne le
-seront qu'en roulant :
+C'est l'étape qu'on oublie, et elle change tout : **en voiture, le téléphone est
+en 4G, donc hors du réseau local.** Le proxy inversé ne suffit pas — il faut que
+le NAS soit joignable depuis Internet, ce qui suppose de rediriger le port 443 de
+la box vers lui.
 
-- **Le verrou d'écran.** Le code est en place, mais le navigateur de test refuse
-  la permission (`NotAllowedError`), y compris sur un appel direct à l'API. Rien
-  ne prouve donc qu'il fonctionne, seulement qu'il échoue proprement.
-- **Le GPS écran éteint.** `watchPosition` continue de recevoir des positions
-  tant que la page vit, mais les systèmes mobiles espacent fortement les mesures
-  quand l'écran s'éteint. C'est précisément à cela que sert le verrou d'écran, et
-  c'est pourquoi les deux se testent ensemble.
+Et dès lors, **l'adresse est publique**. Activer l'authentification prévue dans
+`docker/nginx.conf` : décommenter les deux lignes `auth_basic`, créer le fichier
+de mots de passe, décommenter le volume correspondant dans la pile.
 
-## Architecture
-
-```
-src/
-  core/
-    loop.ts              cadence unique, avec repli quand la page est masquée
-    speed/
-      source.ts          interface commune aux trois sources
-      simulator.ts       vitesse au clavier, pour travailler sur un poste fixe
-      geolocation.ts     GPS réel, avec repli haversine et rejet des aberrations
-      replay.ts          rejeu d'une trace enregistrée, et son enregistreur
-      conditioner.ts     fenêtre glissante, extrapolation, ressort amorti
-    engine/engine.ts     régime, charge, rupteur
-    session.ts           verrou d'écran et session média du système
-    drivetrain/gearbox.ts  rapports, passages automatiques et manuels
-    audio/
-      mix.ts             gains et vitesses de lecture des couches (fonction pure)
-      engine.ts          graphe Web Audio, chargement, horloge sur le fil audio
-    preset/              schéma d'un profil, valeurs par défaut, persistance
-  ui/                    les trois écrans
-  state.ts               assemblage et télémétrie
-public/audio/            échantillons, non versionnés
-scripts/transcode.mjs    compression FLAC
+```bash
+docker run --rm httpd:alpine htpasswd -nbB david "motdepasse" > htpasswd
 ```
 
-Les trois sources de vitesse exposent la même interface, donc tout ce qui est en
-aval ignore d'où vient le chiffre : on développe au clavier, on met au point en
-rejouant un trajet capturé, et on roule pour de vrai, sans branche
-conditionnelle nulle part.
+> Deux pièges fréquents. Depuis le wifi de la maison, le nom DDNS résout vers
+> l'adresse publique : sans **NAT loopback** activé sur la box, l'accès échoue
+> alors qu'il fonctionne en 4G. Et sans authentification, les échantillons sont
+> publics avec le site.
 
-### Le son
+### 6. Vérifier
 
-Toutes les couches jouent en permanence, en boucle, dès l'activation ; seuls
-leurs gains et leurs vitesses de lecture bougent. Démarrer et arrêter des sources
-au fil du régime produirait des discontinuités de phase, donc des clics.
+Depuis le téléphone, en 4G :
 
-Deux fondus se composent, tous deux à puissance constante : en régime, entre les
-couches d'un même rôle ; en charge, entre « en charge » et « pied levé ». La
-charge est déduite de l'accélération, faute de pédale dans une voiture
-électrique.
+1. La page s'affiche, le cadenas est fermé.
+2. Écran Conduite › **Activer le son** → le bouton passe à « Son actif ».
+3. Source **GPS** → autoriser la localisation → le statut passe à « actif ».
+4. Écran Télémétrie → « Intervalles récents » se remplit, autour de 1000 ms.
 
-Trois points ont demandé une attention particulière :
+Si le GPS reste muet alors que la page s'affiche, c'est presque toujours le
+contexte sécurisé : vérifier que l'adresse est bien en `https://`.
 
-- **Le raccord des boucles.** Un échantillon dont le dernier point est loin du
-  premier claque à chaque tour. Mesuré après décodage, canal par canal :
-  `on-high` sautait de 21,6 % du pic et `limiter` de 39,4 %. Le chargement
-  détecte ces cas et applique un fondu de 30 ms sur le raccord.
-- **La cadence en arrière-plan.** Le navigateur gèle l'affichage et ralentit les
-  minuteurs dès que la page n'est plus visible, mais le fil audio continue. Une
-  horloge `AudioWorklet` bat donc la mesure dès qu'elle est disponible, et la
-  boucle d'affichage s'efface. Un média silencieux tourne en parallèle pour que
-  le système ne libère pas la session audio.
-- **La phase des couches.** Deux boucles issues du même enregistrement, démarrées
-  ensemble, restent en phase et se renforcent en peigne. Chacune démarre donc à
-  une position tirée au hasard.
+### Variante : construire l'image depuis le dépôt
 
-### La pièce importante
+Le dépôt est privé et le `Dockerfile` est à la racine, donc Portainer peut
+construire l'image lui-même — plus rien à recopier à la main.
 
-C'est `conditioner.ts`, et ce n'est pas le son. Le GPS ne livre qu'une mesure par
-seconde : piloter directement une hauteur avec ce signal donne un escalier qui
-saute chaque seconde. Trois traitements se composent — une pente calculée sur une
-fenêtre glissante, une extrapolation entre deux mesures, et un ressort amorti
-critique intégré à pas fixe.
+Portainer › **Stacks** › **Add stack** › **Repository** :
 
-Mesuré sur une trace synthétique à 1 Hz : l'écart de suivi reste sous 1 km/h en
-accélération régulière, et la sortie est continue. Il monte à une dizaine de
-km/h sur un freinage brutal, le temps que la pente bascule — c'est le compromis
-inhérent au procédé, et c'est ce qu'arbitrent les réglages « raideur du lissage »
-et « fenêtre d'accélération ».
+| Champ | Valeur |
+|---|---|
+| Repository URL | `https://github.com/davidp57/speed.git` |
+| Repository reference | `refs/heads/main` |
+| Compose path | `docker/docker-compose.build.yml` |
+| Authentication | activé, avec un **jeton d'accès personnel** GitHub en guise de mot de passe |
 
-## Échantillons
+Le jeton se crée dans GitHub › Settings › Developer settings › Personal access
+tokens, avec la seule portée `repo`. Un mot de passe de compte ne fonctionne pas.
 
-Le dossier `public/audio/` **n'est pas versionné**, volontairement. Le code n'y référence
-rien en dur : chaque profil déclare un sous-dossier et la liste de ses couches.
-Changer de banque sonore, c'est remplacer le contenu du dossier et ajuster les
-régimes d'ancrage dans l'écran de configuration.
+Les échantillons restent hors de l'image, montés en volume : ils ne sont pas dans
+le dépôt, et une image qui les contiendrait se redistribuerait avec eux.
+
+Mettre à jour devient alors : `git push`, puis **Update the stack** dans
+Portainer en cochant *Re-pull image and redeploy*.
+
+---
+
+## Référence des réglages
+
+Tout est dans l'écran **Configuration**, appliqué immédiatement.
+
+### Moteur
+
+| Réglage | Ce qu'il fait |
+|---|---|
+| **Cylindres** | Fixe la fréquence d'allumage : `régime ÷ 120 × cylindres` |
+| **Ralenti** | Régime au point mort, moteur non entraîné |
+| **Seuil de coupure** | Régime auquel l'allumage commence à être coupé |
+| **Rupteur** | Plafond absolu du régime |
+| **Durée de coupure** | C'est le hachage qui produit le crépitement, pas le plafonnement |
+| **Inertie** | Poids du volant moteur : temps de montée à vide |
+| **Montée à vide** | Prise de tours hors prise, en tr/min par seconde |
+| **Frein moteur** | Retombée pied levé |
+
+### Transmission
+
+| Réglage | Ce qu'il fait |
+|---|---|
+| **Démultiplications** | Du plus court au plus long, séparées par des virgules. Une seule valeur = prise directe |
+| **Pont** | Rapport final |
+| **Rupteur atteint à** | Vitesse au rupteur dans le dernier rapport. **Modifier cette valeur recalcule le pont** — c'est le chiffre parlant |
+| **Rayon de roue** | En mètres. Entre dans le calcul du régime |
+| **Temps de passage** | Durée de la coupure de couple |
+| **Montée au rupteur** | Fraction du rupteur à laquelle la boîte monte, pied au plancher |
+| **Montée à charge nulle** | La même, pied levé. C'est elle qui décide si l'on roule en rapport long à bas régime — sans elle, les derniers rapports ne sont jamais engagés |
+| **Descente sous** | Seuil de rétrogradage |
+| **Temporisations de montée** | Une par rapport, en secondes. Les garder **inégales** : avec une valeur unique, la boîte sonne comme un métronome |
+
+### Signal de vitesse
+
+| Réglage | Ce qu'il fait |
+|---|---|
+| **Raideur du lissage** | Haut : réactif, mais les sauts du GPS s'entendent. Bas : doux, mais en retard. Le réglage le plus sensible |
+| **Fenêtre d'accélération** | Durée sur laquelle la pente est estimée |
+| **Zone morte** | En deçà, la variation est traitée comme du tremblement de mesure |
+| **Vitesse plausible max** | Au-delà, la mesure est rejetée comme aberrante |
+| **Accélération / décélération max retenues** | Bornes de l'accélération transmise à la charge |
+
+### Mixage
+
+| Réglage | Ce qu'il fait |
+|---|---|
+| **Volume général** | |
+| **Début / fin de bascule** | Régimes entre lesquels la couche haute remplace la basse. **Indépendants des régimes d'ancrage**, qui règlent la justesse |
+| **Accélération pleine charge** | Accélération au-delà de laquelle la charge est maximale. Faute de pédale dans une voiture électrique, c'est elle qui arbitre le fondu entre « en charge » et « pied levé » |
+| **Lissage de la charge** | Évite que le fondu papillonne sur le bruit d'accélération |
+| **Effacement du ralenti** | Régime au-dessus duquel la couche de ralenti disparaît |
+| **Coupe-bas**, **Saturation**, **Seuil du limiteur** | Chaîne de sortie |
+
+### Couches
+
+Une ligne par échantillon. Le bouton **Analyser** mesure le fichier et propose
+des ancrages.
+
+| Colonne | Ce qu'elle fait |
+|---|---|
+| **Rôle** | « en charge », « pied levé », « ralenti » ou « rupteur ». Détermine la famille dans laquelle la couche est fondue |
+| **Ancrage** | Régime auquel l'échantillon a été enregistré. Fixe la **justesse**, pas le point de bascule |
+| **Gain** | Niveau propre à la couche |
+| **Lecture min / max** | Bornes d'étirement. Au-delà d'une octave environ, le son devient métallique vers le haut, pâteux vers le bas |
+
+### Profils
+
+Sélection, renommage, duplication, suppression, **export** et **import** en JSON.
+Les profils sont conservés dans le navigateur ; l'export sert à les transporter
+d'un appareil à l'autre.
+
+---
+
+## Les échantillons
+
+Le dossier `public/audio/` **n'est pas versionné**, volontairement, et le code
+n'y référence rien en dur : chaque profil déclare un sous-dossier et la liste de
+ses couches.
 
 Il faut, par moteur, des boucles stationnaires à régime connu : montée en charge
 bas et haut régime, décélération bas et haut régime, un ralenti, un rupteur.
@@ -243,30 +318,23 @@ et [Game Developer](https://www.gamedeveloper.com/audio/capturing-engine-sounds-
 
 ### Analyser un échantillon
 
-Le bouton **Analyser**, sur chaque couche de l'écran de configuration, mesure le
-fichier et propose des régimes d'ancrage cliquables. Il donne aussi la durée, le
-format, la qualité du raccord de boucle, le centroïde spectral, et signale les
-prises en rampe.
+Le bouton **Analyser** donne la durée, le format, la qualité du raccord de
+boucle, le centroïde spectral, signale les prises en rampe, et propose des
+régimes d'ancrage cliquables.
 
 **Les propositions ne sont pas appliquées d'office, et c'est délibéré.** Le
-régime se déduit en principe de la raie d'allumage — `régime ÷ 120 × cylindres` —
-mais un spectre de moteur se prête mal à une réponse unique : la détection
-confond une fréquence avec sa moitié, son tiers ou ses trois demis, parce qu'un
-moteur émet une raie à chaque demi-tour de vilebrequin et pas seulement à
-l'allumage.
+régime se déduit en principe de la raie d'allumage, mais un moteur émet une raie
+à chaque demi-tour de vilebrequin et pas seulement à l'allumage : le spectre est
+bien plus dense qu'une série harmonique simple, et la détection confond une
+fréquence avec sa moitié, son tiers ou ses trois demis.
 
-Mesuré sur le jeu de test, la méthode place la bonne valeur en tête sur les
-prises stationnaires bas régime (3162 contre 3200 attendus, 3162 contre 3400) et
-se trompe sur les prises haut régime, où la bonne valeur est à 1,5 ou 3 fois le
-meilleur candidat. Rendre une valeur unique reviendrait donc à se tromper une
-fois sur deux avec assurance.
+Mesurée sur le jeu de test, la méthode place la bonne valeur en tête sur les
+prises stationnaires bas régime et se trompe sur les prises haut régime. Rendre
+une valeur unique reviendrait à se tromper une fois sur deux avec assurance.
 
-D'où le choix d'une liste classée. Comme le son tourne pendant l'édition, en
-essayer un se juge à l'oreille immédiatement : la bonne saute aux oreilles, les
-autres sonnent une octave ou une quinte à côté. L'indication **timbre** aide à
-recouper — d'un même moteur, la prise haut régime a forcément le centroïde le
-plus aigu, et l'ordre observé (1202 Hz pour la montée bas régime, 2256 pour la
-montée haut régime) permet d'écarter un candidat aberrant.
+D'où la liste classée : comme le son tourne pendant l'édition, en essayer un se
+juge à l'oreille immédiatement. L'indication **timbre** aide à recouper — d'un
+même moteur, la prise haut régime a forcément le centroïde le plus aigu.
 
 ### Compression
 
@@ -274,10 +342,10 @@ montée haut régime) permet d'écarter un candidat aberrant.
 npm run transcode
 ```
 
-Convertit les prises en FLAC : **−50 %** sur le jeu actuel, 5,73 Mo → 2,84 Mo,
-sans aucune perte (écart maximal mesuré après décodage : 1,5 × 10⁻⁷). Les
-fichiers d'origine sont conservés ; il reste à changer l'extension des couches
-dans l'écran de configuration.
+Convertit en FLAC : **−50 %** sur le jeu de test, 5,73 Mo → 2,84 Mo, sans aucune
+perte (écart maximal mesuré après décodage : 1,5 × 10⁻⁷). Les fichiers d'origine
+sont conservés ; il reste à changer l'extension des couches dans l'écran de
+configuration.
 
 FLAC plutôt qu'AAC ou Opus parce que les codecs avec perte insèrent un silence
 d'amorçage en tête de fichier, qui sur une boucle revient à chaque tour.
@@ -285,13 +353,84 @@ d'amorçage en tête de fichier, qui sur une boucle revient à chaque tour.
 ### Ce qui manque au jeu actuel
 
 Il n'y a **pas de couche de ralenti**. Le moteur étire donc l'enregistrement bas
-régime, ancré à 3128 tr/min, jusqu'au ralenti à 780 — un rapport de 4 pour 1,
-bien au-delà de ce qu'un échantillon supporte. La vitesse de lecture est bornée à
-0,5, ce que l'écran de télémétrie signale par la mention « bornée », et le son à
-l'arrêt sonne donc une octave trop haut.
+régime, ancré vers 3100 tr/min, jusqu'au ralenti à 780 — un rapport de 4 pour 1,
+bien au-delà de ce qu'un échantillon supporte. La vitesse de lecture est bornée,
+ce que la télémétrie signale par la mention « bornée », et le son à l'arrêt sonne
+une octave trop haut.
 
 Y remédier demande de la matière, pas du code : une prise de ralenti, déclarée
 comme une couche de rôle « ralenti ».
+
+---
+
+## Comment ça marche
+
+```
+src/
+  core/
+    loop.ts              cadence unique, avec repli quand la page est masquée
+    session.ts           verrou d'écran et session média du système
+    speed/
+      source.ts          interface commune aux trois sources
+      simulator.ts       vitesse au clavier, pour travailler sur un poste fixe
+      geolocation.ts     GPS réel, repli haversine, rejet des aberrations
+      replay.ts          rejeu d'une trace enregistrée, et son enregistreur
+      conditioner.ts     fenêtre glissante, extrapolation, ressort amorti
+    engine/engine.ts     régime, charge, rupteur
+    drivetrain/gearbox.ts  rapports, passages automatiques et manuels
+    audio/
+      mix.ts             gains et vitesses de lecture des couches (fonction pure)
+      engine.ts          graphe Web Audio, chargement, horloge sur le fil audio
+      analyze.ts         mesure d'un échantillon : ancrage, raccord, timbre
+    preset/              schéma d'un profil, valeurs par défaut, persistance
+  ui/                    les trois écrans
+  state.ts               assemblage et télémétrie
+public/audio/            échantillons, non versionnés
+docker/                  piles Portainer et configuration nginx
+scripts/                 compression FLAC, déploiement
+```
+
+Les trois sources de vitesse exposent la même interface, donc rien en aval ne
+sait d'où vient le chiffre : on développe au clavier, on met au point en rejouant
+un trajet capturé, on roule pour de vrai, sans branche conditionnelle nulle part.
+
+### La pièce importante, et ce n'est pas le son
+
+C'est `conditioner.ts`. Le GPS ne livre qu'une mesure par seconde : piloter
+directement une hauteur avec ce signal donne un escalier qui saute chaque
+seconde. Trois traitements se composent — une pente calculée sur une fenêtre
+glissante, une extrapolation entre deux mesures, et un ressort amorti critique
+intégré à pas fixe.
+
+Mesuré sur une trace synthétique à 1 Hz : l'écart de suivi reste **sous 1 km/h**
+en accélération régulière, et la sortie est continue. Il monte à une dizaine de
+km/h sur un freinage brutal, le temps que la pente bascule — c'est le compromis
+inhérent au procédé, et c'est ce qu'arbitrent les réglages « raideur du lissage »
+et « fenêtre d'accélération ».
+
+### Le son
+
+Toutes les couches jouent en permanence, en boucle, dès l'activation ; seuls
+leurs gains et leurs vitesses de lecture bougent. Démarrer et arrêter des sources
+au fil du régime produirait des discontinuités de phase, donc des clics.
+
+Deux fondus se composent, tous deux à puissance constante : en régime, entre les
+couches d'un même rôle ; en charge, entre « en charge » et « pied levé ».
+
+Trois points ont demandé une attention particulière :
+
+- **Le raccord des boucles.** Mesurée canal par canal après décodage, la
+  discontinuité atteignait 21,6 % du niveau crête sur la montée haut régime et
+  39,4 % sur le rupteur : de quoi claquer à chaque tour. Le chargement les
+  détecte et applique un fondu de 30 ms.
+- **La cadence en arrière-plan.** Le navigateur gèle l'affichage et ralentit les
+  minuteurs dès que la page n'est plus visible, mais le fil audio continue. Une
+  horloge `AudioWorklet` bat donc la mesure dès qu'elle est disponible. Un média
+  silencieux tourne en parallèle pour que le système ne libère pas la session.
+- **La phase des couches.** Deux boucles issues du même enregistrement, démarrées
+  ensemble, se renforcent en peigne. Chacune démarre à une position tirée au sort.
+
+---
 
 ## Banc de mise au point
 
@@ -303,12 +442,46 @@ quoi reprendre la main sur le temps :
 ```js
 const s = window.__speed
 s.start()
-s.pauseLoop()                  // coupe la cadence, garde la source active
+s.pauseLoop()                  // coupe la cadence, garde la source et le son actifs
 s.setThrottle(1)
 s.advanceManually(1 / 60, 600) // dix secondes simulées, à pas fixe
 s.telemetry.value
+s.resumeLoop()
 ```
 
 C'est ainsi que les seuils de passage ont été vérifiés : la boîte monte un
 rapport 0,6 s après avoir franchi 94 % du rupteur à pleine charge, et bien plus
-tôt en charge partielle — sinon les derniers rapports ne seraient jamais engagés.
+tôt en charge partielle.
+
+L'autre outil est le **rejeu de traces** : un trajet réel s'enregistre une fois
+depuis l'écran Télémétrie, puis se rejoue à l'identique sur un poste fixe. Régler
+le lissage devient reproductible, au lieu de demander un aller-retour sur route à
+chaque essai.
+
+---
+
+## État du projet
+
+| Lot | Contenu | État |
+|---|---|---|
+| 0 | Squelette, boucle, écrans, simulateur clavier | fait |
+| 1 | Conditionnement du signal, GPS, enregistrement et rejeu de traces | fait |
+| 2 | Modèle moteur et boîte de vitesses | fait |
+| 3 | Moteur audio à échantillons, compression, calage des boucles | fait |
+| 4 | Analyse des échantillons dans l'éditeur | fait |
+| 5 | Écran de la voiture, session média, verrou d'écran | fait |
+| 6 | Déploiement sur NAS, HTTPS en développement | fait |
+| 7 | Application installable et utilisable hors réseau | en cours |
+
+### Ce qui n'est pas vérifié
+
+- **Le verrou d'écran.** Le code est en place, mais le navigateur de
+  développement refuse la permission (`NotAllowedError`), y compris sur un appel
+  direct à l'API. Seul son échec propre est établi.
+- **Le GPS écran éteint.** Les systèmes mobiles espacent fortement les mesures
+  quand l'écran s'éteint. C'est à cela que sert le verrou, et les deux se testent
+  ensemble, en roulant.
+- **La configuration nginx.** Écrite avec soin mais jamais exécutée, faute de
+  Docker sur le poste de développement.
+- **Le rendu sonore.** Les mesures établissent que le signal sort, qu'il ne
+  sature pas et que les fondus sont corrects. Pas qu'il sonne juste.
