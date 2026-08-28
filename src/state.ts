@@ -1,0 +1,327 @@
+import { computed, ref, shallowRef, watch } from 'vue'
+
+import { Loop } from './core/loop'
+import { Engine, type EngineState } from './core/engine/engine'
+import { Gearbox, type GearboxState, type ShiftMode } from './core/drivetrain/gearbox'
+import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditioner'
+import { GeolocationSource } from './core/speed/geolocation'
+import { ReplaySource, TraceRecorder, type Trace } from './core/speed/replay'
+import { SimulatorSource } from './core/speed/simulator'
+import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
+import type { Profile } from './core/preset/schema'
+import {
+  duplicateProfile,
+  loadProfiles,
+  loadSelectedId,
+  newId,
+  saveProfiles,
+  saveSelectedId,
+} from './core/preset/store'
+
+/**
+ * État de l'application.
+ *
+ * Un module unique plutôt qu'un magasin par domaine : il n'y a qu'une voiture,
+ * qu'une boucle et qu'un profil actif à la fois. Les trois écrans lisent tous
+ * dans le même objet de télémétrie, remplacé en bloc à chaque image — remplacer
+ * une référence coûte moins cher que d'entretenir vingt valeurs réactives
+ * mises à jour soixante fois par seconde.
+ */
+
+export type SourceKind = 'simulator' | 'geolocation' | 'replay'
+
+export interface Telemetry {
+  speed: ConditionedSpeed
+  engine: EngineState
+  gearbox: GearboxState
+  /** Facteur de lecture qu'appliquera chaque couche audio, indexé par clé. */
+  frameMs: number
+}
+
+const profiles = ref<Profile[]>(loadProfiles())
+const selectedId = ref<string>(loadSelectedId() ?? profiles.value[0]?.id ?? '')
+
+export const activeProfile = computed<Profile>(() => {
+  const found = profiles.value.find((p) => p.id === selectedId.value)
+  return found ?? (profiles.value[0] as Profile)
+})
+
+const simulator = new SimulatorSource()
+const geolocation = new GeolocationSource({
+  maxPlausibleKmh: activeProfile.value.speed.maxPlausibleKmh,
+})
+const replay = new ReplaySource({ name: 'vide', startedAt: 0, samples: [] })
+
+const conditioner = new SpeedConditioner(activeProfile.value.speed)
+const gearbox = new Gearbox(activeProfile.value.drivetrain, activeProfile.value.engine)
+const engine = new Engine(activeProfile.value.engine, activeProfile.value.mix)
+const recorder = new TraceRecorder()
+const loop = new Loop()
+
+export const sourceKind = ref<SourceKind>('simulator')
+export const sourceStatus = ref<SourceStatus>('idle')
+export const sourceDetail = ref<string>('')
+export const isRunning = ref(false)
+export const isRecording = ref(false)
+export const recordedCount = ref(0)
+export const traces = ref<Trace[]>([])
+export const replayProgress = ref(0)
+
+export const telemetry = shallowRef<Telemetry>({
+  speed: {
+    kmh: 0,
+    accelMs2: 0,
+    rawKmh: 0,
+    slopeKmhS: 0,
+    sinceLastSampleMs: 0,
+    recentGapsMs: [],
+    atStandstill: true,
+  },
+  engine: {
+    rpm: activeProfile.value.engine.idleRpm,
+    kinematicRpm: 0,
+    load: 0,
+    rpmFraction: 0,
+    firingHz: 0,
+    limiterActive: false,
+    idling: true,
+  },
+  gearbox: {
+    gear: 0,
+    label: 'N',
+    gearCount: activeProfile.value.drivetrain.gearRatios.length,
+    ratio: activeProfile.value.drivetrain.gearRatios[0] ?? 1,
+    mode: 'auto',
+    isShifting: false,
+    shiftProgress: 1,
+    shiftDirection: null,
+    isShiftReady: false,
+  },
+  frameMs: 0,
+})
+
+function currentSource(): SpeedSource {
+  if (sourceKind.value === 'geolocation') return geolocation
+  if (sourceKind.value === 'replay') return replay
+  return simulator
+}
+
+// Chaque source alimente le même conditionneur, et l'enregistreur écoute au
+// passage : on peut donc capturer aussi bien un trajet réel qu'une session au
+// clavier, ce qui rend les cas de test reproductibles.
+for (const source of [simulator, geolocation, replay]) {
+  source.onSample((sample: SpeedSample) => {
+    if (source !== currentSource()) return
+    conditioner.push(sample)
+    if (recorder.isRecording) {
+      recorder.push(sample)
+      recordedCount.value = recorder.count
+    }
+  })
+  source.onStatus((status, detail) => {
+    if (source !== currentSource()) return
+    sourceStatus.value = status
+    sourceDetail.value = detail ?? ''
+  })
+}
+
+/** Régime qu'aurait le moteur dans un rapport donné, à la vitesse courante. */
+function rpmInGear(gear: number, kmh: number): number {
+  const { drivetrain } = activeProfile.value
+  const ratio = drivetrain.gearRatios[gear] ?? 1
+  return Engine.kinematicRpm(kmh, ratio * drivetrain.finalDrive, drivetrain.wheelRadiusM)
+}
+
+/**
+ * Un pas de simulation.
+ *
+ * Extrait de la boucle pour pouvoir être appelé à pas fixe depuis le banc de
+ * mise au point : le navigateur ralentit fortement les minuteurs d'un onglet en
+ * arrière-plan, ce qui rend toute mesure prise à la montre inexploitable. Avec
+ * un pas imposé, le comportement est reproductible.
+ */
+function step(dt: number): void {
+  const source = currentSource()
+  source.tick(dt)
+
+  const speed = conditioner.tick(dt)
+  const profile = activeProfile.value
+
+  // La charge vient de l'image précédente : le moteur est calculé après la
+  // boîte, et un décalage d'une image est imperceptible devant la constante de
+  // lissage de la charge.
+  const gearboxState = gearbox.tick(
+    dt,
+    (gear) => rpmInGear(gear, speed.kmh),
+    speed.atStandstill,
+    telemetry.value.engine.load,
+  )
+
+  const engineState = engine.tick(dt, {
+    kmh: speed.kmh,
+    accelMs2: speed.accelMs2,
+    totalRatio: gearboxState.ratio * profile.drivetrain.finalDrive,
+    wheelRadiusM: profile.drivetrain.wheelRadiusM,
+    atStandstill: speed.atStandstill,
+    isShifting: gearboxState.isShifting,
+    throttle: sourceKind.value === 'simulator' ? simulator.getThrottle() : null,
+  })
+
+  if (sourceKind.value === 'replay') replayProgress.value = replay.progress
+
+  telemetry.value = {
+    speed,
+    engine: engineState,
+    gearbox: gearboxState,
+    frameMs: loop.lastFrameMs,
+  }
+}
+
+loop.add(step)
+
+/**
+ * Suspend la cadence sans arrêter la source, pour reprendre la main sur le temps
+ * depuis le banc de mise au point. `stop()`, lui, coupe aussi la source.
+ */
+export function pauseLoop(): void {
+  loop.stop()
+}
+
+export function resumeLoop(): void {
+  if (isRunning.value) loop.start()
+}
+
+/**
+ * Avance la simulation d'un nombre de pas fixes. Réservé à la mise au point :
+ * exposé sur `window.__speed` en développement uniquement.
+ */
+export function advanceManually(dtSeconds: number, steps: number): void {
+  for (let i = 0; i < steps; i += 1) step(dtSeconds)
+}
+
+// Toute modification du profil est répercutée à chaud dans les modules : c'est
+// ce qui permet de régler un paramètre pendant que le son tourne.
+watch(
+  activeProfile,
+  (profile) => {
+    conditioner.setPreset(profile.speed)
+    gearbox.setPresets(profile.drivetrain, profile.engine)
+    engine.setPresets(profile.engine, profile.mix)
+    geolocation.setOptions({ maxPlausibleKmh: profile.speed.maxPlausibleKmh })
+  },
+  { deep: true, immediate: true },
+)
+
+watch(profiles, (list) => saveProfiles(list), { deep: true })
+watch(selectedId, (id) => {
+  saveSelectedId(id)
+  gearbox.settleFor((gear) => rpmInGear(gear, telemetry.value.speed.kmh))
+})
+
+export function start(): void {
+  currentSource().start()
+  loop.start()
+  isRunning.value = true
+}
+
+export function stop(): void {
+  currentSource().stop()
+  loop.stop()
+  isRunning.value = false
+}
+
+export function setSource(kind: SourceKind): void {
+  if (kind === sourceKind.value) return
+  const wasRunning = isRunning.value
+  currentSource().stop()
+  sourceKind.value = kind
+  conditioner.reset()
+  engine.reset()
+  gearbox.reset()
+  sourceStatus.value = 'idle'
+  sourceDetail.value = ''
+  if (wasRunning) currentSource().start()
+}
+
+export function setThrottle(value: number): void {
+  simulator.setThrottle(value)
+}
+
+export function setBrake(value: number): void {
+  simulator.setBrake(value)
+}
+
+export function setSimulatedSpeed(kmh: number): void {
+  simulator.setSpeed(kmh)
+}
+
+export function setShiftMode(mode: ShiftMode): void {
+  gearbox.setMode(mode)
+}
+
+export function shiftUp(): void {
+  gearbox.shiftUp()
+}
+
+export function shiftDown(): void {
+  gearbox.shiftDown()
+}
+
+export function startRecording(): void {
+  recorder.start()
+  isRecording.value = true
+  recordedCount.value = 0
+}
+
+export function stopRecording(name: string): void {
+  const trace = recorder.stop(name || `trace ${traces.value.length + 1}`)
+  isRecording.value = false
+  if (trace.samples.length > 0) traces.value = [...traces.value, trace]
+}
+
+export function playTrace(trace: Trace): void {
+  replay.setTrace(trace)
+  setSource('replay')
+  conditioner.reset()
+  if (!isRunning.value) start()
+  else replay.start()
+}
+
+export function setReplayRate(rate: number): void {
+  replay.rate = rate
+}
+
+// --- Gestion des profils -------------------------------------------------
+
+export const profileList = computed(() => profiles.value)
+export const selectedProfileId = computed(() => selectedId.value)
+
+export function selectProfile(id: string): void {
+  if (profiles.value.some((p) => p.id === id)) selectedId.value = id
+}
+
+export function addProfile(profile: Profile): void {
+  profiles.value = [...profiles.value, profile]
+  selectedId.value = profile.id
+}
+
+export function duplicateActive(): void {
+  const copy = duplicateProfile(activeProfile.value, `${activeProfile.value.name} (copie)`)
+  addProfile(copy)
+}
+
+export function renameActive(name: string): void {
+  const profile = profiles.value.find((p) => p.id === selectedId.value)
+  if (profile) profile.name = name
+}
+
+export function deleteProfile(id: string): void {
+  if (profiles.value.length <= 1) return
+  const remaining = profiles.value.filter((p) => p.id !== id)
+  profiles.value = remaining
+  if (selectedId.value === id) selectedId.value = remaining[0]?.id ?? ''
+}
+
+export function resetProfileId(profile: Profile): Profile {
+  return { ...profile, id: newId() }
+}

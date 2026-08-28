@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+*.local
+
+# Échantillons moteur : jamais versionnés.
+# Le dossier est une entrée remplaçable, le code n'y référence rien en dur.
+audio/
+tsconfig.tsbuildinfo

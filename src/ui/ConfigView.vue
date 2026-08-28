@@ -1,0 +1,489 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+
+import NumberField from './components/NumberField.vue'
+import { finalDriveFor, rpmAtSpeed } from '../core/preset/defaults'
+import { ProfileImportError, fromFile, toFile } from '../core/preset/store'
+import type { LayerRole } from '../core/preset/schema'
+import {
+  activeProfile,
+  addProfile,
+  deleteProfile,
+  duplicateActive,
+  profileList,
+  renameActive,
+  selectProfile,
+  selectedProfileId,
+} from '../state'
+
+/**
+ * Écran de configuration.
+ *
+ * Toute modification est appliquée immédiatement, pendant que la boucle tourne :
+ * il n'y a pas de bouton « valider ». Les profils sont enregistrés au fil de
+ * l'eau dans le stockage du navigateur, et exportables en JSON pour être
+ * transportés d'un appareil à l'autre.
+ */
+
+const profile = activeProfile
+const importError = ref('')
+const fileInput = ref<HTMLInputElement | null>(null)
+
+const ROLES: { id: LayerRole; label: string }[] = [
+  { id: 'on', label: 'en charge' },
+  { id: 'off', label: 'pied levé' },
+  { id: 'idle', label: 'ralenti' },
+  { id: 'limiter', label: 'rupteur' },
+]
+
+/**
+ * Vitesse à laquelle le rupteur tombe dans le dernier rapport. C'est le chiffre
+ * parlant : le rapport de pont, seul, ne dit rien à personne. Le modifier
+ * recalcule le pont en conséquence.
+ */
+const redlineSpeed = computed<number>({
+  get() {
+    const { drivetrain, engine } = profile.value
+    const top = drivetrain.gearRatios[drivetrain.gearRatios.length - 1] ?? 1
+    const wheelRps =
+      engine.redlineRpm / 60 / Math.max(0.01, top * drivetrain.finalDrive)
+    return wheelRps * 2 * Math.PI * drivetrain.wheelRadiusM * 3.6
+  },
+  set(kmh: number) {
+    const { drivetrain, engine } = profile.value
+    const top = drivetrain.gearRatios[drivetrain.gearRatios.length - 1] ?? 1
+    if (kmh <= 0) return
+    drivetrain.finalDrive = Number(
+      finalDriveFor(engine.redlineRpm, kmh, top, drivetrain.wheelRadiusM).toFixed(3),
+    )
+  },
+})
+
+/** Régime en croisière, repère utile pour juger si la boîte est trop courte. */
+const cruiseRpm = computed(() => {
+  const { drivetrain } = profile.value
+  const top = drivetrain.gearRatios[drivetrain.gearRatios.length - 1] ?? 1
+  return rpmAtSpeed(130, top, drivetrain.finalDrive, drivetrain.wheelRadiusM)
+})
+
+const ratiosText = computed<string>({
+  get: () => profile.value.drivetrain.gearRatios.map((r) => r.toFixed(2)).join(', '),
+  set(text: string) {
+    const parsed = text
+      .split(/[,\s]+/)
+      .map((piece) => Number(piece.replace(',', '.')))
+      .filter((value) => Number.isFinite(value) && value > 0)
+    if (parsed.length > 0) profile.value.drivetrain.gearRatios = parsed
+  },
+})
+
+const delaysText = computed<string>({
+  get: () => profile.value.drivetrain.shiftDelaysS.map((d) => d.toFixed(2)).join(', '),
+  set(text: string) {
+    const parsed = text
+      .split(/[,\s]+/)
+      .map((piece) => Number(piece.replace(',', '.')))
+      .filter((value) => Number.isFinite(value) && value >= 0)
+    if (parsed.length > 0) profile.value.drivetrain.shiftDelaysS = parsed
+  },
+})
+
+function onExport(): void {
+  const blob = new Blob([toFile(profile.value)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `${slug(profile.value.name)}.json`
+  anchor.click()
+  URL.revokeObjectURL(url)
+}
+
+async function onImport(event: Event): Promise<void> {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  importError.value = ''
+  try {
+    addProfile(fromFile(await file.text()))
+  } catch (error) {
+    importError.value =
+      error instanceof ProfileImportError ? error.message : 'Import impossible.'
+  } finally {
+    if (fileInput.value) fileInput.value.value = ''
+  }
+}
+
+function slug(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'profil'
+  )
+}
+
+function addLayer(): void {
+  profile.value.layers.push({
+    key: `couche-${profile.value.layers.length + 1}`,
+    file: '',
+    role: 'on',
+    anchorRpm: 4000,
+    gain: 1,
+    minRate: 0.5,
+    maxRate: 2,
+    enabled: true,
+  })
+}
+
+function removeLayer(index: number): void {
+  profile.value.layers.splice(index, 1)
+}
+</script>
+
+<template>
+  <div class="config">
+    <section class="panel wide">
+      <h2>Profils</h2>
+      <div class="profiles">
+        <select :value="selectedProfileId" @change="selectProfile(($event.target as HTMLSelectElement).value)">
+          <option v-for="entry in profileList" :key="entry.id" :value="entry.id">
+            {{ entry.name }}
+          </option>
+        </select>
+        <input
+          type="text"
+          :value="profile.name"
+          placeholder="Nom du profil"
+          @change="renameActive(($event.target as HTMLInputElement).value)"
+        />
+        <button @click="duplicateActive()">Dupliquer</button>
+        <button :disabled="profileList.length <= 1" @click="deleteProfile(selectedProfileId)">
+          Supprimer
+        </button>
+        <button @click="onExport()">Exporter</button>
+        <button @click="fileInput?.click()">Importer</button>
+        <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="onImport" />
+      </div>
+      <p v-if="importError" class="error">{{ importError }}</p>
+      <label class="inline">
+        Dossier d'échantillons
+        <input v-model="profile.sampleDir" type="text" />
+      </label>
+      <p class="note">
+        Chemin relatif au dossier d'échantillons. Il n'est jamais versionné : remplacer
+        son contenu suffit à changer de banque sonore, sans toucher au code.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Moteur</h2>
+      <NumberField
+        v-model="profile.engine.cylinders"
+        label="Cylindres"
+        :min="1"
+        :max="16"
+        :step="1"
+        hint="Fixe la fréquence d'allumage : régime ÷ 120 × cylindres."
+      />
+      <NumberField v-model="profile.engine.idleRpm" label="Ralenti" :min="400" :max="3000" :step="10" unit="tr/min" />
+      <NumberField
+        v-model="profile.engine.softLimitRpm"
+        label="Seuil de coupure"
+        :min="2000"
+        :max="16000"
+        :step="50"
+        unit="tr/min"
+        hint="Régime auquel l'allumage commence à être coupé."
+      />
+      <NumberField v-model="profile.engine.redlineRpm" label="Rupteur" :min="2000" :max="16000" :step="50" unit="tr/min" />
+      <NumberField
+        v-model="profile.engine.limiterHoldMs"
+        label="Durée de coupure"
+        :min="0"
+        :max="400"
+        :step="5"
+        unit="ms"
+        hint="C'est le hachage qui produit le crépitement, pas le plafonnement du régime."
+      />
+      <NumberField
+        v-model="profile.engine.inertia"
+        label="Inertie"
+        :min="0.1"
+        :max="4"
+        :step="0.05"
+        hint="Volant moteur. Plus c'est lourd, plus le régime met de temps à monter à vide."
+      />
+      <NumberField v-model="profile.engine.freeRevRate" label="Montée à vide" :min="1000" :max="30000" :step="100" unit="tr/min·s⁻¹" />
+      <NumberField v-model="profile.engine.engineBraking" label="Frein moteur" :min="500" :max="20000" :step="100" unit="tr/min·s⁻¹" />
+    </section>
+
+    <section class="panel">
+      <h2>Transmission</h2>
+      <label class="inline">
+        Démultiplications
+        <input
+          type="text"
+          :value="ratiosText"
+          @change="ratiosText = ($event.target as HTMLInputElement).value"
+        />
+      </label>
+      <p class="note">Du plus court au plus long, séparés par des virgules. Une seule valeur = prise directe.</p>
+
+      <NumberField v-model="profile.drivetrain.finalDrive" label="Pont" :min="1" :max="12" :step="0.05" />
+      <NumberField
+        v-model="redlineSpeed"
+        label="Rupteur atteint à"
+        :min="60"
+        :max="400"
+        :step="1"
+        unit="km/h"
+        hint="Dans le dernier rapport. Modifier cette valeur recalcule le pont."
+      />
+      <NumberField v-model="profile.drivetrain.wheelRadiusM" label="Rayon de roue" :min="0.15" :max="0.6" :step="0.005" unit="m" />
+      <NumberField v-model="profile.drivetrain.shiftTimeMs" label="Temps de passage" :min="0" :max="500" :step="5" unit="ms" />
+      <NumberField
+        v-model="profile.drivetrain.upshiftAtRedlineRatio"
+        label="Montée au rupteur"
+        :min="0.5"
+        :max="1"
+        :step="0.01"
+        hint="Fraction du rupteur à laquelle la boîte automatique monte un rapport."
+      />
+      <NumberField
+        v-model="profile.drivetrain.upshiftAtLowLoadRatio"
+        label="Montée à charge nulle"
+        :min="0.15"
+        :max="0.9"
+        :step="0.01"
+        hint="Seuil de montée pied levé. C'est lui qui décide si l'on roule en rapport long à bas régime."
+      />
+      <NumberField
+        v-model="profile.drivetrain.downshiftAtRedlineRatio"
+        label="Descente sous"
+        :min="0.05"
+        :max="0.8"
+        :step="0.01"
+      />
+      <label class="inline">
+        Temporisations de montée
+        <input
+          type="text"
+          :value="delaysText"
+          @change="delaysText = ($event.target as HTMLInputElement).value"
+        />
+      </label>
+      <p class="note">
+        En secondes, une par rapport. Des valeurs volontairement inégales : avec une
+        temporisation unique, la boîte sonne comme un métronome.
+      </p>
+      <p class="derived">À 130 km/h dans le dernier rapport : <b class="numeric">{{ Math.round(cruiseRpm) }}</b> tr/min</p>
+    </section>
+
+    <section class="panel">
+      <h2>Signal de vitesse</h2>
+      <NumberField
+        v-model="profile.speed.springOmega"
+        label="Raideur du lissage"
+        :min="2"
+        :max="40"
+        :step="0.5"
+        hint="Haut : réactif, mais les sauts du GPS s'entendent. Bas : doux, mais en retard."
+      />
+      <NumberField
+        v-model="profile.speed.accelWindowMs"
+        label="Fenêtre d'accélération"
+        :min="200"
+        :max="3000"
+        :step="50"
+        unit="ms"
+      />
+      <NumberField
+        v-model="profile.speed.accelDeadbandKmh"
+        label="Zone morte"
+        :min="0"
+        :max="5"
+        :step="0.1"
+        unit="km/h"
+        hint="En deçà, la variation est traitée comme du tremblement de mesure."
+      />
+      <NumberField v-model="profile.speed.maxPlausibleKmh" label="Vitesse plausible max" :min="50" :max="400" :step="10" unit="km/h" />
+      <NumberField v-model="profile.speed.maxAccelMs2" label="Accélération max retenue" :min="1" :max="30" :step="0.5" unit="m/s²" />
+      <NumberField v-model="profile.speed.minAccelMs2" label="Décélération max retenue" :min="-30" :max="-1" :step="0.5" unit="m/s²" />
+    </section>
+
+    <section class="panel">
+      <h2>Mixage</h2>
+      <NumberField v-model="profile.mix.masterGain" label="Volume général" :min="0" :max="1" :step="0.01" />
+      <NumberField
+        v-model="profile.mix.crossfadeLowRpm"
+        label="Début de bascule"
+        :min="500"
+        :max="12000"
+        :step="50"
+        unit="tr/min"
+        hint="Régime où la couche haute commence à entrer. Indépendant des régimes d'ancrage."
+      />
+      <NumberField v-model="profile.mix.crossfadeHighRpm" label="Fin de bascule" :min="500" :max="16000" :step="50" unit="tr/min" />
+      <NumberField
+        v-model="profile.mix.fullLoadAccelMs2"
+        label="Accélération pleine charge"
+        :min="0.5"
+        :max="10"
+        :step="0.1"
+        unit="m/s²"
+        hint="Accélération au-delà de laquelle la charge est considérée maximale."
+      />
+      <NumberField v-model="profile.mix.loadSmoothingS" label="Lissage de la charge" :min="0.02" :max="1.5" :step="0.01" unit="s" />
+      <NumberField v-model="profile.mix.idleFadeOutRpm" label="Effacement du ralenti" :min="800" :max="4000" :step="50" unit="tr/min" />
+      <NumberField v-model="profile.mix.highpassHz" label="Coupe-bas" :min="10" :max="200" :step="1" unit="Hz" />
+      <NumberField v-model="profile.mix.drive" label="Saturation" :min="0" :max="1" :step="0.01" />
+      <NumberField v-model="profile.mix.limiterThresholdDb" label="Seuil du limiteur" :min="-24" :max="0" :step="0.5" unit="dB" />
+    </section>
+
+    <section class="panel wide">
+      <h2>Couches</h2>
+      <p class="note">
+        Le régime d'ancrage est celui auquel l'échantillon a été enregistré : il détermine
+        la justesse, pas le point de bascule. Les bornes de lecture limitent l'étirement —
+        au-delà d'environ une octave, l'échantillon devient métallique vers le haut et
+        pâteux vers le bas.
+      </p>
+      <table class="layers">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Clé</th>
+            <th>Fichier</th>
+            <th>Rôle</th>
+            <th>Ancrage</th>
+            <th>Gain</th>
+            <th>Lecture min</th>
+            <th>Lecture max</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(layer, index) in profile.layers" :key="index">
+            <td><input v-model="layer.enabled" type="checkbox" /></td>
+            <td><input v-model="layer.key" type="text" /></td>
+            <td><input v-model="layer.file" type="text" /></td>
+            <td>
+              <select v-model="layer.role">
+                <option v-for="role in ROLES" :key="role.id" :value="role.id">{{ role.label }}</option>
+              </select>
+            </td>
+            <td><input v-model.number="layer.anchorRpm" type="number" min="200" max="20000" step="10" /></td>
+            <td><input v-model.number="layer.gain" type="number" min="0" max="4" step="0.05" /></td>
+            <td><input v-model.number="layer.minRate" type="number" min="0.1" max="1" step="0.05" /></td>
+            <td><input v-model.number="layer.maxRate" type="number" min="1" max="4" step="0.05" /></td>
+            <td><button @click="removeLayer(index)">Retirer</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="add" @click="addLayer()">Ajouter une couche</button>
+    </section>
+  </div>
+</template>
+
+<style scoped>
+.config {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(23rem, 1fr));
+  gap: 1rem;
+  align-items: start;
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+}
+
+.panel.wide {
+  grid-column: 1 / -1;
+}
+
+h2 {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.profiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.profiles select,
+.profiles input[type='text'] {
+  flex: 1 1 12rem;
+  width: auto;
+}
+
+.inline {
+  display: block;
+  color: var(--muted);
+  margin-top: 0.6rem;
+}
+
+.inline input {
+  margin-top: 0.25rem;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.derived {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.6rem 0 0;
+}
+
+.derived b {
+  color: var(--text);
+}
+
+.error {
+  color: var(--warn);
+  margin: 0.5rem 0 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.78rem;
+  padding-bottom: 0.3rem;
+}
+
+td {
+  padding: 0.2rem 0.3rem 0.2rem 0;
+  border-top: 1px solid var(--line);
+}
+
+td input[type='number'] {
+  width: 6rem;
+  text-align: right;
+}
+
+.add {
+  margin-top: 0.7rem;
+}
+</style>
