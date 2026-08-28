@@ -1,0 +1,37 @@
+# Pile à coller dans Portainer (Stacks > Add stack > Web editor).
+#
+# Aucune image à construire : nginx officiel, et tout le contenu arrive par des
+# volumes. C'est le choix qui demande le moins de pièces mobiles quand on n'a ni
+# Docker sur son poste, ni registre privé, ni dépôt distant — trois choses dont
+# une image sur mesure aurait besoin pour ne pas devenir une corvée.
+#
+# Sur le NAS, préparer l'arborescence suivante :
+#
+#   /volume1/docker/speed/
+#     dist/        <- le contenu de `npm run build`, recopié depuis le poste
+#     audio/       <- les échantillons, déposés une fois pour toutes
+#     nginx.conf   <- le fichier voisin de celui-ci
+#
+# Les échantillons sont montés séparément et par-dessus le build : ils ne
+# transitent donc jamais par une image ni par un dépôt, et changer de banque
+# sonore se fait en déposant des fichiers, sans rien reconstruire.
+
+services:
+  speed:
+    image: nginx:alpine
+    container_name: speed
+    restart: unless-stopped
+    ports:
+      # Port interne au NAS. C'est le proxy inversé de DSM qui l'expose en HTTPS.
+      - "8088:80"
+    volumes:
+      - /volume1/docker/speed/dist:/usr/share/nginx/html:ro
+      - /volume1/docker/speed/audio:/usr/share/nginx/html/audio:ro
+      - /volume1/docker/speed/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Décommenter avec l'authentification du fichier nginx.conf :
+      # - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/index.html"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

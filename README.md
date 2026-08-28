@@ -18,8 +18,14 @@ npm install
 npm run dev
 ```
 
-Le serveur écoute sur toutes les interfaces : depuis un téléphone sur le même
-réseau, ouvrir `http://<adresse-du-poste>:5173` pour tester avec un vrai GPS.
+Le serveur écoute sur toutes les interfaces, **en HTTPS** : depuis un téléphone
+sur le même réseau, ouvrir `https://<adresse-du-poste>:5173`. Le certificat est
+auto-signé, le téléphone demande donc de confirmer une fois.
+
+L'HTTPS n'est pas optionnel ici. La géolocalisation, le verrou d'écran et
+l'AudioWorklet ne sont accessibles que depuis un « contexte sécurisé » : c'est le
+cas de `localhost`, mais pas d'une adresse de réseau local en clair. En `http://`,
+la page s'affiche normalement et le GPS refuse de démarrer.
 
 Au clavier, en source « Simulateur » : flèches **haut** et **bas** pour
 l'accélérateur et le frein, flèches **gauche** et **droite** pour les rapports en
@@ -40,6 +46,82 @@ Le son fonctionne. L'écran de télémétrie affiche le mixage appliqué à chaq
 image — gain et vitesse de lecture de chaque couche, poids des familles, niveau
 de sortie mesuré après le limiteur — ce qui rend le réglage vérifiable à l'œil
 autant qu'à l'oreille.
+
+## Déployer
+
+```bash
+npm run build
+```
+
+Produit un `dist/` entièrement statique : aucun serveur applicatif, aucune base,
+aucune variable d'environnement. N'importe quel hébergement de fichiers convient,
+à une condition — **HTTPS obligatoire**, pour la même raison qu'en développement.
+
+Vite recopie `public/audio/` dans le build : les échantillons pèsent donc 8,7 Mo
+des 8,8 Mo produits. C'est ce détail qui commande le choix de l'hébergement, et
+il vaut mieux le regarder en face : mettre ce dossier en ligne, c'est le
+redistribuer. Tant qu'il contient des fichiers qui ne sont pas les vôtres,
+l'hébergement doit rester privé — un accès protégé, ou pas d'hébergement du tout.
+
+Si le site est servi depuis un sous-chemin plutôt que la racine d'un domaine,
+renseigner `base` dans `vite.config.ts`.
+
+### Sur un NAS Synology
+
+C'est le déploiement pour lequel le projet est outillé : le NAS est déjà allumé,
+son proxy inversé sait obtenir un certificat, et l'hébergement reste chez soi —
+ce qui règle du même coup la question des échantillons, puisque rien n'est publié.
+
+**Sur le NAS**, préparer un dossier et y déposer trois choses :
+
+```
+/volume1/docker/speed/
+  dist/        le build, recopié depuis le poste
+  audio/       les échantillons, déposés une fois
+  nginx.conf   copié depuis docker/nginx.conf
+```
+
+**Dans Portainer**, créer une pile à partir de `docker/docker-compose.yml`. Elle
+utilise l'image officielle `nginx:alpine` : il n'y a **aucune image à
+construire**. Tout arrive par des volumes, y compris la configuration.
+
+Les échantillons sont montés séparément, par-dessus le build. Ils ne transitent
+donc ni par une image ni par un dépôt, et changer de banque sonore se fait en
+déposant des fichiers.
+
+**Dans DSM**, Panneau de configuration › Portail des applications › Proxy
+inversé : source en HTTPS sur le nom du NAS, destination en HTTP vers
+`localhost:8088`. Le certificat s'obtient dans Sécurité › Certificat.
+
+Ensuite, chaque itération de réglage tient en deux commandes :
+
+```bash
+npm run build && npm run deploy
+```
+
+`deploy` recopie le build vers le chemin déclaré dans `SPEED_DEPLOY_TARGET`, en
+laissant le dossier `audio` intact. Le conteneur sert les nouveaux fichiers sans
+redémarrage.
+
+**Si le service est joignable depuis l'extérieur**, activer l'authentification
+prévue dans `docker/nginx.conf` : sans elle, l'adresse est publique, et les
+échantillons avec elle.
+
+### Une image autonome
+
+`Dockerfile` construit une image complète, échantillons exclus. Elle n'est pas
+nécessaire au départ — la pile ci-dessus obtient le même résultat sans rien
+construire — et le devient si le projet part sur un dépôt distant avec
+construction automatique, ou s'il faut pouvoir revenir à une version précise sans
+retrouver le build correspondant.
+
+### La limite de tout hébergement
+
+Une voiture traverse des zones sans réseau. Une application chargée depuis
+Internet n'y démarre pas, et les 8,7 Mo d'échantillons se retéléchargent à chaque
+visite tant que rien ne les met en cache. Y répondre demande d'en faire une
+application installable, avec ses échantillons stockés localement — ce n'est pas
+fait, et c'est la suite naturelle du projet.
 
 ## En voiture
 
