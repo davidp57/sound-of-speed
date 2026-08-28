@@ -33,7 +33,7 @@ mode manuel.
 | 1 | Conditionnement du signal, GPS, enregistrement et rejeu de traces | fait |
 | 2 | Modèle moteur et boîte de vitesses | fait |
 | 3 | Moteur audio à échantillons, transcodage, calage des boucles | fait |
-| 4 | Détection automatique du régime d'ancrage dans l'éditeur | à faire |
+| 4 | Analyse des échantillons dans l'éditeur | fait |
 | 5 | Adaptation à l'écran de la voiture, Media Session, audio en arrière-plan | à faire |
 
 Le son fonctionne. L'écran de télémétrie affiche le mixage appliqué à chaque
@@ -123,8 +123,32 @@ C'est le format standard de l'audio de jeu — voir
 [Audiokinetic](https://www.audiokinetic.com/en/blog/loop-based-car-engine-design-with-wwise-part-2/)
 et [Game Developer](https://www.gamedeveloper.com/audio/capturing-engine-sounds-for-games).
 
-Le régime d'ancrage d'un échantillon se mesure : le pic d'allumage dominant vaut
-`régime ÷ 120 × cylindres`. Le lot 4 automatisera cette détection dans l'éditeur.
+### Analyser un échantillon
+
+Le bouton **Analyser**, sur chaque couche de l'écran de configuration, mesure le
+fichier et propose des régimes d'ancrage cliquables. Il donne aussi la durée, le
+format, la qualité du raccord de boucle, le centroïde spectral, et signale les
+prises en rampe.
+
+**Les propositions ne sont pas appliquées d'office, et c'est délibéré.** Le
+régime se déduit en principe de la raie d'allumage — `régime ÷ 120 × cylindres` —
+mais un spectre de moteur se prête mal à une réponse unique : la détection
+confond une fréquence avec sa moitié, son tiers ou ses trois demis, parce qu'un
+moteur émet une raie à chaque demi-tour de vilebrequin et pas seulement à
+l'allumage.
+
+Mesuré sur le jeu de test, la méthode place la bonne valeur en tête sur les
+prises stationnaires bas régime (3162 contre 3200 attendus, 3162 contre 3400) et
+se trompe sur les prises haut régime, où la bonne valeur est à 1,5 ou 3 fois le
+meilleur candidat. Rendre une valeur unique reviendrait donc à se tromper une
+fois sur deux avec assurance.
+
+D'où le choix d'une liste classée. Comme le son tourne pendant l'édition, en
+essayer un se juge à l'oreille immédiatement : la bonne saute aux oreilles, les
+autres sonnent une octave ou une quinte à côté. L'indication **timbre** aide à
+recouper — d'un même moteur, la prise haut régime a forcément le centroïde le
+plus aigu, et l'ordre observé (1202 Hz pour la montée bas régime, 2256 pour la
+montée haut régime) permet d'écarter un candidat aberrant.
 
 ### Compression
 

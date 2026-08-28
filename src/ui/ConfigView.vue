@@ -4,10 +4,12 @@ import { computed, ref } from 'vue'
 import NumberField from './components/NumberField.vue'
 import { finalDriveFor, rpmAtSpeed } from '../core/preset/defaults'
 import { ProfileImportError, fromFile, toFile } from '../core/preset/store'
+import type { SampleAnalysis } from '../core/audio/analyze'
 import type { LayerRole } from '../core/preset/schema'
 import {
   activeProfile,
   addProfile,
+  analyzeLayerFile,
   deleteProfile,
   duplicateActive,
   profileList,
@@ -138,6 +140,64 @@ function addLayer(): void {
 
 function removeLayer(index: number): void {
   profile.value.layers.splice(index, 1)
+  delete analyses.value[index]
+}
+
+/**
+ * Analyse des échantillons.
+ *
+ * Le résultat n'est jamais appliqué d'office : l'ambiguïté d'octave est réelle
+ * sur un spectre de moteur, et un chiffre imposé en silence serait parfois faux
+ * sans qu'on sache pourquoi. On propose donc des candidats, et comme le son
+ * tourne pendant l'édition, en essayer un se juge à l'oreille immédiatement.
+ */
+const analyses = ref<Record<number, SampleAnalysis | { error: string }>>({})
+const analyzing = ref<number | null>(null)
+
+/** Résultat exploitable pour cette couche, ou `null` si absent ou en échec. */
+function analysisOf(index: number): SampleAnalysis | null {
+  const entry = analyses.value[index]
+  return entry && !('error' in entry) ? entry : null
+}
+
+/** Message d'échec pour cette couche, ou une chaîne vide. */
+function errorOf(index: number): string {
+  const entry = analyses.value[index]
+  return entry && 'error' in entry ? entry.error : ''
+}
+
+async function analyzeLayer(index: number): Promise<void> {
+  const layer = profile.value.layers[index]
+  if (!layer?.file) return
+  analyzing.value = index
+  try {
+    analyses.value = {
+      ...analyses.value,
+      [index]: await analyzeLayerFile(layer.file, profile.value.engine.cylinders),
+    }
+  } catch (error) {
+    analyses.value = {
+      ...analyses.value,
+      [index]: { error: error instanceof Error ? error.message : 'Analyse impossible.' },
+    }
+  } finally {
+    analyzing.value = null
+  }
+}
+
+async function analyzeAll(): Promise<void> {
+  for (let index = 0; index < profile.value.layers.length; index += 1) {
+    await analyzeLayer(index)
+  }
+}
+
+function candidateTitle(candidate: { firingHz: number; relativeScore: number }): string {
+  return `${candidate.firingHz.toFixed(0)} Hz d'allumage · score ${candidate.relativeScore.toFixed(2)}`
+}
+
+function applyCandidate(index: number, rpm: number): void {
+  const layer = profile.value.layers[index]
+  if (layer) layer.anchorRpm = rpm
 }
 </script>
 
@@ -364,7 +424,8 @@ function removeLayer(index: number): void {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(layer, index) in profile.layers" :key="index">
+          <template v-for="(layer, index) in profile.layers" :key="index">
+          <tr>
             <td><input v-model="layer.enabled" type="checkbox" /></td>
             <td><input v-model="layer.key" type="text" /></td>
             <td><input v-model="layer.file" type="text" /></td>
@@ -377,11 +438,66 @@ function removeLayer(index: number): void {
             <td><input v-model.number="layer.gain" type="number" min="0" max="4" step="0.05" /></td>
             <td><input v-model.number="layer.minRate" type="number" min="0.1" max="1" step="0.05" /></td>
             <td><input v-model.number="layer.maxRate" type="number" min="1" max="4" step="0.05" /></td>
-            <td><button @click="removeLayer(index)">Retirer</button></td>
+            <td class="actions">
+              <button :disabled="!layer.file || analyzing !== null" @click="analyzeLayer(index)">
+                {{ analyzing === index ? 'Analyse…' : 'Analyser' }}
+              </button>
+              <button @click="removeLayer(index)">Retirer</button>
+            </td>
           </tr>
+          <tr v-if="analyses[index]" class="analysis">
+            <td :colspan="9">
+              <span v-if="errorOf(index)" class="error">{{ errorOf(index) }}</span>
+              <template v-else-if="analysisOf(index)">
+                <div class="facts">
+                  <span>
+                    {{ analysisOf(index)!.durationS.toFixed(2) }} s ·
+                    {{ analysisOf(index)!.sampleRate }} Hz ·
+                    {{ analysisOf(index)!.channels }} canaux
+                  </span>
+                  <span :class="{ warn: analysisOf(index)!.seamRatio > 0.02 }">
+                    raccord {{ (analysisOf(index)!.seamRatio * 100).toFixed(1) }} %
+                  </span>
+                  <span>timbre {{ analysisOf(index)!.centroidHz.toFixed(0) }} Hz</span>
+                  <span :class="{ warn: !analysisOf(index)!.steady }">
+                    <template v-if="analysisOf(index)!.steady">régime stable</template>
+                    <template v-else>
+                      rampe {{ analysisOf(index)!.startRpm }} → {{ analysisOf(index)!.endRpm }} tr/min
+                    </template>
+                  </span>
+                </div>
+                <div class="candidates">
+                  <span class="muted">Ancrage proposé :</span>
+                  <button
+                    v-for="candidate in analysisOf(index)!.candidates"
+                    :key="candidate.rpm"
+                    :aria-pressed="layer.anchorRpm === candidate.rpm"
+                    :title="candidateTitle(candidate)"
+                    @click="applyCandidate(index, candidate.rpm)"
+                  >
+                    {{ candidate.rpm }}
+                  </button>
+                </div>
+              </template>
+            </td>
+          </tr>
+          </template>
         </tbody>
       </table>
-      <button class="add" @click="addLayer()">Ajouter une couche</button>
+      <div class="layer-actions">
+        <button class="add" @click="addLayer()">Ajouter une couche</button>
+        <button :disabled="analyzing !== null" @click="analyzeAll()">Analyser toutes les couches</button>
+      </div>
+      <p class="note">
+        Le régime d'ancrage est mesurable, mais un spectre de moteur se prête mal à
+        une réponse unique : la détection confond volontiers une fréquence avec sa
+        moitié, son tiers ou ses trois demis. Les propositions sont donc classées
+        et non appliquées d'office. Comme le son tourne pendant l'édition, les
+        essayer se juge à l'oreille — la bonne saute aux oreilles, les autres
+        sonnent une octave ou une quinte à côté. L'indication « timbre » aide à
+        recouper : d'un même moteur, la prise haut régime a forcément le timbre le
+        plus aigu.
+      </p>
     </section>
   </div>
 </template>
@@ -483,7 +599,45 @@ td input[type='number'] {
   text-align: right;
 }
 
-.add {
+.layer-actions {
+  display: flex;
+  gap: 0.5rem;
   margin-top: 0.7rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.analysis td {
+  background: var(--panel-alt);
+  padding: 0.5rem 0.6rem;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.facts .warn {
+  color: var(--warn);
+}
+
+.candidates {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.candidates button {
+  padding: 0.25rem 0.6rem;
+  font-variant-numeric: tabular-nums;
 }
 </style>

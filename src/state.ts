@@ -2,6 +2,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import { Loop } from './core/loop'
 import { AudioEngine, type AudioStatus } from './core/audio/engine'
+import { analyzeSample, type SampleAnalysis } from './core/audio/analyze'
 import { Engine, type EngineState } from './core/engine/engine'
 import { Gearbox, type GearboxState, type ShiftMode } from './core/drivetrain/gearbox'
 import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditioner'
@@ -306,6 +307,31 @@ function refreshAudioStatus(): void {
 export async function activateAudio(): Promise<void> {
   await audio.activate(activeProfile.value)
   refreshAudioStatus()
+}
+
+/**
+ * Mesure un échantillon : régime d'ancrage, qualité du raccord de boucle, format.
+ *
+ * Le décodage se fait dans un contexte hors ligne dédié, indépendant du moteur
+ * audio : on peut donc analyser un fichier avant même d'avoir activé le son, et
+ * l'analyse d'un fichier absent ou illisible ne perturbe pas ce qui joue.
+ */
+export async function analyzeLayerFile(
+  file: string,
+  cylinders: number,
+): Promise<SampleAnalysis> {
+  const response = await fetch(`/audio/${activeProfile.value.sampleDir}/${file}`)
+  if (!response.ok) throw new Error(`${file} : ${response.status}`)
+
+  const Ctor =
+    window.OfflineAudioContext ??
+    (window as { webkitOfflineAudioContext?: typeof OfflineAudioContext })
+      .webkitOfflineAudioContext
+  if (!Ctor) throw new Error("Ce navigateur ne fournit pas l'API Web Audio.")
+
+  const scratch = new Ctor(1, 1, 48000)
+  const buffer = await scratch.decodeAudioData(await response.arrayBuffer())
+  return analyzeSample(buffer, cylinders)
 }
 
 export function setMuted(value: boolean): void {
