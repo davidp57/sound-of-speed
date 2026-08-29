@@ -44,6 +44,12 @@ export interface GearboxState {
   shiftDirection: ShiftDirection
   /** Vrai quand la condition de montée est remplie mais la temporisation pas écoulée. */
   isShiftReady: boolean
+  /** Régime auquel le rapport engagé cédera la place au suivant. Diagnostic. */
+  upshiftThresholdRpm: number
+  /** Régime sous lequel la boîte cherchera à rétrograder. Diagnostic. */
+  downshiftThresholdRpm: number
+  /** Vrai si le rétrogradage est retenu par la garde anti-va-et-vient. */
+  downshiftBlocked: boolean
 }
 
 export class Gearbox {
@@ -185,11 +191,13 @@ export class Gearbox {
     }
 
     let ready = false
+    let blocked = false
+    let upThresholdSeen = this.upshiftThreshold(this.gear, load)
+    const downThresholdSeen = this.engine.redlineRpm * this.drivetrain.downshiftAtRedlineRatio
 
     if (this.mode === 'auto' && this.hasGearbox && this.shiftRemainingS === 0) {
       const rpm = rpmInGear(this.gear)
-      const upThreshold = this.upshiftThreshold(this.gear, load)
-      const downThreshold = this.engine.redlineRpm * this.drivetrain.downshiftAtRedlineRatio
+      const upThreshold = upThresholdSeen
 
       if (rpm >= upThreshold && this.gear < this.gearCount - 1) {
         if (this.readyForS === 0) {
@@ -202,7 +210,7 @@ export class Gearbox {
         const overshot = rpm >= upThreshold + UPSHIFT_OVERSHOOT_RPM
         if (this.readyForS >= delay || overshot) this.applyShift(1)
       } else if (
-        rpm <= downThreshold &&
+        rpm <= downThresholdSeen &&
         this.gear > 0 &&
         !atStandstill &&
         // Garde contre le va-et-vient : rétrograder n'a de sens que si le régime
@@ -214,8 +222,10 @@ export class Gearbox {
         this.readyForS = 0
         this.applyShift(-1)
       } else {
+        if (rpm <= downThresholdSeen && this.gear > 0 && !atStandstill) blocked = true
         this.readyForS = 0
       }
+      upThresholdSeen = upThreshold
     }
 
     if (atStandstill && this.mode === 'auto') this.gear = 0
@@ -232,6 +242,9 @@ export class Gearbox {
       shiftProgress: 1 - this.shiftRemainingS / shiftTotalS,
       shiftDirection: this.shiftDirection,
       isShiftReady: ready,
+      upshiftThresholdRpm: upThresholdSeen,
+      downshiftThresholdRpm: downThresholdSeen,
+      downshiftBlocked: blocked,
     }
   }
 }

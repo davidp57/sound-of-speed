@@ -22,8 +22,16 @@ const GAIN_GLIDE_S = 0.02
 const RATE_GLIDE_S = 0.03
 /** Durée du fondu appliqué aux boucles mal raccordées, en secondes. */
 const SEAM_FADE_S = 0.03
+/** Fondu, bien plus court, quand le point de bouclage a pu être aligné. */
+const ALIGNED_FADE_S = 0.008
 /** Discontinuité au-delà de laquelle on recolle la boucle. */
 const SEAM_THRESHOLD = 0.005
+/** Durée du motif comparé pour trouver le point de bouclage, en secondes. */
+const MATCH_WINDOW_S = 0.03
+/** Portion de fin explorée à la recherche de ce point, en secondes. */
+const SEARCH_SPAN_S = 0.4
+/** Poids de la forme d'onde devant l'écart de niveau, dans le choix du raccord. */
+const SHAPE_WEIGHT = 0.35
 
 export type AudioPhase = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -452,28 +460,61 @@ export class AudioEngine {
 /**
  * Recolle une boucle dont les extrémités ne se rejoignent pas.
  *
- * Un échantillon dont le dernier point est loin du premier produit un clic à
- * chaque tour — d'autant plus audible que la boucle est courte et rejouée
- * souvent. On raccourcit le buffer du temps d'un fondu et on mélange la queue au
- * début, ce qui rend le raccord continu au prix de quelques millisecondes.
+ * Fondre simplement la queue sur le début ne suffit pas : les deux portions sont
+ * décorrélées, leurs harmoniques se combinent au hasard des phases et s'annulent
+ * en partie. Sur la prise bas régime, ce creux atteignait trois fois l'ampleur
+ * des variations ordinaires du signal et s'entendait comme un gargouillis
+ * revenant toutes les quelques secondes — d'autant plus net que c'est la couche
+ * la plus jouée.
+ *
+ * On cherche donc *où* boucler : l'endroit, vers la fin, dont le voisinage
+ * ressemble le plus au début, en niveau comme en forme. Couper là met les phases
+ * en accord et quelques millisecondes de fondu suffisent.
+ *
+ * Mais aucun critère indirect ne garantit le résultat — sur une prise en rampe,
+ * l'alignement empire les choses. On mesure donc ce qui compte vraiment, le saut
+ * d'énergie au raccord, pour les deux versions, et on garde la meilleure. La
+ * réparation ne peut ainsi jamais dégrader ce qu'elle prétend corriger.
  */
 function makeSeamless(
   context: AudioContext,
   buffer: AudioBuffer,
 ): { buffer: AudioBuffer; repaired: boolean } {
-  const fade = Math.min(Math.floor(SEAM_FADE_S * buffer.sampleRate), Math.floor(buffer.length / 4))
-  if (fade < 8) return { buffer, repaired: false }
+  const sampleRate = buffer.sampleRate
+  const longFade = Math.min(Math.floor(SEAM_FADE_S * sampleRate), Math.floor(buffer.length / 4))
+  if (longFade < 8) return { buffer, repaired: false }
 
   let discontinuity = 0
   for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
     const data = buffer.getChannelData(channel)
-    const first = data[0] ?? 0
-    const last = data[buffer.length - 1] ?? 0
-    discontinuity = Math.max(discontinuity, Math.abs(first - last))
+    discontinuity = Math.max(
+      discontinuity,
+      Math.abs((data[0] ?? 0) - (data[buffer.length - 1] ?? 0)),
+    )
   }
-  if (discontinuity <= SEAM_THRESHOLD) return { buffer, repaired: false }
 
-  const length = buffer.length - fade
+  const reference = cut(context, buffer, buffer.length, longFade)
+  const referenceSeam = seamStep(reference)
+
+  const point = findLoopPoint(buffer)
+  if (point !== null) {
+    const shortFade = Math.max(4, Math.floor(ALIGNED_FADE_S * sampleRate))
+    const aligned = cut(context, buffer, point, shortFade)
+    if (seamStep(aligned) < referenceSeam) return { buffer: aligned, repaired: true }
+  }
+
+  if (discontinuity <= SEAM_THRESHOLD) return { buffer, repaired: false }
+  return { buffer: reference, repaired: true }
+}
+
+/** Raccourcit le buffer à `end` et fond la queue sur le début. */
+function cut(
+  context: AudioContext,
+  buffer: AudioBuffer,
+  end: number,
+  fade: number,
+): AudioBuffer {
+  const length = Math.max(1, end - fade)
   const output = context.createBuffer(buffer.numberOfChannels, length, buffer.sampleRate)
 
   for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
@@ -484,13 +525,80 @@ function makeSeamless(
       const t = i / fade
       const head = target[i] ?? 0
       const tail = input[length + i] ?? 0
-      // Fondu à puissance constante, comme entre deux couches : une rampe
-      // linéaire creuserait le niveau au milieu du raccord.
+      // Fondu à puissance constante : une rampe linéaire creuserait le niveau au
+      // milieu du raccord.
       target[i] = head * Math.sin((t * Math.PI) / 2) + tail * Math.cos((t * Math.PI) / 2)
     }
   }
+  return output
+}
 
-  return { buffer: output, repaired: true }
+/**
+ * Saut d'énergie à la jonction, rapporté au niveau voisin.
+ *
+ * C'est la grandeur que l'oreille relève : une marche de niveau qui revient à
+ * chaque tour. On compare la fin du buffer à son début, puisque c'est ce que la
+ * lecture en boucle enchaîne.
+ */
+function seamStep(buffer: AudioBuffer): number {
+  const window = Math.floor(0.02 * buffer.sampleRate)
+  const data = buffer.getChannelData(0)
+  if (buffer.length < window * 2) return Number.POSITIVE_INFINITY
+
+  let head = 0
+  let tail = 0
+  for (let i = 0; i < window; i += 1) {
+    head += (data[i] ?? 0) ** 2
+    tail += (data[buffer.length - window + i] ?? 0) ** 2
+  }
+  const headRms = Math.sqrt(head / window)
+  const tailRms = Math.sqrt(tail / window)
+  return Math.abs(headRms - tailRms) / (Math.max(headRms, tailRms) + 1e-9)
+}
+
+/**
+ * Cherche le meilleur point de bouclage vers la fin de l'échantillon.
+ *
+ * Le coût retenu mêle l'écart de niveau et la dissemblance de forme, le niveau
+ * pesant davantage : c'est lui qui s'entend. Retourne `null` quand
+ * l'échantillon est trop court pour qu'une recherche ait un sens.
+ */
+function findLoopPoint(buffer: AudioBuffer): number | null {
+  const data = buffer.getChannelData(0)
+  const window = Math.floor(MATCH_WINDOW_S * buffer.sampleRate)
+  const span = Math.min(Math.floor(SEARCH_SPAN_S * buffer.sampleRate), Math.floor(buffer.length / 3))
+  const from = buffer.length - span
+  if (from <= window) return null
+
+  let bestEnd: number | null = null
+  let bestCost = Number.POSITIVE_INFINITY
+
+  // Un candidat sur deux, un point sur deux dans la fenêtre : la précision reste
+  // très inférieure à la période du signal, pour un quart du coût.
+  for (let end = from; end < buffer.length - window; end += 2) {
+    let dot = 0
+    let headEnergy = 0
+    let tailEnergy = 0
+    for (let k = 0; k < window; k += 2) {
+      const head = data[k] ?? 0
+      const tail = data[end - window + k] ?? 0
+      dot += head * tail
+      headEnergy += head * head
+      tailEnergy += tail * tail
+    }
+    const levelGap =
+      Math.abs(Math.sqrt(headEnergy) - Math.sqrt(tailEnergy)) /
+      (Math.max(Math.sqrt(headEnergy), Math.sqrt(tailEnergy)) + 1e-9)
+    const shapeGap = 1 - dot / (Math.sqrt(headEnergy * tailEnergy) + 1e-12)
+    const cost = levelGap + SHAPE_WEIGHT * shapeGap
+
+    if (cost < bestCost) {
+      bestCost = cost
+      bestEnd = end
+    }
+  }
+
+  return bestEnd
 }
 
 /** Courbe de saturation douce. À 0, la courbe est droite et n'altère rien. */

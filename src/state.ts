@@ -121,6 +121,9 @@ export const telemetry = shallowRef<Telemetry>({
     shiftProgress: 1,
     shiftDirection: null,
     isShiftReady: false,
+    upshiftThresholdRpm: 0,
+    downshiftThresholdRpm: 0,
+    downshiftBlocked: false,
   },
   frameMs: 0,
 })

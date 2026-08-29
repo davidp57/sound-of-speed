@@ -536,8 +536,21 @@ Trois points ont demandé une attention particulière :
 
 - **Le raccord des boucles.** Mesurée canal par canal après décodage, la
   discontinuité atteignait 21,6 % du niveau crête sur la montée haut régime et
-  39,4 % sur le rupteur : de quoi claquer à chaque tour. Le chargement les
-  détecte et applique un fondu de 30 ms.
+  39,4 % sur le rupteur : de quoi claquer à chaque tour.
+
+  Un simple fondu ne suffit pourtant pas. Les deux portions raccordées sont
+  décorrélées : leurs harmoniques se combinent au hasard des phases et
+  s'annulent en partie, ce qui creuse le niveau à chaque tour — un saut de
+  20,4 % sur la prise bas régime, trois fois les variations ordinaires du signal,
+  entendu comme un gargouillis revenant toutes les quelques secondes.
+
+  Le chargement cherche donc *où* boucler : l'endroit, vers la fin, dont le
+  voisinage ressemble le plus au début, en niveau comme en forme. Mais aucun
+  critère indirect ne garantit le résultat — sur une prise en rampe, l'alignement
+  dégrade au lieu d'améliorer. Le saut d'énergie réel est donc mesuré sur les
+  deux versions et la meilleure l'emporte, si bien que la réparation ne peut
+  jamais empirer ce qu'elle corrige. Sur le jeu de test, quatre couches sur cinq
+  y gagnent et retombent au niveau des variations ordinaires.
 - **La cadence en arrière-plan.** Le navigateur gèle l'affichage et ralentit les
   minuteurs dès que la page n'est plus visible, mais le fil audio continue. Une
   horloge `AudioWorklet` bat donc la mesure dès qu'elle est disponible. Un média
