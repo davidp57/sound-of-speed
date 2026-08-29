@@ -83,6 +83,13 @@ export function createRoadProfile(): Profile {
       downshiftAtRedlineRatio: 0.28,
       shiftDelaysS: [0.3, 0.55, 0.4, 0.6, 0.35, 0.5],
     },
+    feel: {
+      ...base.feel,
+      kickdown: { ...base.feel.kickdown, targetRpmFraction: 0.55, maxGears: 2 },
+      // Une voiture de série pétarade peu, et pas à n'importe quel régime.
+      backfire: { ...base.feel.backfire, minRpm: 3200, intensity: 0.25, count: 3 },
+      shiftJolt: { ...base.feel.shiftJolt, depth: 0.35 },
+    },
     mix: {
       ...base.mix,
       // La bascule suit la plage réellement parcourue, bien plus basse.
@@ -150,6 +157,26 @@ export function createDefaultProfile(): Profile {
       highpassHz: 45,
       drive: 0.15,
       limiterThresholdDb: -1.5,
+    },
+    feel: {
+      kickdown: {
+        enabled: true,
+        loadThreshold: 0.75,
+        // On vise le milieu haut de la plage : assez pour que ça pousse, sans
+        // aller chercher le rupteur à chaque sollicitation.
+        targetRpmFraction: 0.62,
+        maxGears: 3,
+      },
+      backfire: {
+        enabled: true,
+        minRpm: 4000,
+        intensity: 0.45,
+        count: 4,
+      },
+      shiftJolt: {
+        enabled: true,
+        depth: 0.55,
+      },
     },
     layers: [
       {

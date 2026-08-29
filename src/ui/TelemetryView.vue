@@ -209,6 +209,7 @@ function onRateChange(event: Event): void {
         unit="ms"
       />
       <ValueRow label="Couches chargées" :value="`${audioStatus.loaded} / ${audioStatus.total}`" />
+      <ValueRow label="Pétarades" :value="audioStatus.backfires" hint="Salves déclenchées depuis l'activation du son." />
       <ValueRow
         label="Niveau de sortie"
         :value="audioStatus.outputLevel.toFixed(4)"

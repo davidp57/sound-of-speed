@@ -358,6 +358,21 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 | **Effacement du ralenti** | Régime au-dessus duquel la couche de ralenti disparaît |
 | **Coupe-bas**, **Saturation**, **Seuil du limiteur** | Chaîne de sortie |
 
+### Caractère
+
+Trois comportements qui tiennent moins de la mécanique que du tempérament, et
+qu'on remarque surtout par leur absence. Chacun s'active séparément.
+
+| Réglage | Ce qu'il fait |
+|---|---|
+| **Rétrogradage forcé** | Enfoncer la pédale fait descendre chercher le couple, au lieu d'attendre le seuil de passage. Mesuré : 6<sup>e</sup> à 1927 tr/min → 4<sup>e</sup> à 2724 en une demi-seconde |
+| **Déclenché au-delà de** | Charge à partir de laquelle la demande est jugée franche |
+| **Régime visé** | Ce qu'on cherche à retrouver après la descente, en fraction du rupteur |
+| **Rapports descendus au plus** | Deux suffisent sur un profil routier, trois donnent une réponse plus vive |
+| **Pétarade** | Claquements à l'échappement au lever de pied. Synthétisés, la banque sonore n'en contenant pas |
+| **À partir de** | Régime en deçà duquel rien ne se produit : il ne reste pas assez à brûler. C'est le régime **au moment où l'on coupe**, non celui constaté une demi-seconde plus tard |
+| **À-coup de passage** | Le creux du couple coupé, puis la reprise. Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est |
+
 ### Couches
 
 Une ligne par échantillon. Le bouton **Analyser** mesure le fichier et propose

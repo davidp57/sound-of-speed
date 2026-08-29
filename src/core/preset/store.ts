@@ -110,6 +110,11 @@ function reconcile(profile: Partial<Profile>): Profile {
     drivetrain: migrateDrivetrain(base, profile.drivetrain),
     speed: { ...base.speed, ...(profile.speed ?? {}) },
     mix: { ...base.mix, ...(profile.mix ?? {}) },
+    feel: {
+      kickdown: { ...base.feel.kickdown, ...(profile.feel?.kickdown ?? {}) },
+      backfire: { ...base.feel.backfire, ...(profile.feel?.backfire ?? {}) },
+      shiftJolt: { ...base.feel.shiftJolt, ...(profile.feel?.shiftJolt ?? {}) },
+    },
     layers:
       Array.isArray(profile.layers) && profile.layers.length > 0
         ? profile.layers.map(widenNarrowLayer)

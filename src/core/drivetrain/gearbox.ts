@@ -1,4 +1,4 @@
-import type { DrivetrainPreset, EnginePreset } from '../preset/schema'
+import type { DrivetrainPreset, EnginePreset, FeelPreset } from '../preset/schema'
 
 /**
  * Boîte de vitesses.
@@ -50,6 +50,8 @@ export interface GearboxState {
   downshiftThresholdRpm: number
   /** Vrai si le rétrogradage est retenu par la garde anti-va-et-vient. */
   downshiftBlocked: boolean
+  /** Nombre de rapports descendus par le dernier rétrogradage forcé. */
+  kickdownGears: number
 }
 
 export class Gearbox {
@@ -67,15 +69,21 @@ export class Gearbox {
    * dispersion se moyennerait à zéro, sans rien changer à ce qu'on entend.
    */
   private pendingJitter = 0
+  /** Rapports descendus par le dernier rétrogradage forcé, pour la télémétrie. */
+  private lastKickdown = 0
+  /** Empêche un second rétrogradage forcé tant que la pédale reste enfoncée. */
+  private kickdownArmed = true
 
   constructor(
     private drivetrain: DrivetrainPreset,
     private engine: EnginePreset,
+    private feel: FeelPreset,
   ) {}
 
-  setPresets(drivetrain: DrivetrainPreset, engine: EnginePreset): void {
+  setPresets(drivetrain: DrivetrainPreset, engine: EnginePreset, feel: FeelPreset): void {
     this.drivetrain = drivetrain
     this.engine = engine
+    this.feel = feel
     this.gear = clampInt(this.gear, 0, this.gearCount - 1)
   }
 
@@ -195,6 +203,27 @@ export class Gearbox {
     let upThresholdSeen = this.upshiftThreshold(this.gear, load)
     const downThresholdSeen = this.engine.redlineRpm * this.drivetrain.downshiftAtRedlineRatio
 
+    // Le rétrogradage forcé passe avant tout le reste : c'est une demande
+    // explicite du conducteur, pas une décision de la boîte.
+    if (
+      this.mode === 'auto' &&
+      this.hasGearbox &&
+      this.shiftRemainingS === 0 &&
+      this.feel.kickdown.enabled &&
+      !atStandstill
+    ) {
+      if (load < this.feel.kickdown.loadThreshold * 0.7) this.kickdownArmed = true
+      else if (this.kickdownArmed && load >= this.feel.kickdown.loadThreshold) {
+        const dropped = this.kickdown(rpmInGear)
+        if (dropped > 0) {
+          this.kickdownArmed = false
+          this.lastKickdown = dropped
+          return this.report(atStandstill, false, false, upThresholdSeen, downThresholdSeen)
+        }
+        this.kickdownArmed = false
+      }
+    }
+
     if (this.mode === 'auto' && this.hasGearbox && this.shiftRemainingS === 0) {
       const rpm = rpmInGear(this.gear)
       const upThreshold = upThresholdSeen
@@ -230,7 +259,49 @@ export class Gearbox {
 
     if (atStandstill && this.mode === 'auto') this.gear = 0
 
+    return this.report(atStandstill, ready, blocked, upThresholdSeen, downThresholdSeen)
+  }
+
+  /**
+   * Rétrogradage forcé.
+   *
+   * On descend tant que le rapport atteint reste sous le rupteur et que le
+   * régime visé n'est pas déjà obtenu — exactement ce que fait une boîte quand on
+   * demande de la reprise : aller chercher le couple là où il est, plutôt que
+   * d'attendre son seuil de passage.
+   */
+  private kickdown(rpmInGear: (gear: number) => number): number {
+    const target = this.engine.redlineRpm * this.feel.kickdown.targetRpmFraction
+    const ceiling = this.engine.redlineRpm * 0.95
+    let dropped = 0
+
+    while (dropped < this.feel.kickdown.maxGears && this.gear > 0) {
+      if (rpmInGear(this.gear) >= target) break
+      const candidate = rpmInGear(this.gear - 1)
+      if (candidate > ceiling) break
+      this.gear -= 1
+      dropped += 1
+      if (candidate >= target) break
+    }
+
+    if (dropped > 0) {
+      this.shiftRemainingS = this.drivetrain.shiftTimeMs / 1000
+      this.shiftDirection = 'down'
+      this.readyForS = 0
+    }
+    return dropped
+  }
+
+  private report(
+    atStandstill: boolean,
+    ready: boolean,
+    blocked: boolean,
+    upThreshold: number,
+    downThreshold: number,
+  ): GearboxState {
     const shiftTotalS = Math.max(0.001, this.drivetrain.shiftTimeMs / 1000)
+    const kickdownGears = this.lastKickdown
+    if (this.shiftRemainingS === 0) this.lastKickdown = 0
 
     return {
       gear: this.gear,
@@ -242,9 +313,10 @@ export class Gearbox {
       shiftProgress: 1 - this.shiftRemainingS / shiftTotalS,
       shiftDirection: this.shiftDirection,
       isShiftReady: ready,
-      upshiftThresholdRpm: upThresholdSeen,
-      downshiftThresholdRpm: downThresholdSeen,
+      upshiftThresholdRpm: upThreshold,
+      downshiftThresholdRpm: downThreshold,
       downshiftBlocked: blocked,
+      kickdownGears,
     }
   }
 }

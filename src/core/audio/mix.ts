@@ -61,7 +61,11 @@ const AUDIBLE_GAIN = 0.02
  */
 const PITCH_TOLERANCE_OCTAVES = 0.5
 
-export function computeMix(profile: Profile, state: EngineState): MixResult {
+export function computeMix(
+  profile: Profile,
+  state: EngineState,
+  shift?: { isShifting: boolean; progress: number },
+): MixResult {
   const { mix } = profile
   const enabled = profile.layers.filter((layer) => layer.enabled)
 
@@ -76,6 +80,13 @@ export function computeMix(profile: Profile, state: EngineState): MixResult {
     : 0
 
   const limiterWeight = state.limiterActive ? 1 : 0
+
+  // À-coup de passage : le couple est coupé, donc le son se creuse puis revient.
+  // Une boîte parfaitement lisse ne s'entend pas comme une boîte.
+  const jolt =
+    profile.feel.shiftJolt.enabled && shift?.isShifting
+      ? 1 - profile.feel.shiftJolt.depth * Math.sin(clamp(shift.progress, 0, 1) * Math.PI)
+      : 1
 
   const layers: LayerMix[] = []
   for (const role of ['on', 'off', 'idle', 'limiter'] as const) {
@@ -99,7 +110,12 @@ export function computeMix(profile: Profile, state: EngineState): MixResult {
       const raw = state.rpm / Math.max(1, layer.anchorRpm)
       const rate = clamp(raw, layer.minRate, layer.maxRate)
       const gain =
-        (blend[index] ?? 0) * familyWeight * layer.gain * mix.masterGain * fidelity(raw, rate)
+        (blend[index] ?? 0) *
+        familyWeight *
+        layer.gain *
+        mix.masterGain *
+        fidelity(raw, rate) *
+        (role === 'limiter' ? 1 : jolt)
       layers.push({
         key: layer.key,
         file: layer.file,

@@ -150,6 +150,51 @@ export interface MixPreset {
   limiterThresholdDb: number
 }
 
+/**
+ * Comportements qui tiennent moins de la mécanique que du caractère : ce qu'une
+ * voiture fait ressentir, et qu'on remarque surtout par son absence.
+ */
+export interface FeelPreset {
+  /**
+   * Rétrogradage forcé quand on enfonce l'accélérateur.
+   *
+   * Sans lui, écraser la pédale sur un rapport long ne produit qu'une lente
+   * montée en régime : la boîte attend son seuil de passage au lieu d'aller
+   * chercher du couple là où il est.
+   */
+  kickdown: {
+    enabled: boolean
+    /** Charge à partir de laquelle la demande est jugée franche, de 0 à 1. */
+    loadThreshold: number
+    /** Régime visé après rétrogradage, en fraction du rupteur. */
+    targetRpmFraction: number
+    /** Nombre maximal de rapports descendus d'un coup. */
+    maxGears: number
+  }
+  /**
+   * Pétarade à la décélération : le claquement à l'échappement quand on lève le
+   * pied à haut régime.
+   */
+  backfire: {
+    enabled: boolean
+    /** Régime en deçà duquel il ne se produit pas. */
+    minRpm: number
+    /** Volume des claquements, de 0 à 1. */
+    intensity: number
+    /** Nombre de claquements par salve. */
+    count: number
+  }
+  /**
+   * À-coup au passage de rapport : la coupure de couple, puis la reprise.
+   * Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est.
+   */
+  shiftJolt: {
+    enabled: boolean
+    /** Profondeur du creux de niveau pendant la coupure, de 0 à 1. */
+    depth: number
+  }
+}
+
 export interface Profile {
   /** Identifiant stable, généré à la création. */
   id: string
@@ -160,6 +205,7 @@ export interface Profile {
   drivetrain: DrivetrainPreset
   speed: SpeedPreset
   mix: MixPreset
+  feel: FeelPreset
   layers: LayerPreset[]
 }
 

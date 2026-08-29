@@ -66,6 +66,8 @@ export interface AudioStatus {
   outputLatencyMs: number
   /** Le média silencieux qui maintient la session tourne-t-il ? */
   keepAlive: boolean
+  /** Nombre de salves de pétarade déclenchées depuis l'activation. */
+  backfires: number
 }
 
 interface LoadedLayer {
@@ -115,6 +117,8 @@ export class AudioEngine {
 
   private appliedDrive = -1
   private loadToken = 0
+  /** Bruit blanc court, réutilisé par toutes les pétarades. */
+  private noise: AudioBuffer | null = null
 
   readonly status: AudioStatus = {
     phase: 'idle',
@@ -130,6 +134,7 @@ export class AudioEngine {
     baseLatencyMs: 0,
     outputLatencyMs: 0,
     keepAlive: false,
+    backfires: 0,
   }
 
   /** Appelé à chaque battement de l'horloge audio, quand elle est en place. */
@@ -335,12 +340,16 @@ export class AudioEngine {
   }
 
   /** Applique le mixage calculé pour l'image courante. */
-  update(profile: Profile, state: EngineState): void {
+  update(
+    profile: Profile,
+    state: EngineState,
+    shift?: { isShifting: boolean; progress: number },
+  ): void {
     const context = this.context
     if (!context || this.status.phase !== 'ready') return
 
     const now = context.currentTime
-    const mix = computeMix(profile, state)
+    const mix = computeMix(profile, state, shift)
 
     for (const entry of mix.layers) {
       const node = this.layers.find((layer) => layer.key === entry.key)
@@ -408,6 +417,51 @@ export class AudioEngine {
     const state = readState()
     this.status.contextState = state
     return state === 'running'
+  }
+
+  /**
+   * Pétarade à la décélération.
+   *
+   * Le claquement d'un imbrûlé qui prend feu dans l'échappement : une impulsion
+   * très brève, plutôt grave, avec une queue de souffle. On la synthétise plutôt
+   * que de l'échantillonner — quelques dizaines de millisecondes de bruit filtré
+   * suffisent, et cela évite de dépendre d'un enregistrement que la banque
+   * sonore ne contient pas.
+   */
+  backfire(intensity: number, count: number): void {
+    const context = this.context
+    if (!context || this.status.phase !== 'ready' || !this.bus) return
+
+    this.status.backfires += 1
+    const now = context.currentTime
+    for (let i = 0; i < count; i += 1) {
+      // Les claquements ne sont jamais réguliers : c'est ce qui les distingue
+      // d'un crépitement mécanique.
+      const at = now + Math.random() * 0.28 + i * 0.045
+      const duration = 0.05 + Math.random() * 0.07
+
+      const source = context.createBufferSource()
+      source.buffer = this.noise ?? (this.noise = makeNoise(context))
+      source.playbackRate.value = 0.7 + Math.random() * 0.6
+      source.loop = true
+
+      const band = context.createBiquadFilter()
+      band.type = 'bandpass'
+      band.frequency.value = 260 + Math.random() * 420
+      band.Q.value = 1.4
+
+      const gain = context.createGain()
+      const peak = intensity * (0.5 + Math.random() * 0.5)
+      gain.gain.setValueAtTime(0.0001, at)
+      gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), at + 0.004)
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + duration)
+
+      source.connect(band)
+      band.connect(gain)
+      gain.connect(this.bus)
+      source.start(at)
+      source.stop(at + duration + 0.02)
+    }
   }
 
   /**
@@ -599,6 +653,14 @@ function findLoopPoint(buffer: AudioBuffer): number | null {
   }
 
   return bestEnd
+}
+
+/** Une seconde de bruit blanc, source de toutes les impulsions. */
+function makeNoise(context: AudioContext): AudioBuffer {
+  const buffer = context.createBuffer(1, context.sampleRate, context.sampleRate)
+  const data = buffer.getChannelData(0)
+  for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1
+  return buffer
 }
 
 /** Courbe de saturation douce. À 0, la courbe est droite et n'altère rien. */

@@ -498,6 +498,91 @@ function applyCandidate(index: number, rpm: number): void {
     </section>
 
     <section class="panel">
+      <h2>Caractère</h2>
+      <p class="note">
+        Ce qu'une voiture fait ressentir, et qu'on remarque surtout par son
+        absence. Chaque comportement s'active séparément.
+      </p>
+
+      <div class="toggle">
+        <button
+          :aria-pressed="profile.feel.kickdown.enabled"
+          @click="profile.feel.kickdown.enabled = !profile.feel.kickdown.enabled"
+        >
+          Rétrogradage forcé
+        </button>
+        <span class="note">Descendre chercher le couple quand on enfonce la pédale.</span>
+      </div>
+      <template v-if="profile.feel.kickdown.enabled">
+        <NumberField
+          v-model="profile.feel.kickdown.loadThreshold"
+          label="Déclenché au-delà de"
+          :min="0.3"
+          :max="1"
+          :step="0.05"
+          hint="Charge à partir de laquelle la demande est jugée franche."
+        />
+        <NumberField
+          v-model="profile.feel.kickdown.targetRpmFraction"
+          label="Régime visé"
+          :min="0.3"
+          :max="0.95"
+          :step="0.01"
+          :hint="`Fraction du rupteur, soit ${Math.round(profile.engine.redlineRpm * profile.feel.kickdown.targetRpmFraction)} tr/min.`"
+        />
+        <NumberField
+          v-model="profile.feel.kickdown.maxGears"
+          label="Rapports descendus au plus"
+          :min="1"
+          :max="4"
+          :step="1"
+        />
+      </template>
+
+      <div class="toggle">
+        <button
+          :aria-pressed="profile.feel.backfire.enabled"
+          @click="profile.feel.backfire.enabled = !profile.feel.backfire.enabled"
+        >
+          Pétarade
+        </button>
+        <span class="note">Claquements à l'échappement au lever de pied.</span>
+      </div>
+      <template v-if="profile.feel.backfire.enabled">
+        <NumberField
+          v-model="profile.feel.backfire.minRpm"
+          label="À partir de"
+          :min="1000"
+          :max="9000"
+          :step="100"
+          unit="tr/min"
+          hint="En deçà, rien ne se produit : il ne reste pas assez à brûler."
+        />
+        <NumberField v-model="profile.feel.backfire.intensity" label="Intensité" :min="0" :max="1" :step="0.05" />
+        <NumberField v-model="profile.feel.backfire.count" label="Claquements par salve" :min="1" :max="10" :step="1" />
+      </template>
+
+      <div class="toggle">
+        <button
+          :aria-pressed="profile.feel.shiftJolt.enabled"
+          @click="profile.feel.shiftJolt.enabled = !profile.feel.shiftJolt.enabled"
+        >
+          À-coup de passage
+        </button>
+        <span class="note">Le creux du couple coupé, puis la reprise.</span>
+      </div>
+      <NumberField
+        v-if="profile.feel.shiftJolt.enabled"
+        v-model="profile.feel.shiftJolt.depth"
+        label="Profondeur"
+        :min="0"
+        :max="1"
+        :step="0.05"
+        hint="Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est."
+      />
+    </section>
+
+    <section class="panel">
       <h2>Mixage</h2>
       <NumberField v-model="profile.mix.masterGain" label="Volume général" :min="0" :max="1" :step="0.01" />
       <NumberField
@@ -722,6 +807,20 @@ td {
 td input[type='number'] {
   width: 6rem;
   text-align: right;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0 0.3rem;
+  border-top: 1px solid var(--line);
+}
+
+.toggle .note {
+  margin: 0;
+  flex: 1 1 12rem;
 }
 
 .offline {

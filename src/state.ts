@@ -58,7 +58,11 @@ const geolocation = new GeolocationSource({
 const replay = new ReplaySource({ name: 'vide', startedAt: 0, samples: [] })
 
 const conditioner = new SpeedConditioner(activeProfile.value.speed)
-const gearbox = new Gearbox(activeProfile.value.drivetrain, activeProfile.value.engine)
+const gearbox = new Gearbox(
+  activeProfile.value.drivetrain,
+  activeProfile.value.engine,
+  activeProfile.value.feel,
+)
 const engine = new Engine(activeProfile.value.engine, activeProfile.value.mix)
 const recorder = new TraceRecorder()
 const loop = new Loop()
@@ -124,6 +128,7 @@ export const telemetry = shallowRef<Telemetry>({
     upshiftThresholdRpm: 0,
     downshiftThresholdRpm: 0,
     downshiftBlocked: false,
+    kickdownGears: 0,
   },
   frameMs: 0,
 })
@@ -168,6 +173,25 @@ function rpmInGear(gear: number, kmh: number): number {
  * arrière-plan, ce qui rend toute mesure prise à la montre inexploitable. Avec
  * un pas imposé, le comportement est reproductible.
  */
+/**
+ * Mémoire du lever de pied.
+ *
+ * Comparer la charge d'une image à la précédente ne détecte rien : le lissage
+ * la fait retomber en près d'une seconde, soit sept pour cent par image. Il faut
+ * donc retenir qu'on a été en charge, puis guetter le retour au pied levé —
+ * une bascule à deux seuils, avec la zone morte qui évite de se redéclencher sur
+ * un frémissement.
+ */
+let loadWasHigh = false
+/**
+ * Régime au moment où l'on était encore en charge.
+ *
+ * C'est lui qui décide s'il reste de quoi brûler, et non le régime constaté une
+ * demi-seconde plus tard, quand la charge a fini de retomber et que le moteur a
+ * déjà perdu des tours.
+ */
+let rpmWhenLoaded = 0
+
 function step(dt: number): void {
   const source = currentSource()
   source.tick(dt)
@@ -195,8 +219,27 @@ function step(dt: number): void {
     throttle: sourceKind.value === 'simulator' ? simulator.getThrottle() : null,
   })
 
+  // Pétarade : elle se déclenche au lever de pied, pas pendant qu'on décélère.
+  // C'est la transition qui la produit, une seule fois, et seulement si le moteur
+  // tournait assez haut pour qu'il reste de quoi brûler.
+  const backfire = profile.feel.backfire
+  if (engineState.load >= 0.55) {
+    loadWasHigh = true
+    rpmWhenLoaded = engineState.rpm
+  } else if (loadWasHigh && engineState.load <= 0.3) {
+    loadWasHigh = false
+    if (backfire.enabled && !isMuted.value && rpmWhenLoaded >= backfire.minRpm) {
+      audio.backfire(backfire.intensity, backfire.count)
+    }
+  }
+
   if (isMuted.value) audio.mute()
-  else audio.update(profile, engineState)
+  else {
+    audio.update(profile, engineState, {
+      isShifting: gearboxState.isShifting,
+      progress: gearboxState.shiftProgress,
+    })
+  }
 
   // Le niveau de sortie change à chaque image ; le reste du statut ne bouge
   // qu'aux transitions, et est rafraîchi par `refreshAudioStatus`.
@@ -207,6 +250,7 @@ function step(dt: number): void {
       outputPeak: audio.status.outputPeak,
       outputLatencyMs: audio.status.outputLatencyMs,
       baseLatencyMs: audio.status.baseLatencyMs,
+      backfires: audio.status.backfires,
     }
   }
 
@@ -291,7 +335,7 @@ watch(
   activeProfile,
   (profile) => {
     conditioner.setPreset(profile.speed)
-    gearbox.setPresets(profile.drivetrain, profile.engine)
+    gearbox.setPresets(profile.drivetrain, profile.engine, profile.feel)
     engine.setPresets(profile.engine, profile.mix)
     geolocation.setOptions({ maxPlausibleKmh: profile.speed.maxPlausibleKmh })
   },
