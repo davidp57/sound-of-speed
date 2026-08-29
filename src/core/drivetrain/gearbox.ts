@@ -113,7 +113,10 @@ export class Gearbox {
     const base = table[gear] ?? table[table.length - 1] ?? this.engine.redlineRpm * 0.8
     const spread = this.drivetrain.upshiftLoadSpreadRpm
     const shifted = base + (clamp01(load) - 0.5) * spread + this.pendingJitter
-    return clamp(shifted, this.engine.idleRpm * 1.2, this.engine.redlineRpm)
+    // Le plancher prime : mieux vaut garder un rapport court qu'en engager un
+    // long à un régime où le moteur peinerait.
+    const floored = Math.max(shifted, this.drivetrain.minUpshiftRpm)
+    return clamp(floored, this.engine.idleRpm * 1.2, this.engine.redlineRpm)
   }
 
   /**
@@ -204,8 +207,9 @@ export class Gearbox {
         !atStandstill &&
         // Garde contre le va-et-vient : rétrograder n'a de sens que si le régime
         // obtenu ne franchit pas aussitôt le seuil de montée du rapport visé,
-        // ce qui ferait remonter dans la foulée.
-        rpmInGear(this.gear - 1) < this.upshiftThreshold(this.gear - 1, load)
+        // ce qui ferait remonter dans la foulée. La marge évite de s'arrêter
+        // pile sur le seuil, où le moindre tremblement relancerait le cycle.
+        rpmInGear(this.gear - 1) < this.upshiftThreshold(this.gear - 1, load) * 0.98
       ) {
         this.readyForS = 0
         this.applyShift(-1)

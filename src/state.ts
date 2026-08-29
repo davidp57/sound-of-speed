@@ -476,8 +476,13 @@ export function setBrake(value: number): void {
   simulator.setBrake(value)
 }
 
-export function setSimulatedSpeed(kmh: number): void {
-  simulator.setSpeed(kmh)
+/** Vitesse à tenir au simulateur, ou `null` pour rendre la main. */
+export function setSimulatedSpeed(kmh: number | null): void {
+  simulator.setCruise(kmh)
+}
+
+export function getSimulatedCruise(): number | null {
+  return simulator.getCruise()
 }
 
 export function setShiftMode(mode: ShiftMode): void {

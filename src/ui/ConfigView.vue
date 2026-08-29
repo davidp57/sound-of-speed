@@ -435,6 +435,15 @@ function applyCandidate(index: number, rpm: number): void {
         hint="Tiré au sort à chaque passage. Sans lui, la boîte passe toujours au même régime exact et s'entend comme une machine."
       />
       <NumberField
+        v-model="profile.drivetrain.minUpshiftRpm"
+        label="Ne jamais monter sous"
+        :min="800"
+        :max="5000"
+        :step="50"
+        unit="tr/min"
+        hint="Plancher, toutes charges confondues. C'est lui qui décide à quelle vitesse la boîte rétrograde en décélération : trop bas, elle reste sur le dernier rapport bien après qu'il n'a plus de sens."
+      />
+      <NumberField
         v-model="profile.drivetrain.downshiftAtRedlineRatio"
         label="Descente sous"
         :min="0.05"

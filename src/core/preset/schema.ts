@@ -89,6 +89,18 @@ export interface DrivetrainPreset {
    * cette impression.
    */
   upshiftJitterRpm: number
+  /**
+   * Régime au-dessous duquel la boîte ne monte jamais un rapport, quelle que
+   * soit la charge.
+   *
+   * Sans ce plancher, l'écart de charge fait plonger les seuils pied levé — un
+   * passage à mille huit cents tours, qu'aucune boîte réelle ne ferait. Et comme
+   * le rétrogradage est refusé tant que le rapport inférieur dépasserait son
+   * propre seuil de montée, un seuil effondré revient à s'interdire de
+   * rétrograder : on restait sur le dernier rapport bien plus longtemps qu'il
+   * n'est naturel.
+   */
+  minUpshiftRpm: number
   /** Fraction du rupteur sous laquelle elle redescend. */
   downshiftAtRedlineRatio: number
   /**

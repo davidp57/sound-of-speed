@@ -26,6 +26,8 @@ const DRAG_QUADRATIC = 0.0003
 const BRAKE_KMH_S = 70
 /** Vitesse maximale simulée. */
 const MAX_KMH = 260
+/** Vivacité du régulateur : fraction de l'écart rattrapée par seconde. */
+const CRUISE_RESPONSE = 1.6
 
 export class SimulatorSource extends SpeedSource {
   readonly kind = 'simulator' as const
@@ -35,6 +37,15 @@ export class SimulatorSource extends SpeedSource {
   private throttle = 0
   private brake = 0
   private running = false
+  /**
+   * Vitesse à tenir, ou `null` en conduite libre.
+   *
+   * C'est un régulateur, pas une valeur imposée une fois : sans cela, le curseur
+   * ne faisait que poser la vitesse avant que la traînée ne la fasse retomber
+   * aussitôt — alors que ce qu'on veut simuler, c'est précisément une allure
+   * stabilisée, comme on la tient sur autoroute.
+   */
+  private cruise: number | null = null
 
   start(): void {
     this.running = true
@@ -48,19 +59,27 @@ export class SimulatorSource extends SpeedSource {
     this.setStatus('idle')
   }
 
-  /** Position de l'accélérateur, de 0 à 1. */
+  /** Position de l'accélérateur, de 0 à 1. Reprendre les commandes lève le maintien. */
   setThrottle(value: number): void {
-    this.throttle = clamp(value, 0, 1)
+    const next = clamp(value, 0, 1)
+    if (next > 0) this.cruise = null
+    this.throttle = next
   }
 
-  /** Position du frein, de 0 à 1. */
+  /** Position du frein, de 0 à 1. Reprendre les commandes lève le maintien. */
   setBrake(value: number): void {
-    this.brake = clamp(value, 0, 1)
+    const next = clamp(value, 0, 1)
+    if (next > 0) this.cruise = null
+    this.brake = next
   }
 
-  /** Force la vitesse, sans passer par la physique. Utilisé par le curseur de l'écran. */
-  setSpeed(kmh: number): void {
-    this.kmh = clamp(kmh, 0, MAX_KMH)
+  /** Vitesse à tenir, ou `null` pour rendre la main. */
+  setCruise(kmh: number | null): void {
+    this.cruise = kmh === null ? null : clamp(kmh, 0, MAX_KMH)
+  }
+
+  getCruise(): number | null {
+    return this.cruise
   }
 
   getThrottle(): number {
@@ -74,12 +93,21 @@ export class SimulatorSource extends SpeedSource {
   override tick(dt: number): void {
     if (!this.running || dt <= 0) return
 
-    const thrust =
-      (THRUST_KMH_S * this.throttle * THRUST_HALF_KMH) / (THRUST_HALF_KMH + this.kmh)
-    const drag = DRAG_KMH_S + DRAG_QUADRATIC * this.kmh * this.kmh
-    const braking = BRAKE_KMH_S * this.brake
+    if (this.cruise !== null) {
+      // Le régulateur rejoint la consigne puis s'y tient, sans osciller autour :
+      // on rapproche la vitesse d'une fraction de l'écart à chaque pas, et on
+      // borne le rapprochement pour que la reprise reste crédible à l'oreille.
+      const error = this.cruise - this.kmh
+      const step = clamp(error * CRUISE_RESPONSE * dt, -BRAKE_KMH_S * dt, THRUST_KMH_S * dt)
+      this.kmh = clamp(this.kmh + step, 0, MAX_KMH)
+    } else {
+      const thrust =
+        (THRUST_KMH_S * this.throttle * THRUST_HALF_KMH) / (THRUST_HALF_KMH + this.kmh)
+      const drag = DRAG_KMH_S + DRAG_QUADRATIC * this.kmh * this.kmh
+      const braking = BRAKE_KMH_S * this.brake
 
-    this.kmh = clamp(this.kmh + (thrust - drag - braking) * dt, 0, MAX_KMH)
+      this.kmh = clamp(this.kmh + (thrust - drag - braking) * dt, 0, MAX_KMH)
+    }
 
     const sample: SpeedSample = {
       kmh: this.kmh,

@@ -76,6 +76,10 @@ Au clavier, source « Simulateur » :
 | ↓ | Frein |
 | ← → | Descendre / monter un rapport, en mode manuel |
 
+Le curseur **Allure maintenue** est un régulateur : le simulateur tient la
+vitesse choisie, comme on le fait sur autoroute, jusqu'à ce qu'on accélère ou
+qu'on freine. C'est la façon la plus simple d'écouter un régime stabilisé.
+
 Autres commandes :
 
 ```bash
@@ -329,6 +333,7 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 | **Passage 1 → 2**, **2 → 3**, … | Régime auquel chaque rapport cède la place au suivant, à charge moyenne. Un curseur par passage : c'est le seul moyen d'empêcher les rapports courts de monter au rupteur sans faire passer les longs trop bas. L'aide indique la vitesse correspondante |
 | **Écart selon la charge** | De combien le passage recule pied au plancher et avance pied levé, de part et d'autre des valeurs ci-dessus |
 | **Dispersion aléatoire** | Tirée au sort à chaque passage. Sans elle, la boîte passe toujours au même régime exact et s'entend comme une machine |
+| **Ne jamais monter sous** | Plancher de régime, toutes charges confondues. C'est lui qui décide à quelle vitesse la boîte rétrograde en décélération : trop bas, elle reste sur le dernier rapport bien après qu'il n'a plus de sens |
 | **Descente sous** | Seuil de rétrogradage |
 | **Temporisations de montée** | Une par rapport, en secondes. Les garder **inégales** : avec une valeur unique, la boîte sonne comme un métronome. Courtes de préférence — elles confirment une intention, elles ne retiennent pas le passage |
 

@@ -15,6 +15,7 @@ import {
   setMuted,
   setBrake,
   setShiftMode,
+  getSimulatedCruise,
   setSimulatedSpeed,
   setSource,
   setThrottle,
@@ -46,12 +47,26 @@ const STATUS_LABELS: Record<string, string> = {
 
 const manual = computed(() => telemetry.value.gearbox.mode === 'manual')
 const sliderSpeed = ref(0)
+const cruiseOn = ref(false)
 
+/**
+ * Régulateur du simulateur : le curseur tient l'allure au lieu de la poser une
+ * fois. Toucher l'accélérateur ou le frein rend la main, comme sur une voiture.
+ */
 function onSlider(event: Event): void {
   const value = Number((event.target as HTMLInputElement).value)
   sliderSpeed.value = value
+  cruiseOn.value = true
   setSimulatedSpeed(value)
 }
+
+function releaseCruise(): void {
+  cruiseOn.value = false
+  setSimulatedSpeed(null)
+}
+
+/** Le régulateur peut avoir été levé par une pédale : on suit son état réel. */
+const cruiseActive = computed(() => cruiseOn.value && getSimulatedCruise() !== null)
 
 /**
  * Un seul bouton pour le son, et il bascule.
@@ -199,9 +214,19 @@ const rpmPercent = computed(() => {
           </button>
         </div>
         <label class="slider">
-          Vitesse imposée : <span class="numeric">{{ sliderSpeed }}</span> km/h
+          <span>
+            Allure maintenue : <span class="numeric">{{ sliderSpeed }}</span> km/h
+            <template v-if="!cruiseActive"> — inactive</template>
+          </span>
           <input type="range" min="0" max="220" step="1" :value="sliderSpeed" @input="onSlider" />
         </label>
+        <div class="group">
+          <button :disabled="!cruiseActive" @click="releaseCruise()">Rendre la main</button>
+          <span class="hint">
+            Le simulateur tient cette vitesse, comme sur autoroute. Accélérer ou freiner
+            lève le maintien.
+          </span>
+        </div>
         <p class="hint">
           Au clavier : flèches haut et bas pour l'accélérateur et le frein, flèches gauche
           et droite pour les rapports en mode manuel.

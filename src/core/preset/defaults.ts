@@ -77,8 +77,9 @@ export function createRoadProfile(): Profile {
       // Passages placés en vitesse plutôt qu'en régime : 35, 55, 75, 96 et
       // 115 km/h à charge moyenne.
       upshiftRpm: [3700, 3350, 3050, 2950, 2950],
-      upshiftLoadSpreadRpm: 2200,
+      upshiftLoadSpreadRpm: 1600,
       upshiftJitterRpm: 120,
+      minUpshiftRpm: 2300,
       downshiftAtRedlineRatio: 0.28,
       shiftDelaysS: [0.3, 0.55, 0.4, 0.6, 0.35, 0.5],
     },
@@ -124,6 +125,7 @@ export function createDefaultProfile(): Profile {
       upshiftRpm: [5200, 5600, 5900, 6200, 6500],
       upshiftLoadSpreadRpm: 1800,
       upshiftJitterRpm: 150,
+      minUpshiftRpm: 2600,
       downshiftAtRedlineRatio: 0.32,
       // Volontairement irrégulières : des temporisations égales donnent une
       // boîte qui sonne comme un métronome. Courtes, en revanche — elles
