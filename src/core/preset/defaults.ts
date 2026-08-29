@@ -80,6 +80,8 @@ export function createRoadProfile(): Profile {
       upshiftLoadSpreadRpm: 1600,
       upshiftJitterRpm: 120,
       minUpshiftRpm: 2300,
+      firstGearLaunchOnly: true,
+      launchUpshiftKmh: 5,
       downshiftAtRedlineRatio: 0.28,
       shiftDelaysS: [0.3, 0.55, 0.4, 0.6, 0.35, 0.5],
     },
@@ -97,6 +99,8 @@ export function createRoadProfile(): Profile {
       crossfadeHighRpm: 5200,
       fullLoadAccelMs2: 2,
       loadSmoothingS: 0.22,
+      offLoadGain: 3.2,
+      loadContrast: 0.65,
       drive: 0.12,
     },
   }
@@ -133,6 +137,8 @@ export function createDefaultProfile(): Profile {
       upshiftLoadSpreadRpm: 1800,
       upshiftJitterRpm: 150,
       minUpshiftRpm: 2600,
+      firstGearLaunchOnly: true,
+      launchUpshiftKmh: 8,
       downshiftAtRedlineRatio: 0.32,
       // Volontairement irrégulières : des temporisations égales donnent une
       // boîte qui sonne comme un métronome. Courtes, en revanche — elles
@@ -153,6 +159,9 @@ export function createDefaultProfile(): Profile {
       crossfadeHighRpm: 7000,
       fullLoadAccelMs2: 2.5,
       loadSmoothingS: 0.18,
+      // Compense un enregistrement trois fois plus doux en décélération.
+      offLoadGain: 2.8,
+      loadContrast: 0.75,
       idleFadeOutRpm: 1400,
       highpassHz: 45,
       drive: 0.15,

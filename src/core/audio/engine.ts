@@ -20,6 +20,8 @@ import { computeMix } from './mix'
 const GAIN_GLIDE_S = 0.02
 /** Constante de lissage de la vitesse de lecture. Plus longue : un saut de hauteur s'entend davantage. */
 const RATE_GLIDE_S = 0.03
+/** Période de la surveillance du contexte et du média, en millisecondes. */
+const WATCHDOG_MS = 2000
 /** Durée du fondu appliqué aux boucles mal raccordées, en secondes. */
 const SEAM_FADE_S = 0.03
 /** Fondu, bien plus court, quand le point de bouclage a pu être aligné. */
@@ -110,6 +112,8 @@ export class AudioEngine {
   private highpass: BiquadFilterNode | null = null
   private shaper: WaveShaperNode | null = null
   private limiter: DynamicsCompressorNode | null = null
+  private makeup: GainNode | null = null
+  private watchdog: ReturnType<typeof setInterval> | null = null
   private analyser: AnalyserNode | null = null
   private scope: Float32Array<ArrayBuffer> | null = null
   private keepAlive: HTMLAudioElement | null = null
@@ -197,7 +201,12 @@ export class AudioEngine {
     this.bus.connect(this.highpass)
     this.highpass.connect(this.shaper)
     this.shaper.connect(this.limiter)
-    this.limiter.connect(this.analyser)
+    this.makeup = context.createGain()
+    // Le limiteur ramène les crêtes bien en dessous du plafond ; ce gain rend le
+    // niveau perdu, sans risque d'écrêtage puisqu'il vient après lui.
+    this.makeup.gain.value = 1.8
+    this.limiter.connect(this.makeup)
+    this.makeup.connect(this.analyser)
     this.analyser.connect(context.destination)
   }
 
@@ -234,9 +243,9 @@ export class AudioEngine {
     if (enabled === this.status.keepAlive) return
     if (enabled) this.startKeepAlive()
     else {
+      this.status.keepAlive = false
       this.keepAlive?.pause()
       this.keepAlive = null
-      this.status.keepAlive = false
     }
     this.readLatency()
   }
@@ -244,11 +253,32 @@ export class AudioEngine {
   private startKeepAlive(): void {
     const audio = new Audio(silentWavUrl(4))
     audio.loop = true
-    audio.volume = 0
+    // Le contenu est déjà silencieux : baisser en plus le volume ferait passer
+    // le lecteur pour inactif auprès de certains systèmes, qui libéreraient la
+    // session audio en arrière-plan — précisément ce qu'il sert à empêcher.
+    audio.volume = 1
     audio.setAttribute('playsinline', '')
+    // Certains navigateurs suspendent un média sorti de l'écran : on le relance.
+    audio.addEventListener('pause', () => {
+      if (this.status.keepAlive) void audio.play().catch(() => undefined)
+    })
     void audio.play().catch(() => undefined)
     this.keepAlive = audio
     this.status.keepAlive = true
+
+    // Surveillance permanente, et non seulement au retour au premier plan.
+    // Certains navigateurs embarqués suspendent le contexte sans prévenir et
+    // sans repasser par un changement de visibilité : on ne peut compter que sur
+    // une vérification régulière, qui coûte presque rien.
+    if (this.watchdog === null) {
+      this.watchdog = setInterval(() => {
+        const context = this.context
+        if (!context) return
+        if (context.state === 'suspended') void context.resume().catch(() => undefined)
+        const media = this.keepAlive
+        if (media && media.paused) void media.play().catch(() => undefined)
+      }, WATCHDOG_MS)
+    }
   }
 
   private async startClock(context: AudioContext): Promise<void> {
@@ -479,6 +509,10 @@ export class AudioEngine {
   }
 
   async dispose(): Promise<void> {
+    if (this.watchdog !== null) {
+      clearInterval(this.watchdog)
+      this.watchdog = null
+    }
     this.disposeLayers()
     this.clock?.port.close()
     this.clock?.disconnect()

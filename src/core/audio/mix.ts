@@ -70,9 +70,15 @@ export function computeMix(
   const enabled = profile.layers.filter((layer) => layer.enabled)
 
   // Charge : fondu à puissance constante entre pied levé et pleine charge.
-  const load = clamp(state.load, 0, 1)
+  //
+  // Le contraste resserre l'écart autour du milieu : à un, le fondu va d'un
+  // extrême à l'autre et le moteur s'éteint presque en roue libre ; plus bas, les
+  // deux familles se mélangent en permanence. Le gain propre aux couches pied
+  // levé compense ensuite leur enregistrement plus doux.
+  const contrast = clamp(mix.loadContrast, 0, 1)
+  const load = clamp(0.5 + (clamp(state.load, 0, 1) - 0.5) * contrast, 0, 1)
   const onWeight = Math.sin((load * Math.PI) / 2)
-  const offWeight = Math.cos((load * Math.PI) / 2)
+  const offWeight = Math.cos((load * Math.PI) / 2) * Math.max(0, mix.offLoadGain)
 
   // Le ralenti s'efface dès que le moteur est entraîné par les roues.
   const idleWeight = state.idling

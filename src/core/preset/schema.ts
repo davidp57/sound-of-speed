@@ -104,6 +104,17 @@ export interface DrivetrainPreset {
   /** Fraction du rupteur sous laquelle elle redescend. */
   downshiftAtRedlineRatio: number
   /**
+   * La première ne sert qu'à s'élancer.
+   *
+   * Sur une automatique, elle n'est qu'une amorce : on passe la seconde presque
+   * aussitôt et l'on n'y revient pas, l'arrêt se faisant depuis la seconde.
+   * Garder la première comme un rapport ordinaire donne un moteur qui monte dans
+   * les tours au pas, puis rétrograde à chaque ralentissement.
+   */
+  firstGearLaunchOnly: boolean
+  /** Vitesse au-delà de laquelle la première cède la place, en km/h. */
+  launchUpshiftKmh: number
+  /**
    * Temporisation avant montée, en secondes, indexée par rapport engagé.
    * Des valeurs irrégulières évitent la sensation de métronome.
    */
@@ -140,6 +151,23 @@ export interface MixPreset {
   fullLoadAccelMs2: number
   /** Constante de lissage de la charge, en secondes. */
   loadSmoothingS: number
+  /**
+   * Gain propre aux couches « pied levé ».
+   *
+   * Les prises en décélération sont enregistrées bien plus doucement que celles
+   * en charge — trois fois moins fort sur le jeu de test. Sans compensation, le
+   * son s'éteint presque dès qu'on lève le pied, alors qu'une voiture reste
+   * bruyante en roue libre.
+   */
+  offLoadGain: number
+  /**
+   * Contraste entre en charge et pied levé, de 0 à 1.
+   *
+   * À un, le fondu va d'un extrême à l'autre. Plus bas, les deux familles se
+   * mélangent en permanence : l'écart s'entend moins, et le moteur ne disparaît
+   * jamais complètement.
+   */
+  loadContrast: number
   /** Régime au-dessus duquel le ralenti s'efface complètement. */
   idleFadeOutRpm: number
   /** Coupe-bas de sortie, en hertz. */

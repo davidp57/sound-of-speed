@@ -186,12 +186,14 @@ export class Gearbox {
    *                  boîte connaisse la géométrie des roues.
    * @param atStandstill Véhicule à l'arrêt.
    * @param load        Charge moteur, de 0 à 1. Décale le seuil de montée.
+   * @param kmh         Vitesse, pour le traitement particulier de la première.
    */
   tick(
     dt: number,
     rpmInGear: (gear: number) => number,
     atStandstill: boolean,
     load: number,
+    kmh: number,
   ): GearboxState {
     if (this.shiftRemainingS > 0) {
       this.shiftRemainingS = Math.max(0, this.shiftRemainingS - dt)
@@ -202,6 +204,20 @@ export class Gearbox {
     let blocked = false
     let upThresholdSeen = this.upshiftThreshold(this.gear, load)
     const downThresholdSeen = this.engine.redlineRpm * this.drivetrain.downshiftAtRedlineRatio
+
+    // La première n'est qu'une amorce : passé la vitesse de lancement, elle cède
+    // la place sans attendre le moindre seuil de régime.
+    if (
+      this.mode === 'auto' &&
+      this.hasGearbox &&
+      this.shiftRemainingS === 0 &&
+      this.drivetrain.firstGearLaunchOnly &&
+      this.gear === 0 &&
+      kmh >= this.drivetrain.launchUpshiftKmh
+    ) {
+      this.applyShift(1)
+      return this.report(atStandstill, false, false, upThresholdSeen, downThresholdSeen)
+    }
 
     // Le rétrogradage forcé passe avant tout le reste : c'est une demande
     // explicite du conducteur, pas une décision de la boîte.
@@ -240,7 +256,7 @@ export class Gearbox {
         if (this.readyForS >= delay || overshot) this.applyShift(1)
       } else if (
         rpm <= downThresholdSeen &&
-        this.gear > 0 &&
+        this.gear > (this.drivetrain.firstGearLaunchOnly ? 1 : 0) &&
         !atStandstill &&
         // Garde contre le va-et-vient : rétrograder n'a de sens que si le régime
         // obtenu ne franchit pas aussitôt le seuil de montée du rapport visé,
@@ -275,7 +291,8 @@ export class Gearbox {
     const ceiling = this.engine.redlineRpm * 0.95
     let dropped = 0
 
-    while (dropped < this.feel.kickdown.maxGears && this.gear > 0) {
+    const floor = this.drivetrain.firstGearLaunchOnly ? 1 : 0
+    while (dropped < this.feel.kickdown.maxGears && this.gear > floor) {
       if (rpmInGear(this.gear) >= target) break
       const candidate = rpmInGear(this.gear - 1)
       if (candidate > ceiling) break

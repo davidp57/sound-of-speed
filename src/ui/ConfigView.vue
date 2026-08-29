@@ -518,6 +518,24 @@ function impliedCylinders(index: number): number | null {
         unit="tr/min"
         hint="Tiré au sort à chaque passage. Sans lui, la boîte passe toujours au même régime exact et s'entend comme une machine."
       />
+      <div class="toggle">
+        <button
+          :aria-pressed="profile.drivetrain.firstGearLaunchOnly"
+          @click="profile.drivetrain.firstGearLaunchOnly = !profile.drivetrain.firstGearLaunchOnly"
+        >
+          Première réservée au lancement
+        </button>
+        <span class="note">Elle cède aussitôt la place, et l'on n'y revient pas.</span>
+      </div>
+      <NumberField
+        v-if="profile.drivetrain.firstGearLaunchOnly"
+        v-model="profile.drivetrain.launchUpshiftKmh"
+        label="Passage en seconde à"
+        :min="1"
+        :max="40"
+        :step="1"
+        unit="km/h"
+      />
       <NumberField
         v-model="profile.drivetrain.minUpshiftRpm"
         label="Ne jamais monter sous"
@@ -668,7 +686,30 @@ function impliedCylinders(index: number): number | null {
 
     <section class="panel">
       <h2>Mixage</h2>
-      <NumberField v-model="profile.mix.masterGain" label="Volume général" :min="0" :max="1" :step="0.01" />
+      <NumberField
+        v-model="profile.mix.masterGain"
+        label="Volume général"
+        :min="0"
+        :max="4"
+        :step="0.05"
+        hint="Peut dépasser 1 : le limiteur de sortie empêche la saturation. Utile quand le volume du véhicule doit rester bas pour la musique."
+      />
+      <NumberField
+        v-model="profile.mix.offLoadGain"
+        label="Gain pied levé"
+        :min="0"
+        :max="6"
+        :step="0.1"
+        hint="Les prises en décélération sont enregistrées bien plus doucement que celles en charge. Sans compensation, le son s'éteint dès qu'on lève le pied."
+      />
+      <NumberField
+        v-model="profile.mix.loadContrast"
+        label="Contraste de charge"
+        :min="0"
+        :max="1"
+        :step="0.05"
+        hint="À 1, le fondu va d'un extrême à l'autre. Plus bas, les deux familles se mélangent et l'écart s'entend moins."
+      />
       <NumberField
         v-model="profile.mix.crossfadeLowRpm"
         label="Début de bascule"

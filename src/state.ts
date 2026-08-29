@@ -209,6 +209,7 @@ function step(dt: number): void {
     (gear) => rpmInGear(gear, speed.kmh),
     speed.atStandstill,
     telemetry.value.engine.load,
+    speed.kmh,
   )
 
   const engineState = engine.tick(dt, {

@@ -271,6 +271,28 @@ audio. Il ne le relance jamais seul.
 
 ---
 
+## Sur un navigateur embarqué
+
+Le navigateur d'une voiture n'est pas celui d'un téléphone, et deux écueils y ont
+été rencontrés en roulant.
+
+**L'horodatage des positions** n'y est pas dans la même base que l'heure
+courante — vraisemblablement compté depuis le chargement de la page. Les écarts
+entre mesures restent justes, donc le suivi de vitesse n'en souffre pas, mais
+dater une mesure avec donne un nombre absurde. La réception est donc horodatée
+sur notre propre horloge, et l'horodatage fourni ne sert plus qu'à des
+différences.
+
+**Le contexte audio peut être suspendu** sans prévenir et sans changement de
+visibilité, ce qui coupait le son dès le passage en arrière-plan. Une
+surveillance régulière relance donc le contexte et le média silencieux,
+indépendamment de tout événement. Ce média est par ailleurs laissé à plein
+volume : son contenu est déjà silencieux, et le baisser en plus le ferait passer
+pour inactif auprès du système, qui libérerait la session — exactement ce qu'il
+sert à empêcher.
+
+---
+
 ## Hors réseau
 
 Une voiture traverse des zones sans couverture, et une application chargée depuis

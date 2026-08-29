@@ -62,6 +62,17 @@ export class SpeedConditioner {
   private springRate = 0
   private accelMs2 = 0
   private lastSampleAt = 0
+  /**
+   * Heure de réception, relevée sur notre propre horloge.
+   *
+   * L'horodatage fourni avec une position n'est pas partout dans la même base
+   * que `Date.now()` : certains navigateurs embarqués le comptent depuis le
+   * chargement de la page. Les écarts entre mesures restent justes — le suivi de
+   * vitesse ne s'en ressent pas — mais la différence avec l'heure courante donne
+   * alors un nombre absurde. On ne s'y fie donc que pour des différences entre
+   * deux mesures, jamais pour dater une mesure.
+   */
+  private lastSampleReceivedAt = 0
   private carry = 0
 
   constructor(private preset: SpeedPreset) {}
@@ -80,6 +91,7 @@ export class SpeedConditioner {
     this.springRate = 0
     this.accelMs2 = 0
     this.lastSampleAt = 0
+    this.lastSampleReceivedAt = 0
     this.carry = 0
   }
 
@@ -97,6 +109,7 @@ export class SpeedConditioner {
       }
     }
     this.lastSampleAt = sample.at
+    this.lastSampleReceivedAt = Date.now()
     this.rawKmh = kmh
     this.targetKmh = kmh
 
@@ -134,7 +147,8 @@ export class SpeedConditioner {
   tick(dt: number): ConditionedSpeed {
     const step = clamp(dt, 0, MAX_FRAME_S)
     const now = Date.now()
-    const sinceLastSampleMs = this.lastSampleAt > 0 ? now - this.lastSampleAt : 0
+    const sinceLastSampleMs =
+      this.lastSampleReceivedAt > 0 ? now - this.lastSampleReceivedAt : 0
 
     // Extrapolation : entre deux mesures, la cible suit la pente estimée. Sans
     // cela la vitesse reste plate une seconde puis saute d'un coup.
