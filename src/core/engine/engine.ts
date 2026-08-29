@@ -148,14 +148,28 @@ export class Engine {
   }
 
   /**
-   * Charge : l'accélération sert de mesure d'effort, complétée par la pédale
-   * quand elle existe. Le lissage évite que le fondu on/off papillonne sur le
-   * bruit résiduel de l'accélération.
+   * Charge.
+   *
+   * Quand la position de l'accélérateur est connue — au simulateur — elle fait
+   * foi, seule. On y a longtemps mêlé l'accélération mesurée en prenant le plus
+   * grand des deux, ce qui produisait un défaut net : au relâchement, la charge
+   * restait tenue par une accélération que la fenêtre glissante d'une seconde
+   * mettait tout ce temps à voir retomber. Le régime, lui, suit la vitesse et
+   * réagit aussitôt — d'où un son qui traînait derrière l'image d'une seconde
+   * environ, alors que la commande était relâchée depuis longtemps.
+   *
+   * En conduite réelle il n'y a pas de pédale, et l'accélération reste la seule
+   * mesure d'effort disponible. Sa latence est alors inhérente au procédé, non
+   * un défaut : elle se règle par la fenêtre et la raideur du lissage.
    */
   private advanceLoad(dt: number, input: EngineInput): void {
-    const full = Math.max(0.1, this.mix.fullLoadAccelMs2)
-    const fromAccel = clamp(input.accelMs2 / full, -1, 1) * 0.5 + 0.5
-    const raw = input.throttle === null ? fromAccel : Math.max(fromAccel, input.throttle)
+    let raw: number
+    if (input.throttle === null) {
+      const full = Math.max(0.1, this.mix.fullLoadAccelMs2)
+      raw = clamp(input.accelMs2 / full, -1, 1) * 0.5 + 0.5
+    } else {
+      raw = clamp(input.throttle, 0, 1)
+    }
 
     const tau = Math.max(0.01, this.mix.loadSmoothingS)
     this.load += (raw - this.load) * clamp(dt / tau, 0, 1)

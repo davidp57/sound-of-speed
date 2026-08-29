@@ -10,6 +10,8 @@ import {
   activeProfile,
   addProfile,
   analyzeLayerFile,
+  backgroundAudio,
+  setBackgroundAudio,
   offlineStatus,
   prepareOffline,
   promptInstall,
@@ -63,6 +65,32 @@ const redlineSpeed = computed<number>({
     )
   },
 })
+
+/** Un curseur par passage : autant que de rapports, moins un. */
+const upshiftSlots = computed(() => {
+  const count = Math.max(0, profile.value.drivetrain.gearRatios.length - 1)
+  const table = profile.value.drivetrain.upshiftRpm
+  return Array.from({ length: count }, (_, i) => table[i] ?? table[table.length - 1] ?? 6000)
+})
+
+function setUpshiftRpm(index: number, value: number): void {
+  const table = [...upshiftSlots.value]
+  table[index] = value
+  profile.value.drivetrain.upshiftRpm = table
+}
+
+/**
+ * Vitesse à laquelle le passage se produira, ce qui parle bien plus qu'un
+ * régime seul quand on cherche à placer ses rapports.
+ */
+function upshiftHint(index: number, rpm: number): string {
+  const { drivetrain } = profile.value
+  const ratio = drivetrain.gearRatios[index]
+  if (!ratio) return ''
+  const wheelRps = rpm / 60 / Math.max(0.01, ratio * drivetrain.finalDrive)
+  const kmh = wheelRps * 2 * Math.PI * drivetrain.wheelRadiusM * 3.6
+  return `Soit environ ${Math.round(kmh)} km/h à charge moyenne.`
+}
 
 /** Régime en croisière, repère utile pour juger si la boîte est trop courte. */
 const cruiseRpm = computed(() => {
@@ -269,6 +297,9 @@ function applyCandidate(index: number, rpm: number): void {
         </div>
 
         <div class="offline-actions">
+          <button :aria-pressed="backgroundAudio" @click="setBackgroundAudio(!backgroundAudio)">
+            Son en arrière-plan
+          </button>
           <button
             :disabled="offlineStatus.caching || !offlineStatus.active || offlineStatus.totalFiles === 0"
             @click="prepareOffline()"
@@ -353,21 +384,40 @@ function applyCandidate(index: number, rpm: number): void {
       />
       <NumberField v-model="profile.drivetrain.wheelRadiusM" label="Rayon de roue" :min="0.15" :max="0.6" :step="0.005" unit="m" />
       <NumberField v-model="profile.drivetrain.shiftTimeMs" label="Temps de passage" :min="0" :max="500" :step="5" unit="ms" />
+      <p class="note">
+        Régime auquel chaque rapport cède la place au suivant, à charge moyenne.
+        Les régler séparément est le seul moyen d'empêcher les rapports courts de
+        monter jusqu'au rupteur sans faire passer les longs beaucoup trop bas.
+      </p>
       <NumberField
-        v-model="profile.drivetrain.upshiftAtRedlineRatio"
-        label="Montée au rupteur"
-        :min="0.5"
-        :max="1"
-        :step="0.01"
-        hint="Fraction du rupteur à laquelle la boîte automatique monte un rapport."
+        v-for="(rpm, index) in upshiftSlots"
+        :key="index"
+        :model-value="rpm"
+        :label="`Passage ${index + 1} → ${index + 2}`"
+        :min="1000"
+        :max="profile.engine.redlineRpm"
+        :step="50"
+        unit="tr/min"
+        :hint="upshiftHint(index, rpm)"
+        @update:model-value="setUpshiftRpm(index, $event)"
       />
       <NumberField
-        v-model="profile.drivetrain.upshiftAtLowLoadRatio"
-        label="Montée à charge nulle"
-        :min="0.15"
-        :max="0.9"
-        :step="0.01"
-        hint="Seuil de montée pied levé. C'est lui qui décide si l'on roule en rapport long à bas régime."
+        v-model="profile.drivetrain.upshiftLoadSpreadRpm"
+        label="Écart selon la charge"
+        :min="0"
+        :max="4000"
+        :step="50"
+        unit="tr/min"
+        hint="De combien le passage recule pied au plancher et avance pied levé, de part et d'autre des valeurs ci-dessus."
+      />
+      <NumberField
+        v-model="profile.drivetrain.upshiftJitterRpm"
+        label="Dispersion aléatoire"
+        :min="0"
+        :max="600"
+        :step="10"
+        unit="tr/min"
+        hint="Tiré au sort à chaque passage. Sans lui, la boîte passe toujours au même régime exact et s'entend comme une machine."
       />
       <NumberField
         v-model="profile.drivetrain.downshiftAtRedlineRatio"

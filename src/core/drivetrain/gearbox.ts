@@ -19,6 +19,17 @@ export type ShiftDirection = 'up' | 'down' | null
 /** Anti-rebond sur les commandes manuelles, en millisecondes. */
 const MANUAL_DEBOUNCE_MS = 220
 
+/**
+ * Dépassement toléré au-dessus du régime de passage, en tours par minute.
+ *
+ * La temporisation sert à confirmer une intention, pas à laisser filer le
+ * régime : sous forte accélération, une demi-seconde d'attente suffit à monter
+ * de plus de mille cinq cents tours, et le rapport finissait par passer très
+ * au-dessus de la valeur réglée — un curseur qui ne tient pas sa promesse.
+ * Passé cette marge, on passe sans attendre.
+ */
+const UPSHIFT_OVERSHOOT_RPM = 400
+
 export interface GearboxState {
   /** Index du rapport engagé, 0 = premier. */
   gear: number
@@ -42,6 +53,14 @@ export class Gearbox {
   private shiftDirection: ShiftDirection = null
   private readyForS = 0
   private lastManualAt = 0
+  /**
+   * Écart tiré au sort pour le passage en préparation, en tours par minute.
+   *
+   * Il est tiré une fois lorsque la condition devient vraie, et non à chaque
+   * image : autrement le seuil tremblerait soixante fois par seconde et la
+   * dispersion se moyennerait à zéro, sans rien changer à ce qu'on entend.
+   */
+  private pendingJitter = 0
 
   constructor(
     private drivetrain: DrivetrainPreset,
@@ -82,16 +101,33 @@ export class Gearbox {
   }
 
   /**
+   * Régime auquel ce rapport doit céder la place au suivant.
+   *
+   * La valeur du profil vaut à charge moyenne ; l'effort demandé la décale de
+   * part et d'autre, et le tirage au sort en cours l'écarte un peu plus.
+   */
+  private upshiftThreshold(gear: number, load: number): number {
+    const table = this.drivetrain.upshiftRpm
+    // Le dernier rapport connu sert de repli quand la table est plus courte que
+    // la boîte, ce qui arrive dès qu'on ajoute un rapport sans y toucher.
+    const base = table[gear] ?? table[table.length - 1] ?? this.engine.redlineRpm * 0.8
+    const spread = this.drivetrain.upshiftLoadSpreadRpm
+    const shifted = base + (clamp01(load) - 0.5) * spread + this.pendingJitter
+    return clamp(shifted, this.engine.idleRpm * 1.2, this.engine.redlineRpm)
+  }
+
+  /**
    * Choisit d'emblée le rapport adapté à une vitesse, sans passer par la
    * séquence de passages. Utilisé au démarrage et après un changement de profil,
    * pour éviter de partir en première à 90 km/h.
    */
   settleFor(rpmInGear: (gear: number) => number): void {
-    const ceiling = this.engine.redlineRpm * this.drivetrain.upshiftAtLowLoadRatio
     let chosen = 0
     for (let g = 0; g < this.gearCount; g += 1) {
       chosen = g
-      if (rpmInGear(g) <= ceiling) break
+      // Charge nulle : on retient le rapport le plus long qui convienne, comme
+      // le ferait une reprise en douceur.
+      if (rpmInGear(g) <= this.upshiftThreshold(g, 0)) break
     }
     this.gear = chosen
     this.shiftRemainingS = 0
@@ -149,20 +185,28 @@ export class Gearbox {
 
     if (this.mode === 'auto' && this.hasGearbox && this.shiftRemainingS === 0) {
       const rpm = rpmInGear(this.gear)
-      // Le seuil de montée glisse avec la charge : au rupteur pied au plancher,
-      // bien plus bas en charge partielle.
-      const span =
-        this.drivetrain.upshiftAtRedlineRatio - this.drivetrain.upshiftAtLowLoadRatio
-      const ratio = this.drivetrain.upshiftAtLowLoadRatio + span * clamp01(load)
-      const upThreshold = this.engine.redlineRpm * ratio
+      const upThreshold = this.upshiftThreshold(this.gear, load)
       const downThreshold = this.engine.redlineRpm * this.drivetrain.downshiftAtRedlineRatio
 
       if (rpm >= upThreshold && this.gear < this.gearCount - 1) {
+        if (this.readyForS === 0) {
+          // Nouvelle intention de passer : on tire l'écart de ce passage-ci.
+          this.pendingJitter = (Math.random() * 2 - 1) * this.drivetrain.upshiftJitterRpm
+        }
         ready = true
         this.readyForS += dt
         const delay = this.drivetrain.shiftDelaysS[this.gear] ?? 0.8
-        if (this.readyForS >= delay) this.applyShift(1)
-      } else if (rpm <= downThreshold && this.gear > 0 && !atStandstill) {
+        const overshot = rpm >= upThreshold + UPSHIFT_OVERSHOOT_RPM
+        if (this.readyForS >= delay || overshot) this.applyShift(1)
+      } else if (
+        rpm <= downThreshold &&
+        this.gear > 0 &&
+        !atStandstill &&
+        // Garde contre le va-et-vient : rétrograder n'a de sens que si le régime
+        // obtenu ne franchit pas aussitôt le seuil de montée du rapport visé,
+        // ce qui ferait remonter dans la foulée.
+        rpmInGear(this.gear - 1) < this.upshiftThreshold(this.gear - 1, load)
+      ) {
         this.readyForS = 0
         this.applyShift(-1)
       } else {
@@ -190,6 +234,10 @@ export class Gearbox {
 
 function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return v < lo ? lo : v > hi ? hi : v
 }
 
 function clampInt(v: number, lo: number, hi: number): number {

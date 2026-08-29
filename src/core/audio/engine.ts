@@ -42,6 +42,22 @@ export interface AudioStatus {
   outputLevel: number
   /** Niveau crête récent, de 0 à 1. Au-delà de 1, la sortie écrête. */
   outputPeak: number
+  /**
+   * Latence propre au traitement, en millisecondes.
+   */
+  baseLatencyMs: number
+  /**
+   * Délai entre la demande d'un son et sa sortie effective du haut-parleur, en
+   * millisecondes.
+   *
+   * Aucun code ne peut l'annuler : elle appartient au chemin audio du système,
+   * et une liaison sans fil y ajoute couramment cent à trois cents
+   * millisecondes. C'est la première chose à regarder quand le son paraît
+   * traîner derrière l'affichage, avant de soupçonner le calcul.
+   */
+  outputLatencyMs: number
+  /** Le média silencieux qui maintient la session tourne-t-il ? */
+  keepAlive: boolean
 }
 
 interface LoadedLayer {
@@ -103,6 +119,9 @@ export class AudioEngine {
     repaired: [],
     outputLevel: 0,
     outputPeak: 0,
+    baseLatencyMs: 0,
+    outputLatencyMs: 0,
+    keepAlive: false,
   }
 
   /** Appelé à chaque battement de l'horloge audio, quand elle est en place. */
@@ -136,6 +155,7 @@ export class AudioEngine {
     if (this.context.state === 'suspended') await this.context.resume()
     this.status.contextState = this.context.state
     this.status.sampleRate = this.context.sampleRate
+    this.readLatency()
 
     await this.load(profile)
   }
@@ -176,6 +196,38 @@ export class AudioEngine {
    * en arrière-plan. Garder un lecteur actif, même muet, maintient la session
    * ouverte — c'est ce qui permet au son de survivre à l'écran éteint.
    */
+  /**
+   * Relève les latences annoncées par le navigateur. `outputLatency` n'est pas
+   * fourni partout ; il vaut alors zéro, ce qui signifie « inconnu » et non
+   * « nul ».
+   */
+  private readLatency(): void {
+    const context = this.context
+    if (!context) return
+    this.status.baseLatencyMs = (context.baseLatency ?? 0) * 1000
+    this.status.outputLatencyMs = (context.outputLatency ?? 0) * 1000
+  }
+
+  /**
+   * Active ou coupe le média silencieux.
+   *
+   * Il sert à empêcher le système de libérer la session audio quand
+   * l'application passe en arrière-plan. Mais faire tourner un lecteur média en
+   * parallèle du graphe peut, sur certains téléphones, faire basculer la sortie
+   * vers un chemin plus tamponné, donc plus lent. Pouvoir l'éteindre permet de
+   * vérifier s'il est en cause quand le son traîne.
+   */
+  setKeepAlive(enabled: boolean): void {
+    if (enabled === this.status.keepAlive) return
+    if (enabled) this.startKeepAlive()
+    else {
+      this.keepAlive?.pause()
+      this.keepAlive = null
+      this.status.keepAlive = false
+    }
+    this.readLatency()
+  }
+
   private startKeepAlive(): void {
     const audio = new Audio(silentWavUrl(4))
     audio.loop = true
@@ -183,6 +235,7 @@ export class AudioEngine {
     audio.setAttribute('playsinline', '')
     void audio.play().catch(() => undefined)
     this.keepAlive = audio
+    this.status.keepAlive = true
   }
 
   private async startClock(context: AudioContext): Promise<void> {
@@ -298,6 +351,7 @@ export class AudioEngine {
     }
 
     this.measureOutput()
+    this.readLatency()
     this.status.contextState = context.state
   }
 

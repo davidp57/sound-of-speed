@@ -57,17 +57,38 @@ export interface DrivetrainPreset {
   wheelRadiusM: number
   /** Coupure de couple pendant le passage, en millisecondes. */
   shiftTimeMs: number
-  /** Fraction du rupteur à laquelle la boîte auto monte, pied au plancher. */
-  upshiftAtRedlineRatio: number
   /**
-   * Fraction du rupteur à laquelle elle monte à charge nulle.
+   * Régime de passage, en tours par minute, rapport par rapport.
    *
-   * Sans ce second seuil, la boîte ne monterait qu'au rupteur en toute
-   * circonstance et les derniers rapports ne seraient jamais engagés. Or c'est
-   * l'inverse qui domine en conduite ordinaire : on roule presque toujours en
-   * charge partielle, donc sur un rapport long et à bas régime.
+   * Une entrée par passage : la première vaut pour 1 → 2, la deuxième pour
+   * 2 → 3, et ainsi de suite. Le dernier rapport n'en a pas besoin.
+   *
+   * Un seuil unique exprimé en fraction du rupteur, comme il en existait un
+   * auparavant, ne peut pas convenir : le baisser assez pour que les premiers
+   * rapports ne montent pas jusqu'au rupteur fait passer les rapports longs
+   * beaucoup trop bas. Ce sont deux besoins distincts, ils demandent deux
+   * réglages distincts.
+   *
+   * Les valeurs sont données à charge moyenne ; `upshiftLoadSpreadRpm` les
+   * décale selon l'effort demandé.
    */
-  upshiftAtLowLoadRatio: number
+  upshiftRpm: number[]
+  /**
+   * De combien le régime de passage s'écarte, en tours par minute, entre le pied
+   * levé et le pied au plancher.
+   *
+   * C'est ce qui distingue une conduite tranquille, où l'on monte tôt sur un
+   * rapport long, d'une accélération franche qui étire chaque rapport.
+   */
+  upshiftLoadSpreadRpm: number
+  /**
+   * Amplitude du tirage au sort appliqué à chaque passage, en tours par minute.
+   *
+   * Une boîte qui passe exactement au même régime à chaque fois s'entend comme
+   * une machine. Quelques dizaines de tours de dispersion suffisent à lever
+   * cette impression.
+   */
+  upshiftJitterRpm: number
   /** Fraction du rupteur sous laquelle elle redescend. */
   downshiftAtRedlineRatio: number
   /**

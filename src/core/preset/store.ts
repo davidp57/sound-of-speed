@@ -95,7 +95,7 @@ function reconcile(profile: Partial<Profile>): Profile {
         ? profile.sampleDir
         : base.sampleDir,
     engine: { ...base.engine, ...(profile.engine ?? {}) },
-    drivetrain: { ...base.drivetrain, ...(profile.drivetrain ?? {}) },
+    drivetrain: migrateDrivetrain(base, profile.drivetrain),
     speed: { ...base.speed, ...(profile.speed ?? {}) },
     mix: { ...base.mix, ...(profile.mix ?? {}) },
     layers:
@@ -103,6 +103,36 @@ function reconcile(profile: Partial<Profile>): Profile {
         ? profile.layers
         : base.layers,
   }
+}
+
+/**
+ * Reprend une transmission enregistrée par une version antérieure.
+ *
+ * Les régimes de passage étaient exprimés par deux fractions du rupteur valables
+ * pour tous les rapports. On les convertit en une table par rapport plutôt que
+ * de les perdre : un profil réglé à l'oreille ne doit pas être remis à zéro par
+ * une mise à jour.
+ */
+function migrateDrivetrain(
+  base: Profile,
+  stored: Partial<Profile['drivetrain']> | undefined,
+): Profile['drivetrain'] {
+  const merged = { ...base.drivetrain, ...(stored ?? {}) }
+  if (Array.isArray(stored?.upshiftRpm) && stored.upshiftRpm.length > 0) return merged
+
+  const legacy = stored as { upshiftAtRedlineRatio?: number; upshiftAtLowLoadRatio?: number }
+  const full = legacy?.upshiftAtRedlineRatio
+  const light = legacy?.upshiftAtLowLoadRatio
+  if (typeof full !== 'number' || typeof light !== 'number') return merged
+
+  const redline = base.engine.redlineRpm
+  const count = Math.max(1, merged.gearRatios.length - 1)
+  // L'ancien seuil à mi-charge devient la valeur de référence, identique pour
+  // tous les rapports : c'était précisément le comportement d'avant.
+  const middle = redline * ((full + light) / 2)
+  merged.upshiftRpm = Array.from({ length: count }, () => Math.round(middle))
+  merged.upshiftLoadSpreadRpm = Math.round(redline * (full - light))
+  return merged
 }
 
 function readJson<T>(key: string): T | null {

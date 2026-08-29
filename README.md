@@ -326,10 +326,11 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 | **Rupteur atteint à** | Vitesse au rupteur dans le dernier rapport. **Modifier cette valeur recalcule le pont** — c'est le chiffre parlant |
 | **Rayon de roue** | En mètres. Entre dans le calcul du régime |
 | **Temps de passage** | Durée de la coupure de couple |
-| **Montée au rupteur** | Fraction du rupteur à laquelle la boîte monte, pied au plancher |
-| **Montée à charge nulle** | La même, pied levé. C'est elle qui décide si l'on roule en rapport long à bas régime — sans elle, les derniers rapports ne sont jamais engagés |
+| **Passage 1 → 2**, **2 → 3**, … | Régime auquel chaque rapport cède la place au suivant, à charge moyenne. Un curseur par passage : c'est le seul moyen d'empêcher les rapports courts de monter au rupteur sans faire passer les longs trop bas. L'aide indique la vitesse correspondante |
+| **Écart selon la charge** | De combien le passage recule pied au plancher et avance pied levé, de part et d'autre des valeurs ci-dessus |
+| **Dispersion aléatoire** | Tirée au sort à chaque passage. Sans elle, la boîte passe toujours au même régime exact et s'entend comme une machine |
 | **Descente sous** | Seuil de rétrogradage |
-| **Temporisations de montée** | Une par rapport, en secondes. Les garder **inégales** : avec une valeur unique, la boîte sonne comme un métronome |
+| **Temporisations de montée** | Une par rapport, en secondes. Les garder **inégales** : avec une valeur unique, la boîte sonne comme un métronome. Courtes de préférence — elles confirment une intention, elles ne retiennent pas le passage |
 
 ### Signal de vitesse
 

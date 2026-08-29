@@ -196,6 +196,18 @@ function onRateChange(event: Event): void {
         hint="Sur le fil audio, la cadence survit à l'écran éteint. Sur l'affichage, elle est gelée en arrière-plan."
         :warn="audioStatus.phase === 'ready' && !audioStatus.clockRunning"
       />
+      <ValueRow
+        label="Latence de sortie"
+        :value="audioStatus.outputLatencyMs > 0 ? audioStatus.outputLatencyMs.toFixed(0) : 'non communiquée'"
+        :unit="audioStatus.outputLatencyMs > 0 ? 'ms' : ''"
+        :warn="audioStatus.outputLatencyMs > 120"
+        hint="Délai entre la demande d'un son et sa sortie du haut-parleur. Aucun code ne peut l'annuler : une liaison sans fil y ajoute couramment 100 à 300 ms."
+      />
+      <ValueRow
+        label="Latence de traitement"
+        :value="audioStatus.baseLatencyMs.toFixed(1)"
+        unit="ms"
+      />
       <ValueRow label="Couches chargées" :value="`${audioStatus.loaded} / ${audioStatus.total}`" />
       <ValueRow
         label="Niveau de sortie"

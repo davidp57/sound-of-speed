@@ -80,6 +80,15 @@ export const screenLockSupported = screenLock.supported
 export const screenLockHeld = ref(false)
 export const screenLockError = ref('')
 export const keepScreenOn = ref(false)
+/**
+ * Maintien de la session audio en arrière-plan.
+ *
+ * Activé par défaut : sans lui, le son se coupe quand l'écran s'éteint. Le
+ * désactiver sert à vérifier s'il est responsable d'une latence de sortie
+ * excessive, certains téléphones basculant sur un chemin plus tamponné dès
+ * qu'un lecteur média tourne.
+ */
+export const backgroundAudio = ref(true)
 export const offlineStatus = ref<OfflineStatus>({ ...offline.status })
 
 export const telemetry = shallowRef<Telemetry>({
@@ -192,6 +201,8 @@ function step(dt: number): void {
       ...audioStatus.value,
       outputLevel: audio.status.outputLevel,
       outputPeak: audio.status.outputPeak,
+      outputLatencyMs: audio.status.outputLatencyMs,
+      baseLatencyMs: audio.status.baseLatencyMs,
     }
   }
 
@@ -429,6 +440,12 @@ export async function analyzeLayerFile(
   const scratch = new Ctor(1, 1, 48000)
   const buffer = await scratch.decodeAudioData(await response.arrayBuffer())
   return analyzeSample(buffer, cylinders)
+}
+
+export function setBackgroundAudio(value: boolean): void {
+  backgroundAudio.value = value
+  audio.setKeepAlive(value)
+  refreshAudioStatus()
 }
 
 export function setMuted(value: boolean): void {

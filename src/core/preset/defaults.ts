@@ -54,12 +54,16 @@ export function createDefaultProfile(): Profile {
       finalDrive: 4.5,
       wheelRadiusM: 0.33,
       shiftTimeMs: 90,
-      upshiftAtRedlineRatio: 0.94,
-      upshiftAtLowLoadRatio: 0.34,
+      // Croissants : les rapports courts passent tôt, les longs étirent
+      // davantage. C'est l'inverse qu'un seuil unique produisait.
+      upshiftRpm: [5200, 5600, 5900, 6200, 6500],
+      upshiftLoadSpreadRpm: 1800,
+      upshiftJitterRpm: 150,
       downshiftAtRedlineRatio: 0.32,
-      // Volontairement irrégulier : des temporisations égales donnent une boîte
-      // qui sonne comme un métronome.
-      shiftDelaysS: [0.6, 1.4, 0.9, 1.5, 0.8, 1.3],
+      // Volontairement irrégulières : des temporisations égales donnent une
+      // boîte qui sonne comme un métronome. Courtes, en revanche — elles
+      // confirment une intention, elles ne retiennent pas le passage.
+      shiftDelaysS: [0.25, 0.5, 0.35, 0.55, 0.3, 0.45],
     },
     speed: {
       springOmega: 14,
