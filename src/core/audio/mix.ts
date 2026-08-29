@@ -50,6 +50,17 @@ export interface MixResult {
 /** En deçà, une couche ne contribue pas assez pour qu'un défaut s'entende. */
 const AUDIBLE_GAIN = 0.02
 
+/**
+ * Écart de hauteur, en octaves, au-delà duquel une couche est réduite au silence.
+ *
+ * Une couche dont la vitesse de lecture a été bornée ne joue plus à la hauteur
+ * du régime : elle tient une note fixe pendant que les autres montent. À
+ * l'oreille, cela s'entend comme un second moteur tournant en parallèle, à
+ * régime constant. Plutôt que de la laisser mentir, on l'efface à mesure qu'elle
+ * s'écarte — une demi-octave suffit à la rendre franchement fausse.
+ */
+const PITCH_TOLERANCE_OCTAVES = 0.5
+
 export function computeMix(profile: Profile, state: EngineState): MixResult {
   const { mix } = profile
   const enabled = profile.layers.filter((layer) => layer.enabled)
@@ -87,7 +98,8 @@ export function computeMix(profile: Profile, state: EngineState): MixResult {
     family.forEach((layer, index) => {
       const raw = state.rpm / Math.max(1, layer.anchorRpm)
       const rate = clamp(raw, layer.minRate, layer.maxRate)
-      const gain = (blend[index] ?? 0) * familyWeight * layer.gain * mix.masterGain
+      const gain =
+        (blend[index] ?? 0) * familyWeight * layer.gain * mix.masterGain * fidelity(raw, rate)
       layers.push({
         key: layer.key,
         file: layer.file,
@@ -141,6 +153,18 @@ function blendWeights(family: LayerPreset[], rpm: number, mix: MixPreset): numbe
     if (index === anchors.length - 1 && rpm >= anchor) return 1
     return 0
   })
+}
+
+/**
+ * Facteur d'effacement d'une couche jouée à la mauvaise hauteur.
+ *
+ * Vaut un tant que la vitesse de lecture demandée est tenue, et décroît jusqu'à
+ * zéro à mesure que le bornage l'en écarte.
+ */
+function fidelity(raw: number, rate: number): number {
+  if (raw <= 0 || rate <= 0) return 0
+  const octaves = Math.abs(Math.log2(rate / raw))
+  return clamp(1 - octaves / PITCH_TOLERANCE_OCTAVES, 0, 1)
 }
 
 function smoothstep(edge0: number, edge1: number, x: number): number {

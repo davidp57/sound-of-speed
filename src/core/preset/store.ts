@@ -112,9 +112,22 @@ function reconcile(profile: Partial<Profile>): Profile {
     mix: { ...base.mix, ...(profile.mix ?? {}) },
     layers:
       Array.isArray(profile.layers) && profile.layers.length > 0
-        ? profile.layers
+        ? profile.layers.map(widenNarrowLayer)
         : base.layers,
   }
+}
+
+/**
+ * Élargit vers le grave les couches restées à l'ancienne borne de lecture.
+ *
+ * Cette borne valait la moitié de la vitesse nominale, ce qui rendait
+ * l'enregistrement haut régime injouable en dessous de la moitié de son régime
+ * d'ancrage — soit la majeure partie du domaine sur un moteur de série. Sa
+ * hauteur s'y figeait, et on entendait un second moteur tourner à régime
+ * constant derrière le premier.
+ */
+function widenNarrowLayer<T extends { minRate: number }>(layer: T): T {
+  return layer.minRate === 0.5 ? { ...layer, minRate: 0.25 } : layer
 }
 
 /**

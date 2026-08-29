@@ -365,6 +365,18 @@ des ancrages.
 | **Gain** | Niveau propre à la couche |
 | **Lecture min / max** | Bornes d'étirement. Au-delà d'une octave environ, le son devient métallique vers le haut, pâteux vers le bas |
 
+Ces bornes définissent le **domaine jouable** de chaque couche : un échantillon
+ancré à 8000 tr/min avec une borne basse de 0,25 ne descend pas sous 2000 tr. En
+deçà, sa hauteur se fige — et une couche figée qu'on laisserait s'entendre donne
+l'impression d'un second moteur tournant à régime constant derrière le premier.
+
+Le mixage l'efface donc à mesure qu'elle s'écarte de la hauteur demandée, et la
+réduit au silence au-delà d'une demi-octave. C'est ce qui explique qu'une couche
+puisse afficher un gain nul alors que le fondu devrait la faire entrer : elle
+n'est simplement pas jouable à ce régime. Deux remèdes, selon le cas — abaisser
+sa borne basse, ou reculer le début de bascule pour ne l'appeler que dans son
+domaine.
+
 ### Profils
 
 Deux profils sont livrés avec l'application, et le bouton **Profils d'usine**
