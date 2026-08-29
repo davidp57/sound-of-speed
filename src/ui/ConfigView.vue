@@ -5,6 +5,7 @@ import NumberField from './components/NumberField.vue'
 import { finalDriveFor, rpmAtSpeed } from '../core/preset/defaults'
 import { ProfileImportError, fromFile, toFile } from '../core/preset/store'
 import type { SampleAnalysis } from '../core/audio/analyze'
+import type { ProfileSection } from '../core/preset/store'
 import type { LayerRole } from '../core/preset/schema'
 import {
   activeProfile,
@@ -19,6 +20,7 @@ import {
   duplicateActive,
   profileList,
   renameActive,
+  resetActive,
   restoreFactoryProfiles,
   selectProfile,
   selectedProfileId,
@@ -123,6 +125,37 @@ const delaysText = computed<string>({
 })
 
 const restoreNote = ref('')
+
+/**
+ * Réinitialisation par section.
+ *
+ * En deux temps : un premier clic demande confirmation, un second agit. Écraser
+ * des réglages cherchés à l'oreille mérite une seconde d'hésitation, et un
+ * dialogue système serait plus lourd que le geste lui-même.
+ */
+const RESET_SECTIONS: { id: ProfileSection | 'all'; label: string }[] = [
+  { id: 'all', label: 'tout le profil' },
+  { id: 'engine', label: 'le moteur' },
+  { id: 'drivetrain', label: 'la transmission' },
+  { id: 'speed', label: 'le signal de vitesse' },
+  { id: 'mix', label: 'le mixage' },
+  { id: 'feel', label: 'le caractère' },
+  { id: 'layers', label: 'les couches' },
+]
+
+const resetSection = ref<ProfileSection | 'all'>('drivetrain')
+const resetPending = ref(false)
+
+function onReset(): void {
+  if (!resetPending.value) {
+    resetPending.value = true
+    return
+  }
+  resetActive(resetSection.value)
+  resetPending.value = false
+  const label = RESET_SECTIONS.find((s) => s.id === resetSection.value)?.label ?? ''
+  restoreNote.value = `Réinitialisé : ${label}.`
+}
 
 function onRestore(): void {
   const added = restoreFactoryProfiles()
@@ -315,6 +348,19 @@ function impliedCylinders(index: number): number | null {
       </div>
       <p v-if="importError" class="error">{{ importError }}</p>
       <p v-else-if="restoreNote" class="note">{{ restoreNote }}</p>
+      <div class="reset">
+        <span class="note">Réinitialiser</span>
+        <select v-model="resetSection" @change="resetPending = false">
+          <option v-for="entry in RESET_SECTIONS" :key="entry.id" :value="entry.id">
+            {{ entry.label }}
+          </option>
+        </select>
+        <button :class="{ 'is-active': resetPending }" @click="onReset()">
+          {{ resetPending ? 'Confirmer' : 'Aux valeurs d’usine' }}
+        </button>
+        <button v-if="resetPending" @click="resetPending = false">Annuler</button>
+      </div>
+
       <label class="inline">
         Dossier d'échantillons
         <input v-model="profile.sampleDir" type="text" />
@@ -860,6 +906,23 @@ td {
 td input[type='number'] {
   width: 6rem;
   text-align: right;
+}
+
+.reset {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.7rem;
+}
+
+.reset .note {
+  margin: 0;
+}
+
+.reset select {
+  width: auto;
+  flex: 0 1 14rem;
 }
 
 .toggle {

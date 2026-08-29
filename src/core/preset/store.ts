@@ -54,6 +54,35 @@ export function missingFactoryProfiles(existing: Profile[]): Profile[] {
   return createFactoryProfiles().filter((p) => !known.has(p.id))
 }
 
+/** Sections d'un profil que l'on peut ramener séparément à leur état d'usine. */
+export type ProfileSection = 'engine' | 'drivetrain' | 'speed' | 'mix' | 'feel' | 'layers'
+
+/**
+ * Profil d'usine dont un profil donné est issu, reconnu à son identifiant.
+ *
+ * Retourne les valeurs par défaut génériques pour un profil créé de toutes
+ * pièces : il vaut mieux une base saine que pas de retour possible.
+ */
+function factoryOrigin(id: string): Profile {
+  return createFactoryProfiles().find((p) => p.id === id) ?? createDefaultProfile()
+}
+
+/**
+ * Ramène une section — ou le profil entier — à son état d'usine.
+ *
+ * Un réglage se cherche en tâtonnant, et rien ne permettait jusqu'ici de revenir
+ * en arrière : une valeur mal saisie dans la transmission obligeait à supprimer
+ * le profil, donc à perdre aussi tout ce qui avait été trouvé ailleurs. La
+ * réinitialisation se fait donc section par section, l'identifiant et le nom
+ * étant toujours conservés.
+ */
+export function resetProfileSection(profile: Profile, section: ProfileSection | 'all'): Profile {
+  const origin = factoryOrigin(profile.id)
+  const kept = { id: profile.id, name: profile.name }
+  if (section === 'all') return { ...structuredClone(origin), ...kept }
+  return { ...profile, [section]: structuredClone(origin[section]) }
+}
+
 /** Copie profonde avec un nouvel identifiant. Sert au bouton « dupliquer ». */
 export function duplicateProfile(profile: Profile, name: string): Profile {
   return { ...structuredClone(profile), id: newId(), name }

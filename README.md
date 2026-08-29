@@ -425,6 +425,16 @@ Le tout se règle : c'est la différence entre les deux, pas une nature.
 | Régime à 130 km/h en sixième | 2780 tr/min | 3390 |
 
 Sélection, renommage, duplication, suppression, **export** et **import** en JSON.
+
+Un menu **Réinitialiser** ramène une section — ou le profil entier — à son état
+d'usine, en deux temps pour éviter la fausse manœuvre. Sept portées : tout le
+profil, le moteur, la transmission, le signal de vitesse, le mixage, le
+caractère, les couches. Une valeur mal saisie dans la transmission ne coûte donc
+plus ce qui a été trouvé ailleurs, et l'identifiant comme le nom sont conservés
+dans tous les cas — le profil est remis à neuf, pas remplacé.
+
+Un profil créé de toutes pièces, sans équivalent d'usine, retombe sur les valeurs
+par défaut génériques.
 Les profils sont conservés dans le navigateur ; l'export sert à les transporter
 d'un appareil à l'autre.
 

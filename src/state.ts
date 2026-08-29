@@ -17,6 +17,8 @@ import {
   duplicateProfile,
   loadProfiles,
   missingFactoryProfiles,
+  resetProfileSection,
+  type ProfileSection,
   loadSelectedId,
   newId,
   saveProfiles,
@@ -587,6 +589,17 @@ export function restoreFactoryProfiles(): number {
   const missing = missingFactoryProfiles(profiles.value)
   if (missing.length > 0) profiles.value = [...profiles.value, ...missing]
   return missing.length
+}
+
+/** Ramène une section du profil actif — ou le profil entier — à son état d'usine. */
+export function resetActive(section: ProfileSection | 'all'): void {
+  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
+  if (index < 0) return
+  const current = profiles.value[index]
+  if (!current) return
+  const next = [...profiles.value]
+  next[index] = resetProfileSection(current, section)
+  profiles.value = next
 }
 
 export function duplicateActive(): void {
