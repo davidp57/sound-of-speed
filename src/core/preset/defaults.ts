@@ -34,10 +34,75 @@ export function finalDriveFor(
  * sûr : les prises en décélération sont des rampes, le régime y dérive sur la
  * durée de la boucle. À ajuster à l'oreille dans l'éditeur.
  */
+/**
+ * Profil calibré pour la conduite ordinaire.
+ *
+ * Le profil sportif exploite une plage que l'on n'atteint jamais : à 130 km/h en
+ * dernier rapport il ne tourne qu'à un tiers de son rupteur, si bien que la
+ * moitié haute de la boîte ne sert à rien et que les rapports courts, eux,
+ * hurlent en ville. Le son se joue alors toujours dans le même registre.
+ *
+ * Ici tout est resserré sur les vitesses réellement pratiquées. Le pont est plus
+ * long, le rupteur plus bas — celui d'un moteur de série, non d'un moteur de
+ * course — et les régimes de passage placent chaque rapport là où on l'utilise :
+ * la première jusqu'à trente-cinq, la sixième au-delà de cent quinze. Les six
+ * rapports servent donc entre zéro et cent trente, et chacun tourne autour de
+ * deux mille huit cents tours à sa vitesse de croisière.
+ *
+ * Pied au plancher, l'écart de charge fait monter les passages jusqu'aux trois
+ * quarts du rupteur : il reste de quoi s'amuser, sans que ce soit le régime
+ * ordinaire.
+ */
+export function createRoadProfile(): Profile {
+  const base = createDefaultProfile()
+  return {
+    ...base,
+    id: 'route',
+    name: 'Route',
+    engine: {
+      ...base.engine,
+      idleRpm: 800,
+      softLimitRpm: 6300,
+      redlineRpm: 6500,
+      inertia: 1.2,
+      freeRevRate: 6000,
+      engineBraking: 4000,
+    },
+    drivetrain: {
+      ...base.drivetrain,
+      // Pont allongé : la sixième tourne à 2780 tr/min à 130 km/h, une croisière
+      // tenable, au lieu de 3390.
+      finalDrive: 3.7,
+      shiftTimeMs: 120,
+      // Passages placés en vitesse plutôt qu'en régime : 35, 55, 75, 96 et
+      // 115 km/h à charge moyenne.
+      upshiftRpm: [3700, 3350, 3050, 2950, 2950],
+      upshiftLoadSpreadRpm: 2200,
+      upshiftJitterRpm: 120,
+      downshiftAtRedlineRatio: 0.28,
+      shiftDelaysS: [0.3, 0.55, 0.4, 0.6, 0.35, 0.5],
+    },
+    mix: {
+      ...base.mix,
+      // La bascule suit la plage réellement parcourue, bien plus basse.
+      crossfadeLowRpm: 2600,
+      crossfadeHighRpm: 5200,
+      fullLoadAccelMs2: 2,
+      loadSmoothingS: 0.22,
+      drive: 0.12,
+    },
+  }
+}
+
+/** Les profils livrés avec l'application. */
+export function createFactoryProfiles(): Profile[] {
+  return [createRoadProfile(), createDefaultProfile()]
+}
+
 export function createDefaultProfile(): Profile {
   return {
     id: 'procar',
-    name: 'Procar V8',
+    name: 'Sport',
     sampleDir: 'procar',
     engine: {
       cylinders: 8,

@@ -16,6 +16,7 @@ import type { Profile } from './core/preset/schema'
 import {
   duplicateProfile,
   loadProfiles,
+  missingFactoryProfiles,
   loadSelectedId,
   newId,
   saveProfiles,
@@ -527,6 +528,13 @@ export function selectProfile(id: string): void {
 export function addProfile(profile: Profile): void {
   profiles.value = [...profiles.value, profile]
   selectedId.value = profile.id
+}
+
+/** Réintroduit les profils livrés qui ne sont plus dans la liste. */
+export function restoreFactoryProfiles(): number {
+  const missing = missingFactoryProfiles(profiles.value)
+  if (missing.length > 0) profiles.value = [...profiles.value, ...missing]
+  return missing.length
 }
 
 export function duplicateActive(): void {

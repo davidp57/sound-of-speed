@@ -1,4 +1,4 @@
-import { createDefaultProfile } from './defaults'
+import { createDefaultProfile, createFactoryProfiles } from './defaults'
 import { PROFILE_FORMAT_VERSION, type Profile, type ProfileFile } from './schema'
 
 /**
@@ -17,7 +17,7 @@ const SELECTED_KEY = 'speed.selectedProfile.v1'
 export function loadProfiles(): Profile[] {
   const stored = readJson<Profile[]>(STORAGE_KEY)
   if (!stored || !Array.isArray(stored) || stored.length === 0) {
-    return [createDefaultProfile()]
+    return createFactoryProfiles()
   }
   return stored.map((profile) => reconcile(profile))
 }
@@ -40,6 +40,18 @@ export function saveSelectedId(id: string): void {
   } catch {
     // Navigation privée, quota plein : ce n'est pas une raison pour tout arrêter.
   }
+}
+
+/**
+ * Profils d'usine absents de la liste, repérés par leur identifiant.
+ *
+ * Sert à récupérer un profil livré après coup : celui qui a commencé avec une
+ * seule voix n'a aucune raison d'être privé de la suivante, ni de devoir tout
+ * ressaisir.
+ */
+export function missingFactoryProfiles(existing: Profile[]): Profile[] {
+  const known = new Set(existing.map((p) => p.id))
+  return createFactoryProfiles().filter((p) => !known.has(p.id))
 }
 
 /** Copie profonde avec un nouvel identifiant. Sert au bouton « dupliquer ». */

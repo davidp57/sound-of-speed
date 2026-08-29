@@ -53,18 +53,30 @@ function onSlider(event: Event): void {
   setSimulatedSpeed(value)
 }
 
+/**
+ * Un seul bouton pour le son, et il bascule.
+ *
+ * Il n'activait auparavant que le son, sans jamais l'éteindre : une fois allumé,
+ * il affichait « Son actif » et rappelait l'activation à chaque clic. Un bouton
+ * qui montre un état allumé doit pouvoir l'éteindre, sans quoi il ment.
+ */
 const audioLabel = computed(() => {
   switch (audioStatus.value.phase) {
     case 'loading':
       return `Chargement ${audioStatus.value.loaded}/${audioStatus.value.total}`
     case 'ready':
-      return 'Son actif'
+      return isMuted.value ? 'Son coupé' : 'Son actif'
     case 'error':
       return 'Son en erreur'
     default:
       return 'Activer le son'
   }
 })
+
+function toggleAudio(): void {
+  if (audioStatus.value.phase === 'ready') setMuted(!isMuted.value)
+  else void activateAudio()
+}
 
 const rpmPercent = computed(() => {
   const { rpm } = telemetry.value.engine
@@ -115,8 +127,8 @@ const rpmPercent = computed(() => {
     </section>
 
     <section v-if="immersive" class="immersive-controls">
-      <button :aria-pressed="isMuted" @click="setMuted(!isMuted)">
-        {{ isMuted ? 'Muet' : 'Son' }}
+      <button :class="{ 'is-active': !isMuted }" @click="toggleAudio()">
+        {{ isMuted ? 'Son coupé' : 'Son actif' }}
       </button>
       <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
         {{ manual ? 'Manuelle' : 'Auto' }}
@@ -129,18 +141,11 @@ const rpmPercent = computed(() => {
       <div class="group">
         <span class="label">Son</span>
         <button
-          :class="{ 'is-active': audioStatus.phase === 'ready' }"
+          :class="{ 'is-active': audioStatus.phase === 'ready' && !isMuted }"
           :disabled="audioStatus.phase === 'loading'"
-          @click="activateAudio()"
+          @click="toggleAudio()"
         >
           {{ audioLabel }}
-        </button>
-        <button
-          v-if="audioStatus.phase === 'ready'"
-          :aria-pressed="isMuted"
-          @click="setMuted(!isMuted)"
-        >
-          Muet
         </button>
         <label v-if="audioStatus.phase === 'ready'" class="volume">
           Volume

@@ -367,6 +367,31 @@ des ancrages.
 
 ### Profils
 
+Deux profils sont livrés avec l'application, et le bouton **Profils d'usine**
+réintroduit ceux qu'on aurait supprimés.
+
+**Route** — calibré sur les vitesses que l'on pratique vraiment. Les six rapports
+servent entre 0 et 100 km/h en conduite tranquille, chacun tournant autour de
+2500 tours à sa vitesse de croisière, et la dernière ne tire que 2780 tr/min à
+130 km/h. Pied au plancher, les passages reculent jusqu'aux trois quarts du
+rupteur : il reste de quoi s'amuser sans que ce soit le régime ordinaire.
+
+**Sport** — le calibrage d'origine, taillé pour une plage que l'on n'atteint
+jamais sur route. À 130 km/h en sixième il ne tourne qu'à un tiers de son
+rupteur : la moitié haute de la boîte ne sert donc à rien, tandis que les
+rapports courts hurlent en ville. Intéressant sur une portion dégagée, fatigant
+au quotidien.
+
+Le tout se règle : c'est la différence entre les deux, pas une nature.
+
+| | Route | Sport |
+|---|---|---|
+| Rupteur | 6500 tr/min | 8500 |
+| Pont | 3,7 | 4,5 |
+| Passage 1 → 2 (charge moyenne) | 35 km/h | 40 |
+| Sixième engagée, conduite douce | 98 km/h | 134 |
+| Régime à 130 km/h en sixième | 2780 tr/min | 3390 |
+
 Sélection, renommage, duplication, suppression, **export** et **import** en JSON.
 Les profils sont conservés dans le navigateur ; l'export sert à les transporter
 d'un appareil à l'autre.

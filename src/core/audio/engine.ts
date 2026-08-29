@@ -402,11 +402,18 @@ export class AudioEngine {
     return state === 'running'
   }
 
-  /** Coupe le son sans démonter le contexte : les couches restent chargées. */
+  /**
+   * Coupe le son sans démonter le contexte : les couches restent chargées.
+   *
+   * Le niveau continue d'être relevé pendant la coupure. Sans cela l'indicateur
+   * resterait figé sur sa dernière valeur, donnant à croire que du son sort
+   * encore — un afficheur qui ment sur l'état est pire que pas d'afficheur.
+   */
   mute(): void {
     if (!this.context) return
     const now = this.context.currentTime
     for (const layer of this.layers) layer.gain.gain.setTargetAtTime(0, now, GAIN_GLIDE_S)
+    this.measureOutput()
   }
 
   async dispose(): Promise<void> {

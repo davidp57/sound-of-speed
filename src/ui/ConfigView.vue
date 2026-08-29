@@ -19,6 +19,7 @@ import {
   duplicateActive,
   profileList,
   renameActive,
+  restoreFactoryProfiles,
   selectProfile,
   selectedProfileId,
 } from '../state'
@@ -120,6 +121,16 @@ const delaysText = computed<string>({
     if (parsed.length > 0) profile.value.drivetrain.shiftDelaysS = parsed
   },
 })
+
+const restoreNote = ref('')
+
+function onRestore(): void {
+  const added = restoreFactoryProfiles()
+  restoreNote.value =
+    added > 0
+      ? `${added} profil${added > 1 ? 's' : ''} rétabli${added > 1 ? 's' : ''}.`
+      : 'Tous les profils d’usine sont déjà présents.'
+}
 
 function onExport(): void {
   const blob = new Blob([toFile(profile.value)], { type: 'application/json' })
@@ -257,11 +268,15 @@ function applyCandidate(index: number, rpm: number): void {
         <button :disabled="profileList.length <= 1" @click="deleteProfile(selectedProfileId)">
           Supprimer
         </button>
+        <button :title="'Réintroduit les profils livrés avec l’application'" @click="onRestore()">
+          Profils d'usine
+        </button>
         <button @click="onExport()">Exporter</button>
         <button @click="fileInput?.click()">Importer</button>
         <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="onImport" />
       </div>
       <p v-if="importError" class="error">{{ importError }}</p>
+      <p v-else-if="restoreNote" class="note">{{ restoreNote }}</p>
       <label class="inline">
         Dossier d'échantillons
         <input v-model="profile.sampleDir" type="text" />
