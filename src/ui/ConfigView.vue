@@ -242,9 +242,47 @@ function candidateTitle(candidate: { firingHz: number; relativeScore: number }):
   return `${candidate.firingHz.toFixed(0)} Hz d'allumage · score ${candidate.relativeScore.toFixed(2)}`
 }
 
+/**
+ * Ancrages remplacés par un candidat, pour pouvoir revenir en arrière.
+ *
+ * Appliquer une proposition écrase un réglage parfois trouvé à l'oreille au
+ * terme de plusieurs essais. Sans retour possible, la moindre fausse manœuvre —
+ * ou un nombre de cylindres erroné, qui décale toutes les propositions — coûte
+ * ce travail.
+ */
+const previousAnchors = ref<Record<number, number>>({})
+
 function applyCandidate(index: number, rpm: number): void {
   const layer = profile.value.layers[index]
-  if (layer) layer.anchorRpm = rpm
+  if (!layer || layer.anchorRpm === rpm) return
+  previousAnchors.value = { ...previousAnchors.value, [index]: layer.anchorRpm }
+  layer.anchorRpm = rpm
+}
+
+function undoCandidate(index: number): void {
+  const previous = previousAnchors.value[index]
+  const layer = profile.value.layers[index]
+  if (previous === undefined || !layer) return
+  layer.anchorRpm = previous
+  const rest = { ...previousAnchors.value }
+  delete rest[index]
+  previousAnchors.value = rest
+}
+
+/**
+ * Nombre de cylindres que suggère l'ancrage actuel, au vu de la raie détectée.
+ *
+ * Si l'ancrage en place est juste, ce nombre doit retomber sur celui du profil.
+ * Un écart franc désigne l'un des deux comme faux — et c'est le seul moyen de
+ * s'en apercevoir avant d'appliquer une proposition erronée.
+ */
+function impliedCylinders(index: number): number | null {
+  const analysis = analysisOf(index)
+  const layer = profile.value.layers[index]
+  const best = analysis?.candidates[0]
+  if (!analysis || !layer || !best || best.rpm <= 0) return null
+  // La raie mesurée vaut régime ÷ 120 × cylindres ; on inverse avec l'ancrage en place.
+  return Math.round((best.firingHz * 120) / layer.anchorRpm)
 }
 </script>
 
@@ -337,11 +375,11 @@ function applyCandidate(index: number, rpm: number): void {
       <h2>Moteur</h2>
       <NumberField
         v-model="profile.engine.cylinders"
-        label="Cylindres"
+        label="Cylindres enregistrés"
         :min="1"
         :max="16"
         :step="1"
-        hint="Fixe la fréquence d'allumage : régime ÷ 120 × cylindres."
+        hint="Décrit le moteur des échantillons, pas celui qu'on veut entendre : il ne modifie pas le son. Il sert à convertir la raie d'allumage en régime lors de l'analyse — une valeur fausse y proposerait des ancrages faux, dans le même rapport."
       />
       <NumberField v-model="profile.engine.idleRpm" label="Ralenti" :min="400" :max="3000" :step="10" unit="tr/min" />
       <NumberField
@@ -676,6 +714,14 @@ function applyCandidate(index: number, rpm: number): void {
                     </template>
                   </span>
                 </div>
+                <p
+                  v-if="impliedCylinders(index) && impliedCylinders(index) !== profile.engine.cylinders"
+                  class="error"
+                >
+                  L'ancrage en place correspondrait à {{ impliedCylinders(index) }} cylindres, non
+                  {{ profile.engine.cylinders }}. L'un des deux est faux : vérifier le nombre de
+                  cylindres avant d'appliquer une proposition, sans quoi elle sera décalée d'autant.
+                </p>
                 <div class="candidates">
                   <span class="muted">Ancrage proposé :</span>
                   <button
@@ -686,6 +732,13 @@ function applyCandidate(index: number, rpm: number): void {
                     @click="applyCandidate(index, candidate.rpm)"
                   >
                     {{ candidate.rpm }}
+                  </button>
+                  <button
+                    v-if="previousAnchors[index] !== undefined"
+                    class="undo"
+                    @click="undoCandidate(index)"
+                  >
+                    Revenir à {{ previousAnchors[index] }}
                   </button>
                 </div>
               </template>
@@ -884,6 +937,12 @@ td input[type='number'] {
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-top: 0.5rem;
+}
+
+.candidates .undo {
+  border-color: var(--warn);
+  color: var(--warn);
+  background: transparent;
 }
 
 .candidates button {

@@ -312,7 +312,7 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 
 | Réglage | Ce qu'il fait |
 |---|---|
-| **Cylindres** | Fixe la fréquence d'allumage : `régime ÷ 120 × cylindres` |
+| **Cylindres enregistrés** | Décrit le moteur des **échantillons**, pas celui qu'on veut entendre : il ne modifie pas le son, celui-ci venant d'enregistrements où le moteur est figé. Il sert à convertir la raie d'allumage en régime lors de l'analyse — une valeur fausse y proposerait des ancrages faux, dans le même rapport |
 | **Ralenti** | Régime au point mort, moteur non entraîné |
 | **Seuil de coupure** | Régime auquel l'allumage commence à être coupé |
 | **Rupteur** | Plafond absolu du régime |
@@ -457,6 +457,19 @@ fréquence avec sa moitié, son tiers ou ses trois demis.
 Mesurée sur le jeu de test, la méthode place la bonne valeur en tête sur les
 prises stationnaires bas régime et se trompe sur les prises haut régime. Rendre
 une valeur unique reviendrait à se tromper une fois sur deux avec assurance.
+
+Trois garde-fous entourent cette opération, car appliquer une proposition écrase
+un réglage parfois trouvé à l'oreille après plusieurs essais :
+
+- le champ **Cylindres enregistrés** annonce qu'il ne touche pas au son et qu'une
+  valeur fausse décale les propositions ;
+- l'analyse recoupe l'ancrage en place avec la raie mesurée et **signale
+  l'incohérence** — « l'ancrage correspondrait à 8 cylindres, non 4 » — ce qui
+  détecte aussi bien un champ erroné qu'un ancrage erroné ;
+- chaque couche garde son ancrage précédent et propose de **revenir en arrière**.
+
+Ce retour vaut pour la session en cours. Pour un réglage auquel on tient,
+l'export en JSON reste le filet.
 
 D'où la liste classée : comme le son tourne pendant l'édition, en essayer un se
 juge à l'oreille immédiatement. L'indication **timbre** aide à recouper — d'un
