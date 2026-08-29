@@ -15,86 +15,90 @@ defineEmits<{ close: [] }>()
     <article>
       <h1>Speed</h1>
       <p class="lead">
-        Une voix de moteur pour une voiture qui n'en a pas. L'application lit votre
-        vitesse réelle au GPS, en déduit un régime et un rapport engagé, et joue le
-        moteur correspondant.
+        Cette application ajoute un son de moteur à une voiture qui n'en fait pas.
+        Elle mesure votre vitesse au GPS, en calcule un régime moteur et un rapport
+        de boîte, et joue le son qui correspond.
       </p>
 
       <h2>Pour commencer</h2>
       <ol>
         <li>
-          Écran <b>Conduite</b>, appuyer sur <b>Activer le son</b>. Un navigateur
-          n'autorise le son qu'après un geste : rien ne se produira tant que ce
-          bouton n'aura pas été touché.
+          Sur l'écran <b>Conduite</b>, appuyez sur <b>Activer le son</b>. Un
+          navigateur n'autorise le son qu'après un appui : sans ce geste, il ne se
+          passera rien.
         </li>
         <li>
-          Choisir la source : <b>Simulateur</b> pour essayer à l'arrêt,
-          <b>GPS</b> pour rouler.
+          Choisissez la source de vitesse : <b>Simulateur</b> pour essayer à
+          l'arrêt, <b>GPS</b> pour rouler.
         </li>
         <li>
-          En GPS, autoriser la localisation quand le navigateur le demande.
+          Avec le GPS, autorisez la localisation quand le navigateur la demande.
         </li>
       </ol>
 
-      <h2>Si la vitesse reste à zéro</h2>
+      <h2>La vitesse reste à zéro ?</h2>
       <p>
-        C'est presque toujours l'adresse. La géolocalisation n'est accordée qu'aux
-        pages servies en <b>https</b> : sur une adresse commençant par
-        <code>http://</code>, la page s'affiche normalement et le GPS refuse de
-        démarrer, sans message.
+        C'est presque toujours l'adresse. Le GPS n'est accessible qu'aux pages en
+        <b>https</b>. Si l'adresse commence par <code>http://</code>, la page
+        s'affiche normalement mais la localisation est refusée, sans message.
+      </p>
+
+      <h2>Le son est trop faible ?</h2>
+      <p>
+        Le curseur <b>Volume</b> se trouve sur l'écran de conduite. Il peut monter
+        au-delà du maximum habituel, ce qui est utile quand le volume de la voiture
+        reste bas pour la musique.
       </p>
 
       <h2>En roulant</h2>
       <p>
-        Le bouton <b>Plein écran</b> escamote la barre : les chiffres occupent
-        toute la hauteur et les commandes deviennent quatre grandes cibles. On en
-        sort par la croix, en haut à droite.
+        Le bouton <b>Plein écran</b> masque la barre du haut : les chiffres
+        occupent toute la hauteur et les commandes deviennent quatre grandes
+        touches. Pour en sortir, la croix en haut à droite.
       </p>
       <p>
-        Pensez à <b>garder l'écran allumé</b> — l'interrupteur est sur l'écran de
-        conduite. Sans lui, l'écran s'éteint au bout de quelques dizaines de
-        secondes.
+        Pensez à <b>garder l'écran allumé</b> : l'interrupteur est sur l'écran de
+        conduite. Sinon l'écran s'éteint au bout d'une minute et vous perdez la
+        vitesse de vue.
       </p>
 
-      <h2>Avant de partir sans réseau</h2>
+      <h2>Partir sans réseau</h2>
       <p>
-        Écran <b>Configuration</b>, section <i>Hors réseau</i> :
+        Sur l'écran <b>Configuration</b>, dans <i>Hors réseau</i>, le bouton
         <b>Préparer hors réseau</b> met les sons en mémoire. L'application démarre
-        ensuite sans connexion, ce qui compte dès qu'on traverse une zone mal
-        couverte.
+        ensuite sans connexion — utile dès qu'on traverse une zone mal couverte.
       </p>
 
       <h2>Créer sa propre voiture</h2>
       <p>
-        Écran <b>Configuration</b>, tout en haut : <b>Créer un profil</b> pose
-        quatre questions — tempérament, usage habituel, type de moteur, nombre de
-        rapports — et en déduit l'ensemble des réglages. C'est le moyen le plus
-        court d'obtenir autre chose que les deux voitures livrées.
+        Tout en haut de l'écran <b>Configuration</b>, <b>Créer un profil</b> pose
+        quatre questions : le tempérament, l'usage, le type de moteur et le nombre
+        de rapports. Le reste en découle. C'est le chemin le plus court pour
+        obtenir autre chose que les deux voitures fournies.
       </p>
 
       <h2>Régler le son</h2>
       <p>
-        Deux profils sont livrés. <b>Route</b> convient aux vitesses ordinaires :
-        les six rapports servent entre 0 et 100 km/h. <b>Sport</b> étire les
-        rapports et monte bien plus haut dans les tours.
+        Deux profils sont fournis. <b>Route</b> convient aux vitesses de tous les
+        jours : les six rapports servent entre 0 et 100 km/h. <b>Sport</b> allonge
+        les rapports et monte beaucoup plus haut dans les tours.
       </p>
       <p>
-        Tout se règle dans <b>Configuration</b>, pendant que le son tourne : chaque
-        réglage porte son explication. Et si l'on casse quelque chose, le menu
-        <b>Réinitialiser</b> ramène une section — ou le profil entier — à son état
-        d'origine.
+        Tout se règle dans <b>Configuration</b>, sans couper le son : chaque
+        réglage est expliqué sous son curseur. Et si vous cassez quelque chose, le
+        menu <b>Réinitialiser</b> remet une partie — ou le profil entier — comme au
+        premier jour.
       </p>
 
       <h2>L'écran Télémétrie</h2>
       <p>
-        Il montre tout ce qui alimente le son : la vitesse brute et lissée, la
-        qualité du signal, le régime, la charge, le niveau de chaque couche
-        sonore. C'est là qu'il faut regarder quand quelque chose paraît anormal —
-        et ce qu'il faut nous rapporter le cas échéant.
+        Il affiche tout ce qui sert à fabriquer le son : la vitesse mesurée et
+        lissée, la qualité du signal GPS, le régime, la charge, le niveau de chaque
+        couche sonore. C'est là qu'il faut regarder quand quelque chose cloche.
       </p>
 
       <p class="foot">
-        Cette page se rappelle à tout moment par le bouton <b>?</b>, en haut.
+        Vous pouvez revenir ici à tout moment par le bouton <b>?</b>, en haut.
       </p>
 
       <button class="start" @click="$emit('close')">Commencer</button>

@@ -1,11 +1,11 @@
 # Speed
 
-Une voix de moteur pour une voiture qui n'en a pas.
+Un son de moteur pour une voiture qui n'en fait pas.
 
-L'application lit la vitesse réelle au GPS, en déduit un régime moteur et un
-rapport engagé, et pilote avec ça un moteur sonore à échantillons. Tout est
-réglable pendant que le son tourne, et les réglages se rangent dans des profils
-qu'on sauvegarde, exporte et recharge.
+L'application mesure la vitesse au GPS, en calcule un régime moteur et un rapport
+de boîte, et joue le son correspondant à partir d'enregistrements réels. Tout se
+règle sans couper le son, et les réglages se rangent dans des profils qu'on
+sauvegarde, exporte et recharge.
 
 - [Les trois écrans](#les-trois-écrans)
 - [Démarrer en développement](#démarrer-en-développement)
@@ -24,8 +24,8 @@ qu'on sauvegarde, exporte et recharge.
 
 **Conduite** — la vitesse, le rapport, le régime. Le choix de la source
 (simulateur, GPS, rejeu), l'activation du son, le volume, la boîte automatique ou
-manuelle, et le verrou d'écran. Un bouton **Plein écran** escamote la barre : les chiffres
-occupent toute la hauteur, les commandes deviennent quatre grandes cibles. On en sort par une croix discrète, placée là
+manuelle, et le verrou d'écran. Un bouton **Plein écran** masque la barre du haut : les chiffres
+occupent toute la hauteur et les commandes deviennent quatre grandes touches. On en sort par une croix discrète, placée là
 pour qu'on n'en sorte pas par mégarde en roulant.
 
 **Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
@@ -249,8 +249,8 @@ npm run build && npm run deploy
 
 ## En voiture
 
-**Plein écran** — le bouton escamote la barre d'onglets, porte les chiffres à toute la hauteur disponible et remplace les
-commandes par quatre grandes cibles.
+**Plein écran** — masque la barre d'onglets, porte les chiffres à toute la hauteur
+et remplace les commandes par quatre grandes touches.
 
 **Session média** — l'application apparaît sur l'écran verrouillé et dans le
 panneau de notifications, avec le nom du profil, sa configuration et une pochette
@@ -447,7 +447,7 @@ Le tout se règle : c'est la différence entre les deux, pas une nature.
 Sélection, renommage, duplication, suppression, **export** et **import** en JSON.
 
 Le bouton **☆ Épingler** place un profil en accès direct sur l'écran de conduite,
-mode plein écran compris : changer de voix en roulant n'oblige pas à traverser la
+mode plein écran compris : changer de son en roulant n'oblige pas à passer par la
 configuration.
 
 La première section de l'écran, **Créer un profil**, ouvre une création guidée. Quatre choix décrits en langage de

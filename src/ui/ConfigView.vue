@@ -423,18 +423,18 @@ function impliedCylinders(index: number): number | null {
       <h2>Créer un profil</h2>
       <div v-if="!wizardOpen" class="creation-pitch">
         <p class="note">
-          Quatre questions simples — tempérament, usage, moteur, nombre de rapports —
-          suffisent à produire un profil cohérent. Les trente réglages en découlent,
-          et restent modifiables ensuite.
+          Quatre questions suffisent : le tempérament, l'usage, le moteur et le
+          nombre de rapports. Les trente réglages en découlent, et vous pourrez
+          tout modifier ensuite.
         </p>
         <button class="is-active big" @click="wizardOpen = true">Créer un profil…</button>
       </div>
 
       <div v-if="wizardOpen" class="wizard">
         <p class="note">
-          Quelques choix simples, dont on déduit l'ensemble des réglages. Le
-          résultat reste modifiable ensuite : c'est un point de départ, pas un
-          carcan. Les échantillons du profil courant sont repris.
+          Quelques choix simples, dont découle l'ensemble des réglages. Rien n'est
+          figé : c'est un point de départ, que vous pourrez ajuster. Les sons du
+          profil actuel sont conservés.
         </p>
 
         <label class="inline">
@@ -545,10 +545,9 @@ function impliedCylinders(index: number): number | null {
       <p v-else-if="restoreNote" class="note">{{ restoreNote }}</p>
       <div v-if="shareLink" class="share">
         <p class="note">
-          Ce lien contient le profil entier. L'ouvrir sur un autre appareil l'y
-          installe — aucun compte, aucun serveur. Les échantillons ne voyagent pas :
-          seuls leurs noms suivent, l'autre appareil devant disposer de la même
-          banque sonore.
+          Ce lien contient tout le profil. Ouvrez-le sur un autre appareil et il
+          s'y installe, sans compte ni serveur. Les fichiers de son, eux, ne sont
+          pas transmis : l'autre appareil doit déjà avoir les mêmes.
         </p>
         <div class="qr" v-html="shareQr" />
         <input :value="shareLink" readonly @focus="($event.target as HTMLInputElement).select()" />
@@ -565,8 +564,8 @@ function impliedCylinders(index: number): number | null {
             {{ libraryLoading ? 'Recherche…' : 'Profils du serveur' }}
           </button>
           <span class="note">
-            Déposés dans <code>profiles/</code> sur le NAS, ils apparaissent sur tous
-            les appareils.
+            Déposez vos fichiers dans <code>profiles/</code> sur le NAS : ils
+            apparaîtront sur tous vos appareils.
           </span>
         </div>
         <ul v-if="library.length" class="library-list">
@@ -655,7 +654,7 @@ function impliedCylinders(index: number): number | null {
         :min="1"
         :max="16"
         :step="1"
-        hint="Décrit le moteur des échantillons, pas celui qu'on veut entendre : il ne modifie pas le son. Il sert à convertir la raie d'allumage en régime lors de l'analyse — une valeur fausse y proposerait des ancrages faux, dans le même rapport."
+        hint="Nombre de cylindres du moteur enregistré, pas de celui qu'on veut entendre : ce réglage ne change pas le son. Il ne sert qu'à l'analyse des fichiers, où une valeur fausse fausserait les propositions d'autant."
       />
       <NumberField v-model="profile.engine.idleRpm" label="Ralenti" :min="400" :max="3000" :step="10" unit="tr/min"
         hint="Régime moteur à l'arrêt, embrayage débrayé. C'est le son qu'on entend au feu rouge."
@@ -687,13 +686,13 @@ function impliedCylinders(index: number): number | null {
         :min="0.1"
         :max="4"
         :step="0.05"
-        hint="Volant moteur. Plus c'est lourd, plus le régime met de temps à monter à vide."
+        hint="Poids du volant moteur. Plus il est lourd, plus le moteur met de temps à prendre ses tours."
       />
       <NumberField v-model="profile.engine.freeRevRate" label="Montée à vide" :min="1000" :max="30000" :step="100" unit="tr/min·s⁻¹"
-        hint="Vitesse à laquelle le moteur prend des tours quand la roue ne l'entraîne pas — un coup d'accélérateur à l'arrêt. Plus c'est haut, plus le moteur paraît léger."
+        hint="Rapidité de montée en régime quand les roues n'entraînent pas le moteur, comme un coup d'accélérateur à l'arrêt."
       />
       <NumberField v-model="profile.engine.engineBraking" label="Frein moteur" :min="500" :max="20000" :step="100" unit="tr/min·s⁻¹"
-        hint="Vitesse à laquelle il redescend, pied levé, hors prise. C'est ce qui donne l'impression d'un volant lourd ou vif."
+        hint="Rapidité avec laquelle le régime retombe quand on lève le pied."
       />
     </section>
 
@@ -769,7 +768,7 @@ function impliedCylinders(index: number): number | null {
         >
           Première réservée au lancement
         </button>
-        <span class="note">Elle cède aussitôt la place, et l'on n'y revient pas.</span>
+        <span class="note">On la quitte tout de suite et on n’y revient plus.</span>
       </div>
       <NumberField
         v-if="profile.drivetrain.firstGearLaunchOnly"
@@ -796,7 +795,7 @@ function impliedCylinders(index: number): number | null {
         :min="0.05"
         :max="0.8"
         :step="0.01"
-        hint="Fraction du rupteur en deçà de laquelle la boîte cherche un rapport plus court. Plus c'est haut, plus elle rétrograde tôt en ralentissant."
+        hint="Plus la valeur est élevée, plus la boîte rétrograde tôt quand vous ralentissez."
       />
       <label class="inline">
         Temporisations de montée
@@ -830,7 +829,7 @@ function impliedCylinders(index: number): number | null {
         :max="3000"
         :step="50"
         unit="ms"
-        hint="Durée sur laquelle l'accélération est estimée. Courte, elle réagit vite mais tremble ; longue, elle est stable mais en retard."
+        hint="Durée sur laquelle l'accélération est calculée. Courte, elle réagit vite mais tremble ; longue, elle est stable mais en retard."
       />
       <NumberField
         v-model="profile.speed.accelDeadbandKmh"
@@ -845,7 +844,7 @@ function impliedCylinders(index: number): number | null {
         hint="Au-delà, la mesure est rejetée comme aberrante. Le GPS produit parfois des sauts sous un pont ou entre deux immeubles."
       />
       <NumberField v-model="profile.speed.maxAccelMs2" label="Accélération max retenue" :min="1" :max="30" :step="0.5" unit="m/s²"
-        hint="Plafond de l'accélération transmise à la charge. Écrête les sursauts du GPS plutôt que de les faire entendre."
+        hint="Ignore les accélérations plus fortes que cette valeur : ce sont des sauts du GPS, pas votre conduite."
       />
       <NumberField v-model="profile.speed.minAccelMs2" label="Décélération max retenue" :min="-30" :max="-1" :step="0.5" unit="m/s²"
         hint="Le même plafond, en freinage."
@@ -855,8 +854,8 @@ function impliedCylinders(index: number): number | null {
     <section class="panel">
       <h2>Caractère</h2>
       <p class="note">
-        Ce qu'une voiture fait ressentir, et qu'on remarque surtout par son
-        absence. Chaque comportement s'active séparément.
+        Trois comportements qui rendent la conduite plus vivante. Chacun s'active
+        séparément.
       </p>
 
       <div class="toggle">
@@ -866,7 +865,7 @@ function impliedCylinders(index: number): number | null {
         >
           Rétrogradage forcé
         </button>
-        <span class="note">Descendre chercher le couple quand on enfonce la pédale.</span>
+        <span class="note">Descend d'un ou deux rapports quand on enfonce la pédale, pour reprendre plus fort.</span>
       </div>
       <template v-if="profile.feel.kickdown.enabled">
         <NumberField
@@ -902,7 +901,7 @@ function impliedCylinders(index: number): number | null {
         >
           Pétarade
         </button>
-        <span class="note">Claquements à l'échappement au lever de pied.</span>
+        <span class="note">Claquements à l'échappement quand on lève le pied.</span>
       </div>
       <template v-if="profile.feel.backfire.enabled">
         <NumberField
@@ -929,7 +928,7 @@ function impliedCylinders(index: number): number | null {
         >
           À-coup de passage
         </button>
-        <span class="note">Le creux du couple coupé, puis la reprise.</span>
+        <span class="note">Le petit trou pendant le changement de rapport.</span>
       </div>
       <NumberField
         v-if="profile.feel.shiftJolt.enabled"
@@ -999,10 +998,10 @@ function impliedCylinders(index: number): number | null {
         hint="Retire les fréquences les plus graves. Utile sur un petit haut-parleur, qui ne les reproduit pas et s'y fatigue."
       />
       <NumberField v-model="profile.mix.drive" label="Saturation" :min="0" :max="1" :step="0.01"
-        hint="Écrête doucement les crêtes, ce qui épaissit le son et le fait paraître plus fort. À forte dose, il devient sale."
+        hint="Épaissit le son et le fait paraître plus fort. Trop poussé, il devient sale."
       />
       <NumberField v-model="profile.mix.limiterThresholdDb" label="Seuil du limiteur" :min="-24" :max="0" :step="0.5" unit="dB"
-        hint="Niveau à partir duquel la sortie est retenue. Le baisser laisse plus de marge au volume général, au prix d'une dynamique plus écrasée."
+        hint="Niveau à partir duquel le son est retenu pour éviter la saturation. Le baisser laisse monter le volume général, mais aplatit les nuances."
       />
     </section>
 

@@ -268,9 +268,9 @@ function onRateChange(event: Event): void {
     <section class="panel wide">
       <h2>Mixage des couches</h2>
       <p class="note">
-        Gains et vitesses de lecture calculés pour l'image courante. Une vitesse marquée
-        « bornée » signale un échantillon étiré au-delà de sa plage utile : c'est là qu'il
-        faut soit ajouter une couche, soit rapprocher les régimes d'ancrage.
+        Volume et vitesse de lecture de chaque son, à cet instant. La mention
+        « bornée » signale un son étiré au-delà de ce qu'il supporte : il faut alors
+        soit ajouter un enregistrement, soit rapprocher les régimes de référence.
       </p>
       <table class="layers">
         <thead>
@@ -304,9 +304,9 @@ function onRateChange(event: Event): void {
     <section class="panel wide">
       <h2>Traces</h2>
       <p class="note">
-        Enregistrer un trajet réel permet de le rejouer ensuite sur un poste fixe, à
-        l'identique. C'est le seul moyen de régler le lissage ou les seuils de passage
-        sans refaire la route à chaque essai.
+        Enregistrez un trajet une fois, rejouez-le autant que nécessaire sur
+        l'ordinateur. C'est le seul moyen de régler le lissage ou les seuils de
+        passage sans reprendre la route à chaque essai.
       </p>
       <div class="trace-controls">
         <input v-model="traceName" type="text" placeholder="Nom de la trace" />

@@ -237,19 +237,19 @@ const rpmPercent = computed(() => {
         <div class="group">
           <button :disabled="!cruiseActive" @click="releaseCruise()">Rendre la main</button>
           <span class="hint">
-            Le simulateur tient cette vitesse, comme sur autoroute. Accélérer ou freiner
-            lève le maintien.
+            Le simulateur maintient cette vitesse, comme un régulateur. Accélérez ou
+            freinez pour reprendre la main.
           </span>
         </div>
         <p class="hint">
-          Au clavier : flèches haut et bas pour l'accélérateur et le frein, flèches gauche
-          et droite pour les rapports en mode manuel.
+          Au clavier : flèches haut et bas pour accélérer et freiner, flèches gauche
+          et droite pour changer de rapport en mode manuel.
         </p>
       </div>
 
       <p v-else-if="sourceKind === 'geolocation' && sourceStatus === 'denied'" class="hint warn">
-        La géolocalisation a été refusée. Autorisez-la dans les réglages du site pour
-        mesurer la vitesse réelle.
+        La localisation a été refusée. Autorisez-la dans les réglages du site pour
+        mesurer votre vitesse.
       </p>
     </section>
 
