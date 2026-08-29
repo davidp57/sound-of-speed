@@ -59,6 +59,24 @@ export function isComfortable(url: string): boolean {
   return url.length <= COMFORTABLE_LENGTH
 }
 
+/**
+ * L'adresse est-elle joignable depuis un autre appareil ?
+ *
+ * Un lien produit depuis le poste de développement porte l'adresse de ce poste :
+ * il ne mènera nulle part ailleurs. Le code à scanner paraît pourtant valide, et
+ * l'on ne comprend l'échec qu'une fois le téléphone en main.
+ */
+export function isReachableOrigin(origin: string): boolean {
+  try {
+    const host = new URL(origin).hostname
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false
+    // Adresses de réseau local : joignables du wifi de la maison, pas au-delà.
+    return !/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)
+  } catch {
+    return true
+  }
+}
+
 /** Retire du profil ce qui n'a pas de sens à voyager. */
 function stripForSharing(profile: Profile): Profile {
   const copy = deepCopy(profile)

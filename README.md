@@ -24,9 +24,8 @@ qu'on sauvegarde, exporte et recharge.
 
 **Conduite** — la vitesse, le rapport, le régime. Le choix de la source
 (simulateur, GPS, rejeu), l'activation du son, le volume, la boîte automatique ou
-manuelle, et le verrou d'écran. Un bouton **Conduite** bascule en plein écran :
-la barre disparaît, les chiffres occupent toute la hauteur, les commandes
-deviennent quatre grandes cibles. On en sort par une croix discrète, placée là
+manuelle, et le verrou d'écran. Un bouton **Plein écran** escamote la barre : les chiffres
+occupent toute la hauteur, les commandes deviennent quatre grandes cibles. On en sort par une croix discrète, placée là
 pour qu'on n'en sorte pas par mégarde en roulant.
 
 **Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
@@ -250,8 +249,7 @@ npm run build && npm run deploy
 
 ## En voiture
 
-**Mode conduite** — le bouton du même nom escamote la barre d'onglets, passe en
-plein écran, porte les chiffres à toute la hauteur disponible et remplace les
+**Plein écran** — le bouton escamote la barre d'onglets, porte les chiffres à toute la hauteur disponible et remplace les
 commandes par quatre grandes cibles.
 
 **Session média** — l'application apparaît sur l'écran verrouillé et dans le
@@ -452,7 +450,7 @@ Le bouton **☆ Épingler** place un profil en accès direct sur l'écran de con
 mode plein écran compris : changer de voix en roulant n'oblige pas à traverser la
 configuration.
 
-Le bouton **Créer…** ouvre une création guidée. Quatre choix décrits en langage de
+La première section de l'écran, **Créer un profil**, ouvre une création guidée. Quatre choix décrits en langage de
 conducteur — tempérament, usage, moteur, nombre de rapports — dont on déduit la
 trentaine de réglages qui ne s'accordent pas indépendamment : rapports en
 progression géométrique, pont calculé pour la croisière visée, régimes de
@@ -479,7 +477,9 @@ Trois façons de retrouver ses réglages sur un autre appareil, sans compte ni
 serveur applicatif.
 
 **Par lien.** Le bouton **Partager…** encode le profil entier dans l'adresse,
-compressé — environ 1100 caractères pour un profil de 1,8 ko. L'ouvrir ailleurs
+compressé. L'application prévient lorsque cette adresse n'est joignable que
+depuis le poste courant — un lien produit sur `localhost` ou sur une adresse de
+réseau local ne mènerait nulle part ailleurs, alors que le code paraît valide — environ 1100 caractères pour un profil de 1,8 ko. L'ouvrir ailleurs
 l'y installe. Le fragment d'adresse n'étant jamais transmis au serveur, rien
 n'en est journalisé.
 

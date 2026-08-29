@@ -120,7 +120,7 @@ const rpmPercent = computed(() => {
       </span>
     </section>
 
-    <section v-if="favoriteProfiles.length > 1" class="favorites">
+    <section v-if="favoriteProfiles.length > 1" class="favorites" :class="{ large: immersive }">
       <button
         v-for="entry in favoriteProfiles"
         :key="entry.id"
@@ -153,17 +153,6 @@ const rpmPercent = computed(() => {
           />
         </div>
       </div>
-    </section>
-
-    <section v-if="immersive && favoriteProfiles.length > 1" class="favorites immersive-favorites">
-      <button
-        v-for="entry in favoriteProfiles"
-        :key="entry.id"
-        :aria-pressed="entry.id === selectedProfileId"
-        @click="selectProfile(entry.id)"
-      >
-        {{ entry.name }}
-      </button>
     </section>
 
     <section v-if="immersive" class="immersive-controls">
@@ -295,7 +284,7 @@ const rpmPercent = computed(() => {
   flex-wrap: wrap;
 }
 
-.immersive-favorites button {
+.favorites.large button {
   flex: 1;
   padding: 0.7rem 0.5rem;
 }

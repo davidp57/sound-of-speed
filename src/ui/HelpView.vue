@@ -46,7 +46,7 @@ defineEmits<{ close: [] }>()
 
       <h2>En roulant</h2>
       <p>
-        Le bouton <b>Conduite</b> passe en plein écran : les chiffres occupent
+        Le bouton <b>Plein écran</b> escamote la barre : les chiffres occupent
         toute la hauteur et les commandes deviennent quatre grandes cibles. On en
         sort par la croix, en haut à droite.
       </p>
@@ -62,6 +62,14 @@ defineEmits<{ close: [] }>()
         <b>Préparer hors réseau</b> met les sons en mémoire. L'application démarre
         ensuite sans connexion, ce qui compte dès qu'on traverse une zone mal
         couverte.
+      </p>
+
+      <h2>Créer sa propre voiture</h2>
+      <p>
+        Écran <b>Configuration</b>, tout en haut : <b>Créer un profil</b> pose
+        quatre questions — tempérament, usage habituel, type de moteur, nombre de
+        rapports — et en déduit l'ensemble des réglages. C'est le moyen le plus
+        court d'obtenir autre chose que les deux voitures livrées.
       </p>
 
       <h2>Régler le son</h2>

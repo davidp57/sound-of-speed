@@ -24,7 +24,7 @@ type Tab = 'drive' | 'telemetry' | 'config'
 const tab = ref<Tab>('drive')
 
 /**
- * Mode conduite.
+ * Mode plein écran.
  *
  * Sur un écran de bord, tout ce qui n'est pas la vitesse, le rapport et le régime
  * est du bruit — et une barre d'onglets est une invitation à toucher l'écran en
@@ -183,7 +183,7 @@ onBeforeUnmount(() => {
       </nav>
       <div class="right">
         <button class="help-button" title="Aide" @click="helpOpen = true">?</button>
-        <button @click="toggleImmersive()">Conduite</button>
+        <button @click="toggleImmersive()">Plein écran</button>
         <button class="power" :class="{ 'is-active': isRunning }" @click="isRunning ? stop() : start()">
           {{ isRunning ? 'En marche' : 'Arrêté' }}
         </button>
@@ -211,7 +211,7 @@ onBeforeUnmount(() => {
 
     <HelpView v-if="helpOpen" @close="closeHelp()" />
 
-    <button v-if="immersive" class="escape" title="Quitter le mode conduite" @click="toggleImmersive()">
+    <button v-if="immersive" class="escape" title="Quitter le plein écran" @click="toggleImmersive()">
       ×
     </button>
   </div>

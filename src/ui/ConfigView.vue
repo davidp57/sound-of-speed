@@ -6,7 +6,7 @@ import { finalDriveFor, rpmAtSpeed } from '../core/preset/defaults'
 import { ProfileImportError, fromFile, toFile } from '../core/preset/store'
 import type { SampleAnalysis } from '../core/audio/analyze'
 import type { ProfileSection } from '../core/preset/store'
-import { isComfortable, shareUrl } from '../core/preset/share'
+import { isComfortable, isReachableOrigin, shareUrl } from '../core/preset/share'
 import qrcode from 'qrcode-generator'
 import {
   buildProfile,
@@ -196,9 +196,15 @@ async function onShare(): Promise<void> {
   }
   const url = await shareUrl(profile.value, window.location.origin)
   shareLink.value = url
-  shareNote.value = isComfortable(url)
-    ? ''
-    : "Ce profil donne un lien très long : le code peut être difficile à lire. L'export en fichier est plus sûr."
+  if (!isReachableOrigin(window.location.origin)) {
+    shareNote.value =
+      "Ce lien porte l'adresse à laquelle vous consultez l'application, qui n'est joignable que d'ici. Pour un lien utilisable ailleurs, refaire l'opération depuis l'adresse publique du serveur."
+  } else if (!isComfortable(url)) {
+    shareNote.value =
+      "Ce profil donne un lien très long : le code peut être difficile à lire. L'export en fichier est plus sûr."
+  } else {
+    shareNote.value = ''
+  }
 
   // Correction moyenne : assez robuste pour un écran, sans gonfler le code.
   const code = qrcode(0, 'M')
@@ -413,77 +419,15 @@ function impliedCylinders(index: number): number | null {
 
 <template>
   <div class="config">
-    <section class="panel wide">
-      <h2>Profils</h2>
-      <div class="profiles">
-        <select :value="selectedProfileId" @change="selectProfile(($event.target as HTMLSelectElement).value)">
-          <option v-for="entry in profileList" :key="entry.id" :value="entry.id">
-            {{ entry.name }}
-          </option>
-        </select>
-        <input
-          type="text"
-          :value="profile.name"
-          placeholder="Nom du profil"
-          @change="renameActive(($event.target as HTMLInputElement).value)"
-        />
-        <button
-          :aria-pressed="profile.favorite"
-          :title="profile.favorite ? 'Retirer de l’écran de conduite' : 'Épingler sur l’écran de conduite'"
-          @click="toggleFavorite(selectedProfileId)"
-        >
-          {{ profile.favorite ? '★ Épinglé' : '☆ Épingler' }}
-        </button>
-        <button :class="{ 'is-active': wizardOpen }" @click="wizardOpen = !wizardOpen">
-          Créer…
-        </button>
-        <button @click="duplicateActive()">Dupliquer</button>
-        <button :disabled="profileList.length <= 1" @click="deleteProfile(selectedProfileId)">
-          Supprimer
-        </button>
-        <button :title="'Réintroduit les profils livrés avec l’application'" @click="onRestore()">
-          Profils d'usine
-        </button>
-        <button :class="{ 'is-active': !!shareLink }" @click="onShare()">Partager…</button>
-        <button @click="onExport()">Exporter</button>
-        <button @click="fileInput?.click()">Importer</button>
-        <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="onImport" />
-      </div>
-      <p v-if="importError" class="error">{{ importError }}</p>
-      <p v-else-if="restoreNote" class="note">{{ restoreNote }}</p>
-      <div v-if="shareLink" class="share">
+    <section class="panel wide creation">
+      <h2>Créer un profil</h2>
+      <div v-if="!wizardOpen" class="creation-pitch">
         <p class="note">
-          Ce lien contient le profil entier. L'ouvrir sur un autre appareil l'y
-          installe — aucun compte, aucun serveur. Les échantillons ne voyagent pas :
-          seuls leurs noms suivent, l'autre appareil devant disposer de la même
-          banque sonore.
+          Quatre questions simples — tempérament, usage, moteur, nombre de rapports —
+          suffisent à produire un profil cohérent. Les trente réglages en découlent,
+          et restent modifiables ensuite.
         </p>
-        <div class="qr" v-html="shareQr" />
-        <input :value="shareLink" readonly @focus="($event.target as HTMLInputElement).select()" />
-        <div class="choices">
-          <button @click="onCopyLink()">Copier le lien</button>
-          <button @click="onShare()">Fermer</button>
-        </div>
-        <p v-if="shareNote" class="note">{{ shareNote }}</p>
-      </div>
-
-      <div class="library">
-        <div class="choices">
-          <button :disabled="libraryLoading" @click="refreshLibrary()">
-            {{ libraryLoading ? 'Recherche…' : 'Profils du serveur' }}
-          </button>
-          <span class="note">
-            Déposés dans <code>profiles/</code> sur le NAS, ils apparaissent sur tous
-            les appareils.
-          </span>
-        </div>
-        <ul v-if="library.length" class="library-list">
-          <li v-for="entry in library" :key="entry.file">
-            <span>{{ entry.profile.name }}</span>
-            <span class="muted">{{ entry.file }}</span>
-            <button @click="addProfile(entry.profile)">Ajouter</button>
-          </li>
-        </ul>
+        <button class="is-active big" @click="wizardOpen = true">Créer un profil…</button>
       </div>
 
       <div v-if="wizardOpen" class="wizard">
@@ -561,6 +505,77 @@ function impliedCylinders(index: number): number | null {
           <button class="is-active" @click="createFromWizard()">Créer le profil</button>
           <button @click="wizardOpen = false">Annuler</button>
         </div>
+      </div>
+    </section>
+
+    <section class="panel wide">
+      <h2>Profils</h2>
+      <div class="profiles">
+        <select :value="selectedProfileId" @change="selectProfile(($event.target as HTMLSelectElement).value)">
+          <option v-for="entry in profileList" :key="entry.id" :value="entry.id">
+            {{ entry.name }}
+          </option>
+        </select>
+        <input
+          type="text"
+          :value="profile.name"
+          placeholder="Nom du profil"
+          @change="renameActive(($event.target as HTMLInputElement).value)"
+        />
+        <button
+          :aria-pressed="profile.favorite"
+          :title="profile.favorite ? 'Retirer de l’écran de conduite' : 'Épingler sur l’écran de conduite'"
+          @click="toggleFavorite(selectedProfileId)"
+        >
+          {{ profile.favorite ? '★ Épinglé' : '☆ Épingler' }}
+        </button>
+        <button @click="duplicateActive()">Dupliquer</button>
+        <button :disabled="profileList.length <= 1" @click="deleteProfile(selectedProfileId)">
+          Supprimer
+        </button>
+        <button :title="'Réintroduit les profils livrés avec l’application'" @click="onRestore()">
+          Profils d'usine
+        </button>
+        <button :class="{ 'is-active': !!shareLink }" @click="onShare()">Partager…</button>
+        <button @click="onExport()">Exporter</button>
+        <button @click="fileInput?.click()">Importer</button>
+        <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="onImport" />
+      </div>
+      <p v-if="importError" class="error">{{ importError }}</p>
+      <p v-else-if="restoreNote" class="note">{{ restoreNote }}</p>
+      <div v-if="shareLink" class="share">
+        <p class="note">
+          Ce lien contient le profil entier. L'ouvrir sur un autre appareil l'y
+          installe — aucun compte, aucun serveur. Les échantillons ne voyagent pas :
+          seuls leurs noms suivent, l'autre appareil devant disposer de la même
+          banque sonore.
+        </p>
+        <div class="qr" v-html="shareQr" />
+        <input :value="shareLink" readonly @focus="($event.target as HTMLInputElement).select()" />
+        <div class="choices">
+          <button @click="onCopyLink()">Copier le lien</button>
+          <button @click="onShare()">Fermer</button>
+        </div>
+        <p v-if="shareNote" class="note">{{ shareNote }}</p>
+      </div>
+
+      <div class="library">
+        <div class="choices">
+          <button :disabled="libraryLoading" @click="refreshLibrary()">
+            {{ libraryLoading ? 'Recherche…' : 'Profils du serveur' }}
+          </button>
+          <span class="note">
+            Déposés dans <code>profiles/</code> sur le NAS, ils apparaissent sur tous
+            les appareils.
+          </span>
+        </div>
+        <ul v-if="library.length" class="library-list">
+          <li v-for="entry in library" :key="entry.file">
+            <span>{{ entry.profile.name }}</span>
+            <span class="muted">{{ entry.file }}</span>
+            <button @click="addProfile(entry.profile)">Ajouter</button>
+          </li>
+        </ul>
       </div>
 
       <div class="reset">
@@ -1248,6 +1263,27 @@ td input[type='number'] {
 
 .library-list li span:first-child {
   flex: 1;
+}
+
+.creation {
+  border-color: var(--line-strong);
+}
+
+.creation-pitch {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.creation-pitch .note {
+  flex: 1 1 18rem;
+  margin: 0;
+}
+
+.big {
+  padding: 0.8rem 1.4rem;
+  font-size: 1rem;
 }
 
 .wizard {
