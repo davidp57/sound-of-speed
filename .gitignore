@@ -8,3 +8,7 @@ dist/
 # profil déclare son sous-dossier et la liste de ses couches.
 public/audio/
 tsconfig.tsbuildinfo
+
+# Fichier de mots de passe produit par `npm run htpasswd`. Il n'a rien à faire
+# dans un dépôt — a fortiori s'il devient public un jour.
+htpasswd

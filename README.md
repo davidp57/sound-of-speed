@@ -108,10 +108,32 @@ Ils restent hors de l'image : ils ne sont ni dans le dépôt ni dans le registre
 et changer de banque sonore consistera à remplacer ces fichiers, sans rien
 reconstruire.
 
-### 2. Autoriser Portainer sur le registre — Portainer
+### 2. Rendre l'image accessible au NAS
 
-Le dépôt étant privé, l'image l'est aussi. Portainer › **Registries** ›
-**Add registry** › **Custom registry** :
+Un paquet publié depuis un dépôt privé est privé lui aussi. **Sa visibilité se
+règle pourtant séparément de celle du dépôt** — les deux ne sont pas liées, et
+c'est ce qui permet de simplifier cette étape sans ouvrir son code.
+
+**Option recommandée : rendre le paquet public.** Portainer n'a alors plus rien à
+authentifier et cette étape disparaît. L'image ne contient que l'application
+compilée : ni échantillons, ni secrets — il n'y en a aucun, tout s'exécute dans
+le navigateur.
+
+Le réglage se trouve sur le **profil**, pas sur le dépôt — c'est ce qui le rend
+introuvable quand on le cherche dans les paramètres du projet :
+
+<https://github.com/users/davidp57/packages/container/speed/settings>
+
+Puis, tout en bas, *Danger Zone* › **Change package visibility** › *Public*.
+GitHub demande de retaper le nom du paquet pour confirmer.
+
+Par la navigation : cliquer son avatar › *Your profile* › onglet **Packages** ›
+`speed` › *Package settings* dans la colonne de droite. L'onglet Packages
+n'apparaît que si l'on est connecté, un paquet privé n'étant pas listé autrement.
+
+**Option conservatrice : garder le paquet privé.** Il faut alors déclarer le
+registre dans Portainer › **Registries** › **Add registry** › **Custom
+registry** :
 
 | Champ | Valeur |
 |---|---|
