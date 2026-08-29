@@ -554,8 +554,8 @@ chaque essai.
 - **Le GPS écran éteint.** Les systèmes mobiles espacent fortement les mesures
   quand l'écran s'éteint. C'est à cela que sert le verrou, et les deux se testent
   ensemble, en roulant.
-- **La configuration nginx et la chaîne d'intégration.** Écrites avec soin mais
-  jamais exécutées : il n'y a pas de Docker sur le poste de développement, et le
-  workflow ne s'exécutera qu'à la première poussée.
+- ~~La configuration nginx et la chaîne d'intégration.~~ Vérifiées : le workflow
+  publie une image multi-architecture, et la pile tourne sur le NAS derrière le
+  proxy inversé.
 - **Le rendu sonore.** Les mesures établissent que le signal sort, qu'il ne
   sature pas et que les fondus sont corrects. Pas qu'il sonne juste.
