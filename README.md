@@ -85,90 +85,64 @@ npm run typecheck    # vérification TypeScript stricte
 npm run transcode    # compresse les échantillons en FLAC
 npm run deploy       # recopie le build vers le NAS
 npm run icons        # régénère les icônes de l'application
+npm run htpasswd     # produit un fichier de mots de passe pour nginx
 ```
 
 ---
 
 ## Installation sur un NAS Synology
 
-C'est le déploiement pour lequel le projet est outillé. Le NAS est déjà allumé,
-son proxy inversé sait obtenir un certificat, et l'hébergement reste chez soi —
-ce qui règle du même coup la question des échantillons, puisque rien n'est publié
-sur Internet.
+Une chaîne d'intégration construit l'image et la publie sur le registre de
+conteneurs GitHub à chaque poussée sur `main`. **Le NAS ne construit rien et ne
+reçoit aucun fichier** : Portainer tire une image prête. Tout se fait dans les
+interfaces de DSM et de Portainer ; il n'y a pas de terminal à ouvrir sur le NAS.
 
-Deux chemins mènent au même résultat.
+L'hébergement reste chez soi, ce qui règle du même coup la question des
+échantillons, puisque rien n'est publié.
 
-| | **Volumes** | **Image** |
-|---|---|---|
-| Ce que fait Portainer | Lance `nginx:alpine` tel quel | Construit l'image depuis le dépôt Git |
-| Mise à jour du site | `npm run build && npm run deploy` | Un `git push`, puis redéployer la pile |
-| Ce qu'il faut | Un partage accessible depuis le poste | Un accès du NAS au dépôt privé |
-| Quand le préférer | Pour démarrer, et pendant les réglages | Une fois les réglages figés |
+### 1. Déposer les échantillons — File Station
 
-La suite décrit le chemin **Volumes**, qui demande le moins de pièces mobiles.
-Le chemin **Image** est décrit [plus bas](#variante-construire-limage-depuis-le-dépôt).
+Créer `/volume1/docker/speed/audio/procar/` et y déposer les fichiers.
 
-### 1. Préparer les dossiers sur le NAS
+Ils restent hors de l'image : ils ne sont ni dans le dépôt ni dans le registre,
+et changer de banque sonore consistera à remplacer ces fichiers, sans rien
+reconstruire.
 
-Dans File Station, créer l'arborescence suivante :
+### 2. Autoriser Portainer sur le registre — Portainer
 
-```
-/volume1/docker/speed/
-  dist/          (vide pour l'instant)
-  audio/
-    procar/      les fichiers d'échantillons
-  nginx.conf     copié depuis docker/nginx.conf du dépôt
-```
+Le dépôt étant privé, l'image l'est aussi. Portainer › **Registries** ›
+**Add registry** › **Custom registry** :
 
-Le dossier `audio/` est volontairement séparé du build : il sera monté
-par-dessus. Changer de banque sonore consistera à y déposer d'autres fichiers,
-sans rien reconstruire ni redéployer.
+| Champ | Valeur |
+|---|---|
+| Name | GitHub |
+| Registry URL | `ghcr.io` |
+| Authentication | activé |
+| Username | `davidp57` |
+| Password | un **jeton d'accès personnel** GitHub |
 
-### 2. Construire et envoyer le site
+Le jeton se crée dans GitHub › Settings › Developer settings › Personal access
+tokens › Tokens (classic), avec la seule portée **`read:packages`**. Le mot de
+passe du compte ne fonctionne pas.
 
-Sur le poste de développement :
-
-```bash
-npm run build
-```
-
-Déclarer une fois pour toutes où se trouve le NAS. Le plus simple sous Windows
-est de monter le partage en lecteur réseau, puis :
-
-```bash
-setx SPEED_DEPLOY_TARGET "Z:\docker\speed\dist"
-```
-
-Ensuite, à chaque itération :
-
-```bash
-npm run build && npm run deploy
-```
-
-`deploy` recopie le build **sans toucher au dossier `audio`** — l'écraser
-romprait le montage. Le conteneur sert les nouveaux fichiers immédiatement, sans
-redémarrage.
-
-### 3. Créer la pile dans Portainer
+### 3. Créer la pile — Portainer
 
 Portainer › **Stacks** › **Add stack** › **Web editor**, nommer la pile `speed`,
-et coller le contenu de `docker/docker-compose.yml`.
-
-Vérifier avant de déployer :
+coller le contenu de `docker/docker-compose.yml`, puis **Deploy the stack**.
 
 | À vérifier | Pourquoi |
 |---|---|
-| Le port `8088` | Il peut déjà servir sur le NAS. Le changer ici si Portainer se plaint |
-| Les chemins `/volume1/docker/speed/…` | Le nom du volume peut différer selon le modèle |
+| Le port `8088` | Il peut déjà servir sur le NAS. Le changer dans la pile si Portainer se plaint |
+| Le chemin `/volume1/…` | Le nom du volume peut différer selon le modèle |
 
-Déployer. Le service répond alors sur `http://<ip-du-nas>:8088` — en clair, et
-uniquement depuis le réseau local. C'est normal à ce stade : le GPS ne marchera
-pas encore, faute de HTTPS.
+Le service répond alors sur `http://<ip-du-nas>:8088` — en clair, et seulement
+depuis le réseau local. C'est normal à ce stade : le GPS ne marchera pas encore,
+faute de chiffrement.
 
-### 4. Publier en HTTPS avec le proxy inversé
+### 4. Publier en HTTPS — DSM
 
-DSM › **Panneau de configuration** › **Portail des applications** › **Proxy
-inversé** › **Créer** :
+**Panneau de configuration** › **Portail des applications** › **Proxy inversé** ›
+**Créer** :
 
 | Champ | Valeur |
 |---|---|
@@ -181,34 +155,36 @@ inversé** › **Créer** :
 | Port destination | `8088` |
 
 Le nom DDNS s'obtient dans **Accès externe** › **DDNS** s'il n'existe pas déjà.
+Puis **Sécurité** › **Certificat** : obtenir un certificat Let's Encrypt pour ce
+nom, et l'affecter à ce service dans **Paramètres**.
 
-Puis DSM › **Panneau de configuration** › **Sécurité** › **Certificat** : obtenir
-un certificat Let's Encrypt pour ce nom d'hôte, et l'affecter à ce service dans
-**Paramètres**.
+### 5. Faut-il ouvrir le NAS sur Internet ?
 
-### 5. Rendre le service joignable en voiture
+**Le plus souvent, non** — et c'est un changement récent. Depuis que
+l'application fonctionne [hors réseau](#hors-réseau), il suffit de l'ouvrir une
+fois chez soi, sur le wifi, en appuyant sur *Préparer hors réseau*. Elle tourne
+ensuite sur son cache, en voiture, sans rien demander à personne. Le NAS n'a
+alors besoin d'être joignable que pour installer une mise à jour, depuis la
+maison.
 
-C'est l'étape qu'on oublie, et elle change tout : **en voiture, le téléphone est
-en 4G, donc hors du réseau local.** Le proxy inversé ne suffit pas — il faut que
-le NAS soit joignable depuis Internet, ce qui suppose de rediriger le port 443 de
-la box vers lui.
-
-Et dès lors, **l'adresse est publique**. Activer l'authentification prévue dans
-`docker/nginx.conf` : décommenter les deux lignes `auth_basic`, créer le fichier
-de mots de passe, décommenter le volume correspondant dans la pile.
+Si l'on tient malgré tout à y accéder de l'extérieur, il faut rediriger le port
+443 de la box vers le NAS — et **l'adresse devient publique**. Activer alors
+l'authentification :
 
 ```bash
-docker run --rm httpd:alpine htpasswd -nbB david "motdepasse" > htpasswd
+npm run htpasswd
 ```
 
-> Deux pièges fréquents. Depuis le wifi de la maison, le nom DDNS résout vers
-> l'adresse publique : sans **NAT loopback** activé sur la box, l'accès échoue
-> alors qu'il fonctionne en 4G. Et sans authentification, les échantillons sont
-> publics avec le site.
+Le mot de passe est demandé en saisie masquée, et le fichier `htpasswd` produit
+se dépose dans `/volume1/docker/speed/` avec File Station. Il reste à
+décommenter les deux lignes `auth_basic` de `docker/nginx.conf` et le volume
+correspondant dans la pile.
+
+> Depuis le wifi de la maison, le nom DDNS résout vers l'adresse publique : sans
+> **NAT loopback** activé sur la box, l'accès échoue alors qu'il fonctionne en
+> 4G.
 
 ### 6. Vérifier
-
-Depuis le téléphone, en 4G :
 
 1. La page s'affiche, le cadenas est fermé.
 2. Écran Conduite › **Activer le son** → le bouton passe à « Son actif ».
@@ -218,28 +194,31 @@ Depuis le téléphone, en 4G :
 Si le GPS reste muet alors que la page s'affiche, c'est presque toujours le
 contexte sécurisé : vérifier que l'adresse est bien en `https://`.
 
-### Variante : construire l'image depuis le dépôt
+### Mettre à jour
 
-Le dépôt est privé et le `Dockerfile` est à la racine, donc Portainer peut
-construire l'image lui-même — plus rien à recopier à la main.
+```bash
+git push
+```
 
-Portainer › **Stacks** › **Add stack** › **Repository** :
+La chaîne d'intégration vérifie le code, construit l'image pour les deux
+architectures et la publie. Ensuite, dans Portainer : ouvrir la pile `speed`,
+cocher **Re-pull image and redeploy**, puis **Update the stack**. Les
+échantillons ne sont pas touchés, étant montés depuis le NAS.
 
-| Champ | Valeur |
-|---|---|
-| Repository URL | `https://github.com/davidp57/speed.git` |
-| Repository reference | `refs/heads/main` |
-| Compose path | `docker/docker-compose.build.yml` |
-| Authentication | activé, avec un **jeton d'accès personnel** GitHub en guise de mot de passe |
+### Variante sans registre
 
-Le jeton se crée dans GitHub › Settings › Developer settings › Personal access
-tokens, avec la seule portée `repo`. Un mot de passe de compte ne fonctionne pas.
+`docker/docker-compose.volumes.yml` lance `nginx:alpine` tel quel et prend tout
+par volumes, y compris le site. Utile pour essayer une modification sans attendre
+la chaîne d'intégration, ou pour dépanner si le registre est inaccessible. Elle
+suppose de recopier le build sur le NAS :
 
-Les échantillons restent hors de l'image, montés en volume : ils ne sont pas dans
-le dépôt, et une image qui les contiendrait se redistribuerait avec eux.
+```bash
+setx SPEED_DEPLOY_TARGET "Z:\docker\speed\dist"
+```
 
-Mettre à jour devient alors : `git push`, puis **Update the stack** dans
-Portainer en cochant *Re-pull image and redeploy*.
+```bash
+npm run build && npm run deploy
+```
 
 ---
 
@@ -457,6 +436,7 @@ public/sw.js             service worker
 public/icons/            icônes, produites par npm run icons
 public/audio/            échantillons, non versionnés
 docker/                  piles Portainer et configuration nginx
+.github/workflows/       construction et publication de l'image
 scripts/                 compression FLAC, déploiement
 ```
 
@@ -542,6 +522,7 @@ chaque essai.
 | 5 | Écran de la voiture, session média, verrou d'écran | fait |
 | 6 | Déploiement sur NAS, HTTPS en développement | fait |
 | 7 | Application installable et utilisable hors réseau | fait |
+| 8 | Publication automatique de l'image, installation sans terminal | fait |
 
 ### Ce qui n'est pas vérifié
 
@@ -551,7 +532,8 @@ chaque essai.
 - **Le GPS écran éteint.** Les systèmes mobiles espacent fortement les mesures
   quand l'écran s'éteint. C'est à cela que sert le verrou, et les deux se testent
   ensemble, en roulant.
-- **La configuration nginx.** Écrite avec soin mais jamais exécutée, faute de
-  Docker sur le poste de développement.
+- **La configuration nginx et la chaîne d'intégration.** Écrites avec soin mais
+  jamais exécutées : il n'y a pas de Docker sur le poste de développement, et le
+  workflow ne s'exécutera qu'à la première poussée.
 - **Le rendu sonore.** Les mesures établissent que le signal sort, qu'il ne
   sature pas et que les fondus sont corrects. Pas qu'il sonne juste.

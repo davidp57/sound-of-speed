@@ -1,18 +1,19 @@
-# Image autonome, pour le jour où le déploiement doit se faire d'un seul geste.
+# Image publiée sur le registre de conteneurs GitHub par le workflow
+# .github/workflows/docker.yml.
 #
-# Elle n'est pas nécessaire au départ : la pile de `docker/docker-compose.yml`
-# obtient le même résultat sans rien construire. Elle le devient si le projet
-# part sur un dépôt distant avec une construction automatique, ou s'il faut
-# pouvoir revenir à une version précise sans retrouver le build correspondant.
+# `--platform=$BUILDPLATFORM` sur l'étape de construction n'est pas un détail :
+# sans lui, produire une image pour un NAS à processeur ARM ferait tourner npm
+# sous émulation, pour de longues minutes. Avec lui, la construction se fait
+# nativement sur le coureur, et seule l'image finale — qui ne fait que servir des
+# fichiers — est bâtie pour l'architecture visée.
 #
-# Les échantillons restent volontairement dehors : ils se montent en volume sur
-# /usr/share/nginx/html/audio. Une image qui les contiendrait pèserait dix fois
-# plus, et se redistribuerait avec eux.
+# Les échantillons restent dehors, montés en volume : ils ne sont pas dans le
+# dépôt, et une image qui les contiendrait se redistribuerait avec eux.
 
-FROM node:22-alpine AS build
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
 
-# Les dépendances d'abord : cette couche ne se reconstruit que lorsque les
+# Les dépendances d'abord : cette couche n'est reconstruite que lorsque les
 # versions changent, pas à chaque modification du code.
 COPY package.json package-lock.json ./
 RUN npm ci

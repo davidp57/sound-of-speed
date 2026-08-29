@@ -1,0 +1,30 @@
+# Variante sans registre : nginx officiel, et tout le contenu par volumes.
+#
+# La pile principale (docker-compose.yml) tire une image publiée par GitHub et ne
+# demande aucune recopie : c'est elle qu'il faut utiliser. Celle-ci reste utile
+# dans deux cas — essayer une modification sans attendre la chaîne
+# d'intégration, ou dépanner quand le registre est inaccessible.
+#
+# Elle suppose que le contenu de `npm run build` a été recopié dans
+# /volume1/docker/speed/dist, ce que fait `npm run deploy`, et que
+# docker/nginx.conf a été déposé au même endroit.
+
+services:
+  speed:
+    image: nginx:alpine
+    container_name: speed
+    restart: unless-stopped
+    ports:
+      # Port interne au NAS. C'est le proxy inversé de DSM qui l'expose en HTTPS.
+      - "8088:80"
+    volumes:
+      - /volume1/docker/speed/dist:/usr/share/nginx/html:ro
+      - /volume1/docker/speed/audio:/usr/share/nginx/html/audio:ro
+      - /volume1/docker/speed/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Décommenter avec l'authentification du fichier nginx.conf :
+      # - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/index.html"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
