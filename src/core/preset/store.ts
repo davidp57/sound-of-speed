@@ -1,5 +1,6 @@
 import { createDefaultProfile, createFactoryProfiles } from './defaults'
 import { PROFILE_FORMAT_VERSION, type Profile, type ProfileFile } from './schema'
+import type { Trace } from '../speed/replay'
 
 /**
  * Persistance des profils.
@@ -13,6 +14,55 @@ import { PROFILE_FORMAT_VERSION, type Profile, type ProfileFile } from './schema
 
 const STORAGE_KEY = 'speed.profiles.v1'
 const SELECTED_KEY = 'speed.selectedProfile.v1'
+const TRACES_KEY = 'speed.traces.v1'
+
+/**
+ * Traces conservées d'une session à l'autre.
+ *
+ * Elles ne vivaient qu'en mémoire : un trajet enregistré en roulant disparaissait
+ * au premier rechargement, c'est-à-dire avant même d'avoir pu servir. Or c'est
+ * justement pour les rejouer plus tard, ailleurs, qu'on les enregistre.
+ */
+export function loadTraces(): Trace[] {
+  const stored = readJson<Trace[]>(TRACES_KEY)
+  return Array.isArray(stored) ? stored.filter(isTrace) : []
+}
+
+export function saveTraces(traces: Trace[]): boolean {
+  try {
+    localStorage.setItem(TRACES_KEY, JSON.stringify(traces))
+    return true
+  } catch {
+    // Quota dépassé : les traces longues pèsent lourd. On le signale plutôt que
+    // de laisser croire que l'enregistrement est conservé.
+    return false
+  }
+}
+
+function isTrace(value: unknown): value is Trace {
+  if (typeof value !== 'object' || value === null) return false
+  const t = value as Partial<Trace>
+  return typeof t.name === 'string' && Array.isArray(t.samples)
+}
+
+/** Sérialise des traces pour un fichier, lisible et réimportable. */
+export function tracesToFile(traces: Trace[]): string {
+  return JSON.stringify({ version: 1, traces }, null, 2)
+}
+
+export function tracesFromFile(text: string): Trace[] {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    throw new ProfileImportError('Le fichier n’est pas du JSON valide.')
+  }
+  const list = isRecord(parsed) && Array.isArray(parsed['traces']) ? parsed['traces'] : parsed
+  if (!Array.isArray(list)) throw new ProfileImportError('Aucune trace trouvée dans le fichier.')
+  const traces = list.filter(isTrace)
+  if (traces.length === 0) throw new ProfileImportError('Aucune trace exploitable dans le fichier.')
+  return traces
+}
 
 export function loadProfiles(): Profile[] {
   const stored = readJson<Profile[]>(STORAGE_KEY)
@@ -79,13 +129,25 @@ function factoryOrigin(id: string): Profile {
 export function resetProfileSection(profile: Profile, section: ProfileSection | 'all'): Profile {
   const origin = factoryOrigin(profile.id)
   const kept = { id: profile.id, name: profile.name }
-  if (section === 'all') return { ...structuredClone(origin), ...kept }
-  return { ...profile, [section]: structuredClone(origin[section]) }
+  if (section === 'all') return { ...deepCopy(origin), ...kept }
+  return { ...profile, [section]: deepCopy(origin[section]) }
+}
+
+/**
+ * Copie profonde, sans lien avec l'original.
+ *
+ * `structuredClone` échoue ici : les profils manipulés par l'interface sont
+ * enveloppés dans les mandataires de réactivité de Vue, qu'il refuse de cloner.
+ * Un aller-retour par JSON les traverse sans difficulté, un profil ne contenant
+ * que des nombres, des chaînes et des booléens.
+ */
+export function deepCopy<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
 }
 
 /** Copie profonde avec un nouvel identifiant. Sert au bouton « dupliquer ». */
 export function duplicateProfile(profile: Profile, name: string): Profile {
-  return { ...structuredClone(profile), id: newId(), name }
+  return { ...deepCopy(profile), id: newId(), name }
 }
 
 export function newId(): string {
@@ -131,6 +193,7 @@ function reconcile(profile: Partial<Profile>): Profile {
   return {
     id: typeof profile.id === 'string' && profile.id ? profile.id : newId(),
     name: typeof profile.name === 'string' && profile.name ? profile.name : base.name,
+    favorite: profile.favorite === true,
     sampleDir:
       typeof profile.sampleDir === 'string' && profile.sampleDir
         ? profile.sampleDir

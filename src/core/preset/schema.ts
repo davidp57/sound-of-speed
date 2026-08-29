@@ -227,6 +227,13 @@ export interface Profile {
   /** Identifiant stable, généré à la création. */
   id: string
   name: string
+  /**
+   * Épinglé sur l'écran de conduite.
+   *
+   * Changer de voix en roulant ne doit pas obliger à traverser l'écran de
+   * configuration : les profils marqués ainsi apparaissent en accès direct.
+   */
+  favorite: boolean
   /** Dossier d'échantillons, relatif à la racine des assets. */
   sampleDir: string
   engine: EnginePreset

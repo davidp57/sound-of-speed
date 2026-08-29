@@ -7,7 +7,11 @@ import { rpmAtSpeed } from '../core/preset/defaults'
 import {
   activeProfile,
   audioStatus,
+  deleteTrace,
+  exportTraces,
+  importTraces,
   isRecording,
+  traceStorageError,
   playTrace,
   recordedCount,
   replayProgress,
@@ -68,6 +72,36 @@ function onRecordToggle(): void {
     traceName.value = ''
   } else {
     startRecording()
+  }
+}
+
+const traceFile = ref<HTMLInputElement | null>(null)
+const traceNote = ref('')
+
+/** Exporte les traces pour les rejouer sur un autre appareil. */
+function onExportTraces(): void {
+  const blob = new Blob([exportTraces()], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = 'traces.json'
+  anchor.click()
+  URL.revokeObjectURL(url)
+}
+
+async function onImportTraces(event: Event): Promise<void> {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  try {
+    const added = importTraces(await file.text())
+    traceNote.value =
+      added > 0
+        ? `${added} trace${added > 1 ? 's' : ''} ajoutée${added > 1 ? 's' : ''}.`
+        : 'Ces traces sont déjà présentes.'
+  } catch (error) {
+    traceNote.value = error instanceof Error ? error.message : 'Import impossible.'
+  } finally {
+    if (traceFile.value) traceFile.value.value = ''
   }
 }
 
@@ -286,9 +320,30 @@ function onRateChange(event: Event): void {
           <span>{{ trace.name }}</span>
           <span class="muted">{{ trace.samples.length }} mesures</span>
           <button @click="playTrace(trace)">Rejouer</button>
+          <button @click="deleteTrace(trace.startedAt)">Supprimer</button>
         </li>
       </ul>
       <p v-else class="note">Aucune trace enregistrée.</p>
+
+      <div class="trace-controls">
+        <button :disabled="traces.length === 0" @click="onExportTraces()">
+          Exporter les traces
+        </button>
+        <button @click="traceFile?.click()">Importer</button>
+        <input
+          ref="traceFile"
+          type="file"
+          accept="application/json,.json"
+          hidden
+          @change="onImportTraces"
+        />
+      </div>
+      <p v-if="traceStorageError" class="error">{{ traceStorageError }}</p>
+      <p v-else-if="traceNote" class="note">{{ traceNote }}</p>
+      <p class="note">
+        Les traces sont conservées d'une session à l'autre. Les exporter permet de
+        rejouer un trajet sur un autre appareil, au poste de travail par exemple.
+      </p>
 
       <template v-if="sourceKind === 'replay'">
         <ValueRow label="Progression" :value="`${Math.round(replayProgress * 100)} %`" :bar="replayProgress" />
@@ -416,6 +471,11 @@ td.over {
 
 .trace-list li span:first-child {
   flex: 1;
+}
+
+.error {
+  color: var(--warn);
+  margin: 0.5rem 0 0;
 }
 
 .rate {

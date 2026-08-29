@@ -4,6 +4,9 @@ import { computed, ref } from 'vue'
 import {
   activateAudio,
   activeProfile,
+  favoriteProfiles,
+  selectProfile,
+  selectedProfileId,
   audioStatus,
   isMuted,
   isRunning,
@@ -117,6 +120,17 @@ const rpmPercent = computed(() => {
       </span>
     </section>
 
+    <section v-if="favoriteProfiles.length > 1" class="favorites">
+      <button
+        v-for="entry in favoriteProfiles"
+        :key="entry.id"
+        :aria-pressed="entry.id === selectedProfileId"
+        @click="selectProfile(entry.id)"
+      >
+        {{ entry.name }}
+      </button>
+    </section>
+
     <section class="readout">
       <div class="cell speed">
         <div class="value numeric">{{ Math.round(telemetry.speed.kmh) }}</div>
@@ -139,6 +153,17 @@ const rpmPercent = computed(() => {
           />
         </div>
       </div>
+    </section>
+
+    <section v-if="immersive && favoriteProfiles.length > 1" class="favorites immersive-favorites">
+      <button
+        v-for="entry in favoriteProfiles"
+        :key="entry.id"
+        :aria-pressed="entry.id === selectedProfileId"
+        @click="selectProfile(entry.id)"
+      >
+        {{ entry.name }}
+      </button>
     </section>
 
     <section v-if="immersive" class="immersive-controls">
@@ -262,6 +287,17 @@ const rpmPercent = computed(() => {
 .status {
   color: var(--muted);
   margin-left: 0.5rem;
+}
+
+.favorites {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.immersive-favorites button {
+  flex: 1;
+  padding: 0.7rem 0.5rem;
 }
 
 .readout {

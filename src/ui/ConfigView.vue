@@ -6,6 +6,15 @@ import { finalDriveFor, rpmAtSpeed } from '../core/preset/defaults'
 import { ProfileImportError, fromFile, toFile } from '../core/preset/store'
 import type { SampleAnalysis } from '../core/audio/analyze'
 import type { ProfileSection } from '../core/preset/store'
+import { isComfortable, shareUrl } from '../core/preset/share'
+import qrcode from 'qrcode-generator'
+import {
+  buildProfile,
+  describeProfile,
+  type EngineKind,
+  type Temperament,
+  type Usage,
+} from '../core/preset/wizard'
 import type { LayerRole } from '../core/preset/schema'
 import {
   activeProfile,
@@ -24,6 +33,10 @@ import {
   restoreFactoryProfiles,
   selectProfile,
   selectedProfileId,
+  toggleFavorite,
+  library,
+  libraryLoading,
+  refreshLibrary,
 } from '../state'
 
 /**
@@ -123,6 +136,85 @@ const delaysText = computed<string>({
     if (parsed.length > 0) profile.value.drivetrain.shiftDelaysS = parsed
   },
 })
+
+/**
+ * Création guidée.
+ *
+ * Quatre choix décrits en langage de conducteur, dont on déduit la trentaine de
+ * réglages qui ne s'accordent pas indépendamment. L'aperçu se recalcule à chaque
+ * changement : on juge avant de créer.
+ */
+const wizardOpen = ref(false)
+const wizard = ref<{
+  name: string
+  temperament: Temperament
+  usage: Usage
+  gearCount: number
+  engine: EngineKind
+}>({ name: '', temperament: 'equilibre', usage: 'route', gearCount: 6, engine: 'essence' })
+
+const TEMPERAMENTS: { id: Temperament; label: string; note: string }[] = [
+  { id: 'calme', label: 'Calme', note: 'Monte tôt, tourne bas, reste discret.' },
+  { id: 'equilibre', label: 'Équilibré', note: 'Le compromis ordinaire.' },
+  { id: 'sportif', label: 'Vif', note: 'Étire les rapports, monte dans les tours.' },
+]
+const USAGES: { id: Usage; label: string; note: string }[] = [
+  { id: 'ville', label: 'Ville', note: 'Rapports serrés, tout se joue sous 70 km/h.' },
+  { id: 'route', label: 'Route', note: 'Départementales et voies rapides.' },
+  { id: 'autoroute', label: 'Autoroute', note: 'Dernier rapport très long.' },
+]
+const ENGINE_KINDS: { id: EngineKind; label: string; note: string }[] = [
+  { id: 'diesel', label: 'Diesel', note: 'Rupteur bas, vers 4600 tr/min.' },
+  { id: 'essence', label: 'Essence', note: 'Vers 6600 tr/min.' },
+  { id: 'sportif', label: 'Haut régime', note: 'Au-delà de 8600 tr/min.' },
+]
+
+const wizardPreview = computed(() => describeProfile(buildProfile(wizard.value, profile.value)))
+
+function createFromWizard(): void {
+  addProfile(buildProfile(wizard.value, profile.value))
+  wizardOpen.value = false
+  wizard.value = { ...wizard.value, name: '' }
+}
+
+/**
+ * Partage du profil courant.
+ *
+ * Le lien contient le profil lui-même, compressé : rien à héberger, rien à
+ * inscrire. Le code à scanner évite d'avoir à recopier une adresse d'un écran à
+ * l'autre — le geste naturel entre un poste de travail et un téléphone.
+ */
+const shareLink = ref('')
+const shareQr = ref('')
+const shareNote = ref('')
+
+async function onShare(): Promise<void> {
+  if (shareLink.value) {
+    shareLink.value = ''
+    shareQr.value = ''
+    return
+  }
+  const url = await shareUrl(profile.value, window.location.origin)
+  shareLink.value = url
+  shareNote.value = isComfortable(url)
+    ? ''
+    : "Ce profil donne un lien très long : le code peut être difficile à lire. L'export en fichier est plus sûr."
+
+  // Correction moyenne : assez robuste pour un écran, sans gonfler le code.
+  const code = qrcode(0, 'M')
+  code.addData(url)
+  code.make()
+  shareQr.value = code.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
+}
+
+async function onCopyLink(): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(shareLink.value)
+    shareNote.value = 'Lien copié.'
+  } catch {
+    shareNote.value = 'Copie refusée par le navigateur : sélectionner le lien à la main.'
+  }
+}
 
 const restoreNote = ref('')
 
@@ -335,6 +427,16 @@ function impliedCylinders(index: number): number | null {
           placeholder="Nom du profil"
           @change="renameActive(($event.target as HTMLInputElement).value)"
         />
+        <button
+          :aria-pressed="profile.favorite"
+          :title="profile.favorite ? 'Retirer de l’écran de conduite' : 'Épingler sur l’écran de conduite'"
+          @click="toggleFavorite(selectedProfileId)"
+        >
+          {{ profile.favorite ? '★ Épinglé' : '☆ Épingler' }}
+        </button>
+        <button :class="{ 'is-active': wizardOpen }" @click="wizardOpen = !wizardOpen">
+          Créer…
+        </button>
         <button @click="duplicateActive()">Dupliquer</button>
         <button :disabled="profileList.length <= 1" @click="deleteProfile(selectedProfileId)">
           Supprimer
@@ -342,12 +444,125 @@ function impliedCylinders(index: number): number | null {
         <button :title="'Réintroduit les profils livrés avec l’application'" @click="onRestore()">
           Profils d'usine
         </button>
+        <button :class="{ 'is-active': !!shareLink }" @click="onShare()">Partager…</button>
         <button @click="onExport()">Exporter</button>
         <button @click="fileInput?.click()">Importer</button>
         <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="onImport" />
       </div>
       <p v-if="importError" class="error">{{ importError }}</p>
       <p v-else-if="restoreNote" class="note">{{ restoreNote }}</p>
+      <div v-if="shareLink" class="share">
+        <p class="note">
+          Ce lien contient le profil entier. L'ouvrir sur un autre appareil l'y
+          installe — aucun compte, aucun serveur. Les échantillons ne voyagent pas :
+          seuls leurs noms suivent, l'autre appareil devant disposer de la même
+          banque sonore.
+        </p>
+        <div class="qr" v-html="shareQr" />
+        <input :value="shareLink" readonly @focus="($event.target as HTMLInputElement).select()" />
+        <div class="choices">
+          <button @click="onCopyLink()">Copier le lien</button>
+          <button @click="onShare()">Fermer</button>
+        </div>
+        <p v-if="shareNote" class="note">{{ shareNote }}</p>
+      </div>
+
+      <div class="library">
+        <div class="choices">
+          <button :disabled="libraryLoading" @click="refreshLibrary()">
+            {{ libraryLoading ? 'Recherche…' : 'Profils du serveur' }}
+          </button>
+          <span class="note">
+            Déposés dans <code>profiles/</code> sur le NAS, ils apparaissent sur tous
+            les appareils.
+          </span>
+        </div>
+        <ul v-if="library.length" class="library-list">
+          <li v-for="entry in library" :key="entry.file">
+            <span>{{ entry.profile.name }}</span>
+            <span class="muted">{{ entry.file }}</span>
+            <button @click="addProfile(entry.profile)">Ajouter</button>
+          </li>
+        </ul>
+      </div>
+
+      <div v-if="wizardOpen" class="wizard">
+        <p class="note">
+          Quelques choix simples, dont on déduit l'ensemble des réglages. Le
+          résultat reste modifiable ensuite : c'est un point de départ, pas un
+          carcan. Les échantillons du profil courant sont repris.
+        </p>
+
+        <label class="inline">
+          Nom
+          <input v-model="wizard.name" type="text" placeholder="Ma voiture" />
+        </label>
+
+        <p class="choice-label">Tempérament</p>
+        <div class="choices">
+          <button
+            v-for="entry in TEMPERAMENTS"
+            :key="entry.id"
+            :aria-pressed="wizard.temperament === entry.id"
+            :title="entry.note"
+            @click="wizard.temperament = entry.id"
+          >
+            {{ entry.label }}
+          </button>
+        </div>
+        <p class="note">{{ TEMPERAMENTS.find((t) => t.id === wizard.temperament)?.note }}</p>
+
+        <p class="choice-label">Usage principal</p>
+        <div class="choices">
+          <button
+            v-for="entry in USAGES"
+            :key="entry.id"
+            :aria-pressed="wizard.usage === entry.id"
+            :title="entry.note"
+            @click="wizard.usage = entry.id"
+          >
+            {{ entry.label }}
+          </button>
+        </div>
+        <p class="note">{{ USAGES.find((u) => u.id === wizard.usage)?.note }}</p>
+
+        <p class="choice-label">Moteur</p>
+        <div class="choices">
+          <button
+            v-for="entry in ENGINE_KINDS"
+            :key="entry.id"
+            :aria-pressed="wizard.engine === entry.id"
+            :title="entry.note"
+            @click="wizard.engine = entry.id"
+          >
+            {{ entry.label }}
+          </button>
+        </div>
+        <p class="note">{{ ENGINE_KINDS.find((e) => e.id === wizard.engine)?.note }}</p>
+
+        <p class="choice-label">Nombre de rapports</p>
+        <div class="choices">
+          <button
+            v-for="n in [4, 5, 6, 7, 8]"
+            :key="n"
+            :aria-pressed="wizard.gearCount === n"
+            @click="wizard.gearCount = n"
+          >
+            {{ n }}
+          </button>
+        </div>
+
+        <div class="preview">
+          <p class="choice-label">Ce que ça donnera</p>
+          <p v-for="line in wizardPreview" :key="line">{{ line }}</p>
+        </div>
+
+        <div class="choices">
+          <button class="is-active" @click="createFromWizard()">Créer le profil</button>
+          <button @click="wizardOpen = false">Annuler</button>
+        </div>
+      </div>
+
       <div class="reset">
         <span class="note">Réinitialiser</span>
         <select v-model="resetSection" @change="resetPending = false">
@@ -427,7 +642,9 @@ function impliedCylinders(index: number): number | null {
         :step="1"
         hint="Décrit le moteur des échantillons, pas celui qu'on veut entendre : il ne modifie pas le son. Il sert à convertir la raie d'allumage en régime lors de l'analyse — une valeur fausse y proposerait des ancrages faux, dans le même rapport."
       />
-      <NumberField v-model="profile.engine.idleRpm" label="Ralenti" :min="400" :max="3000" :step="10" unit="tr/min" />
+      <NumberField v-model="profile.engine.idleRpm" label="Ralenti" :min="400" :max="3000" :step="10" unit="tr/min"
+        hint="Régime moteur à l'arrêt, embrayage débrayé. C'est le son qu'on entend au feu rouge."
+      />
       <NumberField
         v-model="profile.engine.softLimitRpm"
         label="Seuil de coupure"
@@ -437,7 +654,9 @@ function impliedCylinders(index: number): number | null {
         unit="tr/min"
         hint="Régime auquel l'allumage commence à être coupé."
       />
-      <NumberField v-model="profile.engine.redlineRpm" label="Rupteur" :min="2000" :max="16000" :step="50" unit="tr/min" />
+      <NumberField v-model="profile.engine.redlineRpm" label="Rupteur" :min="2000" :max="16000" :step="50" unit="tr/min"
+        hint="Plafond absolu : le régime n'ira jamais au-delà. Un moteur de série tourne à 6000-7000, un moteur de course au-delà de 8000."
+      />
       <NumberField
         v-model="profile.engine.limiterHoldMs"
         label="Durée de coupure"
@@ -455,8 +674,12 @@ function impliedCylinders(index: number): number | null {
         :step="0.05"
         hint="Volant moteur. Plus c'est lourd, plus le régime met de temps à monter à vide."
       />
-      <NumberField v-model="profile.engine.freeRevRate" label="Montée à vide" :min="1000" :max="30000" :step="100" unit="tr/min·s⁻¹" />
-      <NumberField v-model="profile.engine.engineBraking" label="Frein moteur" :min="500" :max="20000" :step="100" unit="tr/min·s⁻¹" />
+      <NumberField v-model="profile.engine.freeRevRate" label="Montée à vide" :min="1000" :max="30000" :step="100" unit="tr/min·s⁻¹"
+        hint="Vitesse à laquelle le moteur prend des tours quand la roue ne l'entraîne pas — un coup d'accélérateur à l'arrêt. Plus c'est haut, plus le moteur paraît léger."
+      />
+      <NumberField v-model="profile.engine.engineBraking" label="Frein moteur" :min="500" :max="20000" :step="100" unit="tr/min·s⁻¹"
+        hint="Vitesse à laquelle il redescend, pied levé, hors prise. C'est ce qui donne l'impression d'un volant lourd ou vif."
+      />
     </section>
 
     <section class="panel">
@@ -471,7 +694,9 @@ function impliedCylinders(index: number): number | null {
       </label>
       <p class="note">Du plus court au plus long, séparés par des virgules. Une seule valeur = prise directe.</p>
 
-      <NumberField v-model="profile.drivetrain.finalDrive" label="Pont" :min="1" :max="12" :step="0.05" />
+      <NumberField v-model="profile.drivetrain.finalDrive" label="Pont" :min="1" :max="12" :step="0.05"
+        hint="Démultiplication commune à tous les rapports. La baisser fait tourner le moteur moins vite à toute vitesse ; le réglage voisin permet de raisonner en km/h plutôt qu'avec ce nombre."
+      />
       <NumberField
         v-model="redlineSpeed"
         label="Rupteur atteint à"
@@ -481,8 +706,12 @@ function impliedCylinders(index: number): number | null {
         unit="km/h"
         hint="Dans le dernier rapport. Modifier cette valeur recalcule le pont."
       />
-      <NumberField v-model="profile.drivetrain.wheelRadiusM" label="Rayon de roue" :min="0.15" :max="0.6" :step="0.005" unit="m" />
-      <NumberField v-model="profile.drivetrain.shiftTimeMs" label="Temps de passage" :min="0" :max="500" :step="5" unit="ms" />
+      <NumberField v-model="profile.drivetrain.wheelRadiusM" label="Rayon de roue" :min="0.15" :max="0.6" :step="0.005" unit="m"
+        hint="Rayon d'une roue, en mètres. Entre dans le calcul du régime : une roue plus grande fait moins de tours pour la même vitesse. Environ 0,33 m pour une berline."
+      />
+      <NumberField v-model="profile.drivetrain.shiftTimeMs" label="Temps de passage" :min="0" :max="500" :step="5" unit="ms"
+        hint="Durée pendant laquelle le couple est coupé. Court sur une boîte moderne, plus long sur une ancienne — c'est ce qu'on entend comme un creux entre deux rapports."
+      />
       <p class="note">
         Régime auquel chaque rapport cède la place au suivant, à charge moyenne.
         Les régler séparément est le seul moyen d'empêcher les rapports courts de
@@ -535,6 +764,7 @@ function impliedCylinders(index: number): number | null {
         :max="40"
         :step="1"
         unit="km/h"
+        hint="La première n'est qu'une amorce : au-delà de cette vitesse, elle cède la place."
       />
       <NumberField
         v-model="profile.drivetrain.minUpshiftRpm"
@@ -551,6 +781,7 @@ function impliedCylinders(index: number): number | null {
         :min="0.05"
         :max="0.8"
         :step="0.01"
+        hint="Fraction du rupteur en deçà de laquelle la boîte cherche un rapport plus court. Plus c'est haut, plus elle rétrograde tôt en ralentissant."
       />
       <label class="inline">
         Temporisations de montée
@@ -584,6 +815,7 @@ function impliedCylinders(index: number): number | null {
         :max="3000"
         :step="50"
         unit="ms"
+        hint="Durée sur laquelle l'accélération est estimée. Courte, elle réagit vite mais tremble ; longue, elle est stable mais en retard."
       />
       <NumberField
         v-model="profile.speed.accelDeadbandKmh"
@@ -594,9 +826,15 @@ function impliedCylinders(index: number): number | null {
         unit="km/h"
         hint="En deçà, la variation est traitée comme du tremblement de mesure."
       />
-      <NumberField v-model="profile.speed.maxPlausibleKmh" label="Vitesse plausible max" :min="50" :max="400" :step="10" unit="km/h" />
-      <NumberField v-model="profile.speed.maxAccelMs2" label="Accélération max retenue" :min="1" :max="30" :step="0.5" unit="m/s²" />
-      <NumberField v-model="profile.speed.minAccelMs2" label="Décélération max retenue" :min="-30" :max="-1" :step="0.5" unit="m/s²" />
+      <NumberField v-model="profile.speed.maxPlausibleKmh" label="Vitesse plausible max" :min="50" :max="400" :step="10" unit="km/h"
+        hint="Au-delà, la mesure est rejetée comme aberrante. Le GPS produit parfois des sauts sous un pont ou entre deux immeubles."
+      />
+      <NumberField v-model="profile.speed.maxAccelMs2" label="Accélération max retenue" :min="1" :max="30" :step="0.5" unit="m/s²"
+        hint="Plafond de l'accélération transmise à la charge. Écrête les sursauts du GPS plutôt que de les faire entendre."
+      />
+      <NumberField v-model="profile.speed.minAccelMs2" label="Décélération max retenue" :min="-30" :max="-1" :step="0.5" unit="m/s²"
+        hint="Le même plafond, en freinage."
+      />
     </section>
 
     <section class="panel">
@@ -638,7 +876,8 @@ function impliedCylinders(index: number): number | null {
           :min="1"
           :max="4"
           :step="1"
-        />
+        hint="Deux suffisent pour une reprise franche ; trois donnent une réponse plus vive, au risque de monter très haut dans les tours."
+      />
       </template>
 
       <div class="toggle">
@@ -660,8 +899,12 @@ function impliedCylinders(index: number): number | null {
           unit="tr/min"
           hint="En deçà, rien ne se produit : il ne reste pas assez à brûler."
         />
-        <NumberField v-model="profile.feel.backfire.intensity" label="Intensité" :min="0" :max="1" :step="0.05" />
-        <NumberField v-model="profile.feel.backfire.count" label="Claquements par salve" :min="1" :max="10" :step="1" />
+        <NumberField v-model="profile.feel.backfire.intensity" label="Intensité" :min="0" :max="1" :step="0.05"
+        hint="Volume des claquements. Au-delà de la moitié, ils dominent le moteur."
+      />
+        <NumberField v-model="profile.feel.backfire.count" label="Claquements par salve" :min="1" :max="10" :step="1"
+        hint="Nombre de détonations à chaque lever de pied. Peu et espacés pour rester crédible."
+      />
       </template>
 
       <div class="toggle">
@@ -719,7 +962,9 @@ function impliedCylinders(index: number): number | null {
         unit="tr/min"
         hint="Régime où la couche haute commence à entrer. Indépendant des régimes d'ancrage."
       />
-      <NumberField v-model="profile.mix.crossfadeHighRpm" label="Fin de bascule" :min="500" :max="16000" :step="50" unit="tr/min" />
+      <NumberField v-model="profile.mix.crossfadeHighRpm" label="Fin de bascule" :min="500" :max="16000" :step="50" unit="tr/min"
+        hint="Régime au-delà duquel seule la couche haut régime joue. L'écart avec le début de bascule fixe la douceur de la transition."
+      />
       <NumberField
         v-model="profile.mix.fullLoadAccelMs2"
         label="Accélération pleine charge"
@@ -729,11 +974,21 @@ function impliedCylinders(index: number): number | null {
         unit="m/s²"
         hint="Accélération au-delà de laquelle la charge est considérée maximale."
       />
-      <NumberField v-model="profile.mix.loadSmoothingS" label="Lissage de la charge" :min="0.02" :max="1.5" :step="0.01" unit="s" />
-      <NumberField v-model="profile.mix.idleFadeOutRpm" label="Effacement du ralenti" :min="800" :max="4000" :step="50" unit="tr/min" />
-      <NumberField v-model="profile.mix.highpassHz" label="Coupe-bas" :min="10" :max="200" :step="1" unit="Hz" />
-      <NumberField v-model="profile.mix.drive" label="Saturation" :min="0" :max="1" :step="0.01" />
-      <NumberField v-model="profile.mix.limiterThresholdDb" label="Seuil du limiteur" :min="-24" :max="0" :step="0.5" unit="dB" />
+      <NumberField v-model="profile.mix.loadSmoothingS" label="Lissage de la charge" :min="0.02" :max="1.5" :step="0.01" unit="s"
+        hint="Temps que met la charge à suivre la pédale. Trop court, le fondu papillonne ; trop long, le son traîne derrière la conduite."
+      />
+      <NumberField v-model="profile.mix.idleFadeOutRpm" label="Effacement du ralenti" :min="800" :max="4000" :step="50" unit="tr/min"
+        hint="Régime au-dessus duquel la couche de ralenti disparaît complètement, le moteur étant alors entraîné par les roues."
+      />
+      <NumberField v-model="profile.mix.highpassHz" label="Coupe-bas" :min="10" :max="200" :step="1" unit="Hz"
+        hint="Retire les fréquences les plus graves. Utile sur un petit haut-parleur, qui ne les reproduit pas et s'y fatigue."
+      />
+      <NumberField v-model="profile.mix.drive" label="Saturation" :min="0" :max="1" :step="0.01"
+        hint="Écrête doucement les crêtes, ce qui épaissit le son et le fait paraître plus fort. À forte dose, il devient sale."
+      />
+      <NumberField v-model="profile.mix.limiterThresholdDb" label="Seuil du limiteur" :min="-24" :max="0" :step="0.5" unit="dB"
+        hint="Niveau à partir duquel la sortie est retenue. Le baisser laisse plus de marge au volume général, au prix d'une dynamique plus écrasée."
+      />
     </section>
 
     <section class="panel wide">
@@ -947,6 +1202,86 @@ td {
 td input[type='number'] {
   width: 6rem;
   text-align: right;
+}
+
+.share,
+.library {
+  margin-top: 0.8rem;
+  padding: 0.9rem;
+  background: var(--panel-alt);
+  border-radius: 8px;
+}
+
+.share input {
+  margin: 0.6rem 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+
+.qr {
+  background: #fff;
+  padding: 0.6rem;
+  border-radius: 6px;
+  max-width: 15rem;
+  margin: 0 auto;
+}
+
+.qr :deep(svg) {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.library-list {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+}
+
+.library-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.library-list li span:first-child {
+  flex: 1;
+}
+
+.wizard {
+  margin-top: 0.8rem;
+  padding: 0.9rem;
+  background: var(--panel-alt);
+  border-radius: 8px;
+}
+
+.choice-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0.9rem 0 0.35rem;
+}
+
+.choices {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.preview {
+  margin-top: 1rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--bg);
+  border-radius: 6px;
+}
+
+.preview p:not(.choice-label) {
+  margin: 0.2rem 0;
+  color: var(--text);
+  font-size: 0.9rem;
 }
 
 .reset {

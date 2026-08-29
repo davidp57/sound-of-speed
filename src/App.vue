@@ -2,12 +2,14 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import ConfigView from './ui/ConfigView.vue'
+import HelpView from './ui/HelpView.vue'
 import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
 import {
   applyUpdate,
   offlineStatus,
   setBrake,
+  importFromUrl,
   setThrottle,
   shiftDown,
   shiftUp,
@@ -31,6 +33,31 @@ const tab = ref<Tab>('drive')
  * sortir par accident.
  */
 const immersive = ref(false)
+
+/**
+ * Aide, montrée d'office à la première ouverture.
+ *
+ * Le stockage peut être refusé — navigation privée, quota plein. On ne montre
+ * alors l'aide qu'une fois par session plutôt que de la répéter à chaque
+ * chargement, ni de la taire par prudence.
+ */
+const HELP_SEEN_KEY = 'speed.helpSeen.v1'
+const helpOpen = ref(false)
+/** Nom d'un profil reçu par lien, le temps de l'annoncer. */
+const received = ref('')
+
+function markHelpSeen(): void {
+  try {
+    localStorage.setItem(HELP_SEEN_KEY, '1')
+  } catch {
+    // Sans conséquence : l'aide reste accessible par son bouton.
+  }
+}
+
+function closeHelp(): void {
+  helpOpen.value = false
+  markHelpSeen()
+}
 
 async function toggleImmersive(): Promise<void> {
   immersive.value = !immersive.value
@@ -112,6 +139,19 @@ function releaseControls(): void {
 }
 
 onMounted(() => {
+  try {
+    helpOpen.value = localStorage.getItem(HELP_SEEN_KEY) === null
+  } catch {
+    helpOpen.value = true
+  }
+  // Un profil reçu par lien s'installe avant tout le reste, et le signale.
+  void importFromUrl().then((name) => {
+    if (name) {
+      received.value = name
+      helpOpen.value = false
+    }
+  })
+
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('keyup', onKeyUp)
   window.addEventListener('blur', releaseControls)
@@ -142,6 +182,7 @@ onBeforeUnmount(() => {
         </button>
       </nav>
       <div class="right">
+        <button class="help-button" title="Aide" @click="helpOpen = true">?</button>
         <button @click="toggleImmersive()">Conduite</button>
         <button class="power" :class="{ 'is-active': isRunning }" @click="isRunning ? stop() : start()">
           {{ isRunning ? 'En marche' : 'Arrêté' }}
@@ -162,6 +203,13 @@ onBeforeUnmount(() => {
       <TelemetryView v-else-if="tab === 'telemetry'" />
       <ConfigView v-else />
     </main>
+
+    <div v-if="received" class="banner">
+      <span>Profil « {{ received }} » ajouté.</span>
+      <button @click="received = ''">Fermer</button>
+    </div>
+
+    <HelpView v-if="helpOpen" @close="closeHelp()" />
 
     <button v-if="immersive" class="escape" title="Quitter le mode conduite" @click="toggleImmersive()">
       ×
@@ -198,6 +246,12 @@ onBeforeUnmount(() => {
 
 .power {
   min-width: 8rem;
+}
+
+.help-button {
+  width: 2.4rem;
+  padding: 0.5rem 0;
+  font-weight: 600;
 }
 
 .immersive .content {

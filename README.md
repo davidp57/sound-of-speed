@@ -448,6 +448,17 @@ Le tout se règle : c'est la différence entre les deux, pas une nature.
 
 Sélection, renommage, duplication, suppression, **export** et **import** en JSON.
 
+Le bouton **☆ Épingler** place un profil en accès direct sur l'écran de conduite,
+mode plein écran compris : changer de voix en roulant n'oblige pas à traverser la
+configuration.
+
+Le bouton **Créer…** ouvre une création guidée. Quatre choix décrits en langage de
+conducteur — tempérament, usage, moteur, nombre de rapports — dont on déduit la
+trentaine de réglages qui ne s'accordent pas indépendamment : rapports en
+progression géométrique, pont calculé pour la croisière visée, régimes de
+passage, écart de charge, caractère. Un aperçu chiffré se recalcule à chaque
+choix, et le résultat reste entièrement modifiable.
+
 Un menu **Réinitialiser** ramène une section — ou le profil entier — à son état
 d'usine, en deux temps pour éviter la fausse manœuvre. Sept portées : tout le
 profil, le moteur, la transmission, le signal de vitesse, le mixage, le
@@ -461,6 +472,30 @@ Les profils sont conservés dans le navigateur ; l'export sert à les transporte
 d'un appareil à l'autre.
 
 ---
+
+## Partager un profil
+
+Trois façons de retrouver ses réglages sur un autre appareil, sans compte ni
+serveur applicatif.
+
+**Par lien.** Le bouton **Partager…** encode le profil entier dans l'adresse,
+compressé — environ 1100 caractères pour un profil de 1,8 ko. L'ouvrir ailleurs
+l'y installe. Le fragment d'adresse n'étant jamais transmis au serveur, rien
+n'en est journalisé.
+
+**Par code à scanner.** Le même lien sous forme de code, ce qui évite de recopier
+une adresse entre un poste de travail et un téléphone. Il est produit sur place,
+sans service extérieur.
+
+**Par le NAS.** Les fichiers déposés dans `/volume1/docker/speed/profiles/` avec
+File Station apparaissent sur tous les appareils, via le bouton **Profils du
+serveur**. nginx sait rendre le contenu d'un dossier en JSON, ce qui suffit à les
+découvrir : ni base, ni service à maintenir, et la protection est celle qui garde
+déjà l'accès au site. Le dossier est facultatif.
+
+Dans tous les cas, **les échantillons ne voyagent pas** — seuls leurs noms
+suivent, l'autre appareil devant disposer de la même banque. Et l'identifiant est
+renouvelé à l'import : un profil reçu n'écrase jamais l'un des siens.
 
 ## Les échantillons
 
@@ -640,6 +675,10 @@ s.resumeLoop()
 C'est ainsi que les seuils de passage ont été vérifiés : la boîte monte un
 rapport 0,6 s après avoir franchi 94 % du rupteur à pleine charge, et bien plus
 tôt en charge partielle.
+
+Les traces sont **conservées d'une session à l'autre**, exportables en un fichier
+et réimportables ailleurs — c'est ainsi qu'un trajet enregistré au volant se
+rejoue au poste de travail.
 
 L'autre outil est le **rejeu de traces** : un trajet réel s'enregistre une fois
 depuis l'écran Télémétrie, puis se rejoue à l'identique sur un poste fixe. Régler

@@ -13,11 +13,17 @@ import { ReplaySource, TraceRecorder, type Trace } from './core/speed/replay'
 import { SimulatorSource } from './core/speed/simulator'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
 import type { Profile } from './core/preset/schema'
+import { fetchLibrary, type LibraryEntry } from './core/preset/library'
+import { readProfileFromUrl } from './core/preset/share'
 import {
   duplicateProfile,
   loadProfiles,
+  loadTraces,
   missingFactoryProfiles,
   resetProfileSection,
+  saveTraces,
+  tracesFromFile,
+  tracesToFile,
   type ProfileSection,
   loadSelectedId,
   newId,
@@ -79,7 +85,9 @@ export const sourceDetail = ref<string>('')
 export const isRunning = ref(false)
 export const isRecording = ref(false)
 export const recordedCount = ref(0)
-export const traces = ref<Trace[]>([])
+export const traces = ref<Trace[]>(loadTraces())
+/** Message d'échec de l'enregistrement des traces, quand le quota est atteint. */
+export const traceStorageError = ref('')
 export const replayProgress = ref(0)
 export const audioStatus = ref<AudioStatus>({ ...audio.status })
 export const isMuted = ref(false)
@@ -553,6 +561,35 @@ export function startRecording(): void {
   recordedCount.value = 0
 }
 
+// Les traces sont conservées d'une session à l'autre : un trajet enregistré en
+// roulant doit survivre au rechargement, faute de quoi il n'aura jamais servi.
+watch(
+  traces,
+  (list) => {
+    traceStorageError.value = saveTraces(list)
+      ? ''
+      : "Les traces n'ont pas pu être enregistrées : espace de stockage insuffisant. En supprimer quelques-unes."
+  },
+  { deep: true },
+)
+
+export function deleteTrace(startedAt: number): void {
+  traces.value = traces.value.filter((t) => t.startedAt !== startedAt)
+}
+
+/** Exporte toutes les traces dans un fichier, pour les rejouer ailleurs. */
+export function exportTraces(): string {
+  return tracesToFile(traces.value)
+}
+
+export function importTraces(text: string): number {
+  const imported = tracesFromFile(text)
+  const known = new Set(traces.value.map((t) => t.startedAt))
+  const fresh = imported.filter((t) => !known.has(t.startedAt))
+  if (fresh.length > 0) traces.value = [...traces.value, ...fresh]
+  return fresh.length
+}
+
 export function stopRecording(name: string): void {
   const trace = recorder.stop(name || `trace ${traces.value.length + 1}`)
   isRecording.value = false
@@ -576,8 +613,39 @@ export function setReplayRate(rate: number): void {
 export const profileList = computed(() => profiles.value)
 export const selectedProfileId = computed(() => selectedId.value)
 
+export const favoriteProfiles = computed(() => profiles.value.filter((p) => p.favorite))
+
+export function toggleFavorite(id: string): void {
+  const profile = profiles.value.find((p) => p.id === id)
+  if (profile) profile.favorite = !profile.favorite
+}
+
 export function selectProfile(id: string): void {
   if (profiles.value.some((p) => p.id === id)) selectedId.value = id
+}
+
+export const library = ref<LibraryEntry[]>([])
+export const libraryLoading = ref(false)
+
+/** Interroge le serveur pour les profils qu'on y aurait déposés. */
+export async function refreshLibrary(): Promise<void> {
+  libraryLoading.value = true
+  try {
+    library.value = await fetchLibrary()
+  } finally {
+    libraryLoading.value = false
+  }
+}
+
+/**
+ * Importe un profil reçu par lien, s'il y en a un dans l'adresse.
+ * Retourne son nom, pour pouvoir le dire à l'utilisateur.
+ */
+export async function importFromUrl(): Promise<string | null> {
+  const profile = await readProfileFromUrl()
+  if (!profile) return null
+  addProfile(profile)
+  return profile.name
 }
 
 export function addProfile(profile: Profile): void {

@@ -59,6 +59,7 @@ export function createRoadProfile(): Profile {
     ...base,
     id: 'route',
     name: 'Route',
+    favorite: true,
     engine: {
       ...base.engine,
       idleRpm: 800,
@@ -115,6 +116,7 @@ export function createDefaultProfile(): Profile {
   return {
     id: 'procar',
     name: 'Sport',
+    favorite: true,
     sampleDir: 'procar',
     engine: {
       cylinders: 8,
