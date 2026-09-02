@@ -119,13 +119,23 @@ un autre port pour essayer un lot en voiture avant d'en faire une version ; et
 L'hébergement reste chez soi, ce qui règle du même coup la question des
 échantillons, puisque rien n'est publié.
 
-### 1. Déposer les échantillons — File Station
+### 1. Créer les dossiers et déposer les échantillons — File Station
 
-Créer `/volume1/docker/speed/audio/procar/` et y déposer les fichiers.
+Deux dossiers, sous `/volume1/docker/speed/` :
 
-Ils restent hors de l'image : ils ne sont ni dans le dépôt ni dans le registre,
-et changer de banque sonore consistera à remplacer ces fichiers, sans rien
-reconstruire.
+| Dossier | Contenu |
+|---|---|
+| `audio/procar/` | les échantillons du moteur |
+| `profiles/` | les profils partagés entre appareils. **Peut rester vide** |
+
+Les deux doivent **exister avant** de déployer la pile : Docker sous DSM ne crée
+pas un point de montage absent, il refuse de démarrer le conteneur avec un
+`Bind mount failed`. Un dossier `profiles/` vide suffit — et à défaut, il faut
+commenter sa ligne dans la pile, au prix de la bibliothèque de profils.
+
+Les échantillons restent hors de l'image : ils ne sont ni dans le dépôt ni dans
+le registre, et changer de banque sonore consistera à remplacer ces fichiers,
+sans rien reconstruire.
 
 ### 2. Rendre l'image accessible au NAS
 
@@ -275,6 +285,9 @@ l'application qui sert au quotidien.
 **Stacks** › **Add stack** › **Web editor**, nommer la pile `speed-develop`,
 coller le contenu de [`docker/docker-compose.develop.yml`](docker/docker-compose.develop.yml),
 puis **Deploy the stack**.
+
+Les dossiers `audio/` et `profiles/` doivent exister, comme pour la production —
+c'est le même arrangement, et les mêmes dossiers.
 
 Elle diffère de la production sur trois points, et les trois comptent : un autre
 nom de conteneur, un autre port (`8089`), et une autre adresse dans le proxy

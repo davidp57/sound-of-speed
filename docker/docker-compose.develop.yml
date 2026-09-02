@@ -40,8 +40,14 @@ services:
     volumes:
       # Mêmes échantillons que la production : ils ne dépendent pas du code.
       - /volume1/docker/speed/audio:/usr/share/nginx/html/audio:ro
-      # Mêmes profils déposés, ce qui permet de comparer les deux piles sur les
-      # mêmes réglages.
+      # Profils partagés entre appareils, déposés avec File Station.
+      #
+      # Le dossier doit **exister**, même vide : Docker sous DSM ne crée pas un
+      # point de montage absent, il refuse de démarrer le conteneur. Le
+      # commenter est l'autre issue, au prix de la bibliothèque de profils.
+      #
+      # Le même dossier que la production : c'est ce qui permet de comparer les
+      # deux piles sur les mêmes réglages.
       - /volume1/docker/speed/profiles:/usr/share/nginx/html/profiles:ro
       # Décommenter avec l'authentification de docker/nginx.conf :
       # - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
