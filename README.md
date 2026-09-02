@@ -564,6 +564,12 @@ caractère, les couches. Une valeur mal saisie dans la transmission ne coûte do
 plus ce qui a été trouvé ailleurs, et l'identifiant comme le nom sont conservés
 dans tous les cas — le profil est remis à neuf, pas remplacé.
 
+**Son état d'usine, c'est ce qu'il était à sa création.** Un profil sorti du
+guide, ou dupliqué, garde ses valeurs de départ et y revient. Les deux profils
+livrés reviennent aux leurs. Seul un profil enregistré par une version
+antérieure de l'application, qui n'a pas gardé son état de départ, retombe sur
+des valeurs génériques.
+
 Un profil créé de toutes pièces, sans équivalent d'usine, retombe sur les valeurs
 par défaut génériques.
 Les profils sont conservés dans le navigateur ; l'export sert à les transporter

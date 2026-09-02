@@ -84,6 +84,11 @@ export function isReachableOrigin(origin: string): boolean {
 function stripForSharing(profile: Profile): Profile {
   const copy = deepCopy(profile)
   copy.favorite = false
+  // Les valeurs d'origine doubleraient la longueur du lien, déjà surveillée, et
+  // le destinataire n'a que faire de l'état initial d'un profil qui n'est pas le
+  // sien. Elles suivent en revanche dans un fichier exporté, où la taille
+  // n'importe pas.
+  delete copy.origin
   return copy
 }
 

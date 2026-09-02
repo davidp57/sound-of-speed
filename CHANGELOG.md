@@ -63,6 +63,13 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Réinitialiser un profil créé par le guide lui rendait les réglages du profil
+  « Sport »**, et non les siens : un profil était reconnu à son identifiant, et
+  tous ceux qui n'étaient pas livrés retombaient sur les valeurs par défaut. La
+  fonction ne servait donc à rien là où elle sert le plus — sur un profil qu'on
+  vient de fabriquer et qu'on tâtonne. Chaque profil garde désormais ses valeurs
+  de création, y revient autant de fois qu'on veut, et une duplication en a une
+  aussi.
 - La procédure d'installation ne faisait créer que le dossier des échantillons,
   alors que la pile monte aussi celui des profils partagés — annoncé
   « facultatif », mais un montage absent empêche le conteneur de démarrer sous
