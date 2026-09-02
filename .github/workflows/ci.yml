@@ -1,0 +1,46 @@
+# Contrôle d'intégration.
+#
+# C'est ce workflow qui décide si une PR est fusionnable : sans lui, la règle
+# « merger quand la CI est verte » ne veut rien dire. Il fait exactement ce que
+# le contrôle qualité de CLAUDE.md demande de lancer avant de pousser, pour
+# qu'un échec ici soit toujours reproductible en local.
+#
+# Les scripts `lint` et `test` n'existent pas encore (lot TEST-CORE) : les
+# étapes sont écrites avec `--if-present`, donc elles ne font rien tant que le
+# script n'est pas déclaré, et deviennent bloquantes le jour où il l'est, sans
+# qu'il y ait à revenir ici.
+
+name: Intégration
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Types
+        run: npm run typecheck
+
+      - name: Style du code
+        run: npm run lint --if-present
+
+      - name: Tests
+        run: npm run test --if-present
+
+      - name: Construction
+        run: npm run build
