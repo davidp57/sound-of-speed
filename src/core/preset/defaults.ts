@@ -84,6 +84,16 @@ export function createRoadProfile(): Profile {
       firstGearLaunchOnly: true,
       launchUpshiftKmh: 5,
       downshiftAtRedlineRatio: 0.28,
+      // Croisière basse, mais pas au point de brouter ni de jouer les
+      // échantillons trop grave : à 1500, la croisière se tient entre 1500 et
+      // 2400 tr/min de 50 à 110 km/h — la moitié utile de la prise bas régime,
+      // ancrée à 3128 tr/min.
+      cruiseMinRpm: 1500,
+      // Il monte volontiers : deux secondes et deux dixièmes de vitesse stable
+      // suffisent.
+      cruiseUpshiftAfterS: 2.2,
+      // Et il ne descend que sur un freinage franc, pas sur un lever de pied.
+      brakeDownshiftAccelMs2: -1,
       shiftDelaysS: [0.3, 0.55, 0.4, 0.6, 0.35, 0.5],
     },
     feel: {
@@ -142,6 +152,15 @@ export function createDefaultProfile(): Profile {
       firstGearLaunchOnly: true,
       launchUpshiftKmh: 8,
       downshiftAtRedlineRatio: 0.32,
+      // Croisière haute : sur un profil sportif, tenir une vitesse ne doit pas
+      // finir sur le dernier rapport au ralenti. À 2000, 70 km/h tenus se
+      // stabilisent en cinquième à 2178 tr/min plutôt qu'en sixième à 1823.
+      cruiseMinRpm: 2000,
+      // Et il garde ses rapports : trois secondes et demie de vitesse stable
+      // avant de monter, contre deux et deux dixièmes sur Route.
+      cruiseUpshiftAfterS: 3.5,
+      // Il descend volontiers pour ralentir, dès une décélération modérée.
+      brakeDownshiftAccelMs2: -0.7,
       // Volontairement irrégulières : des temporisations égales donnent une
       // boîte qui sonne comme un métronome. Courtes, en revanche — elles
       // confirment une intention, elles ne retiennent pas le passage.

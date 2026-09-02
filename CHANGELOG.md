@@ -23,8 +23,34 @@ Toutes les évolutions notables du projet. Format
 - Publication de l'image Docker depuis `develop` (étiquette `develop`) en plus
   de `main` (`latest`), et depuis un tag de version.
 
+### Modifié
+
+- **La boîte de vitesses regarde l'évolution de la vitesse, et non plus
+  seulement le régime.** Trois comportements en découlent, tous réglables :
+  - **elle monte les rapports quand on tient une vitesse**, comme une boîte
+    automatique. Elle restait figée sur un palier, faute d'un régime qui monte :
+    50 km/h tenus laissaient la deuxième à 3034 tr/min sur le profil Route, où
+    la quatrième tourne à 1532. La sixième s'engage désormais dès 90 km/h ;
+  - **elle descend pour aider à ralentir** dès que la décélération est soutenue,
+    au lieu d'attendre que le régime soit tombé. Un lever de pied et un freinage
+    donnaient exactement les mêmes vitesses de rétrogradage ;
+  - **le rétrogradage forcé répond à une demande franche**, c'est-à-dire à une
+    montée de charge, et non à son niveau. Faute de pédale dans une voiture
+    électrique la charge est déduite de l'accélération : le seuil se franchissait
+    dès 3,6 km/h par seconde, si bien que remettre délicatement les gaz suffisait
+    à faire descendre la boîte.
+- **Trois réglages nouveaux** dans la transmission : « Croisière au-dessus de »,
+  « Monter après » et « Descendre en freinant à ».
+- **Les deux profils livrés sont remis d'aplomb** pour la boîte nouvelle, et le
+  guide de création produit les trois valeurs selon le tempérament demandé — un
+  profil calme croise bas et monte tôt, un profil sportif garde ses rapports et
+  descend franc au freinage. L'aperçu du guide annonce le rapport de croisière et
+  son régime.
+
 ### Corrigé
 
+- L'infobulle de « Ne jamais monter sous » répétait encore qu'il commande le
+  rétrogradage, erreur pourtant déjà corrigée dans le README.
 - **Le son tient quand le navigateur passe en arrière-plan** — à essayer en
   voiture. Il s'arrêtait net dès que le navigateur de la Tesla était réduit. Le
   média qui maintient la session audio est désormais un fichier servi de deux

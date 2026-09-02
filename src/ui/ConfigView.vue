@@ -787,7 +787,7 @@ function impliedCylinders(index: number): number | null {
         :max="5000"
         :step="50"
         unit="tr/min"
-        hint="Plancher, toutes charges confondues. C'est lui qui décide à quelle vitesse la boîte rétrograde en décélération : trop bas, elle reste sur le dernier rapport bien après qu'il n'a plus de sens."
+        hint="Plancher appliqué aux régimes de passage ci-dessus, toutes charges confondues : il empêche l'écart de charge de faire monter un rapport à un régime où le moteur peinerait. Sans effet sur le rétrogradage."
       />
       <NumberField
         v-model="profile.drivetrain.downshiftAtRedlineRatio"
@@ -795,7 +795,34 @@ function impliedCylinders(index: number): number | null {
         :min="0.05"
         :max="0.8"
         :step="0.01"
-        hint="Plus la valeur est élevée, plus la boîte rétrograde tôt quand vous ralentissez."
+        hint="Fraction du rupteur sous laquelle la boîte redescend, quand la vitesse n'est ni tenue ni franchement en baisse. Plus la valeur est élevée, plus elle rétrograde tôt."
+      />
+      <NumberField
+        v-model="profile.drivetrain.cruiseMinRpm"
+        label="Croisière au-dessus de"
+        :min="600"
+        :max="4000"
+        :step="50"
+        unit="tr/min"
+        hint="Quand vous tenez une vitesse, la boîte monte les rapports d'elle-même et s'arrête juste avant de descendre sous ce régime. Trop bas, le moteur broute ; trop haut, il reste inutilement haut en croisière."
+      />
+      <NumberField
+        v-model="profile.drivetrain.cruiseUpshiftAfterS"
+        label="Monter après"
+        :min="0.5"
+        :max="10"
+        :step="0.1"
+        unit="s"
+        hint="Durée de vitesse stable avant de tenter un rapport de plus. Court, la boîte monte dès que vous levez le pied ; long, elle garde ses rapports."
+      />
+      <NumberField
+        v-model="profile.drivetrain.brakeDownshiftAccelMs2"
+        label="Descendre en freinant à"
+        :min="-4"
+        :max="-0.2"
+        :step="0.1"
+        unit="m/s²"
+        hint="Décélération à partir de laquelle la boîte descend pour aider à ralentir, sans attendre que le régime soit tombé. Proche de zéro, elle descend au moindre lever de pied."
       />
       <label class="inline">
         Temporisations de montée

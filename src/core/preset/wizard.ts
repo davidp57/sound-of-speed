@@ -57,6 +57,19 @@ const UPSHIFT_RANGE: Record<Temperament, [number, number]> = {
   sportif: [0.68, 0.82],
 }
 
+/**
+ * Plancher de croisière, en fraction du rupteur.
+ *
+ * C'est lui qui décide jusqu'où la boîte monte quand on tient une vitesse. Un
+ * tempérament calme accepte de croiser bas ; un sportif garde du régime sous le
+ * pied.
+ */
+const CRUISE_FLOOR: Record<Temperament, number> = {
+  calme: 0.2,
+  equilibre: 0.25,
+  sportif: 0.3,
+}
+
 /** Écart entre pied levé et pied au plancher, en fraction du rupteur. */
 const LOAD_SPREAD: Record<Temperament, number> = {
   calme: 0.2,
@@ -134,6 +147,16 @@ export function buildProfile(choices: WizardChoices, template: Profile): Profile
       downshiftAtRedlineRatio: 0.28,
       firstGearLaunchOnly: true,
       launchUpshiftKmh: choices.usage === 'ville' ? 5 : 8,
+      // Le plancher garde une marge au-dessus du ralenti : sur un diesel, la
+      // fraction du rupteur seule tomberait trop près du régime de ralenti.
+      cruiseMinRpm: Math.round(
+        Math.max(engine.idle * 1.4, engine.redline * CRUISE_FLOOR[choices.temperament]),
+      ),
+      // Un tempérament calme monte dès que la vitesse se stabilise ; un sportif
+      // garde son rapport plus longtemps avant d'y renoncer.
+      cruiseUpshiftAfterS: Number((2 + 1.6 * sportiness).toFixed(1)),
+      // Et il descend au freinage sur une décélération plus faible.
+      brakeDownshiftAccelMs2: Number((-1.1 + 0.5 * sportiness).toFixed(2)),
       shiftDelaysS,
     },
     mix: {
@@ -171,6 +194,24 @@ export function buildProfile(choices: WizardChoices, template: Profile): Profile
  * Un aperçu chiffré vaut mieux qu'une promesse : il permet de juger avant de
  * créer, et de comprendre ce que chaque choix a changé.
  */
+/**
+ * Rapport le plus long qui tourne encore au-dessus du plancher de croisière.
+ *
+ * C'est exactement là que la montée en croisière s'arrête : elle grimpe d'un
+ * rapport tant que le suivant reste au-dessus du plancher, et le régime décroît
+ * avec l'index du rapport. Le calcul donne donc le même résultat que la boîte,
+ * sans avoir à la faire tourner.
+ */
+function cruiseGearAt(profile: Profile, kmh: number): number {
+  const { gearRatios, finalDrive, wheelRadiusM, cruiseMinRpm } = profile.drivetrain
+  let chosen = 0
+  for (let gear = 0; gear < gearRatios.length; gear += 1) {
+    const rpm = ((kmh * K) / wheelRadiusM) * 60 * (gearRatios[gear] ?? 1) * finalDrive
+    if (rpm >= cruiseMinRpm) chosen = gear
+  }
+  return chosen
+}
+
 export function describeProfile(profile: Profile): string[] {
   const { drivetrain, engine } = profile
   const count = drivetrain.gearRatios.length
@@ -178,8 +219,13 @@ export function describeProfile(profile: Profile): string[] {
   const rpmAt = (kmh: number, ratio: number) =>
     ((kmh * K) / drivetrain.wheelRadiusM) * 60 * ratio * drivetrain.finalDrive
 
+  // Le régime de croisière vient en premier : c'est celui qu'on entendra le
+  // plus souvent, la boîte montant d'elle-même dès que la vitesse se tient.
+  const croisiere = cruiseGearAt(profile, 90)
   const lines = [
     `${count} rapports, rupteur à ${engine.redlineRpm} tr/min.`,
+    `À 90 km/h, allure tenue : ${croisiere + 1}e rapport à ` +
+      `${Math.round(rpmAt(90, drivetrain.gearRatios[croisiere] ?? 1))} tr/min.`,
     `À 90 km/h en dernier rapport : ${Math.round(rpmAt(90, top))} tr/min.`,
     `À 130 km/h : ${Math.round(rpmAt(130, top))} tr/min.`,
   ]

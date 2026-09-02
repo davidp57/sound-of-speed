@@ -58,6 +58,34 @@ export interface DrivetrainPreset {
   /** Coupure de couple pendant le passage, en millisecondes. */
   shiftTimeMs: number
   /**
+   * Régime au-dessous duquel la boîte ne monte pas en croisière.
+   *
+   * La montée à vitesse tenue n'a pas de seuil de régime à franchir — c'est
+   * tout son intérêt — donc il lui faut une limite basse, sans quoi 50 km/h
+   * tenus finiraient sur le dernier rapport à mille tours, ce qui broute.
+   *
+   * En tours par minute et non en fraction du rupteur : c'est une limite
+   * mécanique, pas un rapport. Distinct de `minUpshiftRpm`, qui est le plancher
+   * des seuils de passage **ordinaires**.
+   */
+  cruiseMinRpm: number
+  /**
+   * Durée de vitesse stable avant de tenter un rapport de plus, en secondes.
+   *
+   * Court, la boîte monte dès qu'on lève le pied ; long, elle garde ses
+   * rapports. C'est l'un des trois réglages qui font le caractère de la boîte.
+   */
+  cruiseUpshiftAfterS: number
+  /**
+   * Décélération à partir de laquelle la boîte descend pour aider à ralentir,
+   * en m/s². Négative.
+   *
+   * Sans elle, le rétrogradage ne connaissait qu'un seuil de régime : la boîte
+   * descendait aux mêmes vitesses qu'on lève le pied doucement ou qu'on freine
+   * fort, et ne servait donc jamais à ralentir.
+   */
+  brakeDownshiftAccelMs2: number
+  /**
    * Régime de passage, en tours par minute, rapport par rapport.
    *
    * Une entrée par passage : la première vaut pour 1 → 2, la deuxième pour

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { buildProfile, describeProfile, type WizardChoices } from './wizard'
 import { createDefaultProfile, createRoadProfile } from './defaults'
 import { Engine } from '../engine/engine'
+import { Gearbox } from '../drivetrain/gearbox'
 
 /**
  * Tests de la construction guidée.
@@ -212,8 +213,13 @@ describe('describeProfile', () => {
 
     expect(lignes[0]).toContain('6 rapports')
     expect(lignes[0]).toContain(String(profile.engine.redlineRpm))
-    expect(lignes[1]).toMatch(/^À 90 km\/h en dernier rapport : \d+ tr\/min\.$/)
-    expect(lignes[2]).toMatch(/^À 130 km\/h : \d+ tr\/min\.$/)
+    // Les lignes sont retrouvées par leur contenu et non par leur rang : en
+    // ajouter une au milieu ne doit pas faire échouer un test de vocabulaire.
+    expect(lignes.some((l) => /^À 90 km\/h, allure tenue : \de rapport à \d+ tr\/min\.$/.test(l))).toBe(
+      true,
+    )
+    expect(lignes.some((l) => /^À 90 km\/h en dernier rapport : \d+ tr\/min\.$/.test(l))).toBe(true)
+    expect(lignes.some((l) => /^À 130 km\/h : \d+ tr\/min\.$/.test(l))).toBe(true)
     // Aucun terme d'implémentation : c'est un aperçu, pas un relevé.
     for (const ligne of lignes) {
       expect(ligne).not.toMatch(/rpm|ratio|upshift/i)
@@ -223,8 +229,8 @@ describe('describeProfile', () => {
   it('donne un régime cohérent avec le pont annoncé', () => {
     const profile = buildProfile(choices(), template)
 
-    const lignes = describeProfile(profile)
-    const annonce = Number(/: (\d+) tr\/min/.exec(lignes[1] ?? '')?.[1])
+    const ligne = describeProfile(profile).find((l) => l.includes('en dernier rapport')) ?? ''
+    const annonce = Number(/: (\d+) tr\/min/.exec(ligne)?.[1])
 
     expect(annonce).toBeCloseTo(rpmAtTop(profile, 90), -1)
   })
@@ -274,5 +280,81 @@ describe('describeProfile', () => {
 
     expect(lignes.length).toBeGreaterThanOrEqual(3)
     expect(lignes[0]).toContain('2 rapports')
+  })
+})
+
+describe('buildProfile — le caractère de la boîte', () => {
+  /** Régime auquel un profil croise réellement, à une vitesse tenue. */
+  function croisiere(p: ReturnType<typeof buildProfile>, kmh: number): number {
+    const gearbox = new Gearbox(p.drivetrain, p.engine, p.feel)
+    const rpmInGear = (gear: number) =>
+      Engine.kinematicRpm(
+        kmh,
+        (p.drivetrain.gearRatios[gear] ?? 1) * p.drivetrain.finalDrive,
+        p.drivetrain.wheelRadiusM,
+      )
+    let gear = 0
+    for (let frame = 0; frame * (1 / 60) <= 90; frame += 1) {
+      gear = gearbox.tick(1 / 60, {
+        rpmInGear,
+        atStandstill: false,
+        load: 0.5,
+        kmh,
+        accelMs2: 0,
+      }).gear
+    }
+    return rpmInGear(gear)
+  }
+
+  it('fait croiser un profil calme plus bas qu’un profil sportif', () => {
+    const calme = buildProfile(choices({ temperament: 'calme' }), template)
+    const sportif = buildProfile(choices({ temperament: 'sportif' }), template)
+
+    // Sur le régime réellement obtenu, et non sur le réglage : c'est ce qu'on
+    // entendra.
+    expect(croisiere(calme, 90)).toBeLessThan(croisiere(sportif, 90))
+  })
+
+  it('fait attendre plus longtemps un profil sportif avant de monter', () => {
+    const calme = buildProfile(choices({ temperament: 'calme' }), template)
+    const sportif = buildProfile(choices({ temperament: 'sportif' }), template)
+
+    expect(sportif.drivetrain.cruiseUpshiftAfterS).toBeGreaterThan(
+      calme.drivetrain.cruiseUpshiftAfterS,
+    )
+  })
+
+  it('fait descendre un profil sportif sur une décélération plus faible', () => {
+    const calme = buildProfile(choices({ temperament: 'calme' }), template)
+    const sportif = buildProfile(choices({ temperament: 'sportif' }), template)
+
+    expect(sportif.drivetrain.brakeDownshiftAccelMs2).toBeGreaterThan(
+      calme.drivetrain.brakeDownshiftAccelMs2,
+    )
+  })
+
+  it('garde le plancher de croisière au-dessus du ralenti, quel que soit le moteur', () => {
+    for (const engine of ['diesel', 'essence', 'sportif'] as const) {
+      for (const temperament of ['calme', 'equilibre', 'sportif'] as const) {
+        const p = buildProfile(choices({ engine, temperament }), template)
+        expect(p.drivetrain.cruiseMinRpm).toBeGreaterThan(p.engine.idleRpm)
+        expect(p.drivetrain.cruiseMinRpm).toBeLessThan(p.engine.redlineRpm * 0.5)
+      }
+    }
+  })
+
+  it('annonce dans l’aperçu le rapport que la boîte engage vraiment', () => {
+    for (const temperament of ['calme', 'equilibre', 'sportif'] as const) {
+      const p = buildProfile(choices({ temperament }), template)
+      const ligne = describeProfile(p).find((l) => l.includes('allure tenue')) ?? ''
+      // Le régime suit « à » sur cette ligne, le deux-points annonçant le
+      // rapport : « 5e rapport à 1927 tr/min ».
+      const annonce = Number(/à (\d+) tr\/min/.exec(ligne)?.[1])
+
+      // L'aperçu calcule le rapport de croisière plutôt que de faire tourner la
+      // boîte. Les deux doivent tomber d'accord, sinon l'aperçu promet autre
+      // chose que ce qu'on entendra.
+      expect(annonce).toBeCloseTo(croisiere(p, 90), -1)
+    }
   })
 })
