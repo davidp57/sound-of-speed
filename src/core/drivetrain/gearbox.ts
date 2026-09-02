@@ -30,6 +30,64 @@ const MANUAL_DEBOUNCE_MS = 220
  */
 const UPSHIFT_OVERSHOOT_RPM = 400
 
+/**
+ * Montée de charge qui vaut une demande franche.
+ *
+ * En conduite réelle il n'y a pas de pédale : la charge est déduite de
+ * l'accélération. Son **niveau** ne dit donc pas « on demande fort » mais « on
+ * accélère » — mesuré, le seuil de 0,75 se franchissait dès 1 m/s², soit
+ * 3,6 km/h par seconde, et le rétrogradage tirait en permanence.
+ *
+ * Ce qui distingue « j'écrase » de « je remets délicatement les gaz », c'est la
+ * **montée** : la pédale qui bouge.
+ */
+const KICKDOWN_RISE_LOAD = 0.35
+/**
+ * Fenêtre sur laquelle cette montée est mesurée, en secondes.
+ *
+ * Une seconde et demie, et ce n'est pas un choix esthétique : l'accélération
+ * vient d'une pente estimée sur une seconde, une détection plus courte lirait
+ * du bruit. Corollaire assumé — la détection est un peu en retard sur le pied.
+ */
+const KICKDOWN_RISE_WINDOW_S = 1.5
+/** Délai minimal entre deux rétrogradages forcés, en secondes. */
+const KICKDOWN_COOLDOWN_S = 3
+/** Accélération en deçà de laquelle on considère la vitesse tenue, en m/s². */
+const CRUISE_STEADY_ACCEL_MS2 = 0.3
+/** Durée de décélération soutenue avant de descendre, en secondes. */
+const BRAKE_HOLD_S = 1
+/** Le rapport visé par une descente au freinage ne dépasse pas cette fraction du rupteur. */
+const BRAKE_DOWNSHIFT_CEILING = 0.85
+
+/**
+ * Ce que la boîte a besoin de savoir pour décider.
+ *
+ * Un objet plutôt que des paramètres positionnels : ils étaient cinq, l'ajout de
+ * l'accélération en aurait fait six, et l'appel devenait indéchiffrable. Le
+ * moteur a le même arrangement avec `EngineInput`.
+ */
+export interface GearboxInput {
+  /**
+   * Régime qu'aurait le moteur dans un rapport donné, à la vitesse actuelle.
+   * Fourni par l'appelant pour éviter que la boîte connaisse la géométrie des
+   * roues.
+   */
+  rpmInGear: (gear: number) => number
+  atStandstill: boolean
+  /** Charge moteur, de 0 à 1. Décale le seuil de montée. */
+  load: number
+  /** Vitesse, pour le traitement particulier de la première. */
+  kmh: number
+  /**
+   * Accélération lissée, en m/s², positive en accélération.
+   *
+   * C'est elle qui distingue une reprise franche d'une reprise douce, une
+   * croisière stabilisée d'une accélération, et un freinage d'un simple lever de
+   * pied — trois choses qu'un seuil de régime ne peut pas voir.
+   */
+  accelMs2: number
+}
+
 export interface GearboxState {
   /** Index du rapport engagé, 0 = premier. */
   gear: number
@@ -73,6 +131,17 @@ export class Gearbox {
   private lastKickdown = 0
   /** Empêche un second rétrogradage forcé tant que la pédale reste enfoncée. */
   private kickdownArmed = true
+  /** Horloge interne, en secondes. Sert à dater l'historique de charge. */
+  private elapsedS = 0
+  /** Charges récentes, pour mesurer la montée sur la fenêtre déclarée. */
+  private loadHistory: { at: number; load: number }[] = []
+  private currentLoad = 0
+  /** Temps depuis le dernier rétrogradage forcé, en secondes. */
+  private sinceKickdownS = Number.POSITIVE_INFINITY
+  /** Durée pendant laquelle la vitesse est restée stable, en secondes. */
+  private steadyForS = 0
+  /** Durée pendant laquelle la décélération est restée soutenue, en secondes. */
+  private brakingForS = 0
 
   constructor(
     private drivetrain: DrivetrainPreset,
@@ -112,6 +181,44 @@ export class Gearbox {
     this.shiftRemainingS = 0
     this.shiftDirection = null
     this.readyForS = 0
+    this.loadHistory = []
+    this.currentLoad = 0
+    this.elapsedS = 0
+    this.sinceKickdownS = Number.POSITIVE_INFINITY
+    this.steadyForS = 0
+    this.brakingForS = 0
+  }
+
+  /**
+   * Montée de charge sur la fenêtre déclarée.
+   *
+   * La comparaison se fait à la mesure **la plus récente qui soit assez
+   * ancienne**, et non à la plus ancienne de l'historique : cette confusion a
+   * coûté au conditionnement du signal une fenêtre de seize secondes là où elle
+   * en annonçait une, et un régime qui restait trop haut une quinzaine de
+   * secondes. On ne la refait pas ici.
+   */
+  private loadRise(): number {
+    for (let i = this.loadHistory.length - 1; i >= 0; i -= 1) {
+      const entry = this.loadHistory[i]
+      if (entry && this.elapsedS - entry.at >= KICKDOWN_RISE_WINDOW_S) {
+        return this.currentLoad - entry.load
+      }
+    }
+    // Pas encore assez d'historique : aucune montée établie, donc aucune
+    // demande franche. Le rétrogradage forcé attend, ce qui vaut mieux qu'un
+    // déclenchement sur une fenêtre incomplète.
+    return 0
+  }
+
+  /** Retient la charge courante, en ne gardant que le double de la fenêtre. */
+  private recordLoad(load: number): void {
+    this.currentLoad = load
+    this.loadHistory.push({ at: this.elapsedS, load })
+    const limite = this.elapsedS - KICKDOWN_RISE_WINDOW_S * 2
+    while (this.loadHistory.length > 1 && (this.loadHistory[0]?.at ?? 0) < limite) {
+      this.loadHistory.shift()
+    }
   }
 
   /**
@@ -180,37 +287,52 @@ export class Gearbox {
   }
 
   /**
-   * @param dt        Temps écoulé, en secondes.
-   * @param rpmInGear Régime qu'aurait le moteur dans un rapport donné, à la
-   *                  vitesse actuelle. Fourni par l'appelant pour éviter que la
-   *                  boîte connaisse la géométrie des roues.
-   * @param atStandstill Véhicule à l'arrêt.
-   * @param load        Charge moteur, de 0 à 1. Décale le seuil de montée.
-   * @param kmh         Vitesse, pour le traitement particulier de la première.
+   * @param dt    Temps écoulé, en secondes.
+   * @param input Ce que la boîte observe — voir `GearboxInput`.
    */
-  tick(
-    dt: number,
-    rpmInGear: (gear: number) => number,
-    atStandstill: boolean,
-    load: number,
-    kmh: number,
-  ): GearboxState {
+  tick(dt: number, input: GearboxInput): GearboxState {
+    const { rpmInGear, atStandstill, load, kmh, accelMs2 } = input
+
     if (this.shiftRemainingS > 0) {
       this.shiftRemainingS = Math.max(0, this.shiftRemainingS - dt)
       if (this.shiftRemainingS === 0) this.shiftDirection = null
     }
 
+    // Ce que la boîte lit de l'évolution de la vitesse. Trois durées
+    // accumulées plutôt que trois instantanés : une boîte ne décide pas sur une
+    // image, elle décide sur une tendance.
+    this.elapsedS += dt
+    this.recordLoad(load)
+    this.sinceKickdownS += dt
+    this.steadyForS = Math.abs(accelMs2) <= CRUISE_STEADY_ACCEL_MS2 ? this.steadyForS + dt : 0
+    this.brakingForS =
+      accelMs2 <= this.drivetrain.brakeDownshiftAccelMs2 ? this.brakingForS + dt : 0
+
+    // Deux notions distinctes, et les confondre suffit à faire le yoyo.
+    //
+    // `steadyNow` dit que la vitesse est stable **à cet instant** : c'est lui
+    // qui suspend la descente au régime, et il doit rester vrai pendant toute
+    // la croisière. `steadyLongEnough` dit qu'elle l'est depuis assez longtemps
+    // pour tenter un rapport de plus ; il repart à zéro après chaque montée,
+    // pour que la cascade se fasse palier par palier.
+    //
+    // En les confondant, chaque montée réarmait la descente au régime dans la
+    // seconde — le rapport atteint tournant précisément sous ce seuil — et la
+    // boîte oscillait indéfiniment.
+    const steadyNow = Math.abs(accelMs2) <= CRUISE_STEADY_ACCEL_MS2
+    const steadyLongEnough = this.steadyForS >= this.drivetrain.cruiseUpshiftAfterS
+    const braking = this.brakingForS >= BRAKE_HOLD_S
+
     let ready = false
     let blocked = false
     let upThresholdSeen = this.upshiftThreshold(this.gear, load)
     const downThresholdSeen = this.engine.redlineRpm * this.drivetrain.downshiftAtRedlineRatio
+    const auto = this.mode === 'auto' && this.hasGearbox && this.shiftRemainingS === 0
 
     // La première n'est qu'une amorce : passé la vitesse de lancement, elle cède
     // la place sans attendre le moindre seuil de régime.
     if (
-      this.mode === 'auto' &&
-      this.hasGearbox &&
-      this.shiftRemainingS === 0 &&
+      auto &&
       this.drivetrain.firstGearLaunchOnly &&
       this.gear === 0 &&
       kmh >= this.drivetrain.launchUpshiftKmh
@@ -221,26 +343,46 @@ export class Gearbox {
 
     // Le rétrogradage forcé passe avant tout le reste : c'est une demande
     // explicite du conducteur, pas une décision de la boîte.
-    if (
-      this.mode === 'auto' &&
-      this.hasGearbox &&
-      this.shiftRemainingS === 0 &&
-      this.feel.kickdown.enabled &&
-      !atStandstill
-    ) {
-      if (load < this.feel.kickdown.loadThreshold * 0.7) this.kickdownArmed = true
-      else if (this.kickdownArmed && load >= this.feel.kickdown.loadThreshold) {
+    //
+    // Ce qui le déclenche est la **montée** de charge et non son niveau. Le
+    // niveau seul ne distinguait pas « j'écrase » de « je remets délicatement
+    // les gaz » : faute de pédale, la charge est déduite de l'accélération, et
+    // le seuil se franchissait dès 3,6 km/h par seconde.
+    if (auto && this.feel.kickdown.enabled && !atStandstill) {
+      const threshold = this.feel.kickdown.loadThreshold
+      if (load < threshold * 0.7) this.kickdownArmed = true
+      else if (
+        this.kickdownArmed &&
+        load >= threshold &&
+        this.loadRise() >= KICKDOWN_RISE_LOAD &&
+        this.sinceKickdownS >= KICKDOWN_COOLDOWN_S
+      ) {
         const dropped = this.kickdown(rpmInGear)
         if (dropped > 0) {
           this.kickdownArmed = false
           this.lastKickdown = dropped
+          this.sinceKickdownS = 0
+          this.steadyForS = 0
           return this.report(atStandstill, false, false, upThresholdSeen, downThresholdSeen)
         }
         this.kickdownArmed = false
       }
     }
 
-    if (this.mode === 'auto' && this.hasGearbox && this.shiftRemainingS === 0) {
+    // Descente au ralentissement : le rétrogradage sert aussi à ralentir, et
+    // c'était la moitié manquante de son métier. Un seul seuil de régime
+    // décidait, le même qu'on lève le pied doucement ou qu'on freine fort.
+    if (auto && braking && !atStandstill && this.gear > this.downshiftFloor()) {
+      const candidate = rpmInGear(this.gear - 1)
+      if (candidate <= this.engine.redlineRpm * BRAKE_DOWNSHIFT_CEILING) {
+        this.readyForS = 0
+        this.brakingForS = 0
+        this.applyShift(-1)
+        return this.report(atStandstill, false, false, upThresholdSeen, downThresholdSeen)
+      }
+    }
+
+    if (auto) {
       const rpm = rpmInGear(this.gear)
       const upThreshold = upThresholdSeen
 
@@ -256,8 +398,13 @@ export class Gearbox {
         if (this.readyForS >= delay || overshot) this.applyShift(1)
       } else if (
         rpm <= downThresholdSeen &&
-        this.gear > (this.drivetrain.firstGearLaunchOnly ? 1 : 0) &&
+        this.gear > this.downshiftFloor() &&
         !atStandstill &&
+        // Suspendue en croisière : la 4e à 50 km/h tourne à 1532 tr/min, sous
+        // ce seuil, et la boîte ferait le yoyo avec la montée en croisière.
+        // Cette règle existe pour éviter de brouter ; le plancher de croisière
+        // garantit précisément qu'on ne broute pas.
+        !steadyNow &&
         // Garde contre le va-et-vient : rétrograder n'a de sens que si le régime
         // obtenu ne franchit pas aussitôt le seuil de montée du rapport visé,
         // ce qui ferait remonter dans la foulée. La marge évite de s'arrêter
@@ -267,8 +414,27 @@ export class Gearbox {
         this.readyForS = 0
         this.applyShift(-1)
       } else {
-        if (rpm <= downThresholdSeen && this.gear > 0 && !atStandstill) blocked = true
+        if (rpm <= downThresholdSeen && this.gear > 0 && !atStandstill && !steadyNow) {
+          blocked = true
+        }
         this.readyForS = 0
+
+        // Montée en croisière : la seule raison de monter qui ne regarde pas le
+        // régime. Sans elle, un palier figeait le rapport où l'on était — 50 km/h
+        // tenus laissaient la 2e à 3034 tr/min quand la 4e donnait 1532.
+        //
+        // Un rapport à la fois : la cascade se fait d'elle-même, palier par
+        // palier, et chaque étape est jugée sur son propre régime.
+        if (
+          steadyLongEnough &&
+          this.shiftRemainingS === 0 &&
+          this.gear < this.gearCount - 1 &&
+          !atStandstill &&
+          rpmInGear(this.gear + 1) >= this.drivetrain.cruiseMinRpm
+        ) {
+          this.steadyForS = 0
+          this.applyShift(1)
+        }
       }
       upThresholdSeen = upThreshold
     }
@@ -286,12 +452,22 @@ export class Gearbox {
    * demande de la reprise : aller chercher le couple là où il est, plutôt que
    * d'attendre son seuil de passage.
    */
+  /**
+   * Rapport le plus bas qu'une descente automatique puisse engager.
+   *
+   * Quand la première n'est qu'une amorce de lancement, elle ne se réengage pas
+   * en roulant : on ne redescend pas en dessous de la deuxième.
+   */
+  private downshiftFloor(): number {
+    return this.drivetrain.firstGearLaunchOnly ? 1 : 0
+  }
+
   private kickdown(rpmInGear: (gear: number) => number): number {
     const target = this.engine.redlineRpm * this.feel.kickdown.targetRpmFraction
     const ceiling = this.engine.redlineRpm * 0.95
     let dropped = 0
 
-    const floor = this.drivetrain.firstGearLaunchOnly ? 1 : 0
+    const floor = this.downshiftFloor()
     while (dropped < this.feel.kickdown.maxGears && this.gear > floor) {
       if (rpmInGear(this.gear) >= target) break
       const candidate = rpmInGear(this.gear - 1)

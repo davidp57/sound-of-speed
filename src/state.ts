@@ -224,13 +224,16 @@ function step(dt: number): void {
   // La charge vient de l'image précédente : le moteur est calculé après la
   // boîte, et un décalage d'une image est imperceptible devant la constante de
   // lissage de la charge.
-  const gearboxState = gearbox.tick(
-    dt,
-    (gear) => rpmInGear(gear, speed.kmh),
-    speed.atStandstill,
-    telemetry.value.engine.load,
-    speed.kmh,
-  )
+  const gearboxState = gearbox.tick(dt, {
+    rpmInGear: (gear) => rpmInGear(gear, speed.kmh),
+    atStandstill: speed.atStandstill,
+    load: telemetry.value.engine.load,
+    kmh: speed.kmh,
+    // La même accélération que celle qui pilote la charge du moteur : une
+    // seconde estimation divergerait de la première sans qu'on sache laquelle
+    // croire.
+    accelMs2: speed.accelMs2,
+  })
 
   const engineState = engine.tick(dt, {
     kmh: speed.kmh,

@@ -369,7 +369,10 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 | **Écart selon la charge** | De combien le passage recule pied au plancher et avance pied levé, de part et d'autre des valeurs ci-dessus |
 | **Dispersion aléatoire** | Tirée au sort à chaque passage. Sans elle, la boîte passe toujours au même régime exact et s'entend comme une machine |
 | **Ne jamais monter sous** | Plancher appliqué aux régimes de passage ci-dessus, toutes charges confondues : il empêche l'écart de charge de faire monter un rapport à un régime où le moteur peinerait. Sans effet sur le rétrogradage — c'est **Descente sous** qui le commande |
-| **Descente sous** | Seuil de rétrogradage, en fraction du rupteur. C'est lui qui décide à quelle vitesse la boîte redescend en décélération : trop bas, elle reste sur le dernier rapport bien après qu'il n'a plus de sens. Mesuré sur le profil Sport, la quatrième cède la place à 46 km/h à 0,20 du rupteur, et à 114 km/h à 0,50 |
+| **Descente sous** | Seuil de rétrogradage, en fraction du rupteur, quand la vitesse n'est ni tenue ni franchement en baisse. Trop bas, la boîte reste sur le dernier rapport bien après qu'il n'a plus de sens. Mesuré sur le profil Sport, la quatrième cède la place à 46 km/h à 0,20 du rupteur, et à 114 km/h à 0,50 |
+| **Croisière au-dessus de** | Quand on tient une vitesse, la boîte monte les rapports d'elle-même et s'arrête juste avant de descendre sous ce régime. C'est le réglage qui décide de l'assiette en croisière : trop bas le moteur broute, trop haut il reste inutilement haut. Sur Route, 1500 tr/min place la sixième dès 90 km/h |
+| **Monter après** | Durée de vitesse stable avant de tenter un rapport de plus. Court, la boîte monte dès qu'on lève le pied ; long, elle garde ses rapports |
+| **Descendre en freinant à** | Décélération à partir de laquelle la boîte descend pour aider à ralentir, sans attendre que le régime soit tombé. Proche de zéro, elle descend au moindre lever de pied |
 | **Temporisations de montée** | Une par rapport, en secondes. Les garder **inégales** : avec une valeur unique, la boîte sonne comme un métronome. Courtes de préférence — elles confirment une intention, elles ne retiennent pas le passage |
 
 ### Signal de vitesse
@@ -401,7 +404,7 @@ qu'on remarque surtout par leur absence. Chacun s'active séparément.
 | Réglage | Ce qu'il fait |
 |---|---|
 | **Rétrogradage forcé** | Enfoncer la pédale fait descendre chercher le couple, au lieu d'attendre le seuil de passage. Mesuré : 6<sup>e</sup> à 1927 tr/min → 4<sup>e</sup> à 2724 en une demi-seconde |
-| **Déclenché au-delà de** | Charge à partir de laquelle la demande est jugée franche |
+| **Déclenché au-delà de** | Charge à partir de laquelle la demande est jugée franche. Le niveau ne suffit pas : il faut aussi que la charge ait **monté** franchement dans la seconde et demie écoulée. Sans cette condition, le rétrogradage partait dès 3,6 km/h par seconde — c'est-à-dire en remettant délicatement les gaz — puisque, faute de pédale, la charge est déduite de l'accélération |
 | **Régime visé** | Ce qu'on cherche à retrouver après la descente, en fraction du rupteur |
 | **Rapports descendus au plus** | Deux suffisent sur un profil routier, trois donnent une réponse plus vive |
 | **Pétarade** | Claquements à l'échappement au lever de pied. Synthétisés, la banque sonore n'en contenant pas |
@@ -437,17 +440,17 @@ domaine.
 Deux profils sont livrés avec l'application, et le bouton **Profils d'usine**
 réintroduit ceux qu'on aurait supprimés.
 
-**Route** — calibré sur les vitesses que l'on pratique vraiment. Les six rapports
-servent entre 0 et 100 km/h en conduite tranquille, chacun tournant autour de
-2500 tours à sa vitesse de croisière, et la dernière ne tire que 2780 tr/min à
-130 km/h. Pied au plancher, les passages reculent jusqu'aux trois quarts du
-rupteur : il reste de quoi s'amuser sans que ce soit le régime ordinaire.
+**Route** — calibré sur les vitesses que l'on pratique vraiment. En accélération
+les six rapports servent entre 0 et 100 km/h, et dès qu'on tient une vitesse la
+boîte monte d'elle-même : mesuré, la quatrième à 50 km/h (1532 tr/min), la
+cinquième à 70 (1790), la sixième dès 90 (1927), et 2784 tr/min à 130. Pied au
+plancher, les passages reculent jusqu'aux trois quarts du rupteur : il reste de
+quoi s'amuser sans que ce soit le régime ordinaire.
 
 **Sport** — le calibrage d'origine, taillé pour une plage que l'on n'atteint
-jamais sur route. À 130 km/h en sixième il ne tourne qu'à un tiers de son
-rupteur : la moitié haute de la boîte ne sert donc à rien, tandis que les
-rapports courts hurlent en ville. Intéressant sur une portion dégagée, fatigant
-au quotidien.
+jamais sur route. Il garde ses rapports plus longtemps et croise plus haut :
+la troisième à 50 km/h (2460 tr/min) là où Route est en quatrième, et 3386 tr/min
+à 130. Intéressant sur une portion dégagée, fatigant au quotidien.
 
 Le tout se règle : c'est la différence entre les deux, pas une nature.
 
@@ -456,8 +459,10 @@ Le tout se règle : c'est la différence entre les deux, pas une nature.
 | Rupteur | 6500 tr/min | 8500 |
 | Pont | 3,7 | 4,5 |
 | Passage 1 → 2 (charge moyenne) | 35 km/h | 40 |
-| Sixième engagée, conduite douce | 98 km/h | 134 |
-| Régime à 130 km/h en sixième | 2780 tr/min | 3390 |
+| Plancher de croisière | 1500 tr/min | 2000 |
+| Rapport tenu à 50 km/h | 4<sup>e</sup>, 1532 tr/min | 3<sup>e</sup>, 2460 |
+| Rapport tenu à 90 km/h | 6<sup>e</sup>, 1927 tr/min | 6<sup>e</sup>, 2344 |
+| Régime à 130 km/h en sixième | 2784 tr/min | 3386 |
 
 Sélection, renommage, duplication, suppression, **export** et **import** en JSON.
 
@@ -599,7 +604,7 @@ src/
       replay.ts          rejeu d'une trace enregistrée, et son enregistreur
       conditioner.ts     fenêtre glissante, extrapolation, ressort amorti
     engine/engine.ts     régime, charge, rupteur
-    drivetrain/gearbox.ts  rapports, passages automatiques et manuels
+    drivetrain/gearbox.ts  rapports, passages automatiques et manuels, croisière
     audio/
       mix.ts             gains et vitesses de lecture des couches (fonction pure)
       engine.ts          graphe Web Audio, chargement, horloge sur le fil audio
@@ -622,6 +627,28 @@ tests à part : ce qui décrit un module vit avec lui.
 Les trois sources de vitesse exposent la même interface, donc rien en aval ne
 sait d'où vient le chiffre : on développe au clavier, on met au point en rejouant
 un trajet capturé, on roule pour de vrai, sans branche conditionnelle nulle part.
+
+### Ce que la boîte regarde
+
+Elle ne décide pas seulement sur le régime. Trois règles se partagent le travail,
+et chacune répond à une question différente :
+
+- **le régime**, pour les passages en accélération — chaque rapport a son seuil ;
+- **la stabilité de la vitesse**, pour la croisière. Un palier ne fait plus
+  monter le régime, donc rien ne déclencherait de passage : sans cette règle, la
+  boîte restait figée où elle était, et 50 km/h tenus laissaient la deuxième à
+  3034 tr/min. Elle monte donc d'un rapport dès que la vitesse est stable depuis
+  quelques secondes, et s'arrête juste avant de descendre sous le plancher de
+  croisière ;
+- **la décélération**, pour descendre. Le seuil de régime seul ne distinguait pas
+  un lever de pied d'un freinage : la boîte redescendait aux mêmes vitesses dans
+  les deux cas, et ne servait donc jamais à ralentir.
+
+Le rétrogradage forcé, lui, répond à une **montée** de charge et non à son
+niveau. Faute de pédale dans une voiture électrique, la charge est déduite de
+l'accélération : son niveau ne dit pas « on demande fort » mais « on accélère ».
+Le seuil se franchissait dès 3,6 km/h par seconde, et la boîte descendait pour
+cela.
 
 ### La pièce importante, et ce n'est pas le son
 
@@ -723,6 +750,7 @@ chaque essai.
 | 10 | Mise sous test du cœur : 211 tests, 94 % de `core/` couvert | fait |
 | 11 | Les quatre défauts que la mise sous test a trouvés | corrigé, reste à écouter |
 | 12 | Son maintenu quand le navigateur passe en arrière-plan | à essayer en voiture |
+| 13 | Boîte qui regarde la vitesse : montée en croisière, descente au freinage, rétrogradage sur la demande | à écouter |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

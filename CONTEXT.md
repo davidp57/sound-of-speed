@@ -85,12 +85,25 @@ empêcher les rapports courts de monter au rupteur et éviter que les longs
 passent trop bas.
 _Éviter_ : shift, changement de vitesse.
 
+**Croisière** (_cruise_) :
+La phase où la vitesse est tenue, l'accélération restant dans une bande étroite
+autour de zéro pendant quelques secondes. La boîte y monte les rapports d'elle-même, jusqu'au **plancher de croisière**
+(`cruiseMinRpm`) — le régime sous lequel elle refuse de descendre, pour ne pas
+brouter. C'est la seule raison de
+monter qui ne regarde pas le régime.
+_Éviter_ : régulateur (qui désigne le curseur du simulateur), palier.
+
 **Rétrogradage** (_downshift_) :
 Le changement vers un rapport plus court. Deux cas distincts : le rétrogradage
 ordinaire, sous un seuil de régime en décélération, et le **rétrogradage forcé**
 (_kickdown_), déclenché par une demande franche, qui descend plusieurs rapports
 d'un coup pour retrouver du couple.
 _Éviter_ : kickdown en français.
+
+Trois choses distinctes se cachent donc sous « descendre un rapport » : le
+rétrogradage **au régime**, quand le moteur tombe trop bas ; le rétrogradage
+**au freinage**, pour aider à ralentir (`brakeDownshiftAccelMs2`) ; et le
+rétrogradage **forcé**, sur une demande franche du conducteur.
 
 ## Le son
 

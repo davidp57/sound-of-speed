@@ -8,6 +8,7 @@ import {
   rpmAtSpeed,
 } from './defaults'
 import { Engine } from '../engine/engine'
+import { Gearbox } from '../drivetrain/gearbox'
 import type { Profile } from './schema'
 
 /**
@@ -112,6 +113,94 @@ describe('profils livrés', () => {
         expect(couche.anchorRpm).toBeGreaterThan(0)
         expect(couche.minRate).toBeLessThan(couche.maxRate)
       }
+    }
+  })
+})
+
+describe('profils livrés — la croisière', () => {
+  const VITESSES = [30, 50, 70, 90, 110, 130]
+
+  /**
+   * Rapport et régime auxquels un profil se stabilise à vitesse tenue.
+   *
+   * On fait tourner la boîte à vitesse fixe, accélération nulle, assez
+   * longtemps pour que la montée en croisière ait fini sa cascade.
+   */
+  function croisiere(p: Profile, kmh: number): { gear: number; rpm: number } {
+    const gearbox = new Gearbox(p.drivetrain, p.engine, p.feel)
+    const rpmInGear = (gear: number) =>
+      Engine.kinematicRpm(
+        kmh,
+        (p.drivetrain.gearRatios[gear] ?? 1) * p.drivetrain.finalDrive,
+        p.drivetrain.wheelRadiusM,
+      )
+    let gear = 0
+    for (let frame = 0; frame * (1 / 60) <= 90; frame += 1) {
+      gear = gearbox.tick(1 / 60, {
+        rpmInGear,
+        atStandstill: false,
+        load: 0.5,
+        kmh,
+        accelMs2: 0,
+      }).gear
+    }
+    return { gear, rpm: rpmInGear(gear) }
+  }
+
+  it('ne laisse aucun régime de croisière absurde sur Route', () => {
+    const p = createRoadProfile()
+
+    // Mesuré : 1820 à 30 km/h, 1532 à 50, 1790 à 70, 1927 à 90, 2355 à 110.
+    // C'est ce tableau que ce test protège d'un réglage futur maladroit.
+    for (const kmh of VITESSES.filter((v) => v < 130)) {
+      expect(croisiere(p, kmh).rpm).toBeLessThan(2500)
+    }
+  })
+
+  it('ne fait brouter aucun des deux profils', () => {
+    for (const p of createFactoryProfiles()) {
+      for (const kmh of VITESSES) {
+        expect(croisiere(p, kmh).rpm).toBeGreaterThanOrEqual(p.drivetrain.cruiseMinRpm)
+      }
+    }
+  })
+
+  it('engage la sixième sur route ouverte, avec le profil Route', () => {
+    const p = createRoadProfile()
+    const dernier = p.drivetrain.gearRatios.length - 1
+
+    expect(croisiere(p, 90).gear).toBe(dernier)
+    expect(croisiere(p, 130).gear).toBe(dernier)
+  })
+
+  it('fait croiser Sport plus haut que Route, à chaque vitesse', () => {
+    const route = createRoadProfile()
+    const sport = createDefaultProfile()
+
+    for (const kmh of VITESSES) {
+      expect(croisiere(sport, kmh).rpm).toBeGreaterThan(croisiere(route, kmh).rpm)
+    }
+  })
+
+  it('donne aux deux profils un caractère de boîte cohérent avec leur nom', () => {
+    const route = createRoadProfile()
+    const sport = createDefaultProfile()
+
+    // Sport croise plus haut, garde ses rapports plus longtemps, et descend au
+    // freinage sur une décélération plus faible.
+    expect(sport.drivetrain.cruiseMinRpm).toBeGreaterThan(route.drivetrain.cruiseMinRpm)
+    expect(sport.drivetrain.cruiseUpshiftAfterS).toBeGreaterThan(
+      route.drivetrain.cruiseUpshiftAfterS,
+    )
+    expect(sport.drivetrain.brakeDownshiftAccelMs2).toBeGreaterThan(
+      route.drivetrain.brakeDownshiftAccelMs2,
+    )
+  })
+
+  it('garde le plancher de croisière au-dessus du ralenti', () => {
+    for (const p of createFactoryProfiles()) {
+      expect(p.drivetrain.cruiseMinRpm).toBeGreaterThan(p.engine.idleRpm)
+      expect(p.drivetrain.cruiseMinRpm).toBeLessThan(p.engine.redlineRpm * 0.5)
     }
   })
 })
