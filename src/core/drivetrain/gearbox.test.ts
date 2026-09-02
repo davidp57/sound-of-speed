@@ -65,6 +65,8 @@ interface Shift {
   to: number
   kmh: number
   rpm: number
+  /** Instant du passage, en secondes. Sert à isoler une phase du trajet. */
+  t: number
 }
 
 /**
@@ -93,7 +95,7 @@ function drive(
     const before = rpmInGear(previous)
     last = gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: kmh < 1, load: load, kmh: kmh, accelMs2 })
     if (last.gear !== previous) {
-      shifts.push({ from: previous, to: last.gear, kmh, rpm: before })
+      shifts.push({ from: previous, to: last.gear, kmh, rpm: before, t })
       previous = last.gear
     }
   }
@@ -780,6 +782,149 @@ describe('Gearbox — descendre pour ralentir', () => {
 
     for (const descente of shifts.filter((s) => s.to < s.from)) {
       expect(descente.to).toBeGreaterThanOrEqual(1)
+    }
+  })
+})
+
+describe('Gearbox — ralentir n’est pas croiser', () => {
+  /**
+   * Descente depuis une croisière stabilisée à 110 km/h.
+   *
+   * C'est le scénario où les deux défauts se voyaient : on tient une vitesse,
+   * la boîte monte au dernier rapport, puis on ralentit doucement.
+   */
+  const depuisCroisiere = (p: Profile, kmhParSeconde: number) =>
+    drive(
+      p,
+      (t) => (t < 20 ? Math.min(110, t * 6) : t < 40 ? 110 : Math.max(0, 110 - (t - 40) * kmhParSeconde)),
+      40 + 110 / kmhParSeconde + 5,
+      // La phase de descente seule : les passages de la montée en vitesse et de
+      // la croisière ne sont pas le sujet.
+    ).shifts.filter((s) => s.t > 40)
+
+  it('descend régulièrement quand on ralentit doucement', () => {
+    const p = profile()
+    // 0,8 km/h par seconde, soit 0,22 m/s² : à l'intérieur de la bande
+    // d'accélération considérée comme stable. C'était le piège — la descente au
+    // régime s'en trouvait suspendue, et le dernier rapport gardé jusqu'à
+    // l'arrêt.
+    const passages = depuisCroisiere(p, 0.8)
+    const descentes = passages.filter((s) => s.to < s.from && s.kmh > 5)
+
+    // Mesuré : 6→5 à 104 km/h, 5→4 à 87, 4→3 à 73, 3→2 à 55.
+    expect(descentes.length).toBeGreaterThanOrEqual(4)
+    // Étalées, et non entassées dans les derniers kilomètres-heure.
+    expect(Math.max(...descentes.map((s) => s.kmh))).toBeGreaterThan(90)
+    expect(Math.min(...descentes.map((s) => s.kmh))).toBeLessThan(70)
+  })
+
+  it('ne garde pas le dernier rapport jusqu’à l’arrêt', () => {
+    const p = profile()
+    const dernier = p.drivetrain.gearRatios.length - 1
+
+    const passages = depuisCroisiere(p, 0.8)
+    const quitteLeDernier = passages.find((s) => s.from === dernier && s.to < dernier)
+
+    expect(quitteLeDernier).toBeDefined()
+    // Bien avant l'arrêt : à 104 km/h, mesuré.
+    expect(quitteLeDernier!.kmh).toBeGreaterThan(80)
+  })
+
+  it('ne monte pas en croisière quand la vitesse décline doucement', () => {
+    const p = profile()
+
+    // Une décélération constante et faible, dans la bande d'accélération mais
+    // hors de celle, plus serrée, du côté du ralentissement : tenir une
+    // vitesse, c'est ne pas la perdre.
+    const { shifts } = hold(p, 90, 60, () => ({ load: 0.4, accelMs2: -0.2 }))
+
+    // Passé la mise en place du rapport adapté à la vitesse, dans la première
+    // fraction de seconde, plus aucune montée.
+    expect(shifts.filter((s) => s.to > s.from && s.t > 5)).toHaveLength(0)
+  })
+
+  it('tolère un tremblement de l’accélération', () => {
+    const p = profile()
+
+    // L'accélération vient d'une dérivée du GPS : elle tremble. Une sortie
+    // brève de la bande ne doit pas empêcher la croisière, sinon la montée ne
+    // se déclencherait jamais en conduite réelle.
+    const { shifts } = hold(p, 90, 60, (t) => ({
+      load: 0.5,
+      accelMs2: Math.sin(t * 7) * 0.25,
+    }))
+
+    expect(shifts.filter((s) => s.to > s.from && s.t > 5).length).toBeGreaterThan(0)
+  })
+
+  it('distingue un tremblement d’un vrai changement d’allure', () => {
+    const p = profile()
+
+    // Même forme, six fois l'amplitude : ce n'est plus du bruit, c'est une
+    // allure qui bouge. Aucune montée en croisière.
+    const { shifts } = hold(p, 90, 60, (t) => ({
+      load: 0.5,
+      accelMs2: Math.sin(t * 7) * 1.5,
+    }))
+
+    expect(shifts.filter((s) => s.to > s.from && s.t > 5)).toHaveLength(0)
+  })
+})
+
+describe('Gearbox — on ne monte pas en freinant', () => {
+  it('n’annule pas une descente au freinage par une montée au régime', () => {
+    const p = profile()
+
+    // Le va-et-vient mesuré avant ce correctif : 3→2 à 98 km/h, 2→3 à 98,
+    // 3→2 à 95, 2→3 à 95… un aller-retour tous les trois km/h. La descente au
+    // freinage engage un rapport dont le régime dépasse son propre seuil de
+    // montée, et la montée le défaisait aussitôt.
+    const { shifts } = drive(
+      p,
+      (t) => (t < 20 ? Math.min(110, t * 6) : Math.max(0, 110 - (t - 20) * 3)),
+      70,
+    )
+    const enRalentissant = shifts.filter((s) => s.t > 20 && s.kmh > 5)
+
+    expect(enRalentissant.filter((s) => s.to > s.from)).toHaveLength(0)
+  })
+
+  it('espace les descentes au freinage sans lever l’inhibition de montée', () => {
+    const p = profile()
+
+    // Les deux besoins étaient portés par le même compteur : l'espacement des
+    // descentes remettait à zéro celui du freinage, ce qui rouvrait la montée
+    // pendant une seconde — juste assez pour défaire la descente.
+    const { shifts } = drive(
+      p,
+      (t) => (t < 20 ? Math.min(140, t * 7) : Math.max(0, 140 - (t - 20) * 12)),
+      45,
+    )
+    const enFreinant = shifts.filter((s) => s.t > 20 && s.kmh > 5)
+
+    // Le sujet du test est l'inhibition, pas le nombre de descentes — la
+    // cascade est vérifiée ailleurs. Ce qui compte ici : aucune remontée.
+    expect(enFreinant.filter((s) => s.to > s.from)).toHaveLength(0)
+    expect(enFreinant.filter((s) => s.to < s.from).length).toBeGreaterThan(0)
+  })
+
+  it('ne descend pas dans un rapport au-delà de son seuil de montée', () => {
+    const p = profile()
+
+    // Mesuré avant : une descente en deuxième à 98 km/h plaçait le moteur à
+    // 7232 tr/min, au ras du rupteur, et il y restait. Le plafond utile est le
+    // seuil de montée du rapport visé, que le profil règle rapport par rapport.
+    const { shifts } = drive(
+      p,
+      (t) => (t < 25 ? Math.min(180, t * 8) : Math.max(0, 180 - (t - 25) * 15)),
+      60,
+    )
+
+    for (const descente of shifts.filter((s) => s.to < s.from && s.t > 25 && s.kmh > 5)) {
+      const regime = rpmInGearAt(p, descente.kmh)(descente.to)
+      const seuil = p.drivetrain.upshiftRpm[descente.to] ?? p.engine.redlineRpm
+      // À la dispersion de charge près : le seuil se décale avec l'effort.
+      expect(regime).toBeLessThanOrEqual(seuil + p.drivetrain.upshiftLoadSpreadRpm)
     }
   })
 })

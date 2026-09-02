@@ -725,10 +725,16 @@ et chacune répond à une question différente :
   boîte restait figée où elle était, et 50 km/h tenus laissaient la deuxième à
   3034 tr/min. Elle monte donc d'un rapport dès que la vitesse est stable depuis
   quelques secondes, et s'arrête juste avant de descendre sous le plancher de
-  croisière ;
+  croisière. **Tenir une vitesse, c'est ne pas la perdre** : la bande de
+  stabilité est asymétrique, bien plus serrée du côté du ralentissement — un
+  lever de pied sur du plat passait autrement pour une croisière, et le dernier
+  rapport se gardait jusqu'à l'arrêt ;
 - **la décélération**, pour descendre. Le seuil de régime seul ne distinguait pas
   un lever de pied d'un freinage : la boîte redescendait aux mêmes vitesses dans
-  les deux cas, et ne servait donc jamais à ralentir.
+  les deux cas, et ne servait donc jamais à ralentir. Et **on ne monte pas
+  pendant qu'on freine**, comme une vraie boîte : sans cette inhibition, la
+  montée au régime défaisait la descente aussitôt et l'on entendait un
+  aller-retour tous les trois km/h.
 
 Le rétrogradage forcé, lui, répond à une **montée** de charge et non à son
 niveau. Faute de pédale dans une voiture électrique, la charge est déduite de
@@ -847,6 +853,7 @@ chaque essai.
 | 12 | Son maintenu quand le navigateur passe en arrière-plan | à essayer en voiture |
 | 13 | Boîte qui regarde la vitesse : montée en croisière, descente au freinage, rétrogradage sur la demande | à écouter |
 | 14 | Relief du volume : l'effort, le régime et le ralenti s'entendent | à écouter |
+| 15 | Trois défauts de la boîte relevés en roulant : ralentir n'est plus croiser | à écouter |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

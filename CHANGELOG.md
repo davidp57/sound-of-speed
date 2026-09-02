@@ -63,6 +63,19 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **La boîte gardait le dernier rapport jusqu'à l'arrêt quand on ralentissait
+  doucement**, puis passait tous les rapports au premier freinage franc. La bande
+  d'accélération considérée comme « vitesse tenue » était symétrique, si bien
+  qu'un lever de pied sur du plat y tombait et suspendait la descente au régime.
+  Tenir une vitesse, c'est ne pas la perdre : la bande est désormais asymétrique.
+  Mesuré, un ralentissement doux depuis 110 km/h descend maintenant à 104, 87, 73
+  et 55 km/h au lieu de rester en sixième.
+- **Un aller-retour entre deux rapports voisins s'entendait au freinage**, tous
+  les trois km/h : la montée au régime défaisait la descente au freinage, qui
+  engage un rapport dont le régime dépasse son propre seuil de montée. On ne
+  monte plus pendant qu'on freine, comme une vraie boîte, et le plafond d'une
+  descente est désormais le seuil de montée du rapport visé — le régime le plus
+  haut atteint passe de 7232 à 5298 tr/min.
 - **Réinitialiser un profil créé par le guide lui rendait les réglages du profil
   « Sport »**, et non les siens : un profil était reconnu à son identifiant, et
   tous ceux qui n'étaient pas livrés retombaient sur les valeurs par défaut. La
