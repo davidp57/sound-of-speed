@@ -86,8 +86,10 @@ passent trop bas.
 _Éviter_ : shift, changement de vitesse.
 
 **Croisière** (_cruise_) :
-La phase où la vitesse est tenue, l'accélération restant dans une bande étroite
-autour de zéro pendant quelques secondes. La boîte y monte les rapports d'elle-même, jusqu'au **plancher de croisière**
+La phase où la vitesse est **tenue** — c'est-à-dire ni gagnée ni perdue :
+l'accélération reste dans une bande **asymétrique** autour de zéro pendant
+quelques secondes, bien plus serrée du côté du ralentissement. Un lever de pied
+sur du plat n'est pas une croisière. La boîte y monte les rapports d'elle-même, jusqu'au **plancher de croisière**
 (`cruiseMinRpm`) — le régime sous lequel elle refuse de descendre, pour ne pas
 brouter. C'est la seule raison de
 monter qui ne regarde pas le régime.
