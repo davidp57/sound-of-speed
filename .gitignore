@@ -13,6 +13,10 @@ tsconfig.tsbuildinfo
 # dans un dépôt — a fortiori s'il devient public un jour.
 htpasswd
 
+# Rapports de couverture : produits par `npm run coverage`, jamais partagés.
+.coverage/
+coverage/
+
 # Réglages de Claude Code propres au poste, et copies de travail des branches
 # créées sous .claude/worktrees/ : ni les uns ni les autres ne se partagent.
 .claude/settings.local.json

@@ -62,6 +62,10 @@ par Portainer sur un NAS Synology derrière le proxy inversé DSM. Les
 npm run dev          # serveur de développement (http://localhost:5173)
 npm run dev:mobile   # idem en HTTPS, pour tester le GPS depuis un téléphone
 npm run typecheck    # vue-tsc --noEmit
+npm run lint         # eslint
+npm test             # vitest, une passe
+npm run test:watch   # vitest en continu, pendant qu'on écrit
+npm run coverage     # couverture de core/
 npm run build        # typecheck + build de production
 npm run transcode    # compression des échantillons en FLAC
 npm run deploy       # recopie du build vers le NAS
@@ -69,26 +73,20 @@ npm run icons        # génération des icônes de l'application
 npm run htpasswd     # fichier de mots de passe nginx
 ```
 
-Il n'y a pas de script de test : voir ci-dessous.
-
 ## Contrôle qualité — avant chaque poussée
 
 **Obligatoire, et c'est exactement ce que fait la CI.**
 
 ```powershell
 npm run typecheck
+npm run lint
+npm test
 npm run build
 ```
 
-**Cible**, une fois le lot [`TEST-CORE`](.backlog/TEST-CORE/spec.md) livré — ces
-commandes n'existent pas encore, ne pas les inventer avant :
-
-```powershell
-npm run typecheck
-npx eslint src/
-npx vitest run
-npm run build
-```
+`npm run coverage` mesure la couverture de `core/` quand on veut la vérifier —
+elle n'est pas dans le contrôle qualité, un chiffre n'étant pas un critère de
+fusion.
 
 Jamais de `--no-verify` sans raison écrite dans le message de commit.
 
@@ -113,8 +111,8 @@ Configuration) et l'aide.
 
 1. **`core/` n'importe jamais Vue.** Vérifiable :
    `grep -rn "from 'vue'" src/core/` doit rester vide. C'est ce qui rend le
-   cœur testable sans monter un composant, et c'est la condition du lot
-   `TEST-CORE`.
+   cœur testable sans navigateur — les 211 tests de `core/` tournent sous Node,
+   en une seconde.
 2. **Les sources de vitesse passent toutes par `SpeedSource`**
    (`core/speed/source.ts`). Simulateur, GPS et rejeu sont interchangeables et
    rien en aval ne sait d'où vient le chiffre — aucune branche conditionnelle
@@ -315,8 +313,10 @@ Les trois fichiers de configuration :
 
 ## Checklist par changement
 
-1. Mettre à jour ou ajouter les tests — dès que le lot `TEST-CORE` est livré et
-   que le changement touche `core/`.
+1. Mettre à jour ou ajouter les tests dès que le changement touche `core/`. Le
+   test s'écrit **avant** le code quand il s'agit d'un comportement ; les tests
+   existants vivent à côté de leur module (`conditioner.test.ts` auprès de
+   `conditioner.ts`).
 2. Contrôle qualité vert (voir plus haut).
 3. `CHANGELOG.md`, section `[Non publié]`.
 4. `README.md` si un comportement, un réglage ou une étape d'installation

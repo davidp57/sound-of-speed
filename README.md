@@ -85,11 +85,20 @@ Autres commandes :
 npm run dev:mobile   # idem, en HTTPS, pour tester depuis un téléphone
 npm run build        # produit dist/
 npm run typecheck    # vérification TypeScript stricte
+npm run lint         # style et fautes courantes
+npm test             # les tests du cœur, une passe
+npm run test:watch   # les tests en continu, pendant qu'on écrit
+npm run coverage     # couverture de src/core/
 npm run transcode    # compresse les échantillons en FLAC
 npm run deploy       # recopie le build vers le NAS
 npm run icons        # régénère les icônes de l'application
 npm run htpasswd     # produit un fichier de mots de passe pour nginx
 ```
+
+Les quatre premières sont le contrôle à passer avant de pousser — c'est
+exactement ce que vérifie la chaîne d'intégration. Les tests portent sur
+`src/core/`, qui n'importe jamais Vue : ils tournent sous Node, sans navigateur,
+en une seconde.
 
 ---
 
@@ -358,8 +367,8 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 | **Passage 1 → 2**, **2 → 3**, … | Régime auquel chaque rapport cède la place au suivant, à charge moyenne. Un curseur par passage : c'est le seul moyen d'empêcher les rapports courts de monter au rupteur sans faire passer les longs trop bas. L'aide indique la vitesse correspondante |
 | **Écart selon la charge** | De combien le passage recule pied au plancher et avance pied levé, de part et d'autre des valeurs ci-dessus |
 | **Dispersion aléatoire** | Tirée au sort à chaque passage. Sans elle, la boîte passe toujours au même régime exact et s'entend comme une machine |
-| **Ne jamais monter sous** | Plancher de régime, toutes charges confondues. C'est lui qui décide à quelle vitesse la boîte rétrograde en décélération : trop bas, elle reste sur le dernier rapport bien après qu'il n'a plus de sens |
-| **Descente sous** | Seuil de rétrogradage |
+| **Ne jamais monter sous** | Plancher appliqué aux régimes de passage ci-dessus, toutes charges confondues : il empêche l'écart de charge de faire monter un rapport à un régime où le moteur peinerait. Sans effet sur le rétrogradage — c'est **Descente sous** qui le commande |
+| **Descente sous** | Seuil de rétrogradage, en fraction du rupteur. C'est lui qui décide à quelle vitesse la boîte redescend en décélération : trop bas, elle reste sur le dernier rapport bien après qu'il n'a plus de sens. Mesuré sur le profil Sport, la quatrième cède la place à 46 km/h à 0,20 du rupteur, et à 114 km/h à 0,50 |
 | **Temporisations de montée** | Une par rapport, en secondes. Les garder **inégales** : avec une valeur unique, la boîte sonne comme un métronome. Courtes de préférence — elles confirment une intention, elles ne retiennent pas le passage |
 
 ### Signal de vitesse
@@ -605,6 +614,10 @@ docker/                  piles Portainer et configuration nginx
 scripts/                 compression FLAC, déploiement
 ```
 
+Chaque module de `core/` a son fichier de tests à côté de lui —
+`conditioner.test.ts` auprès de `conditioner.ts`. Il n'y a pas de dossier de
+tests à part : ce qui décrit un module vit avec lui.
+
 Les trois sources de vitesse exposent la même interface, donc rien en aval ne
 sait d'où vient le chiffre : on développe au clavier, on met au point en rejouant
 un trajet capturé, on roule pour de vrai, sans branche conditionnelle nulle part.
@@ -706,7 +719,8 @@ chaque essai.
 | 7 | Application installable et utilisable hors réseau | fait |
 | 8 | Publication automatique de l'image, installation sans terminal | fait |
 | 9 | Process de développement écrit, git flow, contrôle d'intégration | fait |
-| TEST-CORE | Mise sous test du cœur : Vitest, ESLint, couverture de `core/` | prêt |
+| 10 | Mise sous test du cœur : 211 tests, 94 % de `core/` couvert | fait |
+| FIX-CORE | Les quatre défauts que la mise sous test a trouvés | prêt |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

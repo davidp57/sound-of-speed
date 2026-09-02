@@ -1,6 +1,6 @@
 # 04 — Le mixage et l'analyse sous test
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Vitest et ESLint en place
 
@@ -22,17 +22,17 @@ le régime correspondant au nombre de cylindres déclaré.
 
 ## Critères d'acceptation
 
-- [ ] Le niveau d'ensemble reste constant, à une tolérance explicite, tout au
+- [x] Le niveau d'ensemble reste constant, à une tolérance explicite, tout au
       long d'une bascule de régime entre deux couches d'un même rôle
-- [ ] Il en va de même pour le fondu de charge entre « en charge » et
+- [x] Il en va de même pour le fondu de charge entre « en charge » et
       « pied levé »
-- [ ] Une couche dont la vitesse de lecture demandée sort de ses bornes voit son
+- [x] Une couche dont la vitesse de lecture demandée sort de ses bornes voit son
       gain décroître, et atteint le silence au-delà d'une demi-octave
-- [ ] La couche de ralenti est silencieuse au-dessus du régime d'effacement
-- [ ] Une couche désactivée ne joue jamais, quel que soit le régime
-- [ ] Le contraste de charge à zéro mélange les deux familles en permanence, à
+- [x] La couche de ralenti est silencieuse au-dessus du régime d'effacement
+- [x] Une couche désactivée ne joue jamais, quel que soit le régime
+- [x] Le contraste de charge à zéro mélange les deux familles en permanence, à
       un les sépare complètement
-- [ ] Sur un signal synthétique de raie d'allumage connue, l'ancrage proposé
+- [x] Sur un signal synthétique de raie d'allumage connue, l'ancrage proposé
       correspond au régime attendu pour le nombre de cylindres déclaré
-- [ ] Un nombre de cylindres erroné déplace l'ancrage proposé dans le même
+- [x] Un nombre de cylindres erroné déplace l'ancrage proposé dans le même
       rapport — le comportement documenté, vérifié

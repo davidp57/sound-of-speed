@@ -1,6 +1,6 @@
 # 05 — Les profils sous test
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Vitest et ESLint en place
 
@@ -19,16 +19,16 @@ complété par les valeurs d'usine, jamais accepté à moitié.
 
 ## Critères d'acceptation
 
-- [ ] Un profil écrit puis relu depuis le stockage local est identique à
+- [x] Un profil écrit puis relu depuis le stockage local est identique à
       l'original
-- [ ] Un aller-retour export puis import rend un profil identique
-- [ ] Un profil transporté par URL et relu rend un profil identique
-- [ ] Un fichier de profil au format antérieur est relu, et les réglages qu'il
+- [x] Un aller-retour export puis import rend un profil identique
+- [x] Un profil transporté par URL et relu rend un profil identique
+- [x] Un fichier de profil au format antérieur est relu, et les réglages qu'il
       contient sont conservés
-- [ ] Un fichier dont un champ manque est complété par la valeur d'usine
+- [x] Un fichier dont un champ manque est complété par la valeur d'usine
       correspondante, et le reste du profil est conservé
-- [ ] Un fichier illisible est refusé sans faire échouer le chargement de
+- [x] Un fichier illisible est refusé sans faire échouer le chargement de
       l'application
-- [ ] La réinitialisation d'une section remet cette section aux valeurs d'usine
+- [x] La réinitialisation d'une section remet cette section aux valeurs d'usine
       et ne touche à aucune autre
-- [ ] Les deux profils livrés se chargent et sont conformes au schéma
+- [x] Les deux profils livrés se chargent et sont conformes au schéma
