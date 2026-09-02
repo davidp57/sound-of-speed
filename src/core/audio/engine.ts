@@ -22,6 +22,14 @@ const GAIN_GLIDE_S = 0.02
 const RATE_GLIDE_S = 0.03
 /** Période de la surveillance du contexte et du média, en millisecondes. */
 const WATCHDOG_MS = 2000
+/**
+ * Adresse du silence qui maintient la session audio.
+ *
+ * Un fichier servi, produit par `npm run silence` et versionné avec son script.
+ * Il est hors de `public/audio/`, qui n'est pas versionné : cette arborescence
+ * est celle des échantillons, déposés dans un volume du NAS.
+ */
+const SILENCE_URL = '/silence.mp3'
 /** Durée du fondu appliqué aux boucles mal raccordées, en secondes. */
 const SEAM_FADE_S = 0.03
 /** Fondu, bien plus court, quand le point de bouclage a pu être aligné. */
@@ -66,8 +74,25 @@ export interface AudioStatus {
    * traîner derrière l'affichage, avant de soupçonner le calcul.
    */
   outputLatencyMs: number
-  /** Le média silencieux qui maintient la session tourne-t-il ? */
+  /** Le maintien de session est-il demandé ? */
   keepAlive: boolean
+  /** Le média de maintien joue-t-il réellement, à cet instant ? */
+  keepAlivePlaying: boolean
+  /**
+   * Ce que le navigateur a refusé, s'il a refusé.
+   *
+   * Un refus de lecture était avalé, donc invisible : on ne pouvait pas
+   * distinguer « le maintien ne suffit pas » de « le maintien n'a jamais
+   * démarré ». Vide quand tout va bien.
+   */
+  keepAliveError: string
+  /**
+   * Nombre de fois qu'il a fallu relancer le contexte depuis l'activation.
+   *
+   * Zéro dit que le système ne l'a jamais suspendu — et donc que la
+   * surveillance périodique ne sert à rien, ce qu'on veut savoir.
+   */
+  contextResumes: number
   /** Nombre de salves de pétarade déclenchées depuis l'activation. */
   backfires: number
 }
@@ -138,6 +163,9 @@ export class AudioEngine {
     baseLatencyMs: 0,
     outputLatencyMs: 0,
     keepAlive: false,
+    keepAlivePlaying: false,
+    keepAliveError: '',
+    contextResumes: 0,
     backfires: 0,
   }
 
@@ -244,41 +272,114 @@ export class AudioEngine {
     if (enabled) this.startKeepAlive()
     else {
       this.status.keepAlive = false
-      this.keepAlive?.pause()
+      this.status.keepAliveError = ''
+      const media = this.keepAlive
       this.keepAlive = null
+      this.status.keepAlivePlaying = false
+      media?.pause()
+      // Retiré du document, et pas seulement arrêté : laisser traîner un lecteur
+      // muet embrouillerait le diagnostic suivant.
+      media?.remove()
     }
     this.readLatency()
   }
 
+  /**
+   * Le média de maintien, construit comme un lecteur véritable.
+   *
+   * Chaque détail de cette construction a une raison, apprise en comparant avec
+   * une application qui, elle, tient le son quand le navigateur de la voiture
+   * est réduit :
+   *
+   * - **inséré dans le document**, et non simplement construit. Un élément
+   *   détaché joue, mais rien ne garantit qu'un navigateur ancien le compte
+   *   comme une lecture — et c'est de ce décompte que dépend le droit de
+   *   continuer en arrière-plan ;
+   * - **un fichier servi**, et non une adresse `blob:` fabriquée en mémoire. La
+   *   pile média du navigateur de la Tesla, un Chromium ancien, ne la traitait
+   *   pas comme une lecture véritable ;
+   * - **long**, deux minutes plutôt que quatre secondes : chaque passage de
+   *   boucle est une occasion de perdre la lecture ;
+   * - **`volume = 1`**, bien que le contenu soit déjà silencieux. Baisser le
+   *   volume ferait passer le lecteur pour inactif auprès de certains systèmes,
+   *   qui libéreraient la session — précisément ce qu'il sert à empêcher.
+   */
   private startKeepAlive(): void {
-    const audio = new Audio(silentWavUrl(4))
+    // Un seul média à la fois. Le chemin qui y menait deux fois est réel :
+    // basculer le réglage avant d'activer le son en crée un — le moteur ignore
+    // encore qu'il en faut un — puis `activate()` en crée un second. Détachés
+    // du document, les doublons passaient inaperçus ; insérés, ils
+    // embrouilleraient exactement le diagnostic que ce média sert à établir.
+    if (this.keepAlive) return
+
+    const audio = document.createElement('audio')
+    const source = document.createElement('source')
+    source.type = 'audio/mpeg'
+    source.src = SILENCE_URL
+    audio.appendChild(source)
     audio.loop = true
-    // Le contenu est déjà silencieux : baisser en plus le volume ferait passer
-    // le lecteur pour inactif auprès de certains systèmes, qui libéreraient la
-    // session audio en arrière-plan — précisément ce qu'il sert à empêcher.
     audio.volume = 1
+    audio.preload = 'auto'
     audio.setAttribute('playsinline', '')
+    audio.style.display = 'none'
+
+    // Un refus du navigateur était jusqu'ici avalé, donc invisible : on ne
+    // pouvait pas distinguer « le maintien ne suffit pas » de « le maintien n'a
+    // jamais démarré ». Personne n'ouvrira une console au volant, la raison
+    // remonte donc jusqu'à l'écran de télémétrie.
+    audio.addEventListener('error', () => {
+      const code = audio.error?.code
+      this.status.keepAliveError = code
+        ? `Média refusé par le navigateur (code ${code}).`
+        : 'Média refusé par le navigateur.'
+    })
     // Certains navigateurs suspendent un média sorti de l'écran : on le relance.
     audio.addEventListener('pause', () => {
-      if (this.status.keepAlive) void audio.play().catch(() => undefined)
+      if (this.status.keepAlive) this.playKeepAlive(audio)
     })
-    void audio.play().catch(() => undefined)
+    audio.addEventListener('playing', () => {
+      this.status.keepAliveError = ''
+    })
+
+    document.body.appendChild(audio)
+    this.playKeepAlive(audio)
     this.keepAlive = audio
     this.status.keepAlive = true
 
     // Surveillance permanente, et non seulement au retour au premier plan.
     // Certains navigateurs embarqués suspendent le contexte sans prévenir et
-    // sans repasser par un changement de visibilité : on ne peut compter que sur
-    // une vérification régulière, qui coûte presque rien.
+    // sans repasser par un changement de visibilité.
+    //
+    // Elle est conservée mais **comptée** : un minuteur est de toute façon gelé
+    // quand la page l'est, donc son utilité réelle est douteuse. Le compteur
+    // tranchera — s'il reste à zéro en voiture, cette surveillance partira.
     if (this.watchdog === null) {
       this.watchdog = setInterval(() => {
         const context = this.context
         if (!context) return
-        if (context.state === 'suspended') void context.resume().catch(() => undefined)
+        if (context.state === 'suspended') this.resumeContext(context)
         const media = this.keepAlive
-        if (media && media.paused) void media.play().catch(() => undefined)
+        if (media && media.paused) this.playKeepAlive(media)
       }, WATCHDOG_MS)
     }
+  }
+
+  /** Relance le média, en retenant le refus éventuel. */
+  private playKeepAlive(audio: HTMLAudioElement): void {
+    void audio.play().then(
+      () => {
+        this.status.keepAliveError = ''
+      },
+      (error: unknown) => {
+        this.status.keepAliveError = describePlayFailure(error)
+      },
+    )
+  }
+
+  /** Relance le contexte, en comptant combien de fois il a fallu le faire. */
+  private resumeContext(context: AudioContext): void {
+    this.status.contextResumes += 1
+    void context.resume().catch(() => undefined)
   }
 
   private async startClock(context: AudioContext): Promise<void> {
@@ -425,6 +526,13 @@ export class AudioEngine {
     }
     this.status.outputLevel = Math.sqrt(sum / scope.length)
     this.status.outputPeak = peak
+    // Relevé au même rythme que le niveau : un média qui s'arrête en
+    // arrière-plan doit se voir dès le retour à l'écran, pas au prochain
+    // changement d'état.
+    this.status.keepAlivePlaying = this.keepAlive !== null && !this.keepAlive.paused
+    // Idem pour l'état du contexte : il n'était relevé qu'aux transitions, donc
+    // une suspension par le système ne s'y voyait qu'au retour au premier plan.
+    if (this.context) this.status.contextState = this.context.state
   }
 
   /**
@@ -443,6 +551,7 @@ export class AudioEngine {
     const readState = (): AudioContextState => context.state
     if (readState() !== 'suspended') return false
 
+    this.status.contextResumes += 1
     await context.resume().catch(() => undefined)
     const state = readState()
     this.status.contextState = state
@@ -710,29 +819,23 @@ function saturationCurve(drive: number): Float32Array {
   return curve
 }
 
-/** Fabrique une piste silencieuse, sans avoir à embarquer de fichier. */
-function silentWavUrl(seconds: number): string {
-  const sampleRate = 8000
-  const frames = sampleRate * seconds
-  const bytes = 44 + frames * 2
-  const view = new DataView(new ArrayBuffer(bytes))
-
-  const ascii = (offset: number, text: string) => {
-    for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i))
+/**
+ * Traduit un refus de lecture en une phrase lisible sans console.
+ *
+ * `NotAllowedError` est le cas courant : le navigateur exige un geste de
+ * l'utilisateur, ou refuse un second lecteur. C'est exactement ce qu'on
+ * soupçonnait sans pouvoir le vérifier.
+ */
+function describePlayFailure(error: unknown): string {
+  if (!(error instanceof Error)) return 'Lecture du média de maintien refusée.'
+  switch (error.name) {
+    case 'NotAllowedError':
+      return 'Média refusé : le navigateur exige un geste, ou n’accepte qu’un lecteur.'
+    case 'NotSupportedError':
+      return 'Média refusé : format non pris en charge par ce navigateur.'
+    case 'AbortError':
+      return 'Lecture du média interrompue par le système.'
+    default:
+      return `Média refusé (${error.name}).`
   }
-
-  ascii(0, 'RIFF')
-  view.setUint32(4, bytes - 8, true)
-  ascii(8, 'WAVEfmt ')
-  view.setUint32(16, 16, true)
-  view.setUint16(20, 1, true)
-  view.setUint16(22, 1, true)
-  view.setUint32(24, sampleRate, true)
-  view.setUint32(28, sampleRate * 2, true)
-  view.setUint16(32, 2, true)
-  view.setUint16(34, 16, true)
-  ascii(36, 'data')
-  view.setUint32(40, frames * 2, true)
-
-  return URL.createObjectURL(new Blob([view.buffer], { type: 'audio/wav' }))
 }

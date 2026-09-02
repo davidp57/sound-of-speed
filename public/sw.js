@@ -14,7 +14,7 @@
  * autonomes.
  */
 
-const VERSION = 'v2'
+const VERSION = 'v3'
 const SHELL = `speed-shell-${VERSION}`
 const ASSETS = `speed-assets-${VERSION}`
 // Les échantillons ne dépendent pas de la version du code : les garder dans un
@@ -32,6 +32,10 @@ self.addEventListener('install', (event) => {
           '/',
           '/index.html',
           '/manifest.webmanifest',
+          // Le silence qui maintient la session audio du système. Sans lui dans
+          // le cache, une application installée perdrait le son en arrière-plan
+          // dès qu'elle est hors réseau — c'est-à-dire là où elle sert.
+          '/silence.mp3',
           // Les icônes portent des noms fixes, donc énumérables ici. Elles
           // n'apparaissent pas dans le relevé des ressources chargées par la
           // page — le navigateur récupère les favicons hors de ce circuit — et
