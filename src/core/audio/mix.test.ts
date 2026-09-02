@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { computeMix } from './mix'
-import { createDefaultProfile } from '../preset/defaults'
+import { createDefaultProfile, createRoadProfile } from '../preset/defaults'
 import type { EngineState } from '../engine/engine'
 import type { LayerPreset, Profile } from '../preset/schema'
 
@@ -82,7 +82,11 @@ describe('computeMix — fondu de régime', () => {
         layer({ key: 'basse', role: 'on', anchorRpm: 4000, minRate: 0.1, maxRate: 8 }),
         layer({ key: 'haute', role: 'on', anchorRpm: 4000, minRate: 0.1, maxRate: 8 }),
       ],
-      mix: { ...profile.mix, masterGain: 1, loadContrast: 0 },
+      // Relief neutralisé : le sujet de ce test est la conservation d'énergie
+      // du fondu, qui se juge à relief égal. Le relief, lui, fait varier le
+      // niveau avec le régime — c'est sa raison d'être, et il est vérifié à
+      // part.
+      mix: { ...profile.mix, masterGain: 1, loadContrast: 0, rpmReliefDb: 0, loadReliefDb: 0 },
     }
 
     const low = p.mix.crossfadeLowRpm
@@ -200,7 +204,9 @@ describe('computeMix — domaine jouable', () => {
     const p: Profile = {
       ...profile,
       layers: [layer({ key: 'etroite', role: 'on', anchorRpm: 4000, minRate: 0.9, maxRate: 1.1 })],
-      mix: { ...profile.mix, masterGain: 1, loadContrast: 0 },
+      // Relief neutralisé : on compare deux régimes, et le relief du régime
+      // déplacerait le rapport qu'on mesure.
+      mix: { ...profile.mix, masterGain: 1, loadContrast: 0, rpmReliefDb: 0, loadReliefDb: 0 },
     }
 
     // À l'ancrage, la couche est pleinement jouable.
@@ -372,5 +378,111 @@ describe('computeMix — volume général', () => {
     const doux = computeMix({ ...profile, mix: { ...profile.mix, masterGain: 0.5 } }, state())
 
     expect(energy(doux.layers, 'on')).toBeCloseTo(energy(fort.layers, 'on') / 2, 6)
+  })
+})
+
+describe('computeMix — relief', () => {
+  /** Niveau d'ensemble, toutes couches confondues. */
+  const total = (r: ReturnType<typeof computeMix>) =>
+    Math.sqrt(r.layers.reduce((a, l) => a + l.gain * l.gain, 0))
+  /** Écart entre deux niveaux, en décibels. */
+  const ecartDb = (a: number, b: number) => 20 * Math.log10(a / b)
+
+  /** Un profil dont on ne garde qu'une couche : le relief seul est mesurable. */
+  const nu = (mix: Partial<Profile['mix']> = {}): Profile => ({
+    ...profile,
+    layers: [layer({ key: 'seule', role: 'on', anchorRpm: 3000, minRate: 0.1, maxRate: 8 })],
+    // Contraste nul : le fondu de charge ne bouge plus, seul le relief varie.
+    // Les deux sont indépendants, et c'est ce qui permet de les régler l'un
+    // après l'autre.
+    mix: { ...profile.mix, masterGain: 1, loadContrast: 0, ...mix },
+  })
+
+  it('fait entendre l’effort, ce que les fondus ne font pas', () => {
+    // Le fondu de charge est à puissance constante : sans relief, écraser et
+    // lever le pied donnent le même niveau. Mesuré sur le profil livré avant ce
+    // réglage : ralenti, croisière, reprise douce et reprise franche tenaient
+    // dans 1,3 dB.
+    const p = nu({ loadReliefDb: 4, rpmReliefDb: 0 })
+
+    const ecrase = total(computeMix(p, state({ load: 1 })))
+    const leve = total(computeMix(p, state({ load: 0 })))
+
+    // Quatre décibels de part et d'autre, donc huit d'écart.
+    expect(ecartDb(ecrase, leve)).toBeCloseTo(8, 1)
+  })
+
+  it('ne touche à rien en croisière', () => {
+    // La charge à mi-course est le point neutre : c'est autour d'elle que le
+    // relief se déploie, pour que le réglage ne change pas le niveau moyen.
+    const avec = total(computeMix(nu({ loadReliefDb: 6 }), state({ load: 0.5 })))
+    const sans = total(computeMix(nu({ loadReliefDb: 0 }), state({ load: 0.5 })))
+
+    expect(ecartDb(avec, sans)).toBeCloseTo(0, 6)
+  })
+
+  it('fait rugir le moteur à mesure qu’il monte', () => {
+    const p = nu({ rpmReliefDb: 6, loadReliefDb: 0 })
+
+    const bas = total(computeMix(p, state({ rpm: profile.engine.idleRpm })))
+    const haut = total(computeMix(p, state({ rpm: profile.engine.redlineRpm })))
+
+    expect(ecartDb(haut, bas)).toBeCloseTo(6, 1)
+  })
+
+  it('monte régulièrement du ralenti au rupteur', () => {
+    const p = nu({ rpmReliefDb: 6, loadReliefDb: 0 })
+    const { idleRpm, redlineRpm } = profile.engine
+
+    let precedent = 0
+    for (let part = 0; part <= 10; part += 1) {
+      const rpm = idleRpm + ((redlineRpm - idleRpm) * part) / 10
+      const niveau = total(computeMix(p, state({ rpm })))
+      expect(niveau).toBeGreaterThan(precedent)
+      precedent = niveau
+    }
+  })
+
+  it('baisse le ralenti, et lui seul', () => {
+    const p = nu({ idleLevelDb: -6, rpmReliefDb: 0, loadReliefDb: 0 })
+
+    const auRalenti = total(computeMix(p, state({ rpm: 1200, idling: true })))
+    const entraine = total(computeMix(p, state({ rpm: 1200, idling: false })))
+
+    expect(ecartDb(auRalenti, entraine)).toBeCloseTo(-6, 1)
+  })
+
+  it('ne change rien quand les trois reliefs sont à zéro', () => {
+    // Un profil venu d'une version antérieure les recevra à zéro par défaut si
+    // rien ne les renseigne : le son doit alors être exactement celui d'avant.
+    const neutre = nu({ loadReliefDb: 0, rpmReliefDb: 0, idleLevelDb: 0 })
+
+    for (const load of [0, 0.5, 1]) {
+      for (const rpm of [800, 3000, 7000]) {
+        const r = computeMix(neutre, state({ rpm, load }))
+        const attendu = computeMix(neutre, state({ rpm, load }))
+        expect(total(r)).toBeCloseTo(total(attendu), 9)
+      }
+    }
+    // Et le niveau ne dépend alors plus du régime.
+    const bas = total(computeMix(neutre, state({ rpm: 3000, load: 0.5 })))
+    const haut = total(computeMix(neutre, state({ rpm: 3200, load: 0.5 })))
+    expect(ecartDb(haut, bas)).toBeCloseTo(0, 6)
+  })
+
+  it('donne aux profils livrés un relief qui suit leur caractère', () => {
+    const route = createRoadProfile()
+    const sport = createDefaultProfile()
+
+    // Sport exagère l'effort et rugit davantage.
+    expect(sport.mix.loadReliefDb).toBeGreaterThan(route.mix.loadReliefDb)
+    expect(sport.mix.rpmReliefDb).toBeGreaterThan(route.mix.rpmReliefDb)
+    // Et la compensation des prises plus douces vit dans les couches, non dans
+    // un facteur commun à la famille.
+    for (const p of [route, sport]) {
+      expect(p.mix.offLoadGain).toBe(1)
+      const off = p.layers.filter((l) => l.role === 'off')
+      expect(off.every((l) => l.gain > 1.5)).toBe(true)
+    }
   })
 })

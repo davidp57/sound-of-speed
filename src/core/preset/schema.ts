@@ -204,6 +204,35 @@ export interface MixPreset {
   drive: number
   /** Seuil du limiteur de sortie, en décibels. */
   limiterThresholdDb: number
+  /**
+   * Relief de charge, en décibels.
+   *
+   * Le fondu de charge est à puissance constante : `sin² + cos² = 1`. Il change
+   * donc le **timbre** et jamais le volume — mesuré, ralenti, croisière, reprise
+   * douce et reprise franche tenaient dans 1,3 dB. Accélérer ne s'entendait pas.
+   *
+   * Ce gain suit la charge : moins ce nombre pied levé, autant en plus pied au
+   * plancher, rien en croisière. À 4, il y a donc 8 dB entre lever le pied et
+   * écraser.
+   */
+  loadReliefDb: number
+  /**
+   * Relief du régime, en décibels, du ralenti au rupteur.
+   *
+   * Un moteur rugit plus haut dans les tours. La banque le fait déjà en partie —
+   * la prise haut régime est enregistrée 4,8 dB plus fort que la basse — mais
+   * c'était un accident de l'enregistrement, pas une intention réglable. Ce gain
+   * s'y ajoute.
+   */
+  rpmReliefDb: number
+  /**
+   * Écart de niveau au ralenti, en décibels. Négatif.
+   *
+   * Au ralenti, faute de couche dédiée dans la banque livrée, on entend la prise
+   * « pied levé » jouée deux octaves plus bas — et, avant ce réglage, aussi fort
+   * que tout le reste.
+   */
+  idleLevelDb: number
 }
 
 /**

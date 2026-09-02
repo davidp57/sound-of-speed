@@ -61,6 +61,11 @@ const AUDIBLE_GAIN = 0.02
  */
 const PITCH_TOLERANCE_OCTAVES = 0.5
 
+/** Convertit un écart en décibels en facteur de gain. */
+function fromDb(db: number): number {
+  return Math.pow(10, db / 20)
+}
+
 export function computeMix(
   profile: Profile,
   state: EngineState,
@@ -86,6 +91,30 @@ export function computeMix(
     : 0
 
   const limiterWeight = state.limiterActive ? 1 : 0
+
+  // Relief.
+  //
+  // Les deux fondus sont à puissance constante — c'est ce qui évite un creux au
+  // milieu d'une bascule — mais cela veut dire qu'ils changent le timbre et
+  // jamais le volume. Mesuré sur le profil Route avant ce réglage : ralenti,
+  // croisière, reprise douce et reprise franche tenaient dans 1,3 dB, et lever
+  // le pied était même 2,3 dB **plus fort** qu'écraser. L'effort ne s'entendait
+  // pas.
+  //
+  // Ces trois facteurs s'appliquent donc après les fondus, à toutes les couches
+  // à la fois : ils déplacent le niveau d'ensemble sans toucher à l'équilibre
+  // entre les couches, donc sans rouvrir le creux que les fondus évitent.
+  // Le relief suit la charge **brute**, et non celle que le contraste a
+  // resserrée : le contraste règle l'équilibre entre les deux familles, le
+  // relief règle le niveau d'ensemble. Les coupler ferait qu'un contraste nul
+  // désactiverait le relief en silence, ce qui rendrait les deux curseurs
+  // impossibles à régler l'un après l'autre.
+  const loadRelief = fromDb((clamp(state.load, 0, 1) - 0.5) * 2 * mix.loadReliefDb)
+  const span = Math.max(1, profile.engine.redlineRpm - profile.engine.idleRpm)
+  const rpmShare = clamp((state.rpm - profile.engine.idleRpm) / span, 0, 1)
+  const rpmRelief = fromDb(rpmShare * mix.rpmReliefDb)
+  const idleTrim = state.idling ? fromDb(mix.idleLevelDb) : 1
+  const relief = loadRelief * rpmRelief * idleTrim
 
   // À-coup de passage : le couple est coupé, donc le son se creuse puis revient.
   // Une boîte parfaitement lisse ne s'entend pas comme une boîte.
@@ -120,6 +149,7 @@ export function computeMix(
         familyWeight *
         layer.gain *
         mix.masterGain *
+        relief *
         fidelity(raw, rate) *
         (role === 'limiter' ? 1 : jolt)
       layers.push({

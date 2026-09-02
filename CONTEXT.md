@@ -146,6 +146,14 @@ qu'elle s'écarte, et la réduit au silence au-delà d'une demi-octave.
 C'est l'explication d'un gain nul là où le fondu devrait faire entrer une
 couche : elle n'est pas jouable à ce régime.
 
+**Relief** (_relief_, `loadReliefDb` / `rpmReliefDb` / `idleLevelDb`) :
+Les trois écarts de niveau, en décibels, qui font entendre l'effort. Ils
+s'appliquent **après** les fondus et à toutes les couches à la fois, parce que
+les fondus sont à puissance constante : ils changent la couleur et jamais le
+volume. Le point neutre est la croisière, de sorte qu'augmenter un relief ne
+déplace pas le niveau moyen.
+_Éviter_ : compression, dynamique (qui désignent la chaîne de sortie).
+
 **Raccord** (_loop seam_) :
 Le point où une boucle se referme sur elle-même. Mal placé, il claque à chaque
 tour, et un simple fondu ne suffit pas : les deux portions raccordées sont
