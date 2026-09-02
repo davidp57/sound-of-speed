@@ -376,9 +376,9 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 | Réglage | Ce qu'il fait |
 |---|---|
 | **Raideur du lissage** | Haut : réactif, mais les sauts du GPS s'entendent. Bas : doux, mais en retard. Le réglage le plus sensible |
-| **Fenêtre d'accélération** | Durée sur laquelle la pente est estimée |
+| **Fenêtre d'accélération** | Durée sur laquelle la pente est estimée. Elle décide aussi du temps qu'une pente met à s'oublier : à quatre secondes, le régime met encore quatre secondes à retomber après qu'on a cessé d'accélérer ; à une seconde, il suit aussitôt mais le signal est moins lisse. En deçà de l'intervalle entre deux mesures — une seconde au GPS — la baisser ne gagne rien |
 | **Zone morte** | En deçà, la variation est traitée comme du tremblement de mesure |
-| **Vitesse plausible max** | Au-delà, la mesure est rejetée comme aberrante |
+| **Vitesse plausible max** | Au-delà, la mesure est écartée : on n'en tire rien du tout, et la vitesse conditionnée continue comme si elle n'était pas arrivée |
 | **Accélération / décélération max retenues** | Bornes de l'accélération transmise à la charge |
 
 ### Mixage
@@ -720,7 +720,7 @@ chaque essai.
 | 8 | Publication automatique de l'image, installation sans terminal | fait |
 | 9 | Process de développement écrit, git flow, contrôle d'intégration | fait |
 | 10 | Mise sous test du cœur : 211 tests, 94 % de `core/` couvert | fait |
-| FIX-CORE | Les quatre défauts que la mise sous test a trouvés | prêt |
+| 11 | Les quatre défauts que la mise sous test a trouvés | corrigé, reste à écouter |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

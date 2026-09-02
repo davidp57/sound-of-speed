@@ -132,38 +132,49 @@ describe('SpeedConditioner', () => {
     expect(largestStep(points.filter((p) => p.t >= 3))).toBeLessThan(0.01)
   })
 
-  /**
-   * Les deux tests qui suivent décrivent un **défaut**, pas une intention.
-   *
-   * La pente est calculée contre l'entrée la **plus ancienne** de l'historique
-   * — seize mesures, donc seize secondes — et non contre la plus récente qui
-   * soit assez ancienne, ce que dit pourtant le commentaire du module. Deux
-   * conséquences mesurées, décrites ici pour qu'elles soient tenues : le réglage
-   * « fenêtre d'accélération » n'a aucun effet, et une pente met seize secondes
-   * à s'oublier au lieu d'une.
-   *
-   * Le correctif est le lot FIX-CORE. Ces deux tests devront être réécrits avec
-   * lui : c'est voulu, ils sont là pour rendre la correction visible.
-   */
-  it("garde une pente périmée pendant une quinzaine de secondes (défaut, lot FIX-CORE)", () => {
+  it("oublie une pente périmée en une seconde", () => {
     // Rampe à 12 km/h/s pendant six secondes, puis vitesse tenue à 72.
+    //
+    // L'extrapolation continue un instant sur la pente estimée : c'est ce qui
+    // produit le dépassement, et c'est inhérent au procédé — la pente ne peut
+    // pas se démentir avant la mesure suivante. Ce qui compte est le temps
+    // qu'elle met à le faire.
     const points = run((t) => Math.min(72, t * 12), 20)
 
-    // Mesuré : 81,7 km/h à t = 7 s, soit près de 10 km/h de trop.
-    expect(largestError(points, 6, 8)).toBeGreaterThan(8)
-    // Et l'écart est encore de 5,3 km/h à t = 12 s, de 1,3 km/h à t = 20 s.
-    expect(largestError(points, 12, 12.5)).toBeGreaterThan(4)
-    expect(largestError(points, 19.5, 20)).toBeGreaterThan(1)
+    // Mesuré : 9,7 km/h de dépassement à t = 7 s, une seconde après la rupture
+    // de pente.
+    expect(largestError(points, 6, 7.5)).toBeGreaterThan(5)
+    expect(largestError(points, 6, 7.5)).toBeLessThan(12)
+
+    // Et deux secondes après, il n'en reste rien. La pente était auparavant
+    // calculée sur l'historique entier : il fallait alors une quinzaine de
+    // secondes, pendant lesquelles le régime restait trop haut.
+    expect(largestError(points, 8, 20)).toBeLessThan(0.05)
   })
 
-  it("ignore le réglage de fenêtre d'accélération (défaut, lot FIX-CORE)", () => {
-    const courte = run((t) => Math.min(72, t * 12), 12, { accelWindowMs: 300 })
-    const longue = run((t) => Math.min(72, t * 12), 12, { accelWindowMs: 4000 })
+  it("obéit au réglage de fenêtre d'accélération", () => {
+    const ecartApres = (accelWindowMs: number) =>
+      largestError(run((t) => Math.min(72, t * 12), 20, { accelWindowMs }), 8, 8.5)
 
-    // Treize fois plus de fenêtre, et strictement le même résultat : le curseur
-    // ne commande rien.
-    const dernier = (points: Point[]) => points[points.length - 1]?.smoothed ?? 0
-    expect(dernier(courte)).toBe(dernier(longue))
+    // Deux secondes après la rupture de pente : avec une fenêtre d'une seconde
+    // la pente est déjà oubliée, avec quatre secondes elle traîne encore.
+    // Mesuré : 0,001 km/h contre 7,27.
+    expect(ecartApres(1000)).toBeLessThan(0.05)
+    expect(ecartApres(4000)).toBeGreaterThan(5)
+
+    // En deçà de l'intervalle entre deux mesures, la fenêtre ne peut rien
+    // gagner : il n'existe pas d'entrée plus récente à laquelle se comparer.
+    // C'est une limite du signal, pas du réglage.
+    expect(ecartApres(300)).toBeCloseTo(ecartApres(1000), 3)
+  })
+
+  it("ne dégrade pas le suivi d'une accélération régulière", () => {
+    // La correction de la fenêtre ne devait rien changer ici : sur une rampe
+    // linéaire, la pente vaut la même chose quelle que soit la fenêtre.
+    // Mesuré avant et après : 0,467 à 4 km/h/s, 0,934 à 8, 1,401 à 12.
+    expect(largestError(run((t) => t * 4, 8), 2)).toBeCloseTo(0.467, 2)
+    expect(largestError(run((t) => t * 8, 8), 2)).toBeCloseTo(0.934, 2)
+    expect(largestError(run((t) => t * 12, 8), 2)).toBeCloseTo(1.401, 2)
   })
 
   it("prend une seconde à voir un freinage franc, et pas plus", () => {
@@ -207,22 +218,48 @@ describe('SpeedConditioner', () => {
     expect(state.slopeKmhS).toBeGreaterThan(5)
   })
 
-  it('borne une mesure aberrante à la vitesse plausible maximale', () => {
+  it('écarte une mesure aberrante au lieu de la suivre', () => {
     const conditioner = new SpeedConditioner(preset())
     const max = preset().maxPlausibleKmh
 
     conditioner.push(mesure(90, 1_000_000))
+    for (let frame = 0; frame < 120; frame += 1) conditioner.tick(FRAME_S)
+    const avant = conditioner.tick(FRAME_S).kmh
+
+    // Une valeur absurde, puis une salve : rien n'en passe.
     conditioner.push(mesure(9000, 1_001_000))
+    conditioner.push(mesure(max * 3, 1_002_000))
+    conditioner.push(mesure(max + 1, 1_003_000))
     for (let frame = 0; frame < 120; frame += 1) conditioner.tick(FRAME_S)
     const state = conditioner.tick(FRAME_S)
 
-    // La mesure n'est pas écartée, elle est ramenée au plafond : la sortie monte
-    // donc vers 260 km/h au lieu de rester sur 90. Le README, lui, annonce
-    // qu'elle est « rejetée ». C'est le code qui fait foi ici ; l'écart est
-    // signalé pour être tranché à part.
+    // La mesure n'est pas ramenée au plafond, elle est ignorée : la vitesse
+    // conditionnée reste sur sa trajectoire, comme si rien n'était arrivé.
+    // Auparavant elle montait vers 260 km/h, donc le moteur au rupteur.
+    expect(state.rawKmh).toBe(90)
+    expect(state.kmh).toBeCloseTo(avant, 1)
+  })
+
+  it('accepte une mesure exactement au plafond du plausible', () => {
+    const conditioner = new SpeedConditioner(preset())
+    const max = preset().maxPlausibleKmh
+
+    conditioner.push(mesure(max, 1_000_000))
+    const state = conditioner.tick(FRAME_S)
+
+    // C'est la borne du plausible, pas celle de l'aberrant.
     expect(state.rawKmh).toBe(max)
-    expect(state.kmh).toBeLessThanOrEqual(max)
-    expect(state.kmh).toBeGreaterThan(90)
+  })
+
+  it('écarte une vitesse négative sans écarter la mesure', () => {
+    const conditioner = new SpeedConditioner(preset())
+
+    conditioner.push(mesure(-5, 1_000_000))
+    const state = conditioner.tick(FRAME_S)
+
+    // Une vitesse négative n'a pas de sens, mais elle ne dit rien d'aberrant
+    // sur la mesure : on la ramène à l'arrêt.
+    expect(state.rawKmh).toBe(0)
   })
 
   it('ne propage pas une mesure non finie', () => {

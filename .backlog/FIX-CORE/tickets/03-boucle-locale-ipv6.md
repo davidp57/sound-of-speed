@@ -1,6 +1,6 @@
 # 03 — Reconnaître la boucle locale en IPv6
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -17,7 +17,7 @@ qu'une fois le téléphone en main.
 
 ## Critères d'acceptation
 
-- [ ] Une adresse en `[::1]` est déclarée non joignable
-- [ ] `localhost` et `127.0.0.1` le restent
-- [ ] Une adresse IPv6 publique reste joignable
-- [ ] Le test qui constatait le défaut a été réécrit
+- [x] Une adresse en `[::1]` est déclarée non joignable
+- [x] `localhost` et `127.0.0.1` le restent
+- [x] Une adresse IPv6 publique reste joignable
+- [x] Le test qui constatait le défaut a été réécrit

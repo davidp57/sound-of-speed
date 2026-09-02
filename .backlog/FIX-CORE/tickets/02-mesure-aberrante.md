@@ -1,6 +1,6 @@
 # 02 — Écarter une mesure aberrante au lieu de la plafonner
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -21,11 +21,11 @@ rien du tout, au lieu d'en tirer le plafond.
 
 ## Critères d'acceptation
 
-- [ ] Une mesure au-delà de la vitesse plausible maximale ne modifie ni la cible,
+- [x] Une mesure au-delà de la vitesse plausible maximale ne modifie ni la cible,
       ni la pente, ni l'historique
-- [ ] La vitesse conditionnée reste sur sa trajectoire, comme si la mesure
+- [x] La vitesse conditionnée reste sur sa trajectoire, comme si la mesure
       n'était pas arrivée
-- [ ] Une mesure exactement égale au plafond est acceptée : c'est la borne du
+- [x] Une mesure exactement égale au plafond est acceptée : c'est la borne du
       plausible, pas de l'aberrant
-- [ ] Une salve de mesures aberrantes consécutives ne fait pas dériver la sortie
-- [ ] Le test qui décrivait le plafonnement a été réécrit
+- [x] Une salve de mesures aberrantes consécutives ne fait pas dériver la sortie
+- [x] Le test qui décrivait le plafonnement a été réécrit

@@ -68,7 +68,10 @@ export function isComfortable(url: string): boolean {
  */
 export function isReachableOrigin(origin: string): boolean {
   try {
-    const host = new URL(origin).hostname
+    // Les crochets d'une adresse IPv6 font partie du nom d'hôte rendu :
+    // `[::1]`, et non `::1`. La comparaison ne se produisait donc jamais, et
+    // l'avertissement manquait précisément là où il servait.
+    const host = new URL(origin).hostname.replace(/^\[|\]$/g, '')
     if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false
     // Adresses de réseau local : joignables du wifi de la maison, pas au-delà.
     return !/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)

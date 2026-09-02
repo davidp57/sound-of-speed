@@ -1,6 +1,6 @@
 # 04 — Annoncer le passage que l'aperçu calcule
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -21,8 +21,8 @@ d'aperçu, pas une décision d'architecture.
 
 ## Critères d'acceptation
 
-- [ ] Le libellé et le calcul portent sur le même passage
-- [ ] La vitesse annoncée correspond à celle où la boîte passe réellement, à
+- [x] Le libellé et le calcul portent sur le même passage
+- [x] La vitesse annoncée correspond à celle où la boîte passe réellement, à
       quelques km/h près, vérifié contre le banc de la boîte
-- [ ] L'aperçu reste sans terme d'implémentation
-- [ ] Le test qui constatait l'incohérence a été réécrit
+- [x] L'aperçu reste sans terme d'implémentation
+- [x] Le test qui constatait l'incohérence a été réécrit

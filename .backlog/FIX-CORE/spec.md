@@ -1,6 +1,6 @@
 # FIX-CORE — les défauts que la mise sous test a trouvés
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 **Branche :** `fix/core-defauts`
 **Version visée :** 0.2
 
@@ -70,8 +70,25 @@ Les tests concernés :
   le rend nécessaire : ce sera un lot de réglage, avec la voiture.
 - Tout autre défaut découvert en corrigeant ceux-ci.
 
+## Ce que le lot a donné
+
+Les quatre corrections sont faites, et les cinq tests qui décrivaient les
+défauts sont réécrits — chacun a été vu échouer avant sa correction, ce qui est
+la seule preuve qu'il servait à quelque chose. 215 tests au total.
+
+Trois tickets sont clos. Le ticket 01 reste à **🧑 attend David** : il change ce
+qu'on entend, et les tests ne disent pas qu'un son est juste. La pente est
+maintenant estimée sur une seconde au lieu de seize : plus juste, moins lissée.
+Si le fondu de charge paraît nerveux en roulant, monter la « fenêtre
+d'accélération » à 2000 ou 3000 ms retrouve du lissage sans revenir au défaut —
+c'est précisément le réglage que la correction rend opérant.
+
+Un cinquième point, de documentation, avait déjà été corrigé dans le lot
+TEST-CORE : le rôle du réglage « Ne jamais monter sous ».
+
 ## Notes
 
-Les cinq tests cités portent chacun une mention `(défaut, lot FIX-CORE)` ou un
-commentaire qui renvoie ici. Chercher `FIX-CORE` dans `src/` retrouve donc
-l'ensemble du périmètre.
+Les cinq tests cités portaient chacun une mention `(défaut, lot FIX-CORE)` ou un
+commentaire qui renvoyait ici. Ces mentions ont disparu avec les corrections :
+chercher `FIX-CORE` dans `src/` ne rend plus rien, et c'est le signe que le lot
+est bouclé.

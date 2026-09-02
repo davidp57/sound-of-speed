@@ -25,24 +25,24 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le régime redescend quand on cesse d'accélérer.** La pente d'accélération
+  était estimée sur l'historique entier — seize secondes — au lieu de la fenêtre
+  réglée : après une reprise suivie d'une vitesse tenue, le moteur restait trop
+  haut une quinzaine de secondes. Mesuré : le dépassement se résorbe maintenant
+  en une seconde au lieu de quinze, et le suivi d'une accélération régulière est
+  inchangé.
+- **Le réglage « fenêtre d'accélération » commande enfin quelque chose.** Il
+  décide de la durée sur laquelle la pente est estimée, donc du temps qu'elle
+  met à s'oublier.
+- **Une mesure GPS aberrante est écartée** au lieu d'être ramenée au plafond de
+  plausibilité : une valeur absurde ne fait plus monter le moteur au rupteur.
+- La boucle locale en IPv6 est reconnue par l'avertissement de partage : un lien
+  produit depuis `[::1]` était annoncé comme joignable.
+- L'aperçu du guide de création annonce le passage dont il donne la vitesse.
 - La documentation du réglage « Ne jamais monter sous » : il ne commande pas la
   vitesse à laquelle la boîte rétrograde en décélération, contrairement à ce
   qu'annonçait le README. C'est « Descente sous » qui le fait — mesuré, et
   désormais tenu par un test.
-
-### À corriger
-
-Quatre défauts relevés en écrivant les tests, décrits dans le lot `FIX-CORE` et
-tenus en attendant par des tests qui constatent le comportement actuel :
-
-- la pente d'accélération est estimée sur tout l'historique et non sur la
-  fenêtre réglée, si bien que le régime reste trop haut une quinzaine de
-  secondes après une accélération, et que le réglage « fenêtre d'accélération »
-  ne commande rien ;
-- une mesure GPS aberrante est ramenée au plafond de plausibilité au lieu d'être
-  écartée ;
-- la boucle locale en IPv6 n'est pas reconnue par l'avertissement de partage ;
-- l'aperçu du guide de création annonce un passage dont il calcule un autre.
 
 ## [0.1.0] — 2026-08-29
 
