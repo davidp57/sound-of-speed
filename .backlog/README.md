@@ -24,7 +24,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | Lot | Statut |
 |-----|--------|
 | [TEST-CORE](TEST-CORE/spec.md) — mettre le cœur sous test : Vitest, ESLint, 211 tests, 94,6 % de `core/` | ✅ |
-| [FIX-CORE](FIX-CORE/spec.md) — les quatre défauts que la mise sous test a trouvés | ⬜ |
+| [FIX-CORE](FIX-CORE/spec.md) — les quatre défauts que la mise sous test a trouvés | 🧑 |
 
 ## Ce qui n'est pas dans le backlog
 

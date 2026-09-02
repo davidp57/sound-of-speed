@@ -184,12 +184,17 @@ export function describeProfile(profile: Profile): string[] {
     `À 130 km/h : ${Math.round(rpmAt(130, top))} tr/min.`,
   ]
 
-  const first = drivetrain.upshiftRpm[0]
-  const second = drivetrain.gearRatios[1]
-  if (first !== undefined && second !== undefined) {
-    const kmh = (first / (drivetrain.finalDrive * (drivetrain.gearRatios[1] ?? 1))) /
-      ((K / drivetrain.wheelRadiusM) * 60)
-    lines.push(`Passage 2 → 3 vers ${Math.round(Math.abs(kmh))} km/h à charge moyenne.`)
+  // Premier passage commandé par le régime. Quand la première n'est qu'une
+  // amorce de lancement, son seuil ne sert jamais : le premier passage qu'on
+  // entend est 2 → 3. Le libellé et le calcul portent sur le même rapport —
+  // ils annonçaient « 2 → 3 » en prenant le seuil de la première, donc une
+  // vitesse qui ne correspondait à aucun passage réel.
+  const gear = drivetrain.firstGearLaunchOnly ? 1 : 0
+  const threshold = drivetrain.upshiftRpm[gear]
+  const ratio = drivetrain.gearRatios[gear]
+  if (threshold !== undefined && ratio !== undefined) {
+    const kmh = threshold / (60 * ratio * drivetrain.finalDrive) / (K / drivetrain.wheelRadiusM)
+    lines.push(`Passage ${gear + 1} → ${gear + 2} vers ${Math.round(kmh)} km/h à charge moyenne.`)
   }
   return lines
 }

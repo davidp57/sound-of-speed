@@ -9,8 +9,11 @@ import type { SpeedSample } from './source'
  * signal donne un escalier — la hauteur saute d'un cran chaque seconde. Trois
  * traitements se combinent ici pour en tirer une courbe continue et jouable :
  *
- * 1. Une pente d'accélération, calculée sur une fenêtre glissante d'environ une
- *    seconde, avec une zone morte qui absorbe le tremblement du GPS à l'arrêt.
+ * 1. Une pente d'accélération, calculée sur la fenêtre glissante réglée — une
+ *    seconde par défaut — avec une zone morte qui absorbe le tremblement du GPS
+ *    à l'arrêt. Cette fenêtre décide aussi du temps qu'une pente met à
+ *    s'oublier : plus elle est longue, plus le signal est lisse et plus il
+ *    traîne après une rupture.
  * 2. Une extrapolation entre deux mesures : tant que la suivante n'est pas
  *    arrivée, la vitesse continue sur sa lancée au lieu de rester figée.
  * 3. Un ressort amorti critique, intégré à pas fixe, qui rattrape la cible sans
@@ -95,11 +98,25 @@ export class SpeedConditioner {
     this.carry = 0
   }
 
-  /** Absorbe une mesure brute. Peut être appelé à n'importe quelle fréquence. */
+  /**
+   * Absorbe une mesure brute. Peut être appelé à n'importe quelle fréquence.
+   *
+   * Une mesure au-delà de la vitesse plausible n'est pas une vitesse, c'est une
+   * erreur : on n'en tire rien du tout. La ramener au plafond, comme on le
+   * faisait, revenait à la croire à moitié — une valeur absurde reçue à 90 km/h
+   * faisait monter la vitesse conditionnée vers le plafond, donc le moteur au
+   * rupteur, sur une seule mesure fausse.
+   *
+   * Le plafond lui-même reste accepté : c'est la borne du plausible, pas celle
+   * de l'aberrant.
+   */
   push(sample: SpeedSample): void {
     if (!Number.isFinite(sample.kmh)) return
+    if (sample.kmh > this.preset.maxPlausibleKmh) return
 
-    const kmh = clamp(sample.kmh, 0, this.preset.maxPlausibleKmh)
+    // Une vitesse négative n'a pas de sens mais ne dit rien d'aberrant sur la
+    // mesure : on la ramène à l'arrêt.
+    const kmh = Math.max(0, sample.kmh)
 
     if (this.lastSampleAt > 0) {
       const gap = sample.at - this.lastSampleAt
@@ -126,10 +143,34 @@ export class SpeedConditioner {
    * comparer à la précédente donnerait une pente dominée par le bruit. La zone
    * morte retire un écart fixe avant de diviser, ce qui annule la pente quand la
    * variation n'est que du tremblement de mesure.
+   *
+   * On parcourt donc l'historique **à l'envers**. Il est rangé du plus ancien au
+   * plus récent, si bien qu'une recherche dans l'ordre rendait la plus
+   * **ancienne** entrée assez vieille — donc la fenêtre entière de seize
+   * mesures, quelle que soit la valeur réglée. Deux conséquences mesurées,
+   * l'une audible : le réglage de fenêtre ne commandait rien, et une pente
+   * mettait une quinzaine de secondes à s'oublier. Le régime restait donc trop
+   * haut longtemps après qu'on avait cessé d'accélérer.
+   *
+   * (`findLast` dirait cela en un mot, mais demanderait de monter la
+   * bibliothèque du projet à ES2023 — un plancher de navigateur relevé pour
+   * trois lignes.)
+   *
+   * L'historique borne la fenêtre utilisable : seize mesures, soit seize
+   * secondes à la cadence d'un GPS. Au-delà, faute d'entrée assez ancienne, on
+   * retombe sur la plus vieille disponible.
    */
   private estimateSlope(at: number, kmh: number): number {
-    const oldest = this.history.find((entry) => at - entry.at >= this.preset.accelWindowMs)
-    const reference = oldest ?? this.history[0]
+    let recentEnough: HistoryEntry | undefined
+    for (let i = this.history.length - 1; i >= 0; i -= 1) {
+      const entry = this.history[i]
+      if (entry && at - entry.at >= this.preset.accelWindowMs) {
+        recentEnough = entry
+        break
+      }
+    }
+
+    const reference = recentEnough ?? this.history[0]
     if (!reference) return this.slopeKmhS
 
     const seconds = (at - reference.at) / 1000

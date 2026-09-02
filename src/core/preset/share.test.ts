@@ -119,13 +119,13 @@ describe('isReachableOrigin', () => {
     // ne comprend l'échec qu'une fois le téléphone en main.
     expect(isReachableOrigin('http://localhost:5173')).toBe(false)
     expect(isReachableOrigin('http://127.0.0.1:5173')).toBe(false)
+    // Les crochets font partie du nom d'hôte rendu pour une adresse IPv6 :
+    // la comparaison les ignore désormais.
+    expect(isReachableOrigin('http://[::1]:5173')).toBe(false)
   })
 
-  it('laisse passer la boucle locale en IPv6 (défaut, lot FIX-CORE)', () => {
-    // `new URL(...).hostname` rend `[::1]`, crochets compris, que la
-    // comparaison à `'::1'` ne rencontre jamais. Conséquence : servi sur la
-    // boucle locale en IPv6, l'avertissement ne s'affiche pas.
-    expect(isReachableOrigin('http://[::1]:5173')).toBe(true)
+  it('accepte une adresse IPv6 publique', () => {
+    expect(isReachableOrigin('http://[2001:db8::1]')).toBe(true)
   })
 
   it('refuse une adresse de réseau local', () => {

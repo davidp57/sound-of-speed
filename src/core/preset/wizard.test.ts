@@ -229,18 +229,44 @@ describe('describeProfile', () => {
     expect(annonce).toBeCloseTo(rpmAtTop(profile, 90), -1)
   })
 
-  it('annonce une vitesse de passage plausible', () => {
+  it('annonce le passage dont elle donne la vitesse', () => {
     const profile = buildProfile(choices(), template)
 
     const ligne = describeProfile(profile).at(-1) ?? ''
     const kmh = Number(/vers (\d+) km\/h/.exec(ligne)?.[1])
 
-    // Le libellé annonce « 2 → 3 » mais s'appuie sur le seuil du premier
-    // rapport : l'incohérence est signalée dans le lot FIX-CORE. On vérifie
-    // ici que le chiffre reste dans un ordre de grandeur crédible.
+    // La première n'est qu'une amorce de lancement : le premier passage
+    // commandé par le régime est 2 → 3.
+    expect(ligne).toContain('Passage 2 → 3')
     expect(ligne).toContain('à charge moyenne')
-    expect(kmh).toBeGreaterThan(10)
-    expect(kmh).toBeLessThan(150)
+
+    // Et la vitesse annoncée est bien celle où ce passage se produit : à cette
+    // vitesse, le deuxième rapport atteint son seuil de montée. Le libellé et
+    // le calcul portaient auparavant sur deux rapports différents.
+    const { gearRatios, finalDrive, wheelRadiusM } = profile.drivetrain
+    const regime = Engine.kinematicRpm(kmh, gearRatios[1]! * finalDrive, wheelRadiusM)
+    const seuil = profile.drivetrain.upshiftRpm[1]!
+    // À 2 % près : la vitesse est annoncée au km/h près, ce qui vaut une
+    // quarantaine de tours sur ce rapport.
+    expect(Math.abs(regime - seuil) / seuil).toBeLessThan(0.02)
+  })
+
+  it('annonce le premier passage quand la première n’est pas une amorce', () => {
+    const profile = buildProfile(choices(), template)
+    const sansAmorce = {
+      ...profile,
+      drivetrain: { ...profile.drivetrain, firstGearLaunchOnly: false },
+    }
+
+    const ligne = describeProfile(sansAmorce).at(-1) ?? ''
+    const kmh = Number(/vers (\d+) km\/h/.exec(ligne)?.[1])
+
+    expect(ligne).toContain('Passage 1 → 2')
+
+    const { gearRatios, finalDrive, wheelRadiusM } = sansAmorce.drivetrain
+    const regime = Engine.kinematicRpm(kmh, gearRatios[0]! * finalDrive, wheelRadiusM)
+    const seuil = sansAmorce.drivetrain.upshiftRpm[0]!
+    expect(Math.abs(regime - seuil) / seuil).toBeLessThan(0.02)
   })
 
   it('reste bref sur une boîte à deux rapports', () => {
