@@ -96,9 +96,14 @@ npm run htpasswd     # produit un fichier de mots de passe pour nginx
 ## Installation sur un NAS Synology
 
 Une chaîne d'intégration construit l'image et la publie sur le registre de
-conteneurs GitHub à chaque poussée sur `main`. **Le NAS ne construit rien et ne
-reçoit aucun fichier** : Portainer tire une image prête. Tout se fait dans les
-interfaces de DSM et de Portainer ; il n'y a pas de terminal à ouvrir sur le NAS.
+conteneurs GitHub. **Le NAS ne construit rien et ne reçoit aucun fichier** :
+Portainer tire une image prête. Tout se fait dans les interfaces de DSM et de
+Portainer ; il n'y a pas de terminal à ouvrir sur le NAS.
+
+Trois étiquettes d'image, selon l'usage : `latest` est la production, publiée
+depuis `main` ; `develop` est l'intégration, à tirer dans une seconde pile sur
+un autre port pour essayer un lot en voiture avant d'en faire une version ; et
+`vX.Y.Z` est une version figée, publiée par son tag.
 
 L'hébergement reste chez soi, ce qui règle du même coup la question des
 échantillons, puisque rien n'est publié.
@@ -700,6 +705,14 @@ chaque essai.
 | 6 | Déploiement sur NAS, HTTPS en développement | fait |
 | 7 | Application installable et utilisable hors réseau | fait |
 | 8 | Publication automatique de l'image, installation sans terminal | fait |
+| 9 | Process de développement écrit, git flow, contrôle d'intégration | fait |
+| TEST-CORE | Mise sous test du cœur : Vitest, ESLint, couverture de `core/` | prêt |
+
+Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
+le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
+règles de travail du dépôt dans [`CLAUDE.md`](CLAUDE.md), son vocabulaire dans
+[`CONTEXT.md`](CONTEXT.md), et ce qui a été livré dans
+[`CHANGELOG.md`](CHANGELOG.md).
 
 ### Ce qui n'est pas vérifié
 

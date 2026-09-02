@@ -2,6 +2,9 @@
 #
 # L'image est construite et publiée par GitHub à chaque poussée sur `main`. Le
 # NAS ne construit rien et ne reçoit aucun fichier : il tire une image prête.
+#
+# Pour essayer l'intégration avant qu'elle devienne une version, dupliquer cette
+# pile sous un autre nom, avec l'étiquette `:develop` et un autre port.
 # Mettre à jour tient alors à un bouton dans Portainer, sans terminal.
 #
 # Le registre étant privé comme le dépôt, Portainer doit s'y authentifier une

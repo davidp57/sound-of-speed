@@ -12,3 +12,8 @@ tsconfig.tsbuildinfo
 # Fichier de mots de passe produit par `npm run htpasswd`. Il n'a rien à faire
 # dans un dépôt — a fortiori s'il devient public un jour.
 htpasswd
+
+# Réglages de Claude Code propres au poste, et copies de travail des branches
+# créées sous .claude/worktrees/ : ni les uns ni les autres ne se partagent.
+.claude/settings.local.json
+.claude/worktrees/
