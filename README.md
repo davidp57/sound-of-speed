@@ -10,6 +10,7 @@ sauvegarde, exporte et recharge.
 - [Les trois écrans](#les-trois-écrans)
 - [Démarrer en développement](#démarrer-en-développement)
 - [Installation sur un NAS Synology](#installation-sur-un-nas-synology)
+- [Une seconde pile, pour essayer l'intégration](#une-seconde-pile-pour-essayer-lintégration)
 - [En voiture](#en-voiture)
 - [Hors réseau](#hors-réseau)
 - [Référence des réglages](#référence-des-réglages)
@@ -259,6 +260,68 @@ setx SPEED_DEPLOY_TARGET "Z:\docker\speed\dist"
 ```bash
 npm run build && npm run deploy
 ```
+
+---
+
+## Une seconde pile, pour essayer l'intégration
+
+L'étiquette `develop` est publiée à chaque lot fusionné, avant qu'il devienne
+une version. La faire tourner **à côté** de la pile de production permet
+d'essayer en voiture ce qui n'est pas encore sorti, sans toucher à
+l'application qui sert au quotidien.
+
+### 1. La pile — Portainer
+
+**Stacks** › **Add stack** › **Web editor**, nommer la pile `speed-develop`,
+coller le contenu de [`docker/docker-compose.develop.yml`](docker/docker-compose.develop.yml),
+puis **Deploy the stack**.
+
+Elle diffère de la production sur trois points, et les trois comptent : un autre
+nom de conteneur, un autre port (`8089`), et une autre adresse dans le proxy
+inversé. Les échantillons et les profils déposés sont partagés, en lecture
+seule : rien à recopier.
+
+### 2. L'adresse — DSM
+
+**Panneau de configuration** › **Portail des applications** › **Proxy inversé** ›
+**Créer** :
+
+| Champ | Valeur |
+|---|---|
+| Description | Speed (intégration) |
+| Protocole source | **HTTPS** |
+| Nom d'hôte source | `speed-dev.<votre-nom>.synology.me` |
+| Port source | `443` |
+| Protocole destination | **HTTP** |
+| Nom d'hôte destination | `localhost` |
+| Port destination | `8089` |
+
+Puis **Sécurité** › **Certificat** : le certificat Let's Encrypt doit couvrir ce
+nom. Le plus simple est de le demander pour les deux noms à la fois, ou d'ajouter
+le nouveau nom au certificat existant.
+
+> **Le HTTPS n'est pas du confort ici.** Le GPS, le verrou d'écran et le service
+> worker n'existent que dans un « contexte sécurisé ». En HTTP simple — par
+> exemple `http://<ip-du-nas>:8089` — la page s'affiche normalement et la
+> localisation est refusée **sans message**. Une pile d'essai sans son nom
+> d'hôte ne sert donc à rien pour rouler.
+
+### 3. Mettre à jour
+
+Portainer ne remplace pas de lui-même une image devenue obsolète. Après une
+poussée sur `develop` : la pile, **Editor**, puis **Update the stack** en cochant
+**Re-pull image**. Une dizaine de secondes.
+
+### Ce que les deux piles ne partagent pas
+
+Les **profils enregistrés dans le navigateur**. Le stockage local appartient à
+une adresse : les réglages trouvés sur l'une ne suivent pas sur l'autre. Deux
+passerelles pour les transporter — le dossier `profiles/` partagé, qui apparaît
+dans la bibliothèque des deux, ou le partage d'un profil par lien.
+
+Il en va de même de l'**installation** : chaque adresse s'installe séparément sur
+l'écran d'accueil, avec son propre cache hors réseau. C'est voulu — une pile
+d'essai qui écraserait le cache de celle qui sert serait une mauvaise idée.
 
 ---
 

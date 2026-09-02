@@ -8,6 +8,10 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- Une **seconde pile Portainer**, sur l'étiquette `develop`, pour essayer en
+  voiture ce qui n'est pas encore sorti sans toucher à l'application qui sert au
+  quotidien : `docker/docker-compose.develop.yml`, et la marche à suivre dans le
+  README — port, proxy inversé, et ce que les deux piles ne partagent pas.
 - Process de développement écrit : `CLAUDE.md` (langue, git flow, contrôle
   qualité, workflow par défaut, release), `CONTEXT.md` (glossaire du projet) et
   `docs/agents/` (configuration des skills de backlog).
