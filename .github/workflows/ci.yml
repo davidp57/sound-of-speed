@@ -5,10 +5,9 @@
 # le contrôle qualité de CLAUDE.md demande de lancer avant de pousser, pour
 # qu'un échec ici soit toujours reproductible en local.
 #
-# Les scripts `lint` et `test` n'existent pas encore (lot TEST-CORE) : les
-# étapes sont écrites avec `--if-present`, donc elles ne font rien tant que le
-# script n'est pas déclaré, et deviennent bloquantes le jour où il l'est, sans
-# qu'il y ait à revenir ici.
+# Les quatre étapes sont bloquantes : une PR dont l'une échoue n'est pas
+# fusionnable. C'est le sens du lot TEST-CORE — un filet qui ne retient rien ne
+# sert à rien.
 
 name: Intégration
 
@@ -37,10 +36,10 @@ jobs:
         run: npm run typecheck
 
       - name: Style du code
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Tests
-        run: npm run test --if-present
+        run: npm run test
 
       - name: Construction
         run: npm run build

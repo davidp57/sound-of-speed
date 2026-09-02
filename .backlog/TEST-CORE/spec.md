@@ -1,6 +1,6 @@
 # TEST-CORE — mettre le cœur sous test
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 **Branche :** `feature/test-core`
 **Version visée :** 0.2
 
@@ -15,9 +15,9 @@ l'application est du calcul, et du calcul dont la justesse s'entend :
   la mesure initiale ;
 - le moteur, la boîte et le mixage ont accumulé des cas particuliers qui sont
   exactement le genre de chose qu'une correction ultérieure casse sans bruit :
-  découplage à l'arrêt et pendant un passage, régime plancher qui commande le
-  rétrogradage en décélération, domaine jouable d'une couche qui l'efface hors
-  de sa plage, dispersion aléatoire des passages ;
+  découplage à l'arrêt et pendant un passage, seuil qui commande le rétrogradage
+  en décélération, domaine jouable d'une couche qui l'efface hors de sa plage,
+  dispersion aléatoire des passages ;
 - la persistance des profils doit relire des fichiers écrits par une version
   antérieure. Une régression y fait perdre les réglages de David, pas seulement
   un test.
@@ -36,8 +36,9 @@ vitesse passent par la même interface, et `core/audio/mix.ts` est une fonction
 pure. Il n'y a donc pas de coutures à créer : elles existent, il suffit de les
 utiliser.
 
-À la fin du lot, le contrôle qualité obligatoire devient `typecheck`, `eslint`,
-`vitest run`, `build`, et la CI fait la même chose sur chaque PR.
+À la fin du lot, le contrôle qualité obligatoire devient `npm run typecheck`,
+`npm run lint`, `npm test` et `npm run build`, et la CI fait la même chose sur
+chaque PR.
 
 ## Histoires
 
@@ -49,7 +50,7 @@ utiliser.
    ralenti à l'arrêt et pendant un passage, parce que c'est le comportement le
    plus facile à casser en touchant à l'inertie.
 4. En tant que développeur, je veux qu'un test couvre le régime de passage
-   rapport par rapport, l'écart selon la charge et le plancher de rétrogradage,
+   rapport par rapport, l'écart selon la charge et le seuil de rétrogradage,
    pour pouvoir toucher à la boîte sans la faire passer au rupteur.
 5. En tant que développeur, je veux qu'un test vérifie qu'une couche sortie de
    son domaine jouable est bien réduite au silence, et qu'un fondu à puissance
@@ -92,9 +93,9 @@ Les modules visés, dans l'ordre de valeur :
 
 | Module | Ce qu'on vérifie |
 |---|---|
-| `core/speed/conditioner.ts` | continuité de la sortie, écart de suivi sur une trace synthétique à 1 Hz, zone morte, rejet des mesures aberrantes |
+| `core/speed/conditioner.ts` | continuité de la sortie, écart de suivi sur une trace synthétique à 1 Hz, zone morte, sort des mesures aberrantes |
 | `core/engine/engine.ts` | découplage à l'arrêt et au passage, montée à vide, frein moteur, plafonnement au rupteur, déduction de la charge |
-| `core/drivetrain/gearbox.ts` | passage rapport par rapport, écart selon la charge, plancher de rétrogradage, rétrogradage forcé, temporisations |
+| `core/drivetrain/gearbox.ts` | passage rapport par rapport, écart selon la charge, seuil de rétrogradage, rétrogradage forcé, temporisations |
 | `core/audio/mix.ts` | fondus à puissance constante, effacement hors domaine jouable, effacement du ralenti |
 | `core/preset/store.ts` et `share.ts` | relecture d'un profil de format antérieur, aller-retour export/import, profil transporté par URL |
 | `core/audio/analyze.ts` | ancrage proposé sur un signal synthétique de raie d'allumage connue |
@@ -117,6 +118,60 @@ oubli, une ligne de garde défensive non couverte ne l'est pas.
   part en `fix/…`, avec son propre ticket. Un lot qui installe un filet ne
   répare pas en même temps ce que le filet attrape.
 
+## Ce que le lot a donné
+
+**211 tests**, et **94,6 % des lignes de `core/`** couvertes (83,8 % des
+branches, 91,7 % des fonctions) — au-delà des 80 % visés. Mesuré par
+`npm run coverage`.
+
+| Module | Lignes |
+|---|---|
+| `audio/analyze.ts` | 100 % |
+| `audio/mix.ts` | 100 % |
+| `preset/defaults.ts` | 100 % |
+| `preset/schema.ts` | 100 % |
+| `preset/wizard.ts` | 100 % |
+| `speed/replay.ts` | 100 % |
+| `speed/simulator.ts` | 100 % |
+| `speed/source.ts` | 100 % |
+| `speed/conditioner.ts` | 98,8 % |
+| `preset/store.ts` | 98,6 % |
+| `engine/engine.ts` | 96,5 % |
+| `drivetrain/gearbox.ts` | 93,2 % |
+| `preset/share.ts` | 79,6 % |
+| `preset/library.ts` | 0 % |
+
+Le périmètre a été élargi en cours de route à `simulator.ts`, `replay.ts`,
+`wizard.ts` et `defaults.ts`, que la liste des tickets ne nommait pas : ce sont
+des modules de calcul, et la règle posée plus haut dit qu'un module de calcul
+non couvert est un oubli.
+
+`preset/library.ts` reste à zéro et c'est délibéré : il ne calcule rien, il va
+chercher la bibliothèque de profils sur le réseau. Le reste non couvert de
+`share.ts` est le repli sans compression et la lecture de l'adresse du
+navigateur, qui demandent une fenêtre.
+
+## Ce que le lot a trouvé
+
+Quatre défauts, dont un audible en roulant. Aucun n'a été corrigé ici — le lot
+[FIX-CORE](../FIX-CORE/spec.md) s'en charge, et chaque défaut est tenu en
+attendant par un test qui décrit le comportement actuel :
+
+1. **La pente d'accélération est calculée sur tout l'historique** (seize
+   secondes) et non sur la fenêtre déclarée. Deux conséquences : le réglage
+   « fenêtre d'accélération » ne commande rien, et après une accélération suivie
+   d'une vitesse tenue, le régime reste trop haut une quinzaine de secondes.
+2. **Une mesure GPS aberrante est plafonnée, non rejetée** : une valeur absurde
+   fait monter la vitesse conditionnée jusqu'au plafond de plausibilité.
+3. **La boucle locale IPv6 n'est pas reconnue** dans l'avertissement de partage.
+4. **L'aperçu du guide annonce un passage** dont il calcule un autre.
+
+Un cinquième point était une erreur de **documentation**, corrigée ici même : le
+README attribuait au réglage « Ne jamais monter sous » la vitesse à laquelle la
+boîte rétrograde en décélération. La mesure montre que ce réglage n'y change
+rien — c'est « Descente sous » qui commande — et un test tient désormais la
+correction.
+
 ## Notes
 
 Le lot est écrit à la main, sans passer par `/to-spec` : il naît de la mise en
@@ -125,3 +180,10 @@ place du process elle-même. Les suivants passeront par les skills.
 L'ordre des tickets suit la valeur décroissante : le conditionnement d'abord,
 parce que c'est la pièce importante du projet et celle dont le comportement est
 déjà chiffré, donc immédiatement vérifiable.
+
+Une leçon d'écriture, pour les lots suivants : sur les onze premières
+assertions écrites de mémoire, **neuf bornes étaient fausses** — arrondis,
+limites asymptotiques, rapports de boîte irréalistes, et surtout des chiffres
+supposés au lieu d'être mesurés. La méthode qui a marché est celle du dépôt :
+instrumenter, relever la valeur, puis écrire l'assertion autour du chiffre
+obtenu, en le notant en commentaire.

@@ -1,6 +1,6 @@
 # 02 — Le conditionnement du signal sous test
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Vitest et ESLint en place
 
@@ -19,14 +19,16 @@ serait un test faux.
 
 ## Critères d'acceptation
 
-- [ ] La sortie est continue : aucun saut entre deux tours de boucle sur toute
+- [x] La sortie est continue : aucun saut entre deux tours de boucle sur toute
       la trace
-- [ ] En accélération régulière, l'écart entre la vitesse conditionnée et la
+- [x] En accélération régulière, l'écart entre la vitesse conditionnée et la
       vitesse réelle reste sous 1 km/h
-- [ ] Sur un freinage brutal, l'écart maximal est vérifié contre une borne
+- [x] Sur un freinage brutal, l'écart maximal est vérifié contre une borne
       explicite, commentée comme étant le compromis attendu
-- [ ] Une variation sous la zone morte ne produit aucune accélération
-- [ ] Une mesure au-delà de la vitesse plausible maximale est rejetée, et la
-      sortie ne la suit pas
-- [ ] Le lissage à raideur élevée suit plus vite qu'à raideur basse — la
+- [x] Une variation sous la zone morte ne produit aucune accélération
+- [x] Le sort d'une mesure au-delà de la vitesse plausible maximale est établi :
+      elle est **plafonnée**, non rejetée comme l'annonçait le README. Le test
+      décrit le code tel qu'il est ; la correction est le ticket 02 du lot
+      [FIX-CORE](../../FIX-CORE/tickets/02-mesure-aberrante.md)
+- [x] Le lissage à raideur élevée suit plus vite qu'à raideur basse — la
       direction du réglage est vérifiée, pas sa valeur exacte

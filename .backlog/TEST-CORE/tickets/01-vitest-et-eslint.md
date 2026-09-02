@@ -1,6 +1,6 @@
 # 01 — Vitest et ESLint en place
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -18,12 +18,12 @@ exception globale.
 
 ## Critères d'acceptation
 
-- [ ] `npm run test` et `npm run lint` existent dans `package.json` et lancent
+- [x] `npm run test` et `npm run lint` existent dans `package.json` et lancent
       respectivement Vitest et ESLint
-- [ ] `npx vitest run` passe, avec au moins un test qui vérifie un comportement
+- [x] `npx vitest run` passe, avec au moins un test qui vérifie un comportement
       réel de `core/`
-- [ ] `npx eslint src/` passe sur le code existant, sans règle désactivée
+- [x] `npx eslint src/` passe sur le code existant, sans règle désactivée
       globalement pour y arriver
-- [ ] Aucune dépendance nouvelle dans `dependencies` : tout va en
+- [x] Aucune dépendance nouvelle dans `dependencies` : tout va en
       `devDependencies`
-- [ ] Le poids du paquet de production est inchangé
+- [x] Le poids du paquet de production est inchangé
