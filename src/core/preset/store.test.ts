@@ -19,6 +19,8 @@ import {
   tracesToFile,
 } from './store'
 import { createDefaultProfile, createFactoryProfiles, createRoadProfile } from './defaults'
+import { buildProfile } from './wizard'
+import { decodeProfile, encodeProfile } from './share'
 import { PROFILE_FORMAT_VERSION, type Profile } from './schema'
 
 /**
@@ -325,7 +327,11 @@ describe('profils d’usine et duplication', () => {
 
     expect(copie.id).not.toBe(original.id)
     expect(copie.name).toBe('Copie')
-    expect({ ...copie, id: original.id, name: original.name }).toEqual(original)
+    // Tout est repris, à l'identité près — et à l'origine près, que la copie
+    // gagne : voir « valeurs d'origine » plus bas.
+    const { origin, ...reste } = copie
+    expect(origin).toBeDefined()
+    expect({ ...reste, id: original.id, name: original.name }).toEqual(original)
   })
 
   it('duplique en profondeur, sans lien avec l’original', () => {
@@ -398,5 +404,116 @@ describe('traces', () => {
     expect(() => tracesFromFile('pas du json')).toThrow(ProfileImportError)
     expect(() => tracesFromFile('{"traces":[]}')).toThrow(ProfileImportError)
     expect(() => tracesFromFile('{"autre":1}')).toThrow(ProfileImportError)
+  })
+})
+
+describe('valeurs d’origine', () => {
+  it('ramène un profil du guide à ce qu’il était, et non au profil Sport', () => {
+    // Le défaut : `factoryOrigin` reconnaissait un profil à son identifiant et
+    // retombait sur les valeurs par défaut — celles de Sport — pour tous les
+    // autres. Réinitialiser une section d'un profil fabriqué rendait donc les
+    // réglages d'un profil qu'on n'avait jamais choisi.
+    const fabrique = buildProfile(
+      { name: 'Mien', temperament: 'calme', usage: 'ville', gearCount: 5, engine: 'diesel' },
+      createDefaultProfile(),
+    )
+    const ancien = deepCopy(fabrique.engine)
+
+    const tatonne = { ...fabrique, engine: { ...fabrique.engine, redlineRpm: 3000 } }
+    const remis = resetProfileSection(tatonne, 'engine')
+
+    expect(remis.engine).toEqual(ancien)
+    // Et surtout : pas les valeurs de Sport.
+    expect(remis.engine.redlineRpm).not.toBe(createDefaultProfile().engine.redlineRpm)
+  })
+
+  it('garde son origine après réinitialisation, pour pouvoir y revenir encore', () => {
+    const fabrique = buildProfile(
+      { name: 'Mien', temperament: 'sportif', usage: 'route', gearCount: 6, engine: 'essence' },
+      createDefaultProfile(),
+    )
+
+    const remis = resetProfileSection(
+      { ...fabrique, mix: { ...fabrique.mix, masterGain: 0.05 } },
+      'all',
+    )
+
+    expect(remis.origin).toEqual(fabrique.origin)
+    expect(remis.mix).toEqual(fabrique.mix)
+  })
+
+  it('ne réinitialise pas l’identité', () => {
+    const fabrique = buildProfile(
+      { name: 'Mien', temperament: 'equilibre', usage: 'route', gearCount: 6, engine: 'essence' },
+      createDefaultProfile(),
+    )
+    const modifie = { ...fabrique, name: 'Renommé', favorite: true }
+
+    const remis = resetProfileSection(modifie, 'all')
+
+    expect(remis.id).toBe(fabrique.id)
+    expect(remis.name).toBe('Renommé')
+    expect(remis.favorite).toBe(true)
+  })
+
+  it('donne une origine à une duplication, héritée ou relevée', () => {
+    // Une duplication d'un profil livré prend ses valeurs du moment comme
+    // origine : avant, elle revenait à celles de Sport.
+    const copieDeRoute = duplicateProfile(createRoadProfile(), 'Ma Route')
+    expect(copieDeRoute.origin?.engine).toEqual(createRoadProfile().engine)
+
+    // Une duplication d'un profil fabriqué hérite de l'origine de son modèle.
+    const fabrique = buildProfile(
+      { name: 'Mien', temperament: 'calme', usage: 'ville', gearCount: 4, engine: 'diesel' },
+      createDefaultProfile(),
+    )
+    const copie = duplicateProfile({ ...fabrique, mix: { ...fabrique.mix, drive: 0.9 } }, 'Copie')
+    expect(copie.origin).toEqual(fabrique.origin)
+  })
+
+  it('ne partage pas l’origine dans un lien, mais la garde dans un fichier', async () => {
+    const fabrique = buildProfile(
+      { name: 'Mien', temperament: 'sportif', usage: 'autoroute', gearCount: 6, engine: 'sportif' },
+      createDefaultProfile(),
+    )
+
+    // Le fichier garde tout : la taille n'y importe pas.
+    expect(fromFile(toFile(fabrique)).origin).toEqual(fabrique.origin)
+
+    // Le lien, non : il doublerait de longueur, et le destinataire n'a que
+    // faire de l'état initial d'un profil qui n'est pas le sien.
+    const recu = await decodeProfile(await encodeProfile(fabrique))
+    expect(recu.origin).toBeUndefined()
+  })
+
+  it('laisse les profils livrés se retrouver par leur identifiant', () => {
+    // Ils n'ont pas d'origine enregistrée, et n'en ont pas besoin.
+    for (const livre of createFactoryProfiles()) {
+      expect(livre.origin).toBeUndefined()
+      const remis = resetProfileSection({ ...livre, mix: { ...livre.mix, masterGain: 9 } }, 'mix')
+      expect(remis.mix).toEqual(livre.mix)
+    }
+  })
+
+  it('garde le repli d’avant pour un profil sans origine', () => {
+    // Un profil venu d'une version antérieure n'a pas d'origine : on ne lui en
+    // invente pas une, et il retombe sur le comportement documenté d'avant.
+    const ancien = { ...createDefaultProfile(), id: 'venu-d-avant', name: 'Ancien' }
+    delete (ancien as Partial<Profile>).origin
+
+    const remis = resetProfileSection({ ...ancien, speed: { ...ancien.speed, springOmega: 1 } }, 'speed')
+
+    expect(remis.speed).toEqual(createDefaultProfile().speed)
+  })
+
+  it('relit une origine enregistrée', () => {
+    const fabrique = buildProfile(
+      { name: 'Mien', temperament: 'calme', usage: 'route', gearCount: 6, engine: 'essence' },
+      createDefaultProfile(),
+    )
+
+    saveProfiles([fabrique])
+
+    expect(loadProfiles()[0]?.origin).toEqual(fabrique.origin)
   })
 })

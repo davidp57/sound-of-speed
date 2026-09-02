@@ -299,9 +299,37 @@ export interface Profile {
   mix: MixPreset
   feel: FeelPreset
   layers: LayerPreset[]
+  /**
+   * Valeurs de ce profil au moment de sa création.
+   *
+   * C'est ce que « réinitialiser » lui rend. Sans elles, un profil sorti du
+   * guide de création ne pouvait revenir qu'aux valeurs du profil **Sport** —
+   * reconnu à son identifiant, et servant de repli à tous les autres. La
+   * fonction ne servait donc à rien précisément là où elle sert le plus : sur un
+   * profil qu'on vient de fabriquer et qu'on tâtonne.
+   *
+   * Facultatif : les deux profils livrés n'en ont pas besoin, leur identifiant
+   * suffit à les retrouver, et un profil venu d'une version antérieure n'en a
+   * pas. Le repli d'avant reste alors en place.
+   *
+   * Ne voyage pas dans un lien de partage — il doublerait sa longueur, déjà
+   * surveillée — mais suit dans un fichier exporté, où la taille n'importe pas.
+   */
+  origin?: ProfileOrigin
 }
 
 /** Version du format, pour pouvoir migrer un profil exporté plus tard. */
+/**
+ * Valeurs d'origine d'un profil : ce qu'il était au moment de sa création.
+ *
+ * Tout sauf son identité — l'identifiant, le nom et le statut de favori ne se
+ * réinitialisent pas.
+ */
+export type ProfileOrigin = Pick<
+  Profile,
+  'sampleDir' | 'engine' | 'drivetrain' | 'speed' | 'mix' | 'feel' | 'layers'
+>
+
 export const PROFILE_FORMAT_VERSION = 1
 
 export interface ProfileFile {

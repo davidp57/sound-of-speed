@@ -183,6 +183,13 @@ deux est un réglage, pas une nature.
 _Éviter_ : preset en français (l'identifiant anglais, lui, reste `*Preset`),
 configuration (qui désigne l'écran).
 
+**Origine** (_origin_, `ProfileOrigin`) :
+Ce qu'un profil était à sa création, tout sauf son identité — identifiant, nom
+et statut de favori n'en font pas partie. C'est à elle que la réinitialisation le
+ramène, et elle survit à l'opération pour qu'on puisse la refaire. Facultative :
+les deux profils livrés se retrouvent à leur identifiant.
+_Éviter_ : valeurs d'usine (qui désigne les profils livrés), défaut.
+
 **Section** (_section_, `ProfileSection`) :
 Un bloc de réglages d'un profil — moteur, transmission, signal, mixage,
 caractère, couches. C'est l'unité de réinitialisation : on remet une section aux

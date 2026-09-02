@@ -1,5 +1,5 @@
 import { createDefaultProfile } from './defaults'
-import { deepCopy, newId } from './store'
+import { captureOrigin, deepCopy, newId } from './store'
 import type { Profile } from './schema'
 
 /**
@@ -80,6 +80,15 @@ const LOAD_SPREAD: Record<Temperament, number> = {
 const K = 1 / 3.6 / (2 * Math.PI) // km/h → tours de roue par seconde, à rayon 1 m
 
 export function buildProfile(choices: WizardChoices, template: Profile): Profile {
+  const profil = build(choices, template)
+  // Le profil porte ses propres valeurs d'origine : c'est à elles que
+  // « réinitialiser » doit le ramener. Sans cela il ne pouvait revenir qu'aux
+  // valeurs du profil livré « Sport », ce qui vidait la fonction de son sens
+  // sur un profil qu'on vient de fabriquer et qu'on tâtonne.
+  return { ...profil, origin: captureOrigin(profil) }
+}
+
+function build(choices: WizardChoices, template: Profile): Profile {
   const base = createDefaultProfile()
   const engine = ENGINES[choices.engine]
   const count = Math.max(2, Math.min(9, Math.round(choices.gearCount)))

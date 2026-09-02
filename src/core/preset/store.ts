@@ -1,5 +1,10 @@
 import { createDefaultProfile, createFactoryProfiles } from './defaults'
-import { PROFILE_FORMAT_VERSION, type Profile, type ProfileFile } from './schema'
+import {
+  PROFILE_FORMAT_VERSION,
+  type Profile,
+  type ProfileFile,
+  type ProfileOrigin,
+} from './schema'
 import type { Trace } from '../speed/replay'
 
 /**
@@ -108,13 +113,35 @@ export function missingFactoryProfiles(existing: Profile[]): Profile[] {
 export type ProfileSection = 'engine' | 'drivetrain' | 'speed' | 'mix' | 'feel' | 'layers'
 
 /**
- * Profil d'usine dont un profil donné est issu, reconnu à son identifiant.
+ * Relève les valeurs d'un profil, pour lui servir plus tard d'état d'origine.
  *
- * Retourne les valeurs par défaut génériques pour un profil créé de toutes
- * pièces : il vaut mieux une base saine que pas de retour possible.
+ * Une copie profonde : le profil continuera d'être modifié, son origine ne doit
+ * pas suivre.
  */
-function factoryOrigin(id: string): Profile {
-  return createFactoryProfiles().find((p) => p.id === id) ?? createDefaultProfile()
+export function captureOrigin(profile: Profile): ProfileOrigin {
+  const { sampleDir, engine, drivetrain, speed, mix, feel, layers } = deepCopy(profile)
+  return { sampleDir, engine, drivetrain, speed, mix, feel, layers }
+}
+
+/**
+ * État auquel un profil doit revenir quand on le réinitialise.
+ *
+ * Trois sources, dans cet ordre :
+ *
+ * 1. **ses propres valeurs d'origine**, s'il les porte — le cas des profils
+ *    sortis du guide de création et des duplications ;
+ * 2. le **profil livré** de même identifiant, pour Route et Sport ;
+ * 3. à défaut, les valeurs par défaut génériques.
+ *
+ * Le troisième cas était auparavant le seul repli, si bien que réinitialiser une
+ * section d'un profil fabriqué rendait les valeurs de **Sport**. Il ne reste
+ * utile que pour les profils venus d'une version antérieure, qui n'ont pas
+ * d'origine enregistrée.
+ */
+function factoryOrigin(profile: Profile): ProfileOrigin {
+  if (profile.origin) return deepCopy(profile.origin)
+  const livre = createFactoryProfiles().find((p) => p.id === profile.id)
+  return captureOrigin(livre ?? createDefaultProfile())
 }
 
 /**
@@ -127,10 +154,21 @@ function factoryOrigin(id: string): Profile {
  * étant toujours conservés.
  */
 export function resetProfileSection(profile: Profile, section: ProfileSection | 'all'): Profile {
-  const origin = factoryOrigin(profile.id)
-  const kept = { id: profile.id, name: profile.name }
-  if (section === 'all') return { ...deepCopy(origin), ...kept }
-  return { ...profile, [section]: deepCopy(origin[section]) }
+  const origin = factoryOrigin(profile)
+  if (section === 'all') {
+    // L'identité ne se réinitialise pas, et l'origine reste attachée : on doit
+    // pouvoir y revenir autant de fois qu'on veut.
+    const remis: Profile = {
+      ...profile,
+      ...origin,
+      id: profile.id,
+      name: profile.name,
+      favorite: profile.favorite,
+    }
+    if (profile.origin) remis.origin = deepCopy(profile.origin)
+    return remis
+  }
+  return { ...profile, [section]: origin[section] }
 }
 
 /**
@@ -145,9 +183,17 @@ export function deepCopy<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
-/** Copie profonde avec un nouvel identifiant. Sert au bouton « dupliquer ». */
+/**
+ * Copie profonde avec un nouvel identifiant. Sert au bouton « dupliquer ».
+ *
+ * La copie hérite de l'origine de son modèle quand il en a une ; sinon elle
+ * prend ses valeurs du moment comme origine. Dans les deux cas elle a un état
+ * de retour, ce qui n'était pas le cas avant : une duplication de Route
+ * revenait aux valeurs de Sport.
+ */
 export function duplicateProfile(profile: Profile, name: string): Profile {
-  return { ...deepCopy(profile), id: newId(), name }
+  const copie = deepCopy(profile)
+  return { ...copie, id: newId(), name, origin: copie.origin ?? captureOrigin(copie) }
 }
 
 export function newId(): string {
@@ -190,7 +236,7 @@ export function fromFile(text: string): Profile {
  */
 function reconcile(profile: Partial<Profile>): Profile {
   const base = createDefaultProfile()
-  return {
+  const complet: Profile = {
     id: typeof profile.id === 'string' && profile.id ? profile.id : newId(),
     name: typeof profile.name === 'string' && profile.name ? profile.name : base.name,
     favorite: profile.favorite === true,
@@ -212,6 +258,13 @@ function reconcile(profile: Partial<Profile>): Profile {
         ? profile.layers.map(widenNarrowLayer)
         : base.layers,
   }
+
+  // L'origine est reprise telle quelle quand elle est là, et simplement absente
+  // sinon : un profil venu d'une version antérieure garde le repli d'avant
+  // plutôt que de se voir attribuer une origine inventée.
+  if (isRecord(profile.origin)) complet.origin = profile.origin as ProfileOrigin
+
+  return complet
 }
 
 /**
