@@ -63,6 +63,10 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- La procédure d'installation ne faisait créer que le dossier des échantillons,
+  alors que la pile monte aussi celui des profils partagés — annoncé
+  « facultatif », mais un montage absent empêche le conteneur de démarrer sous
+  DSM. Les deux dossiers sont désormais demandés, et les piles disent pourquoi.
 - L'infobulle de « Ne jamais monter sous » répétait encore qu'il commande le
   rétrogradage, erreur pourtant déjà corrigée dans le README.
 - **Le son tient quand le navigateur passe en arrière-plan** — à essayer en
