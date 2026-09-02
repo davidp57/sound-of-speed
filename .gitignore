@@ -13,6 +13,10 @@ tsconfig.tsbuildinfo
 # dans un dépôt — a fortiori s'il devient public un jour.
 htpasswd
 
+# Relevés de mesure écrits par un test de sonde, le temps d'un diagnostic.
+mesures.txt
+sonde.txt
+
 # Rapports de couverture : produits par `npm run coverage`, jamais partagés.
 .coverage/
 coverage/

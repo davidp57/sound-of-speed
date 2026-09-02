@@ -110,9 +110,14 @@ export function createRoadProfile(): Profile {
       crossfadeHighRpm: 5200,
       fullLoadAccelMs2: 2,
       loadSmoothingS: 0.22,
-      offLoadGain: 3.2,
+      offLoadGain: 1,
       loadContrast: 0.65,
       drive: 0.12,
+      // Plus mesuré que Sport : 8 dB entre lever le pied et écraser, et 3 dB de
+      // rugissement qui s'ajoutent aux 4 dB que la banque donne déjà.
+      loadReliefDb: 4,
+      rpmReliefDb: 3,
+      idleLevelDb: -5,
     },
   }
 }
@@ -180,13 +185,20 @@ export function createDefaultProfile(): Profile {
       crossfadeHighRpm: 7000,
       fullLoadAccelMs2: 2.5,
       loadSmoothingS: 0.18,
-      // Compense un enregistrement trois fois plus doux en décélération.
-      offLoadGain: 2.8,
+      // Neutre : la compensation des prises plus douces est passée dans le gain
+      // de chaque couche, où le déficit se mesure. Ce réglage reste disponible
+      // comme curseur de goût sur toute la famille « pied levé ».
+      offLoadGain: 1,
       loadContrast: 0.75,
       idleFadeOutRpm: 1400,
       highpassHz: 45,
       drive: 0.15,
       limiterThresholdDb: -1.5,
+      // Un profil sportif exagère l'effort : 10 dB entre lever le pied et
+      // écraser, et un rugissement franc en haut des tours.
+      loadReliefDb: 5,
+      rpmReliefDb: 4,
+      idleLevelDb: -5,
     },
     feel: {
       kickdown: {
@@ -234,7 +246,10 @@ export function createDefaultProfile(): Profile {
         file: 'procar-off-low.wav',
         role: 'off',
         anchorRpm: 3299,
-        gain: 1.3,
+        // Mesuré : cette prise est 9,6 dB plus faible que `on-low`. La
+        // compensation vit ici, par couche, là où le déficit est — un facteur
+        // commun à toute la famille surcompensait l'une et pas l'autre.
+        gain: 3,
         minRate: 0.25,
         maxRate: 2,
         enabled: true,
@@ -244,7 +259,9 @@ export function createDefaultProfile(): Profile {
         file: 'procar-off-high.wav',
         role: 'off',
         anchorRpm: 7604,
-        gain: 1.3,
+        // Mesuré : 6,5 dB plus faible que `on-high`, et non 9,6 comme sa
+        // voisine — d'où deux gains distincts.
+        gain: 2.1,
         minRate: 0.25,
         maxRate: 2,
         enabled: true,

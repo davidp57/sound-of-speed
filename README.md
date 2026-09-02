@@ -389,11 +389,15 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 
 | Réglage | Ce qu'il fait |
 |---|---|
-| **Volume général** | |
+| **Volume général** | Peut dépasser 1, le limiteur de sortie empêchant la saturation. À laisser de la marge quand le relief est fort : c'est lui qui donne au haut des tours la place de rugir |
+| **Relief de charge** | Autant en moins pied levé, autant en plus pied au plancher, rien en croisière. **C'est le réglage qui fait entendre l'effort** : sans lui, les fondus étant à puissance constante, ralenti, croisière et pleine charge tenaient dans 1,3 dB — le son changeait de couleur et jamais de volume. À 4, il y a 8 dB entre lever le pied et écraser |
+| **Relief du régime** | Gain gagné entre le ralenti et le rupteur : le rugissement qui monte avec les tours. Il **s'ajoute** aux 4 dB que la banque livrée donne déjà, sa prise haut régime étant enregistrée plus fort que la basse |
+| **Niveau au ralenti** | Le ralenti n'a pas de couche dédiée dans la banque livrée : on y entend la prise « pied levé » jouée deux octaves plus bas. Sans ce réglage elle sonnait aussi fort que tout le reste |
 | **Début / fin de bascule** | Régimes entre lesquels la couche haute remplace la basse. **Indépendants des régimes d'ancrage**, qui règlent la justesse |
 | **Accélération pleine charge** | Accélération au-delà de laquelle la charge est maximale. Faute de pédale dans une voiture électrique, c'est elle qui arbitre le fondu entre « en charge » et « pied levé » |
 | **Lissage de la charge** | Évite que le fondu papillonne sur le bruit d'accélération |
 | **Effacement du ralenti** | Régime au-dessus duquel la couche de ralenti disparaît |
+| **Gain pied levé** | Curseur de goût sur toute la famille « pied levé ». La compensation des prises plus douces vit dans le gain de chaque couche, où le déficit se mesure — 9,6 dB pour la basse, 6,5 pour la haute : à laisser à 1 sauf pour forcer le trait |
 | **Coupe-bas**, **Saturation**, **Seuil du limiteur** | Chaîne de sortie |
 
 ### Caractère
@@ -673,6 +677,15 @@ au fil du régime produirait des discontinuités de phase, donc des clics.
 Deux fondus se composent, tous deux à puissance constante : en régime, entre les
 couches d'un même rôle ; en charge, entre « en charge » et « pied levé ».
 
+À puissance constante, c'est-à-dire **sans creux au milieu d'une bascule** — mais
+aussi sans relief : ces fondus changent la couleur du son et jamais son volume.
+Mesuré, ralenti, croisière, reprise douce et reprise franche tenaient dans
+1,3 dB, et lever le pied franchement était même plus fort qu'écraser. Trois
+réglages de **relief** s'appliquent donc par-dessus, à toutes les couches à la
+fois : l'effort, le régime, et le ralenti. Ils déplacent le niveau d'ensemble
+sans toucher à l'équilibre entre les couches, donc sans rouvrir le creux que les
+fondus évitent.
+
 Trois points ont demandé une attention particulière :
 
 - **Le raccord des boucles.** Mesurée canal par canal après décodage, la
@@ -751,6 +764,7 @@ chaque essai.
 | 11 | Les quatre défauts que la mise sous test a trouvés | corrigé, reste à écouter |
 | 12 | Son maintenu quand le navigateur passe en arrière-plan | à essayer en voiture |
 | 13 | Boîte qui regarde la vitesse : montée en croisière, descente au freinage, rétrogradage sur la demande | à écouter |
+| 14 | Relief du volume : l'effort, le régime et le ralenti s'entendent | à écouter |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

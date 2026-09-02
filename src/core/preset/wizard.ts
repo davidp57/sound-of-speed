@@ -164,8 +164,16 @@ export function buildProfile(choices: WizardChoices, template: Profile): Profile
       crossfadeLowRpm: Math.round(engine.redline * 0.4),
       crossfadeHighRpm: Math.round(engine.redline * 0.8),
       fullLoadAccelMs2: 2.5 - 0.6 * sportiness,
-      offLoadGain: 3.2 - 0.6 * sportiness,
+      // Neutre : la compensation des prises plus douces vit dans le gain de
+      // chaque couche, reprises du profil courant avec les échantillons.
+      offLoadGain: 1,
       loadContrast: 0.6 + 0.2 * sportiness,
+      // Un tempérament sportif exagère l'effort et rugit plus haut dans les
+      // tours ; un calme reste discret. Sans ce relief, les fondus étant à
+      // puissance constante, accélérer ne s'entendrait pas du tout.
+      loadReliefDb: Number((3 + 3 * sportiness).toFixed(1)),
+      rpmReliefDb: Number((2 + 3 * sportiness).toFixed(1)),
+      idleLevelDb: Number((-3 - 4 * sportiness).toFixed(1)),
     },
     feel: {
       kickdown: {

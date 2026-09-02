@@ -25,6 +25,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Le volume fait entendre l'effort.** Les fondus étant à puissance constante,
+  ils changeaient la couleur du son et jamais son niveau : mesuré, ralenti,
+  croisière, reprise douce et reprise franche tenaient dans 1,3 dB, et lever le
+  pied franchement était même 2,3 dB plus fort qu'écraser. Trois réglages de
+  relief s'appliquent désormais par-dessus — la charge, le régime, le ralenti —
+  et l'étendue passe de 5,3 à 16,5 dB sur le profil Route, dans le bon ordre.
+- La compensation des prises « pied levé », enregistrées plus doucement, passe
+  dans le gain de chaque couche là où son déficit se mesure — 9,6 dB pour la
+  basse, 6,5 pour la haute — au lieu d'un facteur commun qui surcompensait l'une
+  de 2,8 dB et l'autre de 5,9. « Gain pied levé » devient un curseur de goût.
 - **La boîte de vitesses regarde l'évolution de la vitesse, et non plus
   seulement le régime.** Trois comportements en découlent, tous réglables :
   - **elle monte les rapports quand on tient une vitesse**, comme une boîte

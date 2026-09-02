@@ -979,12 +979,39 @@ function impliedCylinders(index: number): number | null {
         hint="Peut dépasser 1 : le limiteur de sortie empêche la saturation. Utile quand le volume du véhicule doit rester bas pour la musique."
       />
       <NumberField
+        v-model="profile.mix.loadReliefDb"
+        label="Relief de charge"
+        :min="0"
+        :max="12"
+        :step="0.5"
+        unit="dB"
+        hint="Autant en moins pied levé, autant en plus pied au plancher. Sans lui, accélérer ne s'entend pas : les fondus sont à puissance constante, ils changent le timbre et jamais le volume. À 4, il y a 8 dB entre lever le pied et écraser."
+      />
+      <NumberField
+        v-model="profile.mix.rpmReliefDb"
+        label="Relief du régime"
+        :min="0"
+        :max="12"
+        :step="0.5"
+        unit="dB"
+        hint="Gain gagné entre le ralenti et le rupteur : c'est le rugissement qui monte avec les tours. Il s'ajoute aux 4 dB que la banque livrée donne déjà, sa prise haut régime étant enregistrée plus fort."
+      />
+      <NumberField
+        v-model="profile.mix.idleLevelDb"
+        label="Niveau au ralenti"
+        :min="-24"
+        :max="0"
+        :step="0.5"
+        unit="dB"
+        hint="Au ralenti, faute de couche dédiée dans la banque, on entend la prise « pied levé » jouée deux octaves plus bas. Sans ce réglage elle sonne aussi fort que tout le reste."
+      />
+      <NumberField
         v-model="profile.mix.offLoadGain"
         label="Gain pied levé"
         :min="0"
         :max="6"
         :step="0.1"
-        hint="Les prises en décélération sont enregistrées bien plus doucement que celles en charge. Sans compensation, le son s'éteint dès qu'on lève le pied."
+        hint="Curseur de goût sur toute la famille « pied levé ». La compensation des prises plus douces vit maintenant dans le gain de chaque couche, où le déficit se mesure : laisser 1 sauf pour forcer le trait."
       />
       <NumberField
         v-model="profile.mix.loadContrast"
