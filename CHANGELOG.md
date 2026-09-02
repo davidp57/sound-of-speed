@@ -25,6 +25,19 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le son tient quand le navigateur passe en arrière-plan** — à essayer en
+  voiture. Il s'arrêtait net dès que le navigateur de la Tesla était réduit. Le
+  média qui maintient la session audio est désormais un fichier servi de deux
+  minutes, inséré dans le document, là où il était fabriqué en mémoire, long de
+  quatre secondes et détaché de la page. Un refus du navigateur n'est plus avalé
+  en silence : il s'affiche, avec l'état du contexte audio, dans un bloc
+  « Arrière-plan » sur l'écran Télémétrie.
+- Le réglage « son en arrière-plan » est respecté à l'activation du son, où il
+  était ignoré, et basculer ce réglage ne peut plus laisser deux médias de
+  maintien en place.
+- **Le suivi GPS est relancé quand il se tait** plus de vingt secondes : sans
+  cela, le son tiendrait en arrière-plan mais resterait figé sur la dernière
+  vitesse connue.
 - **Le régime redescend quand on cesse d'accélérer.** La pente d'accélération
   était estimée sur l'historique entier — seize secondes — au lieu de la fenêtre
   réglée : après une reprise suivie d'une vitesse tenue, le moteur restait trop

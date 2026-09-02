@@ -11,6 +11,7 @@ import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditione
 import { GeolocationSource } from './core/speed/geolocation'
 import { ReplaySource, TraceRecorder, type Trace } from './core/speed/replay'
 import { SimulatorSource } from './core/speed/simulator'
+import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
 import type { Profile } from './core/preset/schema'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
@@ -83,6 +84,17 @@ export const sourceKind = ref<SourceKind>('simulator')
 export const sourceStatus = ref<SourceStatus>('idle')
 export const sourceDetail = ref<string>('')
 export const isRunning = ref(false)
+
+/**
+ * Chien de garde du signal de vitesse.
+ *
+ * En arrière-plan, le système espace les mesures de position puis finit parfois
+ * par ne plus rien envoyer. Le son continuant de son côté, il se figerait sur la
+ * dernière vitesse connue — sans que rien ne le signale.
+ */
+const fixWatchdog = new FixWatchdog()
+/** Nombre de relances du suivi, pour l'écran de télémétrie. */
+export const fixRestarts = ref(0)
 export const isRecording = ref(false)
 export const recordedCount = ref(0)
 export const traces = ref<Trace[]>(loadTraces())
@@ -262,7 +274,23 @@ function step(dt: number): void {
       outputLatencyMs: audio.status.outputLatencyMs,
       baseLatencyMs: audio.status.baseLatencyMs,
       backfires: audio.status.backfires,
+      // Le maintien de session et l'état du contexte doivent se voir en direct :
+      // c'est précisément quand ils lâchent qu'il faut le savoir.
+      keepAlivePlaying: audio.status.keepAlivePlaying,
+      keepAliveError: audio.status.keepAliveError,
+      contextResumes: audio.status.contextResumes,
+      contextState: audio.status.contextState,
     }
+  }
+
+  // Le chien de garde est interrogé ici, et non par un minuteur : un minuteur
+  // est gelé en arrière-plan, précisément là où il sert. Cette boucle, elle,
+  // continue de battre grâce à l'horloge du fil audio.
+  const watching = sourceKind.value === 'geolocation' && isRunning.value
+  if (fixWatchdog.tick(dt, speed.sinceLastSampleMs, watching)) {
+    geolocation.stop()
+    geolocation.start()
+    fixRestarts.value = fixWatchdog.restarts
   }
 
   if (sourceKind.value === 'replay') replayProgress.value = replay.progress
@@ -385,6 +413,8 @@ watch(selectedId, (id) => {
 })
 
 export function start(): void {
+  fixWatchdog.reset()
+  fixRestarts.value = 0
   currentSource().start()
   loop.start()
   isRunning.value = true
@@ -444,6 +474,11 @@ function refreshAudioStatus(): void {
  */
 export async function activateAudio(): Promise<void> {
   await audio.activate(activeProfile.value)
+  // L'activation met le maintien de session en place d'office ; le réglage,
+  // lui, peut avoir été coupé avant. Sans cette ligne il était ignoré, et
+  // comparer avec et sans devenait impossible — ce qui est justement son seul
+  // usage.
+  audio.setKeepAlive(backgroundAudio.value)
   refreshAudioStatus()
 
   mediaSession.setHandlers({
@@ -523,6 +558,8 @@ export function setSource(kind: SourceKind): void {
   gearbox.reset()
   sourceStatus.value = 'idle'
   sourceDetail.value = ''
+  fixWatchdog.reset()
+  fixRestarts.value = 0
   if (wasRunning) currentSource().start()
 }
 

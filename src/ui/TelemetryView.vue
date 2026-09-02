@@ -7,6 +7,7 @@ import { rpmAtSpeed } from '../core/preset/defaults'
 import {
   activeProfile,
   audioStatus,
+  fixRestarts,
   deleteTrace,
   exportTraces,
   importTraces,
@@ -28,6 +29,12 @@ import {
  * calculé ici avant même qu'un moteur audio soit branché. Régler un profil se
  * fait donc à l'œil autant qu'à l'oreille.
  */
+
+/** État du maintien de session, en trois mots plutôt qu'en deux booléens. */
+const maintien = computed(() => {
+  if (!audioStatus.value.keepAlive) return 'coupé'
+  return audioStatus.value.keepAlivePlaying ? 'joue' : 'arrêté'
+})
 
 const traceName = ref('')
 const replayRate = ref(1)
@@ -263,6 +270,39 @@ function onRateChange(event: Event): void {
         hint="Échantillons dont les extrémités ne se rejoignaient pas : un fondu a été appliqué pour supprimer le clic."
       />
       <ValueRow v-if="audioStatus.error" label="Erreur" :value="audioStatus.error" warn />
+    </section>
+
+    <!--
+      Ce bloc n'existe que pour un essai en voiture : le son s'arrêtait net dès
+      que le navigateur de bord était réduit, et rien ne disait pourquoi. Aucune
+      de ces valeurs ne se lit dans une console — on conduit.
+    -->
+    <section class="panel">
+      <h2>Arrière-plan</h2>
+      <ValueRow
+        label="Maintien de session"
+        :value="maintien"
+        :warn="audioStatus.keepAlive && !audioStatus.keepAlivePlaying"
+        hint="Un média silencieux joue en boucle pour que le système ne libère pas la session audio quand la page passe en arrière-plan. S'il est arrêté alors qu'il est demandé, c'est là qu'est le problème."
+      />
+      <ValueRow
+        v-if="audioStatus.keepAliveError"
+        label="Refus du navigateur"
+        :value="audioStatus.keepAliveError"
+        warn
+      />
+      <ValueRow
+        label="Reprises du contexte"
+        :value="audioStatus.contextResumes"
+        :warn="audioStatus.contextResumes > 0"
+        hint="Nombre de fois qu'il a fallu relancer le contexte audio depuis l'activation. À zéro, le système ne l'a jamais suspendu — et la surveillance périodique ne sert à rien."
+      />
+      <ValueRow
+        label="Relances du suivi"
+        :value="fixRestarts"
+        :warn="fixRestarts > 0"
+        hint="Le suivi GPS est relancé quand il se tait plus de vingt secondes : sans cela le son se figerait sur la dernière vitesse connue."
+      />
     </section>
 
     <section class="panel wide">

@@ -92,6 +92,7 @@ npm run coverage     # couverture de src/core/
 npm run transcode    # compresse les échantillons en FLAC
 npm run deploy       # recopie le build vers le NAS
 npm run icons        # régénère les icônes de l'application
+npm run silence      # régénère le silence qui maintient la session audio
 npm run htpasswd     # produit un fichier de mots de passe pour nginx
 ```
 
@@ -721,6 +722,7 @@ chaque essai.
 | 9 | Process de développement écrit, git flow, contrôle d'intégration | fait |
 | 10 | Mise sous test du cœur : 211 tests, 94 % de `core/` couvert | fait |
 | 11 | Les quatre défauts que la mise sous test a trouvés | corrigé, reste à écouter |
+| 12 | Son maintenu quand le navigateur passe en arrière-plan | à essayer en voiture |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
@@ -741,3 +743,9 @@ règles de travail du dépôt dans [`CLAUDE.md`](CLAUDE.md), son vocabulaire dan
   proxy inversé.
 - **Le rendu sonore.** Les mesures établissent que le signal sort, qu'il ne
   sature pas et que les fondus sont corrects. Pas qu'il sonne juste.
+- **Le son en arrière-plan.** Il s'arrêtait net dès que le navigateur de la
+  voiture était réduit. Le média qui maintient la session audio a été refait sur
+  le modèle d'une application qui y arrive — fichier servi plutôt que fabriqué
+  en mémoire, élément inséré dans le document, deux minutes de silence plutôt
+  que quatre secondes. Reste à l'essayer là où le problème se pose : le bloc
+  « Arrière-plan » de l'écran Télémétrie dit ce qui s'est passé.
