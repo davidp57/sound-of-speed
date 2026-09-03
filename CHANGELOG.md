@@ -76,6 +76,11 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Le fichier de mots de passe accepte plusieurs entrées.** `npm run htpasswd`
+  écrasait le fichier : créer un second identifiant effaçait le premier. Il
+  ajoute désormais une ligne, et remplace celle d'un nom déjà présent. Il en faut
+  deux — le vôtre pour ce que vous faites à la main, et celui du dépôt dont
+  l'application se servira depuis la voiture.
 - **L'étalonnage est une couche par-dessus les profils**, et non une recopie
   dedans. Un profil décrit un son ; l'étalonnage décrit la voiture. Les mesures
   s'appliquent donc d'elles-mêmes à tous les profils, ceux livrés compris, sans

@@ -16,7 +16,7 @@
  */
 
 import { createInterface } from 'node:readline'
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { stdin, stdout } from 'node:process'
 
 import bcrypt from 'bcryptjs'
@@ -60,6 +60,27 @@ if (password !== confirmation) {
   console.error('Les deux saisies diffèrent.')
   process.exit(1)
 }
+
+/**
+ * Entrées déjà présentes, hors celle qu'on écrit.
+ *
+ * Le fichier peut ne pas exister — c'est le cas au premier appel — et il peut
+ * contenir des lignes qu'on ne comprend pas : on les garde telles quelles plutôt
+ * que de les jeter, un fichier de mots de passe n'étant pas à nous.
+ */
+async function existingLines(name) {
+  let text
+  try {
+    text = await readFile(OUTPUT, 'utf8')
+  } catch {
+    return { lines: [], replaced: false }
+  }
+  const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '')
+  const kept = lines.filter((line) => line.split(':')[0] !== name)
+  return { lines: kept, replaced: kept.length !== lines.length }
+}
+
+const { lines, replaced } = await existingLines(user)
 
 // Les variantes `$2a$`, `$2b$` et `$2y$` désignent le même algorithme et
 // produisent la même empreinte ; seul le préfixe diffère, pour des raisons

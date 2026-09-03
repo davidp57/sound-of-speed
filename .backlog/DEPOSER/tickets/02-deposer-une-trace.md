@@ -21,12 +21,46 @@ date, durée et nom donné à l'enregistrement.
 Un dépôt qui échoue le dit, et la trace reste dans le stockage local — elle n'est
 jamais perdue au profit d'un dépôt raté.
 
+## L'authentification, tranchée le 3 septembre 2026
+
+Le dépôt exige de s'annoncer, et c'est là que la voiture complique tout. Le
+navigateur ne fournit l'en-tête d'authentification qu'après qu'on l'a saisie une
+fois pour cette adresse, et il n'affiche sa boîte de dialogue native que sur une
+**navigation** — pas sur une requête lancée par l'application. Le premier dépôt
+recevrait donc un refus sans que rien ne s'affiche.
+
+Trois issues ont été posées : s'authentifier par une navigation avant chaque
+session ; faire saisir le mot de passe à l'application ; ou **un jeton**.
+
+**Retenu : le jeton.** Dans une voiture, tout ce qui demande une saisie ou
+affiche une boîte est perdu d'avance — écran à bout de bras, au feu rouge. Et le
+droit accordé est minuscule au regard d'un mot de passe de compte : écrire un
+fichier dans un dossier de traces, rien d'autre.
+
+Concrètement, **rien à changer sur le serveur** : le jeton est un identifiant
+dédié, ajouté au fichier de mots de passe à côté du sien, et l'application
+compose elle-même l'en-tête d'authentification. Aucune boîte, aucune saisie en
+roulant.
+
+Le jeton est une préférence de l'appareil, rangée comme le volume et le mode
+avancé : il ne fait pas partie d'un profil et ne voyage pas avec un profil
+partagé. Il se saisit une fois, à l'écran de configuration.
+
+**Ce que cela vaut, et ne vaut pas** : le jeton vit en clair dans le navigateur
+de la voiture. Quelqu'un qui a la main sur ce navigateur peut déposer des
+fichiers dans le dossier des traces. Il ne peut ni les supprimer — la méthode
+n'est pas ouverte — ni toucher au reste du NAS. C'est le compromis assumé ; le
+mot de passe personnel, lui, ne quitte pas le poste de travail.
+
 ## Critères d'acceptation
 
 - [ ] Une trace se dépose depuis l'écran de télémétrie, en un geste
 - [ ] Le fichier déposé se relit par la fonction d'import existante, à
       l'identique
 - [ ] Le nom du fichier dit de quelle trace il s'agit
+- [ ] Le jeton se saisit une fois et se retient, hors du profil
+- [ ] Aucune boîte de dialogue d'authentification n'apparaît en roulant
 - [ ] Un dépôt qui échoue est signalé, et la trace reste enregistrée localement
+- [ ] Un jeton absent ou faux donne un message qui dit lequel des deux
 - [ ] Une trace déjà déposée ne se réécrit pas en silence
 - [ ] 🧑 Vérifié depuis la voiture : la trace se retrouve sur le poste de travail
