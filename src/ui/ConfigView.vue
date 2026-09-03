@@ -858,15 +858,6 @@ function impliedCylinders(index: number): number | null {
         unit="ms"
         hint="Durée sur laquelle l'accélération est calculée. Courte, elle réagit vite mais tremble ; longue, elle est stable mais en retard."
       />
-      <NumberField
-        v-model="profile.speed.accelDeadbandKmh"
-        label="Zone morte"
-        :min="0"
-        :max="5"
-        :step="0.1"
-        unit="km/h"
-        hint="En deçà, la variation est traitée comme du tremblement de mesure."
-      />
       <NumberField v-model="profile.speed.maxPlausibleKmh" label="Vitesse plausible max" :min="50" :max="400" :step="10" unit="km/h"
         hint="Au-delà, la mesure est rejetée comme aberrante. Le GPS produit parfois des sauts sous un pont ou entre deux immeubles."
       />

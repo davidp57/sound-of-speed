@@ -246,7 +246,7 @@ function reconcile(profile: Partial<Profile>): Profile {
         : base.sampleDir,
     engine: { ...base.engine, ...(profile.engine ?? {}) },
     drivetrain: migrateDrivetrain(base, profile.drivetrain),
-    speed: { ...base.speed, ...(profile.speed ?? {}) },
+    speed: migrateSpeed(base, profile.speed),
     mix: { ...base.mix, ...(profile.mix ?? {}) },
     feel: {
       kickdown: { ...base.feel.kickdown, ...(profile.feel?.kickdown ?? {}) },
@@ -265,6 +265,24 @@ function reconcile(profile: Partial<Profile>): Profile {
   if (isRecord(profile.origin)) complet.origin = profile.origin as ProfileOrigin
 
   return complet
+}
+
+/**
+ * Reprend un signal de vitesse enregistré par une version antérieure.
+ *
+ * La zone morte a disparu : elle retirait un écart fixe en km/h avant de diviser
+ * par la durée de la fenêtre, ce qui annulait les accélérations douces dès que
+ * le GPS livrait plus d'une mesure par seconde. La pente est désormais ajustée
+ * sur toutes les mesures de la fenêtre, et le bruit se moyenne au lieu d'être
+ * seuillé. Le champ est retiré plutôt que laissé mort dans le stockage.
+ */
+function migrateSpeed(
+  base: Profile,
+  stored: Partial<Profile['speed']> | undefined,
+): Profile['speed'] {
+  const merged: Record<string, unknown> = { ...base.speed, ...(stored ?? {}) }
+  delete merged.accelDeadbandKmh
+  return merged as unknown as Profile['speed']
 }
 
 /**

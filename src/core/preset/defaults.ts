@@ -174,7 +174,6 @@ export function createDefaultProfile(): Profile {
     speed: {
       springOmega: 14,
       accelWindowMs: 1000,
-      accelDeadbandKmh: 1,
       maxPlausibleKmh: 260,
       minAccelMs2: -14,
       maxAccelMs2: 14,

@@ -6,8 +6,38 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Corrigé
+
+- **L'accélération douce n'était pas vue du tout dans la voiture.** Le
+  conditionnement du signal était bâti sur l'idée qu'un GPS livre une mesure par
+  seconde — c'était écrit dans son code. Relevé dans une Tesla, il en livre une
+  toutes les quelques dizaines de millisecondes en roulant. Deux défauts s'y
+  composaient : l'historique était borné à seize mesures, soit une demi-seconde
+  à cette cadence, si bien que la fenêtre réglée n'était jamais atteinte et que
+  le réglage ne commandait rien ; et la zone morte retirait un écart fixe en
+  km/h **avant** de diviser par la durée, ce qui, sur une fenêtre deux fois plus
+  courte, annulait purement et simplement toute accélération sous 0,58 m/s².
+  Mesuré : une reprise de 0,55 m/s² était lue à **zéro**. Accélérer de 110 à 150
+  en vingt secondes se jouait donc comme une vitesse tenue.
+
+  La pente est maintenant ajustée aux moindres carrés sur **toutes** les mesures
+  de la fenêtre, dont la durée est bornée en temps et non en nombre. Mesuré, à
+  bruit de mesure égal : la pente est juste à toutes les cadences de 30 ms à 1 s
+  (0,35 m/s² lue 0,350 ; 2,0 lue 2,000), et son écart-type tombe de 0,26 m/s² à
+  un hertz à 0,12 à trente millisecondes. Plus le GPS parle, plus l'estimation
+  est sûre — l'inverse d'avant.
+
+  Le défaut valait aussi au poste de travail : le simulateur émet une mesure par
+  image, soit près de cent cinquante par seconde. Tous les réglages faits au
+  simulateur portaient donc sur une fenêtre de cent millisecondes, pas sur celle
+  qui était affichée.
+
 ### Ajouté
 
+- Trois lignes dans « Qualité du signal » de l'écran Télémétrie : la **cadence
+  typique** des mesures — la médiane, car une seule interruption rend une
+  moyenne illisible — et le **nombre de mesures** qui servent à estimer la
+  pente. C'est ce chiffre qui a permis de trouver le défaut ci-dessus.
 - Une **seconde pile Portainer**, sur l'étiquette `develop`, pour essayer en
   voiture ce qui n'est pas encore sorti sans toucher à l'application qui sert au
   quotidien : `docker/docker-compose.develop.yml`, et la marche à suivre dans le
@@ -26,6 +56,18 @@ Toutes les évolutions notables du projet. Format
   chaque PR vers `develop` et `main`.
 - Publication de l'image Docker depuis `develop` (étiquette `develop`) en plus
   de `main` (`latest`), et depuis un tag de version.
+
+### Retiré
+
+- Le réglage **« Zone morte »** du signal de vitesse. Il n'existait que pour
+  masquer le bruit d'une pente estimée sur deux points ; l'ajustement sur toute
+  la fenêtre moyenne ce bruit au lieu de le seuiller. Mesuré, deux variantes qui
+  le conservaient sous une forme correcte — soustractive, ou pondérée par la
+  qualité de l'ajustement — amputaient les reprises douces de 25 à 69 % : elles
+  ont été écartées. Le tremblement du GPS à l'arrêt, ce que la zone morte
+  protégeait réellement, est traité en ne cherchant pas de pente quand le
+  véhicule est immobile. Les profils enregistrés perdent le champ sans rien
+  d'autre : le format ne change pas de forme.
 
 ### Modifié
 

@@ -1,7 +1,7 @@
 # PENTE — le GPS de la Tesla livre trente fois par seconde
 
 **Statut :** 🧑 attend David
-**Branche :** à créer
+**Branche :** `fix/pente`
 **Version visée :** 0.2 — avant tout le reste
 
 ## Ce qui a déclenché
@@ -147,16 +147,61 @@ signaler. La seconde solution est la bonne si le cas se confirme.
 5. Afficher la cadence de la source dans la télémétrie : `recentGapsMs` existe
    déjà, il n'est pas montré. C'est ce chiffre qui a permis de trouver.
 
+## Quatre écarts à ce plan, décidés en cours de route
+
+1. **`PROFILE_FORMAT_VERSION` n'a pas été monté.** Le point 3 le prévoyait par
+   prudence. Vérifié : rien ne contrôle la version à la lecture d'un fichier de
+   profil, et `reconcile` complète par tolérance. Un champ qui disparaît est
+   simplement ignoré ; monter la version n'aurait rien protégé. Le champ mort est
+   retiré du stockage par une reprise dédiée, `migrateSpeed`.
+
+2. **La suppression de la zone morte a été mise à l'épreuve avant d'être
+   retenue.** Elle protégeait réellement du tremblement du GPS à l'arrêt, et
+   l'ajustement ne suffit pas à l'annuler : mesuré à ±3 km/h de tremblement, il
+   laisse passer 0,6 m/s². Deux variantes qui la gardaient sous une forme
+   correcte ont donc été mesurées — soustractive en km/h/s, et pondérée par la
+   qualité de l'ajustement. Les deux amputent les reprises douces : de 25 % pour
+   la première, de 69 % pour la seconde, qui écrase d'autant plus qu'une pente
+   est faible. Écartées. La protection est passée à un seuil sur les mesures
+   elles-mêmes : on ne cherche pas de pente quand rien ne bouge. Sans réglage, et
+   sans amputer quoi que ce soit.
+
+3. **Le défaut valait aussi au poste de travail.** Le simulateur émet une mesure
+   par image, soit près de cent cinquante par seconde — relevé à l'écran de
+   télémétrie une fois la cadence affichée. Tous les réglages faits au simulateur
+   portaient donc sur une fenêtre de cent millisecondes, jamais sur celle qui
+   était affichée. Le point 3 de la spec parlait d'un simulateur « à un hertz » :
+   c'était faux.
+
+4. **La cadence affichée est une médiane, pas une moyenne.** Relevé au poste de
+   travail sur une page mise en veille par le navigateur : six intervalles de 13,
+   6, 66 398, 4, 19 et 1005 ms. La moyenne annonçait 11 241 ms, la médiane
+   dit 16. Une seule interruption suffit à rendre une moyenne illisible, et c'est
+   un chiffre à lire en roulant.
+
+## Ce qui a été vérifié, et comment
+
+Le cas « cadence plus lente que la fenêtre » a été observé en vrai, par accident
+utile : le navigateur de développement bride la page à un hertz quand elle n'a
+pas le focus. La télémétrie affichait alors une durée d'image de 1006 ms, des
+intervalles de 1005 ms, **deux** mesures dans la fenêtre — le plancher que garde
+l'élagage — et une pente toujours estimée à 8,0 km/h/s. C'est le garde-fou
+« garder au moins deux mesures » qui joue là : sans lui, l'historique tomberait à
+une seule entrée et la pente resterait figée.
+
+L'autre bout est couvert par les tests : 143 mesures dans la fenêtre à sept
+millisecondes de cadence.
+
 ## Critères d'acceptation
 
-- [ ] Une accélération de 0,35 m/s² est vue à 0,35 m/s² à ±0,1, à toute cadence
+- [x] Une accélération de 0,35 m/s² est vue à 0,35 m/s² à ±0,1, à toute cadence
       entre 30 ms et 1 s
-- [ ] La fenêtre réglée commande réellement la durée observée
-- [ ] À bruit égal, la pente estimée est d'autant plus stable que la cadence est
+- [x] La fenêtre réglée commande réellement la durée observée
+- [x] À bruit égal, la pente estimée est d'autant plus stable que la cadence est
       rapide
-- [ ] Le réglage de bande morte a disparu et les profils enregistrés se
+- [x] Le réglage de bande morte a disparu et les profils enregistrés se
       reprennent sans le perdre
-- [ ] La cadence de la source est lisible à l'écran de télémétrie
+- [x] La cadence de la source est lisible à l'écran de télémétrie
 - [ ] 🧑 Vérifié en roulant : une reprise douce fait monter la charge
 - [ ] 🧑 Vérifié en roulant : « Relances du suivi » reste à zéro après un arrêt
       prolongé

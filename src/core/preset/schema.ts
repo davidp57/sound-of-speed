@@ -155,10 +155,14 @@ export interface SpeedPreset {
    * réactif et plus les sauts du GPS s'entendent.
    */
   springOmega: number
-  /** Fenêtre de calcul de la pente d'accélération, en millisecondes. */
+  /**
+   * Fenêtre de calcul de la pente d'accélération, en millisecondes.
+   *
+   * Toutes les mesures qu'elle contient servent à l'ajustement, quel qu'en soit
+   * le nombre : deux à la cadence d'un hertz, une trentaine à celle du GPS d'une
+   * Tesla en mouvement.
+   */
   accelWindowMs: number
-  /** En deçà de cet écart, la variation est considérée comme du bruit GPS. */
-  accelDeadbandKmh: number
   /** Toute mesure au-delà est rejetée comme aberrante. */
   maxPlausibleKmh: number
   /** Bornes de l'accélération retenue, en m/s². */
