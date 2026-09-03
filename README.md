@@ -317,6 +317,8 @@ npm run htpasswd
    caractères au minimum, saisi en aveugle, à confirmer. Rien n'apparaît à
    l'écran pendant la frappe, et le mot de passe ne passe pas en argument : il
    resterait dans l'historique du terminal et dans la liste des processus.
+   Relancer la commande **ajoute** une entrée au fichier, et remplace celle d'un
+   nom déjà présent — il en faudra deux, la vôtre et celle du dépôt.
 2. Elle écrit un fichier nommé `htpasswd` dans le dossier courant. Il tient sur
    une ligne : le nom d'utilisateur, puis l'empreinte du mot de passe. Le mot de
    passe lui-même n'y est pas — il n'est pas récupérable, et il faut refaire
@@ -375,6 +377,29 @@ porte sa propre exigence, déjà active.
 
 Sans ce fichier, le dépôt est refusé — la lecture des traces, des profils et de
 l'application continue de fonctionner normalement.
+
+### Deux identifiants, et pourquoi
+
+Le fichier en portera deux, et ce n'est pas une commodité :
+
+| Nom | Sert à | Vit où |
+|---|---|---|
+| le vôtre | déposer à la main, avec `curl` ou en naviguant | sur le poste de travail |
+| `depot` | à l'application, pour envoyer une trace depuis la voiture | dans le navigateur de la voiture |
+
+La raison est que le navigateur ne fournit l'authentification qu'après l'avoir
+demandée, et il ne la demande que sur une **navigation** — jamais sur une requête
+lancée par l'application. Un dépôt depuis la voiture recevrait donc un refus sans
+que rien ne s'affiche. L'application compose elle-même son en-tête, avec un
+**jeton** qu'on lui donne une fois.
+
+Ce jeton vit en clair dans le navigateur de la voiture, et c'est un compromis
+assumé : qui a la main sur ce navigateur peut déposer un fichier dans le dossier
+des traces, mais ni l'effacer — la méthode n'est pas ouverte — ni toucher au
+reste du NAS. Votre mot de passe personnel, lui, ne quitte pas le poste.
+
+Donnez donc au jeton une valeur longue et sans rapport avec vos autres mots de
+passe : `npm run htpasswd` avec `depot` comme nom d'utilisateur.
 
 > Depuis le wifi de la maison, le nom DDNS résout vers l'adresse publique : sans
 > **NAT loopback** activé sur la box, l'accès échoue alors qu'il fonctionne en
