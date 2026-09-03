@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import {
   MAX_GEARS,
+  SIMPLE_GEAR_COUNTS,
   applyResponsiveness,
   applySportiness,
+  gearRatiosFor,
   resizeGearTables,
   responsivenessOf,
+  setGearCount,
   shiftDelaysFor,
   sportinessOf,
   upshiftTableFor,
@@ -510,5 +513,101 @@ describe('les tables suivent le nombre de rapports', () => {
   it('borne un nombre de rapports absurde', () => {
     expect(resizeGearTables(route, 0).drivetrain.shiftDelaysS).toHaveLength(2)
     expect(resizeGearTables(route, 99).drivetrain.shiftDelaysS).toHaveLength(MAX_GEARS)
+  })
+})
+
+describe('le nombre de rapports se change en un geste', () => {
+  it('donne le nombre demandé, étagé du plus court au plus long', () => {
+    for (const n of SIMPLE_GEAR_COUNTS) {
+      const { gearRatios } = setGearCount(route, n).drivetrain
+
+      expect(gearRatios).toHaveLength(n)
+      for (let i = 1; i < gearRatios.length; i += 1) {
+        expect(gearRatios[i]!).toBeLessThan(gearRatios[i - 1]!)
+      }
+    }
+  })
+
+  it('garde le premier et le dernier rapport, donc le régime en dernier', () => {
+    // C'est la contrainte qui a motivé le profil Route : le rapport le plus long
+    // doit tourner à un régime tenable à la vitesse de croisière habituelle.
+    // Mesuré : 2355 tr/min à 110 km/h sur Route, quel que soit le nombre de
+    // rapports, et 2865 sur Sport.
+    for (const modele of [route, sport]) {
+      const ratios = modele.drivetrain.gearRatios
+      const attendu = rpmInGear(modele, ratios.length - 1, 110)
+
+      for (const n of SIMPLE_GEAR_COUNTS) {
+        const p = setGearCount(modele, n)
+        expect(p.drivetrain.gearRatios[0]).toBe(ratios[0])
+        expect(p.drivetrain.gearRatios[n - 1]).toBe(ratios[ratios.length - 1])
+        expect(p.drivetrain.finalDrive).toBe(modele.drivetrain.finalDrive)
+        expect(rpmInGear(p, n - 1, 110)).toBeCloseTo(attendu, 3)
+      }
+      expect(attendu).toBeCloseTo(modele.id === 'route' ? 2355 : 2865, -1)
+    }
+  })
+
+  it('reste cohérente et jouable de trois à huit rapports', () => {
+    for (const modele of [route, sport]) {
+      for (const n of SIMPLE_GEAR_COUNTS) {
+        const p = setGearCount(modele, n)
+
+        // La boîte monte jusqu'au dernier rapport à 110 km/h tenus, une fois, et
+        // s'y tient : mesuré, n − 1 passages sur nonante secondes.
+        const tenue = cruise(p, 110)
+        expect(tenue.gear).toBe(n - 1)
+        expect(tenue.shifts).toBe(n - 1)
+
+        // Et pied au plancher elle ne tape pas dans le rupteur.
+        expect(fullThrottle(p).peakRpm).toBeLessThan(p.engine.redlineRpm)
+
+        expect(p.drivetrain.upshiftRpm).toHaveLength(n - 1)
+        expect(p.drivetrain.shiftDelaysS).toHaveLength(n)
+      }
+    }
+  })
+
+  it('ne fait pas hurler la première dès le démarrage', () => {
+    // Mesuré : 528 tr/min sur Route à 5 km/h, pour un seuil de passage à 3110 —
+    // et 1027 sur Sport à 8 km/h pour un seuil à 5338. La première a de la
+    // marge, quel que soit le nombre de rapports.
+    for (const modele of [route, sport]) {
+      for (const n of SIMPLE_GEAR_COUNTS) {
+        const p = setGearCount(modele, n)
+        const auLancement = rpmInGear(p, 0, p.drivetrain.launchUpshiftKmh)
+
+        expect(auLancement).toBeLessThan(p.drivetrain.upshiftRpm[0]!)
+        expect(auLancement).toBeLessThan(p.engine.redlineRpm * 0.3)
+      }
+    }
+  })
+
+  it('rend tel quel un profil qui a déjà ce nombre de rapports', () => {
+    expect(setGearCount(route, 6)).toBe(route)
+    expect(setGearCount(sport, 6)).toBe(sport)
+  })
+
+  it('reprend l’étagement du guide quand la boîte n’en a pas', () => {
+    // Une prise directe n'a ni premier ni dernier rapport distincts : il n'y a
+    // rien à conserver, et l'étagement du guide de création sert de repli.
+    const directe: Profile = {
+      ...route,
+      drivetrain: { ...route.drivetrain, gearRatios: [1] },
+    }
+
+    const { gearRatios } = setGearCount(directe, 5).drivetrain
+
+    expect(gearRatios[0]).toBe(3.6)
+    expect(gearRatios[4]).toBe(0.72)
+  })
+
+  it('étage géométriquement, donc à écarts de régime égaux', () => {
+    // C'est le propre d'une boîte bien étagée : le rapport d'un rapport au
+    // suivant est constant.
+    const ratios = gearRatiosFor(7, 3.6, 0.72)
+
+    const ecarts = ratios.slice(1).map((r, i) => ratios[i]! / r)
+    for (const ecart of ecarts) expect(ecart).toBeCloseTo(ecarts[0]!, 2)
   })
 })

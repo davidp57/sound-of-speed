@@ -1,6 +1,6 @@
 # MODE-SIMPLE — quelques curseurs qui commandent les quarante-huit autres
 
-**Statut :** 🔄 en cours
+**Statut :** 🧑 attend David
 **Branche :** `feature/mode-simple`
 **Version visée :** 0.3
 
@@ -39,6 +39,12 @@ Ceux que David nomme :
   temporisations. C'est la différence entre une voiture qui pousse fort et une
   voiture qui répond vite, et elle est réelle ;
 - **le nombre de rapports.**
+
+## Ce qui est livré
+
+Les cinq tickets sont faits. Reste la vérification en roulant du ticket 04 : que
+les deux extrêmes du curseur de réactivité s'entendent, et se distinguent du
+curseur de caractère. Le reste est mesuré et sous test.
 
 ## Une correction factuelle
 

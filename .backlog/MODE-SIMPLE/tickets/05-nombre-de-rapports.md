@@ -1,6 +1,6 @@
 # 05 — Le nombre de rapports, réglable depuis le mode simplifié
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Les tables suivent le nombre de rapports ; 03 — Un curseur
 « calme ↔ sportif », en continu
@@ -22,9 +22,14 @@ et le plus court ne doit pas hurler en ville.
 
 ## Critères d'acceptation
 
-- [ ] Le nombre de rapports se change en un geste, sans saisir de liste
-- [ ] De trois à huit rapports, la boîte reste cohérente et jouable
-- [ ] Le rapport le plus long tourne à un régime tenable à 110 km/h
-- [ ] Le premier rapport ne dépasse pas son seuil de passage dès le démarrage
-- [ ] Le champ des démultiplications reste disponible en mode avancé, pour qui
+- [x] Le nombre de rapports se change en un geste, sans saisir de liste
+- [x] De trois à huit rapports, la boîte reste cohérente et jouable — mesuré, la
+      boîte monte jusqu'au dernier rapport à 110 km/h tenus en n − 1 passages,
+      et ne tape pas dans le rupteur pied au plancher
+- [x] Le rapport le plus long tourne à un régime tenable à 110 km/h — mesuré,
+      2355 tr/min sur Route et 2865 sur Sport, quel que soit le nombre de
+      rapports : le premier et le dernier sont conservés, le pont avec eux
+- [x] Le premier rapport ne dépasse pas son seuil de passage dès le démarrage —
+      mesuré, 528 tr/min à 5 km/h sur Route pour un seuil à 3110
+- [x] Le champ des démultiplications reste disponible en mode avancé, pour qui
       veut les poser à la main

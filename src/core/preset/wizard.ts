@@ -1,4 +1,4 @@
-import { applySportiness } from './character'
+import { applySportiness, gearRatiosFor } from './character'
 import { createDefaultProfile } from './defaults'
 import { captureOrigin, deepCopy, newId } from './store'
 import type { Profile } from './schema'
@@ -67,14 +67,9 @@ function build(choices: WizardChoices, template: Profile): Profile {
   const engine = ENGINES[choices.engine]
   const count = Math.max(2, Math.min(9, Math.round(choices.gearCount)))
 
-  // Rapports répartis géométriquement entre un premier court et un dernier long.
-  // Une progression géométrique donne des écarts de régime égaux d'un rapport au
-  // suivant, ce qui est le propre d'une boîte bien étagée.
-  const first = 3.6
-  const last = 0.72
-  const gearRatios = Array.from({ length: count }, (_, i) =>
-    Number((first * (last / first) ** (i / (count - 1))).toFixed(3)),
-  )
+  // Rapports répartis géométriquement entre un premier court et un dernier long,
+  // par la loi partagée avec le mode simplifié.
+  const gearRatios = gearRatiosFor(count, 3.6, 0.72)
 
   const wheelRadiusM = template.drivetrain.wheelRadiusM
   const cruiseKmh = CRUISE[choices.usage]

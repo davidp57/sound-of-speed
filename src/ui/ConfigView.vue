@@ -15,6 +15,7 @@ import {
   type Temperament,
   type Usage,
 } from '../core/preset/wizard'
+import { SIMPLE_GEAR_COUNTS } from '../core/preset/character'
 import type { LayerRole } from '../core/preset/schema'
 import {
   activeProfile,
@@ -34,9 +35,11 @@ import {
   resetActive,
   restoreFactoryProfiles,
   canUndoGlobalChange,
+  gearCount,
   responsiveness,
   selectProfile,
   selectedProfileId,
+  setGearCount,
   setGearRatios,
   setResponsiveness,
   setSportiness,
@@ -480,6 +483,24 @@ function impliedCylinders(index: number): number | null {
           :step="1"
           hint="La réactivité du signal, et non le caractère : raideur du lissage, fenêtre d'accélération, lissage de la charge, temporisations de passage. Le premier curseur dit si la voiture pousse fort, celui-ci si elle répond vite. Vers cent elle suit au plus près et les sauts du GPS s'entendent ; vers zéro elle est lisse et en retard d'une demi-seconde."
         />
+
+        <p class="choice-label">Nombre de rapports</p>
+        <div class="choices">
+          <button
+            v-for="n in SIMPLE_GEAR_COUNTS"
+            :key="n"
+            :aria-pressed="gearCount === n"
+            @click="setGearCount(n)"
+          >
+            {{ n }}
+          </button>
+        </div>
+        <p class="note">
+          Le premier et le dernier rapport sont conservés, avec le pont : le
+          régime en dernier rapport à une vitesse donnée ne bouge pas. Seuls les
+          rapports intermédiaires se redistribuent, avec les régimes de passage
+          et les temporisations.
+        </p>
         <div class="global-actions">
           <button :disabled="!canUndoGlobalChange" @click="undoGlobalChange()">
             Revenir aux réglages d'avant

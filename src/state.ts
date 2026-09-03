@@ -19,6 +19,7 @@ import {
   applySportiness,
   resizeGearTables,
   responsivenessOf,
+  setGearCount as withGearCount,
   sportinessOf,
 } from './core/preset/character'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
@@ -874,6 +875,27 @@ export const responsiveness = computed(() => responsivenessOf(activeProfile.valu
 
 export function setResponsiveness(value: number): void {
   applyGlobalChange((profile) => applyResponsiveness(profile, value))
+}
+
+/** Nombre de rapports du profil actif. */
+export const gearCount = computed(() => activeProfile.value.drivetrain.gearRatios.length)
+
+/**
+ * Change le nombre de rapports, boîte complète : démultiplications réparties,
+ * régimes de passage et temporisations redimensionnés.
+ *
+ * Compte comme un mouvement de curseur global — il refait la boîte — donc il
+ * prend le même état de retour. Et la boîte se recale aussitôt sur la vitesse
+ * courante : sans cela, changer de nombre de rapports en roulant laisserait le
+ * rapport engagé pointer sur une démultiplication qui n'est plus la même, donc
+ * le régime sauter. Les réglages sont reposés à la main avant le recalage,
+ * l'observateur qui s'en charge d'ordinaire ne se déclenchant qu'après.
+ */
+export function setGearCount(count: number): void {
+  applyGlobalChange((profile) => withGearCount(profile, count))
+  const profile = activeProfile.value
+  gearbox.setPresets(profile.drivetrain, profile.engine, profile.feel)
+  gearbox.settleFor((gear) => rpmInGear(gear, telemetry.value.speed.kmh))
 }
 
 export function duplicateActive(): void {

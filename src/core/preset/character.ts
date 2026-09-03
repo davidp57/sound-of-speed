@@ -28,6 +28,15 @@ export const MIN_GEARS = 2
 export const MAX_GEARS = 9
 
 /**
+ * Nombres de rapports proposés en mode simplifié.
+ *
+ * Plus étroit que ce que la boîte accepte : une boîte à deux rapports est une
+ * curiosité, à neuf une exception. Les deux restent atteignables en posant la
+ * liste des démultiplications à la main, en mode avancé.
+ */
+export const SIMPLE_GEAR_COUNTS = [3, 4, 5, 6, 7, 8]
+
+/**
  * Interpolation entre trois points relevés — au plus calme, au milieu, au plus
  * sportif.
  *
@@ -106,6 +115,55 @@ export function shiftDelaysFor(
   const count = gearsIn(gearCount)
   const base = between(0.45, 0.32, 0.22, sportiness) * (1.5 - clamp01(responsiveness))
   return Array.from({ length: count }, (_, i) => round2(base * (i % 2 === 0 ? 1 : 1.7)))
+}
+
+/**
+ * Démultiplications étagées entre un premier rapport court et un dernier long.
+ *
+ * Une progression géométrique donne des écarts de régime égaux d'un rapport au
+ * suivant, ce qui est le propre d'une boîte bien étagée.
+ */
+export function gearRatiosFor(gearCount: number, first: number, last: number): number[] {
+  const count = gearsIn(gearCount)
+  // Un premier rapport qui ne serait pas plus court que le dernier ne décrit pas
+  // une boîte : on reprend alors l'étagement du guide de création.
+  const court = first > last && first > 0 && last > 0 ? first : 3.6
+  const long = first > last && first > 0 && last > 0 ? last : 0.72
+  return Array.from({ length: count }, (_, i) =>
+    Number((court * (long / court) ** (i / (count - 1))).toFixed(3)),
+  )
+}
+
+/**
+ * Change le nombre de rapports d'un profil, boîte complète.
+ *
+ * Le premier et le dernier rapport sont **conservés**, et le pont avec eux : le
+ * régime en dernier rapport à une vitesse donnée ne bouge donc pas, et c'est
+ * exactement la contrainte qui a motivé le profil Route — le rapport le plus
+ * long doit tourner à un régime tenable à la vitesse de croisière habituelle.
+ * Seuls les rapports intermédiaires se redistribuent, avec les tables qui les
+ * accompagnent.
+ *
+ * Le nombre de rapports était déjà modifiable par la liste des
+ * démultiplications ; ce qui manquait était de le mettre à portée de main sans
+ * avoir à écrire six nombres qui s'accordent.
+ */
+export function setGearCount(profile: Profile, gearCount: number): Profile {
+  const count = gearsIn(gearCount)
+  const actuels = profile.drivetrain.gearRatios
+  if (actuels.length === count) return profile
+
+  const sportiness = sportinessOf(profile)
+  const responsiveness = responsivenessOf(profile)
+  return {
+    ...profile,
+    drivetrain: {
+      ...profile.drivetrain,
+      gearRatios: gearRatiosFor(count, actuels[0] ?? 3.6, actuels[actuels.length - 1] ?? 0.72),
+      upshiftRpm: upshiftTableFor(count, profile.engine.redlineRpm, sportiness),
+      shiftDelaysS: shiftDelaysFor(count, sportiness, responsiveness),
+    },
+  }
 }
 
 function gearsIn(gearCount: number): number {
