@@ -37,13 +37,23 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [ETALONNAGE](ETALONNAGE/spec.md) — mesurer la vraie voiture pour régler les virtuelles | ⬜ |
 | [TABLEAU-DE-BORD](TABLEAU-DE-BORD/spec.md) — un vrai tableau de bord, et un paysage qui défile | 🧑 |
 | [BANQUES](BANQUES/spec.md) — accueillir plusieurs banques de son : découverte, mesure outillée, choix par profil | ⬜ |
+| [PENTE](PENTE/spec.md) — le GPS de la Tesla livre trente fois par seconde, et le conditionneur en attend une | 🧑 |
+| [EFFORT](EFFORT/spec.md) — la charge doit connaître la vitesse : tenir 50 km/h et tenir 130 ne sonnent pas pareil | 🧑 |
+| [IMPERFECTIONS](IMPERFECTIONS/spec.md) — un moteur ne tourne pas juste : tremblement de régime, couches désaccordées | 🧑 |
 
-Six lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
-VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE et TABLEAU-DE-BORD. Ils n'ont
-pas de tickets : leur découpage attend qu'on les reprenne, `/to-tickets` s'en
-chargera. Écrire des tickets pour un lot dont la conception n'est pas
-tranchée donnerait des frontières qui ne survivraient pas à la première
-décision.
+Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
+VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
+EFFORT et IMPERFECTIONS. Ils n'ont pas de tickets : leur découpage attend qu'on
+les reprenne, `/to-tickets` s'en chargera. Écrire des tickets pour un lot dont
+la conception n'est pas tranchée donnerait des frontières qui ne survivraient
+pas à la première décision.
+
+**PENTE passe avant les autres.** Une remarque de passage sur la cadence de
+rafraîchissement d'un compteur a mené à un défaut de mesure qui fausse tout
+l'aval : à la cadence réelle du GPS de la Tesla, une accélération douce est vue
+à zéro. Le volume, le timbre et la boîte travaillent donc sur un signal faux.
+EFFORT et IMPERFECTIONS attendent que cette mesure soit juste — régler l'aval
+d'abord n'aurait aucun sens.
 
 ## Ce qui n'est pas dans le backlog
 

@@ -850,16 +850,19 @@ chaque essai.
 | 9 | Process de développement écrit, git flow, contrôle d'intégration | fait |
 | 10 | Mise sous test du cœur : 211 tests, 94 % de `core/` couvert | fait |
 | 11 | Les quatre défauts que la mise sous test a trouvés | corrigé, reste à écouter |
-| 12 | Son maintenu quand le navigateur passe en arrière-plan | à essayer en voiture |
+| 12 | Son maintenu quand le navigateur passe en arrière-plan | fait, vérifié en roulant |
 | 13 | Boîte qui regarde la vitesse : montée en croisière, descente au freinage, rétrogradage sur la demande | à écouter |
 | 14 | Relief du volume : l'effort, le régime et le ralenti s'entendent | à écouter |
 | 15 | Trois défauts de la boîte relevés en roulant : ralentir n'est plus croiser | à écouter |
+| — | **Pente : la cadence réelle du GPS fausse la mesure d'accélération** | à corriger d'abord |
 | — | Défilement de l'écran de configuration sans dérégler un curseur | prévu |
 | — | Le volume général sort du profil : c'est une préférence d'appareil | prévu |
 | — | Mode simplifié : quelques curseurs globaux, le détail derrière un mode avancé | prévu |
 | — | Déposer profils et traces sur le NAS, la voiture refusant les fichiers | prévu |
 | — | Étalonnage : mesurer la vraie voiture pour régler les virtuelles | prévu |
 | — | Plusieurs banques de son, choisies par profil | prévu |
+| — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | prévu |
+| — | Imperfections : tremblement de régime, couches légèrement désaccordées | prévu |
 | — | Tableau de bord et paysage défilant | à décider |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
@@ -881,9 +884,16 @@ règles de travail du dépôt dans [`CLAUDE.md`](CLAUDE.md), son vocabulaire dan
   proxy inversé.
 - **Le rendu sonore.** Les mesures établissent que le signal sort, qu'il ne
   sature pas et que les fondus sont corrects. Pas qu'il sonne juste.
-- **Le son en arrière-plan.** Il s'arrêtait net dès que le navigateur de la
-  voiture était réduit. Le média qui maintient la session audio a été refait sur
-  le modèle d'une application qui y arrive — fichier servi plutôt que fabriqué
-  en mémoire, élément inséré dans le document, deux minutes de silence plutôt
-  que quatre secondes. Reste à l'essayer là où le problème se pose : le bloc
-  « Arrière-plan » de l'écran Télémétrie dit ce qui s'est passé.
+- ~~Le son en arrière-plan.~~ Vérifié en roulant le 3 septembre 2026 : il
+  continue sans interruption quand le navigateur de la voiture est réduit. Le
+  média qui maintient la session audio avait été refait sur le modèle d'une
+  application qui y arrive — fichier servi plutôt que fabriqué en mémoire,
+  élément inséré dans le document, deux minutes de silence plutôt que quatre
+  secondes.
+- **La mesure d'accélération dans la voiture.** Le GPS de la Tesla livre une
+  position toutes les quelques dizaines de millisecondes en roulant, là où le
+  conditionneur est bâti pour une par seconde. Mesuré en conséquence : une
+  accélération douce y est vue à zéro, ou à trois fois sa valeur selon le bruit.
+  Le volume, le timbre et la boîte travaillent donc sur un signal faux. Ce qui
+  n'est pas vérifié, c'est l'ampleur réelle du bruit de mesure de cette
+  voiture — la sensibilité, elle, est établie.
