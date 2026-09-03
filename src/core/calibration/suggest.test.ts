@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { analyzeStep } from './analyze'
 import { measureTrace } from './measure'
-import { readSetting, writeSetting } from './settings'
+import { readSetting, upshiftSpeeds, writeSetting, type SettingPath } from './settings'
 import { round, suggest } from './suggest'
 import { createRoadProfile } from '../preset/defaults'
 import type { Trace } from '../speed/replay'
@@ -402,6 +402,72 @@ describe('writeSetting', () => {
     const updated = writeSetting(profile, 'mix.fullLoadAccelMs2', [1, 2])
 
     expect(updated).toBe(profile)
+  })
+
+  /**
+   * Chaque chemin, lu puis écrit puis relu.
+   *
+   * Un aiguillage de neuf branches où une erreur de recopie écrirait dans le
+   * champ voisin, en silence : la valeur proposée irait dans le mauvais réglage
+   * et l'écran continuerait d'afficher le bon écart. Aucun autre test ne
+   * l'attraperait.
+   */
+  it('écrit chaque réglage dans son propre champ', () => {
+    const profile = createRoadProfile()
+    const cases: [SettingPath, number, (p: typeof profile) => number][] = [
+      ['mix.fullLoadAccelMs2', 3.3, (p) => p.mix.fullLoadAccelMs2],
+      ['drivetrain.brakeDownshiftAccelMs2', -2.6, (p) => p.drivetrain.brakeDownshiftAccelMs2],
+      ['speed.minAccelMs2', -7.5, (p) => p.speed.minAccelMs2],
+      ['speed.maxAccelMs2', 6.5, (p) => p.speed.maxAccelMs2],
+      ['speed.maxPlausibleKmh', 170, (p) => p.speed.maxPlausibleKmh],
+      ['speed.accelWindowMs', 750, (p) => p.speed.accelWindowMs],
+      ['drivetrain.launchUpshiftKmh', 11, (p) => p.drivetrain.launchUpshiftKmh],
+      ['drivetrain.cruiseUpshiftAfterS', 3.4, (p) => p.drivetrain.cruiseUpshiftAfterS],
+    ]
+
+    for (const [path, value, read] of cases) {
+      const updated = writeSetting(profile, path, value)
+      expect(readSetting(updated, path), path).toBe(value)
+      expect(read(updated), path).toBe(value)
+      // Et le profil de départ n'a pas bougé.
+      expect(read(profile), path).not.toBe(value)
+    }
+  })
+
+  it('écrit la table des seuils, et refuse une table de mauvaise longueur', () => {
+    const profile = createRoadProfile()
+    const table = [900, 2700, 2800, 2750, 3300]
+
+    const updated = writeSetting(profile, 'drivetrain.upshiftRpm', table)
+    expect(updated.drivetrain.upshiftRpm).toEqual(table)
+    expect(readSetting(updated, 'drivetrain.upshiftRpm')).toEqual(table)
+    // Une copie, non la même référence : la table écrite ne doit pas rester liée
+    // à celle de l'appelant.
+    expect(updated.drivetrain.upshiftRpm).not.toBe(table)
+
+    // Trop courte, elle laisserait des rapports sans seuil ; trop longue, elle
+    // porterait des entrées que rien ne lit.
+    expect(writeSetting(profile, 'drivetrain.upshiftRpm', [900, 2700])).toBe(profile)
+    expect(writeSetting(profile, 'drivetrain.upshiftRpm', 3000)).toBe(profile)
+  })
+})
+
+describe('upshiftSpeeds', () => {
+  it('exprime les seuils du profil en km/h', () => {
+    // Le profil Route déclare ses passages à 3700, 3350, 3050, 2950 et
+    // 2950 tr/min. Ses commentaires disent qu'ils tombent « à 35, 55, 75, 96 et
+    // 115 km/h » : la conversion le confirme, et c'est ce qui permet de
+    // comparer un seuil mesuré à un seuil réglé sans parler de régime.
+    const speeds = upshiftSpeeds(createRoadProfile()).map((kmh) => Math.round(kmh))
+
+    expect(speeds).toEqual([35, 55, 75, 96, 115])
+  })
+
+  it('rend zéro sur une démultiplication absurde plutôt que l’infini', () => {
+    const profile = createRoadProfile()
+    profile.drivetrain.finalDrive = 0
+
+    expect(upshiftSpeeds(profile)).toEqual([0, 0, 0, 0, 0])
   })
 })
 
