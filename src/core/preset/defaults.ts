@@ -68,6 +68,11 @@ export function createRoadProfile(): Profile {
       inertia: 1.2,
       freeRevRate: 6000,
       engineBraking: 4000,
+      // Un moteur de série tremble moins qu'un moteur de sport : vingt-cinq
+      // tours au ralenti contre trente-cinq. Mesuré, 24 tr/min d'excursion au
+      // ralenti et ±11 à 3000 tr/min pied levé. La fréquence, elle, reste celle
+      // du profil de base : c'est l'amplitude qui sépare les deux.
+      flutterRpm: 25,
     },
     drivetrain: {
       ...base.drivetrain,
@@ -118,6 +123,9 @@ export function createRoadProfile(): Profile {
       loadReliefDb: 4,
       rpmReliefDb: 3,
       idleLevelDb: -5,
+      // Plus mesuré aussi sur le désaccord : huit centièmes de demi-ton, soit un
+      // battement à 1,2 Hz au milieu de la bascule (3900 tr/min).
+      layerDetuneCents: 8,
     },
   }
 }
@@ -142,6 +150,11 @@ export function createDefaultProfile(): Profile {
       inertia: 1,
       freeRevRate: 9000,
       engineBraking: 5000,
+      // Un moteur de sport a un ralenti franchement instable. Mesuré : 34 tr/min
+      // d'excursion au ralenti, ±18 à 3000 tr/min pied levé, ±7 à 3000 tr/min
+      // pleine charge.
+      flutterRpm: 35,
+      flutterHz: 6,
     },
     drivetrain: {
       gearRatios: [3.55, 2.04, 1.36, 1.03, 0.86, 0.72],
@@ -197,6 +210,10 @@ export function createDefaultProfile(): Profile {
       loadReliefDb: 5,
       rpmReliefDb: 4,
       idleLevelDb: -5,
+      // Douze centièmes de demi-ton entre les deux couches d'une famille.
+      // Mesuré : un battement à 2,4 Hz au milieu de la bascule (5100 tr/min),
+      // 1,5 Hz au début (3200).
+      layerDetuneCents: 12,
     },
     feel: {
       kickdown: {

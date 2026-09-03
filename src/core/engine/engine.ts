@@ -13,11 +13,57 @@ import type { EnginePreset, MixPreset } from '../preset/schema'
  * franchement vaut pleine charge, ralentir vaut pied levé, et tenir une vitesse
  * stable se situe entre les deux. C'est une approximation, mais c'est celle qui
  * s'entend juste.
+ *
+ * Il sort **deux** régimes, et c'est voulu : le régime net, sur lequel la boîte,
+ * ses seuils et la télémétrie travaillent, et le régime entendu, qui porte le
+ * tremblement et fixe les vitesses de lecture. Un compteur, un usage.
  */
 
+/**
+ * Composantes du tremblement : poids, et rapport à la fréquence réglée.
+ *
+ * Trois sinusoïdes plutôt qu'une : à une seule fréquence, le tremblement
+ * s'entend comme un vibrato. La deuxième est à √2 fois la première, un rapport
+ * irrationnel, ce qui empêche la somme de se répéter — elle n'a pas de période.
+ * La troisième est la composante lente : 0,117 fois la fréquence réglée, soit
+ * 0,70 Hz pour les 6 Hz des profils livrés.
+ *
+ * Des sinusoïdes et non un tirage au sort : c'est reproductible sans graine à
+ * gérer, et une même situation donne toujours le même son. Un générateur
+ * pseudo-aléatoire aurait fait dépendre le mixage de l'historique des appels.
+ *
+ * La somme des poids vaut un : l'amplitude réglée est donc l'excursion maximale,
+ * atteinte quand les trois composantes s'alignent.
+ */
+const FLUTTER_PARTS: { weight: number; ratio: number; phase: number }[] = [
+  { weight: 0.45, ratio: 1, phase: 0 },
+  { weight: 0.25, ratio: Math.SQRT2, phase: 1.7 },
+  { weight: 0.3, ratio: 0.117, phase: 0.6 },
+]
+
+/**
+ * Atténuation du tremblement avec le régime et avec la charge.
+ *
+ * Un moteur se stabilise en montant et sous couple : il tremble au ralenti et à
+ * vide. Le tremblement tombe donc au quart au rupteur, et à 40 % pied au
+ * plancher. Aucune des deux atténuations ne va jusqu'à zéro — sous charge
+ * partielle, un moteur tremble encore.
+ */
+const FLUTTER_RPM_FALLOFF = 3
+const FLUTTER_LOAD_FALLOFF = 0.6
+
 export interface EngineState {
-  /** Régime affiché et sonorisé, en tours par minute. */
+  /** Régime affiché, et celui sur lequel travaillent la boîte et ses seuils. */
   rpm: number
+  /**
+   * Régime entendu, en tours par minute : le régime net plus le tremblement.
+   *
+   * C'est lui, et lui seul, qui fixe les vitesses de lecture des couches. Le
+   * tremblement n'atteint donc ni la boîte, ni la télémétrie, ni les seuils de
+   * passage : ceux-ci travaillent sur le régime, et quelques dizaines de tours
+   * suffiraient à les faire osciller.
+   */
+  audibleRpm: number
   /** Régime imposé par la vitesse et le rapport, avant inertie et rupteur. */
   kinematicRpm: number
   /** De 0 (pied levé) à 1 (pleine charge). Pilote le fondu on/off. */
@@ -52,6 +98,12 @@ export class Engine {
   private load = 0
   private limiterCutRemainingS = 0
   private limiterActive = false
+  /**
+   * Temps écoulé depuis la remise à zéro, en secondes, pour la phase du
+   * tremblement. Le tremblement est une fonction de ce seul compteur : la même
+   * suite de pas donne donc la même suite de régimes entendus.
+   */
+  private flutterTimeS = 0
 
   constructor(
     private preset: EnginePreset,
@@ -70,6 +122,7 @@ export class Engine {
     this.load = 0
     this.limiterCutRemainingS = 0
     this.limiterActive = false
+    this.flutterTimeS = 0
   }
 
   /** Régime qu'imposerait la vitesse dans un rapport total donné. */
@@ -92,6 +145,7 @@ export class Engine {
 
     return {
       rpm: this.rpm,
+      audibleRpm: this.advanceFlutter(step),
       kinematicRpm: kinematic,
       load: this.load,
       rpmFraction: fraction,
@@ -174,6 +228,60 @@ export class Engine {
     const tau = Math.max(0.01, this.mix.loadSmoothingS)
     this.load += (raw - this.load) * clamp(dt / tau, 0, 1)
     this.load = clamp(this.load, 0, 1)
+  }
+
+  /**
+   * Tremblement de régime.
+   *
+   * Le conditionnement produit un signal d'une régularité qu'aucun moteur
+   * thermique n'a, et cette régularité est une part importante de ce qui fait
+   * entendre une machine plutôt qu'un moteur. On ajoute donc au régime un
+   * tremblement lent, d'autant plus fort que le régime et la charge sont bas.
+   *
+   * Il ne va que dans le régime **entendu** : la boîte, ses seuils et la
+   * télémétrie gardent le régime net.
+   *
+   * À amplitude nulle, la valeur rendue est exactement le régime net — le
+   * comportement d'avant ce réglage, au bit près.
+   */
+  private advanceFlutter(dt: number): number {
+    this.flutterTimeS += dt
+
+    const amplitude = this.flutterAmplitude()
+    const hz = this.preset.flutterHz
+    if (!(amplitude > 0) || !(hz > 0)) return this.rpm
+
+    let offset = 0
+    for (const part of FLUTTER_PARTS) {
+      const angle = 2 * Math.PI * hz * part.ratio * this.flutterTimeS + part.phase
+      offset += part.weight * Math.sin(angle)
+    }
+
+    // Borné au domaine du moteur : le tremblement ne doit ni franchir le rupteur
+    // ni descendre sous le ralenti. Au ralenti, où le régime est exactement à son
+    // plancher, l'excursion est donc à sens unique — mesuré, 0 à +24 tr/min sur
+    // Route.
+    return clamp(this.rpm + amplitude * offset, this.preset.idleRpm, this.preset.redlineRpm)
+  }
+
+  /**
+   * Amplitude du tremblement à cet instant, en tours par minute.
+   *
+   * Deux atténuations se multiplient, l'une avec le régime et l'autre avec la
+   * charge, et aucune ne s'annule : sous charge partielle un moteur tremble
+   * encore. L'atténuation en régime est hyperbolique plutôt que linéaire — elle
+   * mord surtout dans le bas de la plage, là où le tremblement s'entend.
+   */
+  private flutterAmplitude(): number {
+    const { flutterRpm, idleRpm, redlineRpm } = this.preset
+    if (!(flutterRpm > 0)) return 0
+
+    const span = Math.max(1, redlineRpm - idleRpm)
+    const share = clamp((this.rpm - idleRpm) / span, 0, 1)
+    return (
+      (flutterRpm * (1 - FLUTTER_LOAD_FALLOFF * clamp(this.load, 0, 1))) /
+      (1 + FLUTTER_RPM_FALLOFF * share)
+    )
   }
 
   /**

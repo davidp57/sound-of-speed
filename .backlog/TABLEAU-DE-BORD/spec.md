@@ -1,6 +1,6 @@
 # TABLEAU-DE-BORD — un vrai tableau de bord, et un paysage qui défile
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 **Branche :** `feature/tableau-de-bord`
 **Version visée :** 0.4
 
@@ -73,12 +73,36 @@ doit pas hoqueter, demande d'être mesuré avant d'être promis.
    paysage seul.
 2. ~~Le paysage est-il dans le même lot ?~~ **Tranché** : même lot, tickets
    séparés, le paysage en dernier et conditionné à sa mesure.
-3. **Que devient l'écran de conduite actuel ?** Les chiffres servent au réglage
-   et au diagnostic. Les remplacer ou proposer les deux — le mode plein écran
-   montre qu'un même écran peut avoir deux visages.
-4. **Qu'est-ce qu'on mesure avant de promettre le paysage ?** Le coût d'un rendu
-   continu sur le navigateur de la voiture, et son effet sur la régularité du
-   son. Rien ne se décide là-dessus par le raisonnement.
+3. ~~Que devient l'écran de conduite actuel ?~~ **Tranché en écrivant le code** :
+   les deux visages, cadrans par défaut, chiffres à un bouton. Les chiffres
+   servent au réglage et au diagnostic, où cent tours d'écart ne se voient pas
+   sur une aiguille.
+4. ~~Qu'est-ce qu'on mesure avant de promettre le paysage ?~~ **Tranché** : la
+   durée d'image, avant et après, sur la même trace rejouée, plus le travail
+   ajouté par image. Fait, et favorable — voir le ticket 04. Le navigateur de la
+   voiture et la régularité du son restent à établir en roulant.
+
+## Où en est le lot
+
+Les quatre tickets sont écrits en code. Deux sont clos — la disposition en
+tableau de bord (02) et les deux visages (03). Deux attendent la voiture : le
+cadran (01), pour la lecture en roulant et en plein soleil, et le paysage (04),
+dont le coût est mesuré au poste mais pas sur le navigateur de bord, et dont
+l'effet sur la régularité du son ne peut pas s'établir sans faire sortir du son.
+
+**Le paysage n'est pas abandonné.** La mesure qui conditionnait sa réalisation est
+favorable : la durée d'image ne bouge pas, et le décor coûte 0,13 ms de temps de
+tâche par image, un peu plus d'un centième d'image. Le chiffre et ses réserves
+sont dans le ticket 04.
+
+Deux décisions ont été prises en écrivant le code, faute d'avoir été tranchées
+dans la spécification :
+
+- **L'écran de conduite garde ses deux visages** — point 3 ci-dessus. Le tableau
+  de bord est le visage par défaut, les chiffres restent à un bouton, et le choix
+  est une préférence de l'appareil.
+- **Le paysage est coupé par défaut.** C'est de l'agrément, et un navigateur de
+  bord ancien n'a pas à le payer sans qu'on l'ait demandé.
 
 ## Hors périmètre
 

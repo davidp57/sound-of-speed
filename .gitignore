@@ -25,3 +25,6 @@ coverage/
 # créées sous .claude/worktrees/ : ni les uns ni les autres ne se partagent.
 .claude/settings.local.json
 .claude/worktrees/
+
+# Fichier d essai du dépôt de traces, produit à la main sur le poste.
+essai.json

@@ -22,6 +22,12 @@ import type { EngineState } from '../engine/engine'
  * Le fondu à puissance constante (sinus et cosinus plutôt qu'une rampe linéaire)
  * maintient l'énergie perçue stable au milieu du passage. Avec une rampe
  * linéaire, deux sources décorrélées produisent un creux audible à mi-course.
+ *
+ * Les vitesses de lecture suivent le régime **entendu** — celui qui porte le
+ * tremblement — et sont désaccordées d'une couche à l'autre. Les deux écarts se
+ * calculent ici, donc se vérifient sans sortir un son, et aucun des deux ne
+ * touche aux gains : le domaine jouable se décide sur la hauteur que demande le
+ * régime, avant désaccord.
  */
 
 export interface LayerMix {
@@ -146,14 +152,21 @@ export function computeMix(
     const blend = blendWeights(family, state.rpm, mix)
 
     family.forEach((layer, index) => {
-      const raw = state.rpm / Math.max(1, layer.anchorRpm)
-      const rate = clamp(raw, layer.minRate, layer.maxRate)
+      // Le régime **entendu**, qui porte le tremblement, et non le régime net :
+      // c'est ici, et nulle part ailleurs, que le tremblement entre.
+      const raw = state.audibleRpm / Math.max(1, layer.anchorRpm)
+      const wanted = clamp(raw, layer.minRate, layer.maxRate)
+      // Le désaccord vient après la décision de domaine, et se borne aux mêmes
+      // limites : il ne peut donc ni sortir une couche de son domaine jouable ni
+      // déplacer le gain que celui-ci commande.
+      const detuned = wanted * detune(family.length, index, mix.layerDetuneCents)
+      const rate = clamp(detuned, layer.minRate, layer.maxRate)
       const gain =
         (blend[index] ?? 0) *
         familyWeight *
         layer.gain *
         relief *
-        fidelity(raw, rate) *
+        fidelity(raw, wanted) *
         (role === 'limiter' ? 1 : jolt)
       layers.push({
         key: layer.key,
@@ -161,7 +174,7 @@ export function computeMix(
         role,
         gain,
         rate,
-        rateClamped: Math.abs(rate - raw) > 1e-6 && gain > AUDIBLE_GAIN,
+        rateClamped: Math.abs(wanted - raw) > 1e-6 && gain > AUDIBLE_GAIN,
       })
     })
   }
@@ -208,6 +221,24 @@ function blendWeights(family: LayerPreset[], rpm: number, mix: MixPreset): numbe
     if (index === anchors.length - 1 && rpm >= anchor) return 1
     return 0
   })
+}
+
+/**
+ * Désaccord d'une couche, en facteur de vitesse de lecture.
+ *
+ * Réparti symétriquement dans la famille : avec deux couches, l'une descend de
+ * la moitié de l'écart et l'autre monte d'autant. La hauteur moyenne de la
+ * famille ne bouge donc pas — le désaccord élargit le son, il ne fausse pas la
+ * justesse.
+ *
+ * Il ne dépend que du rang de la couche dans sa famille, jamais du temps : une
+ * même situation donne toujours le même mixage, sans quoi l'écran de télémétrie
+ * deviendrait illisible. Une famille d'une seule couche n'est pas désaccordée,
+ * il n'y aurait personne avec qui battre.
+ */
+function detune(count: number, index: number, cents: number): number {
+  if (count < 2 || cents === 0) return 1
+  return Math.pow(2, (cents * (index / (count - 1) - 0.5)) / 1200)
 }
 
 /**

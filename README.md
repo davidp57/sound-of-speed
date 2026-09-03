@@ -25,22 +25,59 @@ sauvegarde, exporte et recharge.
 
 **Conduite** — la vitesse, le rapport, le régime. Le choix de la source
 (simulateur, GPS, rejeu), l'activation du son, le volume, la boîte automatique ou
-manuelle, et le verrou d'écran. Un bouton **Plein écran** masque la barre du haut : les chiffres
-occupent toute la hauteur et les commandes deviennent quatre grandes touches. On en sort par une croix discrète, placée là
+manuelle, et le verrou d'écran. Un bouton **Plein écran** masque la barre du haut : l'affichage
+occupe toute la hauteur et les commandes deviennent quatre grandes touches. On en sort par une croix discrète, placée là
 pour qu'on n'en sorte pas par mégarde en roulant.
 
+Cet écran a **deux visages**, et deux boutons pour passer de l'un à l'autre :
+
+- **Cadrans** — un tableau de bord. Le compteur de vitesse et le compte-tours
+  sont deux cadrans à aiguille, le rapport engagé est écrit en grand entre les
+  deux. La zone rouge du compte-tours commence au seuil de coupure, donc le
+  plafond se voit sans lire un chiffre. Chaque cadran garde son nombre en petit,
+  au centre, pour le réglage et le diagnostic. Le compteur est gradué jusqu'à
+  180 km/h — la vitesse à laquelle le dernier rapport touche le rupteur dépasse
+  300 km/h sur les deux profils livrés, une échelle qui laisserait l'aiguille
+  dans un coin. En plein écran, sur un écran large, les deux cadrans sont côte à
+  côte ; en portrait, ils s'empilent, chacun sur toute la largeur.
+- **Chiffres** — la vitesse, le rapport et le régime en nombres, avec la
+  réglette de régime. C'est cette vue qui sert à régler : cent tours d'écart se
+  lisent sur un nombre et ne se voient pas sur une aiguille.
+
+Le choix du visage est une préférence de **l'appareil** : il survit au
+rechargement et ne fait pas partie du profil.
+
+Un bouton **Paysage** ajoute, derrière les cadrans, un décor qui défile à la
+vitesse du véhicule. C'est de l'agrément assumé : rien ne s'y lit, il se coupe,
+et coupé il n'existe pas dans la page. Il s'arrête à l'arrêt, et le navigateur
+l'arrête tout seul quand la page passe en arrière-plan — le son, lui, continue.
+Ce que le décor coûte est mesuré, dans « Ce qui n'est pas vérifié ».
+
 **Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
-lissage, pente, accélération, qualité du signal GPS, régime, charge, état de la
-transmission, régime que donnerait chaque rapport, gain et vitesse de lecture de
-chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
-les traces, et qu'on **étalonne** l'application sur la vraie voiture.
+lissage, pente, accélération, qualité du signal GPS, régime, régime entendu,
+charge, état de la transmission, régime que donnerait chaque rapport, gain et
+vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là
+qu'on enregistre et rejoue les traces, et qu'on **étalonne** l'application sur
+la vraie voiture.
 
-**Configuration** — la cinquantaine de réglages, en curseur et en saisie,
-appliqués immédiatement. La gestion des profils et l'analyse des échantillons.
-Une bande de défilement longe le bord gauche : le glissement n'y dérègle rien,
-et les curseurs eux-mêmes rendent le glissement vertical à la page.
+**Configuration** — deux modes. En **simplifié**, la vue est courte : la
+création guidée, les profils, le fonctionnement hors réseau. En **avancé**, la
+cinquantaine de réglages détaillés s'ajoute dessous, en curseur et en saisie,
+appliqués immédiatement, groupés par section — moteur, transmission, signal,
+caractère, mixage, couches. Aucun réglage ne disparaît en simplifié : ils
+attendent. Le choix du mode est une préférence de l'appareil, comme le volume :
+il se retient et ne voyage pas avec un profil partagé.
 
-Aucune animation nulle part : les valeurs changent, rien ne bouge pour le plaisir.
+C'est aussi là qu'on gère les profils et qu'on analyse les échantillons. Une
+bande de défilement longe le bord gauche : le glissement n'y dérègle rien, et
+les curseurs eux-mêmes rendent le glissement vertical à la page.
+
+Aucune animation nulle part : les valeurs changent, rien ne bouge pour le
+plaisir. Deux réserves, et deux seulement. Le **paysage** de l'écran de conduite
+est une exception assumée, levée sciemment, coupée par défaut. Et l'**aiguille**
+d'un cadran n'a jamais relevé de cette règle : son mouvement est la valeur, elle
+n'a aucune inertie propre, et un cadran se lit d'un coup d'œil là où un nombre se
+lit en le lisant — c'est le même argument d'ergonomie qui fonde la règle.
 
 ---
 
@@ -123,17 +160,25 @@ L'hébergement reste chez soi, ce qui règle du même coup la question des
 
 ### 1. Créer les dossiers et déposer les échantillons — File Station
 
-Deux dossiers, sous `/volume1/docker/speed/` :
+Trois dossiers, sous `/volume1/docker/speed/` :
 
-| Dossier | Contenu |
-|---|---|
-| `audio/procar/` | les échantillons du moteur |
-| `profiles/` | les profils partagés entre appareils. **Peut rester vide** |
+| Dossier | Contenu | Accès |
+|---|---|---|
+| `audio/procar/` | les échantillons du moteur | lecture |
+| `profiles/` | les profils partagés entre appareils. **Peut rester vide** | lecture |
+| `traces/` | les trajets enregistrés en roulant, déposés depuis la voiture. **Peut rester vide** | lecture-écriture |
 
-Les deux doivent **exister avant** de déployer la pile : Docker sous DSM ne crée
+Les trois doivent **exister avant** de déployer la pile : Docker sous DSM ne crée
 pas un point de montage absent, il refuse de démarrer le conteneur avec un
-`Bind mount failed`. Un dossier `profiles/` vide suffit — et à défaut, il faut
-commenter sa ligne dans la pile, au prix de la bibliothèque de profils.
+`Bind mount failed`. Des dossiers `profiles/` et `traces/` vides suffisent — et à
+défaut, il faut commenter leur ligne dans la pile, au prix de la bibliothèque de
+profils et du dépôt de traces.
+
+`traces/` est le seul monté en écriture, et le dépôt y est **toujours**
+authentifié, même quand l'authentification générale reste désactivée : un
+dossier ouvert en écriture sur une adresse joignable de l'extérieur est une
+invitation. Il faut donc le fichier de mots de passe pour déposer, voir plus
+bas.
 
 Les échantillons restent hors de l'image : ils ne sont ni dans le dépôt ni dans
 le registre, et changer de banque sonore consistera à remplacer ces fichiers,
@@ -232,6 +277,81 @@ Le mot de passe est demandé en saisie masquée, et le fichier `htpasswd` produi
 se dépose dans `/volume1/docker/speed/` avec File Station. Il reste à
 décommenter les deux lignes `auth_basic` de `docker/nginx.conf` et le volume
 correspondant dans la pile.
+
+### Déposer une trace : le fichier de mots de passe
+
+Le dépôt d'une trace exige lui aussi ce fichier, **indépendamment de
+l'authentification générale** : `traces/` est le seul endroit du serveur qui
+accepte d'écrire, et il ne l'accepte que de quelqu'un qui s'annonce.
+
+En quatre gestes, une fois pour toutes :
+
+```bash
+npm run htpasswd
+```
+
+1. La commande demande un **nom d'utilisateur**, puis un **mot de passe** — huit
+   caractères au minimum, saisi en aveugle, à confirmer. Rien n'apparaît à
+   l'écran pendant la frappe, et le mot de passe ne passe pas en argument : il
+   resterait dans l'historique du terminal et dans la liste des processus.
+2. Elle écrit un fichier nommé `htpasswd` dans le dossier courant. Il tient sur
+   une ligne : le nom d'utilisateur, puis l'empreinte du mot de passe. Le mot de
+   passe lui-même n'y est pas — il n'est pas récupérable, et il faut refaire
+   l'opération si on l'oublie.
+3. Déposer ce fichier dans `/volume1/docker/speed/` avec File Station.
+4. Dans la pile Portainer, **ajouter** les deux lignes suivantes sous
+   `volumes:`, puis tirer l'image à jour et redéployer :
+
+```yaml
+      - /volume1/docker/speed/traces:/usr/share/nginx/html/traces
+      - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
+```
+
+> **Ajouter, et non décommenter.** Une pile Portainer contient le texte qu'on y
+> a collé le jour de sa création, pas le fichier du dépôt : les lignes
+> commentées de `docker/docker-compose.yml` n'y sont pas, et le volume des
+> traces est de toute façon nouveau. Les commentaires du dépôt indiquent quoi
+> monter ; c'est dans l'éditeur de pile que le montage se déclare.
+
+### Redéployer ne suffit pas à changer de version
+
+Mettre une pile à jour recrée le conteneur, mais **Docker réutilise l'image
+qu'il a déjà en local** : une étiquette comme `develop` ou `latest` ne change pas
+de nom quand son contenu change, et rien n'oblige Docker à aller voir. On croit
+donc déployer la dernière version et l'on relance l'ancienne.
+
+Deux façons de s'en assurer :
+
+- dans Portainer, cocher **« Re-pull image and redeploy »** avant de mettre la
+  pile à jour ;
+- ou nommer l'image par son empreinte de commit. Le workflow publie, à côté de
+  `develop` et `latest`, une étiquette immuable `sha-<commit court>` :
+
+```yaml
+    image: ghcr.io/davidp57/speed:sha-28cc0a1
+```
+
+Docker ne l'a jamais vue, donc il la tire forcément. C'est le moyen le plus sûr
+de savoir ce qui tourne, et le seul de revenir à une version précise.
+
+Pour vérifier ce qui tourne réellement, sans Portainer : la date de
+`Last-Modified` sur la page d'accueil est celle de la construction de l'image.
+
+```bash
+curl -I https://ADRESSE/index.html
+```
+
+Le dossier `/volume1/docker/speed/traces/` doit **exister** avant de
+redéployer, même vide : Docker sous DSM refuse de démarrer un conteneur dont un
+point de montage est absent, avec un `Bind mount failed`.
+
+**Il n'y a rien d'autre à décommenter pour le dépôt.** Les deux lignes
+`auth_basic` de `docker/nginx.conf` protègent le site *entier* et ne servent que
+si l'adresse est exposée hors du réseau local ; l'emplacement `traces/`, lui,
+porte sa propre exigence, déjà active.
+
+Sans ce fichier, le dépôt est refusé — la lecture des traces, des profils et de
+l'application continue de fonctionner normalement.
 
 > Depuis le wifi de la maison, le nom DDNS résout vers l'adresse publique : sans
 > **NAT loopback** activé sur la box, l'accès échoue alors qu'il fonctionne en
@@ -342,8 +462,10 @@ d'essai qui écraserait le cache de celle qui sert serait une mauvaise idée.
 
 ## En voiture
 
-**Plein écran** — masque la barre d'onglets, porte les chiffres à toute la hauteur
-et remplace les commandes par quatre grandes touches.
+**Plein écran** — masque la barre d'onglets, porte l'affichage à toute la hauteur
+et remplace les commandes par quatre grandes touches. Sur le visage à cadrans,
+les deux cadrans prennent la hauteur disponible : côte à côte sur un écran large,
+empilés en portrait.
 
 **Session média** — l'application apparaît sur l'écran verrouillé et dans le
 panneau de notifications, avec le nom du profil, sa configuration et une pochette
@@ -419,7 +541,59 @@ Les recherches dans le cache se font donc avec `ignoreVary`.
 
 ## Référence des réglages
 
-Tout est dans l'écran **Configuration**, appliqué immédiatement.
+Tout est dans l'écran **Configuration**, appliqué immédiatement. Les sections qui
+suivent — moteur, transmission, signal de vitesse, mixage, caractère, couches —
+sont celles du **mode avancé** : la bascule en haut de l'écran les fait
+apparaître. En mode simplifié, elles sont remplacées par quelques curseurs
+globaux qui les commandent.
+
+### Mode simplifié
+
+Le guide de création sait déduire une cinquantaine de réglages de quatre
+réponses. Ce savoir ne servait qu'une fois, à la création ; les curseurs globaux
+le rendent disponible en continu. Ils **écrasent** les réglages qu'ils
+commandent — un curseur global recalcule, il ne peut pas faire autrement — et un
+bouton **Revenir aux réglages d'avant** rend le profil tel qu'il était avant le
+premier mouvement.
+
+Aucun des deux n'est enregistré dans le profil : leur position s'en **déduit**.
+Le curseur reflète donc ce qu'on a réellement sous les doigts, y compris sur un
+profil réglé à la main ou reçu par lien. Mesuré : Route se lit à 22 sur cent de
+tempérament, Sport à 80 ; les deux se lisent au milieu de la réactivité, le
+milieu du curseur étant par construction le réglage qui a servi jusqu'ici.
+
+| Curseur | Ce qu'il commande |
+|---|---|
+| **Calme ↔ sportif** | Le caractère du moteur et de la boîte : inertie, montée à vide, temps de passage, écart selon la charge, régimes de passage, plancher et délai de croisière, seuil de rétrogradage au freinage, rétrogradage forcé, pétarade, à-coup de passage. Il ne touche ni au pont, ni aux démultiplications, ni au rupteur, ni au mixage. Mesuré sur Route, pied au plancher : la pointe de régime passe de 3929 tr/min au plus calme à 6043 au plus sportif, pour un rupteur à 6500 |
+| **Pépère ↔ nerveux** | La réactivité du **signal**, et non le caractère : raideur du lissage, fenêtre d'accélération, lissage de la charge, temporisations de passage. La distinction est réelle — le premier curseur dit si la voiture pousse fort, celui-ci si elle répond vite. Une voiture calme peut être vive, une sportive pâteuse |
+| **Nombre de rapports** | De trois à huit, en un appui. Le premier et le dernier rapport sont **conservés**, et le pont avec eux : le régime en dernier rapport à une vitesse donnée ne bouge pas — mesuré, 2355 tr/min à 110 km/h sur Route quel que soit le nombre de rapports. Seuls les rapports intermédiaires se redistribuent, géométriquement, avec les régimes de passage et les temporisations. Pour poser les démultiplications à la main, le champ reste là en mode avancé |
+
+Les bornes du second sont **mesurées** sur une rampe de 0 à 90 km/h en quinze
+secondes, bruitée à ±1 km/h comme l'est une mesure GPS, à la cadence la plus
+défavorable — une mesure par seconde :
+
+| Position | Marche d'une image à l'autre | Retard sur la vitesse vraie |
+|---|---|---|
+| Pépère (raideur 6) | 0,242 km/h | 556 ms |
+| Milieu (raideur 14) | 0,433 km/h | 409 ms |
+| Nerveux (raideur 22) | 0,675 km/h | 369 ms |
+
+La vitesse reste continue même au plus nerveux : le ressort est amorti critique,
+il ne produit pas de marche, et 0,675 km/h par image vaut une quinzaine de tours
+par minute en dernier rapport. À la cadence du GPS d'une Tesla en mouvement —
+une mesure toutes les trente-trois millisecondes — la marche tombe à 0,376 km/h
+et le retard à 334 ms : plus le GPS parle, plus le suivi est à la fois doux et
+juste.
+
+La fenêtre d'accélération suit la même logique, et son prix se paie sur la
+charge : à une cadence de 250 ms, une fenêtre de 400 ms laisse l'accélération
+lue trembler à 1,51 m/s² d'écart-type, contre 0,85 à 1600 ms.
+
+Deux interrupteurs restent à la main : le **rétrogradage forcé** et l'**à-coup de
+passage** ne se coupent jamais tout seuls — couper ce que quelqu'un a activé
+exprès n'est pas un caractère. La **pétarade**, elle, s'éteint au plus calme :
+c'est la règle du guide de création, et une voiture tranquille ne claque pas à
+l'échappement.
 
 ### Moteur
 
@@ -433,12 +607,14 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 | **Inertie** | Poids du volant moteur : temps de montée à vide |
 | **Montée à vide** | Prise de tours hors prise, en tr/min par seconde |
 | **Frein moteur** | Retombée pied levé |
+| **Tremblement au ralenti** | Amplitude du tremblement de régime, en tr/min, prise au ralenti et pied levé. Elle décroît ensuite quand le régime monte et quand la charge monte — un moteur se stabilise en poussant. Mesuré sur Sport, réglé à 35 : 34 tr/min d'excursion au ralenti, ±18 à 3000 tr/min pied levé, ±7 pied au plancher. Zéro donne un régime parfaitement lisse, ce qu'aucun moteur thermique n'est. **Il ne va que dans le son** : la boîte, ses seuils et la télémétrie gardent le régime net |
+| **Vitesse du tremblement** | Fréquence de la composante rapide. Une composante lente à un peu plus d'un dixième de cette valeur s'y ajoute — 0,70 Hz pour 6 Hz réglés : à une seule fréquence, le tremblement s'entend comme un vibrato |
 
 ### Transmission
 
 | Réglage | Ce qu'il fait |
 |---|---|
-| **Démultiplications** | Du plus court au plus long, séparées par des virgules. Une seule valeur = prise directe |
+| **Démultiplications** | Du plus court au plus long, séparées par des virgules. Une seule valeur = prise directe. En **changer le nombre** redimensionne du même coup les régimes de passage et les temporisations, qui sont indexés par rapport : ils sont redistribués depuis le tempérament que porte le profil. À nombre égal, rien d'autre ne bouge |
 | **Pont** | Rapport final |
 | **Rupteur atteint à** | Vitesse au rupteur dans le dernier rapport. **Modifier cette valeur recalcule le pont** — c'est le chiffre parlant |
 | **Rayon de roue** | En mètres. Entre dans le calcul du régime |
@@ -478,6 +654,7 @@ fort.
 | **Relief de charge** | Autant en moins pied levé, autant en plus pied au plancher, rien en croisière. **C'est le réglage qui fait entendre l'effort** : sans lui, les fondus étant à puissance constante, ralenti, croisière et pleine charge tenaient dans 1,3 dB — le son changeait de couleur et jamais de volume. À 4, il y a 8 dB entre lever le pied et écraser |
 | **Relief du régime** | Gain gagné entre le ralenti et le rupteur : le rugissement qui monte avec les tours. Il **s'ajoute** aux 4 dB que la banque livrée donne déjà, sa prise haut régime étant enregistrée plus fort que la basse |
 | **Niveau au ralenti** | Le ralenti n'a pas de couche dédiée dans la banque livrée : on y entend la prise « pied levé » jouée deux octaves plus bas. Sans ce réglage elle sonnait aussi fort que tout le reste |
+| **Désaccord des couches** | Écart de justesse entre les couches d'une même famille, en centièmes de demi-ton. Au rapport exact elles sont parfaitement justes l'une par rapport à l'autre, ce qui n'arrive sur aucun moteur : les inégalités entre cylindres et les deux lignes d'échappement produisent un battement lent. L'écart est réparti de part et d'autre, donc la hauteur moyenne ne bouge pas, et il ne déplace aucun gain. Mesuré, 12 centièmes donnent un battement à 2,4 Hz à 5100 tr/min et 1,5 Hz à 3200 |
 | **Début / fin de bascule** | Régimes entre lesquels la couche haute remplace la basse. **Indépendants des régimes d'ancrage**, qui règlent la justesse |
 | **Accélération pleine charge** | Accélération au-delà de laquelle la charge est maximale. Faute de pédale dans une voiture électrique, c'est elle qui arbitre le fondu entre « en charge » et « pied levé » |
 | **Lissage de la charge** | Évite que le fondu papillonne sur le bruit d'accélération |
@@ -929,6 +1106,46 @@ fois : l'effort, le régime, et le ralenti. Ils déplacent le niveau d'ensemble
 sans toucher à l'équilibre entre les couches, donc sans rouvrir le creux que les
 fondus évitent.
 
+Un moteur ne tourne pas juste, et c'est cela qui le fait entendre comme un
+moteur plutôt que comme un échantillon. Deux écarts sont donc introduits, tous
+deux calculés dans `core/`, donc mesurables sans sortir un son.
+
+**Le régime tremble.** Le conditionnement produit un signal d'une régularité
+qu'aucun moteur thermique n'a. On y ajoute un tremblement lent — trois
+sinusoïdes, dont deux dans un rapport irrationnel, si bien que la somme n'a pas
+de période — d'amplitude décroissante avec le régime et avec la charge : un moteur
+se stabilise en montant et sous couple, il tremble au ralenti et à vide. Mesuré
+sur Sport : 34 tr/min d'excursion au ralenti, ±18 à 3000 tr/min pied levé, ±7 à
+3000 tr/min pied au plancher.
+
+Le moteur sort donc **deux** régimes, et c'est le point délicat. Le régime net
+alimente la boîte, ses seuils et la télémétrie ; le régime **entendu** porte le
+tremblement et ne sert qu'aux vitesses de lecture. Les seuils de passage
+travaillent sur le régime : quelques dizaines de tours de tremblement les
+feraient osciller, et trois défauts d'oscillation de la boîte venaient déjà d'un
+compteur portant deux sens. Un compteur, un usage.
+
+Le tremblement est fait de sinusoïdes et non d'un tirage au sort : il est
+reproductible sans graine à gérer, une même situation donne toujours le même
+son, et un test peut l'affirmer.
+
+**Les couches ne jouent plus d'accord.** Deux couches d'une même famille jouées
+au rapport exact sont parfaitement justes l'une par rapport à l'autre, ce qu'un
+moteur réel n'est jamais : les inégalités entre cylindres et les deux lignes
+d'échappement produisent un battement lent. Elles sont donc désaccordées de
+quelques centièmes de demi-ton, l'écart étant réparti de part et d'autre pour
+que la hauteur moyenne ne bouge pas. Mesuré, douze centièmes donnent un
+battement à 2,4 Hz au milieu de la bascule de Sport.
+
+Le désaccord est constant par couche — il dépend du rang de la couche dans sa
+famille, jamais du temps — et il s'applique **après** la décision de domaine
+jouable : régler ce curseur ne peut donc déplacer aucun gain, et ne peut pas
+sortir une couche de son domaine.
+
+Ce que ces deux écarts ne font pas : un moteur. Cinq fichiers bouclés se
+répètent, et l'oreille l'apprend en quelques tours. Ce plafond-là ne se franchit
+qu'avec plus de bancs moteur.
+
 Trois points ont demandé une attention particulière :
 
 - **Le raccord des boucles.** Mesurée canal par canal après décodage, la
@@ -1052,3 +1269,18 @@ règles de travail du dépôt dans [`CLAUDE.md`](CLAUDE.md), son vocabulaire dan
   Le volume, le timbre et la boîte travaillent donc sur un signal faux. Ce qui
   n'est pas vérifié, c'est l'ampleur réelle du bruit de mesure de cette
   voiture — la sensibilité, elle, est établie.
+- **Le coût du paysage sur le navigateur de la voiture.** Ce qui est mesuré l'a
+  été sur un Chrome 152 sans interface, au poste de travail, sur la même trace
+  rejouée à chaque passe (montée jusqu'à 116 km/h, moyenne 86), trois passes
+  décor coupé alternées avec trois passes décor actif. La **durée d'image** ne
+  bouge pas : 9,3 ms de moyenne coupé, 9,5 actif, pour un écart de passe à passe
+  de 1,8 ms — l'écart entre les deux états est plus petit que le bruit de la
+  machine. Aucune image au-delà de 33 ms dans un cas comme dans l'autre. Le
+  **travail ajouté par image** est de 0,027 ms de recalcul de style et 0,015 ms
+  de script, soit 0,13 ms de temps de tâche au total : un peu plus d'un centième
+  d'image. La mise en page ne bouge pas, ce qui confirme qu'il n'y a que des
+  translations. Sur une machine tranquille, les deux états donnent exactement la
+  même cadence, 6,06 ms, sans une seule image longue. Restent deux inconnues :
+  le navigateur de la voiture, plus ancien, et la régularité du **son** — le son
+  n'a jamais été activé pendant ces mesures, donc c'est la cadence de
+  l'affichage qui est établie, pas celle du fil audio.

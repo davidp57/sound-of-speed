@@ -1,6 +1,6 @@
 # 01 — Un cadran de régime, à la place de la réglette
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -25,10 +25,21 @@ le conditionnement et le moteur — en rajouter la ferait mentir.
 
 ## Critères d'acceptation
 
-- [ ] Le régime se lit sur un cadran, avec le nombre en second
-- [ ] La zone du rupteur est visible sans lire de valeur
-- [ ] L'aiguille suit le régime sans inertie propre
+- [x] Le régime se lit sur un cadran, avec le nombre en second
+- [x] La zone du rupteur est visible sans lire de valeur
+- [x] L'aiguille suit le régime sans inertie propre
 - [ ] Le cadran reste lisible en plein soleil et en mode plein écran
-- [ ] Aucune régression de cadence : la mesure de durée d'image est inchangée
+- [x] Aucune régression de cadence : la mesure de durée d'image est inchangée
 - [ ] 🧑 Vérifié en roulant : le cadran se lit d'un coup d'œil, sans quitter la
       route longtemps
+
+## Ce qui est mesuré
+
+Durée d'image inchangée : sur une machine tranquille, 6,06 ms de moyenne et
+aucune image au-delà de 20 ms, cadrans affichés, sur la même trace rejouée. Le
+détail des passes est dans « Ce qui n'est pas vérifié » du README.
+
+Le plein écran est vérifié à quatre tailles — 375 × 812, 812 × 375, 1024 × 700 et
+la fenêtre du poste — sans débordement horizontal. **Le plein soleil ne l'est
+pas** : il demande d'aller dehors avec le téléphone, et c'est la même sortie que
+la vérification en roulant.

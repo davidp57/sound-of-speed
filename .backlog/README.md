@@ -32,14 +32,14 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [ORIGINE](ORIGINE/spec.md) — réinitialiser un profil à ce qu'il était, et non aux réglages de Sport | ✅ |
 | [UI-DEFILEMENT](UI-DEFILEMENT/spec.md) — faire défiler l'écran de configuration sans dérégler un curseur | 🧑 |
 | [VOLUME-GLOBAL](VOLUME-GLOBAL/spec.md) — le volume est une préférence d'appareil, pas un caractère de profil | ✅ |
-| [MODE-SIMPLE](MODE-SIMPLE/spec.md) — quelques curseurs globaux qui commandent les quarante-huit autres | ⬜ |
-| [DEPOSER](DEPOSER/spec.md) — sortir un profil ou une trace d'une voiture qui refuse les fichiers | ⬜ |
+| [MODE-SIMPLE](MODE-SIMPLE/spec.md) — quelques curseurs globaux qui commandent la cinquantaine d'autres | 🧑 |
+| [DEPOSER](DEPOSER/spec.md) — sortir un profil ou une trace d'une voiture qui refuse les fichiers | 🔄 |
 | [ETALONNAGE](ETALONNAGE/spec.md) — mesurer la vraie voiture pour régler les virtuelles | 🧑 |
 | [TABLEAU-DE-BORD](TABLEAU-DE-BORD/spec.md) — un vrai tableau de bord, et un paysage qui défile | 🧑 |
 | [BANQUES](BANQUES/spec.md) — accueillir plusieurs banques de son : découverte, mesure outillée, choix par profil | ⬜ |
 | [PENTE](PENTE/spec.md) — le GPS de la Tesla livre trente fois par seconde, et le conditionneur en attend une | 🧑 |
 | [EFFORT](EFFORT/spec.md) — la charge doit connaître la vitesse : tenir 50 km/h et tenir 130 ne sonnent pas pareil | 🧑 |
-| [IMPERFECTIONS](IMPERFECTIONS/spec.md) — un moteur ne tourne pas juste : tremblement de régime, couches désaccordées | 🧑 |
+| [IMPERFECTIONS](IMPERFECTIONS/spec.md) — un moteur ne tourne pas juste : tremblement de régime, couches désaccordées | 🔄 |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
@@ -57,6 +57,12 @@ EFFORT et IMPERFECTIONS attendaient cette mesure juste. **Les chiffres d'EFFORT
 sont donc à refaire** : ils avaient été relevés sur une accélération qu'on sait
 maintenant fausse, et le lot vaut peut-être moins qu'annoncé.
 
+**IMPERFECTIONS est à moitié livré** : tremblement de régime et couches
+désaccordées sont faits et mesurés, il reste la vérification en roulant. Son
+troisième ticket — la boucle qui ne se répète plus — attend une mesure qui ne
+peut pas se faire depuis le dépôt : la durée des boucles de la banque livrée, et
+les échantillons vivent dans un volume du NAS.
+
 **Tous les lots sont découpés en tickets**, sauf PENTE dont le travail est
 livré. Les huit lots nés de l'essai sur route du 3 septembre 2026 l'ont été le
 jour même, après deux décisions de conception prises par David :
@@ -69,11 +75,11 @@ jour même, après deux décisions de conception prises par David :
   donc pas de DEPOSER, dont le préalable technique — la présence du module
   d'écriture dans l'image du serveur — n'est pas encore établi.
 
-Deux points restent ouverts à l'intérieur des tickets, et sont posés là où ils se
-tranchent : ce qu'un curseur global fait d'un réglage trouvé à la main
-(MODE-SIMPLE, ticket 03 — reco : écraser, avec un retour), et si EFFORT garde sa
-raison d'être maintenant que la mesure d'accélération est juste (EFFORT,
-ticket 01).
+Un point reste ouvert à l'intérieur des tickets, et il est posé là où il se
+tranche : si EFFORT garde sa raison d'être maintenant que la mesure
+d'accélération est juste (EFFORT, ticket 01). Le second — ce qu'un curseur global
+fait d'un réglage trouvé à la main — est tranché : **on écrase, avec un retour**
+(MODE-SIMPLE, spec).
 
 ## Ce qui n'est pas dans le backlog
 

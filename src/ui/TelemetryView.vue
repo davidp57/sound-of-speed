@@ -199,6 +199,12 @@ function onRateChange(event: Event): void {
         :warn="telemetry.engine.limiterActive"
       />
       <ValueRow
+        label="Régime entendu"
+        :value="Math.round(telemetry.engine.audibleRpm)"
+        unit="tr/min"
+        hint="Le régime plus le tremblement, seul à fixer les vitesses de lecture. Il s'écarte du régime de quelques dizaines de tours au ralenti, de quelques-uns en haut des tours. C'est le seul endroit où le tremblement se voit : la boîte et ses seuils gardent le régime net."
+      />
+      <ValueRow
         label="Régime cinématique"
         :value="Math.round(telemetry.engine.kinematicRpm)"
         unit="tr/min"

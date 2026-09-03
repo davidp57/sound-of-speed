@@ -64,6 +64,25 @@ pont et le rayon de roue — sauf à l'arrêt ou pendant un passage, où le mote
 est découplé des roues.
 _Éviter_ : rpm dans les textes français, tours (ambigu avec le nombre de tours).
 
+**Régime entendu** (_audible engine speed_, `audibleRpm`) :
+Le régime plus le **tremblement**. C'est lui, et lui seul, qui fixe les vitesses
+de lecture des couches. Le moteur en sort donc deux : le régime, sur lequel
+travaillent la boîte, ses seuils et la télémétrie, et celui-ci, qui ne sert qu'au
+son. Les séparer est ce qui empêche le tremblement de faire osciller les seuils
+de passage.
+_Éviter_ : régime réel, régime sonore.
+
+**Tremblement** (_flutter_, `flutterRpm` / `flutterHz`) :
+L'irrégularité de quelques dizaines de tours qu'on ajoute au régime pour qu'il
+cesse d'être parfaitement lisse. Décroît quand le régime monte et quand la charge
+monte : un moteur se stabilise en poussant, il tremble au ralenti et à vide.
+Déterministe — une somme de sinusoïdes, pas un tirage au sort — donc une même
+situation donne toujours le même son.
+_Attention_ : ne pas le confondre avec la **dispersion** des passages
+(`upshiftJitterRpm`), qui est tirée au sort à chaque changement de rapport et
+concerne la boîte.
+_Éviter_ : bruit, jitter, vibrato.
+
 **Charge** (_load_) :
 L'effort demandé au moteur, de 0 à 1. Elle arbitre le fondu entre les couches
 « en charge » et « pied levé ». Dans une voiture électrique il n'y a pas de
@@ -166,6 +185,15 @@ même rôle. Indépendante des ancrages : la bascule règle **quand** une couche
 s'entend, l'ancrage règle **juste**.
 _Éviter_ : crossfade, transition.
 
+**Désaccord** (_detune_, `layerDetuneCents`) :
+L'écart de justesse, en centièmes de demi-ton, entre les couches d'une même
+famille. Au rapport exact elles sont parfaitement justes l'une par rapport à
+l'autre, ce qu'un moteur n'est jamais : c'est le battement lent qui manque.
+L'écart est réparti de part et d'autre, donc la hauteur moyenne de la famille ne
+bouge pas, et il s'applique après la décision de **domaine jouable** — il ne
+déplace donc aucun gain.
+_Éviter_ : détune, désaccordage, chorus.
+
 **Domaine jouable** (_playable range_, `minRate` / `maxRate`) :
 La plage de régimes qu'une couche peut couvrir sans que l'étirement s'entende —
 environ une octave de part et d'autre de son ancrage. Au-delà, sa hauteur se
@@ -224,7 +252,58 @@ Un bloc de réglages d'un profil — moteur, transmission, signal, mixage,
 caractère, couches. C'est l'unité de réinitialisation : on remet une section aux
 valeurs d'usine sans toucher au reste.
 
+**Tempérament** (_sportiness_) :
+Le caractère du moteur et de la boîte, sur une échelle du calme au sportif :
+ce qui décide si la voiture **pousse fort**. Il n'est pas enregistré dans un
+profil, il s'en **déduit** — huit de ses réglages suivent des lois qui
+s'inversent, et la médiane des lectures donne sa position. C'est ce qui permet
+au curseur du mode simplifié de refléter un profil réglé à la main.
+_Ne pas confondre_ avec le **caractère** ci-dessous, qui est un bloc de trois
+comportements, ni avec la **réactivité**, qui est celle du signal.
+_Éviter_ : sportivité, agressivité.
+
+**Réactivité** (_responsiveness_) :
+Le caractère du **signal de vitesse**, du pépère au nerveux : ce qui décide si
+la voiture **répond vite**. Nerveux suit au plus près et laisse passer le bruit
+du GPS, pépère est lisse et en retard. Se déduit du profil comme le
+tempérament, et s'en distingue : une voiture calme peut être vive, une sportive
+pâteuse.
+_Éviter_ : nervosité, latence.
+
+**Mode avancé** (_advanced mode_) :
+La bascule de l'écran de configuration. En simplifié, la vue est courte et
+quelques curseurs globaux commandent le reste ; en avancé, la cinquantaine de
+réglages détaillés s'ajoute dessous. Préférence de l'**appareil**, comme le
+volume général : ne fait pas partie du profil et ne voyage pas.
+_Éviter_ : mode expert, mode débutant.
+
 **Caractère** (_feel_, `FeelPreset`) :
 Les trois comportements qui tiennent du tempérament plutôt que de la mécanique :
 rétrogradage forcé, pétarade, à-coup de passage. Chacun s'active séparément, et
 on les remarque surtout par leur absence.
+
+## L'écran de conduite
+
+**Visage** (_face_, `DriveFace`) :
+L'un des deux affichages de l'écran de conduite : **cadrans** (`dials`), pour
+conduire, ou **chiffres** (`numbers`), pour régler. Le même écran, les mêmes
+commandes, la même télémétrie — seule la façon de montrer la vitesse, le rapport
+et le régime change. C'est une préférence de l'appareil, comme le volume
+général : elle n'appartient pas au profil.
+_Éviter_ : mode (qui désigne la boîte, automatique ou manuelle), thème, vue.
+
+**Cadran** (_dial_, `DialGauge`) :
+Un afficheur à aiguille, gradué. Le compteur de vitesse et le compte-tours en
+sont deux instances du même composant. L'aiguille n'a **aucune inertie propre** :
+elle suit le régime, déjà lissé par le conditionnement et par le volant moteur.
+Son mouvement est la valeur, ce n'est pas une animation.
+_Éviter_ : jauge (qui évoque un niveau), gauge, compteur tout court (ambigu avec
+le compteur de vitesse).
+
+**Paysage** (_scenery_) :
+Le décor qui défile derrière les cadrans, à la vitesse du véhicule. **Rien ne s'y
+lit** : c'est le seul élément de l'application qui bouge pour l'agrément, et
+l'unique exception à la règle « aucune animation », levée sciemment le
+3 septembre 2026. Il se coupe, et coupé il n'existe pas dans la page.
+_Éviter_ : fond, décor animé, arrière-plan (qui désigne l'état de la page quand
+le navigateur la masque).
