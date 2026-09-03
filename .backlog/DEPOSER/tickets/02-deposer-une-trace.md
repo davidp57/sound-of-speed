@@ -82,3 +82,39 @@ Le dépôt vise un chemin relatif, donc le serveur qui sert l'application. En
 développement, c'est celui de Vite, qui n'a pas ce dossier : le message dit alors
 « le serveur a répondu 404 », ce qui est exact. Le dépôt réel demande que
 l'application soit servie par le NAS.
+
+## Deux objections de David, et ce qu'elles ont changé
+
+**« Si je le fais sur mon PC ça marchera pas dans ma Tesla. »** Juste, et cela
+cassait l'usage : le jeton est une préférence de l'appareil, donc absent de la
+voiture — où il sert. Il faudrait le retaper là-bas.
+
+**« Et en plus ton jeton est impossible à retenir. »** Juste aussi. Un jeton
+aléatoire de trente-deux caractères ne se saisit pas sur un écran tactile ;
+c'était une mauvaise suggestion de ma part.
+
+D'où deux corrections :
+
+- le jeton **voyage par l'adresse**, avec un code à scanner, exactement comme un
+  profil partagé — le fragment n'atteint jamais le serveur, et il est effacé
+  aussitôt lu. L'écoute porte aussi sur le changement de fragment : coller
+  l'adresse dans un onglet déjà ouvert ne recharge pas la page, et c'est
+  pourtant le geste le plus probable dans la voiture ;
+- la documentation recommande un jeton **prononçable** — quelques mots séparés
+  par des tirets — plutôt qu'une suite aléatoire. Vingt caractères tapables
+  valent mieux ici : ce qu'il protège est l'écriture d'un fichier de trace, pas
+  un compte.
+
+**Et une troisième remarque, « y'a pas de bouton save ? »** : l'écran de
+configuration n'en a jamais eu, tout s'y applique à la frappe. Mais pour un
+curseur cela se voit, et pour un jeton masqué rien ne se voyait. Le champ dit
+maintenant qu'il est retenu, et sa longueur — de quoi reconnaître une saisie
+tronquée sans montrer le secret.
+
+## Critères ajoutés
+
+- [x] Le jeton s'installe dans la voiture sans avoir à le retaper
+- [x] L'adresse d'installation fonctionne aussi dans un onglet déjà ouvert
+- [x] Le fragment est effacé après lecture, et un rechargement ne le réinstalle
+      pas
+- [x] Le champ du jeton dit qu'il est retenu

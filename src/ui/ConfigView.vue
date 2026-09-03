@@ -52,6 +52,7 @@ import {
   calibrationOverrides,
   depositCredentials,
   setDepositCredentials,
+  depositLink,
 } from '../state'
 
 /**
@@ -70,6 +71,60 @@ const importError = ref('')
 function onDeposit(user: string, token: string): void {
   setDepositCredentials(user, token)
 }
+
+/**
+ * Ce que l'écran dit de l'état du jeton.
+ *
+ * L'écran de configuration n'a pas de bouton « enregistrer » — tout s'applique à
+ * la frappe, c'est la règle du projet. Pour un curseur cela se voit ; pour un
+ * jeton masqué, rien ne se voit, et l'on ne sait pas si la saisie a pris. La
+ * question a été posée dès le premier usage, ce qui suffit à la trancher.
+ *
+ * La longueur est dite plutôt que le jeton : elle permet de reconnaître une
+ * saisie tronquée ou un collage parti de travers, sans montrer le secret.
+ */
+const depotLien = ref('')
+const depotQr = ref('')
+const depotNote = ref('')
+
+/**
+ * Le lien qui installe le jeton dans la voiture.
+ *
+ * Le même mécanisme que le partage d'un profil, et pour le même motif : faire
+ * arriver une donnée sur un appareil où l'on ne veut rien taper.
+ */
+function onDepositLink(): void {
+  if (depotLien.value) {
+    depotLien.value = ''
+    depotQr.value = ''
+    depotNote.value = ''
+    return
+  }
+  depotLien.value = depositLink()
+  const code = qrcode(0, 'M')
+  code.addData(depotLien.value)
+  code.make()
+  depotQr.value = code.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
+  depotNote.value = isReachableOrigin(window.location.origin)
+    ? ''
+    : "Cette adresse est celle du poste de développement : elle ne mènera nulle part dans la voiture. Refaites l'opération depuis l'adresse du serveur."
+}
+
+async function onCopyDepositLink(): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(depotLien.value)
+    depotNote.value = 'Lien copié.'
+  } catch {
+    depotNote.value = 'Copie refusée par le navigateur : sélectionnez le lien à la main.'
+  }
+}
+
+const jetonEtat = computed(() => {
+  const { user, token } = depositCredentials.value
+  if (!token) return 'aucun jeton'
+  if (!user.trim()) return 'jeton retenu, mais il manque le nom d’utilisateur'
+  return `retenu — ${token.length} caractères, rien à valider`
+})
 const fileInput = ref<HTMLInputElement | null>(null)
 
 const ROLES: { id: LayerRole; label: string }[] = [
@@ -714,6 +769,26 @@ function impliedCylinders(index: number): number | null {
           placeholder="jeton"
           @input="onDeposit(depositCredentials.user, ($event.target as HTMLInputElement).value)"
         />
+        <span class="note">{{ jetonEtat }}</span>
+        <button v-if="depositCredentials.token" @click="onDepositLink()">
+          {{ depotLien ? 'Masquer' : 'Installer dans la voiture…' }}
+        </button>
+      </div>
+
+      <div v-if="depotLien" class="share">
+        <p class="note">
+          Le jeton appartient à <strong>cet appareil</strong> : réglé ici, il
+          n'est pas dans la voiture. Ouvrez cette adresse une fois dans son
+          navigateur et il s'y installe — le jeton est dans la partie après le
+          <code>#</code>, qui n'est jamais transmise au serveur, et elle est
+          effacée aussitôt lue. Rien à retaper.
+        </p>
+        <div class="qr" v-html="depotQr" />
+        <input :value="depotLien" readonly @focus="($event.target as HTMLInputElement).select()" />
+        <div class="choices">
+          <button @click="onCopyDepositLink()">Copier le lien</button>
+        </div>
+        <p v-if="depotNote" class="note">{{ depotNote }}</p>
       </div>
       <p class="note">
         Sert à envoyer une trace sur le serveur depuis la voiture, dont le

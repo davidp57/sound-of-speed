@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { authHeader, deposit, depositName, durationS } from './deposit'
+import {
+  authHeader,
+  credentialsUrl,
+  deposit,
+  depositName,
+  durationS,
+  readCredentialsFromUrl,
+} from './deposit'
 import { tracesFromFile } from '../preset/store'
 import type { Trace } from '../speed/replay'
 
@@ -217,5 +224,55 @@ describe('deposit', () => {
 
     expect(issue).toMatchObject({ ok: false, reason: 'network' })
     expect((issue as { detail: string }).detail).toContain('405')
+  })
+})
+
+describe('jeton reçu par l adresse', () => {
+  const oublie = () => {}
+
+  it('lit le nom et le jeton', () => {
+    // Réglé au poste, le jeton n'est nulle part dans la voiture : il y arrive
+    // par l'adresse, comme un profil partagé.
+    expect(readCredentialsFromUrl('#depot=depot:route-moteur-tesla', oublie)).toEqual({
+      user: 'depot',
+      token: 'route-moteur-tesla',
+    })
+  })
+
+  it('efface le fragment même quand il est illisible', () => {
+    // Sans quoi il resterait dans la barre d'adresse et se réinstallerait à
+    // chaque rechargement.
+    let efface = 0
+    readCredentialsFromUrl('#depot=sansdeuxpoints', () => { efface += 1 })
+
+    expect(efface).toBe(1)
+  })
+
+  it('accepte un jeton qui contient des deux-points', () => {
+    // Seul le premier sépare : un jeton n'a pas à s'interdire un caractère.
+    expect(readCredentialsFromUrl('#depot=depot:a:b:c', oublie)?.token).toBe('a:b:c')
+  })
+
+  it('accepte un jeton encodé', () => {
+    const url = credentialsUrl('https://exemple', { user: 'depot', token: 'clé à moi' })
+
+    expect(readCredentialsFromUrl(url.slice(url.indexOf('#')), oublie)).toEqual({
+      user: 'depot',
+      token: 'clé à moi',
+    })
+  })
+
+  it('ne trouve rien quand il n y a rien', () => {
+    expect(readCredentialsFromUrl('', oublie)).toBeNull()
+    expect(readCredentialsFromUrl('#p=unprofil', oublie)).toBeNull()
+  })
+
+  it('refuse une forme incomplète plutôt que de retenir un jeton vide', () => {
+    expect(readCredentialsFromUrl('#depot=depot:', oublie)).toBeNull()
+    expect(readCredentialsFromUrl('#depot=:jeton', oublie)).toBeNull()
+  })
+
+  it('cohabite avec un profil partagé dans la même adresse', () => {
+    expect(readCredentialsFromUrl('#p=abc&depot=depot:mon-jeton', oublie)?.user).toBe('depot')
   })
 })

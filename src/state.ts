@@ -26,7 +26,12 @@ import {
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
 import { analyzeSession, overridesFor, withCalibration } from './core/calibration/onboard'
-import { deposit, type DepositOutcome } from './core/deposit/deposit'
+import {
+  credentialsUrl,
+  deposit,
+  readCredentialsFromUrl,
+  type DepositOutcome,
+} from './core/deposit/deposit'
 import { loadCalibration, saveCalibration, type CalibrationSession } from './core/calibration/store'
 import {
   applyOrigin,
@@ -890,6 +895,29 @@ export async function importFromUrl(): Promise<string | null> {
   if (!profile) return null
   addProfile(profile)
   return profile.name
+}
+
+/**
+ * Jeton de dépôt reçu par l'adresse.
+ *
+ * Le jeton se règle au poste de travail et sert dans la voiture : il faut bien
+ * qu'il y arrive. Il voyage donc dans le fragment, comme un profil partagé, et
+ * pour la même raison — ce qui suit le `#` n'atteint jamais le serveur.
+ *
+ * Rend le nom d'utilisateur installé, ou `null` s'il n'y avait rien.
+ */
+export function readDepositFromUrl(): string | null {
+  const received = readCredentialsFromUrl(window.location.hash, () => {
+    history.replaceState(null, '', window.location.pathname + window.location.search)
+  })
+  if (!received) return null
+  setDepositCredentials(received.user, received.token)
+  return received.user
+}
+
+/** Adresse à ouvrir dans la voiture pour y installer le jeton réglé ici. */
+export function depositLink(): string {
+  return credentialsUrl(window.location.origin, depositCredentials.value)
 }
 
 export function addProfile(profile: Profile): void {

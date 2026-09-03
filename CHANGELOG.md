@@ -86,6 +86,17 @@ Toutes les évolutions notables du projet. Format
   une requête lancée par une page — un dépôt aurait échoué en silence. Le jeton
   n'ouvre que l'écriture d'un fichier dans le dossier des traces.
 
+  **Le jeton s'installe dans la voiture par une adresse**, avec un code à
+  scanner, comme le partage d'un profil : réglé au poste de travail il n'est pas
+  dans la voiture, et un jeton ne se retape pas sur un écran tactile. Il voyage
+  dans la partie qui suit le `#`, jamais transmise au serveur, et elle est
+  effacée aussitôt lue. L'adresse fonctionne aussi collée dans un onglet déjà
+  ouvert, ce qui est le geste le plus probable.
+
+  Le champ du jeton dit qu'il est retenu, et sa longueur : l'écran de
+  configuration n'a pas de bouton d'enregistrement — tout s'y applique à la
+  frappe — mais pour un jeton masqué, rien ne le montrait.
+
   Le nom du fichier dit la date, l'enregistrement et sa durée, et il se relit par
   la fonction d'import. Chaque échec dit lequel il est — jeton absent, jeton
   refusé, droit d'écriture manquant, hors couverture, déjà déposée — parce
