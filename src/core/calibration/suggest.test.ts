@@ -151,24 +151,30 @@ describe('suggest — bornes de l’accélération', () => {
     expect(row(suggestions, 'speed.maxAccelMs2')?.setting?.current).toBe(14)
   })
 
-  it('ignore une étape refusée dans le calcul des bornes', () => {
-    // Un freinage mou est refusé : il ne doit pas servir de borne, sans quoi
-    // une étape ratée resserrerait l'écrêtage sur une valeur trop faible.
+  it('ne borne pas la décélération sur une étape qui n a pas ralenti', () => {
+    // Un freinage mou est refusé, et il ne reste que la reprise — dont la
+    // décélération est nulle. Proposer une borne là-dessus donnerait −0,5 m/s²,
+    // ce qui écrêterait **tout** freinage réel : la charge et la boîte verraient
+    // un ralentissement minuscule là où l'on plante les freins.
+    //
+    // Une borne trop large ne protège de rien ; une borne trop serrée ampute le
+    // signal, ce qui est bien pire. Elle n'est donc pas proposée.
     const launch = analyzeStep('launch', launchTrace(3.4))
     const soft = analyzeStep('brake', slowTrace(90, 1.2, 8))
 
     const suggestions = suggest([launch, soft], createRoadProfile())
 
     expect(soft.valid).toBe(false)
-    // Seule la reprise compte : sa propre décélération est nulle, donc la borne
-    // basse tombe à zéro plutôt qu'à −1,8.
-    expect(row(suggestions, 'speed.minAccelMs2')?.measured?.value).toBeCloseTo(0, 2)
+    expect(row(suggestions, 'speed.minAccelMs2')?.measured).toBeNull()
+    expect(row(suggestions, 'speed.minAccelMs2')?.missing).toContain('ralentisse')
+    // La borne haute, elle, se mesure bien sur une reprise.
+    expect(row(suggestions, 'speed.maxAccelMs2')?.measured?.value).toBeCloseTo(3.4, 1)
   })
 
   it('ne borne rien sans aucune étape valide', () => {
     const suggestions = suggest([], createRoadProfile())
 
-    expect(row(suggestions, 'speed.minAccelMs2')?.missing).toContain('rien à borner')
+    expect(row(suggestions, 'speed.minAccelMs2')?.missing).toContain('ralentisse')
     expect(row(suggestions, 'speed.maxAccelMs2')?.missing).toContain('rien à borner')
   })
 })

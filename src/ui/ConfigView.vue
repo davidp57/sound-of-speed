@@ -49,6 +49,7 @@ import {
   library,
   libraryLoading,
   refreshLibrary,
+  calibrationOverrides,
 } from '../state'
 
 /**
@@ -673,6 +674,22 @@ function impliedCylinders(index: number): number | null {
             <span class="muted">{{ entry.file }}</span>
             <button @click="addProfile(entry.profile)">Ajouter</button>
           </li>
+        </ul>
+      </div>
+
+      <div v-if="calibrationOverrides.length > 0" class="calibrated">
+        <p class="note">
+          <strong>{{ calibrationOverrides.length }}</strong> réglage{{
+            calibrationOverrides.length > 1 ? 's' : ''
+          }}
+          de ce profil {{ calibrationOverrides.length > 1 ? 'sont' : 'est' }} remplacé{{
+            calibrationOverrides.length > 1 ? 's' : ''
+          }}
+          par les mesures de votre voiture. Ce que vous réglez ici reste
+          inchangé — c'est la valeur mesurée que le moteur emploie.
+        </p>
+        <ul class="note">
+          <li v-for="entry in calibrationOverrides" :key="entry.path">{{ entry.label }}</li>
         </ul>
       </div>
 
