@@ -118,3 +118,22 @@ tronquée sans montrer le secret.
 - [x] Le fragment est effacé après lecture, et un rechargement ne le réinstalle
       pas
 - [x] Le champ du jeton dit qu'il est retenu
+
+## Une troisième objection : « j'ai pas de caméra dans le browser de ma Tesla »
+
+Juste, et cela invalidait la façon dont j'avais présenté la chose. Le code à
+scanner ne sert qu'à un appareil **qui a une caméra** — un téléphone, une
+tablette. Dans une voiture, l'adresse se **tape**.
+
+Deux conséquences, et elles vont dans le même sens :
+
+- le nom d'utilisateur `depot` est **implicite** dans l'adresse, qui se réduit à
+  `#depot=<jeton>`. Six caractères de moins à saisir sur un écran tactile ;
+- le jeton prononçable n'est plus une préférence de confort mais une nécessité.
+  La documentation et l'interface le disent tous les deux, avec la raison.
+
+Le code reste affiché, parce qu'il sert à installer le jeton sur un téléphone.
+Mais l'interface dit désormais à quoi il sert et à quoi il ne sert pas.
+
+- [x] L'adresse d'installation est aussi courte que possible, et se tape
+- [x] L'interface dit que le code à scanner ne sert qu'aux appareils à caméra

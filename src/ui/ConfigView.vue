@@ -779,11 +779,22 @@ function impliedCylinders(index: number): number | null {
         <p class="note">
           Le jeton appartient à <strong>cet appareil</strong> : réglé ici, il
           n'est pas dans la voiture. Ouvrez cette adresse une fois dans son
-          navigateur et il s'y installe — le jeton est dans la partie après le
+          navigateur et il s'y installe. Le jeton est dans la partie après le
           <code>#</code>, qui n'est jamais transmise au serveur, et elle est
-          effacée aussitôt lue. Rien à retaper.
+          effacée aussitôt lue.
+        </p>
+        <p class="note">
+          <strong>Dans une voiture, l'adresse se tape</strong> : son navigateur
+          n'a pas de caméra. C'est pourquoi elle est aussi courte que possible,
+          et pourquoi un jeton prononçable vaut mieux qu'une suite aléatoire.
+          Elle fonctionne aussi collée dans un onglet déjà ouvert sur
+          l'application.
         </p>
         <div class="qr" v-html="depotQr" />
+        <p class="note">
+          Le code ci-dessus ne sert qu'aux appareils qui ont une caméra — un
+          téléphone, une tablette.
+        </p>
         <input :value="depotLien" readonly @focus="($event.target as HTMLInputElement).select()" />
         <div class="choices">
           <button @click="onCopyDepositLink()">Copier le lien</button>

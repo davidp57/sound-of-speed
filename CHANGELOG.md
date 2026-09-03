@@ -86,12 +86,16 @@ Toutes les évolutions notables du projet. Format
   une requête lancée par une page — un dépôt aurait échoué en silence. Le jeton
   n'ouvre que l'écriture d'un fichier dans le dossier des traces.
 
-  **Le jeton s'installe dans la voiture par une adresse**, avec un code à
-  scanner, comme le partage d'un profil : réglé au poste de travail il n'est pas
-  dans la voiture, et un jeton ne se retape pas sur un écran tactile. Il voyage
-  dans la partie qui suit le `#`, jamais transmise au serveur, et elle est
-  effacée aussitôt lue. L'adresse fonctionne aussi collée dans un onglet déjà
-  ouvert, ce qui est le geste le plus probable.
+  **Le jeton s'installe dans la voiture par une adresse** : réglé au poste de
+  travail il n'y est pas, et c'est là qu'il sert. Il voyage dans la partie qui
+  suit le `#`, jamais transmise au serveur, et elle est effacée aussitôt lue.
+  L'adresse fonctionne aussi collée dans un onglet déjà ouvert, ce qui est le
+  geste le plus probable.
+
+  Cette adresse **se tape** — le navigateur d'une voiture n'a pas de caméra, donc
+  le code à scanner ne sert qu'à un téléphone. D'où deux choix : le nom
+  d'utilisateur `depot` est implicite, ce qui raccourcit l'adresse, et la
+  documentation recommande un jeton prononçable plutôt qu'une suite aléatoire.
 
   Le champ du jeton dit qu'il est retenu, et sa longueur : l'écran de
   configuration n'a pas de bouton d'enregistrement — tout s'y applique à la

@@ -239,13 +239,31 @@ describe('jeton reçu par l adresse', () => {
     })
   })
 
+  it('accepte le jeton seul, sous le nom par défaut', () => {
+    // La forme à taper dans la voiture : il n'y a pas de caméra dans son
+    // navigateur, donc l'adresse s'y saisit à la main et chaque caractère
+    // compte.
+    expect(readCredentialsFromUrl('#depot=route-moteur-tesla', oublie)).toEqual({
+      user: 'depot',
+      token: 'route-moteur-tesla',
+    })
+  })
+
   it('efface le fragment même quand il est illisible', () => {
     // Sans quoi il resterait dans la barre d'adresse et se réinstallerait à
     // chaque rechargement.
     let efface = 0
-    readCredentialsFromUrl('#depot=sansdeuxpoints', () => { efface += 1 })
+    readCredentialsFromUrl('#depot=:sansnom', () => { efface += 1 })
 
     expect(efface).toBe(1)
+  })
+
+  it('produit une adresse courte pour le nom par défaut', () => {
+    const court = credentialsUrl('https://exemple', { user: 'depot', token: 'mon-jeton' })
+    const long = credentialsUrl('https://exemple', { user: 'autre', token: 'mon-jeton' })
+
+    expect(court).toBe('https://exemple/#depot=mon-jeton')
+    expect(long).toBe('https://exemple/#depot=autre%3Amon-jeton')
   })
 
   it('accepte un jeton qui contient des deux-points', () => {

@@ -22,6 +22,8 @@ import type { Trace } from '../speed/replay'
 
 /** Dossier servi en écriture. Voir `docker/nginx.conf`. */
 const FOLDER = '/traces/'
+/** Nom d'utilisateur du dépôt, celui que la documentation fait créer. */
+export const DEFAULT_USER = 'depot'
 
 export interface DepositCredentials {
   user: string
@@ -202,7 +204,14 @@ function base64(text: string): string {
  * le jeton est retenu, et le fragment est effacé — recharger la page ne doit pas
  * le réinstaller indéfiniment, ni le laisser traîner dans la barre d'adresse.
  *
- * Forme : `#depot=nom:jeton`.
+ * Deux formes, et la plus courte est la bonne pour la voiture :
+ *
+ * - `#depot=jeton` — le nom d'utilisateur vaut alors `depot`, celui que la
+ *   documentation fait créer. C'est la forme à taper, et elle l'est parce qu'il
+ *   n'y a **pas de caméra** dans le navigateur d'une voiture : le code à scanner
+ *   ne sert qu'à un téléphone, et l'adresse s'y saisit à la main. D'où un jeton
+ *   prononçable, et une adresse la plus courte possible ;
+ * - `#depot=nom:jeton` — quand le nom n'est pas celui par défaut.
  */
 export function readCredentialsFromUrl(
   hash: string,
@@ -220,12 +229,24 @@ export function readCredentialsFromUrl(
   }
 
   const separator = decoded.indexOf(':')
-  if (separator <= 0 || separator === decoded.length - 1) return null
+  if (separator < 0) {
+    // Forme courte : le jeton seul, sous le nom d'utilisateur par défaut.
+    return decoded ? { user: DEFAULT_USER, token: decoded } : null
+  }
+  if (separator === 0 || separator === decoded.length - 1) return null
   return { user: decoded.slice(0, separator), token: decoded.slice(separator + 1) }
 }
 
-/** L'adresse à ouvrir dans la voiture pour y installer le jeton. */
+/**
+ * L'adresse à ouvrir dans la voiture pour y installer le jeton.
+ *
+ * Le nom d'utilisateur est omis quand c'est celui par défaut : l'adresse se tape
+ * à la main dans une voiture, et six caractères de moins comptent.
+ */
 export function credentialsUrl(origin: string, credentials: DepositCredentials): string {
-  const payload = encodeURIComponent(`${credentials.user}:${credentials.token}`)
-  return `${origin}/#depot=${payload}`
+  const payload =
+    credentials.user === DEFAULT_USER
+      ? credentials.token
+      : `${credentials.user}:${credentials.token}`
+  return `${origin}/#depot=${encodeURIComponent(payload)}`
 }
