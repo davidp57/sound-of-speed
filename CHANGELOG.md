@@ -6,6 +6,86 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Un tableau de bord à cadrans** sur l'écran de conduite : compteur de vitesse,
+  compte-tours avec sa zone de rupteur, rapport engagé au centre. L'écran a deux
+  visages et l'on passe de l'un à l'autre — les cadrans pour conduire, les
+  chiffres pour régler, car un écart de cent tours ne se voit pas sur une
+  aiguille. Le mouvement d'une aiguille **est** la valeur : il ne relevait pas de
+  la règle qui interdit les animations.
+
+  Un **paysage** défile derrière les cadrans, coupé par défaut. Celui-là est de
+  l'agrément assumé, et la règle a été levée pour lui seul. Mesuré avant de le
+  promettre, sur la même trace rejouée : l'écart de durée d'image entre décor
+  coupé et décor actif est de 0,2 ms, plus petit que l'écart de passe à passe du
+  même état (1,8 ms), et aucune image ne dépasse 33 ms dans les deux cas.
+
+  L'échelle du compteur est fixe à 180 km/h. La déduire de la voiture donnait
+  304 km/h sur Route : l'aiguille aurait passé sa vie dans le coin inférieur
+  gauche. Un compteur se gradue pour ce qu'on roule.
+- **Un mode simplifié** de l'écran de configuration : deux curseurs globaux et le
+  nombre de rapports, le détail des cinquante réglages attendant derrière une
+  bascule « avancé ». Aucun réglage n'est supprimé.
+
+  Le curseur **calme ↔ sportif** commande onze valeurs du moteur et de la boîte ;
+  le curseur **pépère ↔ nerveux** commande la réactivité du signal, ce qui n'est
+  pas la même chose — une voiture calme peut être vive. Le milieu de ce second
+  curseur est exactement le réglage qui a servi jusqu'ici.
+
+  Le tempérament n'est pas stocké : il se **déduit** des réglages. Les lois du
+  guide de création sont devenues inversibles, si bien qu'un profil réglé à la
+  main se lit quand même sur les curseurs, à un dix-millième près. Le guide passe
+  désormais par ces mêmes lois — quatre-vingt-seize lignes de règles dupliquées
+  ont disparu.
+
+  Un mouvement de curseur global écrase les réglages détaillés, mais **se
+  rattrape** : l'état d'avant est pris au premier mouvement et gardé jusqu'à
+  usage.
+- **Le nombre de rapports se règle**, de trois à huit. Il était déjà modifiable
+  par la saisie d'une liste, mais les tables de seuils et de temporisations ne
+  suivaient pas : un rapport ajouté héritait du seuil de son prédécesseur et
+  d'une temporisation étrangère au profil. Le premier et le dernier rapport sont
+  désormais conservés, le pont avec eux, donc le régime en dernier rapport à
+  110 km/h ne bouge pas — 2355 tr/min sur Route, quel que soit le nombre.
+- **Un écran d'étalonnage** : un protocole guidé en six étapes — ville, route,
+  autoroute, accélération franche, décélération pied levé, freinage franc — qui
+  mesure la vraie voiture et propose onze réglages en regard de ceux du profil.
+  Chaque étape juge si elle a bien été faite : une « accélération franche » qui
+  n'atteint pas le critère est refusée, et la raison est dite, plutôt que de
+  donner une charge fausse.
+
+  **Elle propose, elle n'applique pas** : chaque valeur se recopie séparément,
+  jamais en bloc, et le profil sait revenir à ce qu'il était.
+- **Le moteur tremble.** Un tremblement lent s'ajoute au régime, d'amplitude
+  décroissante avec le régime et avec la charge — un moteur se stabilise en
+  poussant, il tremble au ralenti et à vide. Il ne touche pas la boîte : le
+  moteur sort désormais deux régimes, le net qui pilote les seuils de passage et
+  le **régime entendu** qui porte le tremblement et ne sert qu'aux hauteurs de
+  lecture.
+- **Deux couches d'une même famille jouent légèrement désaccordées**, ce qui
+  produit le battement lent d'un moteur réel. Mesuré : le désaccord ne déplace
+  aucun gain, au bit près, et ne peut pas sortir une couche de son domaine
+  jouable.
+- **Le serveur accepte le dépôt d'une trace.** Le navigateur de la voiture refuse
+  tout téléchargement : rien ne sortait d'une session d'enregistrement, alors que
+  les traces ne servent qu'ailleurs. Un dossier `traces/` est servi en lecture
+  comme les profils, et en écriture pour la seule méthode qui dépose un fichier —
+  ni suppression, ni création de dossier. L'écriture exige l'authentification en
+  toutes circonstances, y compris quand celle du site reste désactivée.
+
+### Corrigé
+
+- **Un profil enregistré était complété avec les valeurs de Sport**, quel que
+  soit son identifiant. Chaque réglage ajouté au schéma arrivait donc dans le
+  profil Route de l'utilisateur réglé pour Sport : plancher de croisière à 2000
+  au lieu de 1500, délai de croisière à 3,5 s au lieu de 2,2, seuil de
+  rétrogradage au freinage à −0,7 au lieu de −1, relief de charge à 5 dB au lieu
+  de 4, relief du régime à 4 au lieu de 3. Les essais sur route portaient sur des
+  valeurs que personne n'avait choisies. La réinitialisation, elle, cherchait
+  déjà le bon profil par son identifiant : les deux chemins disent enfin la même
+  chose.
+
 ### Modifié
 
 - **Le volume général est une préférence de l'appareil**, et non plus un réglage
