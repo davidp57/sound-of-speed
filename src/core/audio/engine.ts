@@ -136,6 +136,8 @@ export class AudioEngine {
   private bus: GainNode | null = null
   private highpass: BiquadFilterNode | null = null
   private shaper: WaveShaperNode | null = null
+  /** Volume général, retenu ici pour survivre à la reconstruction du bus. */
+  private masterVolume = 1
   private limiter: DynamicsCompressorNode | null = null
   private makeup: GainNode | null = null
   private watchdog: ReturnType<typeof setInterval> | null = null
@@ -205,9 +207,30 @@ export class AudioEngine {
     await this.load(profile)
   }
 
+  /**
+   * Volume général.
+   *
+   * Appliqué sur le bus commun, donc **en amont** du limiteur : c'est ce qui
+   * permet de le pousser au-delà de un sans écrêter, le limiteur ramenant les
+   * crêtes. Le mettre après aurait supprimé cette marge, qui est justement ce
+   * dont on a besoin quand le relief est fort.
+   *
+   * Il n'entre pas dans le calcul du mixage. Ce n'est pas une règle de mixage
+   * mais un niveau de sortie : les gains affichés à l'écran de télémétrie
+   * décrivent donc l'équilibre entre les couches, sans que le volume les
+   * déplace tous ensemble.
+   */
+  setMasterVolume(volume: number): void {
+    this.masterVolume = Number.isFinite(volume) && volume >= 0 ? volume : 1
+    if (this.bus && this.context) {
+      this.bus.gain.setTargetAtTime(this.masterVolume, this.context.currentTime, GAIN_GLIDE_S)
+    }
+  }
+
   /** Chaîne de sortie, commune à toutes les couches. */
   private buildBus(context: AudioContext): void {
     this.bus = context.createGain()
+    this.bus.gain.value = this.masterVolume
     this.highpass = context.createBiquadFilter()
     this.shaper = context.createWaveShaper()
     this.limiter = context.createDynamicsCompressor()

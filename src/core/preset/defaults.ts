@@ -179,7 +179,6 @@ export function createDefaultProfile(): Profile {
       maxAccelMs2: 14,
     },
     mix: {
-      masterGain: 0.7,
       crossfadeLowRpm: 3200,
       crossfadeHighRpm: 7000,
       fullLoadAccelMs2: 2.5,

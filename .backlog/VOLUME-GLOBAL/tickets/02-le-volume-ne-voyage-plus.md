@@ -1,6 +1,6 @@
 # 02 — Le volume ne voyage plus avec un profil
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Le volume devient une préférence de l'appareil
 
@@ -26,9 +26,9 @@ neutre la croisière, précisément pour ne pas déplacer le niveau moyen.
 
 ## Critères d'acceptation
 
-- [ ] Un aller-retour par lien ne transporte pas le volume
-- [ ] Un aller-retour par fichier ne le transporte pas
-- [ ] Réinitialiser la section de mixage laisse le volume intact
-- [ ] Les reliefs, le niveau au ralenti, le limiteur, le coupe-bas et la
+- [x] Un aller-retour par lien ne transporte pas le volume
+- [x] Un aller-retour par fichier ne le transporte pas
+- [x] Réinitialiser la section de mixage laisse le volume intact
+- [x] Les reliefs, le niveau au ralenti, le limiteur, le coupe-bas et la
       saturation restent dans le profil et voyagent avec lui
-- [ ] Le volume n'apparaît plus qu'à un seul endroit de l'interface
+- [x] Le volume n'apparaît plus qu'à un seul endroit de l'interface

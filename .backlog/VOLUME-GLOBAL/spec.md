@@ -1,6 +1,6 @@
 # VOLUME-GLOBAL — le volume est une préférence d'appareil, pas un caractère
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 **Branche :** `fix/volume-global`
 **Version visée :** 0.3
 

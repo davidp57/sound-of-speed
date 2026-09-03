@@ -961,14 +961,7 @@ function impliedCylinders(index: number): number | null {
 
     <section class="panel">
       <h2>Mixage</h2>
-      <NumberField
-        v-model="profile.mix.masterGain"
-        label="Volume général"
-        :min="0"
-        :max="4"
-        :step="0.05"
-        hint="Peut dépasser 1 : le limiteur de sortie empêche la saturation. Utile quand le volume du véhicule doit rester bas pour la musique."
-      />
+      
       <NumberField
         v-model="profile.mix.loadReliefDb"
         label="Relief de charge"

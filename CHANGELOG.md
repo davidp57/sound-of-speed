@@ -6,6 +6,25 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Modifié
+
+- **Le volume général est une préférence de l'appareil**, et non plus un réglage
+  du profil. Il vivait dans la section de mixage, ce qui produisait trois effets
+  tous fautifs : passer de Route à Sport en roulant faisait sauter le niveau, un
+  profil partagé emportait le volume réglé pour une autre voiture, et
+  réinitialiser la section de mixage remettait le son au niveau d'usine alors
+  qu'on voulait seulement retrouver un caractère. Il est désormais rangé à côté
+  du profil choisi, survit au changement de profil, ne voyage ni par lien ni par
+  fichier, et se règle toujours depuis l'écran de conduite.
+
+  Le niveau déjà réglé est conservé : à la première ouverture, la préférence
+  prend la valeur du profil actif.
+
+  Techniquement, il quitte aussi le calcul du mixage pour devenir un gain de
+  sortie, appliqué en amont du limiteur — ce qui préserve la marge au-delà de 1.
+  Les gains affichés à l'écran de télémétrie décrivent donc l'équilibre entre les
+  couches, sans que le volume les déplace tous ensemble.
+
 ### Corrigé
 
 - **Faire défiler l'écran de configuration ne dérègle plus un curseur.** Un

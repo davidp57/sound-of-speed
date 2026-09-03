@@ -5,12 +5,15 @@ import {
   deepCopy,
   duplicateProfile,
   fromFile,
+  loadInheritedVolume,
+  loadMasterVolume,
   loadProfiles,
   loadSelectedId,
   loadTraces,
   missingFactoryProfiles,
   newId,
   resetProfileSection,
+  saveMasterVolume,
   saveProfiles,
   saveSelectedId,
   saveTraces,
@@ -215,7 +218,7 @@ describe('reprise d’une transmission ancienne', () => {
 describe('export et import de fichier', () => {
   it('fait un aller-retour sans rien perdre, hors identifiant', () => {
     const original = { ...createRoadProfile(), name: 'Essai routier' }
-    original.mix.masterGain = 0.42
+    original.mix.drive = 0.42
 
     const relu = fromFile(toFile(original))
 
@@ -267,13 +270,13 @@ describe('réinitialisation par section', () => {
     const profile = createRoadProfile()
     profile.name = 'Mon réglage'
     profile.engine.redlineRpm = 4200
-    profile.mix.masterGain = 0.1
+    profile.mix.drive = 0.1
 
     const remis = resetProfileSection(profile, 'engine')
 
     expect(remis.engine).toEqual(createRoadProfile().engine)
     // Le reste est intact, identifiant et nom compris.
-    expect(remis.mix.masterGain).toBe(0.1)
+    expect(remis.mix.drive).toBe(0.1)
     expect(remis.id).toBe(profile.id)
     expect(remis.name).toBe('Mon réglage')
   })
@@ -282,7 +285,7 @@ describe('réinitialisation par section', () => {
     const profile = createRoadProfile()
     profile.name = 'Mon réglage'
     profile.engine.redlineRpm = 4200
-    profile.mix.masterGain = 0.1
+    profile.mix.drive = 0.1
 
     const remis = resetProfileSection(profile, 'all')
 
@@ -434,7 +437,7 @@ describe('valeurs d’origine', () => {
     )
 
     const remis = resetProfileSection(
-      { ...fabrique, mix: { ...fabrique.mix, masterGain: 0.05 } },
+      { ...fabrique, mix: { ...fabrique.mix, drive: 0.05 } },
       'all',
     )
 
@@ -490,7 +493,7 @@ describe('valeurs d’origine', () => {
     // Ils n'ont pas d'origine enregistrée, et n'en ont pas besoin.
     for (const livre of createFactoryProfiles()) {
       expect(livre.origin).toBeUndefined()
-      const remis = resetProfileSection({ ...livre, mix: { ...livre.mix, masterGain: 9 } }, 'mix')
+      const remis = resetProfileSection({ ...livre, mix: { ...livre.mix, drive: 0.9 } }, 'mix')
       expect(remis.mix).toEqual(livre.mix)
     }
   })
@@ -515,5 +518,103 @@ describe('valeurs d’origine', () => {
     saveProfiles([fabrique])
 
     expect(loadProfiles()[0]?.origin).toEqual(fabrique.origin)
+  })
+})
+
+describe('volume général', () => {
+  it('se retient d une session à l autre', () => {
+    saveMasterVolume(0.42)
+
+    expect(loadMasterVolume()).toBe(0.42)
+  })
+
+  it('dit qu il n a rien à dire plutôt que d inventer une valeur', () => {
+    // Le repli n'appartient pas au stockage : c'est à l'appelant de reprendre
+    // le volume du profil actif, une fois, à la première ouverture. Rendre un
+    // nombre ici priverait la reprise de son signal.
+    expect(loadMasterVolume()).toBeNull()
+  })
+
+  it('écarte une valeur illisible', () => {
+    localStorage.setItem('speed.masterVolume.v1', 'beaucoup')
+
+    expect(loadMasterVolume()).toBeNull()
+  })
+
+  it('écarte une valeur négative', () => {
+    saveMasterVolume(-3)
+
+    expect(loadMasterVolume()).toBeNull()
+  })
+
+  it('survit à un stockage qui refuse d écrire', () => {
+    install(fakeStorage({ failWrites: true }))
+
+    expect(() => saveMasterVolume(0.5)).not.toThrow()
+  })
+
+  it('ne fait plus partie du profil enregistré', () => {
+    // Un profil de la version précédente porte le champ. Il a servi une fois à
+    // initialiser la préférence d'appareil ; il est ensuite retiré, sans quoi le
+    // schéma mentirait à qui le lit.
+    const ancien = { ...createRoadProfile() } as Profile & { mix: { masterGain?: number } }
+    ancien.mix = { ...ancien.mix, masterGain: 0.33 }
+    saveProfiles([ancien as Profile])
+
+    const relu = loadProfiles()[0] as Profile & { mix: { masterGain?: number } }
+
+    expect(relu.mix.masterGain).toBeUndefined()
+    // Le reste du mixage est intact : on ne retire que ce champ.
+    expect(relu.mix.drive).toBe(createRoadProfile().mix.drive)
+  })
+
+  it('ne voyage ni par fichier ni par lien', async () => {
+    const original = { ...createRoadProfile() } as Profile & { mix: { masterGain?: number } }
+    original.mix = { ...original.mix, masterGain: 0.33 }
+
+    const parFichier = fromFile(toFile(original as Profile)) as Profile & {
+      mix: { masterGain?: number }
+    }
+    const parLien = (await decodeProfile(await encodeProfile(original as Profile))) as Profile & {
+      mix: { masterGain?: number }
+    }
+
+    expect(parFichier.mix.masterGain).toBeUndefined()
+    expect(parLien.mix.masterGain).toBeUndefined()
+  })
+})
+
+describe('reprise du volume hérité', () => {
+  it('lit le volume du profil actif dans le stockage brut', () => {
+    // Le point délicat, et il a été manqué une première fois : charger les
+    // profils les nettoie de ce champ. Une reprise qui passerait par la liste
+    // chargée trouverait donc toujours un profil déjà nettoyé, et perdrait en
+    // silence le niveau réglé par l'utilisateur. La lecture se fait sur le JSON.
+    const ancien = { ...createRoadProfile() } as Profile & { mix: { masterGain?: number } }
+    ancien.mix = { ...ancien.mix, masterGain: 0.33 }
+    const autre = { ...createDefaultProfile() } as Profile & { mix: { masterGain?: number } }
+    autre.mix = { ...autre.mix, masterGain: 0.9 }
+    saveProfiles([autre as Profile, ancien as Profile])
+
+    expect(loadInheritedVolume('route')).toBe(0.33)
+    expect(loadInheritedVolume('procar')).toBe(0.9)
+  })
+
+  it('retombe sur le premier profil quand l identifiant est inconnu', () => {
+    const ancien = { ...createRoadProfile() } as Profile & { mix: { masterGain?: number } }
+    ancien.mix = { ...ancien.mix, masterGain: 0.25 }
+    saveProfiles([ancien as Profile])
+
+    expect(loadInheritedVolume('disparu')).toBe(0.25)
+  })
+
+  it('dit qu il n y a rien à reprendre sur un appareil neuf', () => {
+    expect(loadInheritedVolume('route')).toBeNull()
+  })
+
+  it('dit qu il n y a rien à reprendre quand le profil est déjà au format courant', () => {
+    saveProfiles([createRoadProfile()])
+
+    expect(loadInheritedVolume('route')).toBeNull()
   })
 })

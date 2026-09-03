@@ -89,6 +89,13 @@ function stripForSharing(profile: Profile): Profile {
   // sien. Elles suivent en revanche dans un fichier exporté, où la taille
   // n'importe pas.
   delete copy.origin
+  // Le volume général a quitté le profil : c'est une préférence de l'appareil.
+  // Un profil venu d'une version antérieure peut encore le porter, et il ne doit
+  // surtout pas voyager — le destinataire hériterait d'un niveau réglé pour une
+  // autre voiture, d'autres haut-parleurs, une autre habitude. À la différence de
+  // l'export en fichier, l'encodage d'un lien ne repasse pas par la reprise des
+  // profils : la suppression se fait donc ici.
+  delete (copy.mix as { masterGain?: unknown }).masterGain
   return copy
 }
 

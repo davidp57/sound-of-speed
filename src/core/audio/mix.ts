@@ -10,6 +10,10 @@ import type { EngineState } from '../engine/engine'
  * télémétrie les affiche telles quelles — on voit donc le mixage se calculer
  * avant même qu'un son soit branché, ce qui rend le réglage vérifiable à l'œil.
  *
+ * Le **volume général** n'est pas ici : c'est un niveau de sortie, appliqué sur
+ * le bus du graphe audio, et non une règle de mixage. Les gains rendus décrivent
+ * donc l'équilibre entre les couches, que le volume ne déplace pas.
+ *
  * Deux fondus se composent :
  *
  * - en régime, entre les couches d'un même rôle, à puissance constante ;
@@ -148,7 +152,6 @@ export function computeMix(
         (blend[index] ?? 0) *
         familyWeight *
         layer.gain *
-        mix.masterGain *
         relief *
         fidelity(raw, rate) *
         (role === 'limiter' ? 1 : jolt)
