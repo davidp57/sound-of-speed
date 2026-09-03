@@ -398,18 +398,43 @@ assumé : qui a la main sur ce navigateur peut déposer un fichier dans le dossi
 des traces, mais ni l'effacer — la méthode n'est pas ouverte — ni toucher au
 reste du NAS. Votre mot de passe personnel, lui, ne quitte pas le poste.
 
-Donnez donc au jeton une valeur longue et sans rapport avec vos autres mots de
-passe : `npm run htpasswd` avec `depot` comme nom d'utilisateur.
+Donnez au jeton une valeur **que vous pouvez taper**, sans rapport avec vos
+autres mots de passe : quelques mots séparés par des tirets font l'affaire, du
+genre `route-moteur-tesla-neige`. Vingt caractères prononçables valent mieux
+qu'une suite aléatoire ici — il faudra peut-être le saisir sur un écran tactile,
+et ce qu'il protège est l'écriture d'un fichier de trace, pas un compte.
+
+`npm run htpasswd`, avec `depot` comme nom d'utilisateur.
 
 ### Déposer une trace depuis la voiture
 
 Une fois le jeton créé et le fichier déposé sur le NAS :
 
 1. écran **Configuration**, champ **Jeton de dépôt** : saisir `depot` et le
-   jeton. Il se retient, hors du profil — il ne voyage donc pas avec un profil
+   jeton. Il n'y a pas de bouton d'enregistrement — comme tous les réglages de
+   cet écran, il se retient à la frappe, et la mention à côté du champ le
+   confirme. Il est rangé hors du profil : il ne voyage donc pas avec un profil
    partagé, et il n'y aurait aucun sens à envoyer à quelqu'un un son accompagné
    du droit d'écrire sur son NAS ;
 2. écran **Télémétrie**, à côté de chaque trace : le bouton **Déposer**.
+
+### Installer le jeton dans la voiture
+
+Le jeton appartient à **l'appareil** : réglé au poste de travail, il n'est pas
+dans la voiture — et c'est là qu'il sert. Le bouton **Installer dans la
+voiture…** produit une adresse et un code à scanner, comme le partage d'un
+profil et pour la même raison : faire arriver une donnée là où l'on ne veut rien
+taper.
+
+Ouvrir cette adresse une fois dans le navigateur de la voiture suffit. Elle
+fonctionne aussi collée dans un onglet déjà ouvert sur l'application, ce qui est
+le geste le plus probable.
+
+Le jeton est dans la partie qui suit le `#`, laquelle **n'est jamais transmise au
+serveur** ni inscrite dans ses journaux — même raison que pour le partage d'un
+profil. Elle est effacée de la barre d'adresse aussitôt lue, pour qu'un
+rechargement ne la réinstalle pas indéfiniment et qu'elle ne traîne pas à
+l'écran.
 
 Le fichier prend un nom qui dit la date, le nom de l'enregistrement et sa
 durée — `2026-09-03-21-16-48_retour-du-boulot-90s.json` — de sorte qu'on le

@@ -188,3 +188,44 @@ function base64(text: string): string {
   for (const byte of bytes) binary += String.fromCharCode(byte)
   return btoa(binary)
 }
+
+/**
+ * Jeton reçu par l'adresse.
+ *
+ * Le jeton est une préférence de **l'appareil** : réglé au poste de travail, il
+ * n'est nulle part dans la voiture. Or c'est là qu'il sert, et le retaper sur un
+ * écran tactile en conduisant n'est pas une option — surtout un jeton long.
+ *
+ * Il voyage donc dans le **fragment** de l'adresse, comme un profil partagé, et
+ * pour la même raison : ce qui suit le `#` n'est jamais transmis au serveur ni
+ * inscrit dans ses journaux. On ouvre l'application une fois avec cette adresse,
+ * le jeton est retenu, et le fragment est effacé — recharger la page ne doit pas
+ * le réinstaller indéfiniment, ni le laisser traîner dans la barre d'adresse.
+ *
+ * Forme : `#depot=nom:jeton`.
+ */
+export function readCredentialsFromUrl(
+  hash: string,
+  forget: () => void,
+): DepositCredentials | null {
+  const match = /[#&]depot=([^&]+)/.exec(hash)
+  if (!match?.[1]) return null
+  forget()
+
+  let decoded: string
+  try {
+    decoded = decodeURIComponent(match[1])
+  } catch {
+    return null
+  }
+
+  const separator = decoded.indexOf(':')
+  if (separator <= 0 || separator === decoded.length - 1) return null
+  return { user: decoded.slice(0, separator), token: decoded.slice(separator + 1) }
+}
+
+/** L'adresse à ouvrir dans la voiture pour y installer le jeton. */
+export function credentialsUrl(origin: string, credentials: DepositCredentials): string {
+  const payload = encodeURIComponent(`${credentials.user}:${credentials.token}`)
+  return `${origin}/#depot=${payload}`
+}
