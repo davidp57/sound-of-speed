@@ -1,6 +1,6 @@
 # DEPOSER — sortir un profil ou une trace d'une voiture qui refuse les fichiers
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 **Branche :** `feature/deposer`
 **Version visée :** 0.3
 

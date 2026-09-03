@@ -22,6 +22,10 @@ import {
   stopRecording,
   telemetry,
   traces,
+  depositTrace,
+  depositing,
+  depositMessage,
+  depositCredentials,
 } from '../state'
 
 /**
@@ -395,10 +399,19 @@ function onRateChange(event: Event): void {
           <span>{{ trace.name }}</span>
           <span class="muted">{{ trace.samples.length }} mesures</span>
           <button @click="playTrace(trace)">Rejouer</button>
+          <button :disabled="depositing !== ''" @click="depositTrace(trace)">Déposer</button>
           <button @click="deleteTrace(trace.startedAt)">Supprimer</button>
         </li>
       </ul>
       <p v-else class="note">Aucune trace enregistrée.</p>
+
+      <p v-if="depositMessage" class="note">{{ depositMessage }}</p>
+      <p v-if="!depositCredentials.token" class="note">
+        Le dépôt envoie une trace sur le serveur, d'où on peut la reprendre sur un
+        autre appareil — c'est le seul moyen de la sortir d'une voiture dont le
+        navigateur refuse les téléchargements. Il demande un jeton, à régler une
+        fois à l'écran de configuration.
+      </p>
 
       <div class="trace-controls">
         <button :disabled="traces.length === 0" @click="onExportTraces()">

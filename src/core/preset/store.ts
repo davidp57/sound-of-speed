@@ -21,6 +21,7 @@ const STORAGE_KEY = 'speed.profiles.v1'
 const SELECTED_KEY = 'speed.selectedProfile.v1'
 const TRACES_KEY = 'speed.traces.v1'
 const VOLUME_KEY = 'speed.masterVolume.v1'
+const DEPOSIT_KEY = 'speed.deposit.v1'
 const ADVANCED_KEY = 'speed.advancedMode.v1'
 
 /**
@@ -180,6 +181,45 @@ export function loadInheritedVolume(selectedId: string | null): number | null {
 
   const herite = mix['masterGain']
   return typeof herite === 'number' && Number.isFinite(herite) && herite >= 0 ? herite : null
+}
+
+/**
+ * Jeton de dépôt : une préférence de **cet appareil**.
+ *
+ * Il sert à l'application pour s'annoncer quand elle envoie une trace au
+ * serveur. Un jeton dédié, et non le mot de passe personnel : celui-ci ne doit
+ * pas vivre en clair dans le navigateur d'une voiture, alors qu'un jeton n'ouvre
+ * que l'écriture d'un fichier dans le dossier des traces.
+ *
+ * Rangé comme le volume et le mode avancé — hors du profil, donc sans voyager
+ * avec un profil partagé. Il n'y aurait aucun sens à envoyer à quelqu'un un son
+ * accompagné du droit d'écrire sur notre NAS.
+ */
+export interface DepositCredentials {
+  user: string
+  token: string
+}
+
+export function loadDepositCredentials(): DepositCredentials {
+  try {
+    const raw = localStorage.getItem(DEPOSIT_KEY)
+    if (!raw) return { user: '', token: '' }
+    const parsed: unknown = JSON.parse(raw)
+    if (!isRecord(parsed)) return { user: '', token: '' }
+    const user = typeof parsed['user'] === 'string' ? parsed['user'] : ''
+    const token = typeof parsed['token'] === 'string' ? parsed['token'] : ''
+    return { user, token }
+  } catch {
+    return { user: '', token: '' }
+  }
+}
+
+export function saveDepositCredentials(credentials: DepositCredentials): void {
+  try {
+    localStorage.setItem(DEPOSIT_KEY, JSON.stringify(credentials))
+  } catch {
+    // Le dépôt de la session en cours marche quand même ; il faudra ressaisir.
+  }
 }
 
 /**
