@@ -110,11 +110,20 @@ function onReplay(step: CalibrationStepId): void {
 function onCopy(suggestion: Suggestion): void {
   const setting = suggestion.setting
   if (!setting) return
-  applyCalibrationSetting(setting.path, setting.proposed)
+  // `write`, et non `proposed` : les seuils de passage s'affichent en km/h et se
+  // rangent en tr/min.
+  applyCalibrationSetting(setting.path, setting.write)
 }
 
 function fixed(value: number, digits = 1): string {
   return Number.isFinite(value) ? value.toFixed(digits) : '—'
+}
+
+/** Une valeur ou une liste de valeurs, dans l'unité de la ligne. */
+function shown(value: number | number[], digits: number): string {
+  return Array.isArray(value)
+    ? value.map((entry) => fixed(entry, digits)).join(' · ')
+    : fixed(value, digits)
 }
 
 /**
@@ -130,16 +139,51 @@ function summary(analysis: StepAnalysis): string {
     case 'coast':
     case 'brake':
       return `décélération soutenue ${fixed(analysis.measure.peakDecelMs2 ?? 0)} m/s²`
+    case 'city':
+    case 'road':
+    case 'highway':
+      return ordinarySummary(analysis)
     default:
       return 'mesurée'
   }
 }
 
-/** Écart entre le mesuré et le réglé, signe compris. */
+/**
+ * Ce qu'une étape de conduite ordinaire a relevé.
+ *
+ * Les paliers et leur durée s'affichent par étape : c'est d'eux que sortent les
+ * seuils de passage, et une étape qui n'en contient qu'un n'a pas de quoi les
+ * informer, même si elle est valide.
+ */
+function ordinarySummary(analysis: StepAnalysis): string {
+  const plateaus = analysis.measure.plateaus
+  const held = [...plateaus].sort((a, b) => b.durationS - a.durationS)[0]
+  const total = plateaus.reduce((sum, plateau) => sum + plateau.durationS, 0)
+  const parts = [
+    `${plateaus.length} palier${plateaus.length > 1 ? 's' : ''}`,
+    `${fixed(total, 0)} s tenues`,
+    `le plus long à ${fixed(held?.kmh ?? 0, 0)} km/h pendant ${fixed(held?.durationS ?? 0, 0)} s`,
+    `max pratiqué ${fixed(analysis.measure.practicedMaxKmh, 0)} km/h`,
+  ]
+  const noise = analysis.measure.noiseKmh
+  parts.push(
+    noise === null
+      ? `cadence ${fixed(analysis.measure.cadenceMs, 0)} ms, bruit non mesurable`
+      : `bruit ${fixed(noise, 2)} km/h à ${fixed(analysis.measure.cadenceMs, 0)} ms`,
+  )
+  return parts.join(', ')
+}
+
+/** Écart entre le mesuré et le réglé, signe compris, terme à terme. */
 function gap(setting: NonNullable<Suggestion['setting']>): string {
-  const delta = setting.proposed - setting.current
-  const sign = delta > 0 ? '+' : ''
-  return `${sign}${fixed(delta, setting.decimals)}`
+  const proposed = Array.isArray(setting.proposed) ? setting.proposed : [setting.proposed]
+  const current = Array.isArray(setting.current) ? setting.current : [setting.current]
+  return proposed
+    .map((value, index) => {
+      const delta = value - (current[index] ?? 0)
+      return `${delta > 0 ? '+' : ''}${fixed(delta, setting.decimals)}`
+    })
+    .join(' · ')
 }
 </script>
 
@@ -214,17 +258,29 @@ function gap(setting: NonNullable<Suggestion['setting']>): string {
           </td>
           <template v-if="suggestion.setting">
             <td class="numeric">
-              {{ fixed(suggestion.setting.proposed, suggestion.setting.decimals) }}
+              {{ shown(suggestion.setting.proposed, suggestion.setting.decimals) }}
               <small>{{ suggestion.setting.unit }}</small>
             </td>
             <td class="numeric">
-              {{ fixed(suggestion.setting.current, suggestion.setting.decimals) }}
+              {{ shown(suggestion.setting.current, suggestion.setting.decimals) }}
               <small>{{ suggestion.setting.unit }}</small>
             </td>
             <td class="numeric">{{ gap(suggestion.setting) }}</td>
             <td>
               <button @click="onCopy(suggestion)">Recopier</button>
+              <small v-if="suggestion.setting.conversion" class="muted">
+                {{ suggestion.setting.conversion }}
+              </small>
             </td>
+          </template>
+          <template v-else-if="suggestion.measured">
+            <td class="numeric">
+              {{ shown(suggestion.measured.value, suggestion.measured.decimals) }}
+              <small>{{ suggestion.measured.unit }}</small>
+            </td>
+            <td class="numeric muted">—</td>
+            <td class="numeric muted">—</td>
+            <td></td>
           </template>
           <template v-else>
             <td colspan="3" class="muted">Non mesuré — {{ suggestion.missing }}</td>

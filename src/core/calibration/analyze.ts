@@ -9,6 +9,8 @@ import {
   LAUNCH_MIN_ACCEL_MS2,
   LAUNCH_MIN_S,
   LAUNCH_START_KMH,
+  ORDINARY_MIN_S,
+  ORDINARY_MIN_TOP_KMH,
   type CalibrationStepId,
 } from './protocol'
 import { measureTrace, type TraceMeasure } from './measure'
@@ -61,6 +63,10 @@ function judge(step: CalibrationStepId, measure: TraceMeasure): {
       return judgeCoast(measure)
     case 'brake':
       return judgeBrake(measure)
+    case 'city':
+    case 'road':
+    case 'highway':
+      return judgeOrdinary(measure, step)
     default:
       return { valid: false, reason: 'Étape inconnue.' }
   }
@@ -173,6 +179,45 @@ function judgeCoast(measure: TraceMeasure): { valid: boolean; reason: string } {
       reason:
         'Aucun ralentissement franc dans la trace : la vitesse est restée tenue ' +
         'ou l’enregistrement couvre autre chose.',
+    }
+  }
+
+  return { valid: true, reason: '' }
+}
+
+/**
+ * Les trois étapes de conduite ordinaire ne cherchent pas un extrême.
+ *
+ * Ce qu'on leur demande, c'est de **ressembler à ce qu'elles annoncent** — de
+ * durer, de contenir de la vitesse tenue, et d'atteindre l'ordre de grandeur du
+ * régime de conduite qu'elles décrivent. Le dernier point attrape l'erreur
+ * d'étiquette, qui est la plus coûteuse ici : enregistrer la ville en croyant
+ * enregistrer l'autoroute placerait les seuils de passage cinquante
+ * kilomètres-heure trop bas.
+ */
+function judgeOrdinary(
+  measure: TraceMeasure,
+  step: 'city' | 'road' | 'highway',
+): { valid: boolean; reason: string } {
+  const common = judgeCommon(measure, ORDINARY_MIN_S)
+  if (common) return common
+
+  const floor = ORDINARY_MIN_TOP_KMH[step]
+  if (measure.practicedMaxKmh < floor) {
+    return {
+      valid: false,
+      reason:
+        `La vitesse n’a pas dépassé ${measure.practicedMaxKmh.toFixed(0)} km/h, ` +
+        `il en faut ${floor} : ce n’est pas la conduite que l’étape annonce.`,
+    }
+  }
+
+  if (measure.plateaus.length === 0) {
+    return {
+      valid: false,
+      reason:
+        'Aucune vitesse tenue dans la trace : il n’y a pas de palier dont tirer ' +
+        'les vitesses pratiquées.',
     }
   }
 

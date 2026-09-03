@@ -109,6 +109,24 @@ describe('analyzeStep — accélération franche', () => {
   })
 })
 
+/**
+ * Conduite en ville : feu rouge, départ, palier à 45 km/h, arrêt, et on
+ * recommence. Un cycle de soixante secondes.
+ */
+function cityTrace(durationS: number): Trace {
+  return buildTrace({
+    durationS,
+    cadenceMs: 200,
+    kmhAt: (t) => {
+      const cycle = t % 60
+      if (cycle < 12) return 0
+      if (cycle < 20) return Math.min(45, 2 * 3.6 * (cycle - 12))
+      if (cycle < 50) return 45
+      return Math.max(0, 45 - 2 * 3.6 * (cycle - 50))
+    },
+  })
+}
+
 /** Ralentissement depuis une vitesse donnée, à décélération constante. */
 function slowTrace(fromKmh: number, decelMs2: number, durationS: number): Trace {
   return buildTrace({
@@ -183,6 +201,42 @@ describe('analyzeStep — freinage franc', () => {
 
     expect(analysis.valid).toBe(false)
     expect(analysis.reason).toContain('30 km/h')
+  })
+})
+
+describe('analyzeStep — conduite ordinaire', () => {
+  it('accepte une conduite en ville et compte ses paliers', () => {
+    const analysis = analyzeStep('city', cityTrace(180))
+
+    expect(analysis.valid).toBe(true)
+    // Trois cycles feu-départ-palier-arrêt, donc trois paliers.
+    expect(analysis.measure.plateaus.length).toBe(3)
+  })
+
+  it('refuse une étape trop courte pour porter une distribution', () => {
+    const analysis = analyzeStep('city', cityTrace(50))
+
+    expect(analysis.valid).toBe(false)
+    expect(analysis.reason).toContain('il en faut 60')
+  })
+
+  it('refuse une trace qui ne ressemble pas à l’étape annoncée', () => {
+    // La ville enregistrée en croyant enregistrer l'autoroute : sans ce
+    // garde-fou, les seuils de passage seraient calés cinquante
+    // kilomètres-heure trop bas.
+    const analysis = analyzeStep('highway', cityTrace(180))
+
+    expect(analysis.valid).toBe(false)
+    expect(analysis.reason).toContain('il en faut 90')
+    expect(analysis.reason).toContain('la conduite que l’étape annonce')
+  })
+
+  it('refuse une trace sans aucune vitesse tenue', () => {
+    // Une rampe continue de deux minutes : rien n'y est tenu.
+    const analysis = analyzeStep('road', buildTrace({ durationS: 120, kmhAt: (t) => t }))
+
+    expect(analysis.valid).toBe(false)
+    expect(analysis.reason).toContain('Aucune vitesse tenue')
   })
 })
 

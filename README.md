@@ -617,11 +617,56 @@ chiffre à chaque relecture.
 
 ### Les étapes
 
+Six étapes, dans deux familles. Les trois premières donnent des
+**distributions** — ce qu'on fait tous les jours ; les trois dernières donnent
+des **extrêmes**, et ce sont eux qui manquaient le plus.
+
 | Étape | Ce qu'on demande | Ce qu'elle informe |
 |---|---|---|
+| Conduite en ville | une minute de ville, feux compris | la vitesse de fin de première, les seuils bas, le bruit du GPS |
+| Conduite sur route | une minute de route | les seuils intermédiaires, le plancher de croisière |
+| Conduite sur autoroute | une minute d'autoroute | les seuils hauts, la vitesse plausible |
 | Accélération franche | de l'arrêt, accélérer franchement jusqu'à 50 km/h | l'accélération à charge pleine |
 | Décélération pied levé | au-dessus de 50 km/h, lever le pied sans freiner | avec le freinage, la frontière de rétrogradage ; la borne basse |
 | Freinage franc | au-dessus de 40 km/h, freiner franchement | la même frontière, et la borne basse |
+
+### Ce qu'on tire de la conduite ordinaire
+
+Un **palier** est une portion où la vitesse est tenue : l'accélération reste
+dans une bande étroite pendant au moins deux secondes. Un arrêt n'en est pas un
+— un feu rouge est une accélération nulle qui dure. De la distribution des
+paliers, pondérée par leur durée, viennent :
+
+- les **seuils de passage**, placés de sorte que chaque rapport couvre une part
+  égale du temps passé à vitesse tenue. Le profil Route a été décrit comme
+  « calibré sur les vitesses que l'on pratique vraiment » ; c'était de mémoire ;
+- le **plancher de croisière**, à la vitesse la plus basse réellement tenue ;
+- le **délai de montée en croisière**, au dixième centile de la durée des
+  paliers : neuf paliers sur dix durent alors assez pour que la montée se
+  produise, et les plus brefs ne la déclenchent pas.
+
+Les seuils de passage sont mesurés en **kilomètres-heure** et le réglage du
+profil s'affiche dans la même unité, converti avec le pont, les
+démultiplications et le rayon de roue — sans quoi les deux ne seraient pas
+comparables. C'est le profil qui fournit la conversion : lui a déjà choisi une
+boîte, la voiture mesurée n'en a pas.
+
+### Le bruit du GPS, et la fenêtre qui s'en déduit
+
+L'étalonnage chiffre le **bruit de mesure** du GPS de cette voiture-là, en
+km/h, ainsi que sa **cadence**. La pente d'accélération étant ajustée aux
+moindres carrés sur une fenêtre, son écart-type vaut `√(12 σ² Δ / T³)` pour un
+bruit `σ`, une cadence `Δ` et une fenêtre `T`. On renverse la formule pour
+trouver la fenêtre qui atteint 0,1 m/s² de précision, soit un vingtième de la
+charge pleine du profil Route.
+
+Vérifié sur traces synthétiques, à trois bruits et deux cadences : l'écart-type
+obtenu tient entre 0,100 et 0,104 m/s² pour une cible de 0,100.
+
+**La raideur du lissage, elle, n'est pas proposée.** Le ressort arrondit ce que
+le bruit laisse passer, et le réglage juste est celui à partir duquel le
+tremblement ne s'entend plus : c'est un jugement d'oreille, pas une mesure. Le
+déduire d'une formule serait habiller une convention en résultat.
 
 Le seuil de rétrogradage au freinage se place **au milieu** des deux
 décélérations. Le milieu, parce que c'est le point qui laisse la même marge
@@ -661,6 +706,11 @@ des accélérations et du bruit de mesure ; il informe donc des seuils **en
 vitesse**, jamais en régime. Le régime est une fiction qu'on choisit, et le
 choix reste entier : l'étalonnage ne dira pas quel rupteur ni combien de
 cylindres.
+
+C'est pour cette raison que le **plancher de croisière** est rendu en km/h et ne
+se recopie pas : le réglage est un régime, et le déduire de cette vitesse
+demanderait de choisir dans quel rapport la boîte se trouve — ce que le réglage
+sert justement à décider. La mesure s'arrête où commence le choix, et le dit.
 
 ---
 

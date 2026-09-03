@@ -1,6 +1,6 @@
 # 03 — Ville, route, autoroute : ce qu'on fait vraiment
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Une étape, de la consigne à la valeur proposée
 
@@ -29,10 +29,10 @@ d'accélération. C'est la mesure la plus directement exploitable des trois.
 
 ## Critères d'acceptation
 
-- [ ] Les trois étapes s'enregistrent séparément et se distinguent
-- [ ] Les vitesses tenues et la durée des paliers sont mesurées par étape
-- [ ] Des seuils de passage en vitesse sont proposés, ainsi qu'un plancher de
+- [x] Les trois étapes s'enregistrent séparément et se distinguent
+- [x] Les vitesses tenues et la durée des paliers sont mesurées par étape
+- [x] Des seuils de passage en vitesse sont proposés, ainsi qu'un plancher de
       croisière et un délai de croisière
-- [ ] La vitesse maximale pratiquée est proposée comme vitesse plausible
-- [ ] Le bruit de mesure du GPS est chiffré, avec la cadence observée
-- [ ] Aucune proposition n'est formulée en régime moteur
+- [x] La vitesse maximale pratiquée est proposée comme vitesse plausible
+- [x] Le bruit de mesure du GPS est chiffré, avec la cadence observée
+- [x] Aucune proposition n'est formulée en régime moteur

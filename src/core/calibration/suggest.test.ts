@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { analyzeStep } from './analyze'
+import { measureTrace } from './measure'
 import { readSetting, writeSetting } from './settings'
 import { round, suggest } from './suggest'
 import { createRoadProfile } from '../preset/defaults'
@@ -169,6 +170,212 @@ describe('suggest — bornes de l’accélération', () => {
 
     expect(row(suggestions, 'speed.minAccelMs2')?.missing).toContain('rien à borner')
     expect(row(suggestions, 'speed.maxAccelMs2')?.missing).toContain('rien à borner')
+  })
+})
+
+/**
+ * Générateur pseudo-aléatoire à graine : le bruit des traces synthétiques doit
+ * être le même à chaque exécution, sinon les bornes de ces tests bougeraient.
+ */
+function rng(seed: number): () => number {
+  let state = seed >>> 0
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0
+    let t = state
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function shaped(
+  name: string,
+  durationS: number,
+  cadenceMs: number,
+  kmhAt: (t: number) => number,
+  noiseKmh = 0,
+  seed = 5,
+): Trace {
+  const random = rng(seed)
+  const startedAt = 1_700_000_000_000
+  const samples: SpeedSample[] = []
+  for (let ms = 0; ms <= durationS * 1000; ms += cadenceMs) {
+    const noise = noiseKmh ? (random() * 2 - 1) * noiseKmh * Math.sqrt(3) : 0
+    samples.push({
+      kmh: Math.max(0, kmhAt(ms / 1000) + noise),
+      at: startedAt + ms,
+      accuracyM: 5,
+      derived: false,
+    })
+  }
+  return { name, startedAt, samples }
+}
+
+/** Palier bas, rampe, palier haut. */
+const twoLevels =
+  (low: number, high: number, holdS: number, rampS: number) =>
+  (t: number): number => {
+    if (t < holdS) return low
+    if (t < holdS + rampS) return low + ((high - low) * (t - holdS)) / rampS
+    return high
+  }
+
+/** Ville : feu, départ à 2 m/s², palier à 45 km/h, arrêt. Cycle de 60 s. */
+const cityShape = (t: number): number => {
+  const cycle = t % 60
+  if (cycle < 12) return 0
+  if (cycle < 20) return Math.min(45, 2 * 3.6 * (cycle - 12))
+  if (cycle < 50) return 45
+  return Math.max(0, 45 - 2 * 3.6 * (cycle - 50))
+}
+
+/** Les trois étapes de conduite ordinaire, mesurées et jugées. */
+function ordinarySession() {
+  const city = shaped('ville', 180, 200, cityShape)
+  const road = shaped('route', 180, 100, twoLevels(70, 90, 80, 10), 0.5, 9)
+  const highway = shaped('autoroute', 180, 30, twoLevels(110, 130, 80, 12), 0.6, 11)
+  return [
+    analyzeStep('city', city),
+    analyzeStep('road', road),
+    analyzeStep('highway', highway),
+  ]
+}
+
+describe('suggest — conduite ordinaire', () => {
+  it('propose la vitesse plausible depuis la plus haute vitesse pratiquée', () => {
+    const suggestions = suggest(ordinarySession(), createRoadProfile())
+
+    // 131,0 km/h pratiqués × 1,15 = 150,6, arrondis à la dizaine supérieure.
+    // Le profil livré est à 260, une valeur sans rapport avec la route.
+    expect(row(suggestions, 'speed.maxPlausibleKmh')?.measured?.value).toBeCloseTo(131, 0)
+    expect(row(suggestions, 'speed.maxPlausibleKmh')?.setting?.proposed).toBe(160)
+    expect(row(suggestions, 'speed.maxPlausibleKmh')?.setting?.current).toBe(260)
+  })
+
+  it('propose la vitesse de fin de première depuis les départs arrêtés', () => {
+    const line = row(suggest(ordinarySession(), createRoadProfile()), 'drivetrain.launchUpshiftKmh')
+
+    // 8,6 km/h une seconde après le départ, sur les trois feux de la trace.
+    // Le profil Route est à 5.
+    expect(line?.measured?.value).toBeCloseTo(8.6, 1)
+    expect(line?.setting?.proposed).toBe(9)
+    expect(line?.setting?.current).toBe(5)
+  })
+
+  it('propose des seuils de passage en km/h, et les convertit avec la boîte du profil', () => {
+    const profile = createRoadProfile()
+    const line = row(suggest(ordinarySession(), profile), 'drivetrain.upshiftRpm')
+
+    // Les paliers de la session : 45 km/h (3 × 31 s), 70 (80 s), 90 (90 s),
+    // 110 (80 s), 130 (88 s). La première ne servant qu'à s'élancer, son seuil
+    // est la vitesse de fin de première ; les quatre autres découpent le temps
+    // tenu en cinq parts égales.
+    expect(line?.setting?.unit).toBe('km/h')
+    expect(line?.setting?.proposed).toEqual([9, 45, 70, 90, 130])
+    // Les seuils du profil Route, exprimés dans la même unité : c'est la seule
+    // façon de les comparer sans parler de régime.
+    expect(line?.setting?.current).toEqual([35, 55, 75, 96, 115])
+    // Ce qui est écrit dans le profil, en tr/min, converti avec le pont et les
+    // démultiplications. Non monotone, et c'est normal : un rapport plus long
+    // tourne moins vite à une vitesse plus haute.
+    expect(line?.setting?.write).toEqual([950, 2730, 2831, 2757, 3325])
+    expect(line?.setting?.conversion).toContain('tr/min')
+  })
+
+  it('rend le plancher de croisière en vitesse, sans le convertir en régime', () => {
+    const line = row(suggest(ordinarySession(), createRoadProfile()), 'cruise.floor')
+
+    // 45 km/h : le dixième centile des vitesses tenues, pondéré par la durée.
+    expect(line?.measured?.value).toBe(45)
+    // Rien à recopier : déduire un régime de cette vitesse demanderait de
+    // choisir un rapport, ce qu'aucune mesure ne dit.
+    expect(line?.setting).toBeNull()
+    expect(line?.note).toContain('n’a pas de rapports')
+  })
+
+  it('chiffre le bruit du GPS et la cadence, sans proposer la raideur du lissage', () => {
+    const line = row(suggest(ordinarySession(), createRoadProfile()), 'gps.noise')
+
+    // 0,6 km/h injectés dans la trace d'autoroute, 0,63 mesurés.
+    expect(line?.measured?.value).toBeCloseTo(0.63, 2)
+    expect(line?.note).toContain('30 ms de cadence')
+    expect(line?.note).toContain('à l’oreille')
+    expect(line?.setting).toBeNull()
+  })
+
+  it('déduit la fenêtre d’accélération du bruit et de la cadence', () => {
+    const line = row(suggest(ordinarySession(), createRoadProfile()), 'speed.accelWindowMs')
+
+    // 0,63 km/h de bruit à 30 ms de cadence : ∛(12 σ² Δ / cible²) = 1050 ms
+    // pour une cible de 0,1 m/s². Le profil est à 1000, ce qui se trouve être
+    // presque juste — mais ce n'était pas mesuré.
+    expect(line?.setting?.proposed).toBe(1050)
+    expect(line?.setting?.current).toBe(1000)
+  })
+
+  it('dit non mesuré partout quand aucune étape ordinaire n’est faite', () => {
+    const suggestions = suggest([], createRoadProfile())
+
+    for (const key of [
+      'speed.maxPlausibleKmh',
+      'drivetrain.launchUpshiftKmh',
+      'drivetrain.upshiftRpm',
+      'cruise.floor',
+      'drivetrain.cruiseUpshiftAfterS',
+      'gps.noise',
+      'speed.accelWindowMs',
+    ]) {
+      expect(row(suggestions, key)?.missing, key).toBeTruthy()
+      expect(row(suggestions, key)?.setting, key).toBeNull()
+    }
+  })
+})
+
+describe('suggest — la fenêtre proposée atteint la précision visée', () => {
+  /**
+   * La vérification qui compte : on propose une fenêtre, puis on remesure la
+   * **même trace** avec elle et on regarde l'écart-type de la pente obtenue.
+   * C'est le seul moyen de savoir si la formule tient, plutôt que de la relire.
+   */
+  it('tient la cible de 0,1 m/s² à trois bruits et deux cadences', () => {
+    const cases: [number, number, number, number][] = [
+      // bruit injecté, cadence, fenêtre attendue, écart-type obtenu
+      [0.3, 30, 650, 0.1038],
+      [0.6, 30, 1050, 0.1005],
+      [1, 100, 2000, 0.1034],
+    ]
+
+    for (const [sigma, cadenceMs, expectedWindow, expectedDeviation] of cases) {
+      const highway = shaped(
+        'autoroute',
+        180,
+        cadenceMs,
+        twoLevels(110, 130, 80, 12),
+        sigma,
+        13,
+      )
+      const proposed = Number(
+        row(suggest([analyzeStep('highway', highway)], createRoadProfile()), 'speed.accelWindowMs')
+          ?.setting?.proposed ?? 0,
+      )
+      expect(proposed, `bruit ${sigma}, cadence ${cadenceMs}`).toBe(expectedWindow)
+
+      // Sur la portion tenue à 110 km/h, la pente vraie est nulle : la
+      // dispersion mesurée est donc exactement le bruit de l'estimateur.
+      const slopes = measureTrace(highway, proposed)
+        .points.filter((point) => point.t < 70)
+        .map((point) => point.accelMs2)
+        .filter((value): value is number => value !== null)
+      const mean = slopes.reduce((sum, value) => sum + value, 0) / slopes.length
+      const deviation = Math.sqrt(
+        slopes.reduce((sum, value) => sum + (value - mean) ** 2, 0) / slopes.length,
+      )
+
+      expect(deviation, `bruit ${sigma}, cadence ${cadenceMs}`).toBeCloseTo(
+        expectedDeviation,
+        3,
+      )
+    }
   })
 })
 

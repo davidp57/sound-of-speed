@@ -10,7 +10,10 @@
  * mesure complaisante.
  */
 
-export type CalibrationStepId = 'launch' | 'coast' | 'brake'
+export type CalibrationStepId = 'city' | 'road' | 'highway' | 'launch' | 'coast' | 'brake'
+
+/** Les trois étapes de conduite ordinaire, dont on tire des distributions. */
+export const ORDINARY_STEPS: CalibrationStepId[] = ['city', 'road', 'highway']
 
 export interface CalibrationStep {
   id: CalibrationStepId
@@ -83,7 +86,67 @@ export const BRAKE_MIN_DECEL_MS2 = -2
  */
 export const DOWNSHIFT_SEPARATION_MS2 = 0.5
 
+/**
+ * Durée minimale d'une étape de conduite ordinaire, en secondes.
+ *
+ * Une minute. Ces étapes ne cherchent pas un extrême mais une **distribution** :
+ * il faut du temps passé à des vitesses variées, pas une manœuvre. Trente
+ * secondes de conduite en ville ne contiennent qu'un feu et un carrefour.
+ */
+export const ORDINARY_MIN_S = 60
+
+/**
+ * Vitesse maximale qu'une étape de conduite ordinaire doit au moins atteindre,
+ * en km/h.
+ *
+ * Le garde-fou attrape l'erreur d'étiquette : enregistrer la ville en croyant
+ * enregistrer l'autoroute donnerait des seuils de passage calés cinquante
+ * kilomètres-heure trop bas. Les valeurs sont basses à dessein — elles
+ * distinguent trois régimes de conduite, elles ne dictent pas une vitesse.
+ */
+export const ORDINARY_MIN_TOP_KMH: Record<'city' | 'road' | 'highway', number> = {
+  city: 20,
+  road: 50,
+  highway: 90,
+}
+
 export const CALIBRATION_STEPS: CalibrationStep[] = [
+  {
+    id: 'city',
+    label: 'Conduite en ville',
+    instruction:
+      'Roulez en ville comme d’habitude pendant au moins une minute, feux et ' +
+      'carrefours compris. Ne cherchez rien de particulier : c’est l’ordinaire ' +
+      'qu’on mesure.',
+    criterion:
+      `Au moins ${ORDINARY_MIN_S} s d’enregistrement, une vitesse tenue quelque ` +
+      `part, et ${ORDINARY_MIN_TOP_KMH.city} km/h atteints au moins une fois.`,
+    informs:
+      'La vitesse à laquelle on quitte l’arrêt, les seuils de passage bas, et le ' +
+      'bruit du GPS.',
+  },
+  {
+    id: 'road',
+    label: 'Conduite sur route',
+    instruction:
+      'Roulez sur route pendant au moins une minute, en tenant les vitesses que ' +
+      'vous tenez d’habitude.',
+    criterion:
+      `Au moins ${ORDINARY_MIN_S} s d’enregistrement, une vitesse tenue quelque ` +
+      `part, et ${ORDINARY_MIN_TOP_KMH.road} km/h atteints au moins une fois.`,
+    informs: 'Les seuils de passage intermédiaires et le plancher de croisière.',
+  },
+  {
+    id: 'highway',
+    label: 'Conduite sur autoroute',
+    instruction:
+      'Roulez sur autoroute pendant au moins une minute, à votre allure ' +
+      'habituelle.',
+    criterion:
+      `Au moins ${ORDINARY_MIN_S} s d’enregistrement, une vitesse tenue quelque ` +
+      `part, et ${ORDINARY_MIN_TOP_KMH.highway} km/h atteints au moins une fois.`,
+    informs: 'Les seuils de passage hauts et la vitesse plausible maximale.',
+  },
   {
     id: 'launch',
     label: 'Accélération franche',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { HELD_MIN_S, measureTrace, percentile } from './measure'
+import { HELD_MIN_S, measureTrace, percentile, weightedPercentile } from './measure'
 import type { Trace } from '../speed/replay'
 import type { SpeedSample } from '../speed/source'
 
@@ -212,6 +212,61 @@ describe('measureTrace — vitesses', () => {
     // plausible calée sur une mesure aberrante.
     expect(measure.maxKmh).toBe(240)
     expect(measure.practicedMaxKmh).toBeCloseTo(90, 1)
+  })
+})
+
+describe('measureTrace — départs arrêtés', () => {
+  it('relève la vitesse une seconde après chaque départ', () => {
+    // Deux feux rouges : arrêt, puis départ à 2 m/s². Une seconde après le
+    // départ, la vitesse vaut 7,2 km/h.
+    const kmhAt = (t: number): number => {
+      const cycle = t % 40
+      if (cycle < 10) return 0
+      return Math.min(50, 2 * 3.6 * (cycle - 10))
+    }
+    const measure = measureTrace(buildTrace({ durationS: 80, cadenceMs: 100, kmhAt }))
+
+    expect(measure.departureKmh.length).toBe(2)
+    // Mesuré : 8,64 km/h aux deux départs, pour 7,2 qu'une lecture rapide
+    // attendrait. L'écart est le délai de **détection** du départ : la voiture
+    // est déclarée en mouvement à la première mesure au-dessus du seuil
+    // d'arrêt, soit deux dixièmes de seconde après avoir bougé à cette cadence.
+    // La seconde se compte donc depuis l'instant où l'on voit qu'elle roule, et
+    // non depuis celui où elle a commencé — c'est le seul instant qu'une trace
+    // GPS connaisse.
+    for (const speed of measure.departureKmh) expect(speed).toBeCloseTo(8.64, 2)
+  })
+
+  it('ignore un départ qui n’a pas une seconde de trace derrière lui', () => {
+    // L'enregistrement s'arrête un demi-tour de seconde après le démarrage.
+    const measure = measureTrace(
+      buildTrace({
+        durationS: 10.5,
+        cadenceMs: 100,
+        kmhAt: (t) => (t < 10 ? 0 : 2 * 3.6 * (t - 10)),
+      }),
+    )
+
+    expect(measure.departureKmh).toEqual([])
+  })
+})
+
+describe('weightedPercentile', () => {
+  it('pèse chaque valeur par sa durée', () => {
+    // Cent secondes à 90 km/h et deux secondes à 30 : la médiane pondérée est
+    // à 90, alors que la médiane simple serait à 60.
+    const entries = [
+      { value: 30, weight: 2 },
+      { value: 90, weight: 100 },
+    ]
+
+    expect(weightedPercentile(entries, 0.5)).toBe(90)
+    expect(weightedPercentile(entries, 0.01)).toBe(30)
+  })
+
+  it('écarte un poids nul et rend zéro sur une série vide', () => {
+    expect(weightedPercentile([{ value: 50, weight: 0 }], 0.5)).toBe(0)
+    expect(weightedPercentile([], 0.5)).toBe(0)
   })
 })
 

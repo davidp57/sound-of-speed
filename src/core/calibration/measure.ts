@@ -40,6 +40,22 @@ export const HELD_BAND_MS2 = 0.25
 /** Durée minimale d'un palier, en secondes. */
 export const HELD_MIN_S = 2
 /**
+ * Durée d'interruption tolérée à l'intérieur d'un palier, en secondes.
+ *
+ * Sans elle, le bruit du GPS coupe un palier en morceaux. Mesuré sur une trace
+ * synthétique de deux paliers, l'un à 70 et l'autre à 90 km/h avec 0,5 km/h de
+ * bruit : **vingt-sept paliers** au lieu de deux, le plus long de 11 s pour un
+ * palier réel de 80 s. La distribution des vitesses n'en souffrait pas — les
+ * morceaux ont la même vitesse — mais celle des **durées** devenait fausse, et
+ * c'est elle qui informe le délai de montée en croisière.
+ *
+ * Une seconde : c'est l'ordre de grandeur d'une excursion de bruit, et c'est
+ * bien plus court qu'un vrai changement d'allure.
+ */
+export const HELD_MERGE_GAP_S = 1
+/** Écart de vitesse toléré entre deux morceaux d'un même palier, en km/h. */
+export const HELD_MERGE_KMH = 3
+/**
  * Vitesse en deçà de laquelle un palier ne compte pas, en km/h.
  *
  * Un feu rouge est une accélération nulle qui dure : sans ce plancher, l'arrêt
@@ -48,6 +64,15 @@ export const HELD_MIN_S = 2
 export const HELD_MIN_KMH = 5
 /** Vitesse en deçà de laquelle le véhicule est considéré à l'arrêt, en km/h. */
 export const STANDSTILL_KMH = 0.8
+/**
+ * Délai après lequel on relève la vitesse d'un départ arrêté, en secondes.
+ *
+ * Une convention, et il faut la dire : la première n'est qu'une amorce sur une
+ * automatique, et une seconde de départ est à peu près ce qu'elle couvre. Rien
+ * dans la trace ne désigne l'instant où la première « devrait » céder la place —
+ * la voiture mesurée n'a pas de rapports.
+ */
+export const DEPARTURE_S = 1
 
 export interface TracePoint {
   /** Décalage depuis la première mesure, en secondes. */
@@ -102,6 +127,13 @@ export interface TraceMeasure {
   /** Décélération soutenue la plus forte, en m/s². Négative. */
   peakDecelMs2: number | null
   plateaus: Plateau[]
+  /**
+   * Vitesse atteinte une seconde après chaque départ arrêté, en km/h.
+   *
+   * C'est ce qui informe la vitesse à laquelle on quitte l'arrêt en ville. Vide
+   * quand la trace ne contient aucun arrêt — sur autoroute, c'est la normale.
+   */
+  departureKmh: number[]
 }
 
 /**
@@ -138,6 +170,7 @@ export function measureTrace(trace: Trace, slopeWindowMs = SLOPE_WINDOW_MS): Tra
     peakAccelMs2: slopes.length > 0 ? percentile(slopes, 0.95) : null,
     peakDecelMs2: slopes.length > 0 ? percentile(slopes, 0.05) : null,
     plateaus: findPlateaus(points),
+    departureKmh: findDepartures(points),
   }
 }
 
@@ -339,7 +372,7 @@ function medianGapMs(points: TracePoint[]): number {
  * remplacer le souvenir qu'on en a.
  */
 function findPlateaus(points: TracePoint[]): Plateau[] {
-  const plateaus: Plateau[] = []
+  const pieces: Plateau[] = []
   let start = -1
   let sum = 0
   let count = 0
@@ -349,10 +382,7 @@ function findPlateaus(points: TracePoint[]): Plateau[] {
     const from = points[start]
     const to = points[end]
     if (from && to && count > 0) {
-      const durationS = to.t - from.t
-      if (durationS >= HELD_MIN_S) {
-        plateaus.push({ startS: from.t, durationS, kmh: sum / count })
-      }
+      pieces.push({ startS: from.t, durationS: to.t - from.t, kmh: sum / count })
     }
     start = -1
     sum = 0
@@ -374,7 +404,106 @@ function findPlateaus(points: TracePoint[]): Plateau[] {
   }
   close(points.length - 1)
 
-  return plateaus
+  // La durée minimale s'applique **après** le recollage : un palier réel coupé
+  // en morceaux d'une seconde et demie serait sinon écarté morceau par morceau.
+  return merge(pieces).filter((plateau) => plateau.durationS >= HELD_MIN_S)
+}
+
+/**
+ * Recolle les morceaux d'un même palier.
+ *
+ * Deux morceaux séparés par moins d'une seconde et roulant à la même vitesse
+ * sont le même palier, interrompu par une excursion de bruit. La durée du palier
+ * recollé couvre l'interruption : c'est bien du temps passé à vitesse tenue.
+ */
+function merge(pieces: Plateau[]): Plateau[] {
+  const merged: Plateau[] = []
+  for (const piece of pieces) {
+    const previous = merged[merged.length - 1]
+    if (
+      previous &&
+      piece.startS - (previous.startS + previous.durationS) <= HELD_MERGE_GAP_S &&
+      Math.abs(piece.kmh - previous.kmh) <= HELD_MERGE_KMH
+    ) {
+      const durationS = piece.startS + piece.durationS - previous.startS
+      const weight = previous.durationS + piece.durationS
+      merged[merged.length - 1] = {
+        startS: previous.startS,
+        durationS,
+        kmh:
+          weight > 0
+            ? (previous.kmh * previous.durationS + piece.kmh * piece.durationS) / weight
+            : previous.kmh,
+      }
+      continue
+    }
+    merged.push({ ...piece })
+  }
+  return merged
+}
+
+/**
+ * Vitesses relevées une seconde après chaque départ arrêté.
+ *
+ * Un départ est le passage de l'arrêt au mouvement. On ne compte que ceux qui
+ * ont une seconde de trace derrière eux : un départ à la toute fin de
+ * l'enregistrement ne dit rien.
+ */
+function findDepartures(points: TracePoint[]): number[] {
+  const departures: number[] = []
+  let stopped = false
+
+  for (let index = 0; index < points.length; index += 1) {
+    const point = points[index]
+    if (!point) continue
+    if (point.kmh < STANDSTILL_KMH) {
+      stopped = true
+      continue
+    }
+    if (!stopped) continue
+    stopped = false
+
+    const target = point.t + DEPARTURE_S
+    const last = points[points.length - 1]
+    if (!last || last.t < target) break
+    for (let i = index; i < points.length; i += 1) {
+      const later = points[i]
+      if (later && later.t >= target) {
+        departures.push(later.kmh)
+        break
+      }
+    }
+  }
+
+  return departures
+}
+
+/**
+ * Centile pondéré : chaque valeur pèse ce qu'on lui donne.
+ *
+ * Sert aux vitesses tenues, où le poids est la durée du palier. Sans
+ * pondération, un palier de deux secondes compterait autant qu'un de deux
+ * minutes, et la distribution dirait ce qu'on a fait le plus **souvent** au lieu
+ * de ce qu'on a fait le plus **longtemps**.
+ */
+export function weightedPercentile(
+  entries: { value: number; weight: number }[],
+  fraction: number,
+): number {
+  const sorted = entries
+    .filter((entry) => entry.weight > 0 && Number.isFinite(entry.value))
+    .sort((a, b) => a.value - b.value)
+  if (sorted.length === 0) return 0
+
+  const total = sorted.reduce((sum, entry) => sum + entry.weight, 0)
+  const target = total * Math.min(1, Math.max(0, fraction))
+
+  let running = 0
+  for (const entry of sorted) {
+    running += entry.weight
+    if (running >= target) return entry.value
+  }
+  return sorted[sorted.length - 1]?.value ?? 0
 }
 
 /**
