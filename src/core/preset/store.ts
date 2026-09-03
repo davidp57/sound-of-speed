@@ -20,6 +20,7 @@ import type { Trace } from '../speed/replay'
 const STORAGE_KEY = 'speed.profiles.v1'
 const SELECTED_KEY = 'speed.selectedProfile.v1'
 const TRACES_KEY = 'speed.traces.v1'
+const VOLUME_KEY = 'speed.masterVolume.v1'
 
 /**
  * Traces conservées d'une session à l'autre.
@@ -95,6 +96,62 @@ export function saveSelectedId(id: string): void {
   } catch {
     // Navigation privée, quota plein : ce n'est pas une raison pour tout arrêter.
   }
+}
+
+/**
+ * Volume général : une préférence de **l'appareil**, pas un caractère de profil.
+ *
+ * Il dépend de la puissance de l'autoradio, de la position du téléphone, du
+ * bruit de roulement — rien qui soit un attribut du moteur qu'on imite. Rangé
+ * dans le profil, il sautait à chaque changement de voix, voyageait vers celui
+ * qui recevait un profil partagé, et se remettait en réinitialisant une section
+ * qui n'avait rien à voir.
+ *
+ * Absent, il n'y a pas de valeur par défaut à inventer : c'est à l'appelant de
+ * reprendre celle du profil actif, une fois, à la première ouverture.
+ */
+export function loadMasterVolume(): number | null {
+  try {
+    const raw = localStorage.getItem(VOLUME_KEY)
+    if (raw === null) return null
+    const value = Number(raw)
+    return Number.isFinite(value) && value >= 0 ? value : null
+  } catch {
+    return null
+  }
+}
+
+export function saveMasterVolume(volume: number): void {
+  try {
+    localStorage.setItem(VOLUME_KEY, String(volume))
+  } catch {
+    // Comme au-dessus : le son continue même si la préférence ne se retient pas.
+  }
+}
+
+/**
+ * Volume que portait un profil enregistré par la version précédente.
+ *
+ * Lu **avant** toute normalisation, directement dans le stockage : c'est
+ * indispensable, et le contraire a été essayé. La reprise passait d'abord par la
+ * liste des profils chargés, or les charger les nettoie de ce champ — la valeur
+ * réglée par l'utilisateur avait donc déjà disparu quand on venait la chercher,
+ * et l'on retombait sur la valeur par défaut. Le réglage était perdu en silence.
+ *
+ * Rend `null` quand il n'y a rien à reprendre : un appareil neuf, ou un profil
+ * déjà au format courant.
+ */
+export function loadInheritedVolume(selectedId: string | null): number | null {
+  const stored = readJson<unknown[]>(STORAGE_KEY)
+  if (!Array.isArray(stored)) return null
+
+  const profils = stored.filter(isRecord)
+  const actif = profils.find((p) => p['id'] === selectedId) ?? profils[0]
+  const mix = actif?.['mix']
+  if (!isRecord(mix)) return null
+
+  const herite = mix['masterGain']
+  return typeof herite === 'number' && Number.isFinite(herite) && herite >= 0 ? herite : null
 }
 
 /**
@@ -247,7 +304,7 @@ function reconcile(profile: Partial<Profile>): Profile {
     engine: { ...base.engine, ...(profile.engine ?? {}) },
     drivetrain: migrateDrivetrain(base, profile.drivetrain),
     speed: migrateSpeed(base, profile.speed),
-    mix: { ...base.mix, ...(profile.mix ?? {}) },
+    mix: migrateMix(base, profile.mix),
     feel: {
       kickdown: { ...base.feel.kickdown, ...(profile.feel?.kickdown ?? {}) },
       backfire: { ...base.feel.backfire, ...(profile.feel?.backfire ?? {}) },
@@ -265,6 +322,24 @@ function reconcile(profile: Partial<Profile>): Profile {
   if (isRecord(profile.origin)) complet.origin = profile.origin as ProfileOrigin
 
   return complet
+}
+
+/**
+ * Reprend un mixage enregistré par une version antérieure.
+ *
+ * Le volume général a quitté le profil : c'est une préférence de l'appareil, pas
+ * un caractère de moteur. La valeur qui s'y trouvait a servi une fois, à la
+ * première ouverture, pour initialiser cette préférence — voir `state.ts`. Elle
+ * est ensuite retirée du stockage plutôt que laissée morte, sans quoi le schéma
+ * mentirait à qui le lit.
+ */
+function migrateMix(
+  base: Profile,
+  stored: Partial<Profile['mix']> | undefined,
+): Profile['mix'] {
+  const merged: Record<string, unknown> = { ...base.mix, ...(stored ?? {}) }
+  delete merged.masterGain
+  return merged as unknown as Profile['mix']
 }
 
 /**

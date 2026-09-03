@@ -1,6 +1,6 @@
 # 01 — Le volume devient une préférence de l'appareil
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -23,11 +23,11 @@ et cet ordre garantit qu'aucune version intermédiaire ne perde le réglage.
 
 ## Critères d'acceptation
 
-- [ ] Le volume général vit dans le stockage local, hors du profil
-- [ ] Changer de profil ne change pas le niveau
-- [ ] Le niveau survit à un rechargement de l'application
-- [ ] À la première ouverture après la mise à jour, le niveau est celui que
+- [x] Le volume général vit dans le stockage local, hors du profil
+- [x] Changer de profil ne change pas le niveau
+- [x] Le niveau survit à un rechargement de l'application
+- [x] À la première ouverture après la mise à jour, le niveau est celui que
       portait le profil actif
-- [ ] La reprise ne se rejoue pas au chargement suivant
-- [ ] Un appareil sans stockage disponible retombe sur une valeur par défaut
+- [x] La reprise ne se rejoue pas au chargement suivant
+- [x] Un appareil sans stockage disponible retombe sur une valeur par défaut
       plutôt que sur le silence

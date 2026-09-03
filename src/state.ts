@@ -26,9 +26,12 @@ import {
   tracesFromFile,
   tracesToFile,
   type ProfileSection,
+  loadInheritedVolume,
+  loadMasterVolume,
   loadSelectedId,
   newId,
   saveProfiles,
+  saveMasterVolume,
   saveSelectedId,
 } from './core/preset/store'
 
@@ -51,6 +54,9 @@ export interface Telemetry {
   /** Facteur de lecture qu'appliquera chaque couche audio, indexé par clé. */
   frameMs: number
 }
+
+/** Volume des profils livrés, et repli quand il n'y a rien à reprendre. */
+const DEFAULT_VOLUME = 0.7
 
 const profiles = ref<Profile[]>(loadProfiles())
 const selectedId = ref<string>(loadSelectedId() ?? profiles.value[0]?.id ?? '')
@@ -116,6 +122,34 @@ export const keepScreenOn = ref(false)
  * qu'un lecteur média tourne.
  */
 export const backgroundAudio = ref(true)
+
+/**
+ * Volume général : une préférence de **cet appareil**.
+ *
+ * Il vivait dans le profil, ce qui produisait trois effets tous fautifs : passer
+ * de Route à Sport en roulant faisait sauter le niveau, un profil partagé
+ * emportait le volume réglé pour une autre voiture, et réinitialiser la section
+ * de mixage remettait le son au niveau d'usine alors qu'on voulait seulement
+ * retrouver un caractère.
+ *
+ * Le volume dépend de l'autoradio, de la position du téléphone, du bruit de
+ * roulement. Rien de cela n'est un attribut du moteur qu'on imite.
+ *
+ * **Reprise** : à la première ouverture après la mise à jour, la préférence
+ * prend la valeur du profil actif — celle que David a réellement réglée — puis
+ * elle est écrite, ce qui empêche la reprise de se rejouer. Le champ du profil
+ * n'est plus lu ensuite.
+ */
+export const masterVolume = ref(
+  // Trois sources, dans cet ordre : la préférence de cet appareil ; à défaut, le
+  // volume que portait le profil enregistré avant la mise à jour ; à défaut, la
+  // valeur des profils livrés. La deuxième se lit dans le stockage brut, et non
+  // dans `profiles` ci-dessus : les charger retire déjà ce champ.
+  loadMasterVolume() ?? loadInheritedVolume(loadSelectedId()) ?? DEFAULT_VOLUME,
+)
+saveMasterVolume(masterVolume.value)
+audio.setMasterVolume(masterVolume.value)
+
 export const offlineStatus = ref<OfflineStatus>({ ...offline.status })
 
 export const telemetry = shallowRef<Telemetry>({
@@ -538,6 +572,13 @@ export async function analyzeLayerFile(
   const scratch = new Ctor(1, 1, 48000)
   const buffer = await scratch.decodeAudioData(await response.arrayBuffer())
   return analyzeSample(buffer, cylinders)
+}
+
+export function setMasterVolume(value: number): void {
+  const volume = Number.isFinite(value) && value >= 0 ? value : 1
+  masterVolume.value = volume
+  saveMasterVolume(volume)
+  audio.setMasterVolume(volume)
 }
 
 export function setBackgroundAudio(value: boolean): void {

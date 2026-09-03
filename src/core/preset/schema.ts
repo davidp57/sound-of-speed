@@ -171,7 +171,6 @@ export interface SpeedPreset {
 }
 
 export interface MixPreset {
-  masterGain: number
   /** Régime en dessous duquel seule la couche basse joue. */
   crossfadeLowRpm: number
   /** Régime au-dessus duquel seule la couche haute joue. */
@@ -334,7 +333,7 @@ export type ProfileOrigin = Pick<
   'sampleDir' | 'engine' | 'drivetrain' | 'speed' | 'mix' | 'feel' | 'layers'
 >
 
-export const PROFILE_FORMAT_VERSION = 1
+export const PROFILE_FORMAT_VERSION = 2
 
 export interface ProfileFile {
   version: number

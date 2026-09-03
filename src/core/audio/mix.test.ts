@@ -86,7 +86,7 @@ describe('computeMix — fondu de régime', () => {
       // du fondu, qui se juge à relief égal. Le relief, lui, fait varier le
       // niveau avec le régime — c'est sa raison d'être, et il est vérifié à
       // part.
-      mix: { ...profile.mix, masterGain: 1, loadContrast: 0, rpmReliefDb: 0, loadReliefDb: 0 },
+      mix: { ...profile.mix, loadContrast: 0, rpmReliefDb: 0, loadReliefDb: 0 },
     }
 
     const low = p.mix.crossfadeLowRpm
@@ -129,7 +129,7 @@ describe('computeMix — fondu de régime', () => {
     const p: Profile = {
       ...profile,
       layers: [layer({ key: 'seule', role: 'on', minRate: 0.1, maxRate: 8 })],
-      mix: { ...profile.mix, masterGain: 1 },
+      mix: { ...profile.mix },
     }
 
     const { layers } = computeMix(p, state({ rpm: 5000 }))
@@ -206,7 +206,7 @@ describe('computeMix — domaine jouable', () => {
       layers: [layer({ key: 'etroite', role: 'on', anchorRpm: 4000, minRate: 0.9, maxRate: 1.1 })],
       // Relief neutralisé : on compare deux régimes, et le relief du régime
       // déplacerait le rapport qu'on mesure.
-      mix: { ...profile.mix, masterGain: 1, loadContrast: 0, rpmReliefDb: 0, loadReliefDb: 0 },
+      mix: { ...profile.mix, loadContrast: 0, rpmReliefDb: 0, loadReliefDb: 0 },
     }
 
     // À l'ancrage, la couche est pleinement jouable.
@@ -239,7 +239,7 @@ describe('computeMix — domaine jouable', () => {
     const p: Profile = {
       ...profile,
       layers: [layer({ key: 'etroite', role: 'on', anchorRpm: 4000, minRate: 0.9, maxRate: 1.1 })],
-      mix: { ...profile.mix, masterGain: 1, loadContrast: 0 },
+      mix: { ...profile.mix, loadContrast: 0 },
     }
 
     // Légèrement hors bornes mais encore bien audible : on veut le savoir.
@@ -372,14 +372,10 @@ describe('computeMix — couches désactivées', () => {
   })
 })
 
-describe('computeMix — volume général', () => {
-  it('multiplie tous les gains', () => {
-    const fort = computeMix({ ...profile, mix: { ...profile.mix, masterGain: 1 } }, state())
-    const doux = computeMix({ ...profile, mix: { ...profile.mix, masterGain: 0.5 } }, state())
-
-    expect(energy(doux.layers, 'on')).toBeCloseTo(energy(fort.layers, 'on') / 2, 6)
-  })
-})
+// Le volume général n'est plus ici : c'est un niveau de sortie, appliqué sur le
+// bus du graphe audio et non une règle de mixage. Il n'y a donc plus rien à en
+// vérifier dans cette fonction — et c'est le but : les gains rendus décrivent
+// l'équilibre entre les couches, que le volume ne déplace pas.
 
 describe('computeMix — relief', () => {
   /** Niveau d'ensemble, toutes couches confondues. */
@@ -395,7 +391,7 @@ describe('computeMix — relief', () => {
     // Contraste nul : le fondu de charge ne bouge plus, seul le relief varie.
     // Les deux sont indépendants, et c'est ce qui permet de les régler l'un
     // après l'autre.
-    mix: { ...profile.mix, masterGain: 1, loadContrast: 0, ...mix },
+    mix: { ...profile.mix, loadContrast: 0, ...mix },
   })
 
   it('fait entendre l’effort, ce que les fondus ne font pas', () => {

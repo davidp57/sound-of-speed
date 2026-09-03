@@ -1,6 +1,6 @@
 # 03 — Retirer le champ du profil
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Le volume devient une préférence de l'appareil ; 02 — Le
 volume ne voyage plus avec un profil
@@ -21,9 +21,9 @@ enregistrés se reprennent — c'est exactement le cas prévu par la règle du d
 
 ## Critères d'acceptation
 
-- [ ] Le champ a disparu du schéma, des profils livrés et du guide de création
-- [ ] La référence des réglages du README ne le mentionne plus dans le mixage
-- [ ] La version de format de profil a monté
-- [ ] Un profil enregistré par la version précédente se relit sans perdre autre
+- [x] Le champ a disparu du schéma, des profils livrés et du guide de création
+- [x] La référence des réglages du README ne le mentionne plus dans le mixage
+- [x] La version de format de profil a monté
+- [x] Un profil enregistré par la version précédente se relit sans perdre autre
       chose que ce champ
-- [ ] Un fichier de profil exporté par la version précédente s'importe encore
+- [x] Un fichier de profil exporté par la version précédente s'importe encore

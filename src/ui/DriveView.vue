@@ -5,6 +5,8 @@ import {
   activateAudio,
   activeProfile,
   favoriteProfiles,
+  masterVolume,
+  setMasterVolume,
   selectProfile,
   selectedProfileId,
   audioStatus,
@@ -183,8 +185,8 @@ const rpmPercent = computed(() => {
             min="0"
             max="1"
             step="0.01"
-            :value="activeProfile.mix.masterGain"
-            @input="activeProfile.mix.masterGain = Number(($event.target as HTMLInputElement).value)"
+            :value="masterVolume"
+            @input="setMasterVolume(Number(($event.target as HTMLInputElement).value))"
           />
         </label>
       </div>

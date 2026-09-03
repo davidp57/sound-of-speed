@@ -464,9 +464,17 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 
 ### Mixage
 
+Le **volume général** ne figure pas dans cette liste : ce n'est pas un caractère
+de profil mais une **préférence de l'appareil**, rangée à côté du profil choisi.
+Il dépend de l'autoradio, de la position du téléphone, du bruit de roulement, et
+il n'a donc aucune raison de sauter quand on change de voix, ni de voyager vers
+qui reçoit un profil partagé. Il se règle sur l'écran de conduite, seul endroit
+où l'on touche un réglage en roulant, et il peut dépasser 1 — le limiteur de
+sortie empêche la saturation, ce qui laisse de la marge quand le relief est
+fort.
+
 | Réglage | Ce qu'il fait |
 |---|---|
-| **Volume général** | Peut dépasser 1, le limiteur de sortie empêchant la saturation. À laisser de la marge quand le relief est fort : c'est lui qui donne au haut des tours la place de rugir |
 | **Relief de charge** | Autant en moins pied levé, autant en plus pied au plancher, rien en croisière. **C'est le réglage qui fait entendre l'effort** : sans lui, les fondus étant à puissance constante, ralenti, croisière et pleine charge tenaient dans 1,3 dB — le son changeait de couleur et jamais de volume. À 4, il y a 8 dB entre lever le pied et écraser |
 | **Relief du régime** | Gain gagné entre le ralenti et le rupteur : le rugissement qui monte avec les tours. Il **s'ajoute** aux 4 dB que la banque livrée donne déjà, sa prise haut régime étant enregistrée plus fort que la basse |
 | **Niveau au ralenti** | Le ralenti n'a pas de couche dédiée dans la banque livrée : on y entend la prise « pied levé » jouée deux octaves plus bas. Sans ce réglage elle sonnait aussi fort que tout le reste |
