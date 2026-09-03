@@ -57,9 +57,16 @@ EFFORT et IMPERFECTIONS attendaient cette mesure juste. **Les chiffres d'EFFORT
 sont donc à refaire** : ils avaient été relevés sur une accélération qu'on sait
 maintenant fausse, et le lot vaut peut-être moins qu'annoncé.
 
-**Sept lots n'ont pas de tickets** — DEPOSER, EFFORT, ETALONNAGE, IMPERFECTIONS,
-MODE-SIMPLE, TABLEAU-DE-BORD et UI-DEFILEMENT. `/to-tickets` les découpera quand
-on les reprendra.
+**Huit lots n'ont pas de tickets** — DEPOSER, EFFORT, ETALONNAGE,
+IMPERFECTIONS, MODE-SIMPLE, TABLEAU-DE-BORD, UI-DEFILEMENT et VOLUME-GLOBAL.
+`/to-tickets` les découpera quand on les reprendra ; il se lance lot par lot et
+demande validation du découpage avant d'écrire.
+
+Trois d'entre eux portent une **décision préalable** qui changerait leur
+découpage : TABLEAU-DE-BORD attend la levée de la règle « aucune animation » ;
+ETALONNAGE attend le choix entre analyser dans la voiture ou déposer les traces
+d'abord, ce qui détermine s'il dépend de DEPOSER ; EFFORT attend que ses mesures
+soient refaites, PENTE ayant invalidé celles sur lesquelles il a été écrit.
 
 ## Ce qui n'est pas dans le backlog
 
