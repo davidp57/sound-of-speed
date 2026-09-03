@@ -290,9 +290,24 @@ export function fromFile(text: string): Profile {
  * Complète un profil partiel avec les valeurs par défaut, section par section.
  * Les couches sont reprises telles quelles si elles existent, parce qu'elles
  * dépendent des fichiers présents et qu'aucune valeur par défaut n'y a de sens.
+ *
+ * **La base est choisie par identifiant.** Elle ne l'était pas : tout profil
+ * enregistré était complété avec les valeurs du profil Sport, y compris un
+ * profil Route. Un champ ajouté au schéma arrivait donc dans le Route de
+ * l'utilisateur avec la valeur de Sport — mesuré sur les six réglages ajoutés
+ * depuis : plancher de croisière à 2000 au lieu de 1500, délai de croisière à
+ * 3,5 s au lieu de 2,2, seuil de rétrogradage au freinage à −0,7 au lieu de −1,
+ * relief de charge à 5 dB au lieu de 4, relief de régime à 4 au lieu de 3.
+ *
+ * Autrement dit, chaque réglage livré pour Route arrivait chez lui réglé pour
+ * Sport, et les essais sur route portaient sur des valeurs que personne n'avait
+ * choisies. La réinitialisation, elle, cherchait déjà le bon profil par son
+ * identifiant (`factoryOrigin`) : les deux chemins disent enfin la même chose.
  */
 function reconcile(profile: Partial<Profile>): Profile {
-  const base = createDefaultProfile()
+  const base =
+    createFactoryProfiles().find((livre) => livre.id === profile.id) ??
+    createDefaultProfile()
   const complet: Profile = {
     id: typeof profile.id === 'string' && profile.id ? profile.id : newId(),
     name: typeof profile.name === 'string' && profile.name ? profile.name : base.name,
