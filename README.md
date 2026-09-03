@@ -422,13 +422,19 @@ Une fois le jeton créé et le fichier déposé sur le NAS :
 
 Le jeton appartient à **l'appareil** : réglé au poste de travail, il n'est pas
 dans la voiture — et c'est là qu'il sert. Le bouton **Installer dans la
-voiture…** produit une adresse et un code à scanner, comme le partage d'un
-profil et pour la même raison : faire arriver une donnée là où l'on ne veut rien
-taper.
+voiture…** produit l'adresse qui l'y installe :
 
-Ouvrir cette adresse une fois dans le navigateur de la voiture suffit. Elle
-fonctionne aussi collée dans un onglet déjà ouvert sur l'application, ce qui est
-le geste le plus probable.
+    https://ADRESSE/#depot=route-moteur-tesla-neige
+
+**Dans une voiture, cette adresse se tape** : son navigateur n'a pas de caméra,
+donc le code à scanner affiché à côté ne sert qu'à un téléphone ou une tablette.
+C'est la seule raison pour laquelle l'adresse est aussi courte que possible — le
+nom d'utilisateur `depot` est implicite — et la seule raison pour laquelle un
+jeton prononçable vaut mieux qu'une suite aléatoire. On ne la tape qu'une fois.
+
+Elle fonctionne aussi collée dans un onglet **déjà ouvert** sur l'application, ce
+qui est le geste le plus probable : changer le fragment ne recharge pas la page,
+et l'application l'écoute quand même.
 
 Le jeton est dans la partie qui suit le `#`, laquelle **n'est jamais transmise au
 serveur** ni inscrite dans ses journaux — même raison que pour le partage d'un
