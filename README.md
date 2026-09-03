@@ -456,8 +456,7 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 | Réglage | Ce qu'il fait |
 |---|---|
 | **Raideur du lissage** | Haut : réactif, mais les sauts du GPS s'entendent. Bas : doux, mais en retard. Le réglage le plus sensible |
-| **Fenêtre d'accélération** | Durée sur laquelle la pente est estimée. Elle décide aussi du temps qu'une pente met à s'oublier : à quatre secondes, le régime met encore quatre secondes à retomber après qu'on a cessé d'accélérer ; à une seconde, il suit aussitôt mais le signal est moins lisse. En deçà de l'intervalle entre deux mesures — une seconde au GPS — la baisser ne gagne rien |
-| **Zone morte** | En deçà, la variation est traitée comme du tremblement de mesure |
+| **Fenêtre d'accélération** | Durée sur laquelle la pente est estimée, par ajustement sur **toutes** les mesures qu'elle contient. Elle décide aussi du temps qu'une pente met à s'oublier : à quatre secondes, le régime met encore quatre secondes à retomber après qu'on a cessé d'accélérer ; à une seconde, il suit aussitôt mais le signal est moins lisse. En deçà de l'intervalle entre deux mesures, la baisser ne gagne rien — et cet intervalle dépend de l'appareil : quelques dizaines de millisecondes dans une Tesla en mouvement, une seconde ailleurs |
 | **Vitesse plausible max** | Au-delà, la mesure est écartée : on n'en tire rien du tout, et la vitesse conditionnée continue comme si elle n'était pas arrivée |
 | **Accélération / décélération max retenues** | Bornes de l'accélération transmise à la charge |
 

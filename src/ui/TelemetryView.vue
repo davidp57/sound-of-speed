@@ -69,6 +69,25 @@ const staleFix = computed(
   () => sourceKind.value === 'geolocation' && telemetry.value.speed.sinceLastSampleMs > 3000,
 )
 
+/**
+ * Intervalle typique entre deux mesures.
+ *
+ * La médiane, et non la moyenne : une seule interruption suffit à rendre la
+ * moyenne illisible. Relevé au poste de travail sur une page mise en veille par
+ * le navigateur — six intervalles de 13, 6, 66 398, 4, 19 et 1005 ms — la
+ * moyenne annonçait 11 241 ms là où la médiane dit 16 ms.
+ */
+const sampleRate = computed(() => {
+  const gaps = [...telemetry.value.speed.recentGapsMs].sort((a, b) => a - b)
+  if (gaps.length === 0) return '—'
+  const middle = Math.floor(gaps.length / 2)
+  const median =
+    gaps.length % 2 === 1
+      ? (gaps[middle] ?? 0)
+      : ((gaps[middle - 1] ?? 0) + (gaps[middle] ?? 0)) / 2
+  return String(Math.round(median))
+})
+
 function fixed(value: number, digits = 1): string {
   return Number.isFinite(value) ? value.toFixed(digits) : '—'
 }
@@ -151,10 +170,20 @@ function onRateChange(event: Event): void {
         hint="Au-delà de trois secondes, la vitesse affichée n'est plus qu'une extrapolation."
       />
       <ValueRow
+        label="Cadence typique"
+        :value="sampleRate"
+        unit="ms"
+        hint="Intervalle médian entre deux mesures. Il varie beaucoup d'un appareil à l'autre, et selon qu'on roule ou non : quelques dizaines de millisecondes en mouvement dans une Tesla, plusieurs secondes à l'arrêt, une seconde sur un GPS ordinaire."
+      />
+      <ValueRow
         label="Intervalles récents"
         :value="telemetry.speed.recentGapsMs.join(' · ') || '—'"
         unit="ms"
-        hint="Le GPS livre en général une mesure par seconde."
+      />
+      <ValueRow
+        label="Mesures dans la fenêtre"
+        :value="telemetry.speed.slopeSamples"
+        hint="Nombre de mesures qui servent à estimer la pente. Plus il est grand, plus l'estimation est sûre. À deux, on est à la limite : il n'y a rien à moyenner."
       />
       <ValueRow label="Durée d'image" :value="fixed(telemetry.frameMs)" unit="ms" />
     </section>

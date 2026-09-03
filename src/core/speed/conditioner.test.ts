@@ -8,9 +8,11 @@ import type { SpeedSample } from './source'
 /**
  * Tests du conditionnement du signal de vitesse.
  *
- * On fabrique ici une trace synthétique à 1 Hz — la cadence réelle d'un GPS — et
- * on la fait passer dans le conditionnement image par image, comme le ferait la
- * boucle. Ce qu'on vérifie est le comportement mesuré : la sortie est continue,
+ * On fabrique ici une trace synthétique et on la fait passer dans le
+ * conditionnement image par image, comme le ferait la boucle. La **cadence des
+ * mesures** est un paramètre : un hertz par défaut, mais le GPS d'une Tesla en
+ * mouvement livre une position toutes les trente millisecondes, et le
+ * conditionnement doit se comporter pareil dans les deux cas. Ce qu'on vérifie est le comportement mesuré : la sortie est continue,
  * et l'écart de suivi suit une loi connue.
  *
  * Les bornes de ces tests sont des valeurs **mesurées**, notées en regard. Elles
@@ -51,6 +53,7 @@ function run(
   seconds: number,
   overrides: Partial<SpeedPreset> = {},
   frameS = FRAME_S,
+  samplePeriodS = 1,
 ): Point[] {
   const conditioner = new SpeedConditioner({ ...preset(), ...overrides })
   const points: Point[] = []
@@ -59,10 +62,11 @@ function run(
 
   for (let frame = 0; frame * frameS <= seconds; frame += 1) {
     const t = frame * frameS
-    // Une mesure GPS par seconde, comme sur la route.
-    if (t >= nextSampleAt) {
+    // Une boucle, et non un `if` : à cadence rapide, plusieurs mesures peuvent
+    // tomber dans la même image.
+    while (t >= nextSampleAt) {
       conditioner.push(mesure(speedAt(nextSampleAt), start + nextSampleAt * 1000))
-      nextSampleAt += 1
+      nextSampleAt += samplePeriodS
     }
     points.push({ t, real: speedAt(t), smoothed: conditioner.tick(frameS).kmh })
   }
@@ -190,12 +194,14 @@ describe('SpeedConditioner', () => {
     expect(error).toBeLessThan(decel * 1.3)
   })
 
-  it('ignore une variation qui reste dans la zone morte', () => {
+  it('ne cherche pas de pente quand le véhicule est immobile', () => {
     const conditioner = new SpeedConditioner(preset())
     const start = 1_000_000
 
-    // Le tremblement d'un GPS à l'arrêt : quelques dixièmes, en deçà de la zone
-    // morte d'un km/h.
+    // Le tremblement d'un GPS à l'arrêt. C'est là qu'il est le plus fort — à
+    // ±3 km/h, la régression laisse encore passer 0,6 m/s² — et c'est aussi le
+    // seul endroit où l'on sait à coup sûr que l'accélération est nulle : on ne
+    // l'estime donc pas.
     const jitter = [0, 0.4, 0.2, 0.6, 0.3, 0.5]
     jitter.forEach((kmh, index) => {
       conditioner.push(mesure(kmh, start + index * 1000))
@@ -206,16 +212,106 @@ describe('SpeedConditioner', () => {
     expect(state.accelMs2).toBe(0)
   })
 
-  it('voit une accélération dès que la variation sort de la zone morte', () => {
+  it('voit repartir une voiture arrêtée sans attendre', () => {
+    // Le seuil d'immobilité porte sur les mesures, non sur la vitesse lissée, et
+    // il suffit qu'une seule mesure de la fenêtre le dépasse : sinon un départ
+    // franc serait manqué le temps que la vitesse lissée monte. Mesuré à la
+    // cadence rapide sur un départ à 2 m/s² : la pente est encore nulle à la
+    // seconde du départ, vaut 0,29 m/s² un quart de seconde plus tard, et
+    // atteint sa vraie valeur une seconde après.
     const conditioner = new SpeedConditioner(preset())
     const start = 1_000_000
-
-    for (let index = 0; index <= 4; index += 1) {
-      conditioner.push(mesure(index * 10, start + index * 1000))
+    let slope = 0
+    for (let i = 0; i * 0.03 <= 1.3; i += 1) {
+      const at = i * 0.03
+      conditioner.push(mesure(at < 1 ? 0 : 7.2 * (at - 1), start + at * 1000))
+      slope = conditioner.tick(0.03).slopeKmhS
     }
-    const state = conditioner.tick(FRAME_S)
 
-    expect(state.slopeKmhS).toBeGreaterThan(5)
+    expect(slope).toBeGreaterThan(0)
+  })
+
+  it('lit la même accélération quelle que soit la cadence des mesures', () => {
+    // Le défaut que ce test verrouille : l'historique était borné à seize
+    // mesures, soit une demi-seconde à trente millisecondes de cadence. La
+    // fenêtre réglée n'était jamais atteinte, et la zone morte — un écart fixe
+    // en km/h, divisé par une durée deux fois plus courte — annulait toute
+    // accélération sous 0,58 m/s². Une reprise douce était vue comme une vitesse
+    // tenue.
+    //
+    // Mesuré sur l'estimateur retenu, sans bruit : 0,350 m/s² lu à toutes les
+    // cadences de 30 ms à 1 s, au millième près.
+    for (const periodS of [1, 0.25, 0.1, 0.03]) {
+      const conditioner = new SpeedConditioner(preset())
+      const start = 1_000_000
+      // 0,35 m/s², soit 1,26 km/h par seconde : la reprise douce qui
+      // disparaissait.
+      for (let i = 0; i * periodS <= 20; i += 1) {
+        const at = i * periodS
+        conditioner.push(mesure(30 + 1.26 * at, start + at * 1000))
+      }
+      const state = conditioner.tick(FRAME_S)
+
+      expect(state.slopeKmhS / 3.6).toBeGreaterThan(0.34)
+      expect(state.slopeKmhS / 3.6).toBeLessThan(0.36)
+    }
+  })
+
+  it('estime la pente d autant plus sûrement que le GPS parle souvent', () => {
+    // À bruit de mesure égal, la régression moyenne d'autant mieux qu'elle a de
+    // points. Mesuré avec ±1 km/h de bruit sur une rampe à 2 m/s² : écart-type
+    // de 0,257 m/s² à un hertz, 0,215 à 250 ms, 0,115 à 30 ms.
+    const ecarts = [1, 0.25, 0.03].map((periodS) => {
+      const conditioner = new SpeedConditioner(preset())
+      const start = 1_000_000
+      let seed = 4242
+      const bruit = (): number => {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff
+        return (seed / 0x7fffffff) * 2 - 1
+      }
+      const lues: number[] = []
+      for (let i = 0; i * periodS <= 20; i += 1) {
+        const at = i * periodS
+        conditioner.push(mesure(30 + 7.2 * at + bruit(), start + at * 1000))
+        const state = conditioner.tick(periodS)
+        if (at > 10) lues.push(state.slopeKmhS / 3.6)
+      }
+      const moyenne = lues.reduce((a, b) => a + b, 0) / lues.length
+      return Math.sqrt(lues.reduce((a, b) => a + (b - moyenne) ** 2, 0) / lues.length)
+    })
+
+    const [lent, moyen, rapide] = ecarts as [number, number, number]
+    expect(rapide).toBeLessThan(moyen)
+    expect(moyen).toBeLessThan(lent)
+    // Mesuré : 0,115 m/s² à trente millisecondes.
+    expect(rapide).toBeLessThan(0.15)
+  })
+
+  it('oublie une pente au rythme de la fenêtre réglée, à toute cadence', () => {
+    // La fenêtre décide du temps qu'une pente met à s'oublier. Elle ne le
+    // décidait plus dès que le GPS livrait vite : seize mesures suffisaient à la
+    // remplir, et le réglage ne commandait rien. Mesuré deux secondes après la
+    // fin d'une accélération, sur une fenêtre de quatre secondes : 3,60 km/h/s
+    // de pente restante à un hertz, 3,61 à trente millisecondes.
+    const restante = (periodS: number): number => {
+      const conditioner = new SpeedConditioner({ ...preset(), accelWindowMs: 4000 })
+      const start = 1_000_000
+      let slope = 0
+      for (let i = 0; i * periodS <= 10; i += 1) {
+        const at = i * periodS
+        // Rampe pendant huit secondes, puis vitesse tenue.
+        conditioner.push(mesure(30 + 7.2 * Math.min(at, 8), start + at * 1000))
+        slope = conditioner.tick(periodS).slopeKmhS
+      }
+      return slope
+    }
+
+    const lent = restante(1)
+    const rapide = restante(0.03)
+
+    expect(lent).toBeGreaterThan(3.2)
+    expect(lent).toBeLessThan(4)
+    expect(Math.abs(rapide - lent)).toBeLessThan(0.5)
   })
 
   it('écarte une mesure aberrante au lieu de la suivre', () => {

@@ -126,6 +126,7 @@ export const telemetry = shallowRef<Telemetry>({
     slopeKmhS: 0,
     sinceLastSampleMs: 0,
     recentGapsMs: [],
+    slopeSamples: 0,
     atStandstill: true,
   },
   engine: {
