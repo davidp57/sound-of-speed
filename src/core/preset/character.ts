@@ -50,6 +50,20 @@ function round2(value: number): number {
 }
 
 /**
+ * Arrondi des valeurs menées par un curseur global.
+ *
+ * Trois décimales, et non deux : c'est ce qui rend le geste **fidèle**. Un
+ * curseur global écrit une dizaine de réglages, puis se relit dans ce qu'il a
+ * écrit ; chaque arrondi rogne un peu cette relecture, et le curseur sautait
+ * alors de quelques crans dès qu'on le relâchait. Mesuré sur toute la course :
+ * l'écart entre la position posée et celle relue reste sous 0,009, soit moins
+ * d'un cran sur cent.
+ */
+function round3(value: number): number {
+  return Number(value.toFixed(3))
+}
+
+/**
  * Régimes de passage, un par passage, en tours par minute.
  *
  * Une rampe en fraction du rupteur, du premier passage au dernier : les
@@ -196,6 +210,75 @@ export function responsivenessOf(profile: Profile): number {
       invert(reading.value(profile), reading.law(0), reading.law(1)),
     ),
   )
+}
+
+/**
+ * Refait le caractère du moteur et de la boîte, du calme au sportif.
+ *
+ * Onze réglages d'un coup : inertie, montée à vide, temps de passage, écart de
+ * charge, régimes de passage, plancher et délai de croisière, seuil de
+ * rétrogradage au freinage, rétrogradage forcé, pétarade, à-coup de passage.
+ * C'est bien un **écrasement** : un curseur global recalcule, il ne peut pas
+ * faire autrement. Le geste est rendu sans risque par un état de retour pris
+ * juste avant, à la manière de celui du lot ORIGINE. Un décalage relatif aurait
+ * préservé le réglage fin, mais « calme » n'aurait plus rien voulu dire : deux
+ * profils au même curseur n'auraient pas sonné pareil.
+ *
+ * Ce qui n'est pas touché : le pont, les démultiplications, le rupteur, le
+ * ralenti, le mixage, le signal de vitesse. Ce sont la mécanique et la
+ * réactivité, pas le tempérament.
+ *
+ * Deux interrupteurs restent à la main : le rétrogradage forcé et l'à-coup de
+ * passage. Le guide de création ne les a jamais coupés, et couper ce que
+ * quelqu'un a activé exprès n'est pas un caractère, c'est une perte. La
+ * pétarade, elle, s'éteint au plus calme : c'est la règle du guide, et une
+ * voiture tranquille ne claque pas à l'échappement.
+ */
+export function applySportiness(profile: Profile, sportiness: number): Profile {
+  const s = clamp01(sportiness)
+  const { redlineRpm, idleRpm } = profile.engine
+  const count = profile.drivetrain.gearRatios.length
+  const responsiveness = responsivenessOf(profile)
+
+  return {
+    ...profile,
+    engine: {
+      ...profile.engine,
+      inertia: round3(1.4 - 0.5 * s),
+      freeRevRate: Math.round(redlineRpm * (0.9 + 0.5 * s)),
+    },
+    drivetrain: {
+      ...profile.drivetrain,
+      shiftTimeMs: Math.round(140 - 60 * s),
+      upshiftRpm: upshiftTableFor(count, redlineRpm, s),
+      upshiftLoadSpreadRpm: Math.round(redlineRpm * between(0.2, 0.28, 0.34, s)),
+      // Le plancher garde une marge au-dessus du ralenti : sur un diesel, la
+      // fraction du rupteur seule tomberait trop près du régime de ralenti.
+      cruiseMinRpm: Math.round(Math.max(idleRpm * 1.4, redlineRpm * (0.2 + 0.1 * s))),
+      cruiseUpshiftAfterS: round2(2 + 1.6 * s),
+      brakeDownshiftAccelMs2: round3(-1.1 + 0.5 * s),
+      shiftDelaysS: shiftDelaysFor(count, s, responsiveness),
+    },
+    feel: {
+      ...profile.feel,
+      kickdown: {
+        ...profile.feel.kickdown,
+        targetRpmFraction: round3(0.5 + 0.15 * s),
+        maxGears: s >= 0.75 ? 3 : 2,
+      },
+      backfire: {
+        ...profile.feel.backfire,
+        enabled: s > 0.1,
+        minRpm: Math.round(redlineRpm * 0.5),
+        intensity: round3(0.2 + 0.35 * s),
+        count: s >= 0.75 ? 5 : 3,
+      },
+      shiftJolt: {
+        ...profile.feel.shiftJolt,
+        depth: round3(0.25 + 0.4 * s),
+      },
+    },
+  }
 }
 
 /**

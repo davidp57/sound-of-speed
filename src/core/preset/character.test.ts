@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   MAX_GEARS,
+  applySportiness,
   resizeGearTables,
   responsivenessOf,
   shiftDelaysFor,
@@ -9,6 +10,7 @@ import {
   upshiftTableFor,
 } from './character'
 import { createDefaultProfile, createRoadProfile } from './defaults'
+import { applyOrigin, captureOrigin } from './store'
 import { Engine } from '../engine/engine'
 import { Gearbox } from '../drivetrain/gearbox'
 import type { Profile } from './schema'
@@ -31,21 +33,66 @@ function rpmInGear(profile: Profile, gear: number, kmh: number): number {
   return Engine.kinematicRpm(kmh, (gearRatios[gear] ?? 1) * finalDrive, wheelRadiusM)
 }
 
-/** Régime auquel la boîte finit par croiser, à vitesse tenue. */
-function cruiseRpm(profile: Profile, kmh: number): number {
+/**
+ * Ce que fait la boîte sur quatre-vingt-dix secondes de vitesse tenue.
+ *
+ * Le régime obtenu et le nombre de passages : le premier dit si la boîte dort,
+ * le second si elle brasse. Les deux se lisent sur la boîte elle-même et non
+ * sur les réglages — c'est ce qu'on entendra.
+ */
+function cruise(profile: Profile, kmh: number): { gear: number; rpm: number; shifts: number } {
   const gearbox = new Gearbox(profile.drivetrain, profile.engine, profile.feel)
   const inGear = (gear: number) => rpmInGear(profile, gear, kmh)
   let gear = 0
+  let shifts = 0
   for (let frame = 0; frame * (1 / 60) <= 90; frame += 1) {
-    gear = gearbox.tick(1 / 60, {
+    const state = gearbox.tick(1 / 60, {
       rpmInGear: inGear,
       atStandstill: false,
       load: 0.5,
       kmh,
       accelMs2: 0,
-    }).gear
+    })
+    if (state.gear !== gear) shifts += 1
+    gear = state.gear
   }
-  return inGear(gear)
+  return { gear, rpm: inGear(gear), shifts }
+}
+
+/** Régime auquel la boîte finit par croiser, à vitesse tenue. */
+function cruiseRpm(profile: Profile, kmh: number): number {
+  return cruise(profile, kmh).rpm
+}
+
+/**
+ * Accélération franche depuis l'arrêt, à 2,5 m/s² jusqu'à 150 km/h.
+ *
+ * Rend le rapport atteint, le nombre de passages et la pointe de régime : c'est
+ * là qu'un profil injouable se voit, soit parce qu'il tape dans le rupteur, soit
+ * parce qu'il monte les rapports au pas.
+ */
+function fullThrottle(profile: Profile): { gear: number; shifts: number; peakRpm: number } {
+  const gearbox = new Gearbox(profile.drivetrain, profile.engine, profile.feel)
+  const dt = 1 / 60
+  let shifts = 0
+  let gear = 0
+  let kmh = 0
+  let peakRpm = 0
+  for (let frame = 0; frame < 60 * 40; frame += 1) {
+    kmh = Math.min(150, kmh + 2.5 * 3.6 * dt)
+    const inGear = (g: number) => rpmInGear(profile, g, kmh)
+    const state = gearbox.tick(dt, {
+      rpmInGear: inGear,
+      atStandstill: kmh < 1,
+      load: 0.95,
+      kmh,
+      accelMs2: 2.5,
+    })
+    if (state.gear !== gear) shifts += 1
+    gear = state.gear
+    peakRpm = Math.max(peakRpm, inGear(gear))
+  }
+  return { gear, shifts, peakRpm }
 }
 
 describe('le caractère se relit dans le profil', () => {
@@ -112,6 +159,136 @@ describe('les temporisations suivent la réactivité', () => {
         for (const delay of delays) expect(delay).toBeGreaterThan(0)
       }
     }
+  })
+})
+
+describe('le curseur « calme ↔ sportif »', () => {
+  it('se relit exactement là où on l’a posé', () => {
+    // C'est ce qui permet au curseur de refléter le profil courant sans sauter
+    // quand on le relâche. Mesuré sur toute la course, des deux profils
+    // livrés : l'écart maximal entre position posée et position relue est de
+    // 0,0001 — un dixième de millième de cran.
+    let pire = 0
+    for (const modele of [route, sport]) {
+      for (let i = 0; i <= 100; i += 1) {
+        const voulu = i / 100
+        pire = Math.max(pire, Math.abs(sportinessOf(applySportiness(modele, voulu)) - voulu))
+      }
+    }
+    expect(pire).toBeLessThan(0.001)
+  })
+
+  it('change le caractère de la boîte de façon audible', () => {
+    const calme = applySportiness(route, 0)
+    const sportif = applySportiness(route, 1)
+
+    // Mesuré sur une accélération franche : la pointe de régime passe de 3929 à
+    // 6043 tr/min pour un rupteur à 6500, et la boîte n'est plus qu'en
+    // quatrième à 150 km/h là où le profil calme est en sixième.
+    //
+    // Les bornes laissent la place à la dispersion : la boîte tire au sort
+    // ±120 tr/min à chaque passage sur ce profil, exprès, pour ne pas sonner
+    // comme une machine. Le relevé varie donc d'une exécution à l'autre.
+    const bande = route.drivetrain.upshiftJitterRpm * 2
+    expect(fullThrottle(calme).peakRpm).toBeGreaterThan(3929 - bande)
+    expect(fullThrottle(calme).peakRpm).toBeLessThan(3929 + bande)
+    expect(fullThrottle(sportif).peakRpm).toBeGreaterThan(6043 - bande)
+    expect(fullThrottle(sportif).peakRpm).toBeLessThan(6043 + bande)
+    expect(fullThrottle(sportif).gear).toBeLessThan(fullThrottle(calme).gear)
+
+    expect(sportif.engine.inertia).toBeLessThan(calme.engine.inertia)
+    expect(sportif.drivetrain.shiftTimeMs).toBeLessThan(calme.drivetrain.shiftTimeMs)
+    expect(sportif.drivetrain.cruiseMinRpm).toBeGreaterThan(calme.drivetrain.cruiseMinRpm)
+    expect(sportif.feel.shiftJolt.depth).toBeGreaterThan(calme.feel.shiftJolt.depth)
+  })
+
+  it('reste jouable aux deux extrêmes : ni boîte qui brasse, ni boîte qui dort', () => {
+    for (const modele of [route, sport]) {
+      for (const s of [0, 1]) {
+        const p = applySportiness(modele, s)
+
+        // Ne brasse pas : à vitesse tenue, la boîte monte ses rapports une fois
+        // et s'arrête. Mesuré : cinq passages au plus sur nonante secondes à
+        // 110 km/h, soit la montée de la première à la sixième.
+        const tenue = cruise(p, 110)
+        expect(tenue.shifts).toBeLessThanOrEqual(p.drivetrain.gearRatios.length)
+
+        // Ne dort pas : le régime de croisière reste au-dessus du plancher, et
+        // loin du rupteur. Mesuré : 2355 tr/min sur Route, 2865 sur Sport, à
+        // 110 km/h et quel que soit le curseur — il ne touche pas au pont.
+        expect(tenue.rpm).toBeGreaterThanOrEqual(p.drivetrain.cruiseMinRpm)
+        expect(tenue.rpm).toBeLessThan(p.engine.redlineRpm * 0.6)
+
+        // Et pied au plancher, elle n'attaque pas le rupteur. Mesuré : 93 % du
+        // rupteur au plus sportif, ce qui laisse la marge du limiteur.
+        const franche = fullThrottle(p)
+        expect(franche.peakRpm).toBeLessThan(p.engine.redlineRpm)
+        expect(franche.shifts).toBeLessThanOrEqual(p.drivetrain.gearRatios.length)
+      }
+    }
+  })
+
+  it('reprend sans incohérence un profil réglé à la main', () => {
+    // Route a ses seuils placés en vitesse, donc décroissants — ce qu'aucune loi
+    // ne produit. Le curseur les refait : ils doivent redevenir une rampe
+    // cohérente, et la boîte rester utilisable.
+    const repris = applySportiness(route, 0.6)
+
+    const { upshiftRpm } = repris.drivetrain
+    for (let i = 1; i < upshiftRpm.length; i += 1) {
+      expect(upshiftRpm[i]!).toBeGreaterThan(upshiftRpm[i - 1]!)
+    }
+    expect(repris.drivetrain.minUpshiftRpm).toBeLessThan(upshiftRpm[0]!)
+    // La première ne hurle pas au démarrage : à la vitesse où elle cède la
+    // place, elle est encore loin de son seuil de passage.
+    const auLancement = rpmInGear(repris, 0, repris.drivetrain.launchUpshiftKmh)
+    expect(auLancement).toBeLessThan(upshiftRpm[0]!)
+    expect(cruiseRpm(repris, 110)).toBeGreaterThanOrEqual(repris.drivetrain.cruiseMinRpm)
+  })
+
+  it('ne touche ni au pont, ni aux démultiplications, ni au signal', () => {
+    // Le tempérament n'est pas la mécanique : un curseur de caractère qui
+    // déplacerait le pont changerait la vitesse à laquelle on croise.
+    for (const s of [0, 0.5, 1]) {
+      const p = applySportiness(route, s)
+      expect(p.drivetrain.finalDrive).toBe(route.drivetrain.finalDrive)
+      expect(p.drivetrain.gearRatios).toEqual(route.drivetrain.gearRatios)
+      expect(p.engine.redlineRpm).toBe(route.engine.redlineRpm)
+      expect(p.engine.idleRpm).toBe(route.engine.idleRpm)
+      expect(p.speed).toEqual(route.speed)
+      expect(p.mix).toEqual(route.mix)
+      expect(p.layers).toEqual(route.layers)
+    }
+  })
+
+  it('laisse à la main les interrupteurs qu’on a mis exprès', () => {
+    // La pétarade s'éteint au plus calme — c'est la règle du guide, une voiture
+    // tranquille ne claque pas. Le rétrogradage forcé et l'à-coup, eux, ne se
+    // coupent jamais : couper ce que quelqu'un a activé n'est pas un caractère.
+    expect(applySportiness(route, 0).feel.backfire.enabled).toBe(false)
+    expect(applySportiness(route, 0.5).feel.backfire.enabled).toBe(true)
+    expect(applySportiness(route, 0).feel.kickdown.enabled).toBe(
+      route.feel.kickdown.enabled,
+    )
+    expect(applySportiness(route, 0).feel.shiftJolt.enabled).toBe(
+      route.feel.shiftJolt.enabled,
+    )
+  })
+
+  it('se laisse défaire : on retrouve l’état d’avant le mouvement', () => {
+    // L'état de retour est celui du lot ORIGINE, pris à la volée juste avant le
+    // premier mouvement. C'est ce qui rend le geste sans risque.
+    const retour = captureOrigin(route)
+
+    const gache = applySportiness(applySportiness(route, 1), 0.2)
+    const rendu = applyOrigin(gache, retour)
+
+    expect(rendu.drivetrain).toEqual(route.drivetrain)
+    expect(rendu.engine).toEqual(route.engine)
+    expect(rendu.feel).toEqual(route.feel)
+    // L'identité ne bouge pas au passage.
+    expect(rendu.id).toBe(route.id)
+    expect(rendu.name).toBe(route.name)
   })
 })
 

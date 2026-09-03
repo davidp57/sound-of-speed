@@ -197,6 +197,31 @@ Un bloc de réglages d'un profil — moteur, transmission, signal, mixage,
 caractère, couches. C'est l'unité de réinitialisation : on remet une section aux
 valeurs d'usine sans toucher au reste.
 
+**Tempérament** (_sportiness_) :
+Le caractère du moteur et de la boîte, sur une échelle du calme au sportif :
+ce qui décide si la voiture **pousse fort**. Il n'est pas enregistré dans un
+profil, il s'en **déduit** — huit de ses réglages suivent des lois qui
+s'inversent, et la médiane des lectures donne sa position. C'est ce qui permet
+au curseur du mode simplifié de refléter un profil réglé à la main.
+_Ne pas confondre_ avec le **caractère** ci-dessous, qui est un bloc de trois
+comportements, ni avec la **réactivité**, qui est celle du signal.
+_Éviter_ : sportivité, agressivité.
+
+**Réactivité** (_responsiveness_) :
+Le caractère du **signal de vitesse**, du pépère au nerveux : ce qui décide si
+la voiture **répond vite**. Nerveux suit au plus près et laisse passer le bruit
+du GPS, pépère est lisse et en retard. Se déduit du profil comme le
+tempérament, et s'en distingue : une voiture calme peut être vive, une sportive
+pâteuse.
+_Éviter_ : nervosité, latence.
+
+**Mode avancé** (_advanced mode_) :
+La bascule de l'écran de configuration. En simplifié, la vue est courte et
+quelques curseurs globaux commandent le reste ; en avancé, la cinquantaine de
+réglages détaillés s'ajoute dessous. Préférence de l'**appareil**, comme le
+volume général : ne fait pas partie du profil et ne voyage pas.
+_Éviter_ : mode expert, mode débutant.
+
 **Caractère** (_feel_, `FeelPreset`) :
 Les trois comportements qui tiennent du tempérament plutôt que de la mécanique :
 rétrogradage forcé, pétarade, à-coup de passage. Chacun s'active séparément, et

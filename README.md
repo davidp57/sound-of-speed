@@ -432,6 +432,31 @@ sont celles du **mode avancé** : la bascule en haut de l'écran les fait
 apparaître. En mode simplifié, elles sont remplacées par quelques curseurs
 globaux qui les commandent.
 
+### Mode simplifié
+
+Le guide de création sait déduire une cinquantaine de réglages de quatre
+réponses. Ce savoir ne servait qu'une fois, à la création ; les curseurs globaux
+le rendent disponible en continu. Ils **écrasent** les réglages qu'ils
+commandent — un curseur global recalcule, il ne peut pas faire autrement — et un
+bouton **Revenir aux réglages d'avant** rend le profil tel qu'il était avant le
+premier mouvement.
+
+Aucun des deux n'est enregistré dans le profil : leur position s'en **déduit**.
+Le curseur reflète donc ce qu'on a réellement sous les doigts, y compris sur un
+profil réglé à la main ou reçu par lien. Mesuré : Route se lit à 22 sur cent de
+tempérament, Sport à 80 ; les deux se lisent au milieu de la réactivité, le
+milieu du curseur étant par construction le réglage qui a servi jusqu'ici.
+
+| Curseur | Ce qu'il commande |
+|---|---|
+| **Calme ↔ sportif** | Le caractère du moteur et de la boîte : inertie, montée à vide, temps de passage, écart selon la charge, régimes de passage, plancher et délai de croisière, seuil de rétrogradage au freinage, rétrogradage forcé, pétarade, à-coup de passage. Il ne touche ni au pont, ni aux démultiplications, ni au rupteur, ni au mixage. Mesuré sur Route, pied au plancher : la pointe de régime passe de 3929 tr/min au plus calme à 6043 au plus sportif, pour un rupteur à 6500 |
+
+Deux interrupteurs restent à la main : le **rétrogradage forcé** et l'**à-coup de
+passage** ne se coupent jamais tout seuls — couper ce que quelqu'un a activé
+exprès n'est pas un caractère. La **pétarade**, elle, s'éteint au plus calme :
+c'est la règle du guide de création, et une voiture tranquille ne claque pas à
+l'échappement.
+
 ### Moteur
 
 | Réglage | Ce qu'il fait |

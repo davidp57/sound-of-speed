@@ -240,20 +240,31 @@ function factoryOrigin(profile: Profile): ProfileOrigin {
  */
 export function resetProfileSection(profile: Profile, section: ProfileSection | 'all'): Profile {
   const origin = factoryOrigin(profile)
-  if (section === 'all') {
-    // L'identité ne se réinitialise pas, et l'origine reste attachée : on doit
-    // pouvoir y revenir autant de fois qu'on veut.
-    const remis: Profile = {
-      ...profile,
-      ...origin,
-      id: profile.id,
-      name: profile.name,
-      favorite: profile.favorite,
-    }
-    if (profile.origin) remis.origin = deepCopy(profile.origin)
-    return remis
-  }
+  if (section === 'all') return applyOrigin(profile, origin)
   return { ...profile, [section]: origin[section] }
+}
+
+/**
+ * Repose sur un profil un état relevé plus tôt.
+ *
+ * L'identité ne se réinitialise pas — identifiant, nom, statut de favori — et
+ * l'origine reste attachée : on doit pouvoir y revenir autant de fois qu'on
+ * veut.
+ *
+ * Sert à deux choses : la réinitialisation aux valeurs d'usine, et le retour en
+ * arrière après le mouvement d'un curseur global, qui écrase une dizaine de
+ * réglages d'un coup.
+ */
+export function applyOrigin(profile: Profile, origin: ProfileOrigin): Profile {
+  const remis: Profile = {
+    ...profile,
+    ...deepCopy(origin),
+    id: profile.id,
+    name: profile.name,
+    favorite: profile.favorite,
+  }
+  if (profile.origin) remis.origin = deepCopy(profile.origin)
+  return remis
 }
 
 /**

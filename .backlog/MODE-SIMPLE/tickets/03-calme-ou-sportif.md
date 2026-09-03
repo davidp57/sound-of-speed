@@ -1,6 +1,6 @@
 # 03 — Un curseur « calme ↔ sportif », en continu
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Les tables suivent le nombre de rapports ; 02 — Le détail
 passe derrière un mode avancé
@@ -23,22 +23,25 @@ pose trois réponses, et elles donnent trois produits différents : écraser
 franchement, écraser mais offrir un retour, ou appliquer un décalage relatif qui
 préserve le réglage fin.
 
-**Reco : écraser, avec un retour.** Le lot [ORIGINE](../../ORIGINE/spec.md) a déjà
+**Tranché : écraser, avec un retour.** Le lot [ORIGINE](../../ORIGINE/spec.md) a déjà
 doté chaque profil d'un état de retour ; en prendre un second juste avant le
 mouvement du curseur global coûte peu et rend le geste sans risque. Le décalage
 relatif a l'air séduisant mais retire au curseur tout sens absolu : deux profils
 au même « calme » ne sonneraient pas pareil, et le mot ne voudrait plus rien
 dire.
 
-À confirmer avant d'écrire : c'est le choix dont tout le reste découle.
+Retenu tel quel. Le retour est pris au **premier** mouvement et gardé jusqu'à ce
+qu'on s'en serve : on revient donc à l'état d'avant qu'on ait commencé à toucher
+aux curseurs, et non à celui d'avant le dernier cran — c'est ce qu'on cherche
+quand on s'aperçoit qu'on a gâché le profil.
 
 ## Critères d'acceptation
 
-- [ ] Un mouvement du curseur change le caractère de façon audible et cohérente
-- [ ] Aux deux extrêmes, le profil reste jouable : ni boîte qui brasse, ni boîte
+- [x] Un mouvement du curseur change le caractère de façon audible et cohérente
+- [x] Aux deux extrêmes, le profil reste jouable : ni boîte qui brasse, ni boîte
       qui dort
-- [ ] Le geste est réversible : on retrouve l'état d'avant le mouvement
-- [ ] Le curseur reflète, à l'ouverture, le caractère du profil courant plutôt
+- [x] Le geste est réversible : on retrouve l'état d'avant le mouvement
+- [x] Le curseur reflète, à l'ouverture, le caractère du profil courant plutôt
       qu'une position arbitraire
-- [ ] Un profil réglé à la main puis repris par le curseur ne devient pas
+- [x] Un profil réglé à la main puis repris par le curseur ne devient pas
       incohérent

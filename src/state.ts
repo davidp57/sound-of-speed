@@ -13,11 +13,13 @@ import { ReplaySource, TraceRecorder, type Trace } from './core/speed/replay'
 import { SimulatorSource } from './core/speed/simulator'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
-import type { Profile } from './core/preset/schema'
-import { resizeGearTables } from './core/preset/character'
+import type { Profile, ProfileOrigin } from './core/preset/schema'
+import { applySportiness, resizeGearTables, sportinessOf } from './core/preset/character'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
 import {
+  applyOrigin,
+  captureOrigin,
   duplicateProfile,
   loadProfiles,
   loadTraces,
@@ -794,6 +796,66 @@ export function setGearRatios(ratios: number[]): void {
   const next = [...profiles.value]
   next[index] = { ...resized, drivetrain: { ...resized.drivetrain, gearRatios: ratios } }
   profiles.value = next
+}
+
+// --- Curseurs globaux ----------------------------------------------------
+
+/**
+ * État de retour, pris juste avant qu'un curseur global n'écrase le profil.
+ *
+ * Un curseur global recalcule une dizaine de réglages d'un coup : il ne peut
+ * pas faire autrement, et sans retour possible une heure de réglage fin
+ * partirait au premier mouvement. Le lot ORIGINE avait déjà doté chaque profil
+ * d'un état de retour ; celui-ci en est un second, pris à la volée.
+ *
+ * Il est relevé au **premier** mouvement et gardé jusqu'à ce qu'on s'en serve :
+ * on revient donc à l'état d'avant qu'on ait commencé à toucher aux curseurs,
+ * et non à celui d'avant le dernier cran. C'est ce qu'on cherche quand on
+ * s'aperçoit qu'on a gâché le profil.
+ *
+ * De cet appareil et de cette session seulement : il ne s'enregistre pas.
+ */
+const globalUndo = ref<{ id: string; origin: ProfileOrigin } | null>(null)
+
+export const canUndoGlobalChange = computed(() => globalUndo.value?.id === selectedId.value)
+
+function applyGlobalChange(change: (profile: Profile) => Profile): void {
+  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
+  const current = profiles.value[index]
+  if (!current) return
+
+  if (globalUndo.value?.id !== current.id) {
+    globalUndo.value = { id: current.id, origin: captureOrigin(current) }
+  }
+  const next = [...profiles.value]
+  next[index] = change(current)
+  profiles.value = next
+}
+
+export function undoGlobalChange(): void {
+  const snapshot = globalUndo.value
+  if (!snapshot) return
+  const index = profiles.value.findIndex((p) => p.id === snapshot.id)
+  const current = profiles.value[index]
+  if (!current) return
+
+  const next = [...profiles.value]
+  next[index] = applyOrigin(current, snapshot.origin)
+  profiles.value = next
+  globalUndo.value = null
+}
+
+/**
+ * Tempérament du profil actif, de 0 (calme) à 1 (sportif).
+ *
+ * Déduit du profil et non enregistré dans lui : le curseur reflète donc ce
+ * qu'on a réellement sous les doigts, y compris sur un profil réglé à la main
+ * ou reçu par lien, au lieu de partir d'une position arbitraire.
+ */
+export const sportiness = computed(() => sportinessOf(activeProfile.value))
+
+export function setSportiness(value: number): void {
+  applyGlobalChange((profile) => applySportiness(profile, value))
 }
 
 export function duplicateActive(): void {

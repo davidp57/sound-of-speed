@@ -1,4 +1,4 @@
-import { responsivenessOf, shiftDelaysFor, upshiftTableFor } from './character'
+import { applySportiness } from './character'
 import { createDefaultProfile } from './defaults'
 import { captureOrigin, deepCopy, newId } from './store'
 import type { Profile } from './schema'
@@ -51,26 +51,6 @@ const CRUISE_RPM_FRACTION: Record<Temperament, number> = {
   sportif: 0.52,
 }
 
-/**
- * Plancher de croisière, en fraction du rupteur.
- *
- * C'est lui qui décide jusqu'où la boîte monte quand on tient une vitesse. Un
- * tempérament calme accepte de croiser bas ; un sportif garde du régime sous le
- * pied.
- */
-const CRUISE_FLOOR: Record<Temperament, number> = {
-  calme: 0.2,
-  equilibre: 0.25,
-  sportif: 0.3,
-}
-
-/** Écart entre pied levé et pied au plancher, en fraction du rupteur. */
-const LOAD_SPREAD: Record<Temperament, number> = {
-  calme: 0.2,
-  equilibre: 0.28,
-  sportif: 0.34,
-}
-
 const K = 1 / 3.6 / (2 * Math.PI) // km/h → tours de roue par seconde, à rayon 1 m
 
 export function buildProfile(choices: WizardChoices, template: Profile): Profile {
@@ -107,17 +87,13 @@ function build(choices: WizardChoices, template: Profile): Profile {
 
   const sportiness = choices.temperament === 'sportif' ? 1 : choices.temperament === 'calme' ? 0 : 0.5
 
-  // Les tables indexées par rapport viennent des lois partagées avec le mode
-  // simplifié : le guide et les curseurs globaux doivent dire la même chose du
-  // même tempérament, sans quoi créer un profil « vif » puis toucher au curseur
-  // le déplacerait sans raison.
-  const upshiftRpm = upshiftTableFor(count, engine.redline, sportiness)
-  // Le guide ne touche pas au signal de vitesse : la réactivité du profil de
-  // départ est donc celle du profil créé, et c'est elle qui règle la longueur
-  // des temporisations.
-  const shiftDelaysS = shiftDelaysFor(count, sportiness, responsivenessOf(base))
-
-  return {
+  // Le tempérament est appliqué en dernier, par la loi partagée avec le mode
+  // simplifié : le guide et le curseur global doivent dire la même chose du même
+  // tempérament, sans quoi créer un profil « vif » puis effleurer le curseur le
+  // déplacerait sans que personne l'ait demandé. Ce qui reste écrit ici est ce
+  // que le curseur ne touche pas — la mécanique du moteur choisi, l'étagement,
+  // le pont, le mixage.
+  return applySportiness({
     ...base,
     id: newId(),
     name: choices.name.trim() || 'Nouveau profil',
@@ -130,8 +106,6 @@ function build(choices: WizardChoices, template: Profile): Profile {
       idleRpm: engine.idle,
       redlineRpm: engine.redline,
       softLimitRpm: Math.round(engine.redline * 0.97),
-      inertia: 1.4 - 0.5 * sportiness,
-      freeRevRate: Math.round(engine.redline * (0.9 + 0.5 * sportiness)),
       engineBraking: Math.round(engine.redline * 0.6),
     },
     drivetrain: {
@@ -139,25 +113,11 @@ function build(choices: WizardChoices, template: Profile): Profile {
       gearRatios,
       finalDrive,
       wheelRadiusM,
-      shiftTimeMs: Math.round(140 - 60 * sportiness),
-      upshiftRpm,
-      upshiftLoadSpreadRpm: Math.round(engine.redline * LOAD_SPREAD[choices.temperament]),
       upshiftJitterRpm: Math.round(engine.redline * 0.02),
       minUpshiftRpm: Math.round(engine.redline * 0.34),
       downshiftAtRedlineRatio: 0.28,
       firstGearLaunchOnly: true,
       launchUpshiftKmh: choices.usage === 'ville' ? 5 : 8,
-      // Le plancher garde une marge au-dessus du ralenti : sur un diesel, la
-      // fraction du rupteur seule tomberait trop près du régime de ralenti.
-      cruiseMinRpm: Math.round(
-        Math.max(engine.idle * 1.4, engine.redline * CRUISE_FLOOR[choices.temperament]),
-      ),
-      // Un tempérament calme monte dès que la vitesse se stabilise ; un sportif
-      // garde son rapport plus longtemps avant d'y renoncer.
-      cruiseUpshiftAfterS: Number((2 + 1.6 * sportiness).toFixed(1)),
-      // Et il descend au freinage sur une décélération plus faible.
-      brakeDownshiftAccelMs2: Number((-1.1 + 0.5 * sportiness).toFixed(2)),
-      shiftDelaysS,
     },
     mix: {
       ...base.mix,
@@ -175,25 +135,7 @@ function build(choices: WizardChoices, template: Profile): Profile {
       rpmReliefDb: Number((2 + 3 * sportiness).toFixed(1)),
       idleLevelDb: Number((-3 - 4 * sportiness).toFixed(1)),
     },
-    feel: {
-      kickdown: {
-        ...base.feel.kickdown,
-        targetRpmFraction: 0.5 + 0.15 * sportiness,
-        maxGears: choices.temperament === 'sportif' ? 3 : 2,
-      },
-      backfire: {
-        ...base.feel.backfire,
-        enabled: choices.temperament !== 'calme',
-        minRpm: Math.round(engine.redline * 0.5),
-        intensity: 0.2 + 0.35 * sportiness,
-        count: choices.temperament === 'sportif' ? 5 : 3,
-      },
-      shiftJolt: {
-        ...base.feel.shiftJolt,
-        depth: 0.25 + 0.4 * sportiness,
-      },
-    },
-  }
+  }, sportiness)
 }
 
 /**

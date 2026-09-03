@@ -33,10 +33,14 @@ import {
   renameActive,
   resetActive,
   restoreFactoryProfiles,
+  canUndoGlobalChange,
   selectProfile,
   selectedProfileId,
   setGearRatios,
+  setSportiness,
+  sportiness,
   toggleFavorite,
+  undoGlobalChange,
   library,
   libraryLoading,
   refreshLibrary,
@@ -141,6 +145,20 @@ const delaysText = computed<string>({
     if (parsed.length > 0) profile.value.drivetrain.shiftDelaysS = parsed
   },
 })
+
+/**
+ * Curseurs globaux du mode simplifié.
+ *
+ * Exprimés de zéro à cent plutôt que de zéro à un : ce sont des positions, pas
+ * des grandeurs, et un pour-cent est le plus petit pas qui se voie encore.
+ */
+const sportinessPercent = computed<number>({
+  get: () => Math.round(sportiness.value * 100),
+  set: (value: number) => setSportiness(value / 100),
+})
+
+/** Ce que donne le profil courant, dans les mêmes termes que la création. */
+const simplePreview = computed(() => describeProfile(profile.value))
 
 /**
  * Création guidée.
@@ -437,6 +455,31 @@ function impliedCylinders(index: number): number | null {
           }}
         </span>
       </div>
+
+      <template v-if="!advancedMode">
+        <NumberField
+          v-model="sportinessPercent"
+          label="Calme ↔ sportif"
+          :min="0"
+          :max="100"
+          :step="1"
+          hint="Le caractère du moteur et de la boîte : inertie, régimes de passage, plancher et délai de croisière, rétrogradage, pétarade, à-coup. Vers zéro la boîte monte tôt et tourne bas ; vers cent elle étire les rapports. Ce curseur refait ces réglages, et le bouton de retour annule le geste."
+        />
+        <div class="global-actions">
+          <button :disabled="!canUndoGlobalChange" @click="undoGlobalChange()">
+            Revenir aux réglages d'avant
+          </button>
+          <span class="note">
+            Un curseur global recalcule : il écrase les réglages qu'il commande.
+            Ce retour rend l'état du profil tel qu'il était avant le premier
+            mouvement.
+          </span>
+        </div>
+        <div class="preview">
+          <p class="choice-label">Ce que ça donne</p>
+          <p v-for="line in simplePreview" :key="line">{{ line }}</p>
+        </div>
+      </template>
     </section>
 
     <section class="panel wide creation">
@@ -1403,6 +1446,19 @@ td input[type='number'] {
 }
 
 .mode .note {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.global-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding-top: 0.6rem;
+}
+
+.global-actions .note {
   flex: 1 1 16rem;
   margin: 0;
 }
