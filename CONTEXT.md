@@ -37,6 +37,25 @@ pont et le rayon de roue — sauf à l'arrêt ou pendant un passage, où le mote
 est découplé des roues.
 _Éviter_ : rpm dans les textes français, tours (ambigu avec le nombre de tours).
 
+**Régime entendu** (_audible engine speed_, `audibleRpm`) :
+Le régime plus le **tremblement**. C'est lui, et lui seul, qui fixe les vitesses
+de lecture des couches. Le moteur en sort donc deux : le régime, sur lequel
+travaillent la boîte, ses seuils et la télémétrie, et celui-ci, qui ne sert qu'au
+son. Les séparer est ce qui empêche le tremblement de faire osciller les seuils
+de passage.
+_Éviter_ : régime réel, régime sonore.
+
+**Tremblement** (_flutter_, `flutterRpm` / `flutterHz`) :
+L'irrégularité de quelques dizaines de tours qu'on ajoute au régime pour qu'il
+cesse d'être parfaitement lisse. Décroît quand le régime monte et quand la charge
+monte : un moteur se stabilise en poussant, il tremble au ralenti et à vide.
+Déterministe — une somme de sinusoïdes, pas un tirage au sort — donc une même
+situation donne toujours le même son.
+_Attention_ : ne pas le confondre avec la **dispersion** des passages
+(`upshiftJitterRpm`), qui est tirée au sort à chaque changement de rapport et
+concerne la boîte.
+_Éviter_ : bruit, jitter, vibrato.
+
 **Charge** (_load_) :
 L'effort demandé au moteur, de 0 à 1. Elle arbitre le fondu entre les couches
 « en charge » et « pied levé ». Dans une voiture électrique il n'y a pas de
@@ -138,6 +157,15 @@ Les deux régimes entre lesquels la couche haute remplace la couche basse d'un
 même rôle. Indépendante des ancrages : la bascule règle **quand** une couche
 s'entend, l'ancrage règle **juste**.
 _Éviter_ : crossfade, transition.
+
+**Désaccord** (_detune_, `layerDetuneCents`) :
+L'écart de justesse, en centièmes de demi-ton, entre les couches d'une même
+famille. Au rapport exact elles sont parfaitement justes l'une par rapport à
+l'autre, ce qu'un moteur n'est jamais : c'est le battement lent qui manque.
+L'écart est réparti de part et d'autre, donc la hauteur moyenne de la famille ne
+bouge pas, et il s'applique après la décision de **domaine jouable** — il ne
+déplace donc aucun gain.
+_Éviter_ : détune, désaccordage, chorus.
 
 **Domaine jouable** (_playable range_, `minRate` / `maxRate`) :
 La plage de régimes qu'une couche peut couvrir sans que l'étirement s'entende —

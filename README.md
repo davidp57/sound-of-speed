@@ -30,9 +30,9 @@ occupent toute la hauteur et les commandes deviennent quatre grandes touches. On
 pour qu'on n'en sorte pas par mégarde en roulant.
 
 **Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
-lissage, pente, accélération, qualité du signal GPS, régime, charge, état de la
-transmission, régime que donnerait chaque rapport, gain et vitesse de lecture de
-chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
+lissage, pente, accélération, qualité du signal GPS, régime, régime entendu,
+charge, état de la transmission, régime que donnerait chaque rapport, gain et
+vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
 les traces.
 
 **Configuration** — deux modes. En **simplifié**, la vue est courte : la
@@ -130,17 +130,25 @@ L'hébergement reste chez soi, ce qui règle du même coup la question des
 
 ### 1. Créer les dossiers et déposer les échantillons — File Station
 
-Deux dossiers, sous `/volume1/docker/speed/` :
+Trois dossiers, sous `/volume1/docker/speed/` :
 
-| Dossier | Contenu |
-|---|---|
-| `audio/procar/` | les échantillons du moteur |
-| `profiles/` | les profils partagés entre appareils. **Peut rester vide** |
+| Dossier | Contenu | Accès |
+|---|---|---|
+| `audio/procar/` | les échantillons du moteur | lecture |
+| `profiles/` | les profils partagés entre appareils. **Peut rester vide** | lecture |
+| `traces/` | les trajets enregistrés en roulant, déposés depuis la voiture. **Peut rester vide** | lecture-écriture |
 
-Les deux doivent **exister avant** de déployer la pile : Docker sous DSM ne crée
+Les trois doivent **exister avant** de déployer la pile : Docker sous DSM ne crée
 pas un point de montage absent, il refuse de démarrer le conteneur avec un
-`Bind mount failed`. Un dossier `profiles/` vide suffit — et à défaut, il faut
-commenter sa ligne dans la pile, au prix de la bibliothèque de profils.
+`Bind mount failed`. Des dossiers `profiles/` et `traces/` vides suffisent — et à
+défaut, il faut commenter leur ligne dans la pile, au prix de la bibliothèque de
+profils et du dépôt de traces.
+
+`traces/` est le seul monté en écriture, et le dépôt y est **toujours**
+authentifié, même quand l'authentification générale reste désactivée : un
+dossier ouvert en écriture sur une adresse joignable de l'extérieur est une
+invitation. Il faut donc le fichier de mots de passe pour déposer, voir plus
+bas.
 
 Les échantillons restent hors de l'image : ils ne sont ni dans le dépôt ni dans
 le registre, et changer de banque sonore consistera à remplacer ces fichiers,
@@ -239,6 +247,81 @@ Le mot de passe est demandé en saisie masquée, et le fichier `htpasswd` produi
 se dépose dans `/volume1/docker/speed/` avec File Station. Il reste à
 décommenter les deux lignes `auth_basic` de `docker/nginx.conf` et le volume
 correspondant dans la pile.
+
+### Déposer une trace : le fichier de mots de passe
+
+Le dépôt d'une trace exige lui aussi ce fichier, **indépendamment de
+l'authentification générale** : `traces/` est le seul endroit du serveur qui
+accepte d'écrire, et il ne l'accepte que de quelqu'un qui s'annonce.
+
+En quatre gestes, une fois pour toutes :
+
+```bash
+npm run htpasswd
+```
+
+1. La commande demande un **nom d'utilisateur**, puis un **mot de passe** — huit
+   caractères au minimum, saisi en aveugle, à confirmer. Rien n'apparaît à
+   l'écran pendant la frappe, et le mot de passe ne passe pas en argument : il
+   resterait dans l'historique du terminal et dans la liste des processus.
+2. Elle écrit un fichier nommé `htpasswd` dans le dossier courant. Il tient sur
+   une ligne : le nom d'utilisateur, puis l'empreinte du mot de passe. Le mot de
+   passe lui-même n'y est pas — il n'est pas récupérable, et il faut refaire
+   l'opération si on l'oublie.
+3. Déposer ce fichier dans `/volume1/docker/speed/` avec File Station.
+4. Dans la pile Portainer, **ajouter** les deux lignes suivantes sous
+   `volumes:`, puis tirer l'image à jour et redéployer :
+
+```yaml
+      - /volume1/docker/speed/traces:/usr/share/nginx/html/traces
+      - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
+```
+
+> **Ajouter, et non décommenter.** Une pile Portainer contient le texte qu'on y
+> a collé le jour de sa création, pas le fichier du dépôt : les lignes
+> commentées de `docker/docker-compose.yml` n'y sont pas, et le volume des
+> traces est de toute façon nouveau. Les commentaires du dépôt indiquent quoi
+> monter ; c'est dans l'éditeur de pile que le montage se déclare.
+
+### Redéployer ne suffit pas à changer de version
+
+Mettre une pile à jour recrée le conteneur, mais **Docker réutilise l'image
+qu'il a déjà en local** : une étiquette comme `develop` ou `latest` ne change pas
+de nom quand son contenu change, et rien n'oblige Docker à aller voir. On croit
+donc déployer la dernière version et l'on relance l'ancienne.
+
+Deux façons de s'en assurer :
+
+- dans Portainer, cocher **« Re-pull image and redeploy »** avant de mettre la
+  pile à jour ;
+- ou nommer l'image par son empreinte de commit. Le workflow publie, à côté de
+  `develop` et `latest`, une étiquette immuable `sha-<commit court>` :
+
+```yaml
+    image: ghcr.io/davidp57/speed:sha-28cc0a1
+```
+
+Docker ne l'a jamais vue, donc il la tire forcément. C'est le moyen le plus sûr
+de savoir ce qui tourne, et le seul de revenir à une version précise.
+
+Pour vérifier ce qui tourne réellement, sans Portainer : la date de
+`Last-Modified` sur la page d'accueil est celle de la construction de l'image.
+
+```bash
+curl -I https://ADRESSE/index.html
+```
+
+Le dossier `/volume1/docker/speed/traces/` doit **exister** avant de
+redéployer, même vide : Docker sous DSM refuse de démarrer un conteneur dont un
+point de montage est absent, avec un `Bind mount failed`.
+
+**Il n'y a rien d'autre à décommenter pour le dépôt.** Les deux lignes
+`auth_basic` de `docker/nginx.conf` protègent le site *entier* et ne servent que
+si l'adresse est exposée hors du réseau local ; l'emplacement `traces/`, lui,
+porte sa propre exigence, déjà active.
+
+Sans ce fichier, le dépôt est refusé — la lecture des traces, des profils et de
+l'application continue de fonctionner normalement.
 
 > Depuis le wifi de la maison, le nom DDNS résout vers l'adresse publique : sans
 > **NAT loopback** activé sur la box, l'accès échoue alors qu'il fonctionne en
@@ -492,6 +575,8 @@ l'échappement.
 | **Inertie** | Poids du volant moteur : temps de montée à vide |
 | **Montée à vide** | Prise de tours hors prise, en tr/min par seconde |
 | **Frein moteur** | Retombée pied levé |
+| **Tremblement au ralenti** | Amplitude du tremblement de régime, en tr/min, prise au ralenti et pied levé. Elle décroît ensuite quand le régime monte et quand la charge monte — un moteur se stabilise en poussant. Mesuré sur Sport, réglé à 35 : 34 tr/min d'excursion au ralenti, ±18 à 3000 tr/min pied levé, ±7 pied au plancher. Zéro donne un régime parfaitement lisse, ce qu'aucun moteur thermique n'est. **Il ne va que dans le son** : la boîte, ses seuils et la télémétrie gardent le régime net |
+| **Vitesse du tremblement** | Fréquence de la composante rapide. Une composante lente à un peu plus d'un dixième de cette valeur s'y ajoute — 0,70 Hz pour 6 Hz réglés : à une seule fréquence, le tremblement s'entend comme un vibrato |
 
 ### Transmission
 
@@ -537,6 +622,7 @@ fort.
 | **Relief de charge** | Autant en moins pied levé, autant en plus pied au plancher, rien en croisière. **C'est le réglage qui fait entendre l'effort** : sans lui, les fondus étant à puissance constante, ralenti, croisière et pleine charge tenaient dans 1,3 dB — le son changeait de couleur et jamais de volume. À 4, il y a 8 dB entre lever le pied et écraser |
 | **Relief du régime** | Gain gagné entre le ralenti et le rupteur : le rugissement qui monte avec les tours. Il **s'ajoute** aux 4 dB que la banque livrée donne déjà, sa prise haut régime étant enregistrée plus fort que la basse |
 | **Niveau au ralenti** | Le ralenti n'a pas de couche dédiée dans la banque livrée : on y entend la prise « pied levé » jouée deux octaves plus bas. Sans ce réglage elle sonnait aussi fort que tout le reste |
+| **Désaccord des couches** | Écart de justesse entre les couches d'une même famille, en centièmes de demi-ton. Au rapport exact elles sont parfaitement justes l'une par rapport à l'autre, ce qui n'arrive sur aucun moteur : les inégalités entre cylindres et les deux lignes d'échappement produisent un battement lent. L'écart est réparti de part et d'autre, donc la hauteur moyenne ne bouge pas, et il ne déplace aucun gain. Mesuré, 12 centièmes donnent un battement à 2,4 Hz à 5100 tr/min et 1,5 Hz à 3200 |
 | **Début / fin de bascule** | Régimes entre lesquels la couche haute remplace la basse. **Indépendants des régimes d'ancrage**, qui règlent la justesse |
 | **Accélération pleine charge** | Accélération au-delà de laquelle la charge est maximale. Faute de pédale dans une voiture électrique, c'est elle qui arbitre le fondu entre « en charge » et « pied levé » |
 | **Lissage de la charge** | Évite que le fondu papillonne sur le bruit d'accélération |
@@ -841,6 +927,46 @@ réglages de **relief** s'appliquent donc par-dessus, à toutes les couches à l
 fois : l'effort, le régime, et le ralenti. Ils déplacent le niveau d'ensemble
 sans toucher à l'équilibre entre les couches, donc sans rouvrir le creux que les
 fondus évitent.
+
+Un moteur ne tourne pas juste, et c'est cela qui le fait entendre comme un
+moteur plutôt que comme un échantillon. Deux écarts sont donc introduits, tous
+deux calculés dans `core/`, donc mesurables sans sortir un son.
+
+**Le régime tremble.** Le conditionnement produit un signal d'une régularité
+qu'aucun moteur thermique n'a. On y ajoute un tremblement lent — trois
+sinusoïdes, dont deux dans un rapport irrationnel, si bien que la somme n'a pas
+de période — d'amplitude décroissante avec le régime et avec la charge : un moteur
+se stabilise en montant et sous couple, il tremble au ralenti et à vide. Mesuré
+sur Sport : 34 tr/min d'excursion au ralenti, ±18 à 3000 tr/min pied levé, ±7 à
+3000 tr/min pied au plancher.
+
+Le moteur sort donc **deux** régimes, et c'est le point délicat. Le régime net
+alimente la boîte, ses seuils et la télémétrie ; le régime **entendu** porte le
+tremblement et ne sert qu'aux vitesses de lecture. Les seuils de passage
+travaillent sur le régime : quelques dizaines de tours de tremblement les
+feraient osciller, et trois défauts d'oscillation de la boîte venaient déjà d'un
+compteur portant deux sens. Un compteur, un usage.
+
+Le tremblement est fait de sinusoïdes et non d'un tirage au sort : il est
+reproductible sans graine à gérer, une même situation donne toujours le même
+son, et un test peut l'affirmer.
+
+**Les couches ne jouent plus d'accord.** Deux couches d'une même famille jouées
+au rapport exact sont parfaitement justes l'une par rapport à l'autre, ce qu'un
+moteur réel n'est jamais : les inégalités entre cylindres et les deux lignes
+d'échappement produisent un battement lent. Elles sont donc désaccordées de
+quelques centièmes de demi-ton, l'écart étant réparti de part et d'autre pour
+que la hauteur moyenne ne bouge pas. Mesuré, douze centièmes donnent un
+battement à 2,4 Hz au milieu de la bascule de Sport.
+
+Le désaccord est constant par couche — il dépend du rang de la couche dans sa
+famille, jamais du temps — et il s'applique **après** la décision de domaine
+jouable : régler ce curseur ne peut donc déplacer aucun gain, et ne peut pas
+sortir une couche de son domaine.
+
+Ce que ces deux écarts ne font pas : un moteur. Cinq fichiers bouclés se
+répètent, et l'oreille l'apprend en quelques tours. Ce plafond-là ne se franchit
+qu'avec plus de bancs moteur.
 
 Trois points ont demandé une attention particulière :
 
