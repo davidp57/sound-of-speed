@@ -1,6 +1,6 @@
 # ETALONNAGE — mesurer la vraie voiture pour régler les virtuelles
 
-**Statut :** 🔄 en cours
+**Statut :** 🧑 attend David
 **Branche :** `feature/etalonnage`
 **Version visée :** 0.4
 
@@ -92,6 +92,39 @@ quand il existera.
 - **Une voiture électrique n'a pas de rapports.** L'étalonnage mesure un véhicule
   qui accélère sans passer de vitesses ; il informe donc les seuils **en
   vitesse**, jamais en régime. Le régime reste une fiction qu'on choisit.
+
+## Cinq décisions prises en cours de route
+
+1. **Le lever de pied n'a pas de plafond de décélération dans son critère.** On
+   voulait en poser un pour refuser un freinage déguisé en lever de pied. C'est
+   impossible : rien dans une trace GPS ne dit si la pédale a été touchée, et une
+   électrique récupère au lever de pied assez fort pour dépasser à elle seule tout
+   plafond plausible. Le refus a été déplacé là où il est juste : si les deux
+   étapes rendent la même décélération à moins de 0,5 m/s² près, aucune frontière
+   n'est proposée et la raison est dite.
+
+2. **Le plancher de croisière est rendu en vitesse et ne se recopie pas.**
+   `cruiseMinRpm` est un régime ; le déduire de la vitesse la plus basse tenue
+   demanderait de choisir dans quel rapport la boîte se trouve — or c'est ce que
+   le réglage sert à décider. La mesure s'arrête où commence le choix.
+
+3. **`springOmega` n'est pas proposé.** Le bruit du GPS est chiffré, la fenêtre
+   d'accélération s'en déduit par une formule vérifiée, mais la raideur du lissage
+   dépend du moment où le tremblement cesse de s'entendre. C'est un jugement
+   d'oreille ; le déduire d'une formule aurait habillé une convention en résultat.
+
+4. **Les seuils de passage sont proposés en km/h, et le réglage du profil est
+   affiché dans la même unité.** C'était la seule façon de tenir les deux
+   contraintes du lot à la fois : comparer la mesure au réglage, et ne rien
+   formuler en régime. La conversion n'emploie que le pont, les démultiplications
+   et le rayon de roue — des choix déjà faits, pas des mesures.
+
+5. **Deux défauts de mesure trouvés en mesurant.** Le bruit du GPS coupait un
+   palier en morceaux : vingt-sept paliers au lieu de deux sur une trace de deux
+   paliers de 80 et 90 s avec 0,5 km/h de bruit. Les morceaux sont maintenant
+   recollés. Et le délai de montée en croisière était pris comme une fraction de
+   la durée médiane d'un palier, ce qui donne un délai que la ville n'atteint
+   jamais quand l'autoroute tient une minute — c'est le dixième centile qu'il faut.
 
 ## Hors périmètre
 

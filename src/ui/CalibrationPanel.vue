@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { analyzeStep, type StepAnalysis } from '../core/calibration/analyze'
 import { CALIBRATION_STEPS, type CalibrationStepId } from '../core/calibration/protocol'
 import { loadCalibration, saveCalibration } from '../core/calibration/store'
+import { readSetting, type SettingPath } from '../core/calibration/settings'
 import { suggest, type Suggestion } from '../core/calibration/suggest'
 import {
   activeProfile,
@@ -37,6 +38,19 @@ const session = ref(loadCalibration())
 const active = ref<CalibrationStepId | null>(null)
 const storageError = ref('')
 
+/**
+ * Ce qu'une recopie a écrasé, réglage par réglage.
+ *
+ * Un retour en arrière immédiat, à côté du bouton qui vient d'écrire : dans une
+ * voiture, aller chercher « réinitialiser » dans l'écran de configuration
+ * remettrait toute une section, et pas seulement la valeur qu'on regrette. Cette
+ * mémoire ne vit que le temps de la session ; la garantie durable, elle, est
+ * l'origine du profil, à laquelle « réinitialiser » sait revenir.
+ */
+const overwritten = ref<Partial<Record<SettingPath, { value: number | number[]; shown: string }>>>(
+  {},
+)
+
 function traceFor(step: CalibrationStepId) {
   const startedAt = session.value[step]
   if (startedAt === undefined) return undefined
@@ -54,6 +68,21 @@ const analyses = computed<StepAnalysis[]>(() => {
 })
 
 const suggestions = computed<Suggestion[]>(() => suggest(analyses.value, activeProfile.value))
+
+/**
+ * Où en est la session, en une ligne.
+ *
+ * Une session incomplète reste utile, et c'est justement pour cela qu'il faut
+ * dire ce qu'elle contient : sans ce compte, on ne sait pas si une ligne « non
+ * mesuré » vient d'une étape oubliée ou d'une étape refusée.
+ */
+const progress = computed(() => {
+  const recorded = rows.value.filter((row) => row.recorded && !row.orphan).length
+  const valid = rows.value.filter((row) => row.analysis?.valid === true).length
+  const proposed = suggestions.value.filter((entry) => entry.setting !== null).length
+  const notMeasured = suggestions.value.filter((entry) => entry.measured === null).length
+  return { recorded, total: CALIBRATION_STEPS.length, valid, proposed, notMeasured }
+})
 
 /**
  * Une ligne d'étape, prête à afficher.
@@ -110,9 +139,27 @@ function onReplay(step: CalibrationStepId): void {
 function onCopy(suggestion: Suggestion): void {
   const setting = suggestion.setting
   if (!setting) return
+  // La valeur écrasée est relevée **avant** l'écriture, et dans l'unité du
+  // réglage : c'est elle qu'un retour en arrière doit rendre.
+  overwritten.value = {
+    ...overwritten.value,
+    [setting.path]: {
+      value: readSetting(activeProfile.value, setting.path),
+      shown: `${shown(setting.current, setting.decimals)} ${setting.unit}`,
+    },
+  }
   // `write`, et non `proposed` : les seuils de passage s'affichent en km/h et se
   // rangent en tr/min.
   applyCalibrationSetting(setting.path, setting.write)
+}
+
+function onUndo(path: SettingPath): void {
+  const previous = overwritten.value[path]
+  if (!previous) return
+  applyCalibrationSetting(path, previous.value)
+  const next = { ...overwritten.value }
+  delete next[path]
+  overwritten.value = next
 }
 
 function fixed(value: number, digits = 1): string {
@@ -240,6 +287,20 @@ function gap(setting: NonNullable<Suggestion['setting']>): string {
     </article>
 
     <h3>Mesuré face à réglé</h3>
+    <p class="note">
+      {{ progress.recorded }} étape{{ progress.recorded > 1 ? 's' : '' }} sur
+      {{ progress.total }} enregistrée{{ progress.recorded > 1 ? 's' : '' }},
+      {{ progress.valid }} valide{{ progress.valid > 1 ? 's' : '' }} —
+      {{ progress.proposed }} réglage{{ progress.proposed > 1 ? 's' : '' }} proposé{{ progress.proposed > 1 ? 's' : '' }},
+      {{ progress.notMeasured }} non mesuré{{ progress.notMeasured > 1 ? 's' : '' }}.
+      Une session incomplète reste utile : ce qui manque est dit, jamais estimé.
+    </p>
+    <!--
+      Le tableau défile de lui-même quand la place manque : sur un téléphone,
+      cinq seuils de passage face à cinq autres ne tiennent pas dans la largeur,
+      et c'est la page entière qui partirait de côté.
+    -->
+    <div class="scroller">
     <table class="recap">
       <thead>
         <tr>
@@ -268,6 +329,12 @@ function gap(setting: NonNullable<Suggestion['setting']>): string {
             <td class="numeric">{{ gap(suggestion.setting) }}</td>
             <td>
               <button @click="onCopy(suggestion)">Recopier</button>
+              <template v-if="overwritten[suggestion.setting.path]">
+                <button @click="onUndo(suggestion.setting.path)">Annuler</button>
+                <small class="muted">
+                  était {{ overwritten[suggestion.setting.path]?.shown }}
+                </small>
+              </template>
               <small v-if="suggestion.setting.conversion" class="muted">
                 {{ suggestion.setting.conversion }}
               </small>
@@ -289,7 +356,13 @@ function gap(setting: NonNullable<Suggestion['setting']>): string {
         </tr>
       </tbody>
     </table>
+    </div>
 
+    <p class="note">
+      « Annuler » rend la valeur écrasée, ici et tout de suite. Pour revenir plus
+      tard, l’écran de configuration ramène une section entière du profil à ce
+      qu’elle était à sa création.
+    </p>
     <p v-if="storageError" class="error">{{ storageError }}</p>
   </section>
 </template>
@@ -357,9 +430,26 @@ h3 {
   color: var(--warn);
 }
 
+.scroller {
+  overflow-x: auto;
+}
+
+/*
+ * La largeur minimale n'est pas décorative : la colonne des libellés porte, sous
+ * chaque nom de réglage, la phrase qui dit d'où vient la mesure. Serrée à onze
+ * rem sur un téléphone, elle se casse tous les deux mots et la ligne devient
+ * illisible. À dix-huit rem la phrase tient sur deux ou trois lignes, et le
+ * tableau défile de côté dans son conteneur plutôt que d'emporter la page.
+ */
 .recap {
   width: 100%;
   border-collapse: collapse;
+  min-width: 42rem;
+}
+
+.recap td:first-child,
+.recap th:first-child {
+  min-width: 18rem;
 }
 
 .recap th {
@@ -379,6 +469,10 @@ h3 {
 .recap td.numeric,
 .recap th:nth-child(n + 2) {
   text-align: right;
+}
+
+.recap td.numeric {
+  white-space: nowrap;
 }
 
 .recap small {

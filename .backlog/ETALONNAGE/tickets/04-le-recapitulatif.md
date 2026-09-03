@@ -1,6 +1,6 @@
 # 04 — Le récapitulatif : mesuré face à réglé
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 02 — Distinguer lever le pied d'un freinage ; 03 — Ville,
 route, autoroute : ce qu'on fait vraiment
@@ -24,9 +24,9 @@ filet : un profil sait revenir à ce qu'il était.
 
 ## Critères d'acceptation
 
-- [ ] Toutes les valeurs mesurées de la session sont sur un seul écran
-- [ ] Chaque ligne montre le mesuré, le réglé, et l'écart entre les deux
-- [ ] Ce qui n'a pas été mesuré est dit non mesuré
-- [ ] Un réglage se recopie individuellement, jamais tout en bloc
-- [ ] Après recopie, le profil sait revenir à ce qu'il était
-- [ ] Le récapitulatif se relit sur une session enregistrée plus tôt
+- [x] Toutes les valeurs mesurées de la session sont sur un seul écran
+- [x] Chaque ligne montre le mesuré, le réglé, et l'écart entre les deux
+- [x] Ce qui n'a pas été mesuré est dit non mesuré
+- [x] Un réglage se recopie individuellement, jamais tout en bloc
+- [x] Après recopie, le profil sait revenir à ce qu'il était
+- [x] Le récapitulatif se relit sur une session enregistrée plus tôt

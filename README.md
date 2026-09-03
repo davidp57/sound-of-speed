@@ -692,12 +692,30 @@ départ à l'arrêt, 30 km/h gagnés au minimum, et **2 m/s² d'accélération
 soutenue**. Deux mètres par seconde carré, c'est zéro à cinquante en sept
 secondes — très en dessous de ce qu'une électrique fait sans effort.
 
+### Le récapitulatif
+
+Un seul tableau, sous les étapes. Chaque ligne porte le nom du réglage, la
+phrase qui dit d'où vient la mesure, la valeur **mesurée**, la valeur
+**réglée**, et l'**écart** entre les deux. Une ligne d'en-tête compte où en est
+la session — combien d'étapes enregistrées, combien valides, combien de réglages
+proposés et combien non mesurés — parce que sans ce compte on ne sait pas si un
+« non mesuré » vient d'une étape oubliée ou d'une étape refusée.
+
+Le tableau se relit tel quel après un rechargement : une session ne retient que
+le lien entre une étape et sa trace, et les traces sont conservées. Le
+récapitulatif se **recalcule** donc, plutôt que de rejouer des chiffres
+mémorisés qui pourraient avoir divergé de l'analyse.
+
 ### Elle propose, elle n'applique pas
 
 C'est la règle déjà retenue pour l'analyse d'échantillon : la mesure est plus
 sûre que le souvenir, elle n'est pas plus sûre que le jugement. Rien n'est écrit
-dans le profil sans un geste, et jamais en bloc — un réglage à la fois. Après une
-recopie, **Réinitialiser** ramène la section du profil à ce qu'elle était.
+dans le profil sans un geste, et jamais en bloc — un réglage à la fois.
+
+Deux retours en arrière, à deux échéances. **Annuler**, à côté du bouton qui
+vient d'écrire, rend la valeur écrasée immédiatement et pour ce réglage seul.
+Plus tard, **Réinitialiser** dans l'écran de configuration ramène une section
+entière du profil à ce qu'elle était à sa création.
 
 ### Ce que l'étalonnage ne dira jamais
 
