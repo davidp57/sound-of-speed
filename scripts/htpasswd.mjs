@@ -89,7 +89,12 @@ const { lines, replaced } = await existingLines(user)
 // changé au fil de ses versions.
 const hash = bcrypt.hashSync(password, ROUNDS).replace(/^\$2[abxy]\$/, '$2y$')
 
-await writeFile(OUTPUT, `${user}:${hash}\n`, 'utf8')
-console.log(`\nÉcrit dans ./${OUTPUT}`)
+await writeFile(OUTPUT, [...lines, `${user}:${hash}`].join('\n') + '\n', 'utf8')
+
+const total = lines.length + 1
+console.log(`\n${replaced ? 'Remplacé' : 'Ajouté'} dans ./${OUTPUT} — ${total} entrée${total > 1 ? 's' : ''}.`)
+if (lines.length > 0) {
+  console.log(`Entrées conservées : ${lines.map((line) => line.split(':')[0]).join(', ')}.`)
+}
 console.log('À déposer dans /volume1/docker/speed/ avec File Station,')
-console.log('puis à décommenter dans docker/nginx.conf et dans la pile.')
+console.log('puis à monter dans la pile Portainer.')
