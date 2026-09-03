@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   MAX_GEARS,
+  applyResponsiveness,
   applySportiness,
   resizeGearTables,
   responsivenessOf,
@@ -13,6 +14,7 @@ import { createDefaultProfile, createRoadProfile } from './defaults'
 import { applyOrigin, captureOrigin } from './store'
 import { Engine } from '../engine/engine'
 import { Gearbox } from '../drivetrain/gearbox'
+import { SpeedConditioner } from '../speed/conditioner'
 import type { Profile } from './schema'
 
 /**
@@ -289,6 +291,162 @@ describe('le curseur « calme ↔ sportif »', () => {
     // L'identité ne bouge pas au passage.
     expect(rendu.id).toBe(route.id)
     expect(rendu.name).toBe(route.name)
+  })
+})
+
+/**
+ * Bruit de mesure reproductible, ±amplitude en km/h.
+ *
+ * Un GPS ne livre pas une rampe propre : sans bruit, la mesure de continuité ne
+ * mesure rien, le conditionneur extrapolant exactement entre deux points
+ * alignés.
+ */
+function jitter(seed: number, amplitude: number): number {
+  const x = Math.sin(seed * 12.9898) * 43758.5453
+  return (x - Math.floor(x) - 0.5) * 2 * amplitude
+}
+
+/**
+ * Suivi d'une rampe de 0 à 90 km/h en quinze secondes, bruitée à ±1 km/h.
+ *
+ * Rend la plus grande **marche** — l'écart de vitesse conditionnée d'une image
+ * à la suivante, ce qui s'entendrait comme un saut de hauteur — et le **retard**
+ * maximal sur la vitesse vraie, exprimé en millisecondes de la rampe.
+ */
+function tracking(profile: Profile, cadenceMs: number): { stepKmh: number; lagMs: number } {
+  const conditioner = new SpeedConditioner(profile.speed)
+  const dt = 1 / 60
+  const vraie = (secs: number) => (secs < 15 ? (90 * secs) / 15 : 90)
+  let nextSample = 0
+  let seed = 0
+  let previous = 0
+  let stepKmh = 0
+  let lagKmh = 0
+  for (let frame = 0; frame < 60 * 25; frame += 1) {
+    const at = frame * dt * 1000
+    if (at >= nextSample) {
+      seed += 1
+      conditioner.push({
+        kmh: vraie(at / 1000) + jitter(seed, 1),
+        at,
+        accuracyM: 5,
+        derived: false,
+      })
+      nextSample = at + cadenceMs
+    }
+    const out = conditioner.tick(dt)
+    const secs = at / 1000
+    // Les trois premières secondes sont écartées : le ressort part de zéro et
+    // son rattrapage initial n'est pas un défaut de suivi.
+    if (secs > 3 && secs < 14) {
+      stepKmh = Math.max(stepKmh, Math.abs(out.kmh - previous))
+      lagKmh = Math.max(lagKmh, vraie(secs) - out.kmh)
+    }
+    previous = out.kmh
+  }
+  // La rampe monte de 6 km/h par seconde : un retard en vitesse s'y convertit
+  // en retard de temps.
+  return { stepKmh, lagMs: (lagKmh / 6) * 1000 }
+}
+
+describe('le curseur « pépère ↔ nerveux »', () => {
+  it('se relit exactement là où on l’a posé', () => {
+    let pire = 0
+    for (const modele of [route, sport]) {
+      for (let i = 0; i <= 100; i += 1) {
+        const voulu = i / 100
+        pire = Math.max(pire, Math.abs(responsivenessOf(applyResponsiveness(modele, voulu)) - voulu))
+      }
+    }
+    // Mesuré : 0,0005 au plus, soit un vingtième de cran sur cent.
+    expect(pire).toBeLessThan(0.001)
+  })
+
+  it('ne touche pas au caractère réglé par l’autre curseur', () => {
+    // La distinction est tout l'objet de ce second curseur : une voiture calme
+    // peut être vive, une sportive pâteuse. Les deux lectures sont donc prises
+    // sur des réglages disjoints.
+    const cale = applySportiness(route, 0.7)
+
+    for (const r of [0, 0.5, 1]) {
+      const p = applyResponsiveness(cale, r)
+      expect(sportinessOf(p)).toBeCloseTo(0.7, 3)
+      expect(p.engine).toEqual(cale.engine)
+      expect(p.feel).toEqual(cale.feel)
+      expect(p.drivetrain.upshiftRpm).toEqual(cale.drivetrain.upshiftRpm)
+      expect(p.drivetrain.cruiseMinRpm).toBe(cale.drivetrain.cruiseMinRpm)
+    }
+  })
+
+  it('garde la vitesse continue au plus nerveux', () => {
+    const nerveux = applyResponsiveness(route, 1)
+
+    // Mesuré sur une rampe bruitée à ±1 km/h, à la cadence la plus défavorable
+    // — une mesure par seconde : la vitesse conditionnée bouge de 0,675 km/h
+    // par image au plus. Elle ne saute pas : le ressort est amorti critique, et
+    // 0,675 km/h vaut une quinzaine de tours par minute en dernier rapport.
+    const lent = tracking(nerveux, 1000)
+    expect(lent.stepKmh).toBeCloseTo(0.675, 2)
+    expect(lent.stepKmh).toBeLessThan(1)
+
+    // À la cadence du GPS d'une Tesla en mouvement, la marche tombe à 0,376 :
+    // plus le GPS parle, plus le suivi est doux.
+    expect(tracking(nerveux, 33).stepKmh).toBeCloseTo(0.376, 2)
+  })
+
+  it('garde un retard supportable au plus pépère', () => {
+    const pepere = applyResponsiveness(route, 0)
+
+    // Mesuré : 556 ms de retard à la cadence d'un hertz, 334 ms à trente-trois
+    // millisecondes. Une demi-seconde est tenable en conduite — c'est le prix
+    // de la douceur, et c'est ce que l'extrême de ce curseur achète.
+    const lent = tracking(pepere, 1000)
+    expect(lent.lagMs).toBeCloseTo(556, -1)
+    expect(lent.lagMs).toBeLessThan(700)
+    expect(tracking(pepere, 33).lagMs).toBeLessThan(400)
+
+    // Et il est bien plus doux que le nerveux : 0,242 km/h par image contre
+    // 0,675.
+    expect(lent.stepKmh).toBeLessThan(tracking(applyResponsiveness(route, 1), 1000).stepKmh)
+  })
+
+  it('retrouve au milieu le réglage des profils livrés', () => {
+    // Le milieu du curseur n'est pas un compromis inventé : c'est le réglage
+    // qui a servi jusqu'ici. Mesuré : 0,433 km/h par image et 409 ms de retard.
+    const milieu = applyResponsiveness(route, 0.5)
+
+    expect(milieu.speed.springOmega).toBe(route.speed.springOmega)
+    expect(milieu.speed.accelWindowMs).toBe(route.speed.accelWindowMs)
+    const suivi = tracking(milieu, 1000)
+    expect(suivi.stepKmh).toBeCloseTo(0.433, 2)
+    expect(suivi.lagMs).toBeCloseTo(409, -1)
+  })
+
+  it('se combine avec le tempérament sans produire de profil injouable', () => {
+    for (const s of [0, 1]) {
+      for (const r of [0, 1]) {
+        const p = applyResponsiveness(applySportiness(route, s), r)
+
+        expect(sportinessOf(p)).toBeCloseTo(s, 2)
+        expect(responsivenessOf(p)).toBeCloseTo(r, 2)
+
+        // La boîte ne brasse pas et ne dort pas, quelle que soit la combinaison.
+        const tenue = cruise(p, 110)
+        expect(tenue.shifts).toBeLessThanOrEqual(p.drivetrain.gearRatios.length)
+        expect(tenue.rpm).toBeGreaterThanOrEqual(p.drivetrain.cruiseMinRpm)
+        expect(fullThrottle(p).peakRpm).toBeLessThan(p.engine.redlineRpm)
+
+        // Et le signal reste dans les bornes que l'écran de configuration
+        // affiche, donc réglable ensuite à la main.
+        expect(p.speed.springOmega).toBeGreaterThanOrEqual(2)
+        expect(p.speed.springOmega).toBeLessThanOrEqual(40)
+        expect(p.speed.accelWindowMs).toBeGreaterThanOrEqual(200)
+        expect(p.speed.accelWindowMs).toBeLessThanOrEqual(3000)
+        expect(p.mix.loadSmoothingS).toBeGreaterThanOrEqual(0.02)
+        expect(p.mix.loadSmoothingS).toBeLessThanOrEqual(1.5)
+        for (const delay of p.drivetrain.shiftDelaysS) expect(delay).toBeGreaterThan(0)
+      }
+    }
   })
 })
 

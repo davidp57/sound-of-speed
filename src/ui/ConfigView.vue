@@ -34,9 +34,11 @@ import {
   resetActive,
   restoreFactoryProfiles,
   canUndoGlobalChange,
+  responsiveness,
   selectProfile,
   selectedProfileId,
   setGearRatios,
+  setResponsiveness,
   setSportiness,
   sportiness,
   toggleFavorite,
@@ -155,6 +157,11 @@ const delaysText = computed<string>({
 const sportinessPercent = computed<number>({
   get: () => Math.round(sportiness.value * 100),
   set: (value: number) => setSportiness(value / 100),
+})
+
+const responsivenessPercent = computed<number>({
+  get: () => Math.round(responsiveness.value * 100),
+  set: (value: number) => setResponsiveness(value / 100),
 })
 
 /** Ce que donne le profil courant, dans les mêmes termes que la création. */
@@ -464,6 +471,14 @@ function impliedCylinders(index: number): number | null {
           :max="100"
           :step="1"
           hint="Le caractère du moteur et de la boîte : inertie, régimes de passage, plancher et délai de croisière, rétrogradage, pétarade, à-coup. Vers zéro la boîte monte tôt et tourne bas ; vers cent elle étire les rapports. Ce curseur refait ces réglages, et le bouton de retour annule le geste."
+        />
+        <NumberField
+          v-model="responsivenessPercent"
+          label="Pépère ↔ nerveux"
+          :min="0"
+          :max="100"
+          :step="1"
+          hint="La réactivité du signal, et non le caractère : raideur du lissage, fenêtre d'accélération, lissage de la charge, temporisations de passage. Le premier curseur dit si la voiture pousse fort, celui-ci si elle répond vite. Vers cent elle suit au plus près et les sauts du GPS s'entendent ; vers zéro elle est lisse et en retard d'une demi-seconde."
         />
         <div class="global-actions">
           <button :disabled="!canUndoGlobalChange" @click="undoGlobalChange()">

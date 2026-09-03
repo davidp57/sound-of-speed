@@ -45,6 +45,10 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value))
 }
 
+function round1(value: number): number {
+  return Number(value.toFixed(1))
+}
+
 function round2(value: number): number {
   return Number(value.toFixed(2))
 }
@@ -277,6 +281,59 @@ export function applySportiness(profile: Profile, sportiness: number): Profile {
         ...profile.feel.shiftJolt,
         depth: round3(0.25 + 0.4 * s),
       },
+    },
+  }
+}
+
+/**
+ * Refait la réactivité du signal, du pépère au nerveux.
+ *
+ * Quatre réglages : la raideur du lissage, la fenêtre d'accélération, le lissage
+ * de la charge et les temporisations de passage. Le compromis est celui du
+ * conditionnement du signal, et il n'est pas supprimable — nerveux suit au plus
+ * près et laisse passer le bruit du GPS, pépère est lisse et en retard.
+ *
+ * Les bornes sont mesurées, sur une rampe de 0 à 90 km/h en quinze secondes avec
+ * un bruit de mesure de ±1 km/h :
+ *
+ * - au plus **nerveux** (raideur 22), la vitesse conditionnée bouge de 0,675
+ *   km/h par image au plus à la cadence d'un hertz, et le retard tombe à 369 ms.
+ *   Elle reste continue : le ressort est amorti critique, il ne produit pas de
+ *   marche ;
+ * - au plus **pépère** (raideur 6), la marche descend à 0,242 km/h par image et
+ *   le retard monte à 556 ms — une demi-seconde, tenable en conduite ;
+ * - au **milieu** (raideur 14), on retrouve exactement le réglage des profils
+ *   livrés : 0,433 km/h par image et 409 ms. C'est celui qui a servi jusqu'ici,
+ *   il n'y a pas de raison que passer par le mode simplifié le déplace.
+ *
+ * La fenêtre d'accélération suit la même logique : à la cadence de 250 ms, une
+ * fenêtre de 400 ms laisse l'accélération lue trembler à 1,51 m/s² d'écart-type
+ * contre 0,85 à 1600 ms. C'est le prix de la vivacité, et il se paie sur la
+ * charge, donc sur le fondu entre les couches.
+ *
+ * Ce curseur ne touche pas au caractère du moteur ni à celui de la boîte : une
+ * voiture calme peut être vive, une sportive pâteuse.
+ */
+export function applyResponsiveness(profile: Profile, responsiveness: number): Profile {
+  const r = clamp01(responsiveness)
+  return {
+    ...profile,
+    drivetrain: {
+      ...profile.drivetrain,
+      shiftDelaysS: shiftDelaysFor(
+        profile.drivetrain.gearRatios.length,
+        sportinessOf(profile),
+        r,
+      ),
+    },
+    speed: {
+      ...profile.speed,
+      springOmega: round1(6 + 16 * r),
+      accelWindowMs: Math.round(1600 - 1200 * r),
+    },
+    mix: {
+      ...profile.mix,
+      loadSmoothingS: round3(0.3 - 0.24 * r),
     },
   }
 }

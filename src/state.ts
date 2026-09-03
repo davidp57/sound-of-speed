@@ -14,7 +14,13 @@ import { SimulatorSource } from './core/speed/simulator'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
 import type { Profile, ProfileOrigin } from './core/preset/schema'
-import { applySportiness, resizeGearTables, sportinessOf } from './core/preset/character'
+import {
+  applyResponsiveness,
+  applySportiness,
+  resizeGearTables,
+  responsivenessOf,
+  sportinessOf,
+} from './core/preset/character'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
 import {
@@ -856,6 +862,18 @@ export const sportiness = computed(() => sportinessOf(activeProfile.value))
 
 export function setSportiness(value: number): void {
   applyGlobalChange((profile) => applySportiness(profile, value))
+}
+
+/**
+ * Réactivité du profil actif, de 0 (pépère) à 1 (nerveux).
+ *
+ * Distincte du tempérament, et il faut qu'elle s'entende : le premier dit si la
+ * voiture pousse fort, celle-ci dit si elle répond vite.
+ */
+export const responsiveness = computed(() => responsivenessOf(activeProfile.value))
+
+export function setResponsiveness(value: number): void {
+  applyGlobalChange((profile) => applyResponsiveness(profile, value))
 }
 
 export function duplicateActive(): void {

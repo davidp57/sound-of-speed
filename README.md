@@ -450,6 +450,28 @@ milieu du curseur étant par construction le réglage qui a servi jusqu'ici.
 | Curseur | Ce qu'il commande |
 |---|---|
 | **Calme ↔ sportif** | Le caractère du moteur et de la boîte : inertie, montée à vide, temps de passage, écart selon la charge, régimes de passage, plancher et délai de croisière, seuil de rétrogradage au freinage, rétrogradage forcé, pétarade, à-coup de passage. Il ne touche ni au pont, ni aux démultiplications, ni au rupteur, ni au mixage. Mesuré sur Route, pied au plancher : la pointe de régime passe de 3929 tr/min au plus calme à 6043 au plus sportif, pour un rupteur à 6500 |
+| **Pépère ↔ nerveux** | La réactivité du **signal**, et non le caractère : raideur du lissage, fenêtre d'accélération, lissage de la charge, temporisations de passage. La distinction est réelle — le premier curseur dit si la voiture pousse fort, celui-ci si elle répond vite. Une voiture calme peut être vive, une sportive pâteuse |
+
+Les bornes du second sont **mesurées** sur une rampe de 0 à 90 km/h en quinze
+secondes, bruitée à ±1 km/h comme l'est une mesure GPS, à la cadence la plus
+défavorable — une mesure par seconde :
+
+| Position | Marche d'une image à l'autre | Retard sur la vitesse vraie |
+|---|---|---|
+| Pépère (raideur 6) | 0,242 km/h | 556 ms |
+| Milieu (raideur 14) | 0,433 km/h | 409 ms |
+| Nerveux (raideur 22) | 0,675 km/h | 369 ms |
+
+La vitesse reste continue même au plus nerveux : le ressort est amorti critique,
+il ne produit pas de marche, et 0,675 km/h par image vaut une quinzaine de tours
+par minute en dernier rapport. À la cadence du GPS d'une Tesla en mouvement —
+une mesure toutes les trente-trois millisecondes — la marche tombe à 0,376 km/h
+et le retard à 334 ms : plus le GPS parle, plus le suivi est à la fois doux et
+juste.
+
+La fenêtre d'accélération suit la même logique, et son prix se paie sur la
+charge : à une cadence de 250 ms, une fenêtre de 400 ms laisse l'accélération
+lue trembler à 1,51 m/s² d'écart-type, contre 0,85 à 1600 ms.
 
 Deux interrupteurs restent à la main : le **rétrogradage forcé** et l'**à-coup de
 passage** ne se coupent jamais tout seuls — couper ce que quelqu'un a activé
