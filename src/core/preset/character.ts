@@ -1,0 +1,234 @@
+import type { Profile } from './schema'
+
+/**
+ * Le caractère d'un profil, en deux nombres.
+ *
+ * Le guide de création sait déjà déduire une cinquantaine de réglages de quatre
+ * réponses, mais ce savoir ne servait qu'une fois : passé la création, il ne
+ * restait que la colonne de curseurs. Les lois écrites ici sont celles du guide,
+ * sorties de lui pour être disponibles en continu — et, surtout, **inversibles**
+ * : on peut relire dans un profil le tempérament qu'il porte, ce qui permet à un
+ * curseur global de refléter ce qu'on a sous les doigts au lieu de partir d'une
+ * position arbitraire.
+ *
+ * Deux nombres, et il faut les distinguer :
+ *
+ * - le **tempérament** (0 calme, 1 sportif) est le caractère du moteur et de la
+ *   boîte : ce qui décide si la voiture pousse fort ;
+ * - la **réactivité** (0 pépère, 1 nerveux) est celui du signal : ce qui décide
+ *   si elle répond vite. Une voiture calme peut être vive, une sportive pâteuse.
+ *
+ * Aucun des deux n'est enregistré dans le profil : ils s'en déduisent. Un
+ * réglage trouvé à la main reste donc la seule vérité, et un curseur global ne
+ * peut pas mentir sur ce que le profil contient.
+ */
+
+/** Nombre de rapports admis par la boîte, bornes comprises. */
+export const MIN_GEARS = 2
+export const MAX_GEARS = 9
+
+/**
+ * Interpolation entre trois points relevés — au plus calme, au milieu, au plus
+ * sportif.
+ *
+ * Le guide donnait trois valeurs discrètes pour ses trois tempéraments. Deux
+ * d'entre elles ne sont pas alignées ; les interpoler par morceaux les
+ * conserve exactement, là où une droite les aurait déplacées.
+ */
+function between(low: number, mid: number, high: number, t: number): number {
+  const x = clamp01(t)
+  return x <= 0.5 ? low + (mid - low) * (x * 2) : mid + (high - mid) * ((x - 0.5) * 2)
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.min(1, Math.max(0, value))
+}
+
+function round2(value: number): number {
+  return Number(value.toFixed(2))
+}
+
+/**
+ * Régimes de passage, un par passage, en tours par minute.
+ *
+ * Une rampe en fraction du rupteur, du premier passage au dernier : les
+ * rapports courts passent tôt, les longs étirent davantage. Un seuil unique ne
+ * peut pas faire les deux, c'est ce qui a motivé la table.
+ */
+export function upshiftTableFor(
+  gearCount: number,
+  redlineRpm: number,
+  sportiness: number,
+): number[] {
+  const count = gearsIn(gearCount)
+  const s = clamp01(sportiness)
+  const from = 0.42 + 0.26 * s
+  const to = 0.5 + 0.32 * s
+  return Array.from({ length: Math.max(1, count - 1) }, (_, i) => {
+    const t = count > 2 ? i / (count - 2) : 0
+    return Math.round(redlineRpm * (from + (to - from) * t))
+  })
+}
+
+/**
+ * Temporisations avant montée, en secondes, une par rapport.
+ *
+ * Volontairement inégales : avec une valeur unique, la boîte sonne comme un
+ * métronome. Leur longueur relève de la réactivité et non du tempérament — une
+ * voiture calme peut passer ses rapports sans traîner — mais un tempérament vif
+ * les raccourcit tout de même, parce qu'il ne laisse pas le temps de la
+ * réflexion.
+ */
+export function shiftDelaysFor(
+  gearCount: number,
+  sportiness: number,
+  responsiveness: number,
+): number[] {
+  const count = gearsIn(gearCount)
+  const base = between(0.45, 0.32, 0.22, sportiness) * (1.5 - clamp01(responsiveness))
+  return Array.from({ length: count }, (_, i) => round2(base * (i % 2 === 0 ? 1 : 1.7)))
+}
+
+function gearsIn(gearCount: number): number {
+  if (!Number.isFinite(gearCount)) return MIN_GEARS
+  return Math.max(MIN_GEARS, Math.min(MAX_GEARS, Math.round(gearCount)))
+}
+
+/**
+ * Les huit valeurs qui trahissent le tempérament d'un profil.
+ *
+ * Chacune est linéaire en tempérament, donc inversible exactement : la valeur
+ * lue, rapportée à ce que la loi donnerait aux deux extrêmes, rend le
+ * tempérament. On en garde huit et on prend la **médiane** plutôt que la
+ * moyenne : les deux profils livrés ont été réglés à la main, et l'un ou l'autre
+ * de leurs réglages sort de la loi sans que cela dise quoi que ce soit de leur
+ * caractère d'ensemble. Une moyenne se laisse tirer par cet écart, une médiane
+ * non.
+ *
+ * L'écart de charge n'en fait pas partie : c'est le seul des réglages menés par
+ * le tempérament qui ne soit pas linéaire, donc le seul qui ne s'inverse pas
+ * exactement.
+ */
+const SPORTINESS_READINGS: {
+  value: (profile: Profile) => number
+  law: (profile: Profile, sportiness: number) => number
+}[] = [
+  { value: (p) => p.engine.inertia, law: (_p, s) => 1.4 - 0.5 * s },
+  {
+    value: (p) => p.engine.freeRevRate / p.engine.redlineRpm,
+    law: (_p, s) => 0.9 + 0.5 * s,
+  },
+  { value: (p) => p.drivetrain.shiftTimeMs, law: (_p, s) => 140 - 60 * s },
+  {
+    // Comparé à la rampe qu'aurait une table de **même longueur** : la table
+    // enregistrée peut être plus courte que la boîte, et c'est justement le
+    // défaut que ce lot corrige. Comparer sa moyenne à celle d'une rampe d'une
+    // autre longueur ferait lire un tempérament qui n'est pas là.
+    value: (p) => mean(p.drivetrain.upshiftRpm) / p.engine.redlineRpm,
+    law: (p, s) =>
+      mean(upshiftTableFor(p.drivetrain.upshiftRpm.length + 1, p.engine.redlineRpm, s)) /
+      p.engine.redlineRpm,
+  },
+  { value: (p) => p.drivetrain.cruiseUpshiftAfterS, law: (_p, s) => 2 + 1.6 * s },
+  { value: (p) => p.drivetrain.brakeDownshiftAccelMs2, law: (_p, s) => -1.1 + 0.5 * s },
+  { value: (p) => p.feel.kickdown.targetRpmFraction, law: (_p, s) => 0.5 + 0.15 * s },
+  { value: (p) => p.feel.shiftJolt.depth, law: (_p, s) => 0.25 + 0.4 * s },
+]
+
+/**
+ * Les trois valeurs qui trahissent la réactivité d'un profil.
+ *
+ * Le milieu du curseur est, par construction, le réglage des profils livrés :
+ * c'est celui qui a servi jusqu'ici, il n'y a pas de raison de le déplacer en
+ * passant par le mode simplifié.
+ */
+const RESPONSIVENESS_READINGS: {
+  value: (profile: Profile) => number
+  law: (responsiveness: number) => number
+}[] = [
+  { value: (p) => p.speed.springOmega, law: (r) => 6 + 16 * r },
+  { value: (p) => p.speed.accelWindowMs, law: (r) => 1600 - 1200 * r },
+  { value: (p) => p.mix.loadSmoothingS, law: (r) => 0.3 - 0.24 * r },
+]
+
+function mean(values: number[]): number {
+  if (values.length === 0) return Number.NaN
+  return values.reduce((total, value) => total + value, 0) / values.length
+}
+
+/**
+ * Médiane des lectures exploitables.
+ *
+ * Une lecture peut ne rien valoir — une table vide, un rupteur absurde dans un
+ * profil importé — et il vaut mieux l'écarter que la compter pour zéro : elle
+ * tirerait la médiane vers le calme sans qu'aucun réglage ne le dise.
+ */
+function median(values: number[]): number {
+  const sorted = values.filter((value) => Number.isFinite(value)).sort((a, b) => a - b)
+  if (sorted.length === 0) return 0.5
+  const middle = Math.floor(sorted.length / 2)
+  if (sorted.length % 2 === 1) return sorted[middle] ?? 0
+  return ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2
+}
+
+/** Position d'une valeur entre ce que la loi donne aux deux extrêmes. */
+function invert(value: number, atCalm: number, atSporty: number): number {
+  const span = atSporty - atCalm
+  if (!Number.isFinite(value) || !Number.isFinite(span)) return Number.NaN
+  if (Math.abs(span) < 1e-9) return Number.NaN
+  return clamp01((value - atCalm) / span)
+}
+
+/** Tempérament que porte ce profil, de 0 (calme) à 1 (sportif). */
+export function sportinessOf(profile: Profile): number {
+  return median(
+    SPORTINESS_READINGS.map((reading) =>
+      invert(reading.value(profile), reading.law(profile, 0), reading.law(profile, 1)),
+    ),
+  )
+}
+
+/** Réactivité que porte ce profil, de 0 (pépère) à 1 (nerveux). */
+export function responsivenessOf(profile: Profile): number {
+  return median(
+    RESPONSIVENESS_READINGS.map((reading) =>
+      invert(reading.value(profile), reading.law(0), reading.law(1)),
+    ),
+  )
+}
+
+/**
+ * Redimensionne les tables qui suivent le nombre de rapports.
+ *
+ * Changer le nombre de rapports était déjà possible — le champ des
+ * démultiplications accepte la liste et la réécrit — mais bancal : les régimes
+ * de passage et les temporisations gardaient leur ancienne longueur. La boîte se
+ * rabattait alors sur le dernier seuil connu et sur une temporisation de 0,8 s
+ * étrangère au profil, si bien qu'un rapport ajouté héritait des réglages de son
+ * prédécesseur.
+ *
+ * Les tables sont donc reconstruites depuis le caractère du profil lui-même, tel
+ * qu'il se relit dans ses autres réglages : c'est ce que le guide de création
+ * fait depuis le tempérament, appliqué à un profil déjà en place.
+ *
+ * Un profil dont les tables ont déjà la bonne longueur est rendu **tel quel** :
+ * on ne redistribue pas des seuils que quelqu'un a placés à l'oreille.
+ */
+export function resizeGearTables(profile: Profile, gearCount: number): Profile {
+  const count = gearsIn(gearCount)
+  if (
+    profile.drivetrain.upshiftRpm.length === Math.max(1, count - 1) &&
+    profile.drivetrain.shiftDelaysS.length === count
+  ) {
+    return profile
+  }
+  return {
+    ...profile,
+    drivetrain: {
+      ...profile.drivetrain,
+      upshiftRpm: upshiftTableFor(count, profile.engine.redlineRpm, sportinessOf(profile)),
+      shiftDelaysS: shiftDelaysFor(count, sportinessOf(profile), responsivenessOf(profile)),
+    },
+  }
+}

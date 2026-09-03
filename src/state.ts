@@ -14,6 +14,7 @@ import { SimulatorSource } from './core/speed/simulator'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
 import type { Profile } from './core/preset/schema'
+import { resizeGearTables } from './core/preset/character'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
 import {
@@ -750,6 +751,31 @@ export function resetActive(section: ProfileSection | 'all'): void {
   if (!current) return
   const next = [...profiles.value]
   next[index] = resetProfileSection(current, section)
+  profiles.value = next
+}
+
+/**
+ * Pose la liste des démultiplications du profil actif.
+ *
+ * Passe par ici, et non par une écriture directe, parce que changer le **nombre**
+ * de rapports oblige à redimensionner les tables qui l'accompagnent : les
+ * régimes de passage et les temporisations. Sans cela un rapport ajouté héritait
+ * du seuil de son prédécesseur et d'une temporisation par défaut étrangère au
+ * profil, et un rapport retiré laissait des valeurs orphelines.
+ *
+ * À nombre de rapports égal, rien d'autre ne bouge : `resizeGearTables` rend le
+ * profil tel quel quand ses tables sont déjà à la bonne longueur — on ne
+ * redistribue pas des seuils que quelqu'un a placés à l'oreille.
+ */
+export function setGearRatios(ratios: number[]): void {
+  if (ratios.length === 0) return
+  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
+  const current = profiles.value[index]
+  if (!current) return
+
+  const resized = resizeGearTables(current, ratios.length)
+  const next = [...profiles.value]
+  next[index] = { ...resized, drivetrain: { ...resized.drivetrain, gearRatios: ratios } }
   profiles.value = next
 }
 

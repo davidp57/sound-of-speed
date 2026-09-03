@@ -1,6 +1,6 @@
 # MODE-SIMPLE — quelques curseurs qui commandent les quarante-huit autres
 
-**Statut :** ⬜ prêt
+**Statut :** 🔄 en cours
 **Branche :** `feature/mode-simple`
 **Version visée :** 0.3
 
@@ -57,9 +57,16 @@ Le ticket n'est donc pas « rendre possible » mais « redimensionner les tables
 avec le nombre de rapports », ce que le guide sait faire — il les calcule depuis
 le tempérament.
 
-## La question qui décide de la forme
+## La question qui décide de la forme — tranchée
 
 **Un curseur global écrase-t-il un réglage trouvé à la main ?**
+
+**Réponse retenue : oui, mais réversible** — la deuxième des trois ci-dessous.
+Le lot [ORIGINE](../ORIGINE/spec.md) a doté chaque profil d'un état de retour ;
+on en prend un second juste avant le mouvement d'un curseur global, ce qui rend
+le geste sans risque. Le décalage relatif est écarté : il retirerait au mot
+« calme » tout sens absolu, et deux profils au même réglage ne sonneraient pas
+pareil.
 
 Il ne peut pas faire autrement : il recalcule. Trois réponses possibles, et elles
 donnent trois produits différents.
@@ -75,7 +82,7 @@ donnent trois produits différents.
    fin survit, mais la notion de « calme » n'a alors plus de sens absolu, et
    deux profils au même curseur ne sonnent pas pareil.
 
-À trancher avant d'écrire une ligne : c'est le choix dont tout le reste découle.
+C'était le choix dont tout le reste découlait.
 
 ## Hors périmètre
 

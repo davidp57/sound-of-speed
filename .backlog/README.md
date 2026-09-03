@@ -32,7 +32,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [ORIGINE](ORIGINE/spec.md) — réinitialiser un profil à ce qu'il était, et non aux réglages de Sport | ✅ |
 | [UI-DEFILEMENT](UI-DEFILEMENT/spec.md) — faire défiler l'écran de configuration sans dérégler un curseur | 🧑 |
 | [VOLUME-GLOBAL](VOLUME-GLOBAL/spec.md) — le volume est une préférence d'appareil, pas un caractère de profil | ✅ |
-| [MODE-SIMPLE](MODE-SIMPLE/spec.md) — quelques curseurs globaux qui commandent les quarante-huit autres | ⬜ |
+| [MODE-SIMPLE](MODE-SIMPLE/spec.md) — quelques curseurs globaux qui commandent les quarante-huit autres | 🔄 |
 | [DEPOSER](DEPOSER/spec.md) — sortir un profil ou une trace d'une voiture qui refuse les fichiers | ⬜ |
 | [ETALONNAGE](ETALONNAGE/spec.md) — mesurer la vraie voiture pour régler les virtuelles | ⬜ |
 | [TABLEAU-DE-BORD](TABLEAU-DE-BORD/spec.md) — un vrai tableau de bord, et un paysage qui défile | 🧑 |
@@ -69,11 +69,11 @@ jour même, après deux décisions de conception prises par David :
   donc pas de DEPOSER, dont le préalable technique — la présence du module
   d'écriture dans l'image du serveur — n'est pas encore établi.
 
-Deux points restent ouverts à l'intérieur des tickets, et sont posés là où ils se
-tranchent : ce qu'un curseur global fait d'un réglage trouvé à la main
-(MODE-SIMPLE, ticket 03 — reco : écraser, avec un retour), et si EFFORT garde sa
-raison d'être maintenant que la mesure d'accélération est juste (EFFORT,
-ticket 01).
+Un point reste ouvert à l'intérieur des tickets, et il est posé là où il se
+tranche : si EFFORT garde sa raison d'être maintenant que la mesure
+d'accélération est juste (EFFORT, ticket 01). Le second — ce qu'un curseur global
+fait d'un réglage trouvé à la main — est tranché : **on écrase, avec un retour**
+(MODE-SIMPLE, spec).
 
 ## Ce qui n'est pas dans le backlog
 

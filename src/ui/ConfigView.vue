@@ -33,6 +33,7 @@ import {
   restoreFactoryProfiles,
   selectProfile,
   selectedProfileId,
+  setGearRatios,
   toggleFavorite,
   library,
   libraryLoading,
@@ -122,7 +123,9 @@ const ratiosText = computed<string>({
       .split(/[,\s]+/)
       .map((piece) => Number(piece.replace(',', '.')))
       .filter((value) => Number.isFinite(value) && value > 0)
-    if (parsed.length > 0) profile.value.drivetrain.gearRatios = parsed
+    // Par l'état, qui redimensionne au passage les tables indexées par rapport
+    // quand le nombre de rapports change.
+    setGearRatios(parsed)
   },
 })
 

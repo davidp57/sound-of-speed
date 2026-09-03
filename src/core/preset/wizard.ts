@@ -1,3 +1,4 @@
+import { responsivenessOf, shiftDelaysFor, upshiftTableFor } from './character'
 import { createDefaultProfile } from './defaults'
 import { captureOrigin, deepCopy, newId } from './store'
 import type { Profile } from './schema'
@@ -48,13 +49,6 @@ const CRUISE_RPM_FRACTION: Record<Temperament, number> = {
   calme: 0.36,
   equilibre: 0.43,
   sportif: 0.52,
-}
-
-/** Régimes de passage, en fraction du rupteur : du premier rapport au dernier. */
-const UPSHIFT_RANGE: Record<Temperament, [number, number]> = {
-  calme: [0.42, 0.5],
-  equilibre: [0.55, 0.66],
-  sportif: [0.68, 0.82],
 }
 
 /**
@@ -111,20 +105,17 @@ function build(choices: WizardChoices, template: Profile): Profile {
   const wheelRps = (cruiseKmh * K) / wheelRadiusM
   const finalDrive = Number((cruiseRpm / (wheelRps * 60 * topGear)).toFixed(3))
 
-  const [from, to] = UPSHIFT_RANGE[choices.temperament]
-  const upshiftRpm = Array.from({ length: Math.max(1, count - 1) }, (_, i) => {
-    const t = count > 2 ? i / (count - 2) : 0
-    return Math.round(engine.redline * (from + (to - from) * t))
-  })
-
-  // Temporisations volontairement inégales : identiques, la boîte sonne comme un
-  // métronome. Plus courtes sur un tempérament vif.
-  const baseDelay = choices.temperament === 'sportif' ? 0.22 : choices.temperament === 'calme' ? 0.45 : 0.32
-  const shiftDelaysS = Array.from({ length: count }, (_, i) =>
-    Number((baseDelay * (i % 2 === 0 ? 1 : 1.7)).toFixed(2)),
-  )
-
   const sportiness = choices.temperament === 'sportif' ? 1 : choices.temperament === 'calme' ? 0 : 0.5
+
+  // Les tables indexées par rapport viennent des lois partagées avec le mode
+  // simplifié : le guide et les curseurs globaux doivent dire la même chose du
+  // même tempérament, sans quoi créer un profil « vif » puis toucher au curseur
+  // le déplacerait sans raison.
+  const upshiftRpm = upshiftTableFor(count, engine.redline, sportiness)
+  // Le guide ne touche pas au signal de vitesse : la réactivité du profil de
+  // départ est donc celle du profil créé, et c'est elle qui règle la longueur
+  // des temporisations.
+  const shiftDelaysS = shiftDelaysFor(count, sportiness, responsivenessOf(base))
 
   return {
     ...base,

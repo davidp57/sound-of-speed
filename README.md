@@ -438,7 +438,7 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 
 | Réglage | Ce qu'il fait |
 |---|---|
-| **Démultiplications** | Du plus court au plus long, séparées par des virgules. Une seule valeur = prise directe |
+| **Démultiplications** | Du plus court au plus long, séparées par des virgules. Une seule valeur = prise directe. En **changer le nombre** redimensionne du même coup les régimes de passage et les temporisations, qui sont indexés par rapport : ils sont redistribués depuis le tempérament que porte le profil. À nombre égal, rien d'autre ne bouge |
 | **Pont** | Rapport final |
 | **Rupteur atteint à** | Vitesse au rupteur dans le dernier rapport. **Modifier cette valeur recalcule le pont** — c'est le chiffre parlant |
 | **Rayon de roue** | En mètres. Entre dans le calcul du régime |
