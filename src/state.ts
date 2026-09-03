@@ -2,6 +2,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import { Loop } from './core/loop'
 import { AudioEngine, type AudioStatus } from './core/audio/engine'
+import { writeSetting, type SettingPath } from './core/calibration/settings'
 import { analyzeSample, type SampleAnalysis } from './core/audio/analyze'
 import { MediaSession, ScreenLock } from './core/session'
 import { Offline, type OfflineStatus } from './core/offline'
@@ -672,10 +673,20 @@ export function importTraces(text: string): number {
   return fresh.length
 }
 
-export function stopRecording(name: string): void {
+/**
+ * Arrête l'enregistrement et rend la trace obtenue, ou `null` si rien n'a été
+ * capturé.
+ *
+ * La trace est rendue parce que l'étalonnage doit savoir **laquelle** vient
+ * d'être enregistrée : il rattache une trace à une étape de son protocole, et
+ * prendre la dernière de la liste serait une supposition.
+ */
+export function stopRecording(name: string): Trace | null {
   const trace = recorder.stop(name || `trace ${traces.value.length + 1}`)
   isRecording.value = false
-  if (trace.samples.length > 0) traces.value = [...traces.value, trace]
+  if (trace.samples.length === 0) return null
+  traces.value = [...traces.value, trace]
+  return trace
 }
 
 export function playTrace(trace: Trace): void {
@@ -750,6 +761,26 @@ export function resetActive(section: ProfileSection | 'all'): void {
   if (!current) return
   const next = [...profiles.value]
   next[index] = resetProfileSection(current, section)
+  profiles.value = next
+}
+
+/**
+ * Recopie une valeur mesurée par l'étalonnage dans le profil actif.
+ *
+ * Un réglage à la fois, sur un geste explicite : l'étalonnage propose, il
+ * n'applique pas. Le profil garde son origine, donc « réinitialiser » sait
+ * revenir à ce qu'il était avant la recopie.
+ */
+export function applyCalibrationSetting(
+  path: SettingPath,
+  value: number | number[],
+): void {
+  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
+  if (index < 0) return
+  const current = profiles.value[index]
+  if (!current) return
+  const next = [...profiles.value]
+  next[index] = writeSetting(current, path, value)
   profiles.value = next
 }
 

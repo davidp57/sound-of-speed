@@ -1,0 +1,342 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+
+import { analyzeStep, type StepAnalysis } from '../core/calibration/analyze'
+import { CALIBRATION_STEPS, type CalibrationStepId } from '../core/calibration/protocol'
+import { loadCalibration, saveCalibration } from '../core/calibration/store'
+import { suggest, type Suggestion } from '../core/calibration/suggest'
+import {
+  activeProfile,
+  applyCalibrationSetting,
+  isRecording,
+  isRunning,
+  playTrace,
+  recordedCount,
+  startRecording,
+  stopRecording,
+  traces,
+} from '../state'
+
+/**
+ * Étalonnage : mesurer la vraie voiture pour régler les virtuelles.
+ *
+ * Les réglages qui décident de la charge, des seuils de passage et des bornes
+ * d'accélération ont tous été choisis par le calcul, faute de savoir ce que fait
+ * la voiture. Cet écran demande de rouler, mesure, et met le chiffre obtenu
+ * face à celui du profil.
+ *
+ * **Elle propose, elle n'applique pas.** La recopie se fait réglage par réglage,
+ * sur un geste, jamais en bloc — la même règle que pour les candidats d'ancrage
+ * de l'analyse d'échantillon, qui se départagent à l'oreille. Et le filet est
+ * en place : « Réinitialiser » ramène un profil à ce qu'il était.
+ */
+
+/** Étape → horodatage de la trace qui l'a enregistrée. */
+const session = ref(loadCalibration())
+/** Étape dont l'enregistrement est en cours. */
+const active = ref<CalibrationStepId | null>(null)
+const storageError = ref('')
+
+function traceFor(step: CalibrationStepId) {
+  const startedAt = session.value[step]
+  if (startedAt === undefined) return undefined
+  return traces.value.find((trace) => trace.startedAt === startedAt)
+}
+
+/** Les étapes enregistrées, mesurées et jugées. */
+const analyses = computed<StepAnalysis[]>(() => {
+  const result: StepAnalysis[] = []
+  for (const step of CALIBRATION_STEPS) {
+    const trace = traceFor(step.id)
+    if (trace) result.push(analyzeStep(step.id, trace))
+  }
+  return result
+})
+
+const suggestions = computed<Suggestion[]>(() => suggest(analyses.value, activeProfile.value))
+
+/**
+ * Une ligne d'étape, prête à afficher.
+ *
+ * Le calcul est fait ici plutôt que dans le gabarit : une étape a trois états —
+ * pas enregistrée, enregistrée, et enregistrée mais dont la trace a été
+ * supprimée depuis la liste des traces — et les mêler à la volée dans des
+ * conditions imbriquées rend le gabarit illisible.
+ */
+const rows = computed(() =>
+  CALIBRATION_STEPS.map((step) => {
+    const found = analyses.value.find((analysis) => analysis.step === step.id) ?? null
+    return {
+      step,
+      analysis: found,
+      recorded: session.value[step.id] !== undefined,
+      orphan: session.value[step.id] !== undefined && found === null,
+    }
+  }),
+)
+
+function remember(step: CalibrationStepId, startedAt: number | undefined): void {
+  const next = { ...session.value }
+  if (startedAt === undefined) delete next[step]
+  else next[step] = startedAt
+  session.value = next
+  storageError.value = saveCalibration(next)
+    ? ''
+    : 'La session n’a pas pu être enregistrée : elle ne survivra pas au rechargement.'
+}
+
+function onStart(step: CalibrationStepId): void {
+  active.value = step
+  startRecording()
+}
+
+function onStop(): void {
+  const step = active.value
+  active.value = null
+  const label = CALIBRATION_STEPS.find((entry) => entry.id === step)?.label ?? 'étape'
+  const trace = stopRecording(`étalonnage — ${label}`)
+  if (step && trace) remember(step, trace.startedAt)
+}
+
+function onForget(step: CalibrationStepId): void {
+  remember(step, undefined)
+}
+
+function onReplay(step: CalibrationStepId): void {
+  const trace = traceFor(step)
+  if (trace) playTrace(trace)
+}
+
+function onCopy(suggestion: Suggestion): void {
+  const setting = suggestion.setting
+  if (!setting) return
+  applyCalibrationSetting(setting.path, setting.proposed)
+}
+
+function fixed(value: number, digits = 1): string {
+  return Number.isFinite(value) ? value.toFixed(digits) : '—'
+}
+
+/**
+ * Ce que l'étape a mesuré, en une formule courte, propre à chaque étape.
+ *
+ * Au dixième de m/s², la même précision que la proposition : un verdict qui
+ * annoncerait 7,31 là où le tableau propose 7,3 ferait douter de l'un des deux.
+ */
+function summary(analysis: StepAnalysis): string {
+  switch (analysis.step) {
+    case 'launch':
+      return `accélération soutenue ${fixed(analysis.measure.peakAccelMs2 ?? 0)} m/s²`
+    default:
+      return 'mesurée'
+  }
+}
+
+/** Écart entre le mesuré et le réglé, signe compris. */
+function gap(setting: NonNullable<Suggestion['setting']>): string {
+  const delta = setting.proposed - setting.current
+  const sign = delta > 0 ? '+' : ''
+  return `${sign}${fixed(delta, setting.decimals)}`
+}
+</script>
+
+<template>
+  <section class="panel wide">
+    <h2>Étalonnage</h2>
+    <p class="note">
+      Rouler selon la consigne, une étape à la fois, et l’application mesure ce
+      que la voiture fait vraiment. Elle propose ensuite un réglage face à celui
+      du profil : rien n’est appliqué sans un geste, et un profil sait revenir à
+      ce qu’il était depuis l’écran de configuration.
+    </p>
+    <p class="note">
+      Profil mesuré : <strong>{{ activeProfile.name }}</strong>. Chaque étape vaut
+      séparément — un freinage franc ne se commande pas au milieu du trafic.
+    </p>
+    <p v-if="!isRunning" class="error">
+      Rien ne tourne : démarrez l’application avant d’enregistrer une étape.
+    </p>
+
+    <article v-for="row in rows" :key="row.step.id" class="step">
+      <h3>{{ row.step.label }}</h3>
+      <p class="consigne">{{ row.step.instruction }}</p>
+      <p class="critere"><span class="tag">Critère</span> {{ row.step.criterion }}</p>
+      <p class="note">Informe : {{ row.step.informs }}</p>
+
+      <div class="controls">
+        <button v-if="!isRecording" :disabled="!isRunning" @click="onStart(row.step.id)">
+          Enregistrer l’étape
+        </button>
+        <button v-else-if="active === row.step.id" class="is-active" @click="onStop()">
+          Arrêter ({{ recordedCount }} mesures)
+        </button>
+        <span v-else class="muted">Un autre enregistrement est en cours.</span>
+
+        <template v-if="row.recorded">
+          <button :disabled="row.orphan" @click="onReplay(row.step.id)">Rejouer</button>
+          <button @click="onForget(row.step.id)">Oublier</button>
+        </template>
+      </div>
+
+      <p v-if="row.orphan" class="error">
+        La trace de cette étape a été supprimée : l’étape est à refaire.
+      </p>
+      <p v-else-if="row.analysis" class="verdict" :class="{ bad: !row.analysis.valid }">
+        <template v-if="row.analysis.valid">
+          Étape valide — {{ summary(row.analysis) }}, sur
+          {{ row.analysis.measure.count }} mesures en
+          {{ fixed(row.analysis.measure.durationS, 1) }} s.
+        </template>
+        <template v-else>Étape refusée — {{ row.analysis.reason }}</template>
+      </p>
+      <p v-else class="note">Étape non enregistrée.</p>
+    </article>
+
+    <h3>Mesuré face à réglé</h3>
+    <table class="recap">
+      <thead>
+        <tr>
+          <th>Réglage</th>
+          <th>Mesuré</th>
+          <th>Réglé</th>
+          <th>Écart</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="suggestion in suggestions" :key="suggestion.key">
+          <td>
+            {{ suggestion.label }}
+            <small v-if="suggestion.note" class="muted">{{ suggestion.note }}</small>
+          </td>
+          <template v-if="suggestion.setting">
+            <td class="numeric">
+              {{ fixed(suggestion.setting.proposed, suggestion.setting.decimals) }}
+              <small>{{ suggestion.setting.unit }}</small>
+            </td>
+            <td class="numeric">
+              {{ fixed(suggestion.setting.current, suggestion.setting.decimals) }}
+              <small>{{ suggestion.setting.unit }}</small>
+            </td>
+            <td class="numeric">{{ gap(suggestion.setting) }}</td>
+            <td>
+              <button @click="onCopy(suggestion)">Recopier</button>
+            </td>
+          </template>
+          <template v-else>
+            <td colspan="3" class="muted">Non mesuré — {{ suggestion.missing }}</td>
+            <td></td>
+          </template>
+        </tr>
+      </tbody>
+    </table>
+
+    <p v-if="storageError" class="error">{{ storageError }}</p>
+  </section>
+</template>
+
+<style scoped>
+.note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.7rem;
+}
+
+h2 {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+h3 {
+  margin: 0.9rem 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.step {
+  border-top: 1px solid var(--line);
+  padding-bottom: 0.6rem;
+}
+
+.consigne {
+  margin: 0 0 0.4rem;
+}
+
+.critere {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+}
+
+.tag {
+  background: var(--panel-alt);
+  border-radius: 4px;
+  padding: 0.05rem 0.4rem;
+  margin-right: 0.4rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+.verdict {
+  margin: 0.3rem 0 0;
+  font-size: 0.9rem;
+}
+
+.verdict.bad {
+  color: var(--warn);
+}
+
+.recap {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.recap th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.8rem;
+  padding-bottom: 0.3rem;
+}
+
+.recap td {
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.recap td.numeric,
+.recap th:nth-child(n + 2) {
+  text-align: right;
+}
+
+.recap small {
+  color: var(--muted);
+  font-size: 0.8em;
+}
+
+.recap td small {
+  display: block;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--warn);
+  margin: 0.5rem 0 0;
+}
+</style>

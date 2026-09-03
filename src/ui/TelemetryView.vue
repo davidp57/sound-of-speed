@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import CalibrationPanel from './CalibrationPanel.vue'
 import ValueRow from './components/ValueRow.vue'
 import { computeMix } from '../core/audio/mix'
 import { rpmAtSpeed } from '../core/preset/defaults'
@@ -422,6 +423,14 @@ function onRateChange(event: Event): void {
         </label>
       </template>
     </section>
+
+    <!--
+      L'étalonnage vit dans cet écran plutôt que dans un onglet à lui : il
+      s'appuie sur les traces, qui sont juste au-dessus, et il n'a pas de raison
+      d'être visible en conduisant. Un onglet dédié serait plus commode le jour
+      où le protocole aura ses six étapes.
+    -->
+    <CalibrationPanel />
   </div>
 </template>
 

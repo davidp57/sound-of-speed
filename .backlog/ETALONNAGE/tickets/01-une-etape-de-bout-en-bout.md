@@ -1,6 +1,6 @@
 # 01 — Une étape, de la consigne à la valeur proposée
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -32,10 +32,10 @@ d'échantillon, dont les candidats d'ancrage se départagent à l'oreille.
 
 ## Critères d'acceptation
 
-- [ ] La consigne de l'étape est annoncée avant l'enregistrement
-- [ ] L'étape s'enregistre séparément, et l'enregistrement se relit
-- [ ] Une étape trop molle est refusée, et la raison est dite
-- [ ] L'accélération mesurée est affichée face à celle du profil
-- [ ] Rien n'est appliqué au profil sans un geste explicite
-- [ ] La mesure est reproductible sur une trace rejouée
+- [x] La consigne de l'étape est annoncée avant l'enregistrement
+- [x] L'étape s'enregistre séparément, et l'enregistrement se relit
+- [x] Une étape trop molle est refusée, et la raison est dite
+- [x] L'accélération mesurée est affichée face à celle du profil
+- [x] Rien n'est appliqué au profil sans un geste explicite
+- [x] La mesure est reproductible sur une trace rejouée
 - [ ] 🧑 Vérifié en roulant : la valeur mesurée est plausible pour la voiture

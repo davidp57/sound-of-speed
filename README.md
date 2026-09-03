@@ -33,7 +33,7 @@ pour qu'on n'en sorte pas par mégarde en roulant.
 lissage, pente, accélération, qualité du signal GPS, régime, charge, état de la
 transmission, régime que donnerait chaque rapport, gain et vitesse de lecture de
 chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
-les traces.
+les traces, et qu'on **étalonne** l'application sur la vraie voiture.
 
 **Configuration** — la cinquantaine de réglages, en curseur et en saisie,
 appliqués immédiatement. La gestion des profils et l'analyse des échantillons.
@@ -583,6 +583,62 @@ Un profil créé de toutes pièces, sans équivalent d'usine, retombe sur les va
 par défaut génériques.
 Les profils sont conservés dans le navigateur ; l'export sert à les transporter
 d'un appareil à l'autre.
+
+---
+
+## Étalonner sur la vraie voiture
+
+Les réglages qui décident de la charge et des seuils ont tous été choisis par le
+calcul, faute de savoir ce que fait la voiture. `fullLoadAccelMs2` vaut 2 m/s²
+sur le profil Route — une valeur raisonnée, jamais mesurée, sur un véhicule qui
+en fait bien davantage. L'étalonnage remplace ce raisonnement par un relevé.
+
+Il se trouve **en bas de l'écran Télémétrie**, sous les traces, dont il se sert.
+Tout se passe dans la voiture : l'analyse ne demande que du calcul, et le
+résultat se voit tout de suite.
+
+### La marche à suivre
+
+1. Démarrer l'application, source **GPS**.
+2. Lire la consigne de l'étape, et son **critère**. Le critère est annoncé avant
+   l'enregistrement, pas après.
+3. Appuyer sur **Enregistrer l'étape**, rouler comme demandé, appuyer sur
+   **Arrêter**.
+4. Le verdict s'affiche : étape valide et valeur obtenue, ou étape refusée et
+   raison du refus.
+5. Le tableau **Mesuré face à réglé** met les deux chiffres côte à côte, avec
+   leur écart. **Recopier** applique la valeur, un réglage à la fois.
+
+Chaque étape s'enregistre séparément et vaut séparément : une session
+incomplète reste utile, et ce qui n'a pas été mesuré est dit **non mesuré**,
+jamais estimé. L'enregistrement d'une étape est une trace ordinaire — elle
+apparaît dans la liste des traces, se rejoue, et l'analyse en tire le même
+chiffre à chaque relecture.
+
+### Une étape peut être refusée, et c'est le point
+
+Une « accélération franche » qui n'atteint que 1 m/s² n'en est pas une.
+L'accepter donnerait une charge pleine atteinte au premier filet de gaz — donc
+un fondu faux, un volume faux, des passages faux : exactement le défaut que
+l'étalonnage doit corriger. Le critère de l'accélération franche est donc :
+départ à l'arrêt, 30 km/h gagnés au minimum, et **2 m/s² d'accélération
+soutenue**. Deux mètres par seconde carré, c'est zéro à cinquante en sept
+secondes — très en dessous de ce qu'une électrique fait sans effort.
+
+### Elle propose, elle n'applique pas
+
+C'est la règle déjà retenue pour l'analyse d'échantillon : la mesure est plus
+sûre que le souvenir, elle n'est pas plus sûre que le jugement. Rien n'est écrit
+dans le profil sans un geste, et jamais en bloc — un réglage à la fois. Après une
+recopie, **Réinitialiser** ramène la section du profil à ce qu'elle était.
+
+### Ce que l'étalonnage ne dira jamais
+
+Une voiture électrique n'a pas de rapports. L'étalonnage mesure des vitesses,
+des accélérations et du bruit de mesure ; il informe donc des seuils **en
+vitesse**, jamais en régime. Le régime est une fiction qu'on choisit, et le
+choix reste entier : l'étalonnage ne dira pas quel rupteur ni combien de
+cylindres.
 
 ---
 

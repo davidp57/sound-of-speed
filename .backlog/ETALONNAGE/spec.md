@@ -1,6 +1,6 @@
 # ETALONNAGE — mesurer la vraie voiture pour régler les virtuelles
 
-**Statut :** ⬜ prêt
+**Statut :** 🔄 en cours
 **Branche :** `feature/etalonnage`
 **Version visée :** 0.4
 
