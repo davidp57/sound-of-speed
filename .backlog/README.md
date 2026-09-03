@@ -39,7 +39,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [BANQUES](BANQUES/spec.md) — accueillir plusieurs banques de son : découverte, mesure outillée, choix par profil | ⬜ |
 | [PENTE](PENTE/spec.md) — le GPS de la Tesla livre trente fois par seconde, et le conditionneur en attend une | 🧑 |
 | [EFFORT](EFFORT/spec.md) — la charge doit connaître la vitesse : tenir 50 km/h et tenir 130 ne sonnent pas pareil | 🧑 |
-| [IMPERFECTIONS](IMPERFECTIONS/spec.md) — un moteur ne tourne pas juste : tremblement de régime, couches désaccordées | 🧑 |
+| [IMPERFECTIONS](IMPERFECTIONS/spec.md) — un moteur ne tourne pas juste : tremblement de régime, couches désaccordées | 🔄 |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
@@ -56,6 +56,12 @@ douce était vue à zéro. Restent ses deux vérifications en roulant.
 EFFORT et IMPERFECTIONS attendaient cette mesure juste. **Les chiffres d'EFFORT
 sont donc à refaire** : ils avaient été relevés sur une accélération qu'on sait
 maintenant fausse, et le lot vaut peut-être moins qu'annoncé.
+
+**IMPERFECTIONS est à moitié livré** : tremblement de régime et couches
+désaccordées sont faits et mesurés, il reste la vérification en roulant. Son
+troisième ticket — la boucle qui ne se répète plus — attend une mesure qui ne
+peut pas se faire depuis le dépôt : la durée des boucles de la banque livrée, et
+les échantillons vivent dans un volume du NAS.
 
 **Tous les lots sont découpés en tickets**, sauf PENTE dont le travail est
 livré. Les huit lots nés de l'essai sur route du 3 septembre 2026 l'ont été le

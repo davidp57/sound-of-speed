@@ -19,13 +19,20 @@ import type { LayerPreset, Profile } from '../preset/schema'
 
 const profile = createDefaultProfile()
 
+/**
+ * Le régime entendu suit le régime demandé, sauf mention contraire : l'écart
+ * entre les deux est le tremblement, et il se vérifie à part, dans les tests du
+ * moteur. Ici on veut mesurer le mixage à hauteur connue.
+ */
 function state(over: Partial<EngineState> = {}): EngineState {
+  const rpm = over.rpm ?? 3000
   return {
-    rpm: 3000,
-    kinematicRpm: 3000,
+    rpm,
+    audibleRpm: rpm,
+    kinematicRpm: rpm,
     load: 0.5,
-    rpmFraction: 3000 / profile.engine.redlineRpm,
-    firingHz: (3000 / 120) * profile.engine.cylinders,
+    rpmFraction: rpm / profile.engine.redlineRpm,
+    firingHz: (rpm / 120) * profile.engine.cylinders,
     limiterActive: false,
     idling: false,
     ...over,
@@ -259,6 +266,158 @@ describe('computeMix — domaine jouable', () => {
 
     expect(computeMix(p, state({ rpm: 6000 })).layers[0]?.rate).toBeCloseTo(2, 6)
     expect(computeMix(p, state({ rpm: 1500 })).layers[0]?.rate).toBeCloseTo(0.5, 6)
+  })
+})
+
+describe('computeMix — régime entendu', () => {
+  it('lit à la hauteur du régime entendu, non du régime net', () => {
+    const p: Profile = {
+      ...profile,
+      layers: [layer({ key: 'large', role: 'on', anchorRpm: 3000, minRate: 0.1, maxRate: 8 })],
+    }
+
+    // C'est le tremblement qui sépare les deux : la couche doit suivre le régime
+    // entendu, sans quoi le tremblement ne s'entendrait pas du tout.
+    const r = computeMix(p, state({ rpm: 3000, audibleRpm: 3030 })).layers[0]
+
+    expect(r?.rate).toBeCloseTo(1.01, 6)
+  })
+})
+
+describe('computeMix — désaccord des couches', () => {
+  /** Écart de hauteur entre deux vitesses de lecture, en centièmes de demi-ton. */
+  const ecartCents = (a: number, b: number) => 1200 * Math.log2(b / a)
+
+  /** Deux couches d'une même famille, ancrées au même régime et aux bornes larges. */
+  const paire = (cents: number): Profile => ({
+    ...profile,
+    layers: [
+      layer({ key: 'basse', role: 'on', anchorRpm: 3000, minRate: 0.1, maxRate: 8 }),
+      layer({ key: 'haute', role: 'on', anchorRpm: 3000, minRate: 0.1, maxRate: 8 }),
+    ],
+    mix: { ...profile.mix, layerDetuneCents: cents },
+  })
+
+  it('désaccorde les deux couches d’une même famille', () => {
+    const [basse, haute] = computeMix(paire(12), state({ rpm: 3000 })).layers
+
+    // Douze centièmes de demi-ton, répartis de part et d'autre : la basse
+    // descend de six, la haute monte de six.
+    expect(ecartCents(basse?.rate ?? 0, haute?.rate ?? 0)).toBeCloseTo(12, 6)
+    expect(ecartCents(1, basse?.rate ?? 0)).toBeCloseTo(-6, 6)
+    expect(ecartCents(1, haute?.rate ?? 0)).toBeCloseTo(6, 6)
+  })
+
+  it('ne déplace pas la hauteur moyenne de la famille', () => {
+    const [basse, haute] = computeMix(paire(12), state({ rpm: 3000 })).layers
+
+    // La moyenne géométrique des deux vitesses reste celle du rapport exact :
+    // le désaccord élargit le son, il ne fausse pas la justesse.
+    expect(Math.sqrt((basse?.rate ?? 0) * (haute?.rate ?? 0))).toBeCloseTo(1, 9)
+  })
+
+  it('donne les vitesses d’avant à réglage nul', () => {
+    const { layers } = computeMix(paire(0), state({ rpm: 4500 }))
+
+    // Exactement le rapport entre régime et ancrage, au bit près : un profil
+    // laissé à zéro sonne comme avant ce réglage.
+    for (const entry of layers) expect(entry.rate).toBe(4500 / 3000)
+  })
+
+  it('produit un battement lent aux réglages livrés', () => {
+    // Le battement entre deux couches désaccordées vaut la fréquence
+    // d'allumage multipliée par l'écart relatif de hauteur. Mesuré sur Sport,
+    // douze centièmes au milieu de la bascule — 5100 tr/min, 340 Hz
+    // d'allumage : 2,4 Hz. Sur Route, huit centièmes à 3900 tr/min — 260 Hz :
+    // 1,2 Hz.
+    for (const [p, attendu] of [
+      [createRoadProfile(), 1.2],
+      [createDefaultProfile(), 2.4],
+    ] as const) {
+      const rpm = (p.mix.crossfadeLowRpm + p.mix.crossfadeHighRpm) / 2
+      const on = computeMix(p, {
+        ...state({ rpm, load: 0.8 }),
+        firingHz: (rpm / 120) * p.engine.cylinders,
+      }).layers.filter((l) => l.role === 'on')
+
+      // Les deux couches sont ancrées à des régimes différents : leur rapport de
+      // vitesses vaut donc le rapport des ancrages, au désaccord près.
+      const anchors = p.layers
+        .filter((l) => l.role === 'on')
+        .map((l) => l.anchorRpm)
+        .sort((a, b) => a - b)
+      const exact = (anchors[0] ?? 1) / (anchors[1] ?? 1)
+      const cents = ecartCents(exact, (on[1]?.rate ?? 0) / (on[0]?.rate ?? 1))
+      expect(cents).toBeCloseTo(p.mix.layerDetuneCents, 6)
+
+      const firing = (rpm / 120) * p.engine.cylinders
+      const battement = firing * (Math.pow(2, p.mix.layerDetuneCents / 1200) - 1)
+      expect(battement).toBeCloseTo(attendu, 1)
+    }
+  })
+
+  it('donne toujours le même mixage pour la même situation', () => {
+    // Le désaccord est constant par couche, il ne dépend pas du temps : sans
+    // cela, l'écran de télémétrie afficherait deux valeurs différentes pour une
+    // même situation et deviendrait illisible.
+    const p = createDefaultProfile()
+    const situation = state({ rpm: 4200, load: 0.7 })
+
+    expect(computeMix(p, situation).layers).toEqual(computeMix(p, situation).layers)
+  })
+
+  it('ne sort pas une couche de son domaine jouable', () => {
+    const p: Profile = {
+      ...profile,
+      layers: [
+        layer({ key: 'basse', role: 'on', anchorRpm: 4000, minRate: 0.8, maxRate: 1.25 }),
+        layer({ key: 'haute', role: 'on', anchorRpm: 4000, minRate: 0.8, maxRate: 1.25 }),
+      ],
+      mix: { ...profile.mix, layerDetuneCents: 50 },
+    }
+
+    // Aux deux bornes, un désaccord même large ne les franchit pas : il
+    // s'applique après la décision de domaine et se borne aux mêmes limites.
+    for (const rpm of [1000, 9000]) {
+      for (const entry of computeMix(p, state({ rpm })).layers) {
+        expect(entry.rate).toBeGreaterThanOrEqual(0.8)
+        expect(entry.rate).toBeLessThanOrEqual(1.25)
+      }
+    }
+  })
+
+  it('ne touche à aucun gain', () => {
+    // Le domaine jouable, et donc l'effacement qu'il commande, se décide sur la
+    // hauteur que demande le régime — avant désaccord. Régler ce curseur ne peut
+    // donc pas faire varier un niveau. Mesuré sur toute la plage du profil
+    // Sport : écart de gain maximal nul, au bit près.
+    const p = createDefaultProfile()
+    const nul: Profile = { ...p, mix: { ...p.mix, layerDetuneCents: 0 } }
+
+    for (let rpm = 600; rpm <= 8500; rpm += 25) {
+      for (const load of [0, 0.5, 1]) {
+        const avec = computeMix(p, state({ rpm, load })).layers
+        const sans = computeMix(nul, state({ rpm, load })).layers
+        expect(avec.map((l) => l.gain)).toEqual(sans.map((l) => l.gain))
+      }
+    }
+  })
+
+  it('n’applique aucun désaccord à une famille d’une seule couche', () => {
+    const p: Profile = {
+      ...profile,
+      layers: [layer({ key: 'seule', role: 'on', anchorRpm: 3000, minRate: 0.1, maxRate: 8 })],
+      mix: { ...profile.mix, layerDetuneCents: 25 },
+    }
+
+    // Il n'y a personne avec qui battre : la couche reste juste.
+    expect(computeMix(p, state({ rpm: 3000 })).layers[0]?.rate).toBe(1)
+  })
+
+  it('donne aux profils livrés un désaccord qui suit leur caractère', () => {
+    expect(createDefaultProfile().mix.layerDetuneCents).toBeGreaterThan(
+      createRoadProfile().mix.layerDetuneCents,
+    )
   })
 })
 

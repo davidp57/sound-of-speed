@@ -30,9 +30,9 @@ occupent toute la hauteur et les commandes deviennent quatre grandes touches. On
 pour qu'on n'en sorte pas par mégarde en roulant.
 
 **Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
-lissage, pente, accélération, qualité du signal GPS, régime, charge, état de la
-transmission, régime que donnerait chaque rapport, gain et vitesse de lecture de
-chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
+lissage, pente, accélération, qualité du signal GPS, régime, régime entendu,
+charge, état de la transmission, régime que donnerait chaque rapport, gain et
+vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
 les traces.
 
 **Configuration** — la cinquantaine de réglages, en curseur et en saisie,
@@ -433,6 +433,8 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 | **Inertie** | Poids du volant moteur : temps de montée à vide |
 | **Montée à vide** | Prise de tours hors prise, en tr/min par seconde |
 | **Frein moteur** | Retombée pied levé |
+| **Tremblement au ralenti** | Amplitude du tremblement de régime, en tr/min, prise au ralenti et pied levé. Elle décroît ensuite quand le régime monte et quand la charge monte — un moteur se stabilise en poussant. Mesuré sur Sport, réglé à 35 : 34 tr/min d'excursion au ralenti, ±18 à 3000 tr/min pied levé, ±7 pied au plancher. Zéro donne un régime parfaitement lisse, ce qu'aucun moteur thermique n'est. **Il ne va que dans le son** : la boîte, ses seuils et la télémétrie gardent le régime net |
+| **Vitesse du tremblement** | Fréquence de la composante rapide. Une composante lente à un peu plus d'un dixième de cette valeur s'y ajoute — 0,70 Hz pour 6 Hz réglés : à une seule fréquence, le tremblement s'entend comme un vibrato |
 
 ### Transmission
 
@@ -478,6 +480,7 @@ fort.
 | **Relief de charge** | Autant en moins pied levé, autant en plus pied au plancher, rien en croisière. **C'est le réglage qui fait entendre l'effort** : sans lui, les fondus étant à puissance constante, ralenti, croisière et pleine charge tenaient dans 1,3 dB — le son changeait de couleur et jamais de volume. À 4, il y a 8 dB entre lever le pied et écraser |
 | **Relief du régime** | Gain gagné entre le ralenti et le rupteur : le rugissement qui monte avec les tours. Il **s'ajoute** aux 4 dB que la banque livrée donne déjà, sa prise haut régime étant enregistrée plus fort que la basse |
 | **Niveau au ralenti** | Le ralenti n'a pas de couche dédiée dans la banque livrée : on y entend la prise « pied levé » jouée deux octaves plus bas. Sans ce réglage elle sonnait aussi fort que tout le reste |
+| **Désaccord des couches** | Écart de justesse entre les couches d'une même famille, en centièmes de demi-ton. Au rapport exact elles sont parfaitement justes l'une par rapport à l'autre, ce qui n'arrive sur aucun moteur : les inégalités entre cylindres et les deux lignes d'échappement produisent un battement lent. L'écart est réparti de part et d'autre, donc la hauteur moyenne ne bouge pas, et il ne déplace aucun gain. Mesuré, 12 centièmes donnent un battement à 2,4 Hz à 5100 tr/min et 1,5 Hz à 3200 |
 | **Début / fin de bascule** | Régimes entre lesquels la couche haute remplace la basse. **Indépendants des régimes d'ancrage**, qui règlent la justesse |
 | **Accélération pleine charge** | Accélération au-delà de laquelle la charge est maximale. Faute de pédale dans une voiture électrique, c'est elle qui arbitre le fondu entre « en charge » et « pied levé » |
 | **Lissage de la charge** | Évite que le fondu papillonne sur le bruit d'accélération |
@@ -782,6 +785,46 @@ réglages de **relief** s'appliquent donc par-dessus, à toutes les couches à l
 fois : l'effort, le régime, et le ralenti. Ils déplacent le niveau d'ensemble
 sans toucher à l'équilibre entre les couches, donc sans rouvrir le creux que les
 fondus évitent.
+
+Un moteur ne tourne pas juste, et c'est cela qui le fait entendre comme un
+moteur plutôt que comme un échantillon. Deux écarts sont donc introduits, tous
+deux calculés dans `core/`, donc mesurables sans sortir un son.
+
+**Le régime tremble.** Le conditionnement produit un signal d'une régularité
+qu'aucun moteur thermique n'a. On y ajoute un tremblement lent — trois
+sinusoïdes, dont deux dans un rapport irrationnel, si bien que la somme n'a pas
+de période — d'amplitude décroissante avec le régime et avec la charge : un moteur
+se stabilise en montant et sous couple, il tremble au ralenti et à vide. Mesuré
+sur Sport : 34 tr/min d'excursion au ralenti, ±18 à 3000 tr/min pied levé, ±7 à
+3000 tr/min pied au plancher.
+
+Le moteur sort donc **deux** régimes, et c'est le point délicat. Le régime net
+alimente la boîte, ses seuils et la télémétrie ; le régime **entendu** porte le
+tremblement et ne sert qu'aux vitesses de lecture. Les seuils de passage
+travaillent sur le régime : quelques dizaines de tours de tremblement les
+feraient osciller, et trois défauts d'oscillation de la boîte venaient déjà d'un
+compteur portant deux sens. Un compteur, un usage.
+
+Le tremblement est fait de sinusoïdes et non d'un tirage au sort : il est
+reproductible sans graine à gérer, une même situation donne toujours le même
+son, et un test peut l'affirmer.
+
+**Les couches ne jouent plus d'accord.** Deux couches d'une même famille jouées
+au rapport exact sont parfaitement justes l'une par rapport à l'autre, ce qu'un
+moteur réel n'est jamais : les inégalités entre cylindres et les deux lignes
+d'échappement produisent un battement lent. Elles sont donc désaccordées de
+quelques centièmes de demi-ton, l'écart étant réparti de part et d'autre pour
+que la hauteur moyenne ne bouge pas. Mesuré, douze centièmes donnent un
+battement à 2,4 Hz au milieu de la bascule de Sport.
+
+Le désaccord est constant par couche — il dépend du rang de la couche dans sa
+famille, jamais du temps — et il s'applique **après** la décision de domaine
+jouable : régler ce curseur ne peut donc déplacer aucun gain, et ne peut pas
+sortir une couche de son domaine.
+
+Ce que ces deux écarts ne font pas : un moteur. Cinq fichiers bouclés se
+répètent, et l'oreille l'apprend en quelques tours. Ce plafond-là ne se franchit
+qu'avec plus de bancs moteur.
 
 Trois points ont demandé une attention particulière :
 

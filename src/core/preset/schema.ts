@@ -48,6 +48,28 @@ export interface EnginePreset {
   freeRevRate: number
   /** Vitesse de retombée pied levé, hors prise (tr/min par seconde). */
   engineBraking: number
+  /**
+   * Amplitude du tremblement de régime, en tours par minute, prise au ralenti et
+   * pied levé. Elle décroît ensuite avec le régime et avec la charge.
+   *
+   * Zéro donne un régime parfaitement lisse, ce qu'aucun moteur thermique n'est :
+   * un moteur au ralenti oscille de quelques dizaines de tours, et sous charge
+   * partielle il tremble encore.
+   *
+   * Le tremblement ne s'ajoute qu'au **régime entendu**, celui qui fixe les
+   * vitesses de lecture. La boîte, ses seuils et la télémétrie continuent de voir
+   * le régime net : les seuils de passage travaillent sur le régime, et quelques
+   * dizaines de tours de tremblement les feraient osciller — le défaut que la
+   * boîte a déjà corrigé trois fois.
+   */
+  flutterRpm: number
+  /**
+   * Fréquence de la composante rapide du tremblement, en hertz.
+   *
+   * Une composante lente en est déduite, à un peu plus d'un dixième de cette
+   * valeur : un tremblement à une seule fréquence s'entend comme un vibrato.
+   */
+  flutterHz: number
 }
 
 export interface DrivetrainPreset {
@@ -236,6 +258,20 @@ export interface MixPreset {
    * que tout le reste.
    */
   idleLevelDb: number
+  /**
+   * Désaccord entre les couches d'une même famille, en centièmes de demi-ton.
+   *
+   * Deux couches jouées au rapport exact sont parfaitement justes l'une par
+   * rapport à l'autre, ce qui n'arrive sur aucun moteur : les inégalités entre
+   * cylindres et les deux lignes d'échappement produisent un battement lent.
+   * C'est ce battement qui manque.
+   *
+   * L'écart est réparti symétriquement dans la famille — l'une descend d'autant
+   * que l'autre monte — donc la hauteur moyenne ne bouge pas : le désaccord
+   * élargit le son sans toucher à la justesse. Il est constant par couche, et ne
+   * dépend pas du temps : une même situation donne toujours le même mixage.
+   */
+  layerDetuneCents: number
 }
 
 /**
