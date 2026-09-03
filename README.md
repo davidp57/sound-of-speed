@@ -1226,15 +1226,16 @@ chaque essai.
 | 14 | Relief du volume : l'effort, le régime et le ralenti s'entendent | à écouter |
 | 15 | Trois défauts de la boîte relevés en roulant : ralentir n'est plus croiser | à écouter |
 | 16 | Pente : la cadence réelle du GPS faussait la mesure d'accélération | corrigé, reste à écouter |
-| — | Défilement de l'écran de configuration sans dérégler un curseur | prévu |
-| — | Le volume général sort du profil : c'est une préférence d'appareil | prévu |
-| — | Mode simplifié : quelques curseurs globaux, le détail derrière un mode avancé | prévu |
-| — | Déposer profils et traces sur le NAS, la voiture refusant les fichiers | prévu |
-| — | Étalonnage : mesurer la vraie voiture pour régler les virtuelles | prévu |
+| 17 | Défilement de l'écran de configuration sans dérégler un curseur | corrigé, reste à essayer |
+| 18 | Le volume général sort du profil : c'est une préférence d'appareil | fait |
+| 19 | Mode simplifié : deux curseurs globaux, le détail derrière un mode avancé | fait, reste à écouter |
+| 20 | Tableau de bord à cadrans, et paysage défilant | fait, reste à essayer |
+| 21 | Imperfections : tremblement de régime, couches désaccordées | fait, reste à écouter |
+| 22 | Étalonnage : mesurer la vraie voiture pour régler les virtuelles | fait, reste à rouler |
+| 23 | Le serveur accepte le dépôt d'une trace | fait, éprouvé sur le NAS |
+| — | Déposer une trace et un profil depuis l'application | prévu |
 | — | Plusieurs banques de son, choisies par profil | prévu |
-| — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | prévu |
-| — | Imperfections : tremblement de régime, couches légèrement désaccordées | prévu |
-| — | Tableau de bord à cadrans, et paysage défilant | prévu |
+| — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | à remesurer |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
