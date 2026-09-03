@@ -262,8 +262,23 @@ npm run htpasswd
    passe lui-même n'y est pas — il n'est pas récupérable, et il faut refaire
    l'opération si on l'oublie.
 3. Déposer ce fichier dans `/volume1/docker/speed/` avec File Station.
-4. Dans la pile Portainer, décommenter la ligne du volume `htpasswd`, puis
-   redéployer.
+4. Dans la pile Portainer, **ajouter** les deux lignes suivantes sous
+   `volumes:`, puis tirer l'image à jour et redéployer :
+
+```yaml
+      - /volume1/docker/speed/traces:/usr/share/nginx/html/traces
+      - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
+```
+
+> **Ajouter, et non décommenter.** Une pile Portainer contient le texte qu'on y
+> a collé le jour de sa création, pas le fichier du dépôt : les lignes
+> commentées de `docker/docker-compose.yml` n'y sont pas, et le volume des
+> traces est de toute façon nouveau. Les commentaires du dépôt indiquent quoi
+> monter ; c'est dans l'éditeur de pile que le montage se déclare.
+
+Le dossier `/volume1/docker/speed/traces/` doit **exister** avant de
+redéployer, même vide : Docker sous DSM refuse de démarrer un conteneur dont un
+point de montage est absent, avec un `Bind mount failed`.
 
 **Il n'y a rien d'autre à décommenter pour le dépôt.** Les deux lignes
 `auth_basic` de `docker/nginx.conf` protègent le site *entier* et ne servent que
