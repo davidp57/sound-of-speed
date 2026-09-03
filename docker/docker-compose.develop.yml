@@ -54,7 +54,17 @@ services:
       # traces en sortent. Le dossier doit exister, comme celui des profils, et
       # le dépôt exige le fichier de mots de passe ci-dessous.
       - /volume1/docker/speed/traces:/usr/share/nginx/html/traces
-      # Décommenter avec l'authentification de docker/nginx.conf :
+      # Fichier de mots de passe. À décommenter dans **deux** cas, qui sont
+      # indépendants :
+      #
+      #  - pour déposer une trace depuis la voiture. L'emplacement /traces/ de
+      #    docker/nginx.conf exige toujours de s'annoncer, et il n'y a rien
+      #    d'autre à décommenter que cette ligne ;
+      #  - pour protéger le site entier, si l'adresse est exposée hors du réseau
+      #    local. Il faut alors aussi décommenter les deux lignes auth_basic de
+      #    docker/nginx.conf.
+      #
+      # Le fichier se produit avec `npm run htpasswd`, sans Docker.
       # - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/index.html"]

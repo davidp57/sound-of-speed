@@ -241,10 +241,37 @@ se dépose dans `/volume1/docker/speed/` avec File Station. Il reste à
 décommenter les deux lignes `auth_basic` de `docker/nginx.conf` et le volume
 correspondant dans la pile.
 
-**Ce fichier est aussi obligatoire pour déposer une trace**, indépendamment de
-l'authentification générale : c'est le seul endroit du serveur qui accepte
-d'écrire, et il ne l'accepte que de quelqu'un qui s'annonce. Sans lui, le dépôt
-est refusé — la lecture, elle, continue de fonctionner.
+### Déposer une trace : le fichier de mots de passe
+
+Le dépôt d'une trace exige lui aussi ce fichier, **indépendamment de
+l'authentification générale** : `traces/` est le seul endroit du serveur qui
+accepte d'écrire, et il ne l'accepte que de quelqu'un qui s'annonce.
+
+En quatre gestes, une fois pour toutes :
+
+```bash
+npm run htpasswd
+```
+
+1. La commande demande un **nom d'utilisateur**, puis un **mot de passe** — huit
+   caractères au minimum, saisi en aveugle, à confirmer. Rien n'apparaît à
+   l'écran pendant la frappe, et le mot de passe ne passe pas en argument : il
+   resterait dans l'historique du terminal et dans la liste des processus.
+2. Elle écrit un fichier nommé `htpasswd` dans le dossier courant. Il tient sur
+   une ligne : le nom d'utilisateur, puis l'empreinte du mot de passe. Le mot de
+   passe lui-même n'y est pas — il n'est pas récupérable, et il faut refaire
+   l'opération si on l'oublie.
+3. Déposer ce fichier dans `/volume1/docker/speed/` avec File Station.
+4. Dans la pile Portainer, décommenter la ligne du volume `htpasswd`, puis
+   redéployer.
+
+**Il n'y a rien d'autre à décommenter pour le dépôt.** Les deux lignes
+`auth_basic` de `docker/nginx.conf` protègent le site *entier* et ne servent que
+si l'adresse est exposée hors du réseau local ; l'emplacement `traces/`, lui,
+porte sa propre exigence, déjà active.
+
+Sans ce fichier, le dépôt est refusé — la lecture des traces, des profils et de
+l'application continue de fonctionner normalement.
 
 > Depuis le wifi de la maison, le nom DDNS résout vers l'adresse publique : sans
 > **NAT loopback** activé sur la box, l'accès échoue alors qu'il fonctionne en
