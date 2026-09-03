@@ -109,6 +109,83 @@ describe('analyzeStep — accélération franche', () => {
   })
 })
 
+/** Ralentissement depuis une vitesse donnée, à décélération constante. */
+function slowTrace(fromKmh: number, decelMs2: number, durationS: number): Trace {
+  return buildTrace({
+    durationS,
+    kmhAt: (t) => Math.max(0, fromKmh - Math.abs(decelMs2) * 3.6 * t),
+  })
+}
+
+describe('analyzeStep — décélération pied levé', () => {
+  it('accepte un lever de pied et rend la décélération obtenue', () => {
+    // 70 km/h, 0,8 m/s² pendant dix secondes : 28 km/h perdus.
+    const analysis = analyzeStep('coast', slowTrace(70, 0.8, 10))
+
+    expect(analysis.valid).toBe(true)
+    expect(analysis.measure.peakDecelMs2).toBeCloseTo(-0.8, 2)
+  })
+
+  it('accepte un lever de pied fort, sans plafond', () => {
+    // Une électrique récupère au lever de pied : 2,5 m/s² sans toucher au frein
+    // est parfaitement possible, et refuser cela reviendrait à refuser la
+    // voiture qu'on mesure. C'est la proposition de frontière, plus loin, qui
+    // dit si les deux étapes se distinguent.
+    const analysis = analyzeStep('coast', slowTrace(90, 2.5, 8))
+
+    expect(analysis.valid).toBe(true)
+    expect(analysis.measure.peakDecelMs2).toBeCloseTo(-2.5, 2)
+  })
+
+  it('refuse un lever de pied entamé trop bas', () => {
+    const analysis = analyzeStep('coast', slowTrace(40, 1, 8))
+
+    expect(analysis.valid).toBe(false)
+    expect(analysis.reason).toContain('de quoi ralentir')
+  })
+
+  it('refuse un lever de pied qui ne perd presque rien', () => {
+    const analysis = analyzeStep('coast', slowTrace(80, 0.2, 8))
+
+    expect(analysis.valid).toBe(false)
+    expect(analysis.reason).toContain('km/h perdus')
+  })
+
+  it('refuse une décote qui n’est pas un ralentissement', () => {
+    // Vingt km/h perdus, mais sur cent secondes : 0,06 m/s². La vitesse a
+    // dérivé, elle n'a pas ralenti — et l'enregistrement couvre autre chose que
+    // la manœuvre demandée.
+    const analysis = analyzeStep('coast', slowTrace(80, 0.056, 100))
+
+    expect(analysis.valid).toBe(false)
+    expect(analysis.reason).toContain('restée tenue')
+  })
+})
+
+describe('analyzeStep — freinage franc', () => {
+  it('accepte un freinage franc et rend la décélération obtenue', () => {
+    const analysis = analyzeStep('brake', slowTrace(90, 4.5, 5))
+
+    expect(analysis.valid).toBe(true)
+    expect(analysis.measure.peakDecelMs2).toBeCloseTo(-4.5, 2)
+  })
+
+  it('refuse un ralentissement mou, et dit pourquoi', () => {
+    const analysis = analyzeStep('brake', slowTrace(90, 1.2, 8))
+
+    expect(analysis.valid).toBe(false)
+    expect(analysis.reason).toContain('1.20 m/s²')
+    expect(analysis.reason).toContain('freinage franc')
+  })
+
+  it('refuse un freinage entamé trop bas', () => {
+    const analysis = analyzeStep('brake', slowTrace(30, 4, 5))
+
+    expect(analysis.valid).toBe(false)
+    expect(analysis.reason).toContain('30 km/h')
+  })
+})
+
 describe('analyzeStep — reproductibilité', () => {
   it('rend la même valeur sur la trace rejouée', () => {
     const trace = launchTrace(3.2)

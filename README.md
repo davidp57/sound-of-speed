@@ -615,6 +615,28 @@ jamais estimé. L'enregistrement d'une étape est une trace ordinaire — elle
 apparaît dans la liste des traces, se rejoue, et l'analyse en tire le même
 chiffre à chaque relecture.
 
+### Les étapes
+
+| Étape | Ce qu'on demande | Ce qu'elle informe |
+|---|---|---|
+| Accélération franche | de l'arrêt, accélérer franchement jusqu'à 50 km/h | l'accélération à charge pleine |
+| Décélération pied levé | au-dessus de 50 km/h, lever le pied sans freiner | avec le freinage, la frontière de rétrogradage ; la borne basse |
+| Freinage franc | au-dessus de 40 km/h, freiner franchement | la même frontière, et la borne basse |
+
+Le seuil de rétrogradage au freinage se place **au milieu** des deux
+décélérations. Le milieu, parce que c'est le point qui laisse la même marge
+contre les deux erreurs possibles : rétrograder sur un simple lever de pied, et
+ne pas rétrograder sur un vrai freinage.
+
+**Et il peut ne pas y avoir de milieu.** Une voiture électrique récupère au
+lever de pied, ce qui rapproche les deux cas au lieu de les séparer. Si les deux
+étapes rendent la même décélération à moins de 0,5 m/s² près, aucun seuil n'est
+proposé, et la raison est dite : soit le frein a servi pendant le lever de pied,
+soit la récupération suffit à elle seule. C'est pour la même raison que le lever
+de pied n'a **pas** de plafond de décélération dans son critère : rien dans une
+trace GPS ne dit si le frein a été touché, et refuser un lever de pied « trop
+fort » reviendrait à refuser cette voiture-là.
+
 ### Une étape peut être refusée, et c'est le point
 
 Une « accélération franche » qui n'atteint que 1 m/s² n'en est pas une.

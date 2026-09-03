@@ -1,4 +1,10 @@
 import {
+  BRAKE_MIN_DECEL_MS2,
+  BRAKE_START_KMH,
+  COAST_LOSS_KMH,
+  COAST_MIN_DECEL_MS2,
+  COAST_MIN_S,
+  COAST_START_KMH,
   LAUNCH_GAIN_KMH,
   LAUNCH_MIN_ACCEL_MS2,
   LAUNCH_MIN_S,
@@ -51,9 +57,32 @@ function judge(step: CalibrationStepId, measure: TraceMeasure): {
   switch (step) {
     case 'launch':
       return judgeLaunch(measure)
+    case 'coast':
+      return judgeCoast(measure)
+    case 'brake':
+      return judgeBrake(measure)
     default:
       return { valid: false, reason: 'Étape inconnue.' }
   }
+}
+
+/** Trop court, trop lent, ou vide : les refus qui valent pour toutes les étapes. */
+function judgeCommon(
+  measure: TraceMeasure,
+  minDurationS: number,
+): { valid: boolean; reason: string } | null {
+  if (measure.count < 2) {
+    return { valid: false, reason: 'Trace vide ou trop courte pour être mesurée.' }
+  }
+  if (measure.durationS < minDurationS) {
+    return {
+      valid: false,
+      reason:
+        `L’enregistrement ne dure que ${measure.durationS.toFixed(1)} s, ` +
+        `il en faut ${minDurationS}.`,
+    }
+  }
+  return null
 }
 
 /**
@@ -65,17 +94,8 @@ function judge(step: CalibrationStepId, measure: TraceMeasure): {
  * ordinaire.
  */
 function judgeLaunch(measure: TraceMeasure): { valid: boolean; reason: string } {
-  if (measure.count < 2) {
-    return { valid: false, reason: 'Trace vide ou trop courte pour être mesurée.' }
-  }
-  if (measure.durationS < LAUNCH_MIN_S) {
-    return {
-      valid: false,
-      reason:
-        `L’enregistrement ne dure que ${measure.durationS.toFixed(1)} s, ` +
-        `il en faut ${LAUNCH_MIN_S}.`,
-    }
-  }
+  const common = judgeCommon(measure, LAUNCH_MIN_S)
+  if (common) return common
 
   const start = measure.points[0]?.kmh ?? 0
   if (start > LAUNCH_START_KMH) {
@@ -109,6 +129,82 @@ function judgeLaunch(measure: TraceMeasure): { valid: boolean; reason: string } 
         `L’accélération soutenue n’atteint que ${peak.toFixed(2)} m/s², il en ` +
         `faut ${LAUNCH_MIN_ACCEL_MS2.toFixed(1)}. Ce n’est pas une reprise franche : ` +
         'la retenir donnerait une charge pleine trop tôt.',
+    }
+  }
+
+  return { valid: true, reason: '' }
+}
+
+/**
+ * Le lever de pied : on vérifie qu'il a eu lieu, pas qu'il a été doux.
+ *
+ * Aucun plafond de décélération. Une électrique récupère au lever de pied, ce
+ * qui rapproche les deux cas au lieu de les séparer : refuser un lever de pied
+ * « trop fort » reviendrait à refuser cette voiture-là. Ce que le plafond aurait
+ * dû protéger est protégé au moment de proposer la frontière — si les deux
+ * étapes se touchent, aucune frontière n'est proposée.
+ */
+function judgeCoast(measure: TraceMeasure): { valid: boolean; reason: string } {
+  const common = judgeCommon(measure, COAST_MIN_S)
+  if (common) return common
+
+  const start = measure.points[0]?.kmh ?? 0
+  if (start < COAST_START_KMH) {
+    return {
+      valid: false,
+      reason:
+        `L’enregistrement commence à ${start.toFixed(0)} km/h : il faut partir ` +
+        `d’au moins ${COAST_START_KMH} km/h pour avoir de quoi ralentir.`,
+    }
+  }
+
+  const lost = measure.maxKmh - measure.minKmh
+  if (lost < COAST_LOSS_KMH) {
+    return {
+      valid: false,
+      reason: `Seulement ${lost.toFixed(0)} km/h perdus, il en faut ${COAST_LOSS_KMH}.`,
+    }
+  }
+
+  const peak = measure.peakDecelMs2
+  if (peak === null || peak > COAST_MIN_DECEL_MS2) {
+    return {
+      valid: false,
+      reason:
+        'Aucun ralentissement franc dans la trace : la vitesse est restée tenue ' +
+        'ou l’enregistrement couvre autre chose.',
+    }
+  }
+
+  return { valid: true, reason: '' }
+}
+
+/** Le freinage, lui, se juge sur sa force : c'est tout ce qui le distingue. */
+function judgeBrake(measure: TraceMeasure): { valid: boolean; reason: string } {
+  const common = judgeCommon(measure, LAUNCH_MIN_S)
+  if (common) return common
+
+  const start = measure.points[0]?.kmh ?? 0
+  if (start < BRAKE_START_KMH) {
+    return {
+      valid: false,
+      reason:
+        `L’enregistrement commence à ${start.toFixed(0)} km/h : il faut partir ` +
+        `d’au moins ${BRAKE_START_KMH} km/h.`,
+    }
+  }
+
+  const peak = measure.peakDecelMs2
+  if (peak === null) {
+    return { valid: false, reason: 'Aucune décélération n’a pu être mesurée.' }
+  }
+  if (peak > BRAKE_MIN_DECEL_MS2) {
+    return {
+      valid: false,
+      reason:
+        `La décélération soutenue n’atteint que ${Math.abs(peak).toFixed(2)} m/s², ` +
+        `il en faut ${Math.abs(BRAKE_MIN_DECEL_MS2).toFixed(1)}. Ce n’est pas un ` +
+        'freinage franc : la retenir effacerait la frontière avec le lever de pied.',
     }
   }
 

@@ -127,6 +127,9 @@ function summary(analysis: StepAnalysis): string {
   switch (analysis.step) {
     case 'launch':
       return `accélération soutenue ${fixed(analysis.measure.peakAccelMs2 ?? 0)} m/s²`
+    case 'coast':
+    case 'brake':
+      return `décélération soutenue ${fixed(analysis.measure.peakDecelMs2 ?? 0)} m/s²`
     default:
       return 'mesurée'
   }

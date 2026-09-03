@@ -78,6 +78,100 @@ describe('suggest — charge pleine', () => {
   })
 })
 
+function slowTrace(fromKmh: number, decelMs2: number, durationS: number): Trace {
+  const startedAt = 1_700_000_000_000
+  const samples: SpeedSample[] = []
+  for (let ms = 0; ms <= durationS * 1000; ms += 100) {
+    samples.push({
+      kmh: Math.max(0, fromKmh - (Math.abs(decelMs2) * 3.6 * ms) / 1000),
+      at: startedAt + ms,
+      accuracyM: 5,
+      derived: false,
+    })
+  }
+  return { name: 'ralentissement', startedAt, samples }
+}
+
+/** Retrouve une ligne du récapitulatif par sa clé. */
+function row(suggestions: ReturnType<typeof suggest>, key: string) {
+  return suggestions.find((suggestion) => suggestion.key === key)
+}
+
+describe('suggest — rétrogradage au freinage', () => {
+  it('place le seuil au milieu du lever de pied et du freinage', () => {
+    const coast = analyzeStep('coast', slowTrace(80, 1, 12))
+    const brake = analyzeStep('brake', slowTrace(90, 4.4, 5))
+
+    const line = row(suggest([coast, brake], createRoadProfile()), 'drivetrain.brakeDownshiftAccelMs2')
+
+    // −1,00 pied levé, −4,40 au freinage : le milieu est à −2,70. Le profil
+    // Route est réglé à −1, c'est-à-dire exactement sur la valeur du lever de
+    // pied — donc la boîte y rétrograde dès qu'on lève le pied.
+    expect(line?.measured?.value).toBeCloseTo(-2.7, 2)
+    expect(line?.setting?.proposed).toBe(-2.7)
+    expect(line?.setting?.current).toBe(-1)
+  })
+
+  it('ne propose rien quand les deux étapes se touchent', () => {
+    // Le cas d'une électrique qui récupère fort : lever le pied et freiner
+    // donnent la même chose, et il n'y a pas de frontière entre les deux.
+    const coast = analyzeStep('coast', slowTrace(80, 2.3, 8))
+    const brake = analyzeStep('brake', slowTrace(90, 2.5, 8))
+
+    const line = row(suggest([coast, brake], createRoadProfile()), 'drivetrain.brakeDownshiftAccelMs2')
+
+    expect(line?.setting).toBeNull()
+    expect(line?.missing).toContain('la même décélération')
+    expect(line?.missing).toContain('récupération')
+  })
+
+  it('dit laquelle des deux étapes manque', () => {
+    const brake = analyzeStep('brake', slowTrace(90, 4.4, 5))
+
+    const line = row(suggest([brake], createRoadProfile()), 'drivetrain.brakeDownshiftAccelMs2')
+
+    expect(line?.missing).toContain('décélération pied levé')
+  })
+})
+
+describe('suggest — bornes de l’accélération', () => {
+  it('borne sur la valeur relevée, plus la moitié en marge', () => {
+    const launch = analyzeStep('launch', launchTrace(3.4))
+    const brake = analyzeStep('brake', slowTrace(90, 4.4, 5))
+
+    const suggestions = suggest([launch, brake], createRoadProfile())
+
+    // −4,40 relevé × 1,5 = −6,60, arrondi vers l'extérieur au demi : −7,0.
+    // 3,40 relevé × 1,5 = 5,10, arrondi vers l'extérieur : 5,5.
+    expect(row(suggestions, 'speed.minAccelMs2')?.setting?.proposed).toBe(-7)
+    expect(row(suggestions, 'speed.maxAccelMs2')?.setting?.proposed).toBe(5.5)
+    // Les bornes du profil livré, jamais atteintes.
+    expect(row(suggestions, 'speed.minAccelMs2')?.setting?.current).toBe(-14)
+    expect(row(suggestions, 'speed.maxAccelMs2')?.setting?.current).toBe(14)
+  })
+
+  it('ignore une étape refusée dans le calcul des bornes', () => {
+    // Un freinage mou est refusé : il ne doit pas servir de borne, sans quoi
+    // une étape ratée resserrerait l'écrêtage sur une valeur trop faible.
+    const launch = analyzeStep('launch', launchTrace(3.4))
+    const soft = analyzeStep('brake', slowTrace(90, 1.2, 8))
+
+    const suggestions = suggest([launch, soft], createRoadProfile())
+
+    expect(soft.valid).toBe(false)
+    // Seule la reprise compte : sa propre décélération est nulle, donc la borne
+    // basse tombe à zéro plutôt qu'à −1,8.
+    expect(row(suggestions, 'speed.minAccelMs2')?.measured?.value).toBeCloseTo(0, 2)
+  })
+
+  it('ne borne rien sans aucune étape valide', () => {
+    const suggestions = suggest([], createRoadProfile())
+
+    expect(row(suggestions, 'speed.minAccelMs2')?.missing).toContain('rien à borner')
+    expect(row(suggestions, 'speed.maxAccelMs2')?.missing).toContain('rien à borner')
+  })
+})
+
 describe('writeSetting', () => {
   it('recopie un réglage et laisse le reste intact', () => {
     const profile = createRoadProfile()

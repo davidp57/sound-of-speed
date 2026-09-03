@@ -10,7 +10,11 @@ import type { Profile } from '../preset/schema'
  * ne peut être touché par l'étalonnage.
  */
 
-export type SettingPath = 'mix.fullLoadAccelMs2'
+export type SettingPath =
+  | 'mix.fullLoadAccelMs2'
+  | 'drivetrain.brakeDownshiftAccelMs2'
+  | 'speed.minAccelMs2'
+  | 'speed.maxAccelMs2'
 
 /**
  * Libellé, unité et précision de chaque réglage.
@@ -29,12 +33,25 @@ export const SETTING_LABELS: Record<
     unit: 'm/s²',
     decimals: 1,
   },
+  'drivetrain.brakeDownshiftAccelMs2': {
+    label: 'Rétrogradage au freinage',
+    unit: 'm/s²',
+    decimals: 1,
+  },
+  'speed.minAccelMs2': { label: 'Borne basse de l’accélération', unit: 'm/s²', decimals: 1 },
+  'speed.maxAccelMs2': { label: 'Borne haute de l’accélération', unit: 'm/s²', decimals: 1 },
 }
 
 export function readSetting(profile: Profile, path: SettingPath): number | number[] {
   switch (path) {
     case 'mix.fullLoadAccelMs2':
       return profile.mix.fullLoadAccelMs2
+    case 'drivetrain.brakeDownshiftAccelMs2':
+      return profile.drivetrain.brakeDownshiftAccelMs2
+    case 'speed.minAccelMs2':
+      return profile.speed.minAccelMs2
+    case 'speed.maxAccelMs2':
+      return profile.speed.maxAccelMs2
     default:
       return 0
   }
@@ -56,6 +73,18 @@ export function writeSetting(
     case 'mix.fullLoadAccelMs2':
       if (typeof value !== 'number') return profile
       return { ...profile, mix: { ...profile.mix, fullLoadAccelMs2: value } }
+    case 'drivetrain.brakeDownshiftAccelMs2':
+      if (typeof value !== 'number') return profile
+      return {
+        ...profile,
+        drivetrain: { ...profile.drivetrain, brakeDownshiftAccelMs2: value },
+      }
+    case 'speed.minAccelMs2':
+      if (typeof value !== 'number') return profile
+      return { ...profile, speed: { ...profile.speed, minAccelMs2: value } }
+    case 'speed.maxAccelMs2':
+      if (typeof value !== 'number') return profile
+      return { ...profile, speed: { ...profile.speed, maxAccelMs2: value } }
     default:
       return profile
   }
