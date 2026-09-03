@@ -1,6 +1,6 @@
 # IMPERFECTIONS — un moteur ne tourne pas juste
 
-**Statut :** 🧑 attend David
+**Statut :** ⬜ prêt
 **Branche :** à créer
 **Version visée :** 0.3
 

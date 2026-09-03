@@ -1,6 +1,6 @@
 # TABLEAU-DE-BORD — un vrai tableau de bord, et un paysage qui défile
 
-**Statut :** 🧑 attend David
+**Statut :** ⬜ prêt
 **Branche :** `feature/tableau-de-bord`
 **Version visée :** 0.4
 
@@ -24,8 +24,15 @@ Un paysage qui défile est, par définition, du mouvement pour le plaisir. C'est
 règle de David, et lui seul peut la lever — mais il doit la lever **en le
 sachant**, pas la voir disparaître dans un lot.
 
-Le statut de ce lot est donc 🧑 dès son écriture : il n'y a rien à faire avant
-cette décision.
+**Décision prise le 3 septembre 2026.** David a levé la règle **pour le paysage
+seul**, en connaissance de cause, et l'exception est écrite dans
+[`CLAUDE.md`](../../CLAUDE.md) — elle ne porte que sur ce décor, et pas sur les
+transitions, les valeurs qui glissent ou les apparitions. Le cadran, lui, ne
+relevait pas de la règle : le mouvement d'une aiguille est la valeur.
+
+Le lot est donc prêt, et il est découpé de façon que le paysage puisse être
+abandonné sans rien perdre du tableau de bord — la mesure du coût d'un rendu
+continu est dans son propre ticket, et elle conditionne sa réalisation.
 
 ## Deux propositions, qu'il faut séparer
 
@@ -62,11 +69,10 @@ doit pas hoqueter, demande d'être mesuré avant d'être promis.
 
 ## Décisions à prendre, dans cet ordre
 
-1. **Lève-t-on la règle « aucune animation » ?** Entièrement, ou seulement pour
-   ce que la règle ne visait pas — une aiguille qui porte une valeur ?
-2. **Le paysage est-il dans le même lot que le tableau de bord ?** Recommandation :
-   non. Le tableau de bord a une justification ergonomique et peut se faire seul ;
-   le paysage est un lot d'agrément, à juger sur son coût.
+1. ~~Lève-t-on la règle « aucune animation » ?~~ **Tranché** : levée pour le
+   paysage seul.
+2. ~~Le paysage est-il dans le même lot ?~~ **Tranché** : même lot, tickets
+   séparés, le paysage en dernier et conditionné à sa mesure.
 3. **Que devient l'écran de conduite actuel ?** Les chiffres servent au réglage
    et au diagnostic. Les remplacer ou proposer les deux — le mode plein écran
    montre qu'un même écran peut avoir deux visages.
@@ -74,6 +80,7 @@ doit pas hoqueter, demande d'être mesuré avant d'être promis.
    continu sur le navigateur de la voiture, et son effet sur la régularité du
    son. Rien ne se décide là-dessus par le raisonnement.
 
-## Hors périmètre tant que la règle n'est pas levée
+## Hors périmètre
 
-Tout. Ce lot n'est pas prêt : il attend une décision, pas une implémentation.
+- Toute autre animation. L'exception porte sur le décor, et sur lui seul.
+- L'écran de télémétrie, qui est fait pour le diagnostic et garde ses chiffres.

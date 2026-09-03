@@ -862,7 +862,7 @@ chaque essai.
 | — | Plusieurs banques de son, choisies par profil | prévu |
 | — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | prévu |
 | — | Imperfections : tremblement de régime, couches légèrement désaccordées | prévu |
-| — | Tableau de bord et paysage défilant | à décider |
+| — | Tableau de bord à cadrans, et paysage défilant | prévu |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

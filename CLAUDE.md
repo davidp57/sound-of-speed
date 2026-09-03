@@ -167,6 +167,18 @@ Un réglage nouveau, c'est cinq choses et pas une :
   une application qui doit se charger hors réseau.
 - **Aucune animation.** Les valeurs changent, rien ne bouge pour le plaisir.
   C'est une règle d'ergonomie, pas un goût : l'écran se lit en conduisant.
+
+  **Une exception, levée par David le 3 septembre 2026** : le paysage qui défile
+  de l'écran de conduite (lot
+  [TABLEAU-DE-BORD](.backlog/TABLEAU-DE-BORD/spec.md)). C'est de l'agrément
+  assumé — rien ne s'y lit —, il se coupe, et il ne se fera que si la mesure
+  montre qu'un rendu continu ne dégrade pas la régularité du son. L'exception
+  porte sur ce seul décor : elle n'autorise ni transition, ni valeur qui glisse
+  vers sa nouvelle position, ni effet d'apparition.
+
+  Une **aiguille de cadran** n'a jamais relevé de cette règle : son mouvement
+  **est** la valeur, et un cadran se lit d'un coup d'œil là où un nombre se lit
+  en le lisant. C'est le même argument d'ergonomie qui fonde la règle.
 - **TypeScript strict.** Pas de `any` neuf, pas de `@ts-ignore` sans commentaire
   qui l'explique.
 - Le calcul reste dans `core/`, l'affichage dans `ui/`. Un composant qui calcule

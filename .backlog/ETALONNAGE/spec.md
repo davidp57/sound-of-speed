@@ -63,22 +63,25 @@ celle du profil, côte à côte. **Elle propose, elle n'applique pas** — c'est
 règle qu'on s'est déjà donnée pour l'analyse d'échantillon, dont les candidats
 d'ancrage se départagent à l'oreille.
 
-## Ce qui rend ce lot dépendant d'un autre
+## L'analyse se fait dans la voiture
 
-Une session d'étalonnage produit six traces, enregistrées **dans la voiture**.
-Elles ne servent que si on peut les en sortir — or le navigateur de la Tesla
-refuse tout téléchargement. Le lot [DEPOSER](../DEPOSER/spec.md) est donc un
-préalable, à moins de faire l'analyse **dans la voiture**, ce qui est possible
-puisqu'elle ne demande que du calcul.
+**Décision prise le 3 septembre 2026.** L'analyse ne demande que du calcul : elle
+se fait sur place, et le résultat se voit tout de suite. Ce lot ne dépend donc
+pas de [DEPOSER](../DEPOSER/spec.md).
 
-Ce choix — analyser sur place ou déposer puis analyser — est le premier à
-trancher, et il détermine tout le reste.
+L'argument qui a tranché : six traces enregistrées qu'on ne peut pas sortir de la
+voiture ne servent à rien tant que le dépôt n'existe pas. Faire dépendre le lot
+le plus prometteur du carnet d'un lot d'infrastructure non vérifié — la présence
+du module d'écriture dans l'image du serveur reste à établir — l'aurait retardé
+sans nécessité.
+
+Ce qu'on y perd : refaire l'analyse autrement, plus tard, demandera d'avoir
+déposé les traces. Elles restent enregistrées localement, et DEPOSER les sortira
+quand il existera.
 
 ## Décisions à prendre
 
-- **Sur place ou au poste ?** Sur place, on voit le résultat tout de suite et on
-  se passe de DEPOSER ; au poste, on peut refaire l'analyse autrement sans
-  reprendre la route. Le second est plus sûr, le premier est plus utile.
+- ~~Sur place ou au poste ?~~ **Tranché** : sur place.
 - **Que faire d'une session incomplète ?** Un freinage franc ne se commande pas
   au milieu du trafic. Chaque étape doit valoir séparément, et l'analyse doit
   dire ce qu'elle n'a pas pu mesurer plutôt que d'inventer.

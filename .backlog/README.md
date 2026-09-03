@@ -57,16 +57,23 @@ EFFORT et IMPERFECTIONS attendaient cette mesure juste. **Les chiffres d'EFFORT
 sont donc à refaire** : ils avaient été relevés sur une accélération qu'on sait
 maintenant fausse, et le lot vaut peut-être moins qu'annoncé.
 
-**Huit lots n'ont pas de tickets** — DEPOSER, EFFORT, ETALONNAGE,
-IMPERFECTIONS, MODE-SIMPLE, TABLEAU-DE-BORD, UI-DEFILEMENT et VOLUME-GLOBAL.
-`/to-tickets` les découpera quand on les reprendra ; il se lance lot par lot et
-demande validation du découpage avant d'écrire.
+**Tous les lots sont découpés en tickets**, sauf PENTE dont le travail est
+livré. Les huit lots nés de l'essai sur route du 3 septembre 2026 l'ont été le
+jour même, après deux décisions de conception prises par David :
 
-Trois d'entre eux portent une **décision préalable** qui changerait leur
-découpage : TABLEAU-DE-BORD attend la levée de la règle « aucune animation » ;
-ETALONNAGE attend le choix entre analyser dans la voiture ou déposer les traces
-d'abord, ce qui détermine s'il dépend de DEPOSER ; EFFORT attend que ses mesures
-soient refaites, PENTE ayant invalidé celles sur lesquelles il a été écrit.
+- **La règle « aucune animation » est levée pour le paysage qui défile**, et pour
+  lui seul. L'exception est écrite dans [`CLAUDE.md`](../CLAUDE.md), avec sa
+  raison et ses limites. Le cadran à aiguille, lui, n'en relevait pas : son
+  mouvement est la valeur.
+- **L'étalonnage s'analyse dans la voiture**, sur place. ETALONNAGE ne dépend
+  donc pas de DEPOSER, dont le préalable technique — la présence du module
+  d'écriture dans l'image du serveur — n'est pas encore établi.
+
+Deux points restent ouverts à l'intérieur des tickets, et sont posés là où ils se
+tranchent : ce qu'un curseur global fait d'un réglage trouvé à la main
+(MODE-SIMPLE, ticket 03 — reco : écraser, avec un retour), et si EFFORT garde sa
+raison d'être maintenant que la mesure d'accélération est juste (EFFORT,
+ticket 01).
 
 ## Ce qui n'est pas dans le backlog
 
