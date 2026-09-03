@@ -26,6 +26,7 @@ import {
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
 import { analyzeSession, overridesFor, withCalibration } from './core/calibration/onboard'
+import { deposit, type DepositOutcome } from './core/deposit/deposit'
 import { loadCalibration, saveCalibration, type CalibrationSession } from './core/calibration/store'
 import {
   applyOrigin,
@@ -40,12 +41,14 @@ import {
   tracesToFile,
   type ProfileSection,
   loadAdvancedMode,
+  loadDepositCredentials,
   loadInheritedVolume,
   loadMasterVolume,
   loadSelectedId,
   newId,
   saveAdvancedMode,
   saveProfiles,
+  saveDepositCredentials,
   saveMasterVolume,
   saveSelectedId,
 } from './core/preset/store'
@@ -264,6 +267,38 @@ export function setDriveFace(face: DriveFace): void {
 export function setSceneryOn(value: boolean): void {
   sceneryOn.value = value
   writePreference(SCENERY_KEY, value ? '1' : '0')
+}
+
+/**
+ * Dépôt d'une trace sur le serveur.
+ *
+ * Le navigateur de la voiture refuse tout téléchargement : c'est par là que les
+ * traces en sortent. Le jeton est une préférence de l'appareil, comme le volume.
+ */
+export const depositCredentials = ref(loadDepositCredentials())
+
+export function setDepositCredentials(user: string, token: string): void {
+  depositCredentials.value = { user, token }
+  saveDepositCredentials(depositCredentials.value)
+}
+
+/** Nom de la trace en cours de dépôt, pour désactiver son bouton. */
+export const depositing = ref('')
+/** Résultat du dernier dépôt, à afficher tel quel. */
+export const depositMessage = ref('')
+
+export async function depositTrace(trace: Trace): Promise<DepositOutcome> {
+  depositing.value = trace.name
+  depositMessage.value = ''
+  try {
+    const issue = await deposit(trace, depositCredentials.value)
+    depositMessage.value = issue.ok
+      ? `« ${issue.name} » déposée.`
+      : issue.detail
+    return issue
+  } finally {
+    depositing.value = ''
+  }
 }
 
 export const offlineStatus = ref<OfflineStatus>({ ...offline.status })

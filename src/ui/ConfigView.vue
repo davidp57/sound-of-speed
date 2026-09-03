@@ -50,6 +50,8 @@ import {
   libraryLoading,
   refreshLibrary,
   calibrationOverrides,
+  depositCredentials,
+  setDepositCredentials,
 } from '../state'
 
 /**
@@ -63,6 +65,11 @@ import {
 
 const profile = activeProfile
 const importError = ref('')
+
+/** Le jeton de dépôt se retient dès la frappe : il n'y a rien à valider. */
+function onDeposit(user: string, token: string): void {
+  setDepositCredentials(user, token)
+}
 const fileInput = ref<HTMLInputElement | null>(null)
 
 const ROLES: { id: LayerRole; label: string }[] = [
@@ -692,6 +699,29 @@ function impliedCylinders(index: number): number | null {
           <li v-for="entry in calibrationOverrides" :key="entry.path">{{ entry.label }}</li>
         </ul>
       </div>
+
+      <div class="deposit">
+        <span class="note">Jeton de dépôt</span>
+        <input
+          :value="depositCredentials.user"
+          type="text"
+          placeholder="nom d’utilisateur"
+          @input="onDeposit(($event.target as HTMLInputElement).value, depositCredentials.token)"
+        />
+        <input
+          :value="depositCredentials.token"
+          type="password"
+          placeholder="jeton"
+          @input="onDeposit(depositCredentials.user, ($event.target as HTMLInputElement).value)"
+        />
+      </div>
+      <p class="note">
+        Sert à envoyer une trace sur le serveur depuis la voiture, dont le
+        navigateur refuse les téléchargements. Un jeton dédié, et non votre mot
+        de passe : il ne donne que le droit d’écrire un fichier dans le dossier
+        des traces, et il reste en clair dans ce navigateur. Il se crée avec
+        <code>npm run htpasswd</code>, sous le nom <code>depot</code>.
+      </p>
 
       <div class="reset">
         <span class="note">Réinitialiser</span>
@@ -1592,6 +1622,19 @@ td input[type='number'] {
   margin: 0.2rem 0;
   color: var(--text);
   font-size: 0.9rem;
+}
+
+.deposit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.deposit input {
+  flex: 1 1 8rem;
+  min-width: 0;
 }
 
 .reset {

@@ -74,6 +74,24 @@ Toutes les évolutions notables du projet. Format
   ni suppression, ni création de dossier. L'écriture exige l'authentification en
   toutes circonstances, y compris quand celle du site reste désactivée.
 
+### Ajouté
+
+- **Une trace se dépose sur le serveur depuis la voiture.** C'est le seul moyen
+  de l'en sortir : le navigateur de bord refuse tout téléchargement, alors que
+  les traces naissent en roulant et ne servent qu'ailleurs.
+
+  L'application s'annonce avec un **jeton** dédié, réglé une fois à l'écran de
+  configuration et rangé hors du profil. Un jeton et non un mot de passe : le
+  navigateur ne demande son authentification que sur une navigation, jamais sur
+  une requête lancée par une page — un dépôt aurait échoué en silence. Le jeton
+  n'ouvre que l'écriture d'un fichier dans le dossier des traces.
+
+  Le nom du fichier dit la date, l'enregistrement et sa durée, et il se relit par
+  la fonction d'import. Chaque échec dit lequel il est — jeton absent, jeton
+  refusé, droit d'écriture manquant, hors couverture, déjà déposée — parce
+  qu'ils ne se corrigent pas au même endroit. Une trace n'est jamais perdue au
+  profit d'un dépôt raté.
+
 ### Modifié
 
 - **Le fichier de mots de passe accepte plusieurs entrées.** `npm run htpasswd`

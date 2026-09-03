@@ -401,6 +401,39 @@ reste du NAS. Votre mot de passe personnel, lui, ne quitte pas le poste.
 Donnez donc au jeton une valeur longue et sans rapport avec vos autres mots de
 passe : `npm run htpasswd` avec `depot` comme nom d'utilisateur.
 
+### Déposer une trace depuis la voiture
+
+Une fois le jeton créé et le fichier déposé sur le NAS :
+
+1. écran **Configuration**, champ **Jeton de dépôt** : saisir `depot` et le
+   jeton. Il se retient, hors du profil — il ne voyage donc pas avec un profil
+   partagé, et il n'y aurait aucun sens à envoyer à quelqu'un un son accompagné
+   du droit d'écrire sur son NAS ;
+2. écran **Télémétrie**, à côté de chaque trace : le bouton **Déposer**.
+
+Le fichier prend un nom qui dit la date, le nom de l'enregistrement et sa
+durée — `2026-09-03-21-16-48_retour-du-boulot-90s.json` — de sorte qu'on le
+retrouve sans l'ouvrir. Il se relit par la fonction d'import de cet écran, sur
+n'importe quel appareil.
+
+Ce qui peut échouer le dit, et distingue les cas, parce qu'ils ne se corrigent
+pas au même endroit :
+
+| Message | Ce qu'il faut faire |
+|---|---|
+| Aucun jeton de dépôt | le régler à l'écran de configuration |
+| Jeton refusé | le nom ou le jeton ne correspond pas au fichier de mots de passe |
+| Le serveur n'a pas le droit d'écrire | les permissions du dossier, côté DSM |
+| Dépôt impossible | hors couverture : la trace reste enregistrée, réessayer plus tard |
+| Déjà déposée | rien, elle est en sûreté |
+
+Une trace n'est **jamais** perdue au profit d'un dépôt raté : elle reste dans le
+stockage local, et le dépôt se refait.
+
+> **En développement, le dépôt répond 404.** Il vise le serveur qui sert
+> l'application, et celui de Vite n'a pas ce dossier. C'est en production que la
+> chose se vérifie.
+
 > Depuis le wifi de la maison, le nom DDNS résout vers l'adresse publique : sans
 > **NAT loopback** activé sur la box, l'accès échoue alors qu'il fonctionne en
 > 4G.

@@ -1,6 +1,6 @@
 # 02 — Déposer une trace enregistrée en roulant
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 
 **Bloqué par :** 01 — Le serveur accepte un dépôt, et lui seul
 
@@ -54,13 +54,31 @@ mot de passe personnel, lui, ne quitte pas le poste de travail.
 
 ## Critères d'acceptation
 
-- [ ] Une trace se dépose depuis l'écran de télémétrie, en un geste
-- [ ] Le fichier déposé se relit par la fonction d'import existante, à
+- [x] Une trace se dépose depuis l'écran de télémétrie, en un geste
+- [x] Le fichier déposé se relit par la fonction d'import existante, à
       l'identique
-- [ ] Le nom du fichier dit de quelle trace il s'agit
-- [ ] Le jeton se saisit une fois et se retient, hors du profil
-- [ ] Aucune boîte de dialogue d'authentification n'apparaît en roulant
-- [ ] Un dépôt qui échoue est signalé, et la trace reste enregistrée localement
-- [ ] Un jeton absent ou faux donne un message qui dit lequel des deux
-- [ ] Une trace déjà déposée ne se réécrit pas en silence
+- [x] Le nom du fichier dit de quelle trace il s'agit
+- [x] Le jeton se saisit une fois et se retient, hors du profil
+- [x] Aucune boîte de dialogue d'authentification n'apparaît en roulant
+- [x] Un dépôt qui échoue est signalé, et la trace reste enregistrée localement
+- [x] Un jeton absent ou faux donne un message qui dit lequel des deux
+- [x] Une trace déjà déposée ne se réécrit pas en silence
 - [ ] 🧑 Vérifié depuis la voiture : la trace se retrouve sur le poste de travail
+
+## Un faux positif trouvé à l'usage
+
+La vérification « cette trace est-elle déjà déposée ? » interrogeait le fichier
+lui-même. Essayé : le **premier** dépôt était refusé comme déjà fait.
+
+La cause est qu'un serveur qui replie les chemins inconnus sur la page d'accueil
+répond « oui » à tout — ce que fait le serveur de développement, et ce que fait
+notre nginx partout **hors** du dossier des traces. La question se pose donc au
+dossier, dont la liste est du JSON : si la réponse n'en est pas, on ne sait pas,
+et l'on tente le dépôt plutôt que de refuser à tort.
+
+## Ce qui ne se vérifie qu'en production
+
+Le dépôt vise un chemin relatif, donc le serveur qui sert l'application. En
+développement, c'est celui de Vite, qui n'a pas ce dossier : le message dit alors
+« le serveur a répondu 404 », ce qui est exact. Le dépôt réel demande que
+l'application soit servie par le NAS.
