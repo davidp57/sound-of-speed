@@ -150,6 +150,56 @@ export const masterVolume = ref(
 saveMasterVolume(masterVolume.value)
 audio.setMasterVolume(masterVolume.value)
 
+/**
+ * Visage de l'écran de conduite, et présence du décor.
+ *
+ * Deux **préférences de cet appareil**, comme le volume général : elles ne
+ * décrivent pas le moteur qu'on imite, et un profil partagé n'a pas à emporter
+ * la façon dont son destinataire regarde son écran. Elles ne passent donc pas
+ * par le magasin de profils, et ne sont pas redemandées à chaque ouverture.
+ *
+ * Le tableau de bord est le visage par défaut : c'est en conduisant que l'écran
+ * est regardé. Le décor, lui, est absent par défaut — c'est de l'agrément, et un
+ * navigateur de bord ancien n'a pas à le payer sans qu'on l'ait demandé.
+ */
+export type DriveFace = 'dials' | 'numbers'
+
+const FACE_KEY = 'speed.driveFace.v1'
+const SCENERY_KEY = 'speed.scenery.v1'
+
+function readPreference(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    // Navigation privée, quota plein : on retombe sur la valeur par défaut.
+    return null
+  }
+}
+
+function writePreference(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Le choix s'applique quand même, il ne survivra simplement pas au
+    // rechargement.
+  }
+}
+
+export const driveFace = ref<DriveFace>(
+  readPreference(FACE_KEY) === 'numbers' ? 'numbers' : 'dials',
+)
+export const sceneryOn = ref(readPreference(SCENERY_KEY) === '1')
+
+export function setDriveFace(face: DriveFace): void {
+  driveFace.value = face
+  writePreference(FACE_KEY, face)
+}
+
+export function setSceneryOn(value: boolean): void {
+  sceneryOn.value = value
+  writePreference(SCENERY_KEY, value ? '1' : '0')
+}
+
 export const offlineStatus = ref<OfflineStatus>({ ...offline.status })
 
 export const telemetry = shallowRef<Telemetry>({

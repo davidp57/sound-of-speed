@@ -25,9 +25,33 @@ sauvegarde, exporte et recharge.
 
 **Conduite** — la vitesse, le rapport, le régime. Le choix de la source
 (simulateur, GPS, rejeu), l'activation du son, le volume, la boîte automatique ou
-manuelle, et le verrou d'écran. Un bouton **Plein écran** masque la barre du haut : les chiffres
-occupent toute la hauteur et les commandes deviennent quatre grandes touches. On en sort par une croix discrète, placée là
+manuelle, et le verrou d'écran. Un bouton **Plein écran** masque la barre du haut : l'affichage
+occupe toute la hauteur et les commandes deviennent quatre grandes touches. On en sort par une croix discrète, placée là
 pour qu'on n'en sorte pas par mégarde en roulant.
+
+Cet écran a **deux visages**, et deux boutons pour passer de l'un à l'autre :
+
+- **Cadrans** — un tableau de bord. Le compteur de vitesse et le compte-tours
+  sont deux cadrans à aiguille, le rapport engagé est écrit en grand entre les
+  deux. La zone rouge du compte-tours commence au seuil de coupure, donc le
+  plafond se voit sans lire un chiffre. Chaque cadran garde son nombre en petit,
+  au centre, pour le réglage et le diagnostic. Le compteur est gradué jusqu'à
+  180 km/h — la vitesse à laquelle le dernier rapport touche le rupteur dépasse
+  300 km/h sur les deux profils livrés, une échelle qui laisserait l'aiguille
+  dans un coin. En plein écran, sur un écran large, les deux cadrans sont côte à
+  côte ; en portrait, ils s'empilent, chacun sur toute la largeur.
+- **Chiffres** — la vitesse, le rapport et le régime en nombres, avec la
+  réglette de régime. C'est cette vue qui sert à régler : cent tours d'écart se
+  lisent sur un nombre et ne se voient pas sur une aiguille.
+
+Le choix du visage est une préférence de **l'appareil** : il survit au
+rechargement et ne fait pas partie du profil.
+
+Un bouton **Paysage** ajoute, derrière les cadrans, un décor qui défile à la
+vitesse du véhicule. C'est de l'agrément assumé : rien ne s'y lit, il se coupe,
+et coupé il n'existe pas dans la page. Il s'arrête à l'arrêt, et le navigateur
+l'arrête tout seul quand la page passe en arrière-plan — le son, lui, continue.
+Ce que le décor coûte est mesuré, dans « Ce qui n'est pas vérifié ».
 
 **Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
 lissage, pente, accélération, qualité du signal GPS, régime, charge, état de la
@@ -40,7 +64,12 @@ appliqués immédiatement. La gestion des profils et l'analyse des échantillons
 Une bande de défilement longe le bord gauche : le glissement n'y dérègle rien,
 et les curseurs eux-mêmes rendent le glissement vertical à la page.
 
-Aucune animation nulle part : les valeurs changent, rien ne bouge pour le plaisir.
+Aucune animation nulle part : les valeurs changent, rien ne bouge pour le
+plaisir. Deux réserves, et deux seulement. Le **paysage** de l'écran de conduite
+est une exception assumée, levée sciemment, coupée par défaut. Et l'**aiguille**
+d'un cadran n'a jamais relevé de cette règle : son mouvement est la valeur, elle
+n'a aucune inertie propre, et un cadran se lit d'un coup d'œil là où un nombre se
+lit en le lisant — c'est le même argument d'ergonomie qui fonde la règle.
 
 ---
 
@@ -342,8 +371,10 @@ d'essai qui écraserait le cache de celle qui sert serait une mauvaise idée.
 
 ## En voiture
 
-**Plein écran** — masque la barre d'onglets, porte les chiffres à toute la hauteur
-et remplace les commandes par quatre grandes touches.
+**Plein écran** — masque la barre d'onglets, porte l'affichage à toute la hauteur
+et remplace les commandes par quatre grandes touches. Sur le visage à cadrans,
+les deux cadrans prennent la hauteur disponible : côte à côte sur un écran large,
+empilés en portrait.
 
 **Session média** — l'application apparaît sur l'écran verrouillé et dans le
 panneau de notifications, avec le nom du profil, sa configuration et une pochette
@@ -906,3 +937,18 @@ règles de travail du dépôt dans [`CLAUDE.md`](CLAUDE.md), son vocabulaire dan
   Le volume, le timbre et la boîte travaillent donc sur un signal faux. Ce qui
   n'est pas vérifié, c'est l'ampleur réelle du bruit de mesure de cette
   voiture — la sensibilité, elle, est établie.
+- **Le coût du paysage sur le navigateur de la voiture.** Ce qui est mesuré l'a
+  été sur un Chrome 152 sans interface, au poste de travail, sur la même trace
+  rejouée à chaque passe (montée jusqu'à 116 km/h, moyenne 86), trois passes
+  décor coupé alternées avec trois passes décor actif. La **durée d'image** ne
+  bouge pas : 9,3 ms de moyenne coupé, 9,5 actif, pour un écart de passe à passe
+  de 1,8 ms — l'écart entre les deux états est plus petit que le bruit de la
+  machine. Aucune image au-delà de 33 ms dans un cas comme dans l'autre. Le
+  **travail ajouté par image** est de 0,027 ms de recalcul de style et 0,015 ms
+  de script, soit 0,13 ms de temps de tâche au total : un peu plus d'un centième
+  d'image. La mise en page ne bouge pas, ce qui confirme qu'il n'y a que des
+  translations. Sur une machine tranquille, les deux états donnent exactement la
+  même cadence, 6,06 ms, sans une seule image longue. Restent deux inconnues :
+  le navigateur de la voiture, plus ancien, et la régularité du **son** — le son
+  n'a jamais été activé pendant ces mesures, donc c'est la cadence de
+  l'affichage qui est établie, pas celle du fil audio.
