@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { Engine, type EngineInput } from './engine'
-import { createDefaultProfile } from '../preset/defaults'
+import { createDefaultProfile, createRoadProfile } from '../preset/defaults'
 
 /**
  * Tests du moteur.
@@ -301,6 +301,169 @@ describe('Engine — rupteur', () => {
     // La coupure précédente est échue ; une nouvelle peut être armée aussitôt,
     // donc on vérifie seulement que le régime est resté sous le rupteur.
     expect(state.rpm).toBeLessThanOrEqual(base.engine.redlineRpm)
+  })
+})
+
+describe('Engine — tremblement de régime', () => {
+  /**
+   * Excursion du régime entendu autour du régime net, sur trente secondes.
+   *
+   * Deux secondes de mise en régime ne sont pas comptées : le régime et la
+   * charge mettent ce temps à s'établir, et ce qu'on mesure est l'écart en
+   * régime établi.
+   */
+  function excursion(engine: Engine, over: Partial<EngineInput>) {
+    for (let f = 0; f * FRAME_S <= 2; f += 1) engine.tick(FRAME_S, input(over))
+
+    let lo = Infinity
+    let hi = -Infinity
+    for (let f = 0; f * FRAME_S <= 30; f += 1) {
+      const state = engine.tick(FRAME_S, input(over))
+      const ecart = state.audibleRpm - state.rpm
+      lo = Math.min(lo, ecart)
+      hi = Math.max(hi, ecart)
+    }
+    return { lo, hi, span: hi - lo }
+  }
+
+  const ralenti = { atStandstill: true, throttle: 0 }
+  const lent = { kmh: 30, atStandstill: false, throttle: 0 }
+  const lentEnCharge = { kmh: 30, atStandstill: false, throttle: 1 }
+  const vite = { kmh: 80, atStandstill: false, throttle: 0 }
+  const viteEnCharge = { kmh: 80, atStandstill: false, throttle: 1 }
+
+  it('fait trembler le régime au ralenti', () => {
+    const { lo, hi, span } = excursion(makeEngine(), ralenti)
+
+    // Mesuré sur le profil Sport, réglé à 35 tr/min : 0 à +33,9 tr/min. Le
+    // creux est nul parce que le régime est exactement à son plancher au
+    // ralenti et que le tremblement ne descend pas sous le ralenti —
+    // l'excursion y est donc à sens unique.
+    expect(lo).toBe(0)
+    expect(hi).toBeGreaterThan(32)
+    expect(hi).toBeLessThanOrEqual(profile.engine.flutterRpm)
+    expect(span).toBeGreaterThan(32)
+  })
+
+  it('tremble de part et d’autre dès que le moteur est entraîné', () => {
+    const { lo, hi } = excursion(makeEngine(), lent)
+
+    // Mesuré : ±29,9 tr/min à 1118 tr/min, pied levé.
+    expect(lo).toBeLessThan(-28)
+    expect(hi).toBeGreaterThan(28)
+  })
+
+  it('décroît quand le régime monte', () => {
+    const bas = excursion(makeEngine(), lent)
+    const haut = excursion(makeEngine(), vite)
+
+    // Mesuré : 59,8 tr/min crête à crête à 1118 tr/min, 36,5 à 2981 — un
+    // moteur se stabilise en montant.
+    expect(bas.span).toBeCloseTo(59.8, 0)
+    expect(haut.span).toBeCloseTo(36.5, 0)
+    expect(haut.span).toBeLessThan(bas.span * 0.7)
+  })
+
+  it('décroît quand la charge monte', () => {
+    const leve = excursion(makeEngine(), vite)
+    const ecrase = excursion(makeEngine(), viteEnCharge)
+
+    // Mesuré à 2981 tr/min : 36,5 tr/min crête à crête pied levé, 14,6 pied au
+    // plancher — un moteur se stabilise sous couple.
+    expect(ecrase.span).toBeCloseTo(14.6, 0)
+    expect(ecrase.span).toBeLessThan(leve.span * 0.45)
+
+    // Et à bas régime aussi, où le tremblement est le plus fort.
+    expect(excursion(makeEngine(), lentEnCharge).span).toBeLessThan(
+      excursion(makeEngine(), lent).span * 0.45,
+    )
+  })
+
+  it('ne tremble pas du tout à amplitude nulle', () => {
+    const base = createDefaultProfile()
+    const engine = new Engine({ ...base.engine, flutterRpm: 0 }, base.mix)
+
+    // Exactement le comportement d'avant ce réglage : le régime entendu est le
+    // régime net, au bit près, dans toutes les situations.
+    for (const over of [ralenti, lent, vite, viteEnCharge]) {
+      for (let f = 0; f * FRAME_S <= 5; f += 1) {
+        const state = engine.tick(FRAME_S, input(over))
+        expect(state.audibleRpm).toBe(state.rpm)
+      }
+    }
+  })
+
+  it('donne deux fois la même suite pour la même suite de pas', () => {
+    // Des sinusoïdes et non un tirage au sort : la reproductibilité ne dépend
+    // pas d'une graine à passer, elle est acquise par construction.
+    const un = makeEngine()
+    const deux = makeEngine()
+
+    for (let f = 0; f * FRAME_S <= 10; f += 1) {
+      expect(un.tick(FRAME_S, input(vite)).audibleRpm).toBe(
+        deux.tick(FRAME_S, input(vite)).audibleRpm,
+      )
+    }
+  })
+
+  it('repart de la même phase après une réinitialisation', () => {
+    const engine = makeEngine()
+
+    const premier: number[] = []
+    for (let f = 0; f * FRAME_S <= 3; f += 1) {
+      premier.push(engine.tick(FRAME_S, input(vite)).audibleRpm)
+    }
+
+    engine.reset()
+    const second: number[] = []
+    for (let f = 0; f * FRAME_S <= 3; f += 1) {
+      second.push(engine.tick(FRAME_S, input(vite)).audibleRpm)
+    }
+
+    expect(second).toEqual(premier)
+  })
+
+  it('ne franchit ni le rupteur ni le ralenti', () => {
+    const base = createDefaultProfile()
+    // Amplitude absurde : elle dépasse la plage entière du moteur, donc si le
+    // bornage manquait, on le verrait tout de suite.
+    const engine = new Engine({ ...base.engine, flutterRpm: 4000 }, base.mix)
+
+    for (const over of [ralenti, lent, { kmh: 400, atStandstill: false, throttle: 1 }]) {
+      for (let f = 0; f * FRAME_S <= 10; f += 1) {
+        const state = engine.tick(FRAME_S, input(over))
+        expect(state.audibleRpm).toBeLessThanOrEqual(base.engine.redlineRpm)
+        expect(state.audibleRpm).toBeGreaterThanOrEqual(base.engine.idleRpm)
+      }
+    }
+  })
+
+  it('n’atteint pas la boîte : le régime net reste lisse', () => {
+    // La boîte, ses seuils et la télémétrie travaillent sur `rpm`. Trois défauts
+    // d'oscillation de boîte viennent d'un compteur portant deux sens : le
+    // tremblement ne doit pas en ouvrir un quatrième.
+    const engine = makeEngine()
+    for (let f = 0; f * FRAME_S <= 2; f += 1) engine.tick(FRAME_S, input(vite))
+
+    let precedent = engine.tick(FRAME_S, input(vite)).rpm
+    for (let f = 0; f * FRAME_S <= 5; f += 1) {
+      const state = engine.tick(FRAME_S, input(vite))
+      // À vitesse tenue, le régime net ne bouge plus d'un tour d'une image à
+      // l'autre, quand le régime entendu tremble de ±18.
+      expect(Math.abs(state.rpm - precedent)).toBeLessThan(1)
+      precedent = state.rpm
+    }
+  })
+
+  it('donne aux profils livrés un tremblement qui suit leur caractère', () => {
+    const route = createRoadProfile()
+    const sport = createDefaultProfile()
+
+    // Un moteur de sport a un ralenti plus instable qu'un moteur de série.
+    expect(sport.engine.flutterRpm).toBeGreaterThan(route.engine.flutterRpm)
+    // Mesuré : 24,2 tr/min d'excursion au ralenti sur Route, 33,9 sur Sport.
+    expect(excursion(new Engine(route.engine, route.mix), ralenti).span).toBeCloseTo(24.2, 0)
+    expect(excursion(new Engine(sport.engine, sport.mix), ralenti).span).toBeCloseTo(33.9, 0)
   })
 })
 

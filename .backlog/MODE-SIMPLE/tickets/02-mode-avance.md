@@ -1,6 +1,6 @@
 # 02 — Le détail passe derrière un mode avancé
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -21,8 +21,8 @@ Aucun réglage n'est supprimé. Chacun a été ajouté pour une raison mesurée.
 
 ## Critères d'acceptation
 
-- [ ] La vue par défaut est courte, et le détail est atteignable en un geste
-- [ ] Tous les réglages restent accessibles en mode avancé, sans exception
-- [ ] Le choix du mode survit à un rechargement
-- [ ] Le choix du mode ne fait pas partie du profil et ne voyage pas
-- [ ] Les réglages du mode avancé restent groupés par section, comme aujourd'hui
+- [x] La vue par défaut est courte, et le détail est atteignable en un geste
+- [x] Tous les réglages restent accessibles en mode avancé, sans exception
+- [x] Le choix du mode survit à un rechargement
+- [x] Le choix du mode ne fait pas partie du profil et ne voyage pas
+- [x] Les réglages du mode avancé restent groupés par section, comme aujourd'hui

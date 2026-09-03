@@ -13,10 +13,20 @@ import { ReplaySource, TraceRecorder, type Trace } from './core/speed/replay'
 import { SimulatorSource } from './core/speed/simulator'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
-import type { Profile } from './core/preset/schema'
+import type { Profile, ProfileOrigin } from './core/preset/schema'
+import {
+  applyResponsiveness,
+  applySportiness,
+  resizeGearTables,
+  responsivenessOf,
+  setGearCount as withGearCount,
+  sportinessOf,
+} from './core/preset/character'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
 import {
+  applyOrigin,
+  captureOrigin,
   duplicateProfile,
   loadProfiles,
   loadTraces,
@@ -26,10 +36,12 @@ import {
   tracesFromFile,
   tracesToFile,
   type ProfileSection,
+  loadAdvancedMode,
   loadInheritedVolume,
   loadMasterVolume,
   loadSelectedId,
   newId,
+  saveAdvancedMode,
   saveProfiles,
   saveMasterVolume,
   saveSelectedId,
@@ -151,6 +163,21 @@ saveMasterVolume(masterVolume.value)
 audio.setMasterVolume(masterVolume.value)
 
 /**
+ * Mode avancé de l'écran de configuration : une préférence de **cet appareil**.
+ *
+ * L'écran s'ouvre sur une vue courte — quelques curseurs globaux — et les
+ * cinquante réglages détaillés attendent derrière cette bascule. Aucun n'est
+ * supprimé : chacun a été ajouté pour une raison mesurée. Mais on ne les
+ * parcourait plus, on les subissait.
+ */
+export const advancedMode = ref(loadAdvancedMode())
+
+export function setAdvancedMode(value: boolean): void {
+  advancedMode.value = value
+  saveAdvancedMode(value)
+}
+
+/**
  * Visage de l'écran de conduite, et présence du décor.
  *
  * Deux **préférences de cet appareil**, comme le volume général : elles ne
@@ -215,6 +242,7 @@ export const telemetry = shallowRef<Telemetry>({
   },
   engine: {
     rpm: activeProfile.value.engine.idleRpm,
+    audibleRpm: activeProfile.value.engine.idleRpm,
     kinematicRpm: 0,
     load: 0,
     rpmFraction: 0,
@@ -801,6 +829,124 @@ export function resetActive(section: ProfileSection | 'all'): void {
   const next = [...profiles.value]
   next[index] = resetProfileSection(current, section)
   profiles.value = next
+}
+
+/**
+ * Pose la liste des démultiplications du profil actif.
+ *
+ * Passe par ici, et non par une écriture directe, parce que changer le **nombre**
+ * de rapports oblige à redimensionner les tables qui l'accompagnent : les
+ * régimes de passage et les temporisations. Sans cela un rapport ajouté héritait
+ * du seuil de son prédécesseur et d'une temporisation par défaut étrangère au
+ * profil, et un rapport retiré laissait des valeurs orphelines.
+ *
+ * À nombre de rapports égal, rien d'autre ne bouge : `resizeGearTables` rend le
+ * profil tel quel quand ses tables sont déjà à la bonne longueur — on ne
+ * redistribue pas des seuils que quelqu'un a placés à l'oreille.
+ */
+export function setGearRatios(ratios: number[]): void {
+  if (ratios.length === 0) return
+  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
+  const current = profiles.value[index]
+  if (!current) return
+
+  const resized = resizeGearTables(current, ratios.length)
+  const next = [...profiles.value]
+  next[index] = { ...resized, drivetrain: { ...resized.drivetrain, gearRatios: ratios } }
+  profiles.value = next
+}
+
+// --- Curseurs globaux ----------------------------------------------------
+
+/**
+ * État de retour, pris juste avant qu'un curseur global n'écrase le profil.
+ *
+ * Un curseur global recalcule une dizaine de réglages d'un coup : il ne peut
+ * pas faire autrement, et sans retour possible une heure de réglage fin
+ * partirait au premier mouvement. Le lot ORIGINE avait déjà doté chaque profil
+ * d'un état de retour ; celui-ci en est un second, pris à la volée.
+ *
+ * Il est relevé au **premier** mouvement et gardé jusqu'à ce qu'on s'en serve :
+ * on revient donc à l'état d'avant qu'on ait commencé à toucher aux curseurs,
+ * et non à celui d'avant le dernier cran. C'est ce qu'on cherche quand on
+ * s'aperçoit qu'on a gâché le profil.
+ *
+ * De cet appareil et de cette session seulement : il ne s'enregistre pas.
+ */
+const globalUndo = ref<{ id: string; origin: ProfileOrigin } | null>(null)
+
+export const canUndoGlobalChange = computed(() => globalUndo.value?.id === selectedId.value)
+
+function applyGlobalChange(change: (profile: Profile) => Profile): void {
+  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
+  const current = profiles.value[index]
+  if (!current) return
+
+  if (globalUndo.value?.id !== current.id) {
+    globalUndo.value = { id: current.id, origin: captureOrigin(current) }
+  }
+  const next = [...profiles.value]
+  next[index] = change(current)
+  profiles.value = next
+}
+
+export function undoGlobalChange(): void {
+  const snapshot = globalUndo.value
+  if (!snapshot) return
+  const index = profiles.value.findIndex((p) => p.id === snapshot.id)
+  const current = profiles.value[index]
+  if (!current) return
+
+  const next = [...profiles.value]
+  next[index] = applyOrigin(current, snapshot.origin)
+  profiles.value = next
+  globalUndo.value = null
+}
+
+/**
+ * Tempérament du profil actif, de 0 (calme) à 1 (sportif).
+ *
+ * Déduit du profil et non enregistré dans lui : le curseur reflète donc ce
+ * qu'on a réellement sous les doigts, y compris sur un profil réglé à la main
+ * ou reçu par lien, au lieu de partir d'une position arbitraire.
+ */
+export const sportiness = computed(() => sportinessOf(activeProfile.value))
+
+export function setSportiness(value: number): void {
+  applyGlobalChange((profile) => applySportiness(profile, value))
+}
+
+/**
+ * Réactivité du profil actif, de 0 (pépère) à 1 (nerveux).
+ *
+ * Distincte du tempérament, et il faut qu'elle s'entende : le premier dit si la
+ * voiture pousse fort, celle-ci dit si elle répond vite.
+ */
+export const responsiveness = computed(() => responsivenessOf(activeProfile.value))
+
+export function setResponsiveness(value: number): void {
+  applyGlobalChange((profile) => applyResponsiveness(profile, value))
+}
+
+/** Nombre de rapports du profil actif. */
+export const gearCount = computed(() => activeProfile.value.drivetrain.gearRatios.length)
+
+/**
+ * Change le nombre de rapports, boîte complète : démultiplications réparties,
+ * régimes de passage et temporisations redimensionnés.
+ *
+ * Compte comme un mouvement de curseur global — il refait la boîte — donc il
+ * prend le même état de retour. Et la boîte se recale aussitôt sur la vitesse
+ * courante : sans cela, changer de nombre de rapports en roulant laisserait le
+ * rapport engagé pointer sur une démultiplication qui n'est plus la même, donc
+ * le régime sauter. Les réglages sont reposés à la main avant le recalage,
+ * l'observateur qui s'en charge d'ordinaire ne se déclenchant qu'après.
+ */
+export function setGearCount(count: number): void {
+  applyGlobalChange((profile) => withGearCount(profile, count))
+  const profile = activeProfile.value
+  gearbox.setPresets(profile.drivetrain, profile.engine, profile.feel)
+  gearbox.settleFor((gear) => rpmInGear(gear, telemetry.value.speed.kmh))
 }
 
 export function duplicateActive(): void {

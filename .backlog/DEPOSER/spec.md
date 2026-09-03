@@ -36,17 +36,19 @@ service à maintenir, ce qui est la contrainte du projet depuis le début. Un
 dossier `traces/` autorisé en écriture, et l'application y dépose ; le fichier
 est ensuite lisible depuis n'importe quel appareil, ou par File Station.
 
-**À confirmer avant d'écrire une ligne** : que le module DAV soit compilé dans
-l'image `nginx:alpine` dont nous héritons. La vérification tient en une commande
-sur le NAS :
+**Vérifié, et le module est là.** Docker n'étant pas installé sur le poste de
+développement, la vérification s'est faite à la source du paquet plutôt que sur
+l'image : `nginx:alpine` installe le paquet Alpine officiel de nginx, et la
+recette de ce paquet — `alpine/Makefile` du dépôt `nginx/pkg-oss` — liste
+`--with-http_dav_module` parmi ses arguments de compilation de base, sans
+exclure aucun module par ailleurs.
 
-```
-docker run --rm nginx:alpine nginx -V 2>&1 | tr ' ' '\n' | grep dav
-```
+Les deux replis envisagés — changer d'image de base, ou déposer par le
+presse-papiers — sont donc sans objet.
 
-Docker n'est pas installé sur le poste de développement, donc ce point **n'a pas
-été vérifié**. S'il manquait, deux replis : une image de base différente, ou un
-dépôt par le presse-papiers pour les petites choses.
+Ce qui reste à éprouver, et qui demande le NAS : que le processus du serveur ait
+le droit d'écrire dans le volume monté. Les droits d'un dossier partagé DSM ne
+sont pas ceux d'un conteneur.
 
 ## Histoires
 

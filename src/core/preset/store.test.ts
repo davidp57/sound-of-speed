@@ -5,6 +5,7 @@ import {
   deepCopy,
   duplicateProfile,
   fromFile,
+  loadAdvancedMode,
   loadInheritedVolume,
   loadMasterVolume,
   loadProfiles,
@@ -13,6 +14,7 @@ import {
   missingFactoryProfiles,
   newId,
   resetProfileSection,
+  saveAdvancedMode,
   saveMasterVolume,
   saveProfiles,
   saveSelectedId,
@@ -521,6 +523,38 @@ describe('valeurs d’origine', () => {
   })
 })
 
+describe('mode avancé', () => {
+  it('s ouvre sur la vue courte quand rien n a été choisi', () => {
+    // Le mode simplifié est le défaut : c'est tout l'objet de la bascule.
+    expect(loadAdvancedMode()).toBe(false)
+  })
+
+  it('se retient d une session à l autre, dans les deux sens', () => {
+    saveAdvancedMode(true)
+    expect(loadAdvancedMode()).toBe(true)
+
+    saveAdvancedMode(false)
+    expect(loadAdvancedMode()).toBe(false)
+  })
+
+  it('ne fait pas partie du profil, donc ne voyage pas', () => {
+    saveAdvancedMode(true)
+
+    // Le profil exporté ne porte rien du mode : c'est une préférence de
+    // l'appareil, comme le volume général.
+    expect(toFile(createRoadProfile())).not.toContain('advanced')
+    expect(loadProfiles().some((p) => 'advancedMode' in p)).toBe(false)
+  })
+
+  it('survit à un stockage qui refuse d écrire ou de lire', () => {
+    install(fakeStorage({ failWrites: true }))
+    expect(() => saveAdvancedMode(true)).not.toThrow()
+
+    install(fakeStorage({ failReads: true }))
+    expect(loadAdvancedMode()).toBe(false)
+  })
+})
+
 describe('volume général', () => {
   it('se retient d une session à l autre', () => {
     saveMasterVolume(0.42)
@@ -616,5 +650,63 @@ describe('reprise du volume hérité', () => {
     saveProfiles([createRoadProfile()])
 
     expect(loadInheritedVolume('route')).toBeNull()
+  })
+})
+
+describe('reprise par identifiant', () => {
+  it('complète un profil Route avec les valeurs de Route, non celles de Sport', () => {
+    // Le défaut corrigé : la base de complétion était le profil Sport pour tout
+    // le monde. Un champ ajouté au schéma arrivait donc dans le Route de
+    // l'utilisateur avec la valeur de Sport, et les essais sur route portaient
+    // sur des valeurs que personne n'avait choisies.
+    //
+    // On simule un profil Route enregistré par une version antérieure : il porte
+    // son identité et une seule section, les autres manquent.
+    const partiel = { id: 'route', name: 'Route', sampleDir: 'procar' }
+    saveProfiles([partiel as unknown as Profile])
+
+    const relu = loadProfiles()[0] as Profile
+    const route = createRoadProfile()
+    const sport = createDefaultProfile()
+
+    // Mesuré sur les réglages où les deux profils livrés diffèrent le plus.
+    expect(relu.drivetrain.cruiseMinRpm).toBe(route.drivetrain.cruiseMinRpm)
+    expect(relu.drivetrain.cruiseMinRpm).not.toBe(sport.drivetrain.cruiseMinRpm)
+    expect(relu.drivetrain.cruiseUpshiftAfterS).toBe(route.drivetrain.cruiseUpshiftAfterS)
+    expect(relu.mix.loadReliefDb).toBe(route.mix.loadReliefDb)
+    expect(relu.mix.loadReliefDb).not.toBe(sport.mix.loadReliefDb)
+    expect(relu.engine.redlineRpm).toBe(route.engine.redlineRpm)
+  })
+
+  it('complète un profil Sport avec les valeurs de Sport', () => {
+    const partiel = { id: 'procar', name: 'Sport', sampleDir: 'procar' }
+    saveProfiles([partiel as unknown as Profile])
+
+    const relu = loadProfiles()[0] as Profile
+
+    expect(relu.drivetrain.cruiseMinRpm).toBe(createDefaultProfile().drivetrain.cruiseMinRpm)
+    expect(relu.engine.redlineRpm).toBe(createDefaultProfile().engine.redlineRpm)
+  })
+
+  it('retombe sur les valeurs génériques pour un profil fabriqué', () => {
+    // Un profil sorti du guide de création porte un identifiant tiré au sort :
+    // aucun profil livré ne lui correspond, et le repli d'avant reste le bon.
+    const partiel = { id: 'un-identifiant-a-nous', name: 'Le mien', sampleDir: 'procar' }
+    saveProfiles([partiel as unknown as Profile])
+
+    const relu = loadProfiles()[0] as Profile
+
+    expect(relu.engine.redlineRpm).toBe(createDefaultProfile().engine.redlineRpm)
+    expect(relu.name).toBe('Le mien')
+  })
+
+  it('ne touche pas aux valeurs que le profil porte déjà', () => {
+    const enregistre = createRoadProfile()
+    enregistre.drivetrain.cruiseMinRpm = 1234
+    saveProfiles([enregistre])
+
+    const relu = loadProfiles()[0] as Profile
+
+    expect(relu.drivetrain.cruiseMinRpm).toBe(1234)
   })
 })

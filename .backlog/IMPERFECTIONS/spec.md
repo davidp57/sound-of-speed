@@ -1,7 +1,7 @@
 # IMPERFECTIONS — un moteur ne tourne pas juste
 
-**Statut :** ⬜ prêt
-**Branche :** à créer
+**Statut :** 🔄 en cours — tickets 01 et 02 faits, 03 en attente d'une mesure
+**Branche :** `feature/imperfections`
 **Version visée :** 0.3
 
 ## Le problème
@@ -124,12 +124,48 @@ bien moins criante que si elles en font deux.
 
 ## Critères d'acceptation
 
-- [ ] Au ralenti, le régime tremble d'une amplitude réglable et non nulle
-- [ ] Le tremblement décroît quand le régime monte et quand la charge monte
-- [ ] Le tremblement est reproductible à graine égale — un test peut l'affirmer
-- [ ] Deux couches d'une même famille jouent légèrement désaccordées
-- [ ] Le désaccord ne dépend pas du temps : une même situation donne un même
+- [x] Au ralenti, le régime tremble d'une amplitude réglable et non nulle
+- [x] Le tremblement décroît quand le régime monte et quand la charge monte
+- [x] Le tremblement est reproductible à graine égale — un test peut l'affirmer
+- [x] Deux couches d'une même famille jouent légèrement désaccordées
+- [x] Le désaccord ne dépend pas du temps : une même situation donne un même
       mixage, sinon la télémétrie devient illisible
-- [ ] Les deux réglages figurent dans le guide de création et dans la référence
+- [x] Les deux réglages figurent dans le guide de création et dans la référence
       des réglages du README
 - [ ] 🧑 Vérifié en roulant : le ralenti et la croisière sonnent moins figés
+
+## Ce que le lot a donné
+
+Tickets 01 et 02 faits, chacun avec ses mesures dans son fichier. Trois réglages
+nouveaux : **tremblement au ralenti** et **vitesse du tremblement** dans le
+moteur, **désaccord des couches** dans le mixage. Le guide de création les dérive
+tous les trois du tempérament choisi.
+
+| | Route | Sport |
+|---|---|---|
+| Tremblement au ralenti | 0 à +24,2 tr/min | 0 à +33,9 tr/min |
+| Tremblement à 2981 tr/min, pied levé | ±11,3 | ±18,3 |
+| Tremblement à 2981 tr/min, pleine charge | ±4,5 | ±7,3 |
+| Battement entre couches, milieu de bascule | 1,20 Hz | 2,37 Hz |
+
+**La décision de conception du lot** : le moteur sort désormais **deux** régimes.
+Le régime net alimente la boîte, ses seuils et la télémétrie ; le régime
+**entendu** porte le tremblement et ne sert qu'aux vitesses de lecture. Les
+seuils de passage travaillent sur le régime, et quelques dizaines de tours de
+tremblement les feraient osciller — [FIX-BOITE](../FIX-BOITE/spec.md) vient de
+corriger trois oscillations venues précisément d'un compteur portant deux sens.
+C'est la même séparation que celle d'[EFFORT](../EFFORT/spec.md) entre la charge
+d'intention et l'effort du moteur : ce qui pilote le son n'est pas ce qui pilote
+la mécanique.
+
+**Le tremblement est déterministe** — une somme de trois sinusoïdes, dont deux
+dans un rapport irrationnel, donc sans période — et non un tirage au sort. Il n'y
+a par conséquent aucune graine à gérer : la reproductibilité est acquise par
+construction, et une même situation donne toujours le même mixage.
+
+307 tests.
+
+Reste le ticket 03, et il reste **bloqué par une mesure qui ne peut pas se faire
+depuis le dépôt** : la durée des boucles de la banque livrée décide de sa forme
+et de son urgence, et les échantillons vivent dans un volume du NAS. À reprendre
+depuis un poste qui a la banque sous la main.

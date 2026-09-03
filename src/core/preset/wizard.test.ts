@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildProfile, describeProfile, type WizardChoices } from './wizard'
+import { sportinessOf } from './character'
 import { createDefaultProfile, createRoadProfile } from './defaults'
 import { Engine } from '../engine/engine'
 import { Gearbox } from '../drivetrain/gearbox'
@@ -159,6 +160,19 @@ describe('buildProfile — caractère', () => {
     expect(buildProfile(choices({ temperament: 'sportif' }), template).feel.backfire.enabled).toBe(
       true,
     )
+  })
+
+  it('produit un profil qui rend le tempérament demandé', () => {
+    // Le guide et le mode simplifié partagent les mêmes lois : un profil sorti
+    // du guide doit donc se relire à la position exacte du curseur. Sans cette
+    // égalité, créer un profil « vif » puis effleurer le curseur global le
+    // déplacerait sans que personne l'ait demandé.
+    expect(sportinessOf(buildProfile(choices({ temperament: 'calme' }), template))).toBe(0)
+    expect(sportinessOf(buildProfile(choices({ temperament: 'equilibre' }), template))).toBeCloseTo(
+      0.5,
+      3,
+    )
+    expect(sportinessOf(buildProfile(choices({ temperament: 'sportif' }), template))).toBe(1)
   })
 
   it('monte l’à-coup et le rétrogradage avec le tempérament', () => {
