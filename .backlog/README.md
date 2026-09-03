@@ -48,12 +48,18 @@ les reprenne, `/to-tickets` s'en chargera. Écrire des tickets pour un lot dont
 la conception n'est pas tranchée donnerait des frontières qui ne survivraient
 pas à la première décision.
 
-**PENTE passe avant les autres.** Une remarque de passage sur la cadence de
-rafraîchissement d'un compteur a mené à un défaut de mesure qui fausse tout
-l'aval : à la cadence réelle du GPS de la Tesla, une accélération douce est vue
-à zéro. Le volume, le timbre et la boîte travaillent donc sur un signal faux.
-EFFORT et IMPERFECTIONS attendent que cette mesure soit juste — régler l'aval
-d'abord n'aurait aucun sens.
+**PENTE est livré** (PR #11, dans `develop`). Une remarque de passage sur la
+cadence de rafraîchissement d'un compteur avait mené à un défaut de mesure qui
+faussait tout l'aval : à la cadence réelle du GPS de la Tesla, une accélération
+douce était vue à zéro. Restent ses deux vérifications en roulant.
+
+EFFORT et IMPERFECTIONS attendaient cette mesure juste. **Les chiffres d'EFFORT
+sont donc à refaire** : ils avaient été relevés sur une accélération qu'on sait
+maintenant fausse, et le lot vaut peut-être moins qu'annoncé.
+
+**Sept lots n'ont pas de tickets** — DEPOSER, EFFORT, ETALONNAGE, IMPERFECTIONS,
+MODE-SIMPLE, TABLEAU-DE-BORD et UI-DEFILEMENT. `/to-tickets` les découpera quand
+on les reprendra.
 
 ## Ce qui n'est pas dans le backlog
 

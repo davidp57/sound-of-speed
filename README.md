@@ -853,7 +853,7 @@ chaque essai.
 | 13 | Boîte qui regarde la vitesse : montée en croisière, descente au freinage, rétrogradage sur la demande | à écouter |
 | 14 | Relief du volume : l'effort, le régime et le ralenti s'entendent | à écouter |
 | 15 | Trois défauts de la boîte relevés en roulant : ralentir n'est plus croiser | à écouter |
-| — | **Pente : la cadence réelle du GPS fausse la mesure d'accélération** | à corriger d'abord |
+| 16 | Pente : la cadence réelle du GPS faussait la mesure d'accélération | corrigé, reste à écouter |
 | — | Défilement de l'écran de configuration sans dérégler un curseur | prévu |
 | — | Le volume général sort du profil : c'est une préférence d'appareil | prévu |
 | — | Mode simplifié : quelques curseurs globaux, le détail derrière un mode avancé | prévu |
