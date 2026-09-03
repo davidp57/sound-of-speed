@@ -238,16 +238,33 @@ function brakeDownshift(
  *
  * Toutes les étapes valides comptent, pas seulement le freinage : on freine
  * aussi en ville, parfois plus fort que sur la manœuvre commandée.
+ *
+ * **Mais il faut qu'une étape ait pu ralentir.** Mesuré en éprouvant la reprise
+ * d'un étalonnage par une création de profil : avec la seule étape de reprise
+ * enregistrée — une accélération pure, sans un freinage — la plus forte
+ * décélération relevée valait presque zéro, et la borne proposée −0,5 m/s².
+ * Écrite dans un profil, elle aurait écrêté **tout** freinage réel : la charge
+ * et la boîte auraient vu un ralentissement minuscule là où l'on plante les
+ * freins. Une borne trop large ne protège de rien ; une borne trop serrée
+ * ampute le signal, ce qui est bien pire.
+ *
+ * La borne ne se propose donc que si au moins une étape susceptible de ralentir
+ * a été mesurée : le lever de pied, le freinage, ou la conduite ordinaire.
  */
 function lowerBound(analyses: StepAnalysis[], profile: Profile): Suggestion {
   const note =
     'La plus forte décélération relevée sur toutes les étapes, plus la moitié en ' +
     'marge. Toute décélération au-delà est écrêtée.'
-  const values = validValues(analyses, (measure) => measure.peakDecelMs2)
+  const decelerating: CalibrationStepId[] = ['coast', 'brake', ...ORDINARY_STEPS]
+  const measured = analyses.filter((analysis) => decelerating.includes(analysis.step))
+  const values = validValues(measured, (measure) => measure.peakDecelMs2)
 
   if (values.length === 0) {
     return line('speed.minAccelMs2', profile, note, {
-      missing: 'Aucune étape valide : rien à borner.',
+      missing:
+        'Aucune étape qui ralentisse : le lever de pied, le freinage ou la ' +
+        'conduite ordinaire. Une borne déduite d’une accélération seule ' +
+        'écrêterait les freinages réels.',
     })
   }
 

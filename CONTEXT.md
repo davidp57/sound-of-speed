@@ -307,3 +307,17 @@ l'unique exception à la règle « aucune animation », levée sciemment le
 3 septembre 2026. Il se coupe, et coupé il n'existe pas dans la page.
 _Éviter_ : fond, décor animé, arrière-plan (qui désigne l'état de la page quand
 le navigateur la masque).
+
+## Profil effectif
+
+Ce que le moteur, la boîte, le conditionnement et le mixage emploient réellement :
+le **profil** réglé, corrigé par l'**étalonnage** quand il existe.
+
+Deux couches, et la distinction porte tout le reste : un profil décrit un *son*
+— le caractère d'un moteur, sa boîte, son mixage —, l'étalonnage décrit une
+*voiture* — sa reprise, son freinage, son ralentissement pied levé, les vitesses
+qu'on y pratique. Une mesure de la voiture n'appartient donc pas à un profil :
+elle vaut pour tous ceux qu'on écoute dans cette voiture.
+
+L'écran de configuration édite le profil ; c'est le profil effectif qu'on entend.
+Sans étalonnage, les deux sont le même objet.

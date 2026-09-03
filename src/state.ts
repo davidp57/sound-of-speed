@@ -25,6 +25,8 @@ import {
 } from './core/preset/character'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
+import { analyzeSession, overridesFor, withCalibration } from './core/calibration/onboard'
+import { loadCalibration, saveCalibration, type CalibrationSession } from './core/calibration/store'
 import {
   applyOrigin,
   captureOrigin,
@@ -78,6 +80,42 @@ export const activeProfile = computed<Profile>(() => {
   const found = profiles.value.find((p) => p.id === selectedId.value)
   return found ?? (profiles.value[0] as Profile)
 })
+
+/**
+ * Étalonnage : une couche par-dessus le profil, pas une recopie dedans.
+ *
+ * Un profil décrit un son ; l'étalonnage décrit la **voiture** — ce dont elle
+ * est capable. Deux choses distinctes, et la seconde ne s'écrit pas dans la
+ * première. Ce qu'on règle reste intact, la mesure vaut pour tous les profils à
+ * la fois, et refaire l'étalonnage ne fait rien perdre.
+ *
+ * L'analyse des traces est mémorisée à part : elle est coûteuse et ne dépend que
+ * des enregistrements, quand la composition se refait à chaque réglage touché.
+ */
+export const calibration = ref<CalibrationSession>(loadCalibration())
+
+export function setCalibration(session: CalibrationSession): boolean {
+  calibration.value = session
+  return saveCalibration(session)
+}
+
+const calibrationAnalyses = computed(() => analyzeSession(calibration.value, traces.value))
+
+/** Ce que la mesure impose au profil courant, en clair. */
+export const calibrationOverrides = computed(() =>
+  overridesFor(activeProfile.value, calibrationAnalyses.value),
+)
+
+/**
+ * Le profil que le moteur emploie : le réglé, corrigé par le mesuré.
+ *
+ * C'est lui que lisent le conditionnement, le moteur, la boîte et le mixage.
+ * L'écran de configuration, lui, édite `activeProfile` — on règle ce qu'on a
+ * choisi, on entend ce que la voiture peut.
+ */
+export const runtimeProfile = computed<Profile>(() =>
+  withCalibration(activeProfile.value, calibrationOverrides.value),
+)
 
 const simulator = new SimulatorSource()
 const geolocation = new GeolocationSource({
@@ -296,7 +334,7 @@ for (const source of [simulator, geolocation, replay]) {
 
 /** Régime qu'aurait le moteur dans un rapport donné, à la vitesse courante. */
 function rpmInGear(gear: number, kmh: number): number {
-  const { drivetrain } = activeProfile.value
+  const { drivetrain } = runtimeProfile.value
   const ratio = drivetrain.gearRatios[gear] ?? 1
   return Engine.kinematicRpm(kmh, ratio * drivetrain.finalDrive, drivetrain.wheelRadiusM)
 }
@@ -333,7 +371,7 @@ function step(dt: number): void {
   source.tick(dt)
 
   const speed = conditioner.tick(dt)
-  const profile = activeProfile.value
+  const profile = runtimeProfile.value
 
   // La charge vient de l'image précédente : le moteur est calculé après la
   // boîte, et un décalage d'une image est imperceptible devant la constante de
@@ -488,7 +526,7 @@ if (typeof document !== 'undefined') {
 // Toute modification du profil est répercutée à chaud dans les modules : c'est
 // ce qui permet de régler un paramètre pendant que le son tourne.
 watch(
-  activeProfile,
+  runtimeProfile,
   (profile) => {
     conditioner.setPreset(profile.speed)
     gearbox.setPresets(profile.drivetrain, profile.engine, profile.feel)
@@ -824,7 +862,6 @@ export function addProfile(profile: Profile): void {
   selectedId.value = profile.id
 }
 
-/** Réintroduit les profils livrés qui ne sont plus dans la liste. */
 export function restoreFactoryProfiles(): number {
   const missing = missingFactoryProfiles(profiles.value)
   if (missing.length > 0) profiles.value = [...profiles.value, ...missing]

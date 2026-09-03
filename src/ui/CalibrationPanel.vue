@@ -3,12 +3,13 @@ import { computed, ref } from 'vue'
 
 import { analyzeStep, type StepAnalysis } from '../core/calibration/analyze'
 import { CALIBRATION_STEPS, type CalibrationStepId } from '../core/calibration/protocol'
-import { loadCalibration, saveCalibration } from '../core/calibration/store'
 import { readSetting, type SettingPath } from '../core/calibration/settings'
 import { suggest, type Suggestion } from '../core/calibration/suggest'
 import {
   activeProfile,
   applyCalibrationSetting,
+  calibration,
+  setCalibration,
   isRecording,
   isRunning,
   playTrace,
@@ -33,7 +34,12 @@ import {
  */
 
 /** Étape → horodatage de la trace qui l'a enregistrée. */
-const session = ref(loadCalibration())
+/**
+ * La session vit dans l'état de l'application, pas ici : l'étalonnage est une
+ * couche que le moteur compose avec le profil, et un enregistrement nouveau doit
+ * se répercuter tout de suite sur ce qu'on entend.
+ */
+const session = calibration
 /** Étape dont l'enregistrement est en cours. */
 const active = ref<CalibrationStepId | null>(null)
 const storageError = ref('')
@@ -108,8 +114,7 @@ function remember(step: CalibrationStepId, startedAt: number | undefined): void 
   const next = { ...session.value }
   if (startedAt === undefined) delete next[step]
   else next[step] = startedAt
-  session.value = next
-  storageError.value = saveCalibration(next)
+  storageError.value = setCalibration(next)
     ? ''
     : 'La session n’a pas pu être enregistrée : elle ne survivra pas au rechargement.'
 }

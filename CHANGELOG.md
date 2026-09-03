@@ -74,8 +74,27 @@ Toutes les évolutions notables du projet. Format
   ni suppression, ni création de dossier. L'écriture exige l'authentification en
   toutes circonstances, y compris quand celle du site reste désactivée.
 
+### Modifié
+
+- **L'étalonnage est une couche par-dessus les profils**, et non une recopie
+  dedans. Un profil décrit un son ; l'étalonnage décrit la voiture. Les mesures
+  s'appliquent donc d'elles-mêmes à tous les profils, ceux livrés compris, sans
+  jamais écraser ce qui a été réglé — et un profil partagé n'emporte pas les
+  capacités d'une autre voiture, pour la même raison qui a fait sortir le volume
+  général du profil. Sans étalonnage, rien ne change.
+
+  L'écran de configuration annonce les réglages que la mesure remplace. Il n'y a
+  plus de bouton d'adaptation, ni de question « appliquer ou pas ».
+
 ### Corrigé
 
+- **Une borne de décélération n'est plus proposée sans étape qui ralentisse.**
+  Avec la seule reprise enregistrée — une accélération pure, sans freinage — la
+  plus forte décélération relevée valait presque zéro, et la borne proposée
+  −0,5 m/s². Écrite dans un profil, elle aurait écrêté **tout** freinage réel :
+  la charge et la boîte auraient vu un ralentissement minuscule là où l'on plante
+  les freins. Une borne trop large ne protège de rien ; une borne trop serrée
+  ampute le signal.
 - **Un profil enregistré était complété avec les valeurs de Sport**, quel que
   soit son identifiant. Chaque réglage ajouté au schéma arrivait donc dans le
   profil Route de l'utilisateur réglé pour Sport : plancher de croisière à 2000

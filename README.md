@@ -71,6 +71,30 @@ C'est aussi là qu'on gère les profils et qu'on analyse les échantillons. Une
 bande de défilement longe le bord gauche : le glissement n'y dérègle rien, et
 les curseurs eux-mêmes rendent le glissement vertical à la page.
 
+**Étalonnage** — un protocole guidé en six étapes : rouler en ville, sur route,
+sur autoroute, puis une accélération franche, une décélération pied levé et un
+freinage franc. Chacune s'enregistre à part et **juge si elle a bien été
+faite** : une « accélération franche » qui n'atteint pas le critère est refusée,
+et la raison est dite, plutôt que de donner une charge fausse. Un récapitulatif
+met ensuite le mesuré face au réglé.
+
+Ce que l'étalonnage mesure devient une **couche** par-dessus les profils. Un
+profil décrit un son — le caractère d'un moteur, sa boîte, son mixage ;
+l'étalonnage décrit une voiture — sa reprise, son freinage, son ralentissement
+pied levé, les vitesses qu'on y pratique. Le moteur emploie la composition des
+deux. Trois conséquences :
+
+- les mesures valent pour **tous** les profils à la fois, ceux livrés compris —
+  une capacité de la voiture n'a pas de raison de ne profiter qu'au profil ouvert
+  le jour où on l'a prise ;
+- le profil qu'on a réglé n'est **jamais écrasé**. L'écran de configuration
+  annonce les réglages que la mesure remplace, et l'on peut refaire ou retirer
+  l'étalonnage sans avoir rien perdu ;
+- un profil partagé emporte un son, pas les capacités d'une autre voiture —
+  la même raison qui a fait sortir le volume général du profil.
+
+**Sans étalonnage, rien ne change** : le profil est employé tel quel.
+
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le
 plaisir. Deux réserves, et deux seulement. Le **paysage** de l'écran de conduite
 est une exception assumée, levée sciemment, coupée par défaut. Et l'**aiguille**
