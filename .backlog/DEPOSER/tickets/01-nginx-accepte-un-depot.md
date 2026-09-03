@@ -1,6 +1,6 @@
 # 01 — Le serveur accepte un dépôt, et lui seul
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -28,18 +28,34 @@ libre comme celle des profils.
 Seule la méthode d'écriture d'un fichier est ouverte : ni suppression, ni
 création de dossier. Une trace déposée ne s'effacera pas depuis le réseau.
 
-**Ce qui reste à éprouver sur le NAS** : que le processus du serveur ait le
-droit d'écrire dans le volume monté. Les droits d'un dossier partagé DSM ne sont
-pas ceux d'un conteneur, et c'est le genre de détail qui ne se voit qu'au premier
-dépôt.
+## Éprouvé sur le NAS, le 3 septembre 2026
+
+Le doute portait sur les droits d'écriture : ceux d'un dossier partagé DSM ne
+sont pas ceux d'un conteneur. Relevé sur la pile d'essai :
+
+| Requête | Réponse |
+|---|---|
+| Liste du dossier | `200`, `application/json`, liste vide au départ |
+| Dépôt authentifié | accepté, sans message |
+| Relecture du fichier déposé | le contenu, à l'octet près |
+| Dépôt **non** authentifié | `401`, domaine `Speed — dépôt` |
+
+Le refus non authentifié a été essayé sur un fichier **déjà présent** : il n'a
+donc rien créé, et le fichier visé était intact après coup — même taille, même
+horodatage. La protection refuse avant d'écrire, et non après.
+
+Un détour instructif au passage : la première tentative a répondu `405`, la
+pile de production ayant été redéployée au lieu de celle d'essai. Puis `200`
+avec du HTML, parce que redéployer une pile ne retélécharge pas son image — une
+étiquette comme `develop` garde son nom quand son contenu change. Les deux
+pièges sont maintenant dans le README.
 
 ## Critères d'acceptation
 
 - [x] La présence du module d'écriture dans l'image de base est établie, ou un
       repli est retenu et écrit
-- [ ] 🧑 Un dépôt authentifié aboutit, et le fichier est ensuite lisible —
-      demande le NAS, la configuration n'est pas éprouvable au poste
-- [ ] 🧑 Un dépôt non authentifié est refusé — même raison
+- [x] Un dépôt authentifié aboutit, et le fichier est ensuite lisible
+- [x] Un dépôt non authentifié est refusé
 - [x] Le dossier de dépôt est un volume du NAS, hors de l'image
 - [x] La marche à suivre est dans le README, au même endroit que celle des
       profils
