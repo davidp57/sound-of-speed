@@ -1,6 +1,6 @@
 # 02 — La vitesse et le rapport, en tableau de bord
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Un cadran de régime, à la place de la réglette
 
@@ -22,9 +22,9 @@ un tableau de bord qui empêche de couper le son serait un recul.
 
 ## Critères d'acceptation
 
-- [ ] Vitesse, régime et rapport se lisent ensemble, sans défilement
-- [ ] Le rapport engagé se distingue immédiatement
-- [ ] Les commandes de conduite restent accessibles depuis l'écran
-- [ ] La disposition tient en portrait et en paysage, sur téléphone et sur écran
+- [x] Vitesse, régime et rapport se lisent ensemble, sans défilement
+- [x] Le rapport engagé se distingue immédiatement
+- [x] Les commandes de conduite restent accessibles depuis l'écran
+- [x] La disposition tient en portrait et en paysage, sur téléphone et sur écran
       de voiture
-- [ ] Le mode plein écran reste cohérent avec la nouvelle disposition
+- [x] Le mode plein écran reste cohérent avec la nouvelle disposition

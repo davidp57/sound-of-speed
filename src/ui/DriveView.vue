@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import DialGauge from './components/DialGauge.vue'
+import ScrollingScenery from './components/ScrollingScenery.vue'
 import {
   activateAudio,
   activeProfile,
+  driveFace,
   favoriteProfiles,
   masterVolume,
+  sceneryOn,
+  setDriveFace,
   setMasterVolume,
+  setSceneryOn,
   selectProfile,
   selectedProfileId,
   audioStatus,
@@ -103,6 +109,26 @@ const rpmPercent = computed(() => {
   const redline = activeProfile.value.engine.redlineRpm
   return Math.round((rpm / Math.max(1, redline)) * 100)
 })
+
+/**
+ * Échelle du compte-tours : le rupteur, arrondi au millier supérieur, de sorte
+ * que la dernière graduation soit un chiffre rond. La zone rouge commence au
+ * seuil de coupure, là où l'allumage se met à mordre.
+ */
+const rpmScale = computed(() => Math.ceil(activeProfile.value.engine.redlineRpm / 1000) * 1000)
+
+/**
+ * Échelle du compteur de vitesse : fixe, et c'est voulu.
+ *
+ * Le premier réflexe était de la déduire de la voiture — la vitesse à laquelle
+ * le dernier rapport touche le rupteur. Mesuré sur les profils livrés, cela
+ * donne 304 km/h pour Route et 326 pour Sport : l'aiguille passerait sa vie
+ * dans le coin inférieur gauche, et la moitié du cadran ne servirait jamais.
+ * Un compteur de voiture est gradué pour ce qu'on roule, pas pour ce que la
+ * mécanique permet. 180 km/h place 130 aux trois quarts de la course.
+ */
+const SPEED_SCALE_KMH = 180
+const SPEED_STEP_KMH = 20
 </script>
 
 <template>
@@ -133,7 +159,56 @@ const rpmPercent = computed(() => {
       </button>
     </section>
 
-    <section class="readout">
+    <!--
+      Les deux visages de l'écran, et le décor.
+      Les cadrans se lisent mieux en roulant ; on ne règle pas un profil sur une
+      aiguille, où cent tours d'écart ne se voient pas. Le choix est une
+      préférence de l'appareil, retenue d'une ouverture à l'autre.
+    -->
+    <section v-if="!immersive" class="face-switch">
+      <button :aria-pressed="driveFace === 'dials'" @click="setDriveFace('dials')">Cadrans</button>
+      <button :aria-pressed="driveFace === 'numbers'" @click="setDriveFace('numbers')">
+        Chiffres
+      </button>
+      <button
+        v-if="driveFace === 'dials'"
+        :aria-pressed="sceneryOn"
+        @click="setSceneryOn(!sceneryOn)"
+      >
+        Paysage
+      </button>
+    </section>
+
+    <section v-if="driveFace === 'dials'" class="dashboard">
+      <ScrollingScenery v-if="sceneryOn" />
+
+      <div class="cell speed">
+        <DialGauge
+          :value="telemetry.speed.kmh"
+          :max="SPEED_SCALE_KMH"
+          :step="SPEED_STEP_KMH"
+          unit="km/h"
+        />
+      </div>
+
+      <div class="cell gear">
+        <div class="gear-value numeric">{{ telemetry.gearbox.label }}</div>
+        <div class="unit">rapport</div>
+      </div>
+
+      <div class="cell rpm">
+        <DialGauge
+          :value="telemetry.engine.rpm"
+          :max="rpmScale"
+          :step="1000"
+          :redline="activeProfile.engine.softLimitRpm"
+          :alert="telemetry.engine.limiterActive"
+          unit="tr/min"
+        />
+      </div>
+    </section>
+
+    <section v-else class="readout">
       <div class="cell speed">
         <div class="value numeric">{{ Math.round(telemetry.speed.kmh) }}</div>
         <div class="unit">km/h</div>
@@ -339,6 +414,64 @@ const rpmPercent = computed(() => {
   background: var(--warn);
 }
 
+.face-switch {
+  display: flex;
+  gap: 0.4rem;
+}
+
+/*
+ * Tableau de bord.
+ *
+ * Trois cellules qui se lisent ensemble, sans rien faire défiler : le compteur,
+ * le rapport, le compte-tours. En portrait, les deux cadrans se partagent la
+ * largeur et le rapport passe en bandeau sous eux — c'est l'information la plus
+ * utile de l'écran, celle qui explique ce qu'on entend, et elle a droit à toute
+ * la largeur plutôt qu'au tiers du milieu.
+ *
+ * Les cellules n'ont ni fond ni bordure ici : les cadrans portent déjà leur
+ * propre disque opaque, et le décor doit pouvoir se voir autour.
+ */
+.dashboard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr minmax(4.5rem, 0.5fr) 1fr;
+  grid-template-areas: 'speed gear rpm';
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+}
+
+.dashboard .cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  min-width: 0;
+}
+
+.dashboard .speed {
+  grid-area: speed;
+}
+
+.dashboard .rpm {
+  grid-area: rpm;
+}
+
+.dashboard .gear {
+  grid-area: gear;
+  text-align: center;
+}
+
+.gear-value {
+  font-size: clamp(2.5rem, 9vw, 5.5rem);
+  line-height: 1;
+  font-weight: 300;
+  color: var(--accent);
+}
+
 .controls {
   display: flex;
   flex-direction: column;
@@ -435,12 +568,76 @@ const rpmPercent = computed(() => {
   font-size: 1.05rem;
 }
 
+/*
+ * Mode plein écran, visage à cadrans : la rangée de cadrans prend toute la
+ * hauteur disponible et les cadrans s'y inscrivent en gardant leurs
+ * proportions. Les rangées sont déclarées, faute de quoi elles se
+ * dimensionneraient sur leur contenu et déborderaient de l'écran.
+ */
+.drive.immersive .dashboard {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.drive.immersive .dashboard .cell {
+  min-height: 0;
+}
+
+/*
+ * Les cadrans prennent toute la hauteur de leur cellule au lieu de garder la
+ * largeur pour seule mesure : sans cette règle, un cadran de 175 pixels de large
+ * flottait au milieu d'une rangée de 500 de haut. Le dessin s'inscrit dans la
+ * boîte et se centre, ses proportions étant tenues par le repère du SVG.
+ */
+.drive.immersive .dashboard .dial {
+  height: 100%;
+  max-height: none;
+}
+
+/* Le rapport grandit avec l'écran : c'est l'information qu'on cherche le plus. */
+.drive.immersive .gear-value {
+  font-size: clamp(3rem, 14vh, 10rem);
+}
+
+@media (max-width: 640px) {
+  .dashboard {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'speed rpm'
+      'gear gear';
+  }
+
+  /*
+   * Plein écran en portrait : les cadrans s'empilent.
+   *
+   * Côte à côte, chacun est borné par la moitié de la largeur — 165 pixels
+   * mesurés sur un téléphone de 375 —, et la hauteur libre reste vide. Empilés,
+   * ils font 375 de large chacun, avec le rapport entre les deux comme sur une
+   * planche de bord. Hors plein écran, ils restent côte à côte : là, c'est de
+   * lire les trois d'un coup sans faire défiler qui compte.
+   */
+  .drive.immersive .dashboard {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'speed'
+      'gear'
+      'rpm';
+    grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 620px) {
   .readout {
     grid-template-columns: 1fr 1fr;
   }
 
-  .rpm {
+  /*
+   * Réservé au visage en chiffres : le tableau de bord a sa propre disposition
+   * en portrait, et un sélecteur non qualifié la lui écrasait.
+   */
+  .readout .rpm {
     grid-column: 1 / -1;
   }
 }

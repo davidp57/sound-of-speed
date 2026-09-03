@@ -254,3 +254,29 @@ _Éviter_ : mode expert, mode débutant.
 Les trois comportements qui tiennent du tempérament plutôt que de la mécanique :
 rétrogradage forcé, pétarade, à-coup de passage. Chacun s'active séparément, et
 on les remarque surtout par leur absence.
+
+## L'écran de conduite
+
+**Visage** (_face_, `DriveFace`) :
+L'un des deux affichages de l'écran de conduite : **cadrans** (`dials`), pour
+conduire, ou **chiffres** (`numbers`), pour régler. Le même écran, les mêmes
+commandes, la même télémétrie — seule la façon de montrer la vitesse, le rapport
+et le régime change. C'est une préférence de l'appareil, comme le volume
+général : elle n'appartient pas au profil.
+_Éviter_ : mode (qui désigne la boîte, automatique ou manuelle), thème, vue.
+
+**Cadran** (_dial_, `DialGauge`) :
+Un afficheur à aiguille, gradué. Le compteur de vitesse et le compte-tours en
+sont deux instances du même composant. L'aiguille n'a **aucune inertie propre** :
+elle suit le régime, déjà lissé par le conditionnement et par le volant moteur.
+Son mouvement est la valeur, ce n'est pas une animation.
+_Éviter_ : jauge (qui évoque un niveau), gauge, compteur tout court (ambigu avec
+le compteur de vitesse).
+
+**Paysage** (_scenery_) :
+Le décor qui défile derrière les cadrans, à la vitesse du véhicule. **Rien ne s'y
+lit** : c'est le seul élément de l'application qui bouge pour l'agrément, et
+l'unique exception à la règle « aucune animation », levée sciemment le
+3 septembre 2026. Il se coupe, et coupé il n'existe pas dans la page.
+_Éviter_ : fond, décor animé, arrière-plan (qui désigne l'état de la page quand
+le navigateur la masque).

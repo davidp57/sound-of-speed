@@ -1,6 +1,6 @@
 # 03 — Les chiffres restent, pour qui règle
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Un cadran de régime, à la place de la réglette ; 02 — La
 vitesse et le rapport, en tableau de bord
@@ -23,7 +23,7 @@ tous ses chiffres.
 
 ## Critères d'acceptation
 
-- [ ] On passe des cadrans aux chiffres en un geste
-- [ ] Le choix survit à un rechargement et ne fait pas partie du profil
-- [ ] La vue en chiffres est celle d'avant le lot, sans perte
-- [ ] L'écran de télémétrie est inchangé
+- [x] On passe des cadrans aux chiffres en un geste
+- [x] Le choix survit à un rechargement et ne fait pas partie du profil
+- [x] La vue en chiffres est celle d'avant le lot, sans perte
+- [x] L'écran de télémétrie est inchangé
