@@ -694,6 +694,24 @@ function impliedCylinders(index: number): number | null {
       <NumberField v-model="profile.engine.engineBraking" label="Frein moteur" :min="500" :max="20000" :step="100" unit="tr/min·s⁻¹"
         hint="Rapidité avec laquelle le régime retombe quand on lève le pied."
       />
+      <NumberField
+        v-model="profile.engine.flutterRpm"
+        label="Tremblement au ralenti"
+        :min="0"
+        :max="150"
+        :step="1"
+        unit="tr/min"
+        hint="Un moteur au ralenti oscille de quelques dizaines de tours, et sous charge partielle il tremble encore. Le tremblement décroît quand le régime monte et quand la charge monte. Zéro donne un régime parfaitement lisse, ce qu'aucun moteur thermique n'est. Il ne va que dans le son : la boîte et ses seuils gardent le régime net."
+      />
+      <NumberField
+        v-model="profile.engine.flutterHz"
+        label="Vitesse du tremblement"
+        :min="0.5"
+        :max="20"
+        :step="0.1"
+        unit="Hz"
+        hint="Fréquence de la composante rapide ; une composante lente à un dixième de cette valeur s'y ajoute, sans quoi le tremblement s'entend comme un vibrato."
+      />
     </section>
 
     <section class="panel">
@@ -1004,6 +1022,15 @@ function impliedCylinders(index: number): number | null {
         :max="1"
         :step="0.05"
         hint="À 1, le fondu va d'un extrême à l'autre. Plus bas, les deux familles se mélangent et l'écart s'entend moins."
+      />
+      <NumberField
+        v-model="profile.mix.layerDetuneCents"
+        label="Désaccord des couches"
+        :min="0"
+        :max="50"
+        :step="1"
+        unit="centièmes"
+        hint="Écart de justesse entre les deux couches d'une même famille, en centièmes de demi-ton. Au rapport exact elles sont parfaitement justes l'une par rapport à l'autre, ce qui n'arrive sur aucun moteur : les inégalités entre cylindres et les deux lignes d'échappement produisent un battement lent. Mesuré, 12 centièmes donnent un battement à 2,4 Hz à 5100 tr/min et 1,5 Hz à 3200."
       />
       <NumberField
         v-model="profile.mix.crossfadeLowRpm"

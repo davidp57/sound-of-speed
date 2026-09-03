@@ -142,6 +142,9 @@ function build(choices: WizardChoices, template: Profile): Profile {
       inertia: 1.4 - 0.5 * sportiness,
       freeRevRate: Math.round(engine.redline * (0.9 + 0.5 * sportiness)),
       engineBraking: Math.round(engine.redline * 0.6),
+      // Un moteur de sport a un ralenti plus instable, et il tremble plus vite.
+      flutterRpm: Math.round(20 + 15 * sportiness),
+      flutterHz: Number((5.5 + 1.5 * sportiness).toFixed(1)),
     },
     drivetrain: {
       ...base.drivetrain,
@@ -183,6 +186,9 @@ function build(choices: WizardChoices, template: Profile): Profile {
       loadReliefDb: Number((3 + 3 * sportiness).toFixed(1)),
       rpmReliefDb: Number((2 + 3 * sportiness).toFixed(1)),
       idleLevelDb: Number((-3 - 4 * sportiness).toFixed(1)),
+      // Un moteur de sport a des cylindres plus inégaux et deux lignes
+      // d'échappement : le battement entre couches y est plus large.
+      layerDetuneCents: Math.round(6 + 8 * sportiness),
     },
     feel: {
       kickdown: {
