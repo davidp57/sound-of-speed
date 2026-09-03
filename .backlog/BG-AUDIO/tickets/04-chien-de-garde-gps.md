@@ -32,3 +32,5 @@ vérifiable sans navigateur, contrairement à tout le reste de ce lot.
 - [x] Aucune relance quand le suivi est à l'arrêt
 - [x] Le compteur de relances est visible dans le bloc « arrière-plan »
 - [x] La pièce est couverte par des tests, y compris ses cas limites
+- [ ] 🧑 Le compteur de relances observé en roulant : il dira si le suivi se tait
+      réellement en arrière-plan, ce qu'aucun test ne peut établir

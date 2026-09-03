@@ -25,12 +25,25 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 |-----|--------|
 | [TEST-CORE](TEST-CORE/spec.md) — mettre le cœur sous test : Vitest, ESLint, 211 tests, 94,6 % de `core/` | ✅ |
 | [FIX-CORE](FIX-CORE/spec.md) — les quatre défauts que la mise sous test a trouvés | 🧑 |
-| [BG-AUDIO](BG-AUDIO/spec.md) — tenir le son quand le navigateur passe en arrière-plan | 🧑 |
+| [BG-AUDIO](BG-AUDIO/spec.md) — tenir le son quand le navigateur passe en arrière-plan | ✅ |
 | [BOITE-VIVANTE](BOITE-VIVANTE/spec.md) — une boîte qui regarde la vitesse, pas seulement le régime | 🧑 |
 | [FIX-BOITE](FIX-BOITE/spec.md) — ralentir n'est pas croiser : trois défauts de la boîte, relevés en roulant | 🧑 |
 | [RELIEF](RELIEF/spec.md) — faire entendre l'effort : relief de charge, de régime, et niveau au ralenti | 🧑 |
 | [ORIGINE](ORIGINE/spec.md) — réinitialiser un profil à ce qu'il était, et non aux réglages de Sport | ✅ |
+| [UI-DEFILEMENT](UI-DEFILEMENT/spec.md) — faire défiler l'écran de configuration sans dérégler un curseur | ⬜ |
+| [VOLUME-GLOBAL](VOLUME-GLOBAL/spec.md) — le volume est une préférence d'appareil, pas un caractère de profil | ⬜ |
+| [MODE-SIMPLE](MODE-SIMPLE/spec.md) — quelques curseurs globaux qui commandent les quarante-huit autres | ⬜ |
+| [DEPOSER](DEPOSER/spec.md) — sortir un profil ou une trace d'une voiture qui refuse les fichiers | ⬜ |
+| [ETALONNAGE](ETALONNAGE/spec.md) — mesurer la vraie voiture pour régler les virtuelles | ⬜ |
+| [TABLEAU-DE-BORD](TABLEAU-DE-BORD/spec.md) — un vrai tableau de bord, et un paysage qui défile | 🧑 |
 | [BANQUES](BANQUES/spec.md) — accueillir plusieurs banques de son : découverte, mesure outillée, choix par profil | ⬜ |
+
+Six lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
+VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE et TABLEAU-DE-BORD. Ils n'ont
+pas de tickets : leur découpage attend qu'on les reprenne, `/to-tickets` s'en
+chargera. Écrire des tickets pour un lot dont la conception n'est pas
+tranchée donnerait des frontières qui ne survivraient pas à la première
+décision.
 
 ## Ce qui n'est pas dans le backlog
 

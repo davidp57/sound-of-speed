@@ -35,7 +35,7 @@ transmission, régime que donnerait chaque rapport, gain et vitesse de lecture d
 chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
 les traces.
 
-**Configuration** — les quelque trente-cinq paramètres, en curseur et en saisie,
+**Configuration** — la cinquantaine de réglages, en curseur et en saisie,
 appliqués immédiatement. La gestion des profils et l'analyse des échantillons.
 
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le plaisir.
@@ -854,6 +854,13 @@ chaque essai.
 | 13 | Boîte qui regarde la vitesse : montée en croisière, descente au freinage, rétrogradage sur la demande | à écouter |
 | 14 | Relief du volume : l'effort, le régime et le ralenti s'entendent | à écouter |
 | 15 | Trois défauts de la boîte relevés en roulant : ralentir n'est plus croiser | à écouter |
+| — | Défilement de l'écran de configuration sans dérégler un curseur | prévu |
+| — | Le volume général sort du profil : c'est une préférence d'appareil | prévu |
+| — | Mode simplifié : quelques curseurs globaux, le détail derrière un mode avancé | prévu |
+| — | Déposer profils et traces sur le NAS, la voiture refusant les fichiers | prévu |
+| — | Étalonnage : mesurer la vraie voiture pour régler les virtuelles | prévu |
+| — | Plusieurs banques de son, choisies par profil | prévu |
+| — | Tableau de bord et paysage défilant | à décider |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

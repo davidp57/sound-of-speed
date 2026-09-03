@@ -1,6 +1,6 @@
 # BG-AUDIO — tenir le son quand le navigateur passe en arrière-plan
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ fait
 **Branche :** `fix/bg-audio`
 **Version visée :** 0.2
 
@@ -145,6 +145,22 @@ donc à 🧑 jusqu'à l'essai. Ce qu'il faudra regarder, dans le bloc
 | **Reprises du contexte** à 0 | le contexte n'a jamais été suspendu — la surveillance périodique ne sert à rien et partira |
 | **Reprises du contexte** non nul | le contexte a bien été suspendu, et la surveillance a servi |
 | **Relances du suivi** non nul | le GPS s'est tu plus de vingt secondes, et a été relancé |
+
+## Vérifié en roulant
+
+Essai du 3 septembre 2026 : **« le mode background fonctionne bien »**. Le son
+tient quand le navigateur de la Tesla est réduit. Les trois écarts comblés
+suffisaient donc — élément média inséré dans le document, fichier servi plutôt
+que fabriqué en mémoire, et deux minutes de silence au lieu de quatre secondes.
+
+Ce qui reste inconnu, et qui décide du sort d'un morceau de code : la valeur du
+compteur **« Reprises du contexte »** du bloc « Arrière-plan ». À zéro, le
+système n'a jamais suspendu le contexte audio, et la surveillance périodique par
+minuteur — conservée dans ce lot faute de savoir — ne sert à rien et peut
+partir. Non nul, elle a servi. La question est posée à David.
+
+Le chien de garde GPS n'a pas été observé non plus : son compteur de relances
+est dans le même bloc.
 
 ## Notes
 
