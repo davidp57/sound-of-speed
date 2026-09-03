@@ -276,6 +276,34 @@ npm run htpasswd
 > traces est de toute façon nouveau. Les commentaires du dépôt indiquent quoi
 > monter ; c'est dans l'éditeur de pile que le montage se déclare.
 
+### Redéployer ne suffit pas à changer de version
+
+Mettre une pile à jour recrée le conteneur, mais **Docker réutilise l'image
+qu'il a déjà en local** : une étiquette comme `develop` ou `latest` ne change pas
+de nom quand son contenu change, et rien n'oblige Docker à aller voir. On croit
+donc déployer la dernière version et l'on relance l'ancienne.
+
+Deux façons de s'en assurer :
+
+- dans Portainer, cocher **« Re-pull image and redeploy »** avant de mettre la
+  pile à jour ;
+- ou nommer l'image par son empreinte de commit. Le workflow publie, à côté de
+  `develop` et `latest`, une étiquette immuable `sha-<commit court>` :
+
+```yaml
+    image: ghcr.io/davidp57/speed:sha-28cc0a1
+```
+
+Docker ne l'a jamais vue, donc il la tire forcément. C'est le moyen le plus sûr
+de savoir ce qui tourne, et le seul de revenir à une version précise.
+
+Pour vérifier ce qui tourne réellement, sans Portainer : la date de
+`Last-Modified` sur la page d'accueil est celle de la construction de l'image.
+
+```bash
+curl -I https://ADRESSE/index.html
+```
+
 Le dossier `/volume1/docker/speed/traces/` doit **exister** avant de
 redéployer, même vide : Docker sous DSM refuse de démarrer un conteneur dont un
 point de montage est absent, avec un `Bind mount failed`.
