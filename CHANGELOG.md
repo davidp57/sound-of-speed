@@ -8,6 +8,21 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Faire défiler l'écran de configuration ne dérègle plus un curseur.** Un
+  glissement vertical commencé sur l'un des cinquante et un curseurs déplaçait le
+  curseur au lieu de faire défiler la page : on réglait au hasard en cherchant à
+  lire, et on s'en apercevait au son. Les curseurs rendent désormais le
+  glissement vertical à la page et ne gardent que l'horizontal.
+- Une **bande de défilement** longe le bord gauche de l'écran de configuration —
+  la place du conducteur, donc celle du pouce. Le glissement n'y peut rien
+  dérégler, quoi qu'il arrive : elle vaut aussi comme sécurité si le navigateur
+  de la voiture ignore le comportement tactile déclaré.
+- **L'écran de configuration ne débordait plus l'écran d'un téléphone en
+  portrait.** Le tableau des couches forçait la largeur de la page — mesuré à
+  766 px pour un écran de 375 — et le geste de défilement emportait l'écran de
+  côté. Le tableau glisse maintenant dans sa propre boîte, et la zone de contenu
+  tient dans la largeur de l'écran.
+
 - **L'accélération douce n'était pas vue du tout dans la voiture.** Le
   conditionnement du signal était bâti sur l'idée qu'un GPS livre une mesure par
   seconde — c'était écrit dans son code. Relevé dans une Tesla, il en livre une

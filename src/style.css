@@ -85,6 +85,19 @@ select {
 input[type='range'] {
   width: 100%;
   accent-color: var(--accent);
+  /*
+   * Le glissement vertical revient à la page, l'horizontal reste au curseur.
+   *
+   * Sans cela, un doigt posé sur un curseur pour faire défiler l'écran de
+   * configuration ne fait pas défiler : il déplace le curseur. On dérègle donc
+   * un réglage au hasard en cherchant à lire, et on ne s'en aperçoit qu'au son —
+   * à un feu, l'écran à bout de bras, sans pouvoir vérifier ce qu'on a dérangé.
+   *
+   * Déclaré ici plutôt que dans le composant de champ numérique : les quatre
+   * endroits où l'application montre un curseur sont ainsi couverts d'un coup,
+   * et ceux qu'on ajoutera aussi.
+   */
+  touch-action: pan-y;
 }
 
 .numeric {
