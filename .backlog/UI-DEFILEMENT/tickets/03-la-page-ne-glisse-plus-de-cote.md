@@ -1,4 +1,4 @@
-# 03 — La page ne glisse plus de côté
+# 03 — La barre du haut tient dans un écran de téléphone
 
 **Statut :** ⬜ prêt
 
@@ -6,27 +6,64 @@
 
 ## Ce qu'il faut obtenir
 
-En portrait sur un téléphone, la page ne déborde plus horizontalement. On peut
-la faire défiler vers le bas sans qu'elle parte de côté au passage.
+Sur un téléphone en portrait, tous les boutons de la barre du haut sont
+atteignables sans faire glisser la page, et la page ne déborde plus
+horizontalement.
 
-C'est le même symptôme vécu que le reste du lot — on cherche à défiler et
-l'écran fait autre chose — mais une cause différente, et antérieure : le
-document est plus large que l'écran, si bien que le contenu apparaît décalé et
-que le geste de défilement emporte la page latéralement.
+## Ce que la mesure a montré
 
-Mesuré sur un écran de 375 px de large, une fois l'écran de configuration
-corrigé par les tickets 01 et 02 : le document fait encore 606 px. Le
-responsable est la **barre d'onglets**, en haut, dont les boutons ne se replient
-pas — la zone de contenu, elle, tient désormais dans les 375 px.
+La barre aligne six boutons sur une seule ligne, et elle a besoin de **603 px**
+pour les tenir :
 
-Le remède n'est pas de rétrécir les libellés : c'est de laisser la barre se
-replier, ou de faire glisser les boutons dans leur propre bande quand la place
-manque.
+| Bouton | Largeur |
+|---|---|
+| Conduite | 92 px |
+| Télémétrie | 99 px |
+| Configuration | 121 px |
+| ? | 26 px |
+| Plein écran | 79 px |
+| En marche / Arrêté | 128 px |
+| **Boutons seuls** | **545 px** |
+| Avec les espaces et les marges | **603 px** |
+
+Elle ne se replie pas. En dessous de 603 px de large, ce qui dépasse sort donc
+de l'écran :
+
+| Largeur d'écran | Ce qui se passe |
+|---|---|
+| 640 px | rien, tout tient |
+| 600 px | 3 px de débordement |
+| 414 px | le dernier bouton est 189 px dehors |
+| 375 px | **« En marche » est entièrement hors écran** (228 px dehors), « Plein écran » 94 px dehors, « ? » 9 px dehors |
+
+**Le plus important n'est donc pas que la page glisse.** C'est que le bouton
+marche/arrêt — celui qui démarre et coupe tout — est invisible sur un téléphone
+standard en portrait. Il faut faire glisser la page de côté pour l'atteindre, et
+rien ne dit qu'il est là.
+
+## Qui est concerné
+
+Les téléphones en portrait, et eux seuls. L'écran de la voiture est large : le
+problème ne s'y produit pas. C'est ce qui explique qu'il ait pu passer inaperçu.
+
+## Trois remèdes
+
+- **Laisser la barre se replier** sur deux lignes quand la place manque. Une
+  déclaration, rien de caché, tous les boutons atteignables. Coût : une
+  quarantaine de pixels de hauteur en portrait.
+- **Raccourcir les libellés** sous une certaine largeur. Peu de gain — le plus
+  long, « Configuration », ne fait que 121 px — et le dépôt tient à ses textes
+  en clair.
+- **Faire glisser les onglets** dans leur propre bande, les commandes de droite
+  restant fixes. La page ne déborde plus, mais un onglet caché est un onglet
+  qu'on ne trouve pas.
+
+**Reco : le repli.** C'est le seul qui ne cache rien.
 
 ## Critères d'acceptation
 
-- [ ] Sur un écran de 375 px de large, le document ne dépasse pas la largeur de
-      la fenêtre
-- [ ] Tous les onglets et commandes de la barre restent atteignables
-- [ ] En paysage et sur grand écran, la barre est inchangée
-- [ ] Aucun texte de la barre n'est tronqué sans possibilité de le lire
+- [ ] Sur un écran de 375 px de large, aucun bouton de la barre n'est hors écran
+- [ ] Sur un écran de 375 px, le document ne dépasse pas la largeur de la fenêtre
+- [ ] Le bouton marche/arrêt est visible sans aucun geste préalable
+- [ ] En paysage et sur grand écran, la barre est inchangée — une seule ligne
+- [ ] Aucun libellé n'est tronqué ni remplacé par un signe qu'il faut deviner
