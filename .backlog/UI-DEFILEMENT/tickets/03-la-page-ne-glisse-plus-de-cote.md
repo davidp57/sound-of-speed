@@ -1,6 +1,6 @@
 # 03 — La barre du haut tient dans un écran de téléphone
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -49,8 +49,8 @@ problème ne s'y produit pas. C'est ce qui explique qu'il ait pu passer inaperç
 ## Trois remèdes
 
 - **Laisser la barre se replier** sur deux lignes quand la place manque. Une
-  déclaration, rien de caché, tous les boutons atteignables. Coût : une
-  quarantaine de pixels de hauteur en portrait.
+  déclaration, rien de caché, tous les boutons atteignables. Coût mesuré plus
+  bas : 53 pixels de hauteur en portrait.
 - **Raccourcir les libellés** sous une certaine largeur. Peu de gain — le plus
   long, « Configuration », ne fait que 121 px — et le dépôt tient à ses textes
   en clair.
@@ -58,12 +58,32 @@ problème ne s'y produit pas. C'est ce qui explique qu'il ait pu passer inaperç
   restant fixes. La page ne déborde plus, mais un onglet caché est un onglet
   qu'on ne trouve pas.
 
-**Reco : le repli.** C'est le seul qui ne cache rien.
+**Retenu : le repli**, validé par David le 3 septembre 2026. C'est le seul qui
+ne cache rien.
+
+## Ce que le repli coûte, mesuré
+
+Il remplace la compression. Sans lui, le navigateur resserrait les deux groupes
+de boutons pour les faire tenir — jusqu'à 603 px, au-delà desquels il
+débordait. Avec lui, les groupes gardent leur taille et passent à la ligne dès
+que la barre descend sous **655 px**. Entre 603 et 655, il y a donc maintenant
+deux lignes là où il y en avait une, resserrée.
+
+| Largeur d'écran | Lignes | Hauteur de la barre | Boutons hors écran |
+|---|---|---|---|
+| 320 px | 3 | 155 px | aucun |
+| 375 px | 2 | 111 px | aucun |
+| 414 px | 2 | 111 px | aucun |
+| 640 px | 2 | 111 px | aucun |
+| 1280 px | 1 | 58 px | aucun |
+
+Le prix est donc de 53 px de hauteur sur un téléphone, et rien au-delà de
+655 px — ni sur l'écran de la voiture, ni au poste de travail.
 
 ## Critères d'acceptation
 
-- [ ] Sur un écran de 375 px de large, aucun bouton de la barre n'est hors écran
-- [ ] Sur un écran de 375 px, le document ne dépasse pas la largeur de la fenêtre
-- [ ] Le bouton marche/arrêt est visible sans aucun geste préalable
-- [ ] En paysage et sur grand écran, la barre est inchangée — une seule ligne
-- [ ] Aucun libellé n'est tronqué ni remplacé par un signe qu'il faut deviner
+- [x] Sur un écran de 375 px de large, aucun bouton de la barre n'est hors écran
+- [x] Sur un écran de 375 px, le document ne dépasse pas la largeur de la fenêtre
+- [x] Le bouton marche/arrêt est visible sans aucun geste préalable
+- [x] En paysage et sur grand écran, la barre est inchangée — une seule ligne
+- [x] Aucun libellé n'est tronqué ni remplacé par un signe qu'il faut deviner

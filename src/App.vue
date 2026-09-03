@@ -224,10 +224,34 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 
+/*
+ * La barre se replie quand la place manque.
+ *
+ * Ses six boutons tenaient sur une seule ligne quoi qu'il arrive, et ce qui
+ * dépassait sortait de l'écran. Mesuré sur un téléphone de 375 pixels :
+ * « En marche » était entièrement dehors — 228 pixels au-delà du bord. Il
+ * fallait faire glisser la page de côté pour atteindre le bouton qui démarre et
+ * coupe tout, sans que rien n'indique qu'il était là.
+ *
+ * L'écran de la voiture est large : le défaut ne s'y produisait pas, ce qui
+ * explique qu'il ait vécu longtemps sans se voir.
+ *
+ * Le repli plutôt que des libellés raccourcis ou des onglets qui glissent :
+ * c'est le seul remède qui ne cache rien.
+ *
+ * **Ce que le repli coûte, mesuré** : il remplace la compression. Sans lui, le
+ * navigateur resserrait les deux groupes pour les faire tenir — jusqu'à 603
+ * pixels, au-delà desquels il débordait. Avec lui, les groupes gardent leur
+ * taille et passent à la ligne dès que la barre descend sous 655 pixels. Entre
+ * 603 et 655, il y a donc maintenant deux lignes là où il y en avait une,
+ * resserrée. C'est le prix, et il est petit : la barre passe de 58 à 111 pixels
+ * de haut sur un téléphone, et rien ne change au-delà de 655.
+ */
 .bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 0.6rem 1rem;
   border-bottom: 1px solid var(--line);
@@ -236,12 +260,20 @@ onBeforeUnmount(() => {
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
 }
 
+/*
+ * Poussé à droite même quand il se retrouve seul sur sa ligne : la répartition
+ * de la barre le collerait sinon au bord gauche, sous les onglets, alors que
+ * les commandes sont à droite quand tout tient sur une ligne. Deux dispositions
+ * pour les mêmes boutons se cherchent du regard.
+ */
 .right {
   display: flex;
   gap: 0.4rem;
+  margin-left: auto;
 }
 
 .power {
