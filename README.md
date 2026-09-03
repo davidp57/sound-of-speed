@@ -7,7 +7,7 @@ de boîte, et joue le son correspondant à partir d'enregistrements réels. Tout
 règle sans couper le son, et les réglages se rangent dans des profils qu'on
 sauvegarde, exporte et recharge.
 
-- [Les trois écrans](#les-trois-écrans)
+- [Les quatre écrans](#les-quatre-écrans)
 - [Démarrer en développement](#démarrer-en-développement)
 - [Installation sur un NAS Synology](#installation-sur-un-nas-synology)
 - [Une seconde pile, pour essayer l'intégration](#une-seconde-pile-pour-essayer-lintégration)
@@ -21,7 +21,7 @@ sauvegarde, exporte et recharge.
 
 ---
 
-## Les trois écrans
+## Les quatre écrans
 
 **Conduite** — la vitesse, le rapport, le régime. Le choix de la source
 (simulateur, GPS, rejeu), l'activation du son, le volume, la boîte automatique ou
@@ -57,8 +57,7 @@ Ce que le décor coûte est mesuré, dans « Ce qui n'est pas vérifié ».
 lissage, pente, accélération, qualité du signal GPS, régime, régime entendu,
 charge, état de la transmission, régime que donnerait chaque rapport, gain et
 vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là
-qu'on enregistre et rejoue les traces, et qu'on **étalonne** l'application sur
-la vraie voiture.
+qu'on enregistre et rejoue les traces.
 
 **Configuration** — deux modes. En **simplifié**, la vue est courte : la
 création guidée, les profils, le fonctionnement hors réseau. En **avancé**, la

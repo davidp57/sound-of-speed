@@ -5,6 +5,7 @@ import ConfigView from './ui/ConfigView.vue'
 import HelpView from './ui/HelpView.vue'
 import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
+import CalibrationPanel from './ui/CalibrationPanel.vue'
 import {
   applyUpdate,
   offlineStatus,
@@ -19,7 +20,7 @@ import {
   isRunning,
 } from './state'
 
-type Tab = 'drive' | 'telemetry' | 'config'
+type Tab = 'drive' | 'telemetry' | 'config' | 'calibration'
 
 const tab = ref<Tab>('drive')
 
@@ -82,6 +83,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'drive', label: 'Conduite' },
   { id: 'telemetry', label: 'Télémétrie' },
   { id: 'config', label: 'Configuration' },
+  { id: 'calibration', label: 'Étalonnage' },
 ]
 
 /**
@@ -201,6 +203,7 @@ onBeforeUnmount(() => {
     <main class="content">
       <DriveView v-if="tab === 'drive' || immersive" :immersive="immersive" />
       <TelemetryView v-else-if="tab === 'telemetry'" />
+      <CalibrationPanel v-else-if="tab === 'calibration'" />
       <ConfigView v-else />
     </main>
 
