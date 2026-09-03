@@ -1058,6 +1058,7 @@ function impliedCylinders(index: number): number | null {
         au-delà d'environ une octave, l'échantillon devient métallique vers le haut et
         pâteux vers le bas.
       </p>
+      <div class="table-scroll">
       <table class="layers">
         <thead>
           <tr>
@@ -1148,6 +1149,7 @@ function impliedCylinders(index: number): number | null {
           </template>
         </tbody>
       </table>
+      </div>
       <div class="layer-actions">
         <button class="add" @click="addLayer()">Ajouter une couche</button>
         <button :disabled="analyzing !== null" @click="analyzeAll()">Analyser toutes les couches</button>
@@ -1167,13 +1169,65 @@ function impliedCylinders(index: number): number | null {
 </template>
 
 <style scoped>
+/*
+ * Bande de défilement, à gauche.
+ *
+ * À gauche parce que c'est la place du conducteur, donc celle du pouce. Elle
+ * donne une zone où le glissement ne peut rien dérégler quoi qu'il arrive, y
+ * compris si le navigateur de la voiture ignore le comportement tactile déclaré
+ * sur les curseurs — c'est un Chromium ancien, et c'est le seul avis qui compte.
+ *
+ * Faite en réservant une marge sur la grille plutôt qu'en ajoutant un élément :
+ * la bande ne porte aucune information et n'est pas atteignable, donc rien ne
+ * justifie de la mettre dans le document.
+ */
 .config {
+  --band: clamp(1.75rem, 6vw, 2.75rem);
+
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(23rem, 1fr));
+  /*
+   * Le `min()` est ce qui empêche la grille de déborder en portrait : une
+   * colonne d'au moins vingt rem, plus la bande, dépasse la largeur d'un
+   * téléphone, et la page se décale alors horizontalement. Mesuré avant
+   * correction sur un écran de 375 px : soixante-cinq pixels de débordement.
+   */
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
   gap: 1rem;
   align-items: start;
   max-width: 80rem;
   margin: 0 auto;
+  position: relative;
+  padding-left: calc(var(--band) + 1rem);
+}
+
+.config::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--band);
+  background: var(--panel-alt);
+  border-right: 1px solid var(--line);
+  border-radius: 6px 0 0 6px;
+  touch-action: pan-y;
+}
+
+/* Le mot est en haut, là où le regard arrive avant de commencer à lire. */
+.config::after {
+  content: 'défiler';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--band);
+  padding-top: 0.6rem;
+  writing-mode: vertical-rl;
+  text-align: start;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  pointer-events: none;
 }
 
 .panel {
@@ -1243,6 +1297,20 @@ h2 {
 table {
   width: 100%;
   border-collapse: collapse;
+}
+
+/*
+ * Le tableau des couches est plus large qu'un téléphone en portrait — mesuré à
+ * 687 pixels pour un écran de 375. Sans ce conteneur, c'est la page entière qui
+ * défilait latéralement : on cherchait à faire défiler vers le bas et l'écran
+ * partait de côté. Le tableau glisse maintenant dans sa propre boîte.
+ *
+ * Le défaut est antérieur à la bande de défilement : mesuré identique avec et
+ * sans elle.
+ */
+.table-scroll {
+  overflow-x: auto;
+  touch-action: pan-x pan-y;
 }
 
 th {

@@ -1,6 +1,6 @@
 # 02 — Une bande de défilement à gauche, trouvable sans regarder
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 
 **Bloqué par :** aucun, peut démarrer tout de suite — mais n'a de sens qu'après
 avoir constaté ce que donne le 01 dans la voiture
@@ -25,10 +25,10 @@ sans dégradé, sans flèche.
 
 ## Critères d'acceptation
 
-- [ ] Un glissement vertical dans la bande fait défiler la page
-- [ ] Aucun réglage ne peut être atteint depuis la bande
-- [ ] La bande est visible sans être voyante, et ne bouge pas
-- [ ] Les curseurs restent utilisables sur un téléphone en portrait
-- [ ] L'écran de télémétrie n'en reçoit pas : il n'a pas de curseurs, donc pas le
+- [x] Un glissement vertical dans la bande fait défiler la page
+- [x] Aucun réglage ne peut être atteint depuis la bande
+- [x] La bande est visible sans être voyante, et ne bouge pas
+- [x] Les curseurs restent utilisables sur un téléphone en portrait
+- [x] L'écran de télémétrie n'en reçoit pas : il n'a pas de curseurs, donc pas le
       problème
 - [ ] 🧑 Vérifié dans la voiture : la bande se trouve au pouce, sans regarder

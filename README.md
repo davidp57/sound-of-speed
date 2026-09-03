@@ -37,6 +37,8 @@ les traces.
 
 **Configuration** — la cinquantaine de réglages, en curseur et en saisie,
 appliqués immédiatement. La gestion des profils et l'analyse des échantillons.
+Une bande de défilement longe le bord gauche : le glissement n'y dérègle rien,
+et les curseurs eux-mêmes rendent le glissement vertical à la page.
 
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le plaisir.
 

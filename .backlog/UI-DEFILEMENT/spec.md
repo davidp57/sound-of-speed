@@ -1,6 +1,6 @@
 # UI-DEFILEMENT — faire défiler sans dérégler
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 **Branche :** `fix/defilement`
 **Version visée :** 0.3
 
