@@ -428,6 +428,13 @@ function onRateChange(event: Event): void {
         </label>
       </template>
     </section>
+
+    <!--
+      L'étalonnage vit dans cet écran plutôt que dans un onglet à lui : il
+      s'appuie sur les traces, qui sont juste au-dessus, et il n'a pas de raison
+      d'être visible en conduisant. Un onglet dédié serait plus commode le jour
+      où le protocole aura ses six étapes.
+    -->
   </div>
 </template>
 

@@ -28,6 +28,33 @@ Un trajet capturé, mesure par mesure, qu'on rejoue pour mettre au point sans
 reprendre la voiture. S'enregistre et se relit depuis l'écran Télémétrie.
 _Éviter_ : log, enregistrement (réservé aux échantillons audio).
 
+**Étalonnage** (_calibration_) :
+Mesurer la vraie voiture pour régler les virtuelles. Un protocole en **étapes**
+(`CalibrationStep`), chacune avec sa consigne et son **critère** de validité :
+l'étape s'enregistre comme une trace, la trace se mesure, et le chiffre obtenu
+s'affiche face à celui du profil. Il **propose, il n'applique pas** — la recopie
+se fait réglage par réglage, sur un geste. Il informe des seuils **en vitesse**,
+jamais en régime : la voiture mesurée n'a pas de rapports.
+_Attention_ : ne pas le confondre avec l'**analyse d'échantillon**, qui mesure un
+fichier audio. Les deux rendent des propositions, mais l'une mesure la voiture et
+l'autre le son.
+_Éviter_ : calibration en français, réglage automatique.
+
+**Étape** (_step_, `CalibrationStepId`) :
+Une manœuvre du protocole d'étalonnage — accélération franche, décélération pied
+levé, freinage, conduite en ville, sur route, sur autoroute. Chacune vaut
+séparément : un freinage franc ne se commande pas au milieu du trafic, et ce qui
+n'a pas été fait est dit **non mesuré**, jamais estimé.
+
+**Palier** (_plateau_, `Plateau`) :
+Dans une trace, une portion où la vitesse est **tenue** — l'accélération reste
+dans une bande étroite assez longtemps. C'est de là que sortent les vitesses
+qu'on pratique vraiment. L'arrêt n'en est pas un : un feu rouge est une
+accélération nulle qui dure.
+_Attention_ : proche de la **croisière**, mais ce n'est pas la même chose — la
+croisière est ce que la boîte décide en roulant, le palier est ce qu'on relève
+après coup sur une trace.
+
 ## Le moteur
 
 **Régime** (_engine speed_, `rpm`) :

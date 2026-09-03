@@ -1,6 +1,6 @@
 # 02 — Distinguer lever le pied d'un freinage
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 
 **Bloqué par :** 01 — Une étape, de la consigne à la valeur proposée
 
@@ -24,9 +24,9 @@ pu mesurer. Un freinage franc ne se commande pas au milieu du trafic.
 
 ## Critères d'acceptation
 
-- [ ] Les deux étapes s'enregistrent séparément
-- [ ] La décélération pied levé et celle du freinage sont mesurées et distinguées
-- [ ] Un seuil de rétrogradage au freinage est proposé, entre les deux valeurs
-- [ ] Les bornes réelles de décélération sont proposées
-- [ ] Une étape non faite est dite non mesurée, jamais estimée
+- [x] Les deux étapes s'enregistrent séparément
+- [x] La décélération pied levé et celle du freinage sont mesurées et distinguées
+- [x] Un seuil de rétrogradage au freinage est proposé, entre les deux valeurs
+- [x] Les bornes réelles de décélération sont proposées
+- [x] Une étape non faite est dite non mesurée, jamais estimée
 - [ ] 🧑 Vérifié en roulant : les deux valeurs sont distinctes sur cette voiture

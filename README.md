@@ -7,7 +7,7 @@ de boîte, et joue le son correspondant à partir d'enregistrements réels. Tout
 règle sans couper le son, et les réglages se rangent dans des profils qu'on
 sauvegarde, exporte et recharge.
 
-- [Les trois écrans](#les-trois-écrans)
+- [Les quatre écrans](#les-quatre-écrans)
 - [Démarrer en développement](#démarrer-en-développement)
 - [Installation sur un NAS Synology](#installation-sur-un-nas-synology)
 - [Une seconde pile, pour essayer l'intégration](#une-seconde-pile-pour-essayer-lintégration)
@@ -21,7 +21,7 @@ sauvegarde, exporte et recharge.
 
 ---
 
-## Les trois écrans
+## Les quatre écrans
 
 **Conduite** — la vitesse, le rapport, le régime. Le choix de la source
 (simulateur, GPS, rejeu), l'activation du son, le volume, la boîte automatique ou
@@ -56,8 +56,8 @@ Ce que le décor coûte est mesuré, dans « Ce qui n'est pas vérifié ».
 **Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
 lissage, pente, accélération, qualité du signal GPS, régime, régime entendu,
 charge, état de la transmission, régime que donnerait chaque rapport, gain et
-vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
-les traces.
+vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là
+qu'on enregistre et rejoue les traces.
 
 **Configuration** — deux modes. En **simplifié**, la vue est courte : la
 création guidée, les profils, le fonctionnement hors réseau. En **avancé**, la
@@ -759,6 +759,152 @@ Un profil créé de toutes pièces, sans équivalent d'usine, retombe sur les va
 par défaut génériques.
 Les profils sont conservés dans le navigateur ; l'export sert à les transporter
 d'un appareil à l'autre.
+
+---
+
+## Étalonner sur la vraie voiture
+
+Les réglages qui décident de la charge et des seuils ont tous été choisis par le
+calcul, faute de savoir ce que fait la voiture. `fullLoadAccelMs2` vaut 2 m/s²
+sur le profil Route — une valeur raisonnée, jamais mesurée, sur un véhicule qui
+en fait bien davantage. L'étalonnage remplace ce raisonnement par un relevé.
+
+Il se trouve **en bas de l'écran Télémétrie**, sous les traces, dont il se sert.
+Tout se passe dans la voiture : l'analyse ne demande que du calcul, et le
+résultat se voit tout de suite.
+
+### La marche à suivre
+
+1. Démarrer l'application, source **GPS**.
+2. Lire la consigne de l'étape, et son **critère**. Le critère est annoncé avant
+   l'enregistrement, pas après.
+3. Appuyer sur **Enregistrer l'étape**, rouler comme demandé, appuyer sur
+   **Arrêter**.
+4. Le verdict s'affiche : étape valide et valeur obtenue, ou étape refusée et
+   raison du refus.
+5. Le tableau **Mesuré face à réglé** met les deux chiffres côte à côte, avec
+   leur écart. **Recopier** applique la valeur, un réglage à la fois.
+
+Chaque étape s'enregistre séparément et vaut séparément : une session
+incomplète reste utile, et ce qui n'a pas été mesuré est dit **non mesuré**,
+jamais estimé. L'enregistrement d'une étape est une trace ordinaire — elle
+apparaît dans la liste des traces, se rejoue, et l'analyse en tire le même
+chiffre à chaque relecture.
+
+### Les étapes
+
+Six étapes, dans deux familles. Les trois premières donnent des
+**distributions** — ce qu'on fait tous les jours ; les trois dernières donnent
+des **extrêmes**, et ce sont eux qui manquaient le plus.
+
+| Étape | Ce qu'on demande | Ce qu'elle informe |
+|---|---|---|
+| Conduite en ville | une minute de ville, feux compris | la vitesse de fin de première, les seuils bas, le bruit du GPS |
+| Conduite sur route | une minute de route | les seuils intermédiaires, le plancher de croisière |
+| Conduite sur autoroute | une minute d'autoroute | les seuils hauts, la vitesse plausible |
+| Accélération franche | de l'arrêt, accélérer franchement jusqu'à 50 km/h | l'accélération à charge pleine |
+| Décélération pied levé | au-dessus de 50 km/h, lever le pied sans freiner | avec le freinage, la frontière de rétrogradage ; la borne basse |
+| Freinage franc | au-dessus de 40 km/h, freiner franchement | la même frontière, et la borne basse |
+
+### Ce qu'on tire de la conduite ordinaire
+
+Un **palier** est une portion où la vitesse est tenue : l'accélération reste
+dans une bande étroite pendant au moins deux secondes. Un arrêt n'en est pas un
+— un feu rouge est une accélération nulle qui dure. De la distribution des
+paliers, pondérée par leur durée, viennent :
+
+- les **seuils de passage**, placés de sorte que chaque rapport couvre une part
+  égale du temps passé à vitesse tenue. Le profil Route a été décrit comme
+  « calibré sur les vitesses que l'on pratique vraiment » ; c'était de mémoire ;
+- le **plancher de croisière**, à la vitesse la plus basse réellement tenue ;
+- le **délai de montée en croisière**, au dixième centile de la durée des
+  paliers : neuf paliers sur dix durent alors assez pour que la montée se
+  produise, et les plus brefs ne la déclenchent pas.
+
+Les seuils de passage sont mesurés en **kilomètres-heure** et le réglage du
+profil s'affiche dans la même unité, converti avec le pont, les
+démultiplications et le rayon de roue — sans quoi les deux ne seraient pas
+comparables. C'est le profil qui fournit la conversion : lui a déjà choisi une
+boîte, la voiture mesurée n'en a pas.
+
+### Le bruit du GPS, et la fenêtre qui s'en déduit
+
+L'étalonnage chiffre le **bruit de mesure** du GPS de cette voiture-là, en
+km/h, ainsi que sa **cadence**. La pente d'accélération étant ajustée aux
+moindres carrés sur une fenêtre, son écart-type vaut `√(12 σ² Δ / T³)` pour un
+bruit `σ`, une cadence `Δ` et une fenêtre `T`. On renverse la formule pour
+trouver la fenêtre qui atteint 0,1 m/s² de précision, soit un vingtième de la
+charge pleine du profil Route.
+
+Vérifié sur traces synthétiques, à trois bruits et deux cadences : l'écart-type
+obtenu tient entre 0,100 et 0,104 m/s² pour une cible de 0,100.
+
+**La raideur du lissage, elle, n'est pas proposée.** Le ressort arrondit ce que
+le bruit laisse passer, et le réglage juste est celui à partir duquel le
+tremblement ne s'entend plus : c'est un jugement d'oreille, pas une mesure. Le
+déduire d'une formule serait habiller une convention en résultat.
+
+Le seuil de rétrogradage au freinage se place **au milieu** des deux
+décélérations. Le milieu, parce que c'est le point qui laisse la même marge
+contre les deux erreurs possibles : rétrograder sur un simple lever de pied, et
+ne pas rétrograder sur un vrai freinage.
+
+**Et il peut ne pas y avoir de milieu.** Une voiture électrique récupère au
+lever de pied, ce qui rapproche les deux cas au lieu de les séparer. Si les deux
+étapes rendent la même décélération à moins de 0,5 m/s² près, aucun seuil n'est
+proposé, et la raison est dite : soit le frein a servi pendant le lever de pied,
+soit la récupération suffit à elle seule. C'est pour la même raison que le lever
+de pied n'a **pas** de plafond de décélération dans son critère : rien dans une
+trace GPS ne dit si le frein a été touché, et refuser un lever de pied « trop
+fort » reviendrait à refuser cette voiture-là.
+
+### Une étape peut être refusée, et c'est le point
+
+Une « accélération franche » qui n'atteint que 1 m/s² n'en est pas une.
+L'accepter donnerait une charge pleine atteinte au premier filet de gaz — donc
+un fondu faux, un volume faux, des passages faux : exactement le défaut que
+l'étalonnage doit corriger. Le critère de l'accélération franche est donc :
+départ à l'arrêt, 30 km/h gagnés au minimum, et **2 m/s² d'accélération
+soutenue**. Deux mètres par seconde carré, c'est zéro à cinquante en sept
+secondes — très en dessous de ce qu'une électrique fait sans effort.
+
+### Le récapitulatif
+
+Un seul tableau, sous les étapes. Chaque ligne porte le nom du réglage, la
+phrase qui dit d'où vient la mesure, la valeur **mesurée**, la valeur
+**réglée**, et l'**écart** entre les deux. Une ligne d'en-tête compte où en est
+la session — combien d'étapes enregistrées, combien valides, combien de réglages
+proposés et combien non mesurés — parce que sans ce compte on ne sait pas si un
+« non mesuré » vient d'une étape oubliée ou d'une étape refusée.
+
+Le tableau se relit tel quel après un rechargement : une session ne retient que
+le lien entre une étape et sa trace, et les traces sont conservées. Le
+récapitulatif se **recalcule** donc, plutôt que de rejouer des chiffres
+mémorisés qui pourraient avoir divergé de l'analyse.
+
+### Elle propose, elle n'applique pas
+
+C'est la règle déjà retenue pour l'analyse d'échantillon : la mesure est plus
+sûre que le souvenir, elle n'est pas plus sûre que le jugement. Rien n'est écrit
+dans le profil sans un geste, et jamais en bloc — un réglage à la fois.
+
+Deux retours en arrière, à deux échéances. **Annuler**, à côté du bouton qui
+vient d'écrire, rend la valeur écrasée immédiatement et pour ce réglage seul.
+Plus tard, **Réinitialiser** dans l'écran de configuration ramène une section
+entière du profil à ce qu'elle était à sa création.
+
+### Ce que l'étalonnage ne dira jamais
+
+Une voiture électrique n'a pas de rapports. L'étalonnage mesure des vitesses,
+des accélérations et du bruit de mesure ; il informe donc des seuils **en
+vitesse**, jamais en régime. Le régime est une fiction qu'on choisit, et le
+choix reste entier : l'étalonnage ne dira pas quel rupteur ni combien de
+cylindres.
+
+C'est pour cette raison que le **plancher de croisière** est rendu en km/h et ne
+se recopie pas : le réglage est un régime, et le déduire de cette vitesse
+demanderait de choisir dans quel rapport la boîte se trouve — ce que le réglage
+sert justement à décider. La mesure s'arrête où commence le choix, et le dit.
 
 ---
 
