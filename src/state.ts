@@ -27,10 +27,12 @@ import {
   tracesFromFile,
   tracesToFile,
   type ProfileSection,
+  loadAdvancedMode,
   loadInheritedVolume,
   loadMasterVolume,
   loadSelectedId,
   newId,
+  saveAdvancedMode,
   saveProfiles,
   saveMasterVolume,
   saveSelectedId,
@@ -150,6 +152,21 @@ export const masterVolume = ref(
 )
 saveMasterVolume(masterVolume.value)
 audio.setMasterVolume(masterVolume.value)
+
+/**
+ * Mode avancé de l'écran de configuration : une préférence de **cet appareil**.
+ *
+ * L'écran s'ouvre sur une vue courte — quelques curseurs globaux — et les
+ * cinquante réglages détaillés attendent derrière cette bascule. Aucun n'est
+ * supprimé : chacun a été ajouté pour une raison mesurée. Mais on ne les
+ * parcourait plus, on les subissait.
+ */
+export const advancedMode = ref(loadAdvancedMode())
+
+export function setAdvancedMode(value: boolean): void {
+  advancedMode.value = value
+  saveAdvancedMode(value)
+}
 
 export const offlineStatus = ref<OfflineStatus>({ ...offline.status })
 

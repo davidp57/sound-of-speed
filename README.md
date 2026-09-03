@@ -35,10 +35,17 @@ transmission, régime que donnerait chaque rapport, gain et vitesse de lecture d
 chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
 les traces.
 
-**Configuration** — la cinquantaine de réglages, en curseur et en saisie,
-appliqués immédiatement. La gestion des profils et l'analyse des échantillons.
-Une bande de défilement longe le bord gauche : le glissement n'y dérègle rien,
-et les curseurs eux-mêmes rendent le glissement vertical à la page.
+**Configuration** — deux modes. En **simplifié**, la vue est courte : la
+création guidée, les profils, le fonctionnement hors réseau. En **avancé**, la
+cinquantaine de réglages détaillés s'ajoute dessous, en curseur et en saisie,
+appliqués immédiatement, groupés par section — moteur, transmission, signal,
+caractère, mixage, couches. Aucun réglage ne disparaît en simplifié : ils
+attendent. Le choix du mode est une préférence de l'appareil, comme le volume :
+il se retient et ne voyage pas avec un profil partagé.
+
+C'est aussi là qu'on gère les profils et qu'on analyse les échantillons. Une
+bande de défilement longe le bord gauche : le glissement n'y dérègle rien, et
+les curseurs eux-mêmes rendent le glissement vertical à la page.
 
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le plaisir.
 
@@ -419,7 +426,11 @@ Les recherches dans le cache se font donc avec `ignoreVary`.
 
 ## Référence des réglages
 
-Tout est dans l'écran **Configuration**, appliqué immédiatement.
+Tout est dans l'écran **Configuration**, appliqué immédiatement. Les sections qui
+suivent — moteur, transmission, signal de vitesse, mixage, caractère, couches —
+sont celles du **mode avancé** : la bascule en haut de l'écran les fait
+apparaître. En mode simplifié, elles sont remplacées par quelques curseurs
+globaux qui les commandent.
 
 ### Moteur
 

@@ -19,8 +19,10 @@ import type { LayerRole } from '../core/preset/schema'
 import {
   activeProfile,
   addProfile,
+  advancedMode,
   analyzeLayerFile,
   backgroundAudio,
+  setAdvancedMode,
   setBackgroundAudio,
   offlineStatus,
   prepareOffline,
@@ -422,6 +424,21 @@ function impliedCylinders(index: number): number | null {
 
 <template>
   <div class="config">
+    <section class="panel wide simple">
+      <h2>Réglage</h2>
+      <div class="mode">
+        <button :aria-pressed="!advancedMode" @click="setAdvancedMode(false)">Simplifié</button>
+        <button :aria-pressed="advancedMode" @click="setAdvancedMode(true)">Avancé</button>
+        <span class="note">
+          {{
+            advancedMode
+              ? 'Les cinquante réglages, section par section, sous les profils.'
+              : 'La cinquantaine de réglages détaillés attend en mode avancé. Aucun n’a disparu.'
+          }}
+        </span>
+      </div>
+    </section>
+
     <section class="panel wide creation">
       <h2>Créer un profil</h2>
       <div v-if="!wizardOpen" class="creation-pitch">
@@ -649,7 +666,7 @@ function impliedCylinders(index: number): number | null {
       </p>
     </section>
 
-    <section class="panel">
+    <section v-if="advancedMode" class="panel">
       <h2>Moteur</h2>
       <NumberField
         v-model="profile.engine.cylinders"
@@ -699,7 +716,7 @@ function impliedCylinders(index: number): number | null {
       />
     </section>
 
-    <section class="panel">
+    <section v-if="advancedMode" class="panel">
       <h2>Transmission</h2>
       <label class="inline">
         Démultiplications
@@ -842,7 +859,7 @@ function impliedCylinders(index: number): number | null {
       <p class="derived">À 130 km/h dans le dernier rapport : <b class="numeric">{{ Math.round(cruiseRpm) }}</b> tr/min</p>
     </section>
 
-    <section class="panel">
+    <section v-if="advancedMode" class="panel">
       <h2>Signal de vitesse</h2>
       <NumberField
         v-model="profile.speed.springOmega"
@@ -872,7 +889,7 @@ function impliedCylinders(index: number): number | null {
       />
     </section>
 
-    <section class="panel">
+    <section v-if="advancedMode" class="panel">
       <h2>Caractère</h2>
       <p class="note">
         Trois comportements qui rendent la conduite plus vivante. Chacun s'active
@@ -962,7 +979,7 @@ function impliedCylinders(index: number): number | null {
       />
     </section>
 
-    <section class="panel">
+    <section v-if="advancedMode" class="panel">
       <h2>Mixage</h2>
       
       <NumberField
@@ -1046,7 +1063,7 @@ function impliedCylinders(index: number): number | null {
       />
     </section>
 
-    <section class="panel wide">
+    <section v-if="advancedMode" class="panel wide">
       <h2>Couches</h2>
       <p class="note">
         Le régime d'ancrage est celui auquel l'échantillon a été enregistré : il détermine
@@ -1373,8 +1390,21 @@ td input[type='number'] {
   flex: 1;
 }
 
-.creation {
+.creation,
+.simple {
   border-color: var(--line-strong);
+}
+
+.mode {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.mode .note {
+  flex: 1 1 16rem;
+  margin: 0;
 }
 
 .creation-pitch {

@@ -5,6 +5,7 @@ import {
   deepCopy,
   duplicateProfile,
   fromFile,
+  loadAdvancedMode,
   loadInheritedVolume,
   loadMasterVolume,
   loadProfiles,
@@ -13,6 +14,7 @@ import {
   missingFactoryProfiles,
   newId,
   resetProfileSection,
+  saveAdvancedMode,
   saveMasterVolume,
   saveProfiles,
   saveSelectedId,
@@ -518,6 +520,38 @@ describe('valeurs d’origine', () => {
     saveProfiles([fabrique])
 
     expect(loadProfiles()[0]?.origin).toEqual(fabrique.origin)
+  })
+})
+
+describe('mode avancé', () => {
+  it('s ouvre sur la vue courte quand rien n a été choisi', () => {
+    // Le mode simplifié est le défaut : c'est tout l'objet de la bascule.
+    expect(loadAdvancedMode()).toBe(false)
+  })
+
+  it('se retient d une session à l autre, dans les deux sens', () => {
+    saveAdvancedMode(true)
+    expect(loadAdvancedMode()).toBe(true)
+
+    saveAdvancedMode(false)
+    expect(loadAdvancedMode()).toBe(false)
+  })
+
+  it('ne fait pas partie du profil, donc ne voyage pas', () => {
+    saveAdvancedMode(true)
+
+    // Le profil exporté ne porte rien du mode : c'est une préférence de
+    // l'appareil, comme le volume général.
+    expect(toFile(createRoadProfile())).not.toContain('advanced')
+    expect(loadProfiles().some((p) => 'advancedMode' in p)).toBe(false)
+  })
+
+  it('survit à un stockage qui refuse d écrire ou de lire', () => {
+    install(fakeStorage({ failWrites: true }))
+    expect(() => saveAdvancedMode(true)).not.toThrow()
+
+    install(fakeStorage({ failReads: true }))
+    expect(loadAdvancedMode()).toBe(false)
   })
 })
 

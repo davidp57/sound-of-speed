@@ -21,6 +21,7 @@ const STORAGE_KEY = 'speed.profiles.v1'
 const SELECTED_KEY = 'speed.selectedProfile.v1'
 const TRACES_KEY = 'speed.traces.v1'
 const VOLUME_KEY = 'speed.masterVolume.v1'
+const ADVANCED_KEY = 'speed.advancedMode.v1'
 
 /**
  * Traces conservées d'une session à l'autre.
@@ -126,6 +127,33 @@ export function saveMasterVolume(volume: number): void {
     localStorage.setItem(VOLUME_KEY, String(volume))
   } catch {
     // Comme au-dessus : le son continue même si la préférence ne se retient pas.
+  }
+}
+
+/**
+ * Mode avancé de l'écran de configuration : une préférence de **l'appareil**.
+ *
+ * Comme le volume, et pour la même raison : ce n'est pas un caractère de moteur.
+ * Régler au détail ou s'en tenir aux curseurs globaux dépend de ce qu'on est en
+ * train de faire, pas du profil qu'on écoute — et cela n'a donc rien à faire
+ * dans un profil partagé, ni à sauter quand on change de voix.
+ *
+ * Absent, la vue reste courte : c'est le mode simplifié qui est le défaut.
+ */
+export function loadAdvancedMode(): boolean {
+  try {
+    return localStorage.getItem(ADVANCED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function saveAdvancedMode(advanced: boolean): void {
+  try {
+    localStorage.setItem(ADVANCED_KEY, advanced ? '1' : '0')
+  } catch {
+    // Navigation privée, quota plein : la bascule marche quand même, elle ne se
+    // retient simplement pas.
   }
 }
 
