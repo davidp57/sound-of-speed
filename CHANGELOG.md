@@ -27,6 +27,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le bouton marche/arrêt n'est plus hors écran sur un téléphone.** La barre du
+  haut alignait ses six boutons sur une seule ligne quoi qu'il arrive, et ce qui
+  dépassait sortait de l'écran : mesuré sur un écran de 375 px, « En marche »
+  était entièrement dehors — 228 px au-delà du bord — et il fallait faire
+  glisser la page de côté pour atteindre le bouton qui démarre et coupe tout.
+  L'écran de la voiture étant large, le défaut ne s'y produisait pas, ce qui
+  explique qu'il soit passé inaperçu. La barre se replie désormais sous 655 px,
+  les commandes restant alignées à droite ; au-delà, elle est inchangée.
 - **Faire défiler l'écran de configuration ne dérègle plus un curseur.** Un
   glissement vertical commencé sur l'un des cinquante et un curseurs déplaçait le
   curseur au lieu de faire défiler la page : on réglait au hasard en cherchant à
