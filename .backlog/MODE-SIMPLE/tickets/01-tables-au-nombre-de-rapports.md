@@ -1,6 +1,6 @@
 # 01 — Les tables suivent le nombre de rapports
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -26,10 +26,10 @@ lui-même puisqu'il corrige un défaut existant.
 
 ## Critères d'acceptation
 
-- [ ] Ajouter un rapport donne un seuil de passage et une temporisation cohérents
+- [x] Ajouter un rapport donne un seuil de passage et une temporisation cohérents
       avec les rapports voisins
-- [ ] Retirer un rapport ne laisse aucune valeur orpheline
-- [ ] Les temporisations produites restent inégales entre elles
-- [ ] Un profil dont on ne touche pas le nombre de rapports est inchangé
-- [ ] Le rapport le plus long garde une vitesse de croisière tenable après
+- [x] Retirer un rapport ne laisse aucune valeur orpheline
+- [x] Les temporisations produites restent inégales entre elles
+- [x] Un profil dont on ne touche pas le nombre de rapports est inchangé
+- [x] Le rapport le plus long garde une vitesse de croisière tenable après
       redimensionnement

@@ -35,10 +35,17 @@ charge, état de la transmission, régime que donnerait chaque rapport, gain et
 vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là qu'on enregistre et rejoue
 les traces.
 
-**Configuration** — la cinquantaine de réglages, en curseur et en saisie,
-appliqués immédiatement. La gestion des profils et l'analyse des échantillons.
-Une bande de défilement longe le bord gauche : le glissement n'y dérègle rien,
-et les curseurs eux-mêmes rendent le glissement vertical à la page.
+**Configuration** — deux modes. En **simplifié**, la vue est courte : la
+création guidée, les profils, le fonctionnement hors réseau. En **avancé**, la
+cinquantaine de réglages détaillés s'ajoute dessous, en curseur et en saisie,
+appliqués immédiatement, groupés par section — moteur, transmission, signal,
+caractère, mixage, couches. Aucun réglage ne disparaît en simplifié : ils
+attendent. Le choix du mode est une préférence de l'appareil, comme le volume :
+il se retient et ne voyage pas avec un profil partagé.
+
+C'est aussi là qu'on gère les profils et qu'on analyse les échantillons. Une
+bande de défilement longe le bord gauche : le glissement n'y dérègle rien, et
+les curseurs eux-mêmes rendent le glissement vertical à la page.
 
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le plaisir.
 
@@ -502,7 +509,59 @@ Les recherches dans le cache se font donc avec `ignoreVary`.
 
 ## Référence des réglages
 
-Tout est dans l'écran **Configuration**, appliqué immédiatement.
+Tout est dans l'écran **Configuration**, appliqué immédiatement. Les sections qui
+suivent — moteur, transmission, signal de vitesse, mixage, caractère, couches —
+sont celles du **mode avancé** : la bascule en haut de l'écran les fait
+apparaître. En mode simplifié, elles sont remplacées par quelques curseurs
+globaux qui les commandent.
+
+### Mode simplifié
+
+Le guide de création sait déduire une cinquantaine de réglages de quatre
+réponses. Ce savoir ne servait qu'une fois, à la création ; les curseurs globaux
+le rendent disponible en continu. Ils **écrasent** les réglages qu'ils
+commandent — un curseur global recalcule, il ne peut pas faire autrement — et un
+bouton **Revenir aux réglages d'avant** rend le profil tel qu'il était avant le
+premier mouvement.
+
+Aucun des deux n'est enregistré dans le profil : leur position s'en **déduit**.
+Le curseur reflète donc ce qu'on a réellement sous les doigts, y compris sur un
+profil réglé à la main ou reçu par lien. Mesuré : Route se lit à 22 sur cent de
+tempérament, Sport à 80 ; les deux se lisent au milieu de la réactivité, le
+milieu du curseur étant par construction le réglage qui a servi jusqu'ici.
+
+| Curseur | Ce qu'il commande |
+|---|---|
+| **Calme ↔ sportif** | Le caractère du moteur et de la boîte : inertie, montée à vide, temps de passage, écart selon la charge, régimes de passage, plancher et délai de croisière, seuil de rétrogradage au freinage, rétrogradage forcé, pétarade, à-coup de passage. Il ne touche ni au pont, ni aux démultiplications, ni au rupteur, ni au mixage. Mesuré sur Route, pied au plancher : la pointe de régime passe de 3929 tr/min au plus calme à 6043 au plus sportif, pour un rupteur à 6500 |
+| **Pépère ↔ nerveux** | La réactivité du **signal**, et non le caractère : raideur du lissage, fenêtre d'accélération, lissage de la charge, temporisations de passage. La distinction est réelle — le premier curseur dit si la voiture pousse fort, celui-ci si elle répond vite. Une voiture calme peut être vive, une sportive pâteuse |
+| **Nombre de rapports** | De trois à huit, en un appui. Le premier et le dernier rapport sont **conservés**, et le pont avec eux : le régime en dernier rapport à une vitesse donnée ne bouge pas — mesuré, 2355 tr/min à 110 km/h sur Route quel que soit le nombre de rapports. Seuls les rapports intermédiaires se redistribuent, géométriquement, avec les régimes de passage et les temporisations. Pour poser les démultiplications à la main, le champ reste là en mode avancé |
+
+Les bornes du second sont **mesurées** sur une rampe de 0 à 90 km/h en quinze
+secondes, bruitée à ±1 km/h comme l'est une mesure GPS, à la cadence la plus
+défavorable — une mesure par seconde :
+
+| Position | Marche d'une image à l'autre | Retard sur la vitesse vraie |
+|---|---|---|
+| Pépère (raideur 6) | 0,242 km/h | 556 ms |
+| Milieu (raideur 14) | 0,433 km/h | 409 ms |
+| Nerveux (raideur 22) | 0,675 km/h | 369 ms |
+
+La vitesse reste continue même au plus nerveux : le ressort est amorti critique,
+il ne produit pas de marche, et 0,675 km/h par image vaut une quinzaine de tours
+par minute en dernier rapport. À la cadence du GPS d'une Tesla en mouvement —
+une mesure toutes les trente-trois millisecondes — la marche tombe à 0,376 km/h
+et le retard à 334 ms : plus le GPS parle, plus le suivi est à la fois doux et
+juste.
+
+La fenêtre d'accélération suit la même logique, et son prix se paie sur la
+charge : à une cadence de 250 ms, une fenêtre de 400 ms laisse l'accélération
+lue trembler à 1,51 m/s² d'écart-type, contre 0,85 à 1600 ms.
+
+Deux interrupteurs restent à la main : le **rétrogradage forcé** et l'**à-coup de
+passage** ne se coupent jamais tout seuls — couper ce que quelqu'un a activé
+exprès n'est pas un caractère. La **pétarade**, elle, s'éteint au plus calme :
+c'est la règle du guide de création, et une voiture tranquille ne claque pas à
+l'échappement.
 
 ### Moteur
 
@@ -523,7 +582,7 @@ Tout est dans l'écran **Configuration**, appliqué immédiatement.
 
 | Réglage | Ce qu'il fait |
 |---|---|
-| **Démultiplications** | Du plus court au plus long, séparées par des virgules. Une seule valeur = prise directe |
+| **Démultiplications** | Du plus court au plus long, séparées par des virgules. Une seule valeur = prise directe. En **changer le nombre** redimensionne du même coup les régimes de passage et les temporisations, qui sont indexés par rapport : ils sont redistribués depuis le tempérament que porte le profil. À nombre égal, rien d'autre ne bouge |
 | **Pont** | Rapport final |
 | **Rupteur atteint à** | Vitesse au rupteur dans le dernier rapport. **Modifier cette valeur recalcule le pont** — c'est le chiffre parlant |
 | **Rayon de roue** | En mètres. Entre dans le calcul du régime |

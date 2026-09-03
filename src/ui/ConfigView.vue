@@ -15,12 +15,15 @@ import {
   type Temperament,
   type Usage,
 } from '../core/preset/wizard'
+import { SIMPLE_GEAR_COUNTS } from '../core/preset/character'
 import type { LayerRole } from '../core/preset/schema'
 import {
   activeProfile,
   addProfile,
+  advancedMode,
   analyzeLayerFile,
   backgroundAudio,
+  setAdvancedMode,
   setBackgroundAudio,
   offlineStatus,
   prepareOffline,
@@ -31,9 +34,18 @@ import {
   renameActive,
   resetActive,
   restoreFactoryProfiles,
+  canUndoGlobalChange,
+  gearCount,
+  responsiveness,
   selectProfile,
   selectedProfileId,
+  setGearCount,
+  setGearRatios,
+  setResponsiveness,
+  setSportiness,
+  sportiness,
   toggleFavorite,
+  undoGlobalChange,
   library,
   libraryLoading,
   refreshLibrary,
@@ -122,7 +134,9 @@ const ratiosText = computed<string>({
       .split(/[,\s]+/)
       .map((piece) => Number(piece.replace(',', '.')))
       .filter((value) => Number.isFinite(value) && value > 0)
-    if (parsed.length > 0) profile.value.drivetrain.gearRatios = parsed
+    // Par l'état, qui redimensionne au passage les tables indexées par rapport
+    // quand le nombre de rapports change.
+    setGearRatios(parsed)
   },
 })
 
@@ -136,6 +150,25 @@ const delaysText = computed<string>({
     if (parsed.length > 0) profile.value.drivetrain.shiftDelaysS = parsed
   },
 })
+
+/**
+ * Curseurs globaux du mode simplifié.
+ *
+ * Exprimés de zéro à cent plutôt que de zéro à un : ce sont des positions, pas
+ * des grandeurs, et un pour-cent est le plus petit pas qui se voie encore.
+ */
+const sportinessPercent = computed<number>({
+  get: () => Math.round(sportiness.value * 100),
+  set: (value: number) => setSportiness(value / 100),
+})
+
+const responsivenessPercent = computed<number>({
+  get: () => Math.round(responsiveness.value * 100),
+  set: (value: number) => setResponsiveness(value / 100),
+})
+
+/** Ce que donne le profil courant, dans les mêmes termes que la création. */
+const simplePreview = computed(() => describeProfile(profile.value))
 
 /**
  * Création guidée.
@@ -419,6 +452,72 @@ function impliedCylinders(index: number): number | null {
 
 <template>
   <div class="config">
+    <section class="panel wide simple">
+      <h2>Réglage</h2>
+      <div class="mode">
+        <button :aria-pressed="!advancedMode" @click="setAdvancedMode(false)">Simplifié</button>
+        <button :aria-pressed="advancedMode" @click="setAdvancedMode(true)">Avancé</button>
+        <span class="note">
+          {{
+            advancedMode
+              ? 'Les cinquante réglages, section par section, sous les profils.'
+              : 'La cinquantaine de réglages détaillés attend en mode avancé. Aucun n’a disparu.'
+          }}
+        </span>
+      </div>
+
+      <template v-if="!advancedMode">
+        <NumberField
+          v-model="sportinessPercent"
+          label="Calme ↔ sportif"
+          :min="0"
+          :max="100"
+          :step="1"
+          hint="Le caractère du moteur et de la boîte : inertie, régimes de passage, plancher et délai de croisière, rétrogradage, pétarade, à-coup. Vers zéro la boîte monte tôt et tourne bas ; vers cent elle étire les rapports. Ce curseur refait ces réglages, et le bouton de retour annule le geste."
+        />
+        <NumberField
+          v-model="responsivenessPercent"
+          label="Pépère ↔ nerveux"
+          :min="0"
+          :max="100"
+          :step="1"
+          hint="La réactivité du signal, et non le caractère : raideur du lissage, fenêtre d'accélération, lissage de la charge, temporisations de passage. Le premier curseur dit si la voiture pousse fort, celui-ci si elle répond vite. Vers cent elle suit au plus près et les sauts du GPS s'entendent ; vers zéro elle est lisse et en retard d'une demi-seconde."
+        />
+
+        <p class="choice-label">Nombre de rapports</p>
+        <div class="choices">
+          <button
+            v-for="n in SIMPLE_GEAR_COUNTS"
+            :key="n"
+            :aria-pressed="gearCount === n"
+            @click="setGearCount(n)"
+          >
+            {{ n }}
+          </button>
+        </div>
+        <p class="note">
+          Le premier et le dernier rapport sont conservés, avec le pont : le
+          régime en dernier rapport à une vitesse donnée ne bouge pas. Seuls les
+          rapports intermédiaires se redistribuent, avec les régimes de passage
+          et les temporisations.
+        </p>
+        <div class="global-actions">
+          <button :disabled="!canUndoGlobalChange" @click="undoGlobalChange()">
+            Revenir aux réglages d'avant
+          </button>
+          <span class="note">
+            Un curseur global recalcule : il écrase les réglages qu'il commande.
+            Ce retour rend l'état du profil tel qu'il était avant le premier
+            mouvement.
+          </span>
+        </div>
+        <div class="preview">
+          <p class="choice-label">Ce que ça donne</p>
+          <p v-for="line in simplePreview" :key="line">{{ line }}</p>
+        </div>
+      </template>
+    </section>
+
     <section class="panel wide creation">
       <h2>Créer un profil</h2>
       <div v-if="!wizardOpen" class="creation-pitch">
@@ -646,7 +745,7 @@ function impliedCylinders(index: number): number | null {
       </p>
     </section>
 
-    <section class="panel">
+    <section v-if="advancedMode" class="panel">
       <h2>Moteur</h2>
       <NumberField
         v-model="profile.engine.cylinders"
@@ -714,7 +813,7 @@ function impliedCylinders(index: number): number | null {
       />
     </section>
 
-    <section class="panel">
+    <section v-if="advancedMode" class="panel">
       <h2>Transmission</h2>
       <label class="inline">
         Démultiplications
@@ -857,7 +956,7 @@ function impliedCylinders(index: number): number | null {
       <p class="derived">À 130 km/h dans le dernier rapport : <b class="numeric">{{ Math.round(cruiseRpm) }}</b> tr/min</p>
     </section>
 
-    <section class="panel">
+    <section v-if="advancedMode" class="panel">
       <h2>Signal de vitesse</h2>
       <NumberField
         v-model="profile.speed.springOmega"
@@ -887,7 +986,7 @@ function impliedCylinders(index: number): number | null {
       />
     </section>
 
-    <section class="panel">
+    <section v-if="advancedMode" class="panel">
       <h2>Caractère</h2>
       <p class="note">
         Trois comportements qui rendent la conduite plus vivante. Chacun s'active
@@ -977,7 +1076,7 @@ function impliedCylinders(index: number): number | null {
       />
     </section>
 
-    <section class="panel">
+    <section v-if="advancedMode" class="panel">
       <h2>Mixage</h2>
       
       <NumberField
@@ -1070,7 +1169,7 @@ function impliedCylinders(index: number): number | null {
       />
     </section>
 
-    <section class="panel wide">
+    <section v-if="advancedMode" class="panel wide">
       <h2>Couches</h2>
       <p class="note">
         Le régime d'ancrage est celui auquel l'échantillon a été enregistré : il détermine
@@ -1397,8 +1496,34 @@ td input[type='number'] {
   flex: 1;
 }
 
-.creation {
+.creation,
+.simple {
   border-color: var(--line-strong);
+}
+
+.mode {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.mode .note {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.global-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding-top: 0.6rem;
+}
+
+.global-actions .note {
+  flex: 1 1 16rem;
+  margin: 0;
 }
 
 .creation-pitch {

@@ -1,3 +1,4 @@
+import { applySportiness, gearRatiosFor } from './character'
 import { createDefaultProfile } from './defaults'
 import { captureOrigin, deepCopy, newId } from './store'
 import type { Profile } from './schema'
@@ -50,33 +51,6 @@ const CRUISE_RPM_FRACTION: Record<Temperament, number> = {
   sportif: 0.52,
 }
 
-/** Régimes de passage, en fraction du rupteur : du premier rapport au dernier. */
-const UPSHIFT_RANGE: Record<Temperament, [number, number]> = {
-  calme: [0.42, 0.5],
-  equilibre: [0.55, 0.66],
-  sportif: [0.68, 0.82],
-}
-
-/**
- * Plancher de croisière, en fraction du rupteur.
- *
- * C'est lui qui décide jusqu'où la boîte monte quand on tient une vitesse. Un
- * tempérament calme accepte de croiser bas ; un sportif garde du régime sous le
- * pied.
- */
-const CRUISE_FLOOR: Record<Temperament, number> = {
-  calme: 0.2,
-  equilibre: 0.25,
-  sportif: 0.3,
-}
-
-/** Écart entre pied levé et pied au plancher, en fraction du rupteur. */
-const LOAD_SPREAD: Record<Temperament, number> = {
-  calme: 0.2,
-  equilibre: 0.28,
-  sportif: 0.34,
-}
-
 const K = 1 / 3.6 / (2 * Math.PI) // km/h → tours de roue par seconde, à rayon 1 m
 
 export function buildProfile(choices: WizardChoices, template: Profile): Profile {
@@ -93,14 +67,9 @@ function build(choices: WizardChoices, template: Profile): Profile {
   const engine = ENGINES[choices.engine]
   const count = Math.max(2, Math.min(9, Math.round(choices.gearCount)))
 
-  // Rapports répartis géométriquement entre un premier court et un dernier long.
-  // Une progression géométrique donne des écarts de régime égaux d'un rapport au
-  // suivant, ce qui est le propre d'une boîte bien étagée.
-  const first = 3.6
-  const last = 0.72
-  const gearRatios = Array.from({ length: count }, (_, i) =>
-    Number((first * (last / first) ** (i / (count - 1))).toFixed(3)),
-  )
+  // Rapports répartis géométriquement entre un premier court et un dernier long,
+  // par la loi partagée avec le mode simplifié.
+  const gearRatios = gearRatiosFor(count, 3.6, 0.72)
 
   const wheelRadiusM = template.drivetrain.wheelRadiusM
   const cruiseKmh = CRUISE[choices.usage]
@@ -111,22 +80,15 @@ function build(choices: WizardChoices, template: Profile): Profile {
   const wheelRps = (cruiseKmh * K) / wheelRadiusM
   const finalDrive = Number((cruiseRpm / (wheelRps * 60 * topGear)).toFixed(3))
 
-  const [from, to] = UPSHIFT_RANGE[choices.temperament]
-  const upshiftRpm = Array.from({ length: Math.max(1, count - 1) }, (_, i) => {
-    const t = count > 2 ? i / (count - 2) : 0
-    return Math.round(engine.redline * (from + (to - from) * t))
-  })
-
-  // Temporisations volontairement inégales : identiques, la boîte sonne comme un
-  // métronome. Plus courtes sur un tempérament vif.
-  const baseDelay = choices.temperament === 'sportif' ? 0.22 : choices.temperament === 'calme' ? 0.45 : 0.32
-  const shiftDelaysS = Array.from({ length: count }, (_, i) =>
-    Number((baseDelay * (i % 2 === 0 ? 1 : 1.7)).toFixed(2)),
-  )
-
   const sportiness = choices.temperament === 'sportif' ? 1 : choices.temperament === 'calme' ? 0 : 0.5
 
-  return {
+  // Le tempérament est appliqué en dernier, par la loi partagée avec le mode
+  // simplifié : le guide et le curseur global doivent dire la même chose du même
+  // tempérament, sans quoi créer un profil « vif » puis effleurer le curseur le
+  // déplacerait sans que personne l'ait demandé. Ce qui reste écrit ici est ce
+  // que le curseur ne touche pas — la mécanique du moteur choisi, l'étagement,
+  // le pont, le mixage.
+  return applySportiness({
     ...base,
     id: newId(),
     name: choices.name.trim() || 'Nouveau profil',
@@ -139,8 +101,6 @@ function build(choices: WizardChoices, template: Profile): Profile {
       idleRpm: engine.idle,
       redlineRpm: engine.redline,
       softLimitRpm: Math.round(engine.redline * 0.97),
-      inertia: 1.4 - 0.5 * sportiness,
-      freeRevRate: Math.round(engine.redline * (0.9 + 0.5 * sportiness)),
       engineBraking: Math.round(engine.redline * 0.6),
       // Un moteur de sport a un ralenti plus instable, et il tremble plus vite.
       flutterRpm: Math.round(20 + 15 * sportiness),
@@ -151,25 +111,11 @@ function build(choices: WizardChoices, template: Profile): Profile {
       gearRatios,
       finalDrive,
       wheelRadiusM,
-      shiftTimeMs: Math.round(140 - 60 * sportiness),
-      upshiftRpm,
-      upshiftLoadSpreadRpm: Math.round(engine.redline * LOAD_SPREAD[choices.temperament]),
       upshiftJitterRpm: Math.round(engine.redline * 0.02),
       minUpshiftRpm: Math.round(engine.redline * 0.34),
       downshiftAtRedlineRatio: 0.28,
       firstGearLaunchOnly: true,
       launchUpshiftKmh: choices.usage === 'ville' ? 5 : 8,
-      // Le plancher garde une marge au-dessus du ralenti : sur un diesel, la
-      // fraction du rupteur seule tomberait trop près du régime de ralenti.
-      cruiseMinRpm: Math.round(
-        Math.max(engine.idle * 1.4, engine.redline * CRUISE_FLOOR[choices.temperament]),
-      ),
-      // Un tempérament calme monte dès que la vitesse se stabilise ; un sportif
-      // garde son rapport plus longtemps avant d'y renoncer.
-      cruiseUpshiftAfterS: Number((2 + 1.6 * sportiness).toFixed(1)),
-      // Et il descend au freinage sur une décélération plus faible.
-      brakeDownshiftAccelMs2: Number((-1.1 + 0.5 * sportiness).toFixed(2)),
-      shiftDelaysS,
     },
     mix: {
       ...base.mix,
@@ -190,25 +136,7 @@ function build(choices: WizardChoices, template: Profile): Profile {
       // d'échappement : le battement entre couches y est plus large.
       layerDetuneCents: Math.round(6 + 8 * sportiness),
     },
-    feel: {
-      kickdown: {
-        ...base.feel.kickdown,
-        targetRpmFraction: 0.5 + 0.15 * sportiness,
-        maxGears: choices.temperament === 'sportif' ? 3 : 2,
-      },
-      backfire: {
-        ...base.feel.backfire,
-        enabled: choices.temperament !== 'calme',
-        minRpm: Math.round(engine.redline * 0.5),
-        intensity: 0.2 + 0.35 * sportiness,
-        count: choices.temperament === 'sportif' ? 5 : 3,
-      },
-      shiftJolt: {
-        ...base.feel.shiftJolt,
-        depth: 0.25 + 0.4 * sportiness,
-      },
-    },
-  }
+  }, sportiness)
 }
 
 /**

@@ -21,6 +21,7 @@ const STORAGE_KEY = 'speed.profiles.v1'
 const SELECTED_KEY = 'speed.selectedProfile.v1'
 const TRACES_KEY = 'speed.traces.v1'
 const VOLUME_KEY = 'speed.masterVolume.v1'
+const ADVANCED_KEY = 'speed.advancedMode.v1'
 
 /**
  * Traces conservées d'une session à l'autre.
@@ -130,6 +131,33 @@ export function saveMasterVolume(volume: number): void {
 }
 
 /**
+ * Mode avancé de l'écran de configuration : une préférence de **l'appareil**.
+ *
+ * Comme le volume, et pour la même raison : ce n'est pas un caractère de moteur.
+ * Régler au détail ou s'en tenir aux curseurs globaux dépend de ce qu'on est en
+ * train de faire, pas du profil qu'on écoute — et cela n'a donc rien à faire
+ * dans un profil partagé, ni à sauter quand on change de voix.
+ *
+ * Absent, la vue reste courte : c'est le mode simplifié qui est le défaut.
+ */
+export function loadAdvancedMode(): boolean {
+  try {
+    return localStorage.getItem(ADVANCED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function saveAdvancedMode(advanced: boolean): void {
+  try {
+    localStorage.setItem(ADVANCED_KEY, advanced ? '1' : '0')
+  } catch {
+    // Navigation privée, quota plein : la bascule marche quand même, elle ne se
+    // retient simplement pas.
+  }
+}
+
+/**
  * Volume que portait un profil enregistré par la version précédente.
  *
  * Lu **avant** toute normalisation, directement dans le stockage : c'est
@@ -212,20 +240,31 @@ function factoryOrigin(profile: Profile): ProfileOrigin {
  */
 export function resetProfileSection(profile: Profile, section: ProfileSection | 'all'): Profile {
   const origin = factoryOrigin(profile)
-  if (section === 'all') {
-    // L'identité ne se réinitialise pas, et l'origine reste attachée : on doit
-    // pouvoir y revenir autant de fois qu'on veut.
-    const remis: Profile = {
-      ...profile,
-      ...origin,
-      id: profile.id,
-      name: profile.name,
-      favorite: profile.favorite,
-    }
-    if (profile.origin) remis.origin = deepCopy(profile.origin)
-    return remis
-  }
+  if (section === 'all') return applyOrigin(profile, origin)
   return { ...profile, [section]: origin[section] }
+}
+
+/**
+ * Repose sur un profil un état relevé plus tôt.
+ *
+ * L'identité ne se réinitialise pas — identifiant, nom, statut de favori — et
+ * l'origine reste attachée : on doit pouvoir y revenir autant de fois qu'on
+ * veut.
+ *
+ * Sert à deux choses : la réinitialisation aux valeurs d'usine, et le retour en
+ * arrière après le mouvement d'un curseur global, qui écrase une dizaine de
+ * réglages d'un coup.
+ */
+export function applyOrigin(profile: Profile, origin: ProfileOrigin): Profile {
+  const remis: Profile = {
+    ...profile,
+    ...deepCopy(origin),
+    id: profile.id,
+    name: profile.name,
+    favorite: profile.favorite,
+  }
+  if (profile.origin) remis.origin = deepCopy(profile.origin)
+  return remis
 }
 
 /**
