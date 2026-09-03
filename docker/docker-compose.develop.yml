@@ -49,6 +49,11 @@ services:
       # Le même dossier que la production : c'est ce qui permet de comparer les
       # deux piles sur les mêmes réglages.
       - /volume1/docker/speed/profiles:/usr/share/nginx/html/profiles:ro
+      # Dépôt des traces enregistrées en roulant. **En lecture-écriture** : le
+      # navigateur de la voiture refuse tout téléchargement, c'est par là que les
+      # traces en sortent. Le dossier doit exister, comme celui des profils, et
+      # le dépôt exige le fichier de mots de passe ci-dessous.
+      - /volume1/docker/speed/traces:/usr/share/nginx/html/traces
       # Décommenter avec l'authentification de docker/nginx.conf :
       # - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
     healthcheck:

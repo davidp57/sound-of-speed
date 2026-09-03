@@ -123,17 +123,25 @@ L'hébergement reste chez soi, ce qui règle du même coup la question des
 
 ### 1. Créer les dossiers et déposer les échantillons — File Station
 
-Deux dossiers, sous `/volume1/docker/speed/` :
+Trois dossiers, sous `/volume1/docker/speed/` :
 
-| Dossier | Contenu |
-|---|---|
-| `audio/procar/` | les échantillons du moteur |
-| `profiles/` | les profils partagés entre appareils. **Peut rester vide** |
+| Dossier | Contenu | Accès |
+|---|---|---|
+| `audio/procar/` | les échantillons du moteur | lecture |
+| `profiles/` | les profils partagés entre appareils. **Peut rester vide** | lecture |
+| `traces/` | les trajets enregistrés en roulant, déposés depuis la voiture. **Peut rester vide** | lecture-écriture |
 
-Les deux doivent **exister avant** de déployer la pile : Docker sous DSM ne crée
+Les trois doivent **exister avant** de déployer la pile : Docker sous DSM ne crée
 pas un point de montage absent, il refuse de démarrer le conteneur avec un
-`Bind mount failed`. Un dossier `profiles/` vide suffit — et à défaut, il faut
-commenter sa ligne dans la pile, au prix de la bibliothèque de profils.
+`Bind mount failed`. Des dossiers `profiles/` et `traces/` vides suffisent — et à
+défaut, il faut commenter leur ligne dans la pile, au prix de la bibliothèque de
+profils et du dépôt de traces.
+
+`traces/` est le seul monté en écriture, et le dépôt y est **toujours**
+authentifié, même quand l'authentification générale reste désactivée : un
+dossier ouvert en écriture sur une adresse joignable de l'extérieur est une
+invitation. Il faut donc le fichier de mots de passe pour déposer, voir plus
+bas.
 
 Les échantillons restent hors de l'image : ils ne sont ni dans le dépôt ni dans
 le registre, et changer de banque sonore consistera à remplacer ces fichiers,
@@ -232,6 +240,11 @@ Le mot de passe est demandé en saisie masquée, et le fichier `htpasswd` produi
 se dépose dans `/volume1/docker/speed/` avec File Station. Il reste à
 décommenter les deux lignes `auth_basic` de `docker/nginx.conf` et le volume
 correspondant dans la pile.
+
+**Ce fichier est aussi obligatoire pour déposer une trace**, indépendamment de
+l'authentification générale : c'est le seul endroit du serveur qui accepte
+d'écrire, et il ne l'accepte que de quelqu'un qui s'annonce. Sans lui, le dépôt
+est refusé — la lecture, elle, continue de fonctionner.
 
 > Depuis le wifi de la maison, le nom DDNS résout vers l'adresse publique : sans
 > **NAT loopback** activé sur la box, l'accès échoue alors qu'il fonctionne en
