@@ -37,6 +37,25 @@ export interface GeolocationSourceOptions {
 }
 
 /**
+ * Ce que la source attend d'un fournisseur de positions.
+ *
+ * C'est la partie de `navigator.geolocation` qu'elle emploie, et rien de plus.
+ * L'écrire comme une dépendance plutôt que comme un appel en dur permet de faire
+ * lire à **ce module-ci**, sans branche conditionnelle, des positions fabriquées
+ * par le banc : les deux derniers défauts relevés en roulant — la source qui se
+ * tait, le plafond de plausibilité — vivaient précisément ici, là où un
+ * simulateur qui émet des vitesses toutes faites ne passe jamais.
+ */
+export interface PositionProvider {
+  watchPosition(
+    onPosition: (position: GeolocationPosition) => void,
+    onError: (error: GeolocationPositionError) => void,
+    options?: PositionOptions,
+  ): number
+  clearWatch(id: number): void
+}
+
+/**
  * Ce que la source a vu passer. Remonté à l'écran de télémétrie.
  *
  * Sans ces comptes, une source qui reçoit des positions et ne produit aucune
@@ -108,6 +127,14 @@ export class GeolocationSource extends SpeedSource {
     rejected: { implausible: 0, tooClose: 0, inaccurate: 0 },
   }
 
+  /**
+   * Le fournisseur employé, ou `null` pour celui du navigateur.
+   *
+   * Il est lu à chaque démarrage et non retenu à la construction : le banc se
+   * branche et se débranche pendant que l'application tourne.
+   */
+  private provider: PositionProvider | null = null
+
   constructor(private options: GeolocationSourceOptions) {
     super()
   }
@@ -116,15 +143,30 @@ export class GeolocationSource extends SpeedSource {
     this.options = options
   }
 
+  /** Branche un fournisseur de positions, ou rend la main au navigateur. */
+  setProvider(provider: PositionProvider | null): void {
+    const wasWatching = this.watchId !== null
+    if (wasWatching) this.stop()
+    this.provider = provider
+    if (wasWatching) this.start()
+  }
+
+  private currentProvider(): PositionProvider | null {
+    if (this.provider) return this.provider
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) return null
+    return navigator.geolocation
+  }
+
   start(): void {
     if (this.watchId !== null) return
-    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+    const provider = this.currentProvider()
+    if (!provider) {
       this.setStatus('unsupported')
       return
     }
 
     this.setStatus('starting')
-    this.watchId = navigator.geolocation.watchPosition(
+    this.watchId = provider.watchPosition(
       (position) => this.handlePosition(position),
       (error) => this.handleError(error),
       { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
@@ -133,7 +175,7 @@ export class GeolocationSource extends SpeedSource {
 
   stop(): void {
     if (this.watchId !== null) {
-      navigator.geolocation.clearWatch(this.watchId)
+      this.currentProvider()?.clearWatch(this.watchId)
       this.watchId = null
     }
     this.previous = null

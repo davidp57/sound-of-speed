@@ -44,6 +44,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [JOURNAL](JOURNAL/spec.md) — savoir ce que la voiture a vécu, sans avoir à le demander : journal déposé tout seul, en deux crans d'accord | 🧑 |
 | [NAVIGATEUR-VOITURE](NAVIGATEUR-VOITURE/spec.md) — ce que l'appareil réel impose : filtrer sur la précision, mesurer la largeur utile | 🧑 |
 | [DECOR-PERSPECTIVE](DECOR-PERSPECTIVE/spec.md) — un décor vu de la place du conducteur, et non de côté | ⬜ |
+| [BANC-GPS](BANC-GPS/spec.md) — éprouver toute la chaîne sans rouler : trois modes de simulation, dont un qui traverse la vraie source GPS | ✅ |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,

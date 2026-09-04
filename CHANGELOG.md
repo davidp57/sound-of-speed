@@ -8,6 +8,28 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Trois modes de simulation**, pour éprouver toute la chaîne sans rouler. Le
+  simulateur livrait jusqu'ici une vitesse parfaite à chaque image, ce qui fait
+  disparaître toute la difficulté du produit : mesuré en croisière tenue à
+  110 km/h, l'accélération vue vaut exactement zéro, quand un vrai GPS en montre
+  0,51 m/s² de pointe — un quart de la charge pleine du profil Route, sur une
+  vitesse qui ne bouge pas.
+
+  *Vitesse exacte* garde ce comportement, commode pour juger un réglage de son.
+  *Mesure GPS* livre la même vitesse à la cadence d'un récepteur (30 ms en
+  roulant, deux secondes à l'arrêt : les valeurs mesurées sur la voiture) et
+  bruitée. *Positions GPS* fabrique des positions complètes que la **vraie**
+  source GPS traite — le seul mode qui éprouve la dérivation par distance, le
+  rejet des positions trop rapprochées et le filtre de précision, c'est-à-dire
+  exactement là où vivaient les deux derniers défauts relevés en roulant. Le
+  blocage du 4 septembre se reproduit désormais au banc, sans voiture.
+
+  Une case « le récepteur annonce sa vitesse » permet d'écouter les deux cas : on
+  ne sait toujours pas ce que fait la Tesla, et l'attendre coûterait un trajet.
+
+  Mesuré au banc : écart-type de l'accélération vue de 0 en vitesse exacte, 0,177
+  en mesure GPS, 0,179 en positions.
+
 - **L'application dit quelle version elle sert**, en tête de la section
   *Appareil* de l'écran de télémétrie. Dans la voiture il n'y a ni console ni
   outils de développement, un service worker garde un cache, et rien ne
@@ -91,6 +113,17 @@ Toutes les évolutions notables du projet. Format
   été déposé.
 
 ### Modifié
+
+- **Le simulateur n'existe plus qu'en développement.** Dans une voiture il n'a
+  aucun sens, et il n'y serait qu'un moyen de se tromper sur ce qu'on entend. La
+  construction de production ne le propose pas, et la source au démarrage y
+  devient le GPS.
+
+  Ce qu'on y perd mérite d'être dit : le simulateur avait servi de test
+  discriminant en roulant — « le simulateur fonctionne encore, repasser au GPS
+  rebloque aussitôt » est la phrase qui a orienté le diagnostic du GPS muet. Le
+  journal de bord et les comptes de rejet, désormais lisibles à l'écran, le
+  remplacent en partie.
 
 - **On quitte le plein écran par une flèche de retour**, à gauche de la rangée de
   commandes, à l'écart des autres et d'une autre couleur. C'était une croix

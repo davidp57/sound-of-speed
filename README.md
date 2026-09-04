@@ -204,6 +204,45 @@ Le curseur **Allure maintenue** est un régulateur : le simulateur tient la
 vitesse choisie, comme on le fait sur autoroute, jusqu'à ce qu'on accélère ou
 qu'on freine. C'est la façon la plus simple d'écouter un régime stabilisé.
 
+### Ce que le banc fabrique
+
+Le simulateur a **trois modes**, de fidélité croissante. Ils ne changent pas sa
+physique, mais ce qu'il **émet** — et c'est là que se joue la difficulté du
+produit, car la voiture ne donne jamais sa vitesse exacte.
+
+| Mode | Ce qui sort | Ce que ça éprouve en plus |
+|---|---|---|
+| **Vitesse exacte** | une vitesse parfaite à chaque image | rien : commode pour juger un réglage de son sans le bruit du signal |
+| **Mesure GPS** | la même vitesse, à la cadence d'un récepteur et bruitée | le conditionnement sur un signal réel : extrapolation, ressort, charge qui frémit, plafond de plausibilité, chien de garde |
+| **Positions GPS** | des positions complètes, lues par la **vraie** source GPS | la source elle-même : dérivation par distance, rejet des positions trop rapprochées, filtre de précision |
+
+Les deux derniers défauts relevés en roulant — la source qui se tait, le plafond
+de plausibilité qui rejetait tout — vivaient dans ce que seul le troisième mode
+traverse. C'est la raison de l'avoir fait.
+
+Quatre réglages accompagnent les deux derniers modes : la cadence en roulant
+(30 ms, la valeur mesurée sur la voiture), la cadence à l'arrêt (le récepteur
+s'espace quand rien ne bouge), le bruit de mesure, et la précision annoncée. Le
+mode *Positions GPS* ajoute une case **« le récepteur annonce sa vitesse »** :
+décochée, la source doit dériver la vitesse de deux positions — le chemin où elle
+s'était tue. On ne sait pas encore ce que fait la Tesla, et les deux cas
+s'écoutent ici sans attendre un trajet.
+
+Mesuré au banc, en croisière tenue à 110 km/h :
+
+| | Vitesse exacte | Mesure GPS | Positions GPS |
+|---|---|---|---|
+| Écart-type de l'accélération vue | 0 | 0,177 m/s² | 0,179 m/s² |
+| Pointe d'accélération | 0 | 0,51 m/s² | 0,48 m/s² |
+
+Un quart de la charge pleine du profil Route en pointe, sur une vitesse qui ne
+bouge pas : voilà ce que le premier mode cache.
+
+**Le simulateur n'existe qu'en développement.** Dans une voiture il n'a aucun
+sens, et il n'y serait qu'un moyen de se tromper sur ce qu'on entend. La
+construction de production ne le propose pas, et la source au démarrage y est
+donc le GPS.
+
 Autres commandes :
 
 ```bash
@@ -1445,6 +1484,7 @@ chaque essai.
 | 24 | Ce que l'appareil réel impose : positions imprécises écartées, largeur utile, verrou d'écran et autorisation GPS affichés | fait, reste à relever en roulant |
 | 25 | Un étalonnage ne s'applique qu'entier, et une source qui rejette tout dit pourquoi | fait, reste à rouler |
 | 26 | Une manette Xbox conduit le simulateur, gâchettes analogiques comprises | fait |
+| 27 | Trois modes de simulation, dont un qui traverse la vraie source GPS | fait |
 | — | Déposer une trace et un profil depuis l'application | prévu |
 | — | Plusieurs banques de son, choisies par profil | prévu |
 | — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | à remesurer |
