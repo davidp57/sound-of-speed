@@ -54,6 +54,49 @@ nombre de cœurs annoncé. Un chiffre sans son contexte ne se relit pas trois
 semaines plus tard — et le relevé du poste de David n'a pas la même valeur que
 celui de la voiture.
 
+## Ce que coûte WebAssembly, mesuré
+
+Le rapport de faisabilité donnait des chiffres **natifs**. Il manquait le facteur
+de conversion vers WebAssembly, sans quoi le relevé de la sonde ne se compare à
+rien. Mesuré ici, sur deux noyaux repris du vrai code — une convolution par
+produit direct, qui pèse 65 % du coût audio, et un solveur itératif comme celui
+des contraintes du vilebrequin :
+
+| Noyau | Natif, g++ -O2 | WebAssembly, Chromium | Surcoût |
+|---|---|---|---|
+| Convolution, 48 000 sorties sur 10 000 points | 0,308 s | 0,410 s | ×1,33 |
+| Solveur, 100 000 pas de 8 itérations | 0,219 s | 0,254 s | ×1,16 |
+
+Deux passes, écarts sous 1 %. **WebAssembly coûte donc 16 à 33 % de plus que le
+natif**, bien moins que le facteur deux qu'on avance souvent.
+
+Le banc recoupe au passage la mesure du rapport de faisabilité : 0,308 s pour
+48 000 échantillons ici, contre 0,266 s pour 44 100 sur le vrai code, soit le
+même ordre à 8 % près.
+
+Ce qui reste inconnu est donc **le seul rapport entre ce poste et la voiture** —
+et c'est exactement ce que la sonde va chercher.
+
+## Une fausse piste, pour qu'on ne la reprenne pas
+
+Le service worker a été soupçonné de bloquer le chargement d'un module
+WebAssembly : un fichier servi correctement — 200, type `application/wasm`,
+vérifié à la ligne de commande — restait impossible à charger depuis la page, et
+il s'est chargé après désinscription. Un correctif a été écrit sur cette base,
+puis **annulé**.
+
+En cherchant à le reproduire, tout échouait de la même façon, y compris
+`/index.html` et le chemin qu'on venait d'exempter, pendant que le serveur
+répondait en deux millisecondes à la ligne de commande. Ce n'était donc pas le
+service worker mais **la connexion du navigateur de mise au point**, instable
+pendant que plusieurs chantiers écrivaient dans le dossier. La corrélation entre
+la désinscription et le retour à la normale était fortuite.
+
+Ce qu'il faut en retenir pour la sonde : **une page qui ne charge pas dans la
+voiture ne prouve rien à elle seule**. La sonde doit distinguer une panne de
+réseau d'un refus du service worker et le dire à l'écran, sans quoi le verdict
+du lot se jouera sur une ambiguïté du même genre.
+
 ## Critères d'acceptation
 
 - [ ] Le cœur compile en WebAssembly, sans interface, sans piranha
@@ -63,4 +106,8 @@ celui de la voiture.
 - [ ] Elle est servie par le même nginx que l'application, pour s'ouvrir dans la
       voiture comme le reste
 - [ ] Le poids du `.wasm` est indiqué : il devra être mis en cache hors réseau
+- [ ] La page se charge avec le service worker actif, module compris — vérifié,
+      pas supposé
+- [ ] Quand un chargement échoue, la page dit **pourquoi** : réseau injoignable,
+      module absent, ou service worker qui l'intercepte
 - [ ] 🧑 Relevé fait dans la Tesla, et le chiffre écrit dans le ticket 02
