@@ -51,6 +51,15 @@ export interface ConditionedSpeed {
   accelMs2: number
   /** Dernière vitesse brute reçue, en km/h. Pour l'écran de télémétrie. */
   rawKmh: number
+  /**
+   * Vrai si la dernière mesure a été déduite de deux positions plutôt que lue.
+   *
+   * Le drapeau existe depuis le premier jour dans `SpeedSample` et n'était
+   * affiché nulle part. C'est ce qui a rendu invisible pendant une semaine un
+   * défaut du repli par distance : rien ne disait par lequel des deux chemins la
+   * vitesse arrivait.
+   */
+  derived: boolean
   /** Pente estimée sur la fenêtre glissante, en km/h par seconde. */
   slopeKmhS: number
   /** Temps écoulé depuis la dernière mesure, en millisecondes. */
@@ -77,6 +86,7 @@ export class SpeedConditioner {
   private gaps: number[] = []
 
   private rawKmh = 0
+  private derived = false
   private slopeKmhS = 0
   private targetKmh = 0
   private smoothedKmh = 0
@@ -107,6 +117,7 @@ export class SpeedConditioner {
     this.history = []
     this.gaps = []
     this.rawKmh = 0
+    this.derived = false
     this.slopeKmhS = 0
     this.targetKmh = 0
     this.smoothedKmh = 0
@@ -147,6 +158,7 @@ export class SpeedConditioner {
     this.lastSampleAt = sample.at
     this.lastSampleReceivedAt = Date.now()
     this.rawKmh = kmh
+    this.derived = sample.derived
     this.targetKmh = kmh
 
     this.history.push({ at: sample.at, kmh })
@@ -265,8 +277,26 @@ export class SpeedConditioner {
 
     this.integrate(step)
 
+    // L'accélération rendue est la **pente estimée**, et non la vitesse de la
+    // masse du ressort.
+    //
+    // Les deux mesurent la même chose et l'une est bien meilleure que l'autre.
+    // Le ressort a pour métier de rattraper une cible qui saute à chaque mesure,
+    // sans la dépasser : sa vitesse porte donc tout le bruit du GPS, et le
+    // retard qui va avec. Mesuré sur une vitesse parfaitement tenue à la cadence
+    // rapide, avec un bruit de mesure de ±1 km/h : 0,83 m/s² d'écart-type et des
+    // pointes à 2,2 pour la vitesse du ressort, 0,10 et 0,4 pour la pente. Sur
+    // une reprise établie à 2 m/s², le ressort lit 1,96 et la pente 2,00.
+    //
+    // Ce n'est pas cosmétique : cette valeur décide la charge, donc le fondu
+    // entre les couches, et elle décide les passages de la boîte. À 0,83 m/s²
+    // de bruit, la boîte changeait de rapport une dizaine de fois par minute sur
+    // une vitesse tenue, et jusqu'à quarante-trois fois avec le curseur de
+    // réactivité au maximum.
+    //
+    // La pente était déjà calculée ici, et ne servait qu'à l'extrapolation.
     this.accelMs2 = clamp(
-      this.springRate / 3.6,
+      this.slopeKmhS / 3.6,
       this.preset.minAccelMs2,
       this.preset.maxAccelMs2,
     )
@@ -277,6 +307,7 @@ export class SpeedConditioner {
       kmh: this.smoothedKmh,
       accelMs2: this.accelMs2,
       rawKmh: this.rawKmh,
+      derived: this.derived,
       slopeKmhS: this.slopeKmhS,
       sinceLastSampleMs,
       recentGapsMs: [...this.gaps],
