@@ -26,6 +26,7 @@ import {
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
 import { analyzeSession, overridesFor, withCalibration } from './core/calibration/onboard'
+import type { CalibrationStepId } from './core/calibration/protocol'
 import { deposit, type DepositOutcome } from './core/deposit/deposit'
 import { loadCalibration, saveCalibration, type CalibrationSession } from './core/calibration/store'
 import {
@@ -97,6 +98,19 @@ export const activeProfile = computed<Profile>(() => {
  */
 export const calibration = ref<CalibrationSession>(loadCalibration())
 
+/**
+ * Étape d'étalonnage dont l'enregistrement est en cours.
+ *
+ * Elle vit ici, et non dans l'écran d'étalonnage, parce que les écrans sont
+ * démontés quand on change d'onglet : l'étape était alors perdue tandis que
+ * l'enregistrement continuait. Au retour, l'application savait qu'un
+ * enregistrement tournait mais plus lequel, toutes les étapes s'annonçaient
+ * occupées par une autre, et plus aucun bouton ne permettait de l'arrêter. Il
+ * suffisait d'aller regarder l'écran de conduite — ce que fait forcément
+ * quelqu'un qui roule — pour condamner l'écran jusqu'au rechargement.
+ */
+export const calibrationStep = ref<CalibrationStepId | null>(null)
+
 export function setCalibration(session: CalibrationSession): boolean {
   calibration.value = session
   return saveCalibration(session)
@@ -155,6 +169,19 @@ export const isRunning = ref(false)
 const fixWatchdog = new FixWatchdog()
 /** Nombre de relances du suivi, pour l'écran de télémétrie. */
 export const fixRestarts = ref(0)
+/**
+ * Ce que la source GPS a vu passer, pour l'écran de télémétrie.
+ *
+ * Une source qui reçoit des positions sans en tirer aucune vitesse donne le même
+ * écran qu'une source qui ne reçoit rien : une vitesse figée. Ces comptes sont
+ * ce qui distingue les deux, et leur absence a coûté une semaine.
+ */
+export const fixStats = ref({
+  received: 0,
+  emitted: 0,
+  implausible: 0,
+  tooClose: 0,
+})
 export const isRecording = ref(false)
 export const recordedCount = ref(0)
 export const traces = ref<Trace[]>(loadTraces())
@@ -228,13 +255,11 @@ export function setAdvancedMode(value: boolean): void {
  * par le magasin de profils, et ne sont pas redemandées à chaque ouverture.
  *
  * Le tableau de bord est le visage par défaut : c'est en conduisant que l'écran
- * est regardé. Le décor, lui, est absent par défaut — c'est de l'agrément, et un
- * navigateur de bord ancien n'a pas à le payer sans qu'on l'ait demandé.
+ * est regardé.
  */
 export type DriveFace = 'dials' | 'numbers'
 
 const FACE_KEY = 'speed.driveFace.v1'
-const SCENERY_KEY = 'speed.scenery.v1'
 
 function readPreference(key: string): string | null {
   try {
@@ -257,16 +282,10 @@ function writePreference(key: string, value: string): void {
 export const driveFace = ref<DriveFace>(
   readPreference(FACE_KEY) === 'numbers' ? 'numbers' : 'dials',
 )
-export const sceneryOn = ref(readPreference(SCENERY_KEY) === '1')
 
 export function setDriveFace(face: DriveFace): void {
   driveFace.value = face
   writePreference(FACE_KEY, face)
-}
-
-export function setSceneryOn(value: boolean): void {
-  sceneryOn.value = value
-  writePreference(SCENERY_KEY, value ? '1' : '0')
 }
 
 /**
@@ -308,6 +327,7 @@ export const telemetry = shallowRef<Telemetry>({
     kmh: 0,
     accelMs2: 0,
     rawKmh: 0,
+    derived: false,
     slopeKmhS: 0,
     sinceLastSampleMs: 0,
     recentGapsMs: [],
@@ -481,6 +501,16 @@ function step(dt: number): void {
     geolocation.stop()
     geolocation.start()
     fixRestarts.value = fixWatchdog.restarts
+  }
+
+  if (sourceKind.value === 'geolocation') {
+    const stats = geolocation.stats
+    fixStats.value = {
+      received: stats.received,
+      emitted: stats.emitted,
+      implausible: stats.rejected.implausible,
+      tooClose: stats.rejected.tooClose,
+    }
   }
 
   if (sourceKind.value === 'replay') replayProgress.value = replay.progress
@@ -835,6 +865,10 @@ export function importTraces(text: string): number {
 export function stopRecording(name: string): Trace | null {
   const trace = recorder.stop(name || `trace ${traces.value.length + 1}`)
   isRecording.value = false
+  // L'étape d'étalonnage ne survit pas à l'arrêt, d'où qu'il vienne : un
+  // enregistrement arrêté depuis l'écran de télémétrie laissait sinon une étape
+  // annoncée en cours pour toujours.
+  calibrationStep.value = null
   if (trace.samples.length === 0) return null
   traces.value = [...traces.value, trace]
   return trace

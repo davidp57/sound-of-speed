@@ -9,6 +9,7 @@ import {
   activeProfile,
   applyCalibrationSetting,
   calibration,
+  calibrationStep,
   setCalibration,
   isRecording,
   isRunning,
@@ -40,8 +41,14 @@ import {
  * se répercuter tout de suite sur ce qu'on entend.
  */
 const session = calibration
-/** Étape dont l'enregistrement est en cours. */
-const active = ref<CalibrationStepId | null>(null)
+/**
+ * Étape dont l'enregistrement est en cours.
+ *
+ * Elle vient de l'état de l'application, et non d'un `ref` local : cet écran est
+ * démonté dès qu'on change d'onglet, et l'étape se perdait alors que
+ * l'enregistrement continuait.
+ */
+const active = calibrationStep
 const storageError = ref('')
 
 /**
@@ -126,10 +133,22 @@ function onStart(step: CalibrationStepId): void {
 
 function onStop(): void {
   const step = active.value
-  active.value = null
   const label = CALIBRATION_STEPS.find((entry) => entry.id === step)?.label ?? 'étape'
+  // `stopRecording` remet l'étape à zéro : on la relève avant.
   const trace = stopRecording(`étalonnage — ${label}`)
   if (step && trace) remember(step, trace.startedAt)
+}
+
+/**
+ * Arrête un enregistrement dont cet écran ne connaît pas l'étape.
+ *
+ * Il n'est pas perdu pour autant : il rejoint la liste des traces, où il se
+ * rejoue et se rattache à la main. Ce qui compte est qu'aucun état n'enferme
+ * l'écran — l'enregistrement tournait sans qu'on puisse l'arrêter, et
+ * continuait d'accumuler des mesures.
+ */
+function onStopUnknown(): void {
+  stopRecording('enregistrement libre')
 }
 
 function onForget(step: CalibrationStepId): void {
@@ -251,6 +270,18 @@ function gap(setting: NonNullable<Suggestion['setting']>): string {
     <p class="note">
       Profil mesuré : <strong>{{ activeProfile.name }}</strong>. Chaque étape vaut
       séparément — un freinage franc ne se commande pas au milieu du trafic.
+    </p>
+    <!--
+      Un enregistrement dont cet écran ne connaît pas l'étape — lancé depuis
+      l'écran de télémétrie, par exemple. Il reste arrêtable : sans ce bouton,
+      toutes les étapes s'annonçaient occupées et rien ne permettait plus d'en
+      sortir, l'enregistrement continuant d'accumuler des mesures.
+    -->
+    <p v-if="isRecording && active === null" class="warn-bar">
+      Un enregistrement est en cours, lancé hors de cet écran.
+      <button class="is-active" @click="onStopUnknown()">
+        L’arrêter ({{ recordedCount }} mesures)
+      </button>
     </p>
     <p v-if="!isRunning" class="error">
       Rien ne tourne : démarrez l’application avant d’enregistrer une étape.
@@ -496,5 +527,15 @@ h3 {
 .error {
   color: var(--warn);
   margin: 0.5rem 0 0;
+}
+
+/* Un enregistrement lancé ailleurs : il se voit et s'arrête d'un geste. */
+.warn-bar {
+  align-items: center;
+  color: var(--warn);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0 0 0.7rem;
 }
 </style>

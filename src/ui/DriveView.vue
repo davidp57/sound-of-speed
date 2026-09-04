@@ -2,17 +2,14 @@
 import { computed, ref } from 'vue'
 
 import DialGauge from './components/DialGauge.vue'
-import ScrollingScenery from './components/ScrollingScenery.vue'
 import {
   activateAudio,
   activeProfile,
   driveFace,
   favoriteProfiles,
   masterVolume,
-  sceneryOn,
   setDriveFace,
   setMasterVolume,
-  setSceneryOn,
   selectProfile,
   selectedProfileId,
   audioStatus,
@@ -40,6 +37,14 @@ import {
 } from '../state'
 
 withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
+
+/**
+ * Quitter le plein écran.
+ *
+ * L'état est tenu par `App.vue`, qui commande aussi l'API plein écran du
+ * navigateur : cet écran ne fait que déclarer l'intention.
+ */
+const emit = defineEmits<{ exit: [] }>()
 
 const SOURCES: { id: SourceKind; label: string }[] = [
   { id: 'simulator', label: 'Simulateur' },
@@ -160,28 +165,25 @@ const SPEED_STEP_KMH = 20
     </section>
 
     <!--
-      Les deux visages de l'écran, et le décor.
+      Les deux visages de l'écran.
       Les cadrans se lisent mieux en roulant ; on ne règle pas un profil sur une
       aiguille, où cent tours d'écart ne se voient pas. Le choix est une
       préférence de l'appareil, retenue d'une ouverture à l'autre.
+
+      Le décor qui défilait derrière les cadrans est retiré : il défilait de
+      côté, comme un jeu de plateforme, là où une vue depuis la place du
+      conducteur défile en perspective, d'avant en arrière. Il reviendra
+      autrement, et le code de l'ancien est dans l'historique.
     -->
     <section v-if="!immersive" class="face-switch">
       <button :aria-pressed="driveFace === 'dials'" @click="setDriveFace('dials')">Cadrans</button>
       <button :aria-pressed="driveFace === 'numbers'" @click="setDriveFace('numbers')">
         Chiffres
       </button>
-      <button
-        v-if="driveFace === 'dials'"
-        :aria-pressed="sceneryOn"
-        @click="setSceneryOn(!sceneryOn)"
-      >
-        Paysage
-      </button>
+
     </section>
 
     <section v-if="driveFace === 'dials'" class="dashboard">
-      <ScrollingScenery v-if="sceneryOn" />
-
       <div class="cell speed">
         <DialGauge
           :value="telemetry.speed.kmh"
@@ -232,15 +234,28 @@ const SPEED_STEP_KMH = 20
       </div>
     </section>
 
+    <!--
+      La sortie du plein écran est à gauche, à l'écart des autres et d'une autre
+      couleur. Elle était auparavant une croix flottante en haut à droite, en
+      transparence et sans fond, posée **par-dessus** la rangée des profils
+      épinglés : quitter le plein écran recouvrait changer de profil. Une flèche
+      de retour dit ce qu'elle fait sans qu'on ait à le lire.
+    -->
     <section v-if="immersive" class="immersive-controls">
-      <button :class="{ 'is-active': !isMuted }" @click="toggleAudio()">
-        {{ isMuted ? 'Son coupé' : 'Son actif' }}
+      <button class="exit" title="Quitter le plein écran" @click="emit('exit')">
+        <span aria-hidden="true">←</span>
+        <span class="sr-only">Quitter le plein écran</span>
       </button>
-      <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
-        {{ manual ? 'Manuelle' : 'Auto' }}
-      </button>
-      <button :disabled="!manual" @click="shiftDown()">−</button>
-      <button :disabled="!manual" @click="shiftUp()">+</button>
+      <div class="immersive-group">
+        <button :class="{ 'is-active': !isMuted }" @click="toggleAudio()">
+          {{ isMuted ? 'Son coupé' : 'Son actif' }}
+        </button>
+        <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
+          {{ manual ? 'Manuelle' : 'Auto' }}
+        </button>
+        <button :disabled="!manual" @click="shiftDown()">−</button>
+        <button :disabled="!manual" @click="shiftUp()">+</button>
+      </div>
     </section>
 
     <section v-else class="controls">
@@ -558,14 +573,49 @@ const SPEED_STEP_KMH = 20
 }
 
 .immersive-controls {
+  display: flex;
+  gap: 1.4rem;
+}
+
+.immersive-group {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  flex: 1;
   gap: 0.5rem;
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .immersive-controls button {
   padding: 1.1rem 0.5rem;
   font-size: 1.05rem;
+}
+
+/*
+ * La touche de sortie : à part, et d'une autre couleur.
+ *
+ * L'écart avec le groupe est plus large que celui qui sépare les commandes entre
+ * elles — c'est lui qui empêche de la presser en visant la voisine. Et elle ne
+ * porte pas la couleur des commandes de conduite : ce qu'elle fait n'est pas de
+ * la même nature.
+ */
+.exit {
+  background: transparent;
+  border-color: var(--muted);
+  color: var(--muted);
+  flex: 0 0 auto;
+  font-size: 1.6rem;
+  line-height: 1;
+  min-width: 3.6rem;
+  padding: 1.1rem 0.5rem;
+}
+
+/* Le libellé est lu par les lecteurs d'écran, la flèche parle aux autres. */
+.sr-only {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 /*

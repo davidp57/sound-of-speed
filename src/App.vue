@@ -201,7 +201,11 @@ onBeforeUnmount(() => {
     </div>
 
     <main class="content">
-      <DriveView v-if="tab === 'drive' || immersive" :immersive="immersive" />
+      <DriveView
+        v-if="tab === 'drive' || immersive"
+        :immersive="immersive"
+        @exit="toggleImmersive()"
+      />
       <TelemetryView v-else-if="tab === 'telemetry'" />
       <CalibrationPanel v-else-if="tab === 'calibration'" />
       <ConfigView v-else />
@@ -214,9 +218,6 @@ onBeforeUnmount(() => {
 
     <HelpView v-if="helpOpen" @close="closeHelp()" />
 
-    <button v-if="immersive" class="escape" title="Quitter le plein écran" @click="toggleImmersive()">
-      ×
-    </button>
   </div>
 </template>
 
@@ -291,23 +292,6 @@ onBeforeUnmount(() => {
 
 .immersive .content {
   padding: 0;
-}
-
-.escape {
-  position: fixed;
-  top: 0.5rem;
-  right: 0.5rem;
-  width: 2.2rem;
-  height: 2.2rem;
-  padding: 0;
-  line-height: 1;
-  font-size: 1.2rem;
-  opacity: 0.35;
-  background: transparent;
-}
-
-.escape:hover {
-  opacity: 1;
 }
 
 .banner {

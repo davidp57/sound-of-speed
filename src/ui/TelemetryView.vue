@@ -8,6 +8,7 @@ import {
   activeProfile,
   audioStatus,
   fixRestarts,
+  fixStats,
   deleteTrace,
   exportTraces,
   importTraces,
@@ -189,6 +190,30 @@ function onRateChange(event: Event): void {
         :value="telemetry.speed.slopeSamples"
         hint="Nombre de mesures qui servent à estimer la pente. Plus il est grand, plus l'estimation est sûre. À deux, on est à la limite : il n'y a rien à moyenner."
       />
+      <ValueRow
+        label="Origine de la vitesse"
+        :value="telemetry.speed.derived ? 'déduite' : 'lue'"
+        :warn="telemetry.speed.derived"
+        hint="« Lue » : le navigateur donne la vitesse. « Déduite » : il ne la donne pas, et elle est calculée depuis la distance entre deux positions — ce qui demande deux positions assez espacées, et rend le suivi plus fragile."
+      />
+      <template v-if="sourceKind === 'geolocation'">
+        <ValueRow
+          label="Positions reçues"
+          :value="fixStats.received"
+          hint="Ce que le navigateur a livré depuis le démarrage du suivi."
+        />
+        <ValueRow
+          label="Vitesses produites"
+          :value="fixStats.emitted"
+          :warn="fixStats.received > 20 && fixStats.emitted === 0"
+          hint="Ce qui en est ressorti. À vitesse déduite, il en faut deux positions assez espacées pour en tirer une : l'écart est normal. Un compte à zéro alors que les positions arrivent veut dire que la source ne délivre plus rien, et c'est ce défaut-là qui immobilisait la vitesse."
+        />
+        <ValueRow
+          label="Rejets"
+          :value="`${fixStats.implausible} aberrantes · ${fixStats.tooClose} trop proches`"
+          hint="Les aberrantes dépassent la vitesse plausible et ne sont pas transmises. Les trop proches n'ont pas assez d'écart avec la position de référence, qui est alors conservée en attendant la suivante."
+        />
+      </template>
       <ValueRow label="Durée d'image" :value="fixed(telemetry.frameMs)" unit="ms" />
     </section>
 
