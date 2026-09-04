@@ -1,6 +1,6 @@
 # 01 — Remesurer, et dire si le lot vaut encore
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — le lot continue, inchangé
 
 **Bloqué par :** aucun, peut démarrer tout de suite — mais n'a de sens qu'après
 avoir roulé avec [PENTE](../../PENTE/spec.md)
@@ -34,3 +34,22 @@ insuffisant et le lot continue.
 - [ ] La conclusion est écrite : le lot continue, se réduit, ou s'abandonne
 - [ ] 🧑 Confirmé en roulant : une reprise douce s'entend, ou ne s'entend toujours
       pas
+
+## Conclusion, le 4 septembre 2026
+
+**Le lot continue, sans réduction de périmètre.** Le tableau des charges refait
+au banc, sur la version qui corrige la pente et l'accélération, donne 0,50 à
+toute vitesse tenue — de l'arrêt à 130 km/h. Le défaut n'était donc pas un
+artefact du bruit de mesure, et la solution écrite dans la spec garde sa raison
+d'être.
+
+Le tableau des **niveaux en décibels** n'a pas été refait : il demande le niveau
+efficace de chaque échantillon, et les échantillons vivent dans un volume du NAS.
+Les charges, elles, suffisent à trancher — les niveaux s'en déduisent par le
+mixage, qui n'a pas changé.
+
+Relevé aussi : la roue libre à 110 km/h donne 0,07, contre 0,33 dans la spec.
+L'écart vient de la correction de l'accélération, qui voit désormais la
+décélération réelle au lieu d'un signal bruité. Le contraste entre pied levé et
+croisière est donc **déjà** meilleur qu'annoncé, ce qui ne change pas la
+conclusion : c'est la croisière qui est plate.

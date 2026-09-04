@@ -150,6 +150,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Les deux modes de banc qui imitent un GPS fournissaient une pédale que la
+  voiture n'a pas.** La charge se déduit de l'accélération quand la position de
+  l'accélérateur est inconnue, et se lit directement dessus quand elle l'est —
+  or elle était transmise dès que la source était le simulateur, mode compris.
+  Les trois modes s'entendaient donc pareil : le calcul de charge réel n'était
+  jamais exercé. Mesuré après correction, en croisière tenue à 110 km/h : charge
+  de 0 en vitesse exacte, 0,50 en mesure GPS et en positions, avec un
+  frémissement de 0,024 à 0,029 que le mode exact ne montre pas.
+
+
 - **Un étalonnage incomplet pouvait figer la vitesse.** Relevé en roulant le
   4 septembre 2026 : la seule étape de ville enregistrée, prise dans un bouchon à
   moins de 30 km/h, portait la vitesse plausible maximale de 260 à 40 km/h. Cette

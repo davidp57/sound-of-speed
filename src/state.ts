@@ -587,6 +587,17 @@ function benchDrives(): boolean {
   return sourceKind.value === 'simulator' && simulationMode.value === 'positions'
 }
 
+/**
+ * La position de l'accélérateur est-elle une information dont dispose le moteur ?
+ *
+ * Seulement au simulateur en vitesse exacte. Dès que le banc imite un GPS, non :
+ * la voiture ne dit pas ce que fait le pied, et c'est précisément la difficulté
+ * qu'on veut mettre à l'épreuve.
+ */
+function padThrottleKnown(): boolean {
+  return sourceKind.value === 'simulator' && simulationMode.value === 'perfect'
+}
+
 // Chaque source alimente le même conditionneur, et l'enregistreur écoute au
 // passage : on peut donc capturer aussi bien un trajet réel qu'une session au
 // clavier, ce qui rend les cas de test reproductibles.
@@ -671,7 +682,12 @@ function step(dt: number): void {
     wheelRadiusM: profile.drivetrain.wheelRadiusM,
     atStandstill: speed.atStandstill,
     isShifting: gearboxState.isShifting,
-    throttle: sourceKind.value === 'simulator' ? simulator.getThrottle() : null,
+    // La pédale n'est connue qu'en « vitesse exacte ». Dès que le banc imite un
+    // GPS, elle ne l'est plus — c'est tout le sujet : une voiture ne dit pas ce
+    // que fait le pied, et la charge doit se déduire de l'accélération mesurée.
+    // La transmettre quand même faisait que les trois modes s'entendaient
+    // pareil : le calcul de charge réel n'était jamais exercé.
+    throttle: padThrottleKnown() ? simulator.getThrottle() : null,
   })
 
   // Pétarade : elle se déclenche au lever de pied, pas pendant qu'on décélère.

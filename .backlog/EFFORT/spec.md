@@ -1,44 +1,36 @@
 # EFFORT — la charge doit connaître la vitesse
 
-**Statut :** ⬜ prêt — et devenu urgent, voir en tête
+**Statut :** 🔄 en cours
 **Branche :** à créer
 **Version visée :** 0.3 — **après [PENTE](../PENTE/spec.md)**
 
-## Ce qui a changé le 4 septembre au soir, et qui rend ce lot urgent
+## Remesuré le 4 septembre 2026, après PENTE et après ESSAI-04
 
-**La charge est devenue strictement binaire.** Mesuré au banc, profil Route,
-toutes vitesses tenues au régulateur :
+C'est ce que demandait le ticket 01, et **la conclusion est que le lot continue,
+inchangé**. Relevé au banc en mode « positions GPS », donc sans pédale, comme
+dans la voiture :
 
-| Situation | Charge | Régime |
-|---|---|---|
-| Arrêt, au ralenti | 0 | 800 |
-| 30 km/h tenu | 0 | 1820 |
-| 50 km/h tenu | 0 | 1532 |
-| 90 km/h tenu | 0 | 1927 |
-| 110 km/h tenu | 0 | 2355 |
-| 130 km/h tenu | 0 | 2784 |
-| Reprise franche | 1,00 | 3541 |
+| Situation | Charge | Régime | Rapport |
+|---|---|---|---|
+| Arrêt, au ralenti | 0,52 | 800 | 1 |
+| 30 km/h tenu | 0,50 | 1798 | 2 |
+| 50 km/h tenu | 0,50 | 1542 | 4 |
+| 90 km/h tenu | 0,51 | 1935 | 6 |
+| 110 km/h tenu | 0,50 | 2353 | 6 |
+| 130 km/h tenu | 0,50 | 2770 | 6 |
+| 110 km/h roue libre | 0,07 | — | — |
 
-Zéro partout, un en accélération. Le tableau plus bas dans cette page annonce
-0,50 en croisière : **il est périmé**, et l'écart n'est pas une erreur de mesure.
+Un demi partout, de l'arrêt à 130 km/h. Le défaut décrit plus bas est donc
+intact après la correction de la pente : ce n'était pas un artefact du bruit de
+mesure, et les chiffres de la spec tiennent.
 
-La cause est le correctif d'ESSAI-04 qui fait venir l'accélération de la pente
-estimée, et non plus de la vitesse du ressort de lissage. Avant, le ressort
-portait tout le bruit du GPS — 0,83 m/s² d'écart-type sur une vitesse
-parfaitement tenue — et cette agitation produisait à elle seule une charge à
-mi-course en permanence. **Le peu de vie qu'avait la croisière venait d'un
-défaut de mesure.** Le défaut corrigé, la croisière est tombée à zéro : le
-moteur est pied levé du ralenti à 130 km/h.
-
-Conséquence pour ce lot : il ne s'agit plus d'affiner une croisière plate mais
-de lui rendre une charge, laquelle n'existe plus du tout. Et il n'a plus à
-attendre de nouveaux chiffres — ceux-ci sont pris après PENTE et après le
-correctif d'accélération.
-
-Relevé aussi : les trois modes du banc ([BANC-GPS](../BANC-GPS/spec.md)) donnent
-la **même** charge au dix-millième en reprise (0,98) et zéro en croisière. Le
-bruit du signal tombe dans les deux zones saturées du modèle, où il ne peut plus
-rien faire — c'est pourquoi les trois modes s'entendent pareil.
+**Une fausse piste, écartée le soir même.** Une première mesure donnait une
+charge nulle en croisière et 1,00 en reprise, ce qui aurait voulu dire que le
+modèle était devenu binaire. C'était un artefact du banc : au simulateur en
+vitesse exacte, la charge vient de la **pédale**, pas de l'accélération, et le
+régulateur tenait sa vitesse pédale relâchée. Les modes qui imitent un GPS ne
+transmettent plus la pédale depuis — sans quoi ils n'éprouvaient pas le calcul
+qu'ils étaient censés éprouver.
 
 ## À lire d'abord
 
