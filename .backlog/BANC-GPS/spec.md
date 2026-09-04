@@ -69,10 +69,10 @@ remplacent en partie, et ils sont désormais lisibles à l'écran.
 
 Conséquence : en production, la source par défaut au démarrage devient le GPS.
 
-Ce qui reste ouvert, et qui appartient à David : faut-il une **porte de secours**
-— un paramètre d'adresse qui ramène le simulateur en production — pour retrouver
-le test discriminant en roulant le jour où quelque chose se fige ? Cela tient en
-une ligne, et n'encombre aucun écran.
+Une porte de secours a été proposée — un paramètre d'adresse qui ramènerait le
+simulateur en production, pour retrouver le test discriminant en roulant.
+**Écartée par David le 4 septembre 2026.** Le diagnostic sur route passe par le
+journal de bord et les comptes de rejet, qui sont faits pour ça.
 
 ## Hors périmètre
 
