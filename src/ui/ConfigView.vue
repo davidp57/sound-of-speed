@@ -50,6 +50,7 @@ import {
   libraryLoading,
   refreshLibrary,
   calibrationOverrides,
+  calibrationMissing,
   depositCredentials,
   journalConsent,
   journalDeposits,
@@ -453,6 +454,19 @@ async function analyzeAll(): Promise<void> {
   }
 }
 
+/**
+ * Une valeur d'étalonnage, avec son unité. Un tableau se lit d'une traite :
+ * les seuils de passage n'ont de sens que les uns par rapport aux autres.
+ */
+function showOverride(
+  value: number | number[],
+  entry: { unit: string; decimals: number },
+): string {
+  const one = (v: number): string => v.toFixed(entry.decimals)
+  const body = Array.isArray(value) ? value.map(one).join(' / ') : one(value)
+  return `${body} ${entry.unit}`
+}
+
 /** Taille lisible, pour l'état du cache hors réseau. */
 function megabytes(bytes: number): string {
   return `${(bytes / 1048576).toFixed(1)} Mo`
@@ -744,8 +758,23 @@ function impliedCylinders(index: number): number | null {
           inchangé — c'est la valeur mesurée que le moteur emploie.
         </p>
         <ul class="note">
-          <li v-for="entry in calibrationOverrides" :key="entry.path">{{ entry.label }}</li>
+          <li v-for="entry in calibrationOverrides" :key="entry.path">
+            {{ entry.label }} — <strong>{{ showOverride(entry.proposed, entry) }}</strong>
+            au lieu de {{ showOverride(entry.current, entry) }}
+          </li>
         </ul>
+      </div>
+
+      <div v-else-if="calibrationMissing.length > 0" class="calibrated">
+        <p class="note">
+          <strong>L'étalonnage ne s'applique pas</strong> : il manque
+          {{ calibrationMissing.join(', ').toLowerCase() }}. Un étalonnage
+          incomplet décrit le bout de route enregistré, pas la voiture — une
+          seule étape de ville dans un bouchon a déjà plafonné la vitesse
+          acceptée à 40 km/h, au-delà de laquelle plus rien ne bougeait. Les
+          mesures déjà prises restent visibles dans l'écran d'étalonnage, et se
+          recopient à la main.
+        </p>
       </div>
 
       <div class="deposit">
