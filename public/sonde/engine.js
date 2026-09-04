@@ -32,6 +32,12 @@ const WASM_URL = './probe.wasm'
 /** Longueur de la réponse impulsionnelle, en échantillons. */
 const IMPULSE_SAMPLES = 10000
 
+/**
+ * Huit cylindres : c'est le moteur visé, et il coûte le double d'un quatre.
+ * Mesurer l'autre reviendrait à décider sur un moteur qu'on ne veut pas.
+ */
+const CYLINDERS = 8
+
 let modulePromise = null
 
 /** Charge le module une seule fois, quel que soit le nombre de bancs créés. */
@@ -57,7 +63,7 @@ export async function createBench({ sampleRate }) {
   const module = await loadModule()
   const bytes = await wasmSize()
 
-  const create = module.cwrap('bench_create', 'number', ['number', 'number'])
+  const create = module.cwrap('bench_create', 'number', ['number', 'number', 'number'])
   const dispose = module.cwrap('bench_dispose', null, [])
   const simulate = module.cwrap('bench_simulate', null, ['number'])
   const synthesize = module.cwrap('bench_synthesize', null, ['number'])
@@ -67,12 +73,12 @@ export async function createBench({ sampleRate }) {
   // Un seul banc à la fois : le moteur et son simulateur sont un état global du
   // binaire. La page en crée un par mesure et le libère aussitôt, ce qui suffit.
   dispose()
-  if (create(sampleRate, IMPULSE_SAMPLES) !== 1) {
+  if (create(sampleRate, IMPULSE_SAMPLES, CYLINDERS) !== 1) {
     throw new Error('le banc n’a pas pu être construit')
   }
 
   return {
-    label: `engine-sim, 4 cylindres, ${Math.round(sampleRate / 1000)} kHz`,
+    label: `engine-sim, V8 croisé, ${Math.round(sampleRate / 1000)} kHz`,
     wasmBytes: bytes,
     impulseSamples: IMPULSE_SAMPLES,
     simulate,
