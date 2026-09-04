@@ -378,69 +378,45 @@ porte sa propre exigence, déjà active.
 Sans ce fichier, le dépôt est refusé — la lecture des traces, des profils et de
 l'application continue de fonctionner normalement.
 
-### Deux identifiants, et pourquoi
+### Un ou deux comptes ?
 
-Le fichier en portera deux, et ce n'est pas une commodité :
+L'application s'annonce elle-même, avec **un nom et un mot de passe** du fichier
+`htpasswd` — pas autre chose. Elle est obligée de le faire : le navigateur ne
+fournit l'authentification qu'après l'avoir demandée, et il ne la demande que sur
+une **navigation**, jamais sur une requête lancée par une page. Un dépôt
+recevrait donc un refus sans que rien ne s'affiche.
+
+Le compte que vous avez déjà **fonctionne**. Mais un second, dédié au dépôt, vaut
+mieux, et pour deux raisons précises :
+
+- il vit en clair dans le navigateur de la voiture. Le vôtre n'a pas à y être ;
+- si vous activez un jour l'authentification générale du site, le vôtre ouvrirait
+  **tout**, alors qu'un compte dédié ne sert qu'au dépôt — et se révoque seul, en
+  retirant sa ligne du fichier.
 
 | Nom | Sert à | Vit où |
 |---|---|---|
 | le vôtre | déposer à la main, avec `curl` ou en naviguant | sur le poste de travail |
-| `depot` | à l'application, pour envoyer une trace depuis la voiture | dans le navigateur de la voiture |
+| `depot` | à l'application, depuis la voiture | dans le navigateur de la voiture |
 
-La raison est que le navigateur ne fournit l'authentification qu'après l'avoir
-demandée, et il ne la demande que sur une **navigation** — jamais sur une requête
-lancée par l'application. Un dépôt depuis la voiture recevrait donc un refus sans
-que rien ne s'affiche. L'application compose elle-même son en-tête, avec un
-**jeton** qu'on lui donne une fois.
+Donnez au second un mot de passe **que vous pouvez taper** : il faudra le saisir
+une fois dans la voiture, sur un écran tactile. Quelques mots séparés par des
+tirets valent mieux qu'une suite aléatoire.
 
-Ce jeton vit en clair dans le navigateur de la voiture, et c'est un compromis
-assumé : qui a la main sur ce navigateur peut déposer un fichier dans le dossier
-des traces, mais ni l'effacer — la méthode n'est pas ouverte — ni toucher au
-reste du NAS. Votre mot de passe personnel, lui, ne quitte pas le poste.
-
-Donnez au jeton une valeur **que vous pouvez taper**, sans rapport avec vos
-autres mots de passe : quelques mots séparés par des tirets font l'affaire, du
-genre `route-moteur-tesla-neige`. Vingt caractères prononçables valent mieux
-qu'une suite aléatoire ici — il faudra peut-être le saisir sur un écran tactile,
-et ce qu'il protège est l'écriture d'un fichier de trace, pas un compte.
-
-`npm run htpasswd`, avec `depot` comme nom d'utilisateur.
+`npm run htpasswd`, avec `depot` comme nom d'utilisateur. Le script **ajoute**
+une entrée sans écraser les autres.
 
 ### Déposer une trace depuis la voiture
 
-Une fois le jeton créé et le fichier déposé sur le NAS :
+Une fois le compte créé et le fichier déposé sur le NAS :
 
-1. écran **Configuration**, champ **Jeton de dépôt** : saisir `depot` et le
-   jeton. Il n'y a pas de bouton d'enregistrement — comme tous les réglages de
-   cet écran, il se retient à la frappe, et la mention à côté du champ le
-   confirme. Il est rangé hors du profil : il ne voyage donc pas avec un profil
+1. écran **Configuration**, champ **Compte de dépôt** : saisir le nom et le mot
+   de passe. Il n'y a pas de bouton d'enregistrement — comme tous les réglages de
+   cet écran, cela se retient à la frappe, et la mention à côté du champ le
+   confirme. C'est rangé hors du profil : cela ne voyage donc pas avec un profil
    partagé, et il n'y aurait aucun sens à envoyer à quelqu'un un son accompagné
    du droit d'écrire sur son NAS ;
 2. écran **Télémétrie**, à côté de chaque trace : le bouton **Déposer**.
-
-### Installer le jeton dans la voiture
-
-Le jeton appartient à **l'appareil** : réglé au poste de travail, il n'est pas
-dans la voiture — et c'est là qu'il sert. Le bouton **Installer dans la
-voiture…** produit l'adresse qui l'y installe :
-
-    https://ADRESSE/#depot=route-moteur-tesla-neige
-
-**Dans une voiture, cette adresse se tape** : son navigateur n'a pas de caméra,
-donc le code à scanner affiché à côté ne sert qu'à un téléphone ou une tablette.
-C'est la seule raison pour laquelle l'adresse est aussi courte que possible — le
-nom d'utilisateur `depot` est implicite — et la seule raison pour laquelle un
-jeton prononçable vaut mieux qu'une suite aléatoire. On ne la tape qu'une fois.
-
-Elle fonctionne aussi collée dans un onglet **déjà ouvert** sur l'application, ce
-qui est le geste le plus probable : changer le fragment ne recharge pas la page,
-et l'application l'écoute quand même.
-
-Le jeton est dans la partie qui suit le `#`, laquelle **n'est jamais transmise au
-serveur** ni inscrite dans ses journaux — même raison que pour le partage d'un
-profil. Elle est effacée de la barre d'adresse aussitôt lue, pour qu'un
-rechargement ne la réinstalle pas indéfiniment et qu'elle ne traîne pas à
-l'écran.
 
 Le fichier prend un nom qui dit la date, le nom de l'enregistrement et sa
 durée — `2026-09-03-21-16-48_retour-du-boulot-90s.json` — de sorte qu'on le
@@ -452,8 +428,8 @@ pas au même endroit :
 
 | Message | Ce qu'il faut faire |
 |---|---|
-| Aucun jeton de dépôt | le régler à l'écran de configuration |
-| Jeton refusé | le nom ou le jeton ne correspond pas au fichier de mots de passe |
+| Aucun compte de dépôt | le régler à l'écran de configuration |
+| Refusé | le nom ou le mot de passe ne correspond pas au fichier du serveur |
 | Le serveur n'a pas le droit d'écrire | les permissions du dossier, côté DSM |
 | Dépôt impossible | hors couverture : la trace reste enregistrée, réessayer plus tard |
 | Déjà déposée | rien, elle est en sûreté |

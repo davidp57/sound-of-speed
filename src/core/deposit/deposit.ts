@@ -13,21 +13,23 @@ import type { Trace } from '../speed/replay'
  * fournit l'en-tête qu'après l'avoir demandée, et il ne la demande que sur une
  * navigation — jamais sur une requête lancée par une page. Un dépôt aurait donc
  * reçu un refus sans que rien ne s'affiche. L'application s'annonce elle-même,
- * avec un **jeton** dédié plutôt qu'un mot de passe personnel : il n'ouvre que
- * l'écriture d'un fichier dans le dossier des traces, et il vit en clair dans le
- * navigateur de la voiture, ce que le mot de passe ne doit pas faire.
+ * avec un couple nom et mot de passe saisi une fois à l'écran de configuration.
+ *
+ * Une version antérieure faisait voyager ce secret dans l'adresse, pour éviter
+ * de le saisir dans la voiture. C'était **moins sûr et plus long** : moins sûr
+ * parce que le navigateur mémorise les adresses tapées et ressortait le secret
+ * en autocomplétion, plus long parce que l'adresse entière fait plus de
+ * caractères que le secret seul. Retiré.
  *
  * `fetch` est injecté pour que tout ceci se vérifie sans réseau ni serveur.
  */
 
 /** Dossier servi en écriture. Voir `docker/nginx.conf`. */
 const FOLDER = '/traces/'
-/** Nom d'utilisateur du dépôt, celui que la documentation fait créer. */
-export const DEFAULT_USER = 'depot'
 
 export interface DepositCredentials {
   user: string
-  token: string
+  password: string
 }
 
 export type DepositOutcome =
@@ -65,18 +67,18 @@ export function durationS(trace: Trace): number {
  * En-tête d'authentification.
  *
  * Séparé pour être vérifiable : une erreur d'encodage ici donnerait un refus
- * qu'on mettrait sur le compte d'un jeton faux.
+ * qu'on mettrait sur le compte d'un mot de passe faux.
  */
 export function authHeader(credentials: DepositCredentials): string {
-  return `Basic ${base64(`${credentials.user}:${credentials.token}`)}`
+  return `Basic ${base64(`${credentials.user}:${credentials.password}`)}`
 }
 
 /**
  * Dépose une trace, et dit précisément ce qui a échoué.
  *
- * La distinction entre les motifs n'est pas cosmétique : « jeton absent » se
- * corrige à l'écran de configuration, « refusé » veut dire que le jeton ne
- * correspond pas à celui du serveur, et « réseau » qu'on est hors couverture —
+ * La distinction entre les motifs n'est pas cosmétique : « compte absent » se
+ * corrige à l'écran de configuration, « refusé » veut dire que le mot de passe
+ * ne correspond pas à celui du serveur, et « réseau » qu'on est hors couverture —
  * ce qui arrive en roulant, et n'est pas une erreur.
  */
 export async function deposit(
@@ -84,11 +86,11 @@ export async function deposit(
   credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<DepositOutcome> {
-  if (!credentials.user.trim() || !credentials.token) {
+  if (!credentials.user.trim() || !credentials.password) {
     return {
       ok: false,
       reason: 'no-credentials',
-      detail: "Aucun jeton de dépôt : il se règle à l'écran de configuration.",
+      detail: "Aucun compte de dépôt : il se règle à l'écran de configuration.",
     }
   }
 
@@ -125,7 +127,7 @@ export async function deposit(
         reason: 'refused',
         detail:
           response.status === 401
-            ? "Jeton refusé : le nom ou le jeton ne correspond pas à celui du serveur."
+            ? "Refusé : le nom ou le mot de passe ne correspond pas au fichier du serveur."
             : "Le serveur s'est laissé convaincre mais n'a pas le droit d'écrire dans le dossier.",
       }
     }
@@ -181,7 +183,7 @@ function slug(text: string): string {
 /**
  * Base 64 d'une chaîne qui peut contenir des accents.
  *
- * `btoa` ne prend que des octets : un jeton contenant un caractère hors ASCII le
+ * `btoa` ne prend que des octets : un mot de passe contenant un caractère hors ASCII le
  * ferait échouer, et l'échec ressemblerait à un refus du serveur.
  */
 function base64(text: string): string {
@@ -189,64 +191,4 @@ function base64(text: string): string {
   let binary = ''
   for (const byte of bytes) binary += String.fromCharCode(byte)
   return btoa(binary)
-}
-
-/**
- * Jeton reçu par l'adresse.
- *
- * Le jeton est une préférence de **l'appareil** : réglé au poste de travail, il
- * n'est nulle part dans la voiture. Or c'est là qu'il sert, et le retaper sur un
- * écran tactile en conduisant n'est pas une option — surtout un jeton long.
- *
- * Il voyage donc dans le **fragment** de l'adresse, comme un profil partagé, et
- * pour la même raison : ce qui suit le `#` n'est jamais transmis au serveur ni
- * inscrit dans ses journaux. On ouvre l'application une fois avec cette adresse,
- * le jeton est retenu, et le fragment est effacé — recharger la page ne doit pas
- * le réinstaller indéfiniment, ni le laisser traîner dans la barre d'adresse.
- *
- * Deux formes, et la plus courte est la bonne pour la voiture :
- *
- * - `#depot=jeton` — le nom d'utilisateur vaut alors `depot`, celui que la
- *   documentation fait créer. C'est la forme à taper, et elle l'est parce qu'il
- *   n'y a **pas de caméra** dans le navigateur d'une voiture : le code à scanner
- *   ne sert qu'à un téléphone, et l'adresse s'y saisit à la main. D'où un jeton
- *   prononçable, et une adresse la plus courte possible ;
- * - `#depot=nom:jeton` — quand le nom n'est pas celui par défaut.
- */
-export function readCredentialsFromUrl(
-  hash: string,
-  forget: () => void,
-): DepositCredentials | null {
-  const match = /[#&]depot=([^&]+)/.exec(hash)
-  if (!match?.[1]) return null
-  forget()
-
-  let decoded: string
-  try {
-    decoded = decodeURIComponent(match[1])
-  } catch {
-    return null
-  }
-
-  const separator = decoded.indexOf(':')
-  if (separator < 0) {
-    // Forme courte : le jeton seul, sous le nom d'utilisateur par défaut.
-    return decoded ? { user: DEFAULT_USER, token: decoded } : null
-  }
-  if (separator === 0 || separator === decoded.length - 1) return null
-  return { user: decoded.slice(0, separator), token: decoded.slice(separator + 1) }
-}
-
-/**
- * L'adresse à ouvrir dans la voiture pour y installer le jeton.
- *
- * Le nom d'utilisateur est omis quand c'est celui par défaut : l'adresse se tape
- * à la main dans une voiture, et six caractères de moins comptent.
- */
-export function credentialsUrl(origin: string, credentials: DepositCredentials): string {
-  const payload =
-    credentials.user === DEFAULT_USER
-      ? credentials.token
-      : `${credentials.user}:${credentials.token}`
-  return `${origin}/#depot=${encodeURIComponent(payload)}`
 }

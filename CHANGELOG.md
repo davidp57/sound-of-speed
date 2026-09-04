@@ -73,37 +73,27 @@ Toutes les évolutions notables du projet. Format
   comme les profils, et en écriture pour la seule méthode qui dépose un fichier —
   ni suppression, ni création de dossier. L'écriture exige l'authentification en
   toutes circonstances, y compris quand celle du site reste désactivée.
-
-### Ajouté
-
 - **Une trace se dépose sur le serveur depuis la voiture.** C'est le seul moyen
   de l'en sortir : le navigateur de bord refuse tout téléchargement, alors que
   les traces naissent en roulant et ne servent qu'ailleurs.
 
-  L'application s'annonce avec un **jeton** dédié, réglé une fois à l'écran de
-  configuration et rangé hors du profil. Un jeton et non un mot de passe : le
-  navigateur ne demande son authentification que sur une navigation, jamais sur
-  une requête lancée par une page — un dépôt aurait échoué en silence. Le jeton
-  n'ouvre que l'écriture d'un fichier dans le dossier des traces.
+  L'application s'annonce avec un **compte du fichier `htpasswd`** — un nom et un
+  mot de passe — réglé une fois à l'écran de configuration et rangé hors du
+  profil. Elle est obligée de le faire elle-même : le navigateur ne demande
+  l'authentification que sur une navigation, jamais sur une requête lancée par
+  une page, si bien qu'un dépôt aurait échoué en silence.
 
-  **Le jeton s'installe dans la voiture par une adresse** : réglé au poste de
-  travail il n'y est pas, et c'est là qu'il sert. Il voyage dans la partie qui
-  suit le `#`, jamais transmise au serveur, et elle est effacée aussitôt lue.
-  L'adresse fonctionne aussi collée dans un onglet déjà ouvert, ce qui est le
-  geste le plus probable.
+  Le compte déjà créé fonctionne, mais un second dédié au dépôt vaut mieux : il
+  vit en clair dans le navigateur de la voiture, et il ne donnerait pas accès au
+  site entier si l'authentification générale était activée un jour.
 
-  Cette adresse **se tape** — le navigateur d'une voiture n'a pas de caméra, donc
-  le code à scanner ne sert qu'à un téléphone. D'où deux choix : le nom
-  d'utilisateur `depot` est implicite, ce qui raccourcit l'adresse, et la
-  documentation recommande un jeton prononçable plutôt qu'une suite aléatoire.
-
-  Le champ du jeton dit qu'il est retenu, et sa longueur : l'écran de
+  Le champ dit que la saisie est retenue, et sa longueur : l'écran de
   configuration n'a pas de bouton d'enregistrement — tout s'y applique à la
-  frappe — mais pour un jeton masqué, rien ne le montrait.
+  frappe — mais pour un champ masqué, rien ne le montrait.
 
   Le nom du fichier dit la date, l'enregistrement et sa durée, et il se relit par
-  la fonction d'import. Chaque échec dit lequel il est — jeton absent, jeton
-  refusé, droit d'écriture manquant, hors couverture, déjà déposée — parce
+  la fonction d'import. Chaque échec dit lequel il est — compte absent, refus
+  d'authentification, droit d'écriture manquant, hors couverture, déjà déposée — parce
   qu'ils ne se corrigent pas au même endroit. Une trace n'est jamais perdue au
   profit d'un dépôt raté.
 
@@ -111,9 +101,9 @@ Toutes les évolutions notables du projet. Format
 
 - **Le fichier de mots de passe accepte plusieurs entrées.** `npm run htpasswd`
   écrasait le fichier : créer un second identifiant effaçait le premier. Il
-  ajoute désormais une ligne, et remplace celle d'un nom déjà présent. Il en faut
-  deux — le vôtre pour ce que vous faites à la main, et celui du dépôt dont
-  l'application se servira depuis la voiture.
+  ajoute désormais une ligne, et remplace celle d'un nom déjà présent. C'est ce
+  qui permet d'en avoir deux — le vôtre pour ce que vous faites à la main, et
+  celui du dépôt dont l'application se sert depuis la voiture.
 - **L'étalonnage est une couche par-dessus les profils**, et non une recopie
   dedans. Un profil décrit un son ; l'étalonnage décrit la voiture. Les mesures
   s'appliquent donc d'elles-mêmes à tous les profils, ceux livrés compris, sans

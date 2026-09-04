@@ -11,7 +11,6 @@ import {
   offlineStatus,
   setBrake,
   importFromUrl,
-  readDepositFromUrl,
   setThrottle,
   shiftDown,
   shiftUp,
@@ -45,12 +44,7 @@ const immersive = ref(false)
  */
 const HELP_SEEN_KEY = 'speed.helpSeen.v1'
 const helpOpen = ref(false)
-/**
- * Ce qu'on vient de recevoir par l'adresse, le temps de l'annoncer.
- *
- * Un profil partagé, ou un jeton de dépôt : le message est composé en entier
- * ici, les deux n'ayant pas la même formule.
- */
+/** Message d'un profil reçu par lien, le temps de l'annoncer. */
 const received = ref('')
 
 function markHelpSeen(): void {
@@ -64,19 +58,6 @@ function markHelpSeen(): void {
 function closeHelp(): void {
   helpOpen.value = false
   markHelpSeen()
-}
-
-/**
- * Installe un jeton de dépôt présent dans l'adresse.
- *
- * Écouté au chargement **et** au changement de fragment : coller l'adresse dans
- * un onglet déjà ouvert sur l'application ne recharge pas la page — seul le
- * fragment change —, et sans cette écoute rien ne se passerait. C'est
- * précisément le geste qu'on fera dans la voiture, où l'application est déjà là.
- */
-function installDeposit(): void {
-  const depot = readDepositFromUrl()
-  if (depot) received.value = `Jeton de dépôt installé, au nom de « ${depot} ».`
 }
 
 async function toggleImmersive(): Promise<void> {
@@ -165,10 +146,6 @@ onMounted(() => {
   } catch {
     helpOpen.value = true
   }
-  // Un jeton de dépôt reçu par l'adresse s'installe aussi : c'est la façon de
-  // le faire arriver dans la voiture, où il sert et où on ne le tapera pas.
-  installDeposit()
-
   // Un profil reçu par lien s'installe avant tout le reste, et le signale.
   void importFromUrl().then((name) => {
     if (name) {
@@ -180,7 +157,6 @@ onMounted(() => {
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('keyup', onKeyUp)
   window.addEventListener('blur', releaseControls)
-  window.addEventListener('hashchange', installDeposit)
   document.addEventListener('fullscreenchange', onFullscreenChange)
   start()
 })
@@ -189,7 +165,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
   window.removeEventListener('keyup', onKeyUp)
   window.removeEventListener('blur', releaseControls)
-  window.removeEventListener('hashchange', installDeposit)
   document.removeEventListener('fullscreenchange', onFullscreenChange)
   stop()
 })

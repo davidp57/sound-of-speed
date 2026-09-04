@@ -184,12 +184,18 @@ export function loadInheritedVolume(selectedId: string | null): number | null {
 }
 
 /**
- * Jeton de dépôt : une préférence de **cet appareil**.
+ * Compte de dépôt : une préférence de **cet appareil**.
  *
- * Il sert à l'application pour s'annoncer quand elle envoie une trace au
- * serveur. Un jeton dédié, et non le mot de passe personnel : celui-ci ne doit
- * pas vivre en clair dans le navigateur d'une voiture, alors qu'un jeton n'ouvre
- * que l'écriture d'un fichier dans le dossier des traces.
+ * Un nom et un mot de passe, ceux d'une entrée du fichier `htpasswd` du serveur.
+ * L'application s'en sert pour s'annoncer quand elle envoie une trace.
+ *
+ * **Et c'est bien un mot de passe**, pas autre chose. Une version antérieure
+ * l'appelait « jeton », ce qui suggérait une nature différente — révocable,
+ * limité, moins sensible. Il est haché par le même bcrypt, dans le même fichier,
+ * vérifié par la même authentification. Ce qui est vrai, en revanche, est qu'un
+ * compte **dédié** au dépôt vaut mieux que le compte personnel : il se révoque
+ * seul, et il ne donnerait pas accès au site entier si l'authentification
+ * générale était activée un jour.
  *
  * Rangé comme le volume et le mode avancé — hors du profil, donc sans voyager
  * avec un profil partagé. Il n'y aurait aucun sens à envoyer à quelqu'un un son
@@ -197,20 +203,20 @@ export function loadInheritedVolume(selectedId: string | null): number | null {
  */
 export interface DepositCredentials {
   user: string
-  token: string
+  password: string
 }
 
 export function loadDepositCredentials(): DepositCredentials {
   try {
     const raw = localStorage.getItem(DEPOSIT_KEY)
-    if (!raw) return { user: '', token: '' }
+    if (!raw) return { user: '', password: '' }
     const parsed: unknown = JSON.parse(raw)
-    if (!isRecord(parsed)) return { user: '', token: '' }
+    if (!isRecord(parsed)) return { user: '', password: '' }
     const user = typeof parsed['user'] === 'string' ? parsed['user'] : ''
-    const token = typeof parsed['token'] === 'string' ? parsed['token'] : ''
-    return { user, token }
+    const password = typeof parsed['password'] === 'string' ? parsed['password'] : ''
+    return { user, password }
   } catch {
-    return { user: '', token: '' }
+    return { user: '', password: '' }
   }
 }
 
