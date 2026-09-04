@@ -23,7 +23,9 @@ function tranche() {
 
 /** Un `fetch` de comptoir : retient l'appel et rend ce qu'on lui dit. */
 function fakeFetch(reply: Response | Error) {
-  const calls: { url: string; init?: RequestInit }[] = []
+  // `init` est déclaré présent mais possiblement indéfini : le projet active
+  // `exactOptionalPropertyTypes`, où une propriété optionnelle refuse `undefined`.
+  const calls: { url: string; init: RequestInit | undefined }[] = []
   const impl = ((url: string, init?: RequestInit) => {
     calls.push({ url, init })
     return reply instanceof Error ? Promise.reject(reply) : Promise.resolve(reply)
