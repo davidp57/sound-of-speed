@@ -83,7 +83,15 @@ function fullThrottle(profile: Profile): { gear: number; shifts: number; peakRpm
   let gear = 0
   let kmh = 0
   let peakRpm = 0
-  for (let frame = 0; frame < 60 * 40; frame += 1) {
+  // La reprise s'arrête à 150 km/h, et le relevé avec elle.
+  //
+  // Le banc tenait ensuite la vitesse pendant vingt-trois secondes tout en
+  // annonçant 2,5 m/s² : la boîte voyait une accélération franche là où la
+  // vitesse ne bougeait plus. Elle juge maintenant la croisière sur la vitesse,
+  // et empilait donc ses rapports pendant ce plateau — les deux profils
+  // finissaient en sixième, ce que le test comparait. Le sujet est le rapport
+  // engagé **à 150 km/h en reprise**, pas celui atteint en croisière ensuite.
+  for (let frame = 0; frame < 60 * 40 && kmh < 150; frame += 1) {
     kmh = Math.min(150, kmh + 2.5 * 3.6 * dt)
     const inGear = (g: number) => rpmInGear(profile, g, kmh)
     const state = gearbox.tick(dt, {

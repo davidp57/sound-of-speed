@@ -417,4 +417,113 @@ describe('SpeedConditioner', () => {
 
     expect(Math.abs(last(1 / 30) - last(1 / 120))).toBeLessThan(0.5)
   })
+
+  describe('l’accélération rendue est la pente estimée', () => {
+    /**
+     * Bruit blanc reproductible, en km/h crête.
+     *
+     * Sans graine fixe, un test de bruit passerait ou échouerait au hasard.
+     */
+    function bruit(amplitude: number, graine: number): () => number {
+      let seed = graine
+      return () => {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff
+        return (seed / 0x7fffffff - 0.5) * 2 * amplitude
+      }
+    }
+
+    function ecartType(values: number[]): number {
+      const mean = values.reduce((a, b) => a + b, 0) / values.length
+      return Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length)
+    }
+
+    /** Une minute de vitesse tenue, bruitée, à la cadence demandée. */
+    function croisiere(kmh: number, cadenceMs: number, graine: number): number[] {
+      const conditioner = new SpeedConditioner(preset())
+      const tirage = bruit(1, graine)
+      const start = 1_000_000
+      const accels: number[] = []
+      let nextAt = start
+
+      for (let i = 0; i * FRAME_S <= 40; i += 1) {
+        const nowMs = start + i * FRAME_S * 1000
+        while (nextAt <= nowMs) {
+          conditioner.push(mesure(kmh + tirage(), nextAt))
+          nextAt += cadenceMs
+        }
+        const state = conditioner.tick(FRAME_S)
+        // Les dix premières secondes servent à établir le régime du ressort.
+        if (i * FRAME_S > 10) accels.push(state.accelMs2)
+      }
+      return accels
+    }
+
+    it('reste calme sur une vitesse tenue, à la cadence rapide du GPS', () => {
+      // La dérivée du ressort, employée jusqu'ici, portait tout le bruit de la
+      // mesure : 0,83 m/s² d'écart-type sur une vitesse parfaitement tenue, avec
+      // des pointes à 2,2. La pente ajustée aux moindres carrés sur la fenêtre
+      // tombe à 0,10 et 0,4. C'est ce qui décide la charge et les passages de la
+      // boîte : à ce niveau de bruit, la boîte changeait de rapport une dizaine
+      // de fois par minute sur une vitesse tenue.
+      for (const graine of [12345, 777, 20260904]) {
+        const accels = croisiere(40, 30, graine)
+        expect(ecartType(accels)).toBeLessThan(0.2)
+        expect(Math.max(...accels.map(Math.abs))).toBeLessThan(0.8)
+      }
+    })
+
+    it('reste calme aussi à la cadence lente', () => {
+      // À un hertz la fenêtre ne contient que deux mesures : le bruit y passe
+      // davantage, et c'est inhérent au procédé. On vérifie qu'il reste sous ce
+      // que la dérivée du ressort donnait à cadence rapide.
+      const accels = croisiere(40, 1000, 12345)
+      expect(ecartType(accels)).toBeLessThan(0.8)
+    })
+
+    it('rend une reprise établie à sa vraie valeur', () => {
+      // La dérivée du ressort lisait 1,96 m/s² pour 2,00 réels ; la pente rend
+      // 2,00. Le ressort traîne par construction — c'est son métier de rattraper
+      // une cible sans la dépasser —, et cette latence n'a pas à se retrouver
+      // dans la charge.
+      const conditioner = new SpeedConditioner(preset())
+      const tirage = bruit(1, 999)
+      const start = 1_000_000
+      let nextAt = start
+      const lus: number[] = []
+
+      for (let i = 0; i * FRAME_S <= 12; i += 1) {
+        const t = i * FRAME_S
+        while (nextAt <= start + t * 1000) {
+          const s = (nextAt - start) / 1000
+          const kmh = s < 2 ? 0 : (s - 2) * 2 * 3.6
+          conditioner.push(mesure(kmh + tirage(), nextAt))
+          nextAt += 30
+        }
+        const state = conditioner.tick(FRAME_S)
+        if (t > 6) lus.push(state.accelMs2)
+      }
+
+      const moyenne = lus.reduce((a, b) => a + b, 0) / lus.length
+      expect(moyenne).toBeGreaterThan(1.95)
+      expect(moyenne).toBeLessThan(2.05)
+    })
+
+    it('reste borné par les bornes du profil', () => {
+      // Les bornes d'accélération du profil s'appliquent toujours : elles
+      // protègent l'aval d'une valeur absurde, quelle que soit son origine.
+      const conditioner = new SpeedConditioner({
+        ...preset(),
+        minAccelMs2: -1,
+        maxAccelMs2: 1,
+      })
+      const start = 1_000_000
+      for (let i = 0; i <= 40; i += 1) {
+        // Une montée à 5 m/s², bien au-delà de la borne déclarée.
+        conditioner.push(mesure(i * 0.03 * 5 * 3.6, start + i * 30))
+      }
+      const state = conditioner.tick(FRAME_S)
+      expect(state.accelMs2).toBeLessThanOrEqual(1)
+      expect(state.accelMs2).toBeGreaterThanOrEqual(-1)
+    })
+  })
 })

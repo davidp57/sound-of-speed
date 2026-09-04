@@ -6,6 +6,102 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Modifié
+
+- **On quitte le plein écran par une flèche de retour**, à gauche de la rangée de
+  commandes, à l'écart des autres et d'une autre couleur. C'était une croix
+  flottante en haut à droite, à 35 % d'opacité et sans fond — posée **par-dessus**
+  le bouton de profil le plus à droite, puisque la rangée des profils épinglés
+  occupe toute la largeur en plein écran. Quitter le plein écran recouvrait
+  changer de profil.
+
+  La croix avait été faite discrète exprès, pour qu'on n'en sorte pas par
+  mégarde. Ce sont deux besoins distincts : un geste délibéré, et une cible
+  identifiable. Une petite cible transparente au bord de l'écran ne répond ni à
+  l'un ni à l'autre — en roulant, ce n'est pas une cible. C'est l'écart avec les
+  commandes de conduite qui empêche maintenant de la presser par erreur.
+- **Le décor qui défilait derrière les cadrans est retiré.** Il défilait de côté,
+  comme un jeu de plateforme, là où l'écran se voit de la place du conducteur :
+  un décor y défile en perspective, d'avant en arrière, et se rapproche. Ce n'est
+  pas un réglage à corriger, c'est un autre dessin.
+
+  Retiré plutôt que caché derrière un bouton coupé : un décor faux qu'on peut
+  activer par erreur ne vaut pas mieux qu'un décor faux, et le garder laisserait
+  croire qu'il sert de base à la refonte. L'exception à la règle « aucune
+  animation » tient — le lot est reporté, pas abandonné — et l'ancien code est
+  dans l'historique.
+
+### Corrigé
+
+- **L'accélération transmise au son était celle du ressort de lissage, pas
+  celle qui avait été mesurée.** Le conditionnement calcule une pente ajustée
+  aux moindres carrés sur sa fenêtre — c'est le travail du 3 septembre — mais
+  ce qui arrivait à la charge et à la boîte était la vitesse de la masse du
+  ressort. Or le ressort a pour métier de rattraper une cible qui saute à
+  chaque mesure sans la dépasser : sa vitesse porte tout le bruit du GPS, et le
+  retard qui va avec.
+
+  Mesuré sur une vitesse parfaitement tenue, à la cadence réelle du GPS et avec
+  un bruit de mesure de ±1 km/h : 0,83 m/s² d'écart-type et des pointes à 2,2
+  pour le ressort, **0,10 et 0,4 pour la pente**. Et sur une reprise établie à
+  2 m/s², le ressort lit 1,96 quand la pente lit 2,00.
+
+  La première piste avait été d'empêcher le curseur de réactivité de descendre
+  aussi bas, et **la mesure l'a écartée** : la fenêtre balayée de 200 à 2000 ms
+  ne changeait presque rien, l'écart-type restant entre 0,82 et 0,93. Le
+  curseur peut donc aller au bout de sa course.
+- **La boîte jugeait « vitesse tenue » sur l'accélération instantanée**, dont le
+  bruit résiduel est du même ordre que la borne basse de sa bande — un dixième
+  de m/s². Le critère se décidait ainsi au tirage au sort, et une seule image
+  dans la bande suffisait à remettre le compte à zéro. Deux conséquences
+  opposées : sur une vitesse vraiment tenue, la boîte faisait le va-et-vient ;
+  en ralentissant doucement, elle se croyait en croisière deux fois sur trois,
+  gardait un rapport long, et le régime se plaquait au ralenti sous 26 km/h en
+  quatrième — d'où un son qui ne bougeait plus en ville.
+
+  Une vitesse tenue se mesure désormais sur la **vitesse**, par la dérive entre
+  les deux moitiés d'une fenêtre de trois secondes. Les bornes de la bande n'ont
+  pas changé, c'est la façon de les mesurer. Mesuré sur douze minutes de vitesse
+  tenue, à 25, 40, 60 et 90 km/h : quarante-six passages parasites avant,
+  quatre avec une fenêtre de deux secondes, **aucun** avec trois — et cela
+  quelle que soit la fenêtre d'accélération réglée.
+- **La source GPS pouvait se taire définitivement.** Quand le navigateur ne
+  renseigne pas la vitesse, elle est déduite de deux positions ; un écart de
+  moins de 150 ms était refusé, mais la position de référence était **remplacée
+  quand même**, si bien que l'écart ne pouvait jamais s'accumuler. Mesuré : zéro
+  vitesse produite sur une minute à 110 km/h dès que la cadence passait sous
+  150 ms — c'est-à-dire dès que la voiture roulait. Le suivi ne repartait plus,
+  et le chien de garde le relançait en vain puisque la cadence restait rapide.
+
+  La référence est maintenant conservée jusqu'à ce que l'écart suffise. Et une
+  mesure au-delà du plausible n'est plus remplacée par la dernière valeur saine
+  puis émise comme si elle avait été mesurée : elle est ignorée, ce que le
+  conditionnement fait déjà de son côté. Ce maquillage privait le chien de garde
+  du silence dont il aurait pu se saisir.
+
+  `geolocation.ts` était le seul module du signal de vitesse sans aucun test.
+  Il en a sept.
+- **Un enregistrement d'étalonnage s'arrête toujours.** L'étape en cours était
+  retenue dans l'écran d'étalonnage, lequel est démonté dès qu'on change
+  d'onglet : au retour, l'application savait qu'un enregistrement tournait mais
+  plus lequel. Toutes les étapes s'annonçaient occupées par une autre et aucun
+  bouton ne permettait plus de l'arrêter — il suffisait d'aller regarder l'écran
+  de conduite pour condamner l'écran jusqu'au rechargement, l'enregistrement
+  continuant d'accumuler des mesures. L'étape vit désormais dans l'état de
+  l'application, et un enregistrement lancé ailleurs s'annonce dans un bandeau
+  qui l'arrête d'un geste, sans perdre la trace.
+
+### Ajouté
+
+- Quatre lignes dans « Qualité du signal » de l'écran Télémétrie :
+  l'**origine de la vitesse** — lue du navigateur ou déduite de deux positions —,
+  les **positions reçues**, les **vitesses produites** et les **rejets** par
+  motif. Le drapeau qui distingue une vitesse déduite d'une vitesse lue existait
+  depuis le premier jour et n'était affiché nulle part : c'est ce qui a rendu
+  invisible pendant une semaine le défaut du repli ci-dessus. Une source qui
+  reçoit des positions sans en tirer aucune vitesse donne le même écran qu'une
+  source muette ; ces comptes distinguent les deux.
+
 ### Ajouté
 
 - **Un tableau de bord à cadrans** sur l'écran de conduite : compteur de vitesse,

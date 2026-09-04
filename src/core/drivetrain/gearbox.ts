@@ -55,6 +55,36 @@ const KICKDOWN_COOLDOWN_S = 3
 /** Accélération au-delà de laquelle la vitesse n'est plus tenue, en m/s². */
 const CRUISE_STEADY_ACCEL_MS2 = 0.3
 /**
+ * Fenêtre sur laquelle la dérive de vitesse est mesurée, en secondes.
+ *
+ * « Tenir une vitesse » se mesure sur la **vitesse**, pas sur sa dérivée. Cette
+ * fenêtre est comparée par moitiés : l'écart entre la vitesse moyenne de la
+ * seconde moitié et celle de la première, rapporté au temps qui les sépare,
+ * donne une dérive en m/s² qu'on compare aux mêmes bornes qu'avant.
+ *
+ * C'est la moyenne qui fait le travail : le bruit d'une mesure isolée est divisé
+ * par la racine du nombre d'images moyennées. L'accélération instantanée, elle,
+ * est bruitée à un dixième de m/s² même une fois estimée proprement — soit
+ * exactement la borne basse de la bande, si bien que le critère se décidait au
+ * tirage au sort.
+ *
+ * Trois secondes, et la durée est **mesurée**. Sur douze minutes de vitesse
+ * parfaitement tenue, à 25, 40, 60 et 90 km/h, avec un bruit de mesure de
+ * ±1 km/h et la cadence rapide du GPS :
+ *
+ * - en jugeant sur l'accélération instantanée, quarante-six passages parasites ;
+ * - sur une dérive mesurée sur deux secondes, quatre, dont deux descentes — donc
+ *   encore des allers-retours ;
+ * - sur trois secondes, aucun, et cela quelle que soit la fenêtre
+ *   d'accélération réglée, de 200 à 2000 ms.
+ *
+ * Le coût est une latence : un ralentissement est vu en une seconde et demie au
+ * lieu d'être vu tout de suite. C'est sans conséquence ici — ce critère décide
+ * d'une montée en croisière, qui attend de toute façon deux secondes de
+ * stabilité, et le freinage franc a son propre chemin, immédiat.
+ */
+const CRUISE_WINDOW_S = 3
+/**
  * Décélération au-delà de laquelle la vitesse n'est plus tenue, en m/s².
  *
  * Bien plus serrée que du côté de l'accélération, et ce n'est pas une
@@ -189,6 +219,8 @@ export class Gearbox {
   private sinceDownshiftS = Number.POSITIVE_INFINITY
   /** Durée passée hors de la bande de croisière, en secondes. */
   private outOfBandForS = 0
+  /** Vitesses récentes, pour mesurer la dérive sur la fenêtre déclarée. */
+  private speedHistory: { at: number; kmh: number }[] = []
 
   constructor(
     private drivetrain: DrivetrainPreset,
@@ -236,6 +268,7 @@ export class Gearbox {
     this.brakingForS = 0
     this.sinceDownshiftS = Number.POSITIVE_INFINITY
     this.outOfBandForS = 0
+    this.speedHistory = []
   }
 
   /**
@@ -258,6 +291,59 @@ export class Gearbox {
     // demande franche. Le rétrogradage forcé attend, ce qui vaut mieux qu'un
     // déclenchement sur une fenêtre incomplète.
     return 0
+  }
+
+  /** Retient la vitesse courante, en ne gardant que la fenêtre déclarée. */
+  private recordSpeed(kmh: number): void {
+    this.speedHistory.push({ at: this.elapsedS, kmh })
+    const limite = this.elapsedS - CRUISE_WINDOW_S
+    while (this.speedHistory.length > 1 && (this.speedHistory[0]?.at ?? 0) < limite) {
+      this.speedHistory.shift()
+    }
+  }
+
+  /**
+   * Dérive de la vitesse sur la fenêtre, en m/s².
+   *
+   * La fenêtre est comparée par moitiés plutôt que par ses deux extrémités : une
+   * moyenne divise le bruit, deux mesures isolées l'additionnent. Rendue en m/s²
+   * pour se comparer aux bornes de la bande, qui sont des accélérations et qui
+   * n'ont pas bougé — c'est la façon de les mesurer qui change.
+   *
+   * Rend `null` tant que la fenêtre n'est pas assez remplie pour que la
+   * comparaison ait un sens, et la vitesse n'est alors **pas** tenue : on ne peut
+   * pas affirmer qu'une allure se maintient avant de l'avoir observée. Rendre
+   * zéro, comme on l'a d'abord fait, revenait à l'affirmer — et la boîte montait
+   * un rapport dans les deux secondes suivant un démarrage ou un changement de
+   * profil, sans rien avoir constaté.
+   */
+  private speedDriftMs2(): number | null {
+    const points = this.speedHistory
+    const oldest = points[0]
+    if (!oldest) return null
+    const span = this.elapsedS - oldest.at
+    if (span < CRUISE_WINDOW_S * 0.5) return null
+
+    const milieu = oldest.at + span / 2
+    let sommeAvant = 0
+    let nAvant = 0
+    let sommeApres = 0
+    let nApres = 0
+    for (const point of points) {
+      if (point.at < milieu) {
+        sommeAvant += point.kmh
+        nAvant += 1
+      } else {
+        sommeApres += point.kmh
+        nApres += 1
+      }
+    }
+    if (nAvant === 0 || nApres === 0) return null
+
+    // Les deux moyennes sont séparées par la moitié de la fenêtre : c'est cette
+    // durée qui convertit un écart de vitesse en accélération.
+    const ecartKmh = sommeApres / nApres - sommeAvant / nAvant
+    return ecartKmh / (span / 2) / 3.6
   }
 
   /** Retient la charge courante, en ne gardant que le double de la fenêtre. */
@@ -353,10 +439,17 @@ export class Gearbox {
     // image, elle décide sur une tendance.
     this.elapsedS += dt
     this.recordLoad(load)
+    this.recordSpeed(kmh)
     this.sinceKickdownS += dt
     this.sinceDownshiftS += dt
     // Tenir une vitesse, c'est ne pas la perdre : la bande est asymétrique.
-    const inBand = accelMs2 <= CRUISE_STEADY_ACCEL_MS2 && accelMs2 >= -CRUISE_DECEL_LIMIT_MS2
+    //
+    // Elle se juge sur la dérive de la vitesse, et non sur l'accélération
+    // instantanée : celle-ci est bruitée à un dixième de m/s² une fois estimée
+    // au mieux, soit la borne basse de la bande elle-même.
+    const drift = this.speedDriftMs2()
+    const inBand =
+      drift !== null && drift <= CRUISE_STEADY_ACCEL_MS2 && drift >= -CRUISE_DECEL_LIMIT_MS2
     this.outOfBandForS = inBand ? 0 : this.outOfBandForS + dt
     // Une sortie brève est du tremblement de mesure, pas un changement
     // d'allure : le compte de stabilité ne repart à zéro qu'au bout d'un
