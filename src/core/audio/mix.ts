@@ -91,7 +91,10 @@ export function computeMix(
   // deux familles se mélangent en permanence. Le gain propre aux couches pied
   // levé compense ensuite leur enregistrement plus doux.
   const contrast = clamp(mix.loadContrast, 0, 1)
-  const load = clamp(0.5 + (clamp(state.load, 0, 1) - 0.5) * contrast, 0, 1)
+  // L'effort, et non la charge : c'est le travail du moteur qui décide du
+  // timbre, et tenir 130 km/h en demande plus que tenir 30. La charge, elle,
+  // reste à la boîte.
+  const load = clamp(0.5 + (clamp(state.effort, 0, 1) - 0.5) * contrast, 0, 1)
   const onWeight = Math.sin((load * Math.PI) / 2)
   const offWeight = Math.cos((load * Math.PI) / 2) * Math.max(0, mix.offLoadGain)
 
@@ -119,7 +122,7 @@ export function computeMix(
   // relief règle le niveau d'ensemble. Les coupler ferait qu'un contraste nul
   // désactiverait le relief en silence, ce qui rendrait les deux curseurs
   // impossibles à régler l'un après l'autre.
-  const loadRelief = fromDb((clamp(state.load, 0, 1) - 0.5) * 2 * mix.loadReliefDb)
+  const loadRelief = fromDb((clamp(state.effort, 0, 1) - 0.5) * 2 * mix.loadReliefDb)
   const span = Math.max(1, profile.engine.redlineRpm - profile.engine.idleRpm)
   const rpmShare = clamp((state.rpm - profile.engine.idleRpm) / span, 0, 1)
   const rpmRelief = fromDb(rpmShare * mix.rpmReliefDb)

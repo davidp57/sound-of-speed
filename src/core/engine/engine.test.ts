@@ -265,6 +265,84 @@ describe('Engine — charge', () => {
   })
 })
 
+describe('Engine — effort', () => {
+  const rolling = { atStandstill: false, throttle: null }
+
+  it('croît avec la vitesse à accélération nulle', () => {
+    // Le défaut que ce lot corrige : tenir une allure donnait toujours le même
+    // demi, de l'arrêt à 130 km/h. Mesuré avant, cinq allures à 0,50 au
+    // centième près.
+    const tenu = (kmh: number) => settle(makeEngine(), 3, { ...rolling, kmh, accelMs2: 0 }).effort
+
+    expect(tenu(30)).toBeLessThan(tenu(90))
+    expect(tenu(90)).toBeLessThan(tenu(130))
+    expect(tenu(130)).toBeGreaterThan(tenu(30) + 0.3)
+  })
+
+  it('vaut la moitié au repère de traînée', () => {
+    // C'est la définition du réglage : à cette vitesse-là, tenir l'allure
+    // consomme la moitié de la charge disponible.
+    const p = createDefaultProfile()
+    const tenu = settle(makeEngine(), 3, { ...rolling, kmh: p.mix.dragRefKmh, accelMs2: 0 })
+
+    expect(tenu.effort).toBeCloseTo(0.5, 2)
+  })
+
+  it('est nul à l’arrêt', () => {
+    // Et c'est ce qui fait perdre au ralenti le niveau que la charge à 0,5 lui
+    // donnait sans raison : `idleLevelDb` le lui rend.
+    expect(settle(makeEngine(), 3, { kmh: 0, accelMs2: 0, throttle: null }).effort).toBeCloseTo(0, 3)
+  })
+
+  it('sature à pleine charge et ne dépasse pas', () => {
+    const plein = settle(makeEngine(), 3, {
+      ...rolling,
+      kmh: 200,
+      accelMs2: profile.mix.fullLoadAccelMs2 * 2,
+    })
+
+    expect(plein.effort).toBeCloseTo(1, 2)
+    expect(plein.effort).toBeLessThanOrEqual(1)
+  })
+
+  it('ajoute l’accélération à la traînée', () => {
+    // Une reprise douce à haute vitesse est le cas du reproche : elle était
+    // écrasée entre la croisière et le vrombissement du haut des tours.
+    const tenu = settle(makeEngine(), 3, { ...rolling, kmh: 110, accelMs2: 0 })
+    const douce = settle(makeEngine(), 3, { ...rolling, kmh: 110, accelMs2: 0.55 })
+
+    expect(douce.effort).toBeGreaterThan(tenu.effort + 0.2)
+  })
+
+  it('laisse la charge tranquille : elle reste l’intention du conducteur', () => {
+    // Le garde-fou du lot. La boîte lit la charge, et rien de ce qui précède ne
+    // doit la déplacer — sans quoi tous les seuils de passage seraient à
+    // recaler dans les profils livrés.
+    const lent = settle(makeEngine(), 3, { ...rolling, kmh: 30, accelMs2: 0 })
+    const vite = settle(makeEngine(), 3, { ...rolling, kmh: 130, accelMs2: 0 })
+
+    expect(lent.load).toBeCloseTo(0.5, 2)
+    expect(vite.load).toBeCloseTo(0.5, 2)
+  })
+
+  it('suit le repère de traînée du profil', () => {
+    // Sport porte un repère plus haut : à vitesse égale, sa traînée pèse moins.
+    const route = createRoadProfile()
+    const sport = createDefaultProfile()
+    const effortAt = (p: ReturnType<typeof createRoadProfile>) => {
+      const engine = new Engine(p.engine, p.mix)
+      let state = engine.tick(FRAME_S, input({ ...rolling, kmh: 130, accelMs2: 0 }))
+      for (let i = 0; i < 180; i += 1) {
+        state = engine.tick(FRAME_S, input({ ...rolling, kmh: 130, accelMs2: 0 }))
+      }
+      return state.effort
+    }
+
+    expect(route.mix.dragRefKmh).toBeLessThan(sport.mix.dragRefKmh)
+    expect(effortAt(route)).toBeGreaterThan(effortAt(sport))
+  })
+})
+
 describe('Engine — rupteur', () => {
   it('s’active au seuil de coupure et hache le régime', () => {
     const engine = makeEngine()

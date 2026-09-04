@@ -1,7 +1,7 @@
 # EFFORT — la charge doit connaître la vitesse
 
-**Statut :** 🔄 en cours
-**Branche :** à créer
+**Statut :** 🧑 attend David — livré, reste à écouter en roulant
+**Branche :** `feature/effort`
 **Version visée :** 0.3 — **après [PENTE](../PENTE/spec.md)**
 
 ## Remesuré le 4 septembre 2026, après PENTE et après ESSAI-04
@@ -228,3 +228,52 @@ précisément ce que ce lot supprime en séparant les deux grandeurs.
 - [ ] Le guide de création donne un repère de traînée cohérent avec le
       caractère choisi
 - [ ] 🧑 Vérifié en roulant : une reprise douce à haute vitesse s'entend
+
+## Livré le 4 septembre 2026
+
+`mix.dragRefKmh` existe — 130 km/h sur Route, 150 sur Sport. `EngineState.effort`
+est calculé à côté de la charge, lissé de la même façon, et affiché en télémétrie
+sous elle. Le fondu entre familles et le relief de charge le lisent ; la boîte
+continue de lire la charge, et **rien de ses seuils n'a bougé** — les 535 tests
+passent, dont ceux de la boîte, qui étaient le garde-fou du lot.
+
+Mesuré au banc, en mode « positions GPS », profil Route :
+
+| Situation | Charge (boîte) | Effort (son) | Relief de charge |
+|---|---|---|---|
+| Arrêt, au ralenti | 0,50 | 0,00 | −4,0 dB |
+| 30 km/h tenu | 0,52 | 0,07 | −3,4 dB |
+| 50 km/h tenu | 0,54 | 0,15 | −2,8 dB |
+| 90 km/h tenu | 0,51 | 0,26 | −1,9 dB |
+| 110 km/h tenu | 0,53 | 0,42 | −0,6 dB |
+| 130 km/h tenu | 0,53 | 0,57 | +0,6 dB |
+| 110 km/h roue libre | 0,19 | 0,00 | −4,0 dB |
+| 130 km/h, reprise douce | — | 0,85 | +2,8 dB |
+| Pleine charge | 1,00 | 1,00 | +4,0 dB |
+
+Avant le lot, **toutes** les lignes « tenu » valaient 0 dB : la croisière était
+plate d'un bout à l'autre. Elle s'étage maintenant sur 3,4 dB entre 50 et
+130 km/h, et une reprise douce à 130 passe 2,2 dB au-dessus de la croisière à la
+même vitesse.
+
+`idleLevelDb` est recalé en conséquence : −5 → −1 sur Route, −5 → 0 sur Sport,
+soit exactement le relief que l'effort nul retire désormais au ralenti.
+
+### Ce qui n'a pas pu être chiffré, et pourquoi
+
+Le tableau en **niveaux acoustiques absolus** de la spec n'a pas été refait. Il
+demande le niveau efficace de chaque échantillon, et les échantillons vivent dans
+un volume du NAS. Une tentative de le remplacer par la somme des gains de couches
+a donné un résultat absurde — une reprise douce sortant *sous* la croisière — et
+la raison vaut d'être retenue : **les couches « pied levé » portent un gain de 3
+là où les couches « en charge » portent 1**, parce qu'elles ont été enregistrées
+plus doucement. Comparer des gains sans les niveaux qu'ils multiplient ne veut
+donc rien dire.
+
+Le relief de charge, lui, est un facteur global : il se chiffre sans les
+échantillons, et c'est ce que donne le tableau.
+
+Conséquence pour le critère « une reprise douce à 130 s'entend 3 dB au-dessus de
+la croisière » : le relief en apporte **2,2**, et le reste dépend du fondu de
+timbre, qui ne se mesure pas d'ici. À juger à l'oreille ; si l'écart manque,
+`loadReliefDb` est le curseur, et c'est un réglage, pas un correctif.

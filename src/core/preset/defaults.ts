@@ -114,6 +114,9 @@ export function createRoadProfile(): Profile {
       crossfadeLowRpm: 2600,
       crossfadeHighRpm: 5200,
       fullLoadAccelMs2: 2,
+      // Tenir 130 consomme la moitié de la charge disponible : une berline de
+      // série y est déjà à un vrai effort, sans être à sa limite.
+      dragRefKmh: 130,
       loadSmoothingS: 0.22,
       offLoadGain: 1,
       loadContrast: 0.65,
@@ -122,7 +125,10 @@ export function createRoadProfile(): Profile {
       // rugissement qui s'ajoutent aux 4 dB que la banque donne déjà.
       loadReliefDb: 4,
       rpmReliefDb: 3,
-      idleLevelDb: -5,
+      // Recalé de −5 à −1 avec l'arrivée de l'effort : à l'arrêt, l'effort vaut
+      // zéro là où la charge valait un demi sans raison, et le relief de charge
+      // retire donc ses 4 dB pleins. Le ralenti retrouve le niveau qu'il avait.
+      idleLevelDb: -1,
       // Plus mesuré aussi sur le désaccord : huit centièmes de demi-ton, soit un
       // battement à 1,2 Hz au milieu de la bascule (3900 tr/min).
       layerDetuneCents: 8,
@@ -202,6 +208,9 @@ export function createDefaultProfile(): Profile {
       crossfadeLowRpm: 3200,
       crossfadeHighRpm: 7000,
       fullLoadAccelMs2: 2.5,
+      // Plus haut que Route : un profil sportif a de la réserve, et sa traînée
+      // ne doit pas peser aussi tôt.
+      dragRefKmh: 150,
       loadSmoothingS: 0.18,
       // Neutre : la compensation des prises plus douces est passée dans le gain
       // de chaque couche, où le déficit se mesure. Ce réglage reste disponible
@@ -216,7 +225,9 @@ export function createDefaultProfile(): Profile {
       // écraser, et un rugissement franc en haut des tours.
       loadReliefDb: 5,
       rpmReliefDb: 4,
-      idleLevelDb: -5,
+      // Recalé de −5 à 0 : cinq décibels de relief de charge que l'effort nul
+      // retire désormais au ralenti.
+      idleLevelDb: 0,
       // Douze centièmes de demi-ton entre les deux couches d'une famille.
       // Mesuré : un battement à 2,4 Hz au milieu de la bascule (5100 tr/min),
       // 1,5 Hz au début (3200).

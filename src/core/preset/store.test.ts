@@ -710,3 +710,34 @@ describe('reprise par identifiant', () => {
     expect(relu.drivetrain.cruiseMinRpm).toBe(1234)
   })
 })
+
+describe('reprise — arrivée de l’effort', () => {
+  it('remonte le niveau de ralenti d’un profil d’avant le repère de traînée', () => {
+    // Le ralenti perd le relief de charge que la charge à un demi lui laissait
+    // sans raison. Les profils livrés ont été recalés ; un profil enregistré
+    // porte l'ancienne valeur, et sonnerait d'autant plus bas qu'hier.
+    const ancien = createRoadProfile()
+    const mix = { ...ancien.mix, idleLevelDb: -5, loadReliefDb: 4 } as Record<string, unknown>
+    delete mix.dragRefKmh
+
+    // Par le stockage et non par l'import : c'est le chemin des profils déjà
+    // enregistrés, et le seul où la base est retrouvée par identifiant.
+    localStorage.setItem('speed.profiles.v1', JSON.stringify([{ ...ancien, mix }]))
+    const repris = loadProfiles().find((profil) => profil.id === ancien.id)
+
+    expect(repris?.mix.idleLevelDb).toBe(-1)
+    expect(repris?.mix.dragRefKmh).toBe(createRoadProfile().mix.dragRefKmh)
+  })
+
+  it('ne touche pas au ralenti d’un profil qui a déjà le repère', () => {
+    const recent = createRoadProfile()
+    localStorage.setItem(
+      'speed.profiles.v1',
+      JSON.stringify([{ ...recent, mix: { ...recent.mix, idleLevelDb: -3 } }]),
+    )
+
+    const repris = loadProfiles().find((profil) => profil.id === recent.id)
+
+    expect(repris?.mix.idleLevelDb).toBe(-3)
+  })
+})

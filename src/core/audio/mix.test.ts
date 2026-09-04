@@ -31,6 +31,10 @@ function state(over: Partial<EngineState> = {}): EngineState {
     audibleRpm: rpm,
     kinematicRpm: rpm,
     load: 0.5,
+    // L'effort suit la charge par défaut : les tests qui ne parlent que de
+    // timbre n'ont pas à connaître la traînée, et ceux qui la mesurent le
+    // disent explicitement.
+    effort: over.effort ?? over.load ?? 0.5,
     rpmFraction: rpm / profile.engine.redlineRpm,
     firingHz: (rpm / 120) * profile.engine.cylinders,
     limiterActive: false,

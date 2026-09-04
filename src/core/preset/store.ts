@@ -439,6 +439,19 @@ function migrateMix(
 ): Profile['mix'] {
   const merged: Record<string, unknown> = { ...base.mix, ...(stored ?? {}) }
   delete merged.masterGain
+
+  // Arrivée de l'effort : le ralenti perd le relief de charge que la charge à
+  // un demi lui laissait sans raison. Les profils livrés ont vu leur niveau de
+  // ralenti recalé d'autant ; un profil déjà enregistré, lui, porte l'ancienne
+  // valeur et sonnerait quatre à cinq décibels plus bas qu'hier. On la lui
+  // remonte du même montant, une fois, reconnaissable à l'absence du repère de
+  // traînée — le seul marqueur qui distingue un profil d'avant.
+  if (stored && stored.dragRefKmh === undefined) {
+    const relief = typeof merged.loadReliefDb === 'number' ? merged.loadReliefDb : 0
+    const idle = typeof merged.idleLevelDb === 'number' ? merged.idleLevelDb : 0
+    merged.idleLevelDb = idle + relief
+  }
+
   return merged as unknown as Profile['mix']
 }
 
