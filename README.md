@@ -169,6 +169,25 @@ Au clavier, source « Simulateur » :
 | ↓ | Frein |
 | ← → | Descendre / monter un rapport, en mode manuel |
 
+Une **manette Xbox** branchée sur le poste conduit le simulateur, et c'est un
+meilleur outil que le clavier pour juger un son : la charge s'entend sur des
+transitions, et une touche tout ou rien ne produit que la plus brutale.
+
+| Commande | Effet |
+|---|---|
+| Gâchette droite | Accélérateur, analogique |
+| Gâchette gauche | Frein, analogique |
+| A / B | Monter / descendre un rapport |
+| X | Boîte automatique ou manuelle |
+| Y | Tenir la vitesse courante, ou rendre la main |
+| Stick gauche, haut et bas | Volume général |
+
+La manette n'apparaît **qu'après un premier appui** sur un de ses boutons : le
+navigateur ne la révèle pas avant, pour ne pas la donner comme empreinte à toute
+page ouverte. Elle ne reprend la main sur les curseurs de l'écran qu'en étant
+touchée, et la rend en revenant au repos. Tout autre agencement que le standard
+est ignoré.
+
 Le curseur **Allure maintenue** est un régulateur : le simulateur tient la
 vitesse choisie, comme on le fait sur autoroute, jusqu'à ce qu'on accélère ou
 qu'on freine. C'est la façon la plus simple d'écouter un régime stabilisé.
@@ -1412,6 +1431,8 @@ chaque essai.
 | 22 | Étalonnage : mesurer la vraie voiture pour régler les virtuelles | fait, reste à rouler |
 | 23 | Le serveur accepte le dépôt d'une trace | fait, éprouvé sur le NAS |
 | 24 | Ce que l'appareil réel impose : positions imprécises écartées, largeur utile, verrou d'écran et autorisation GPS affichés | fait, reste à relever en roulant |
+| 25 | Un étalonnage ne s'applique qu'entier, et une source qui rejette tout dit pourquoi | fait, reste à rouler |
+| 26 | Une manette Xbox conduit le simulateur, gâchettes analogiques comprises | fait |
 | — | Déposer une trace et un profil depuis l'application | prévu |
 | — | Plusieurs banques de son, choisies par profil | prévu |
 | — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | à remesurer |
