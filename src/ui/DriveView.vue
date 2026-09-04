@@ -339,6 +339,7 @@ const SPEED_STEP_KMH = 20
     </section>
 
     <section v-else class="controls">
+      <div class="control-bar">
       <div class="group">
         <span class="label">Son</span>
         <button
@@ -360,8 +361,6 @@ const SPEED_STEP_KMH = 20
           />
         </label>
       </div>
-      <p v-if="audioStatus.phase === 'error'" class="hint warn">{{ audioStatus.error }}</p>
-
       <div v-if="screenLockSupported" class="group">
         <span class="label">Écran</span>
         <button :aria-pressed="keepScreenOn" @click="setKeepScreenOn(!keepScreenOn)">
@@ -372,7 +371,6 @@ const SPEED_STEP_KMH = 20
           {{ screenLockError || 'Verrou non obtenu.' }}
         </span>
       </div>
-
       <div class="group">
         <span class="label">Boîte</span>
         <button :aria-pressed="!manual" @click="setShiftMode('auto')">Auto</button>
@@ -380,39 +378,11 @@ const SPEED_STEP_KMH = 20
         <button :disabled="!manual" @click="shiftDown()">−</button>
         <button :disabled="!manual" @click="shiftUp()">+</button>
       </div>
+      </div>
 
-      <div v-if="sourceKind === 'simulator'" class="group column">
-        <span class="label">Simulateur</span>
-        <div class="pedals">
-          <button
-            @pointerdown="setThrottle(1)"
-            @pointerup="setThrottle(0)"
-            @pointerleave="setThrottle(0)"
-          >
-            Accélérer
-          </button>
-          <button
-            @pointerdown="setBrake(1)"
-            @pointerup="setBrake(0)"
-            @pointerleave="setBrake(0)"
-          >
-            Freiner
-          </button>
-        </div>
-        <label class="slider">
-          <span>
-            Allure maintenue : <span class="numeric">{{ sliderSpeed }}</span> km/h
-            <template v-if="!cruiseActive"> — inactive</template>
-          </span>
-          <input type="range" min="0" max="220" step="1" :value="sliderSpeed" @input="onSlider" />
-        </label>
-        <div class="group">
-          <button :disabled="!cruiseActive" @click="releaseCruise()">Rendre la main</button>
-          <span class="hint">
-            Le simulateur maintient cette vitesse, comme un régulateur. Accélérez ou
-            freinez pour reprendre la main.
-          </span>
-        </div>
+      <p v-if="audioStatus.phase === 'error'" class="hint warn">{{ audioStatus.error }}</p>
+
+      <template v-if="sourceKind === 'simulator'">
         <div class="group column">
           <span class="note">Ce que le banc fabrique</span>
           <div class="modes">
@@ -493,7 +463,40 @@ const SPEED_STEP_KMH = 20
             </label>
           </template>
         </div>
+      </template>
 
+      <div v-if="sourceKind === 'simulator'" class="group column">
+        <span class="label">Simulateur</span>
+        <div class="pedals">
+          <button
+            @pointerdown="setThrottle(1)"
+            @pointerup="setThrottle(0)"
+            @pointerleave="setThrottle(0)"
+          >
+            Accélérer
+          </button>
+          <button
+            @pointerdown="setBrake(1)"
+            @pointerup="setBrake(0)"
+            @pointerleave="setBrake(0)"
+          >
+            Freiner
+          </button>
+        </div>
+        <label class="slider">
+          <span>
+            Allure maintenue : <span class="numeric">{{ sliderSpeed }}</span> km/h
+            <template v-if="!cruiseActive"> — inactive</template>
+          </span>
+          <input type="range" min="0" max="220" step="1" :value="sliderSpeed" @input="onSlider" />
+        </label>
+        <div class="group">
+          <button :disabled="!cruiseActive" @click="releaseCruise()">Rendre la main</button>
+          <span class="hint">
+            Le simulateur maintient cette vitesse, comme un régulateur. Accélérez ou
+            freinez pour reprendre la main.
+          </span>
+        </div>
         <p class="hint">
           Au clavier : flèches haut et bas pour accélérer et freiner, flèches gauche
           et droite pour changer de rapport en mode manuel.
@@ -709,6 +712,18 @@ const SPEED_STEP_KMH = 20
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+/*
+ * Son, écran et boîte sur une ligne : trois réglages qu'on touche à l'arrêt, et
+ * qui prenaient trois lignes de haut à eux seuls. Ils se replient quand la
+ * largeur manque, comme la barre du haut.
+ */
+.control-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem 1.5rem;
+  flex-wrap: wrap;
 }
 
 .group {
