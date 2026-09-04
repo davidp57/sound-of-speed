@@ -12,6 +12,7 @@ import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditione
 import { GeolocationSource } from './core/speed/geolocation'
 import { ReplaySource, TraceRecorder, type Trace } from './core/speed/replay'
 import { SimulatorSource } from './core/speed/simulator'
+import { RejectionWatch, type RejectionCause } from './core/speed/rejection'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
 import type { Profile, ProfileOrigin } from './core/preset/schema'
@@ -28,7 +29,12 @@ import { JournalCollector, type JournalConsent } from './core/journal/collect'
 import { depositSlice } from './core/journal/deposit'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
-import { analyzeSession, overridesFor, withCalibration } from './core/calibration/onboard'
+import {
+  analyzeSession,
+  missingStepLabels,
+  overridesFor,
+  withCalibration,
+} from './core/calibration/onboard'
 import type { CalibrationStepId } from './core/calibration/protocol'
 import { deposit, type DepositOutcome } from './core/deposit/deposit'
 import { loadCalibration, saveCalibration, type CalibrationSession } from './core/calibration/store'
@@ -127,6 +133,18 @@ export const calibrationOverrides = computed(() =>
 )
 
 /**
+ * Les étapes qui manquent pour que l'étalonnage compte.
+ *
+ * Vide quand il n'y a rien d'enregistré comme quand tout l'est : c'est la
+ * présence d'une session entamée qui distingue les deux, et l'écran le sait.
+ */
+export const calibrationMissing = computed(() =>
+  calibrationAnalyses.value.length === 0 && Object.keys(calibration.value).length === 0
+    ? []
+    : missingStepLabels(calibrationAnalyses.value),
+)
+
+/**
  * Le profil que le moteur emploie : le réglé, corrigé par le mesuré.
  *
  * C'est lui que lisent le conditionnement, le moteur, la boîte et le mixage.
@@ -173,6 +191,16 @@ export const isRunning = ref(false)
 const fixWatchdog = new FixWatchdog()
 /** Nombre de relances du suivi, pour l'écran de télémétrie. */
 export const fixRestarts = ref(0)
+
+/**
+ * Pourquoi la vitesse s'est figée alors que des positions arrivent.
+ *
+ * Le chien de garde ne sait pas le dire : il ne voit qu'un silence, et relance
+ * un suivi qui marche. Cette cause-là se lit sur l'écran de conduite, parce
+ * qu'elle se corrige par un réglage et non en attendant.
+ */
+const rejectionWatch = new RejectionWatch()
+export const rejectionCause = ref<RejectionCause | null>(null)
 /**
  * Ce que la source GPS a vu passer, pour l'écran de télémétrie.
  *
@@ -622,6 +650,15 @@ function step(dt: number): void {
 
   if (sourceKind.value === 'geolocation') {
     const stats = geolocation.stats
+    rejectionCause.value = watching
+      ? rejectionWatch.tick(dt, {
+          received: stats.received,
+          emitted: stats.emitted,
+          implausible: stats.rejected.implausible,
+          tooClose: stats.rejected.tooClose,
+          inaccurate: stats.rejected.inaccurate,
+        })
+      : null
     fixStats.value = {
       received: stats.received,
       emitted: stats.emitted,
@@ -784,6 +821,8 @@ watch(selectedId, (id) => {
 export function start(): void {
   fixWatchdog.reset()
   fixRestarts.value = 0
+  rejectionWatch.reset()
+  rejectionCause.value = null
   currentSource().start()
   loop.start()
   isRunning.value = true
@@ -936,6 +975,8 @@ export function setSource(kind: SourceKind): void {
   sourceDetail.value = ''
   fixWatchdog.reset()
   fixRestarts.value = 0
+  rejectionWatch.reset()
+  rejectionCause.value = null
   if (wasRunning) currentSource().start()
 }
 

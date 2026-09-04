@@ -68,8 +68,14 @@ toute la conduite ordinaire, et la couche haut régime ne sort jamais.
 
 ## Périmètre
 
-Sept tickets. Cinq sont faits, un attend l'essai de l'ancrage, un attend le
-jugement à l'oreille.
+Huit tickets. Six sont faits, un attend le jugement à l'oreille, un — le relief
+en sortie — attend que la mesure soit reprise.
+
+Le huitième est né de l'essai du soir, avec le lot déjà livré : **le blocage de
+la vitesse avait une seconde cause**, l'étalonnage. Le ticket 02 avait bien
+corrigé la source, mais une étape de ville enregistrée dans un bouchon plafonne
+la vitesse acceptée à 40 km/h, et tout est rejeté au-delà. L'étalonnage ne
+s'applique donc plus qu'entier (ticket 08).
 
 Ce que le lot a livré : l'accélération vient de la pente estimée, la croisière
 se juge sur la dérive de la vitesse (aucun passage parasite mesuré, contre

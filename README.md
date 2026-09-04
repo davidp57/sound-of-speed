@@ -113,7 +113,17 @@ deux. Trois conséquences :
 - un profil partagé emporte un son, pas les capacités d'une autre voiture —
   la même raison qui a fait sortir le volume général du profil.
 
-**Sans étalonnage, rien ne change** : le profil est employé tel quel.
+**Sans étalonnage, rien ne change** : le profil est employé tel quel. Et
+**l'étalonnage ne s'applique qu'entier** : tant qu'une des six étapes manque ou
+a été refusée, rien n'est repris automatiquement, et l'écran de configuration
+dit lesquelles manquent. Plusieurs des réglages qu'il informe sont des bornes
+tirées de ce que la voiture a fait pendant l'étalonnage : au jeu complet elles
+décrivent la voiture, à une étape près elles décrivent le bout de route qu'on a
+pris ce jour-là. Mesuré en roulant : une seule étape de ville, enregistrée dans
+un bouchon à moins de 30 km/h, portait la vitesse plausible maximale à 40 km/h —
+au-delà, chaque mesure était rejetée comme aberrante et la vitesse se figeait.
+Les propositions, elles, restent affichées étape par étape et se recopient à la
+main.
 
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le
 plaisir. Deux réserves, et deux seulement. Un **décor** défilant reste une
