@@ -186,6 +186,14 @@ Toutes les évolutions notables du projet. Format
   frémissement de 0,024 à 0,029 que le mode exact ne montre pas.
 
 
+- **Le numéro de version mentait en développement.** Il est injecté à la
+  construction, et le serveur gardait donc celui qu'il avait lu à son démarrage :
+  l'écran annonçait 0.1.27 sur du 0.1.30 — le numéro censé lever les doutes en
+  créait un, le jour même de sa mise en place. Le serveur redémarre désormais
+  quand `package.json` change. Sans effet sur la construction de production, qui
+  lit toujours la bonne.
+
+
 - **Un étalonnage incomplet pouvait figer la vitesse.** Relevé en roulant le
   4 septembre 2026 : la seule étape de ville enregistrée, prise dans un bouchon à
   moins de 30 km/h, portait la vitesse plausible maximale de 260 à 40 km/h. Cette
