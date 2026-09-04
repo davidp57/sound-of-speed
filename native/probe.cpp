@@ -475,7 +475,186 @@ void report(const char *label, const Result &r) {
                 r.audioSeconds / total, r.rpm);
 }
 
+
 } // namespace
+
+// ---------------------------------------------------------------------------
+// Banc persistant, pour la page de mesure.
+//
+// La sonde en ligne de commande construit tout, mesure, et jette. La page, elle,
+// chronometre chaque appel de l'exterieur : il lui faut un banc qui vive entre
+// les appels, et trois operations separees.
+//
+// La synthese seule n'alimente pas la physique : elle ecrit dans l'entree du
+// synthetiseur un signal fabrique, puis lit la sortie. C'est bien la convolution
+// qu'on mesure alors, sans le cout du moteur derriere.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+struct Rig {
+    Engine *engine = nullptr;
+    Vehicle *vehicle = nullptr;
+    Transmission *transmission = nullptr;
+    Simulator *simulator = nullptr;
+    unsigned int impulseSamples = 0;
+    std::vector<int16_t> out;
+};
+
+Rig *g_rig = nullptr;
+
+Rig *buildRig(int simFrequency, unsigned int impulseSamples) {
+    Rig *rig = new Rig;
+    rig->engine = buildInline4();
+    rig->impulseSamples = impulseSamples;
+    rig->out.resize(4096);
+
+    rig->vehicle = new Vehicle;
+    Vehicle::Parameters vp;
+    vp.mass = units::mass(2700.0, units::lb);
+    vp.dragCoefficient = 0.2;
+    vp.crossSectionArea =
+        units::distance(66.0, units::inch) * units::distance(56.0, units::inch);
+    vp.diffRatio = 3.9;
+    vp.tireRadius = units::distance(10.0, units::inch);
+    vp.rollingResistance = units::force(300.0, units::N);
+    rig->vehicle->initialize(vp);
+
+    static const double gearRatios[6] = { 3.636, 2.375, 1.761, 1.346, 0.971, 0.756 };
+    rig->transmission = new Transmission;
+    Transmission::Parameters tp;
+    tp.GearCount = 6;
+    tp.GearRatios = gearRatios;
+    tp.MaxClutchTorque = units::torque(300.0, units::ft_lb);
+    rig->transmission->initialize(tp);
+
+    rig->simulator = rig->engine->createSimulator(rig->vehicle, rig->transmission);
+    rig->simulator->setSimulationFrequency(simFrequency);
+
+    Synthesizer::AudioParameters ap = rig->simulator->synthesizer().getAudioParameters();
+    ap.inputSampleNoise = (float)rig->engine->getInitialJitter();
+    ap.airNoise = (float)rig->engine->getInitialNoise();
+    ap.dF_F_mix = (float)rig->engine->getInitialHighFrequencyGain();
+    rig->simulator->synthesizer().setAudioParameters(ap);
+
+    const std::vector<int16_t> ir = makeImpulseResponse(impulseSamples);
+    rig->simulator->synthesizer().initializeImpulseResponse(
+        ir.data(), (unsigned int)ir.size(), 0.01f, 0);
+
+    rig->simulator->startAudioRenderingThread();
+    rig->engine->getIgnitionModule()->m_enabled = true;
+    rig->engine->setSpeedControl(0.10);
+    rig->simulator->m_dyno.m_enabled = false;
+    rig->simulator->m_starterMotor.m_enabled = true;
+
+    // Rodage hors chronometre : un moteur a l'arret ne mesure rien.
+    const double frameDt = 1.0 / 60.0;
+    for (int i = 0; i < 120; ++i) {
+        rig->simulator->startFrame(frameDt);
+        while (rig->simulator->simulateStep()) { /* void */ }
+        rig->simulator->endFrame();
+        rig->simulator->readAudioOutput((int)rig->out.size(), rig->out.data());
+        if (i == 60) rig->simulator->m_starterMotor.m_enabled = false;
+    }
+
+    return rig;
+}
+
+void destroyRig(Rig *rig) {
+    if (rig == nullptr) return;
+    rig->simulator->endAudioRenderingThread();
+    rig->simulator->releaseSimulation();
+    delete rig->simulator;
+    rig->engine->destroy();
+    delete rig->engine;
+    delete rig->vehicle;
+    delete rig->transmission;
+    delete rig;
+}
+
+} // namespace
+
+extern "C" {
+
+/** Construit le banc. Rend 1, ou 0 si un banc existait deja. */
+int bench_create(int simFrequency, int impulseSamples) {
+    if (g_rig != nullptr) return 0;
+    g_rig = buildRig(simFrequency, (unsigned int)impulseSamples);
+    return 1;
+}
+
+void bench_dispose() {
+    destroyRig(g_rig);
+    g_rig = nullptr;
+}
+
+/** Physique seule : aucune sortie n'est lue, donc rien n'est convolue. */
+void bench_simulate(double seconds) {
+    if (g_rig == nullptr) return;
+    const double frameDt = 1.0 / 60.0;
+    const int frames = (int)(seconds * 60.0);
+    for (int i = 0; i < frames; ++i) {
+        g_rig->simulator->startFrame(frameDt);
+        while (g_rig->simulator->simulateStep()) { /* void */ }
+        g_rig->simulator->endFrame();
+    }
+}
+
+/**
+ * Synthese seule : on alimente l'entree d'un signal fabrique et l'on tire la
+ * sortie. Aucune physique, donc c'est bien la convolution qu'on mesure.
+ */
+void bench_synthesize(double seconds) {
+    if (g_rig == nullptr) return;
+    Synthesizer &synth = g_rig->simulator->synthesizer();
+    const int target = (int)(seconds * 44100.0);
+    int produced = 0;
+    int guard = 0;
+    double phase = 0.0;
+    while (produced < target && guard < target * 8 + 1000) {
+        for (int k = 0; k < 64; ++k) {
+            const double sample = std::sin(phase) * 0.2;
+            phase += 0.05;
+            synth.writeInput(&sample);
+            synth.endInputBlock();
+        }
+        const int n = synth.readAudioOutput(
+            std::min(target - produced, (int)g_rig->out.size()), g_rig->out.data());
+        if (n > 0) produced += n;
+        ++guard;
+    }
+}
+
+/** La chaine complete, telle qu'elle tournerait. */
+void bench_run(double seconds) {
+    if (g_rig == nullptr) return;
+    const double frameDt = 1.0 / 60.0;
+    const int target = (int)(seconds * 44100.0);
+    int produced = 0;
+    int frames = 0;
+    const int frameLimit = (int)(seconds * 60 * 20) + 100;
+    while (produced < target && frames < frameLimit) {
+        g_rig->simulator->startFrame(frameDt);
+        while (g_rig->simulator->simulateStep()) { /* void */ }
+        g_rig->simulator->endFrame();
+        int read = 0;
+        int guard = 0;
+        while (read < 735 && guard < 8) {
+            const int n = g_rig->simulator->readAudioOutput(
+                std::min(735 - read, (int)g_rig->out.size()), g_rig->out.data());
+            if (n <= 0) break;
+            read += n;
+            ++guard;
+        }
+        produced += read;
+        ++frames;
+    }
+}
+
+double bench_rpm() { return g_rig == nullptr ? 0.0 : g_rig->engine->getRpm(); }
+int bench_impulse_samples() { return g_rig == nullptr ? 0 : (int)g_rig->impulseSamples; }
+
+} // extern "C"
 
 int main(int argc, char **argv) {
     double duration = 1.0;

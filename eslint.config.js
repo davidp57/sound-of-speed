@@ -21,10 +21,18 @@ export default ts.config(
       // Service worker : écrit pour le navigateur, servi tel quel, hors chaîne
       // de construction.
       'public/sw.js',
+      // Sortie d'Emscripten : du code machine enveloppé de JavaScript, produit
+      // par `native/build-wasm.sh` et déposé tel quel. Le relire n'a pas de sens,
+      // et le corriger serait défait à la compilation suivante.
+      'public/sonde/probe.mjs',
       // Copies de travail que les agents créent dans le dépôt. Sans cette
       // exclusion, `npm run lint` y voit une seconde racine TypeScript et rend
       // cent quarante erreurs d'analyse qui ne parlent d'aucun code du projet.
       '.claude/worktrees/**',
+      // Sources tierces rapatriées et produits de compilation : rien de tout
+      // cela n'est versionné, et rien n'y est écrit à la main.
+      'native/.work/**',
+      'native/.build/**',
     ],
   },
   js.configs.recommended,
@@ -51,7 +59,7 @@ export default ts.config(
   },
   {
     // Les scripts d'outillage tournent sous Node, pas dans le navigateur.
-    files: ['scripts/**/*.mjs', '*.config.ts', '*.config.js'],
+    files: ['scripts/**/*.mjs', 'native/**/*.mjs', '*.config.ts', '*.config.js'],
     languageOptions: { globals: { ...globals.node } },
   },
 )

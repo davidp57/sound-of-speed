@@ -52,7 +52,8 @@ em++ $CXXFLAGS $INCLUDES "${SOURCES[@]}" \
     -sALLOW_MEMORY_GROWTH \
     -sINITIAL_MEMORY=134217728 \
     -sMODULARIZE -sEXPORT_ES6 \
-    -sEXPORTED_RUNTIME_METHODS=callMain \
+    -sEXPORTED_RUNTIME_METHODS=callMain,ccall,cwrap \
+    -sEXPORTED_FUNCTIONS=_main,_bench_create,_bench_dispose,_bench_simulate,_bench_synthesize,_bench_run,_bench_rpm,_bench_impulse_samples \
     -sINVOKE_RUN=0 \
     -o "$BUILD/probe.mjs"
 
