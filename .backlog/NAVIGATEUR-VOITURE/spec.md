@@ -51,6 +51,17 @@ la voiture, puis décider : un seuil trop serré rejetterait des mesures saines 
 ferait taire la source, c'est-à-dire exactement le défaut qu'on vient de
 corriger.
 
+**Dire quelle version tourne.** L'application n'affiche son numéro de version
+nulle part. Dans la voiture, où le service worker sert un cache et où il n'y a
+ni console ni devtools, **rien ne permet donc de savoir si l'on essaie la
+version qu'on croit**. Relevé le 4 septembre 2026, en préparant une série
+d'essais : la première précaution demandée était « comment repartir sur une base
+propre », et la réponse ne peut pas être vérifiée faute de ce numéro.
+
+Il se lit déjà dans `package.json` au moment de la construction. L'afficher tient
+donc à peu de chose, et cela vaut pour tout essai à venir : un correctif jugé
+sur la version précédente est un correctif jugé pour rien.
+
 **Afficher ce qui ne se déduit pas.** Quatre inconnues se règlent par un
 affichage en télémétrie plutôt que par du code écrit à l'aveugle : la précision
 des positions, la largeur utile réelle de la page (le zoom n'est pas réglable et
