@@ -140,6 +140,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Les commandes de l'écran de conduite tiennent sur une seule ligne**, en trois
+  groupes ancrés : la source à gauche, l'affichage au centre, les profils à
+  droite. Elles occupaient trois lignes, soit 286 pixels de hauteur pris sur les
+  cadrans ; elles en prennent 38. Chaque groupe garde sa place quand les autres
+  changent de largeur — un nom de profil plus long ne déplace pas les boutons de
+  source, qu'on cherche au même endroit à chaque fois. Ils se replient l'un après
+  l'autre dès que la largeur manque : deux lignes à 380 pixels, sans débordement.
+  Cela compte, la largeur utile du navigateur de la voiture n'étant pas connue et
+  son zoom pas réglable.
+
+
 - **Le simulateur n'existe plus qu'en développement.** Dans une voiture il n'a
   aucun sens, et il n'y serait qu'un moyen de se tromper sur ce qu'on entend. La
   construction de production ne le propose pas, et la source au démarrage y

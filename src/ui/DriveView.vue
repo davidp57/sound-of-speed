@@ -217,7 +217,8 @@ const SPEED_STEP_KMH = 20
 
 <template>
   <div class="drive" :class="{ immersive }">
-    <section v-if="!immersive" class="sources">
+    <div class="toolbar">
+      <section v-if="!immersive" class="sources">
       <button
         v-for="entry in SOURCES"
         :key="entry.id"
@@ -232,17 +233,6 @@ const SPEED_STEP_KMH = 20
       </span>
     </section>
 
-    <section v-if="favoriteProfiles.length > 1" class="favorites" :class="{ large: immersive }">
-      <button
-        v-for="entry in favoriteProfiles"
-        :key="entry.id"
-        :aria-pressed="entry.id === selectedProfileId"
-        @click="selectProfile(entry.id)"
-      >
-        {{ entry.name }}
-      </button>
-    </section>
-
     <!--
       Les deux visages de l'écran.
       Les cadrans se lisent mieux en roulant ; on ne règle pas un profil sur une
@@ -254,13 +244,24 @@ const SPEED_STEP_KMH = 20
       conducteur défile en perspective, d'avant en arrière. Il reviendra
       autrement, et le code de l'ancien est dans l'historique.
     -->
-    <section v-if="!immersive" class="face-switch">
-      <button :aria-pressed="driveFace === 'dials'" @click="setDriveFace('dials')">Cadrans</button>
-      <button :aria-pressed="driveFace === 'numbers'" @click="setDriveFace('numbers')">
-        Chiffres
-      </button>
+      <section v-if="!immersive" class="face-switch">
+        <button :aria-pressed="driveFace === 'dials'" @click="setDriveFace('dials')">Cadrans</button>
+        <button :aria-pressed="driveFace === 'numbers'" @click="setDriveFace('numbers')">
+          Chiffres
+        </button>
+      </section>
 
+      <section v-if="favoriteProfiles.length > 1" class="favorites" :class="{ large: immersive }">
+      <button
+        v-for="entry in favoriteProfiles"
+        :key="entry.id"
+        :aria-pressed="entry.id === selectedProfileId"
+        @click="selectProfile(entry.id)"
+      >
+        {{ entry.name }}
+      </button>
     </section>
+    </div>
 
     <section v-if="driveFace === 'dials'" class="dashboard">
       <div class="cell speed">
@@ -538,6 +539,24 @@ const SPEED_STEP_KMH = 20
   margin: 0 auto;
 }
 
+/*
+ * Une seule barre d'outils, sur une ligne quand la place le permet.
+ *
+ * Les trois groupes — source, profil, visage — occupaient trois lignes, soit
+ * autant de hauteur prise sur les cadrans. Ils se replient l'un après l'autre
+ * dès que la largeur manque, ce qui compte : la largeur utile du navigateur de
+ * la voiture n'est pas connue, et son zoom n'est pas réglable.
+ *
+ * Les groupes restent des sections distinctes : ce sont trois choix sans
+ * rapport, et un lecteur d'écran doit continuer de les entendre séparés.
+ */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem 1.25rem;
+  flex-wrap: wrap;
+}
+
 .sources {
   display: flex;
   align-items: center;
@@ -548,6 +567,24 @@ const SPEED_STEP_KMH = 20
 .status {
   color: var(--muted);
   margin-left: 0.5rem;
+}
+
+/*
+ * Trois ancrages plutôt que trois places au fil du texte : la source à gauche,
+ * l'affichage au centre, les profils à droite. Chacun garde sa place quand les
+ * autres changent de largeur — un nom de profil plus long ne doit pas déplacer
+ * les boutons de source, qu'on cherche au même endroit à chaque fois.
+ *
+ * Les marges automatiques tombent d'elles-mêmes quand la barre se replie : les
+ * groupes se rangent alors les uns sous les autres, alignés à gauche.
+ */
+.face-switch {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.favorites {
+  margin-left: auto;
 }
 
 .favorites {
@@ -613,6 +650,7 @@ const SPEED_STEP_KMH = 20
   display: flex;
   gap: 0.4rem;
 }
+
 
 /*
  * Tableau de bord.
