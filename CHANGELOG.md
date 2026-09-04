@@ -8,6 +8,13 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **L'application dit quelle version elle sert**, en tête de la section
+  *Appareil* de l'écran de télémétrie. Dans la voiture il n'y a ni console ni
+  outils de développement, un service worker garde un cache, et rien ne
+  permettait de savoir si l'on essayait la version qu'on croyait — un correctif
+  jugé sur la version précédente est un correctif jugé pour rien. Le numéro est
+  lu dans `package.json` au moment de la construction.
+
 - **Une manette Xbox conduit le simulateur.** Deux gâchettes analogiques valent
   mieux qu'une flèche du clavier pour juger un son : la charge s'entend sur des
   transitions, et une commande tout ou rien ne produit que la plus brutale.

@@ -51,7 +51,8 @@ la voiture, puis décider : un seuil trop serré rejetterait des mesures saines 
 ferait taire la source, c'est-à-dire exactement le défaut qu'on vient de
 corriger.
 
-**Dire quelle version tourne.** L'application n'affiche son numéro de version
+**Dire quelle version tourne.** ✅ Livré le 4 septembre 2026.
+ L'application n'affiche son numéro de version
 nulle part. Dans la voiture, où le service worker sert un cache et où il n'y a
 ni console ni devtools, **rien ne permet donc de savoir si l'on essaie la
 version qu'on croit**. Relevé le 4 septembre 2026, en préparant une série
@@ -78,6 +79,10 @@ session à l'autre.
   aussi ce qui confirmera ou non le diagnostic du GPS muet.
 
 ## Ce qui est livré
+
+**Le numéro de version s'affiche**, en tête de la section « Appareil » de
+l'écran de télémétrie, lu dans `package.json` à la construction. C'est la
+première chose à regarder avant de juger un essai.
 
 Le filtre de précision existe, réglable par profil sous *Précision GPS
 acceptée*, livré à **250 mètres** — large exprès, faute de valeurs mesurées.

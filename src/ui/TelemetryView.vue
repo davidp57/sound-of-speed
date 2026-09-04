@@ -46,6 +46,9 @@ const maintien = computed(() => {
   return audioStatus.value.keepAlivePlaying ? 'joue' : 'arrêté'
 })
 
+/** La version servie à cette page, injectée à la construction. */
+const appVersion = __APP_VERSION__
+
 const traceName = ref('')
 const replayRate = ref(1)
 
@@ -442,6 +445,11 @@ function onRateChange(event: Event): void {
     -->
     <section class="panel">
       <h2>Appareil</h2>
+      <ValueRow
+        label="Version"
+        :value="appVersion"
+        hint="La version servie à cette page. Dans la voiture, où un service worker garde un cache et où il n'y a pas de console, c'est le seul moyen de savoir si l'on essaie bien ce qu'on croit essayer."
+      />
       <ValueRow
         label="Largeur utile"
         :value="pageWidth"

@@ -33,7 +33,9 @@ export default ts.config(
   {
     files: ['**/*.ts', '**/*.vue'],
     languageOptions: {
-      globals: { ...globals.browser },
+      // `__APP_VERSION__` est injectée par Vite à la construction, depuis
+      // `package.json` : elle n'existe dans aucune déclaration de source.
+      globals: { ...globals.browser, __APP_VERSION__: 'readonly' },
       parserOptions: { parser: ts.parser },
     },
     rules: {
