@@ -29,6 +29,7 @@ import {
   setThrottle,
   shiftDown,
   shiftUp,
+  rejectionCause,
   sourceDetail,
   sourceKind,
   sourceStatus,
@@ -62,6 +63,31 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const manual = computed(() => telemetry.value.gearbox.mode === 'manual')
+
+/**
+ * Ce qui écarte les positions, quand la vitesse se fige alors que le GPS parle.
+ *
+ * Le message nomme le réglage à regarder : ces trois causes se corrigent, et
+ * aucune ne se résout en attendant. Relevé en roulant le 4 septembre 2026, où
+ * un étalonnage de ville avait plafonné la vitesse acceptée sans que rien ne le
+ * dise.
+ */
+const REJECTION_LABELS: Record<string, string> = {
+  implausible:
+    'Les mesures dépassent la vitesse acceptée et sont toutes écartées. ' +
+    'Voyez « Vitesse plausible maximale » — un étalonnage incomplet peut l’avoir abaissée.',
+  inaccurate:
+    'Les positions sont annoncées trop imprécises et sont toutes écartées. ' +
+    'Voyez « Précision GPS acceptée ».',
+  tooClose:
+    'Les positions se suivent de trop près pour en tirer une vitesse, et le GPS ' +
+    'n’annonce pas la sienne.',
+  none: 'Le GPS envoie des positions, mais aucune vitesse n’en sort.',
+}
+
+const rejectionMessage = computed(() =>
+  rejectionCause.value === null ? '' : (REJECTION_LABELS[rejectionCause.value] ?? ''),
+)
 const sliderSpeed = ref(0)
 const cruiseOn = ref(false)
 
@@ -338,6 +364,8 @@ const SPEED_STEP_KMH = 20
           et droite pour changer de rapport en mode manuel.
         </p>
       </div>
+
+      <p v-if="rejectionMessage" class="hint warn">{{ rejectionMessage }}</p>
 
       <p v-else-if="sourceKind === 'geolocation' && sourceStatus === 'denied'" class="hint warn">
         La localisation a été refusée. Autorisez-la dans les réglages du site pour

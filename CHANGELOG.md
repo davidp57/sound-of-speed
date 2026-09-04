@@ -87,6 +87,37 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Un étalonnage incomplet pouvait figer la vitesse.** Relevé en roulant le
+  4 septembre 2026 : la seule étape de ville enregistrée, prise dans un bouchon à
+  moins de 30 km/h, portait la vitesse plausible maximale de 260 à 40 km/h. Cette
+  borne est appliquée au profil que le moteur emploie, et une mesure au-delà
+  n'est pas écrêtée mais **rejetée** — aux deux étages, la source et le
+  conditionnement. En montant sur l'autoroute, plus une seule vitesse ne sortait :
+  vitesse, régime et son figés, le chien de garde relançant un suivi qui
+  fonctionnait. Rien à l'écran n'en disait la cause, l'écran de configuration
+  affichant toujours les 260 km/h du profil réglé.
+
+  **L'étalonnage ne s'applique désormais qu'entier.** Tant qu'une des six étapes
+  manque ou a été refusée, rien n'est repris automatiquement, et l'écran de
+  configuration dit lesquelles manquent. Plusieurs des réglages informés sont des
+  bornes tirées de ce que la voiture a fait pendant l'étalonnage : au jeu complet
+  elles décrivent la voiture, à une étape près elles décrivent le bout de route du
+  jour. La même mécanique guettait les deux bornes d'accélération — un étalonnage
+  sans freinage franc avait déjà proposé une borne basse qui aurait écrêté tout
+  freinage réel. Les propositions restent affichées et se recopient à la main.
+
+  L'écran de configuration annonce maintenant **la valeur** de chaque réglage
+  remplacé, et non son seul libellé : « Vitesse plausible maximale — 40 km/h au
+  lieu de 260 » se lit, « Vitesse plausible maximale » ne disait rien.
+
+- **Une source qui jetait toutes ses mesures était muette sur la raison.** Elle
+  donnait le même écran qu'une source qui ne reçoit rien : une vitesse figée. Un
+  message sur l'écran de conduite nomme désormais la cause au bout de trois
+  secondes de silence — vitesse acceptée dépassée, positions trop imprécises,
+  positions trop rapprochées — et le réglage à regarder. Le chien de garde, lui,
+  ne voit qu'un silence et relance un suivi qui marche : les deux ne parlent pas
+  en même temps.
+
 - **L'accélération transmise au son était celle du ressort de lissage, pas
   celle qui avait été mesurée.** Le conditionnement calcule une pente ajustée
   aux moindres carrés sur sa fenêtre — c'est le travail du 3 septembre — mais
