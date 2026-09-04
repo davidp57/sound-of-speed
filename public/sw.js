@@ -82,20 +82,6 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // La sonde de mesure est laissée au navigateur, entièrement.
-  //
-  // Elle charge un module WebAssembly, et le service worker le lui refusait :
-  // mesuré, un fichier servi correctement par le serveur — 200, type
-  // `application/wasm` — restait impossible à charger depuis la page, parce que
-  // le repli de `networkFirst` vaut `null` pour une adresse inconnue et rejette
-  // au lieu de laisser passer. Une fois le service worker désinscrit, le module
-  // se chargeait du premier coup.
-  //
-  // Cela compte plus qu'il n'y paraît : la sonde sert à décider si le simulateur
-  // de moteur tient dans la voiture, et le service worker y est actif. Une page
-  // cassée par notre propre cache se lirait comme un échec du portage.
-  if (url.pathname.startsWith('/sonde/')) return
-
   // La page d'entrée doit être cherchée sur le réseau en premier : c'est elle
   // qui référence les ressources empreintes, donc elle seule fait basculer sur
   // une nouvelle version. Hors ligne, la copie en cache prend le relais.
