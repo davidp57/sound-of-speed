@@ -137,6 +137,7 @@ export const runtimeProfile = computed<Profile>(() =>
 const simulator = new SimulatorSource()
 const geolocation = new GeolocationSource({
   maxPlausibleKmh: activeProfile.value.speed.maxPlausibleKmh,
+  maxAccuracyM: activeProfile.value.speed.maxAccuracyM,
 })
 const replay = new ReplaySource({ name: 'vide', startedAt: 0, samples: [] })
 
@@ -181,7 +182,37 @@ export const fixStats = ref({
   emitted: 0,
   implausible: 0,
   tooClose: 0,
+  inaccurate: 0,
+  lastAccuracyM: null as number | null,
+  recentAccuracyM: [] as number[],
 })
+
+/**
+ * État de l'autorisation de géolocalisation à l'ouverture de la page.
+ *
+ * Relevé ici, au chargement du module, et pas plus tard : c'est le seul moment
+ * où il répond à la question posée — l'autorisation est-elle retenue d'une
+ * session à l'autre, ou faut-il la redonner à chaque démarrage de la voiture ?
+ * Interrogé après un premier suivi, il vaudrait « accordée » dans les deux cas.
+ */
+export const geolocationPermissionAtStart = ref<'inconnu' | 'accordée' | 'à demander' | 'refusée'>(
+  'inconnu',
+)
+
+if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+  // `PermissionName` ne connaît pas encore « geolocation » dans tous les
+  // navigateurs, d'où la conversion : l'interroger reste sans effet de bord.
+  void navigator.permissions
+    .query({ name: 'geolocation' as PermissionName })
+    .then((status) => {
+      const dire = { granted: 'accordée', prompt: 'à demander', denied: 'refusée' } as const
+      geolocationPermissionAtStart.value = dire[status.state] ?? 'inconnu'
+    })
+    .catch(() => {
+      // Certains navigateurs embarqués refusent la requête elle-même. Rester sur
+      // « inconnu » vaut mieux qu'annoncer un état inventé.
+    })
+}
 export const isRecording = ref(false)
 export const recordedCount = ref(0)
 export const traces = ref<Trace[]>(loadTraces())
@@ -510,6 +541,9 @@ function step(dt: number): void {
       emitted: stats.emitted,
       implausible: stats.rejected.implausible,
       tooClose: stats.rejected.tooClose,
+      inaccurate: stats.rejected.inaccurate,
+      lastAccuracyM: stats.lastAccuracyM,
+      recentAccuracyM: [...stats.recentAccuracyM],
     }
   }
 
@@ -596,7 +630,10 @@ watch(
     conditioner.setPreset(profile.speed)
     gearbox.setPresets(profile.drivetrain, profile.engine, profile.feel)
     engine.setPresets(profile.engine, profile.mix)
-    geolocation.setOptions({ maxPlausibleKmh: profile.speed.maxPlausibleKmh })
+    geolocation.setOptions({
+      maxPlausibleKmh: profile.speed.maxPlausibleKmh,
+      maxAccuracyM: profile.speed.maxAccuracyM,
+    })
   },
   { deep: true, immediate: true },
 )

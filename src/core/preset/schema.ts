@@ -187,6 +187,20 @@ export interface SpeedPreset {
   accelWindowMs: number
   /** Toute mesure au-delà est rejetée comme aberrante. */
   maxPlausibleKmh: number
+  /**
+   * Précision annoncée au-delà de laquelle une position est écartée, en mètres.
+   *
+   * Une position à trois cents mètres près entrait dans le calcul comme une
+   * position à cinq mètres : la vitesse déduite de deux points aussi flous n'a
+   * aucun sens, et le lissage l'étale ensuite sur plusieurs secondes.
+   *
+   * **Le seuil est large tant que les valeurs réelles ne sont pas relevées.**
+   * Un seuil trop serré rejette des mesures saines et fait taire la source,
+   * c'est-à-dire exactement le défaut qui vient d'immobiliser l'application
+   * deux fois sur autoroute. La précision courante est affichée en télémétrie
+   * pour qu'on resserre sur des chiffres et non sur une intuition.
+   */
+  maxAccuracyM: number
   /** Bornes de l'accélération retenue, en m/s². */
   minAccelMs2: number
   maxAccelMs2: number

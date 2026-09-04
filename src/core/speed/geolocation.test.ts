@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { GeolocationSource } from './geolocation'
+import { createDefaultProfile } from '../preset/defaults'
 import type { SourceStatus, SpeedSample } from './source'
+
+/**
+ * Seuil de précision livré. Lu dans le profil et non recopié : c'est cette
+ * valeur-là qui roulera, et un test qui recopierait la sienne ne dirait rien
+ * du réglage réel.
+ */
+const DEFAULT_MAX_ACCURACY_M = createDefaultProfile().speed.maxAccuracyM
 
 /**
  * Tests de la source GPS.
@@ -63,12 +71,17 @@ function installFakeGeolocation(): FakeGeolocation {
  * `speed` à `null` reproduit un navigateur qui ne renseigne pas la vitesse — le
  * cas où elle doit être déduite de deux positions.
  */
-function position(atMs: number, metres: number, speed: number | null): GeolocationPosition {
+function position(
+  atMs: number,
+  metres: number,
+  speed: number | null,
+  accuracyM: number | null = 5,
+): GeolocationPosition {
   return {
     coords: {
       latitude: 49.6 + metres / 111_320,
       longitude: 6.13,
-      accuracy: 5,
+      accuracy: accuracyM,
       altitude: null,
       altitudeAccuracy: null,
       heading: null,
@@ -91,10 +104,13 @@ function drive(options: {
   seconds: number
   reportsSpeed: boolean
   maxPlausibleKmh?: number
+  maxAccuracyM?: number
+  accuracyM?: number | null
 }): Trajet {
   const fake = installFakeGeolocation()
   const source = new GeolocationSource({
     maxPlausibleKmh: options.maxPlausibleKmh ?? 260,
+    maxAccuracyM: options.maxAccuracyM ?? DEFAULT_MAX_ACCURACY_M,
   })
   const samples: SpeedSample[] = []
   const statuses: SourceStatus[] = []
@@ -109,7 +125,14 @@ function drive(options: {
   const steps = Math.round((options.seconds * 1000) / options.cadenceMs)
   for (let i = 0; i <= steps; i += 1) {
     const atMs = i * options.cadenceMs
-    watch.onPosition(position(atMs, (atMs / 1000) * mps, options.reportsSpeed ? mps : null))
+    watch.onPosition(
+      position(
+        atMs,
+        (atMs / 1000) * mps,
+        options.reportsSpeed ? mps : null,
+        options.accuracyM === undefined ? 5 : options.accuracyM,
+      ),
+    )
   }
   return { samples, statuses, source }
 }
@@ -178,7 +201,7 @@ describe('GeolocationSource — les mesures aberrantes', () => {
     // entièrement une valeur aberrante — les deux disent maintenant la même
     // chose.
     const fake = installFakeGeolocation()
-    const source = new GeolocationSource({ maxPlausibleKmh: 200 })
+    const source = new GeolocationSource({ maxPlausibleKmh: 200, maxAccuracyM: DEFAULT_MAX_ACCURACY_M })
     const samples: SpeedSample[] = []
     source.onSample((sample) => samples.push(sample))
     source.start()
@@ -201,7 +224,7 @@ describe('GeolocationSource — les mesures aberrantes', () => {
     // La prendre au mot donnerait une vitesse négative ; il faut la déduire des
     // positions, comme si le champ était absent.
     const fake = installFakeGeolocation()
-    const source = new GeolocationSource({ maxPlausibleKmh: 260 })
+    const source = new GeolocationSource({ maxPlausibleKmh: 260, maxAccuracyM: DEFAULT_MAX_ACCURACY_M })
     const samples: SpeedSample[] = []
     source.onSample((sample) => samples.push(sample))
     source.start()
@@ -222,7 +245,7 @@ describe('GeolocationSource — la reprise du suivi', () => {
     // position de référence ne doit pas survivre à cet arrêt : l'écart avec la
     // première position d'après serait celui d'une interruption entière.
     const fake = installFakeGeolocation()
-    const source = new GeolocationSource({ maxPlausibleKmh: 260 })
+    const source = new GeolocationSource({ maxPlausibleKmh: 260, maxAccuracyM: DEFAULT_MAX_ACCURACY_M })
     const samples: SpeedSample[] = []
     source.onSample((sample) => samples.push(sample))
 
@@ -237,5 +260,151 @@ describe('GeolocationSource — la reprise du suivi', () => {
 
     expect(samples).toHaveLength(0)
     expect(fake.cleared).toEqual([1])
+  })
+})
+
+describe('GeolocationSource — la précision des positions', () => {
+  it('rejette une position plus imprécise que le seuil, et la compte', () => {
+    // Une position à quelques centaines de mètres près n'est pas une position
+    // fausse au sens du GPS, mais la vitesse qu'on en déduit l'est : deux
+    // secondes d'écart et trois cents mètres d'incertitude donnent n'importe
+    // quoi. Rejeter n'a d'intérêt que si le rejet se compte : un filtre muet
+    // qui ferait taire la source ressemblerait trait pour trait au défaut du
+    // GPS immobile.
+    const { samples, source } = drive({
+      kmh: 110,
+      cadenceMs: 200,
+      seconds: 10,
+      reportsSpeed: true,
+      maxAccuracyM: 100,
+      accuracyM: 400,
+    })
+
+    expect(samples).toHaveLength(0)
+    expect(source.stats.rejected.inaccurate).toBe(source.stats.received)
+    expect(source.stats.emitted).toBe(0)
+  })
+
+  it('laisse passer une position précise', () => {
+    const { samples, source } = drive({
+      kmh: 110,
+      cadenceMs: 200,
+      seconds: 10,
+      reportsSpeed: true,
+      maxAccuracyM: 100,
+      accuracyM: 8,
+    })
+
+    expect(samples.length).toBeGreaterThan(5)
+    expect(source.stats.rejected.inaccurate).toBe(0)
+  })
+
+  it('accepte une précision juste égale au seuil', () => {
+    // La borne est incluse : c'est le seuil au-delà duquel on rejette, pas
+    // celui à partir duquel on rejette.
+    const { samples } = drive({
+      kmh: 90,
+      cadenceMs: 500,
+      seconds: 5,
+      reportsSpeed: true,
+      maxAccuracyM: 60,
+      accuracyM: 60,
+    })
+
+    expect(samples.length).toBeGreaterThan(3)
+  })
+
+  it('ne rejette rien d’ordinaire au réglage livré', () => {
+    // Le seuil livré est volontairement large : les valeurs réelles de la
+    // voiture ne sont pas connues, et un seuil trop serré ferait taire la
+    // source — le défaut qu'on vient de corriger. Ce test est là pour qu'un
+    // resserrement au doigt mouillé se voie tout de suite : 100 mètres est un
+    // relevé médiocre mais crédible sur un récepteur qui voit peu de ciel.
+    for (const accuracyM of [5, 25, 60, 100]) {
+      const { samples, source } = drive({
+        kmh: 110,
+        cadenceMs: 200,
+        seconds: 10,
+        reportsSpeed: true,
+        accuracyM,
+      })
+      expect(source.stats.rejected.inaccurate, `précision ${accuracyM} m`).toBe(0)
+      expect(samples.length, `précision ${accuracyM} m`).toBeGreaterThan(5)
+    }
+  })
+
+  it('n’écarte pas une position dont la précision est inconnue', () => {
+    // Tous les navigateurs ne renseignent pas `accuracy`. L'absence de chiffre
+    // n'est pas un mauvais chiffre : filtrer là-dessus reviendrait à refuser
+    // toutes les positions d'un appareil qui se tait.
+    const { samples, source } = drive({
+      kmh: 110,
+      cadenceMs: 200,
+      seconds: 10,
+      reportsSpeed: true,
+      maxAccuracyM: 100,
+      accuracyM: null,
+    })
+
+    expect(samples.length).toBeGreaterThan(5)
+    expect(source.stats.rejected.inaccurate).toBe(0)
+    expect(source.stats.lastAccuracyM).toBeNull()
+  })
+
+  it('ne prend pas une position imprécise comme référence', () => {
+    // À vitesse déduite, la position rejetée ne doit pas non plus servir de
+    // point de départ au calcul suivant : sinon le filtre transforme une
+    // position douteuse en vitesse aberrante, et on n'a fait que déplacer le
+    // problème d'un rejet à l'autre.
+    const fake = installFakeGeolocation()
+    const source = new GeolocationSource({ maxPlausibleKmh: 260, maxAccuracyM: 100 })
+    const samples: SpeedSample[] = []
+    source.onSample((sample) => samples.push(sample))
+    source.start()
+    const watch = fake.watches[0]!
+
+    watch.onPosition(position(0, 0, null, 6))
+    // Un saut de cinq cents mètres, annoncé à neuf cents mètres près.
+    watch.onPosition(position(1000, 500, null, 900))
+    watch.onPosition(position(2000, 25, null, 6))
+
+    // 25 mètres en deux secondes : 45 km/h. Prise comme référence, la position
+    // rejetée aurait donné 475 m/s, donc un second rejet pour aberration.
+    expect(samples).toHaveLength(1)
+    expect(samples[0]?.kmh).toBeCloseTo(45, 0)
+    expect(source.stats.rejected.inaccurate).toBe(1)
+    expect(source.stats.rejected.implausible).toBe(0)
+  })
+
+  it('remonte la précision courante et les précisions récentes', () => {
+    // C'est l'affichage qui décidera du seuil : sans relevé dans la voiture, on
+    // ne connaît pas les valeurs réelles. Une position rejetée compte donc dans
+    // l'historique — c'est même la première qu'on veut voir.
+    const fake = installFakeGeolocation()
+    const source = new GeolocationSource({ maxPlausibleKmh: 260, maxAccuracyM: 100 })
+    source.start()
+    const watch = fake.watches[0]!
+
+    watch.onPosition(position(0, 0, 30, 12))
+    watch.onPosition(position(1000, 30, 30, 380))
+    watch.onPosition(position(2000, 60, 30, 8))
+
+    expect(source.stats.lastAccuracyM).toBe(8)
+    expect(source.stats.recentAccuracyM).toEqual([12, 380, 8])
+  })
+
+  it('borne l’historique des précisions', () => {
+    // Le GPS de la voiture livre une position toutes les quelques dizaines de
+    // millisecondes : sans borne, l'historique grossirait tout le trajet.
+    const { source } = drive({
+      kmh: 110,
+      cadenceMs: 100,
+      seconds: 20,
+      reportsSpeed: true,
+      accuracyM: 7,
+    })
+
+    expect(source.stats.received).toBeGreaterThan(100)
+    expect(source.stats.recentAccuracyM.length).toBeLessThanOrEqual(12)
   })
 })

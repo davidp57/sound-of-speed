@@ -188,6 +188,13 @@ export function createDefaultProfile(): Profile {
       springOmega: 14,
       accelWindowMs: 1000,
       maxPlausibleKmh: 260,
+      // Volontairement large, et à resserrer sur relevé. Un point satellite
+      // s'annonce à quelques mètres ou quelques dizaines de mètres, même mal
+      // placé ; une position obtenue sans satellites, par le réseau, s'annonce
+      // à plusieurs centaines. Ce seuil passe entre les deux familles sans
+      // rejeter ce qu'un vrai point GPS produit. Les valeurs de la voiture, en
+      // revanche, ne sont pas encore mesurées : la télémétrie les affiche.
+      maxAccuracyM: 250,
       minAccelMs2: -14,
       maxAccelMs2: 14,
     },
