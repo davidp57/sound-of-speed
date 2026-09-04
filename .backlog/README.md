@@ -42,7 +42,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [IMPERFECTIONS](IMPERFECTIONS/spec.md) — un moteur ne tourne pas juste : tremblement de régime, couches désaccordées | 🔄 |
 | [ESSAI-04](ESSAI-04/spec.md) — six défauts relevés en roulant le 4 septembre : GPS muet, accélération bruitée, étalonnage bloqué, relief écrasé, sortie du plein écran, décor retiré | 🔄 |
 | [JOURNAL](JOURNAL/spec.md) — savoir ce que la voiture a vécu, sans avoir à le demander : journal déposé tout seul, en deux crans d'accord | ⬜ |
-| [NAVIGATEUR-VOITURE](NAVIGATEUR-VOITURE/spec.md) — ce que l'appareil réel impose : filtrer sur la précision, mesurer la largeur utile | ⬜ |
+| [NAVIGATEUR-VOITURE](NAVIGATEUR-VOITURE/spec.md) — ce que l'appareil réel impose : filtrer sur la précision, mesurer la largeur utile | 🧑 |
 | [DECOR-PERSPECTIVE](DECOR-PERSPECTIVE/spec.md) — un décor vu de la place du conducteur, et non de côté | ⬜ |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,

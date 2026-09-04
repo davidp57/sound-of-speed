@@ -1,6 +1,6 @@
 # NAVIGATEUR-VOITURE — ce que l'appareil réel impose
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — le code est livré, il attend un relevé en roulant
 **Branche :** `fix/navigateur-voiture`
 **Version visée :** 0.2
 
@@ -65,6 +65,34 @@ session à l'autre.
 - **`coords.speed` est-il renseigné ?** La ligne « Origine de la vitesse » de
   l'écran de télémétrie, livrée par ESSAI-04, le dira au premier trajet. C'est
   aussi ce qui confirmera ou non le diagnostic du GPS muet.
+
+## Ce qui est livré
+
+Le filtre de précision existe, réglable par profil sous *Précision GPS
+acceptée*, livré à **250 mètres** — large exprès, faute de valeurs mesurées.
+Une position écartée n'est ni une mesure ni la référence de la suivante, et son
+rejet se compte à l'écran. Sept tests couvrent le rejet, le passage, la borne,
+la précision inconnue, la référence conservée et le réglage livré.
+
+Les quatre inconnues sont affichées : la précision annoncée et les douze
+dernières dans « Qualité du signal » ; la largeur et la hauteur utiles, la
+taille d'écran annoncée, la densité de pixels, la réponse de l'API de verrou
+d'écran et l'autorisation de géolocalisation relevée au chargement, dans une
+section « Appareil ».
+
+## Ce qui reste
+
+Un relevé en roulant, par David :
+
+1. la précision annoncée par la voiture, en ville et sur autoroute — c'est elle
+   qui décidera du seuil définitif ;
+2. la largeur utile, pour caler la mise en page ;
+3. la réponse du verrou d'écran, et si l'autorisation de géolocalisation est
+   retenue au démarrage suivant.
+
+Le seuil ne sera resserré qu'après. Tant qu'il ne l'est pas, le compte
+« imprécises » doit rester à zéro sur un trajet ordinaire ; s'il grimpe, c'est
+le seuil qu'il faut élargir, pas les mesures qu'il faut croire.
 
 ## Hors périmètre
 

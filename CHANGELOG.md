@@ -101,6 +101,29 @@ Toutes les évolutions notables du projet. Format
   invisible pendant une semaine le défaut du repli ci-dessus. Une source qui
   reçoit des positions sans en tirer aucune vitesse donne le même écran qu'une
   source muette ; ces comptes distinguent les deux.
+- **Les positions imprécises sont écartées**, par un réglage nouveau —
+  *Précision GPS acceptée*, dans « Signal de vitesse ». La précision annoncée
+  avec chaque position était transmise depuis le premier jour et ne servait à
+  rien : un point à 200 mètres près entrait dans le calcul comme un point à 5
+  mètres. Une position écartée n'est ni une mesure ni la référence de la
+  mesure suivante, et son rejet se compte à l'écran.
+
+  Le seuil est livré à **250 mètres, volontairement large** : les valeurs de la
+  voiture ne sont pas mesurées, et un seuil trop serré rejetterait des mesures
+  saines pour faire taire le GPS — le défaut qu'on vient de corriger deux fois.
+  Une position dont la précision n'est pas renseignée n'est jamais rejetée : un
+  champ absent n'est pas un mauvais chiffre.
+- Deux lignes de plus dans « Qualité du signal » : la **précision annoncée**
+  avec la dernière position, et les **douze dernières**. C'est ce relevé qui
+  servira à resserrer le seuil ci-dessus, sur des chiffres et non sur une
+  intuition.
+- **Une section « Appareil »** sur l'écran Télémétrie : largeur et hauteur
+  utiles de la page en pixels CSS, taille d'écran annoncée, densité de pixels,
+  réponse de l'API de maintien d'écran allumé, et état de l'autorisation de
+  géolocalisation **relevé au chargement** — plus tard, il vaudrait « accordée »
+  dans tous les cas et ne dirait plus si la voiture la retient d'une session à
+  l'autre. Le zoom du navigateur de bord n'est pas réglable et sa valeur par
+  défaut a changé : la mise en page ne peut se caler que sur un relevé.
 
 ### Ajouté
 

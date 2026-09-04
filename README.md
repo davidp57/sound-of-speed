@@ -67,6 +67,18 @@ elle a rejetées. Ces comptes ne sont pas décoratifs : une source qui reçoit d
 positions sans en tirer aucune vitesse donne le même écran qu'une source muette,
 et c'est ce qui a rendu un défaut invisible pendant une semaine.
 
+Elle affiche aussi la **précision** que le navigateur annonce avec chaque
+position, la courante et les douze dernières. C'est ce relevé, et non une
+supposition, qui doit servir à régler le seuil *Précision GPS acceptée* : le
+seuil livré est large exprès, faute de connaître les valeurs de la voiture.
+
+La section *Appareil* répond à trois questions qu'aucun code ne devine : la
+largeur et la hauteur dont la page dispose réellement — le zoom du navigateur
+d'une voiture n'est pas réglable —, ce que répond l'API de maintien d'écran
+allumé, et si l'autorisation de géolocalisation est retenue d'une session à
+l'autre. Cette dernière est relevée au chargement de la page, avant tout suivi :
+plus tard, elle vaudrait « accordée » dans tous les cas.
+
 **Configuration** — deux modes. En **simplifié**, la vue est courte : la
 création guidée, les profils, le fonctionnement hors réseau. En **avancé**, la
 cinquantaine de réglages détaillés s'ajoute dessous, en curseur et en saisie,
@@ -733,6 +745,7 @@ l'échappement.
 | **Raideur du lissage** | Haut : réactif, mais les sauts du GPS s'entendent. Bas : doux, mais en retard. Le réglage le plus sensible |
 | **Fenêtre d'accélération** | Durée sur laquelle la pente est estimée, par ajustement sur **toutes** les mesures qu'elle contient. Elle décide aussi du temps qu'une pente met à s'oublier : à quatre secondes, le régime met encore quatre secondes à retomber après qu'on a cessé d'accélérer ; à une seconde, il suit aussitôt mais le signal est moins lisse. En deçà de l'intervalle entre deux mesures, la baisser ne gagne rien — et cet intervalle dépend de l'appareil : quelques dizaines de millisecondes dans une Tesla en mouvement, une seconde ailleurs |
 | **Vitesse plausible max** | Au-delà, la mesure est écartée : on n'en tire rien du tout, et la vitesse conditionnée continue comme si elle n'était pas arrivée |
+| **Précision GPS acceptée** | Incertitude annoncée au-delà de laquelle la position est écartée — ni mesure, ni référence pour la mesure suivante. Livré à 250 m, volontairement large : un point satellite s'annonce à quelques mètres ou quelques dizaines de mètres même mal placé, une position obtenue par le réseau à plusieurs centaines. Les valeurs de la voiture ne sont pas mesurées ; **les relever sur l'écran Télémétrie avant de resserrer.** Un seuil trop serré rejette des mesures saines et fait taire le GPS. Une position dont la précision n'est pas renseignée n'est jamais rejetée |
 | **Accélération / décélération max retenues** | Bornes de l'accélération transmise à la charge |
 
 ### Mixage
@@ -1344,6 +1357,7 @@ chaque essai.
 | 21 | Imperfections : tremblement de régime, couches désaccordées | fait, reste à écouter |
 | 22 | Étalonnage : mesurer la vraie voiture pour régler les virtuelles | fait, reste à rouler |
 | 23 | Le serveur accepte le dépôt d'une trace | fait, éprouvé sur le NAS |
+| 24 | Ce que l'appareil réel impose : positions imprécises écartées, largeur utile, verrou d'écran et autorisation GPS affichés | fait, reste à relever en roulant |
 | — | Déposer une trace et un profil depuis l'application | prévu |
 | — | Plusieurs banques de son, choisies par profil | prévu |
 | — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | à remesurer |
@@ -1359,6 +1373,16 @@ règles de travail du dépôt dans [`CLAUDE.md`](CLAUDE.md), son vocabulaire dan
 - **Le verrou d'écran.** Le code est en place, mais le navigateur de
   développement refuse la permission (`NotAllowedError`), y compris sur un appel
   direct à l'API. Seul son échec propre est établi.
+- **La précision réelle des positions dans la voiture.** Le seuil de rejet est
+  livré à 250 m, choisi large : il écarte ce qu'annonce une position obtenue
+  sans satellites, sans toucher à ce qu'un point satellite produit. Aucune
+  valeur n'a été relevée dans cette voiture — c'est ce que l'écran Télémétrie
+  affiche maintenant. Tant que le relevé n'existe pas, ce seuil est un
+  garde-fou et non un réglage.
+- **La largeur utile de la page dans la voiture, et l'API de verrou d'écran.**
+  Les deux sont affichées, aucune n'est relevée. Le zoom du navigateur de bord
+  n'est pas réglable et sa valeur par défaut a changé avec le logiciel de la
+  voiture ; la mise en page ne pourra se caler que sur le chiffre lu à l'écran.
 - **Le GPS écran éteint.** Les systèmes mobiles espacent fortement les mesures
   quand l'écran s'éteint. C'est à cela que sert le verrou, et les deux se testent
   ensemble, en roulant.
