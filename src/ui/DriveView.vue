@@ -30,6 +30,8 @@ import {
   shiftDown,
   shiftUp,
   padConnected,
+  padLabel,
+  padMapping,
   rejectionCause,
   sourceDetail,
   sourceKind,
@@ -364,11 +366,20 @@ const SPEED_STEP_KMH = 20
           Au clavier : flèches haut et bas pour accélérer et freiner, flèches gauche
           et droite pour changer de rapport en mode manuel.
         </p>
-        <p v-if="padConnected" class="hint">
-          Manette : gâchette droite pour accélérer, gauche pour freiner, A et B pour
-          changer de rapport, X pour la boîte automatique ou manuelle, Y pour tenir
-          la vitesse, stick gauche pour le volume.
-        </p>
+        <template v-if="padConnected">
+          <p class="hint">
+            Manette : gâchette droite pour accélérer, gauche pour freiner, A et B pour
+            changer de rapport, X pour la boîte automatique ou manuelle, Y pour tenir
+            la vitesse, stick gauche pour le volume.
+          </p>
+          <p class="hint">
+            Vue par le navigateur : {{ padLabel || 'sans nom' }} — agencement
+            {{ padMapping || 'non annoncé' }}.
+            <template v-if="padMapping !== 'standard'">
+              Les boutons peuvent ne pas correspondre à ceux décrits.
+            </template>
+          </p>
+        </template>
         <p v-else class="hint">
           Une manette branchée prend la main dès qu'on appuie sur un de ses boutons —
           le navigateur ne la révèle pas avant.

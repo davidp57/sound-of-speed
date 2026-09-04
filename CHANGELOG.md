@@ -22,6 +22,15 @@ Toutes les évolutions notables du projet. Format
   pleine accélération. La manette ne prend la main sur les curseurs de l'écran
   qu'en étant touchée, et la rend en revenant au repos.
 
+  Deux choses corrigées aussitôt, la manette n'étant pas détectée sur le poste de
+  David. **Aucun agencement n'est plus refusé** : exiger `mapping === 'standard'`
+  écartait en silence une manette qui s'annonce autrement — ce qui dépend du
+  navigateur, du pilote et du mode de liaison. Et **la détection ne dépend plus de
+  la boucle** : elle passe par l'événement de connexion, qui arrive au premier
+  appui, si bien qu'une boucle à l'arrêt ne fait plus dire à l'écran qu'aucune
+  manette n'est branchée. L'écran annonce enfin ce que le navigateur voit — nom et
+  agencement — et prévient quand l'agencement n'est pas standard.
+
 - **Un journal de bord, déposé tout seul.** Le navigateur de la voiture n'a pas
   de console : on ne consulte rien au volant, et le diagnostic se faisait donc en
   devinant. Le drapeau qui distingue une vitesse lue d'une vitesse déduite
