@@ -54,6 +54,45 @@ nombre de cœurs annoncé. Un chiffre sans son contexte ne se relit pas trois
 semaines plus tard — et le relevé du poste de David n'a pas la même valeur que
 celui de la voiture.
 
+## Ce que coûte WebAssembly, mesuré
+
+Le rapport de faisabilité donnait des chiffres **natifs**. Il manquait le facteur
+de conversion vers WebAssembly, sans quoi le relevé de la sonde ne se compare à
+rien. Mesuré ici, sur deux noyaux repris du vrai code — une convolution par
+produit direct, qui pèse 65 % du coût audio, et un solveur itératif comme celui
+des contraintes du vilebrequin :
+
+| Noyau | Natif, g++ -O2 | WebAssembly, Chromium | Surcoût |
+|---|---|---|---|
+| Convolution, 48 000 sorties sur 10 000 points | 0,308 s | 0,410 s | ×1,33 |
+| Solveur, 100 000 pas de 8 itérations | 0,219 s | 0,254 s | ×1,16 |
+
+Deux passes, écarts sous 1 %. **WebAssembly coûte donc 16 à 33 % de plus que le
+natif**, bien moins que le facteur deux qu'on avance souvent.
+
+Le banc recoupe au passage la mesure du rapport : 0,308 s pour 48 000
+échantillons ici, contre 0,266 s pour 44 100 sur le vrai code, soit le même ordre
+à 8 % près.
+
+Ce qui reste inconnu est donc **le seul rapport entre ce poste et la voiture** —
+et c'est exactement ce que la sonde va chercher.
+
+## Le service worker bloque le module, et il fallait le savoir
+
+Mesuré en préparant le banc : un module WebAssembly déposé dans `public/`, servi
+correctement — 200, type `application/wasm`, vérifié à la ligne de commande —
+était **impossible à charger depuis la page**. Une fois le service worker
+désinscrit et les caches vidés, il se chargeait du premier coup.
+
+La cause est dans `public/sw.js` : le gestionnaire intercepte toutes les
+requêtes en réseau-d'abord, et le repli vaut `null` pour une adresse inconnue —
+la promesse est donc rejetée au lieu de laisser passer.
+
+Dans la voiture, le service worker est actif et installé. Une sonde muette pour
+cette raison se lirait comme un échec du portage, sur la décision la plus
+importante du lot. Le service worker laisse désormais passer `/sonde/`
+entièrement.
+
 ## Critères d'acceptation
 
 - [ ] Le cœur compile en WebAssembly, sans interface, sans piranha
@@ -63,4 +102,6 @@ celui de la voiture.
 - [ ] Elle est servie par le même nginx que l'application, pour s'ouvrir dans la
       voiture comme le reste
 - [ ] Le poids du `.wasm` est indiqué : il devra être mis en cache hors réseau
+- [ ] La page se charge avec le service worker actif, module compris — vérifié,
+      pas supposé
 - [ ] 🧑 Relevé fait dans la Tesla, et le chiffre écrit dans le ticket 02
