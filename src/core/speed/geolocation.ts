@@ -84,6 +84,22 @@ export class GeolocationSource extends SpeedSource {
    */
   private previous: GeolocationPosition | null = null
 
+  /**
+   * Dernière position connue, hors du flux des mesures.
+   *
+   * Elle n'est **pas** ajoutée à `SpeedSample`, et ce n'est pas un détail. Le
+   * flux des mesures est recopié tel quel par l'enregistreur de traces, et une
+   * trace s'exporte en fichier et se dépose sur le serveur **sans accord
+   * particulier** : y faire entrer des coordonnées les ferait sortir par une
+   * porte déjà ouverte. Une donnée de déplacement ne voyage donc pas dans le
+   * canal général — elle se lit ici, explicitement, par qui en a le droit.
+   *
+   * L'invariant des sources n'en souffre pas : il porte sur le **chiffre de
+   * vitesse**, que rien en aval ne doit pouvoir rattacher à une source. Les
+   * comptes de `stats` sont déjà exposés de cette façon.
+   */
+  lastPosition: { latitude: number; longitude: number; at: number } | null = null
+
   readonly stats: GeolocationStats = {
     received: 0,
     emitted: 0,
@@ -121,6 +137,7 @@ export class GeolocationSource extends SpeedSource {
       this.watchId = null
     }
     this.previous = null
+    this.lastPosition = null
     this.setStatus('idle')
   }
 
@@ -173,6 +190,11 @@ export class GeolocationSource extends SpeedSource {
       return
     }
 
+    this.lastPosition = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      at: position.timestamp,
+    }
     this.stats.emitted += 1
     this.setStatus('active')
     this.emit({

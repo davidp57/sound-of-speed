@@ -23,6 +23,9 @@ import {
   setGearCount as withGearCount,
   sportinessOf,
 } from './core/preset/character'
+import { Journal, newSessionId } from './core/journal/journal'
+import { JournalCollector, type JournalConsent } from './core/journal/collect'
+import { depositSlice } from './core/journal/deposit'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
 import { analyzeSession, overridesFor, withCalibration } from './core/calibration/onboard'
@@ -291,6 +294,7 @@ export function setAdvancedMode(value: boolean): void {
 export type DriveFace = 'dials' | 'numbers'
 
 const FACE_KEY = 'speed.driveFace.v1'
+const JOURNAL_KEY = 'speed.journal.v1'
 
 function readPreference(key: string): string | null {
   try {
@@ -317,6 +321,88 @@ export const driveFace = ref<DriveFace>(
 export function setDriveFace(face: DriveFace): void {
   driveFace.value = face
   writePreference(FACE_KEY, face)
+}
+
+/**
+ * Ce que l'utilisateur a accepté d'envoyer au serveur, par cran.
+ *
+ * Une préférence de **cet appareil**, comme le volume : elle ne voyage ni par
+ * lien ni par fichier, et un profil partagé ne l'emporte pas. Rien n'est envoyé
+ * par défaut, et le cran étendu — qui ajoute la position — se choisit
+ * séparément du minimum : il ne s'en déduit jamais.
+ */
+export const journalConsent = ref<JournalConsent>(readConsent())
+
+function readConsent(): JournalConsent {
+  const stored = readPreference(JOURNAL_KEY)
+  return stored === 'minimal' || stored === 'extended' ? stored : 'none'
+}
+
+export function setJournalConsent(consent: JournalConsent): void {
+  journalConsent.value = consent
+  writePreference(JOURNAL_KEY, consent)
+  collector.setConsent(consent)
+}
+
+/**
+ * Le journal de la session en cours.
+ *
+ * Une session couvre l'ouverture de la page, et non un trajet : le navigateur de
+ * la voiture ne prévient pas quand il se ferme, et découper autrement demanderait
+ * de deviner. L'identifiant est tiré au démarrage et sert de préfixe aux
+ * tranches, ce qui les regroupe et les trie.
+ */
+const journalStartedAt = Date.now()
+const journal = new Journal({ sessionId: newSessionId(), startedAt: journalStartedAt })
+/**
+ * Temps de session du journal, accumulé depuis le pas de la boucle.
+ *
+ * Et non `Date.now()`. Toute la chaîne avance par `dt`, et le banc de mise au
+ * point déroule des heures en quelques secondes : un journal branché sur
+ * l'horloge murale n'y produisait aucune tranche, donc ne s'y vérifiait pas. La
+ * date réelle sert encore à nommer les fichiers, ce qui est son emploi juste.
+ */
+let journalElapsedMs = 0
+const collector = new JournalCollector(journal, readConsent())
+
+/** Tranches déposées, pour que l'écran dise ce qui est parti. */
+export const journalDeposits = ref<{ name: string; bytes: number }[]>([])
+/** Dernier échec de dépôt, à afficher tel quel. */
+export const journalError = ref('')
+/** Vrai pendant un dépôt : on n'en lance pas deux à la fois. */
+let journalBusy = false
+
+/**
+ * Dépose une tranche si l'heure est venue.
+ *
+ * Appelé depuis la boucle, mais **sans l'attendre** : un dépôt prend le temps du
+ * réseau, et la cadence du son ne se règle pas sur celle d'une requête. Un seul
+ * dépôt court à la fois, sinon deux tranches partiraient dans un ordre que
+ * personne ne garantit.
+ */
+function depositJournalIfDue(nowMs: number): void {
+  if (journalBusy || journalConsent.value === 'none') return
+  if (!journal.shouldSlice(nowMs)) return
+
+  const slice = journal.takeSlice(nowMs)
+  if (!slice) return
+
+  journalBusy = true
+  void depositSlice(slice, depositCredentials.value)
+    .then((outcome) => {
+      if (outcome.ok) {
+        journalError.value = ''
+        journalDeposits.value = [...journalDeposits.value, { name: outcome.name, bytes: outcome.bytes }]
+        return
+      }
+      journalError.value = outcome.detail
+      // La tranche revient en attente et se joindra à la suivante : c'est ce qui
+      // fait qu'un tunnel ne coûte pas un journal.
+      if (outcome.retry) journal.restore(slice)
+    })
+    .finally(() => {
+      journalBusy = false
+    })
 }
 
 /**
@@ -546,6 +632,32 @@ function step(dt: number): void {
       recentAccuracyM: [...stats.recentAccuracyM],
     }
   }
+
+  // Le journal regarde le même instantané que la télémétrie, et décide seul de
+  // se taire : c'est lui qui sait à quelles transitions il tient, non la boucle.
+  journalElapsedMs += dt * 1000
+  collector.observe({
+    at: journalElapsedMs,
+    source: sourceKind.value,
+    sourceStatus: sourceStatus.value,
+    derived: speed.derived,
+    kmh: speed.kmh,
+    accelMs2: speed.accelMs2,
+    rpm: engineState.rpm,
+    gear: gearboxState.gear + 1,
+    load: engineState.load,
+    fixRestarts: fixWatchdog.restarts,
+    rejected: {
+      implausible: geolocation.stats.rejected.implausible,
+      tooClose: geolocation.stats.rejected.tooClose,
+      inaccurate: geolocation.stats.rejected.inaccurate,
+    },
+    audioState: audio.status.contextState,
+    accuracyM: geolocation.stats.lastAccuracyM,
+    latitude: geolocation.lastPosition?.latitude ?? null,
+    longitude: geolocation.lastPosition?.longitude ?? null,
+  })
+  depositJournalIfDue(journalElapsedMs)
 
   if (sourceKind.value === 'replay') replayProgress.value = replay.progress
 

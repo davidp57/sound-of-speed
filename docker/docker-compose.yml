@@ -35,6 +35,13 @@ services:
       # traces en sortent. Le dossier doit exister, comme celui des profils, et
       # le dépôt exige le fichier de mots de passe ci-dessous.
       - /volume1/docker/speed/traces:/usr/share/nginx/html/traces
+      # Journal de bord, déposé tout seul en roulant. **En lecture-écriture**,
+      # pour la même raison, et dans un dossier séparé : celui des traces est
+      # servi en index JSON, et c'est cet index que l'application télécharge pour
+      # les lister — une tranche de journal toutes les cinq minutes l'alourdirait
+      # à chaque sortie. Rien n'y est déposé tant que le journal n'a pas été
+      # accepté dans l'écran de configuration.
+      - /volume1/docker/speed/journal:/usr/share/nginx/html/journal
       # Fichier de mots de passe. À décommenter dans **deux** cas, qui sont
       # indépendants :
       #

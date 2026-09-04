@@ -211,18 +211,23 @@ Trois dossiers, sous `/volume1/docker/speed/` :
 | `audio/procar/` | les échantillons du moteur | lecture |
 | `profiles/` | les profils partagés entre appareils. **Peut rester vide** | lecture |
 | `traces/` | les trajets enregistrés en roulant, déposés depuis la voiture. **Peut rester vide** | lecture-écriture |
+| `journal/` | le journal de bord, déposé tout seul en roulant. **Peut rester vide** | lecture-écriture |
 
-Les trois doivent **exister avant** de déployer la pile : Docker sous DSM ne crée
-pas un point de montage absent, il refuse de démarrer le conteneur avec un
-`Bind mount failed`. Des dossiers `profiles/` et `traces/` vides suffisent — et à
-défaut, il faut commenter leur ligne dans la pile, au prix de la bibliothèque de
-profils et du dépôt de traces.
+Les quatre doivent **exister avant** de déployer la pile : Docker sous DSM ne
+crée pas un point de montage absent, il refuse de démarrer le conteneur avec un
+`Bind mount failed`. Des dossiers `profiles/`, `traces/` et `journal/` vides
+suffisent — et à défaut, il faut commenter leur ligne dans la pile, au prix de
+la bibliothèque de profils, du dépôt de traces et du journal.
 
-`traces/` est le seul monté en écriture, et le dépôt y est **toujours**
-authentifié, même quand l'authentification générale reste désactivée : un
-dossier ouvert en écriture sur une adresse joignable de l'extérieur est une
-invitation. Il faut donc le fichier de mots de passe pour déposer, voir plus
-bas.
+`traces/` et `journal/` sont les seuls montés en écriture, et le dépôt y est
+**toujours** authentifié, même quand l'authentification générale reste
+désactivée : un dossier ouvert en écriture sur une adresse joignable de
+l'extérieur est une invitation. Il faut donc le fichier de mots de passe pour
+déposer, voir plus bas.
+
+Ni l'un ni l'autre n'accepte la suppression : l'application ne peut pas effacer
+ce qu'elle a déposé. C'est voulu pour le journal — un témoin qui peut effacer
+ses notes est un mauvais témoin — et le ménage se fait avec File Station.
 
 Les échantillons restent hors de l'image : ils ne sont ni dans le dépôt ni dans
 le registre, et changer de banque sonore consistera à remplacer ces fichiers,
@@ -1044,6 +1049,45 @@ déjà l'accès au site. Le dossier est facultatif.
 Dans tous les cas, **les échantillons ne voyagent pas** — seuls leurs noms
 suivent, l'autre appareil devant disposer de la même banque. Et l'identifiant est
 renouvelé à l'import : un profil reçu n'écrase jamais l'un des siens.
+
+## Le journal de bord
+
+Le navigateur de la voiture n'a pas de console, et rien ne s'y consulte au
+volant : comprendre après coup ce que l'application a vécu demandait de deviner.
+Elle peut désormais tenir un journal et le **déposer toute seule** sur le
+serveur.
+
+**Rien n'est envoyé par défaut.** Le réglage est dans l'écran de configuration,
+en mode avancé, et il a trois positions :
+
+| Position | Ce qui part |
+|---|---|
+| **Rien n'est envoyé** | rien, et rien n'est même retenu |
+| **Le minimum** | ce que fait l'application : source de vitesse et son état, bascule de l'origine de la vitesse, relances du suivi, mesures rejetées par motif, suspensions du son, erreurs, et un relevé de conduite toutes les dix secondes |
+| **Et la position** | tout ce qui précède, **plus votre position**, un point par seconde — soit un trajet reconstituable |
+
+Passer à l'une des deux dernières demande une confirmation, qui dit ce qui sera
+envoyé avant que cela ne parte. Le troisième cran ne se déduit jamais du second :
+une position est une donnée de déplacement, et cela se dit avant. Couper, en
+revanche, est immédiat — on n'a pas à confirmer qu'on ne veut plus rien envoyer.
+
+Le dépôt se fait par tranches, toutes les cinq minutes ou dès qu'une tranche
+atteint sa taille, avec le même compte que celui des traces. Ce qui n'a pas pu
+partir — un tunnel, un parking couvert — est gardé et joint à la tranche
+suivante : un trou de réseau ne coûte pas un journal, et ne produit pas un
+fichier par tentative. Les tranches portent un nom qui les regroupe et les trie
+par trajet, ce qui permet d'en supprimer un d'un geste.
+
+Ce que cela pèse, pour une demi-heure de conduite : environ 25 Ko au cran
+minimum, 200 Ko avec la position. À deux trajets par jour, de 1,5 à 12 Mo par
+mois.
+
+### Ce qui n'est pas dans le journal
+
+Les positions ne circulent pas dans le flux des mesures de vitesse, et ce n'est
+pas un détail : ce flux est recopié tel quel par l'enregistreur de traces, et
+une trace s'exporte en fichier et se dépose sans accord particulier. Y faire
+entrer des coordonnées les aurait fait sortir par une porte déjà ouverte.
 
 ## Les échantillons
 

@@ -1,6 +1,6 @@
 # JOURNAL — savoir ce que la voiture a vécu, sans avoir à le demander
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 **Branche :** `feature/journal`
 **Version visée :** 0.2
 
@@ -158,3 +158,41 @@ présenter avant de décider.
 ## Hors périmètre
 
 L'analyse des journaux déposés. On commence par les avoir.
+
+## Ce qui est livré
+
+Le cœur — l'anneau borné, le découpage en tranches, le nommage triable, la
+remise en attente d'une tranche qui n'a pas pu partir —, le dépôt avec sa
+distinction des échecs réessayables, la collecte qui se tait aux états
+inchangés, le réglage à trois positions avec sa confirmation, le bloc
+`location /journal/` du serveur et le montage dans les deux piles.
+
+**Trente-six tests, éprouvés par mutation.** Six mutations du code ont été
+essayées, dont trois sur la règle de confidentialité et le découpage : chacune
+fait tomber un test au moins. Un test qui passe sur du code neuf ne prouve rien
+tant qu'on n'a pas montré qu'il peut échouer.
+
+Un défaut trouvé en essayant l'application, et qui ne se serait pas vu
+autrement : le journal était branché sur l'horloge murale alors que toute la
+chaîne avance au pas de la boucle. Le banc de mise au point, qui déroule des
+heures en quelques secondes, ne produisait donc aucune tranche — le journal
+n'était pas vérifiable là où tout le reste l'est.
+
+## Ce qui reste
+
+**Deux gestes sur le NAS**, et ils sont à David :
+
+- créer le dossier `/volume1/docker/speed/journal/` avec File Station, avant de
+  redéployer : Docker sous DSM refuse de démarrer sur un point de montage absent ;
+- **redéployer l'image**, et non seulement l'application : le bloc `location` du
+  serveur est dans l'image.
+
+Puis un trajet, journal accepté, pour lire ce qu'il dit. Le format d'une ligne et
+la valeur du plafond de tranche restent à confirmer sur des tranches réelles
+plutôt que sur l'estimation de 25 Ko.
+
+## Question toujours ouverte
+
+La **console embarquée** (eruda, vConsole), qui répondrait au besoin voisin de
+regarder sur place, sans réseau. C'est une dépendance de production, et David ne
+connaît pas l'outil : à lui montrer en action avant de proposer de l'ajouter.
