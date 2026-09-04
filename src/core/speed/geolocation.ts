@@ -23,13 +23,48 @@ export interface GeolocationSourceOptions {
   maxPlausibleKmh: number
 }
 
+/**
+ * Ce que la source a vu passer. Remonté à l'écran de télémétrie.
+ *
+ * Sans ces comptes, une source qui reçoit des positions et ne produit aucune
+ * vitesse est indiscernable d'une source qui ne reçoit rien : les deux donnent
+ * une vitesse figée et un écran muet. C'est exactement ce qui a rendu invisible
+ * pendant une semaine le défaut du repli — l'écart entre `received` et `emitted`
+ * l'aurait montré du premier coup d'œil.
+ */
+export interface GeolocationStats {
+  /** Positions reçues du navigateur. */
+  received: number
+  /** Vitesses effectivement produites. */
+  emitted: number
+  rejected: {
+    /** Au-delà du plausible : une erreur, pas une vitesse. */
+    implausible: number
+    /** Deux positions trop rapprochées pour en tirer une vitesse. */
+    tooClose: number
+  }
+}
+
 export class GeolocationSource extends SpeedSource {
   readonly kind = 'geolocation' as const
   readonly label = 'GPS'
 
   private watchId: number | null = null
+  /**
+   * Position de référence pour le calcul par distance.
+   *
+   * Elle est **gardée** tant qu'aucune vitesse n'en a été tirée. La remplacer à
+   * chaque position, comme on le faisait, empêchait l'écart de jamais atteindre
+   * le minimum exploitable : au-delà de six positions par seconde, plus une
+   * seule vitesse n'était produite, et le suivi ne repartait plus.
+   */
   private previous: GeolocationPosition | null = null
-  private lastKmh = 0
+
+  readonly stats: GeolocationStats = {
+    received: 0,
+    emitted: 0,
+    rejected: { implausible: 0, tooClose: 0 },
+  }
 
   constructor(private options: GeolocationSourceOptions) {
     super()
@@ -64,6 +99,8 @@ export class GeolocationSource extends SpeedSource {
   }
 
   private handlePosition(position: GeolocationPosition): void {
+    this.stats.received += 1
+
     const reported = position.coords.speed
     const hasReported = typeof reported === 'number' && Number.isFinite(reported) && reported >= 0
 
@@ -73,24 +110,34 @@ export class GeolocationSource extends SpeedSource {
     if (hasReported) {
       kmh = reported * 3.6
       derived = false
+      this.previous = position
     } else {
       const fallback = this.speedFromPositions(this.previous, position)
       if (fallback === null) {
-        this.previous = position
+        // La référence est **conservée** : c'est en la gardant que l'écart finit
+        // par atteindre le minimum exploitable. Une position isolée ne sert donc
+        // qu'à devenir référence quand il n'y en a pas encore.
+        this.stats.rejected.tooClose += 1
+        if (!this.previous) this.previous = position
         return
       }
       kmh = fallback
       derived = true
+      this.previous = position
     }
-
-    this.previous = position
 
     if (!Number.isFinite(kmh) || kmh > this.options.maxPlausibleKmh) {
-      // Aberration : on garde la dernière valeur saine plutôt que de propager le saut.
-      kmh = this.lastKmh
+      // Une mesure au-delà du plausible n'est pas une vitesse, c'est une erreur :
+      // on n'en tire rien du tout. La remplacer par la dernière valeur saine puis
+      // l'émettre, comme on le faisait, la faisait passer pour une mesure — la
+      // vitesse se figeait sans que rien ne le signale, et le chien de garde ne
+      // voyait aucun silence dont il aurait pu se saisir. C'est la règle que le
+      // conditionnement du signal applique déjà de son côté.
+      this.stats.rejected.implausible += 1
+      return
     }
-    this.lastKmh = kmh
 
+    this.stats.emitted += 1
     this.setStatus('active')
     this.emit({
       kmh,
@@ -117,7 +164,9 @@ export class GeolocationSource extends SpeedSource {
     } else {
       this.setStatus('unavailable', error.message)
     }
-    this.lastKmh = 0
+    // La référence est abandonnée : après une interruption, l'écart avec la
+    // prochaine position ne décrit plus un déplacement continu.
+    this.previous = null
   }
 }
 
