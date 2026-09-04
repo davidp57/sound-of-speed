@@ -140,6 +140,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Les commandes de l'écran de conduite tiennent sur une seule ligne.** Source,
+  profil et choix d'affichage occupaient trois lignes, soit 286 pixels de hauteur
+  pris sur les cadrans ; ils en prennent 38. Ils se replient l'un après l'autre
+  dès que la largeur manque — deux lignes à 380 pixels, sans débordement — ce qui
+  compte : la largeur utile du navigateur de la voiture n'est pas connue et son
+  zoom n'est pas réglable.
+
+
 - **Le simulateur n'existe plus qu'en développement.** Dans une voiture il n'a
   aucun sens, et il n'y serait qu'un moyen de se tromper sur ce qu'on entend. La
   construction de production ne le propose pas, et la source au démarrage y

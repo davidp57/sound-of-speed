@@ -217,7 +217,8 @@ const SPEED_STEP_KMH = 20
 
 <template>
   <div class="drive" :class="{ immersive }">
-    <section v-if="!immersive" class="sources">
+    <div class="toolbar">
+      <section v-if="!immersive" class="sources">
       <button
         v-for="entry in SOURCES"
         :key="entry.id"
@@ -232,7 +233,7 @@ const SPEED_STEP_KMH = 20
       </span>
     </section>
 
-    <section v-if="favoriteProfiles.length > 1" class="favorites" :class="{ large: immersive }">
+      <section v-if="favoriteProfiles.length > 1" class="favorites" :class="{ large: immersive }">
       <button
         v-for="entry in favoriteProfiles"
         :key="entry.id"
@@ -254,13 +255,13 @@ const SPEED_STEP_KMH = 20
       conducteur défile en perspective, d'avant en arrière. Il reviendra
       autrement, et le code de l'ancien est dans l'historique.
     -->
-    <section v-if="!immersive" class="face-switch">
-      <button :aria-pressed="driveFace === 'dials'" @click="setDriveFace('dials')">Cadrans</button>
-      <button :aria-pressed="driveFace === 'numbers'" @click="setDriveFace('numbers')">
-        Chiffres
-      </button>
-
-    </section>
+      <section v-if="!immersive" class="face-switch">
+        <button :aria-pressed="driveFace === 'dials'" @click="setDriveFace('dials')">Cadrans</button>
+        <button :aria-pressed="driveFace === 'numbers'" @click="setDriveFace('numbers')">
+          Chiffres
+        </button>
+      </section>
+    </div>
 
     <section v-if="driveFace === 'dials'" class="dashboard">
       <div class="cell speed">
@@ -538,6 +539,24 @@ const SPEED_STEP_KMH = 20
   margin: 0 auto;
 }
 
+/*
+ * Une seule barre d'outils, sur une ligne quand la place le permet.
+ *
+ * Les trois groupes — source, profil, visage — occupaient trois lignes, soit
+ * autant de hauteur prise sur les cadrans. Ils se replient l'un après l'autre
+ * dès que la largeur manque, ce qui compte : la largeur utile du navigateur de
+ * la voiture n'est pas connue, et son zoom n'est pas réglable.
+ *
+ * Les groupes restent des sections distinctes : ce sont trois choix sans
+ * rapport, et un lecteur d'écran doit continuer de les entendre séparés.
+ */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem 1.25rem;
+  flex-wrap: wrap;
+}
+
 .sources {
   display: flex;
   align-items: center;
@@ -548,6 +567,13 @@ const SPEED_STEP_KMH = 20
 .status {
   color: var(--muted);
   margin-left: 0.5rem;
+}
+
+.face-switch {
+  /* Poussé à droite quand tout tient : c'est un réglage d'affichage, pas une
+     commande de conduite, et le laisser au milieu le fait confondre avec le
+     choix de profil. */
+  margin-left: auto;
 }
 
 .favorites {
@@ -613,6 +639,7 @@ const SPEED_STEP_KMH = 20
   display: flex;
   gap: 0.4rem;
 }
+
 
 /*
  * Tableau de bord.
