@@ -137,3 +137,36 @@ Mais l'interface dit désormais à quoi il sert et à quoi il ne sert pas.
 
 - [x] L'adresse d'installation est aussi courte que possible, et se tape
 - [x] L'interface dit que le code à scanner ne sert qu'aux appareils à caméra
+
+## Le mécanisme d'adresse est retiré, et le mot « jeton » avec
+
+David, le 3 septembre 2026 : « à quoi ça sert tout ça ? au final, si c'est pour
+taper une url à rallonge j'ai autant taper un mot de passe dans l'app… c'est
+mieux d'un point de vue sécu ? c'est pas un jeton non plus, ça reste un mot de
+passe — sauf que lui on le voit dans l'url ! »
+
+Les trois points sont justes, et le bilan est sans appel.
+
+**Ce n'est pas un jeton.** C'est un mot de passe, dans le même fichier
+`htpasswd`, haché par le même bcrypt, vérifié par la même authentification. Le
+mot suggérait une nature différente — révocable, limité, moins sensible — et il
+était trompeur. Ce qui reste vrai est qu'un compte **dédié** vaut mieux que le
+compte personnel, ce qui est un choix d'usage et non de mécanisme.
+
+**Ce n'était pas mieux du point de vue de la sécurité, c'était pire.** Le
+fragment n'atteint pas le serveur, mais il apparaît en clair dans la barre
+d'adresse, et surtout le navigateur mémorise les adresses **tapées** : le secret
+ressortait en autocomplétion. `replaceState` nettoie l'entrée d'historique, pas
+la mémoire de saisie. Un champ de mot de passe ne fait rien de tout cela.
+
+**Et ce n'était même pas plus court.** Taper l'adresse entière fait plus de
+caractères que le secret seul.
+
+L'erreur de raisonnement, pour mémoire : j'avais écarté le champ dans
+l'application en objectant qu'il faudrait garder le secret dans le navigateur.
+Mais le mécanisme d'adresse **stocke exactement la même chose au même endroit** —
+il finit dans le stockage local — et ajoute l'exposition. L'objection valait
+contre ma propre solution, et je ne l'ai pas vu.
+
+Retiré : la lecture du fragment, le lien, le code à scanner, l'écoute du
+changement de fragment, et neuf tests. Il ne reste que le champ.

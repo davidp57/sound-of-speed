@@ -1,13 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  authHeader,
-  credentialsUrl,
-  deposit,
-  depositName,
-  durationS,
-  readCredentialsFromUrl,
-} from './deposit'
+import { authHeader, deposit, depositName, durationS } from './deposit'
 import { tracesFromFile } from '../preset/store'
 import type { Trace } from '../speed/replay'
 
@@ -15,14 +8,14 @@ import type { Trace } from '../speed/replay'
  * Tests du dépôt d'une trace.
  *
  * Le réseau est remplacé par une fonction : ce qui compte ici n'est pas qu'un
- * serveur réponde, c'est que **chaque échec dise lequel il est**. « Jeton
+ * serveur réponde, c'est que **chaque échec dise lequel il est**. « Compte
  * absent » se corrige à l'écran de configuration, « refusé » veut dire que le
- * jeton ne correspond pas, et « réseau » qu'on roule hors couverture — ce qui
+ * mot de passe ne correspond pas, et « réseau » qu'on roule hors couverture — ce qui
  * n'est pas une erreur. Confondre les trois laisserait l'utilisateur sans rien
  * à faire de l'information.
  */
 
-const IDENTIFIANTS = { user: 'depot', token: 'un-jeton-assez-long' }
+const IDENTIFIANTS = { user: 'depot', password: 'un-mot-de-passe-a-nous' }
 
 function trace(name: string, startedAt = 1_700_000_000_000, durationMs = 12_000): Trace {
   const samples = []
@@ -93,13 +86,13 @@ describe('depositName', () => {
 })
 
 describe('authHeader', () => {
-  it('encode le couple nom et jeton', () => {
-    expect(authHeader({ user: 'depot', token: 'secret' })).toBe(`Basic ${btoa('depot:secret')}`)
+  it('encode le couple nom et mot de passe', () => {
+    expect(authHeader({ user: 'depot', password: 'secret' })).toBe(`Basic ${btoa('depot:secret')}`)
   })
 
-  it('accepte un jeton accentué', () => {
+  it('accepte un mot de passe accentué', () => {
     // `btoa` seul échouerait, et l'échec ressemblerait à un refus du serveur.
-    expect(() => authHeader({ user: 'dépôt', token: 'clé-é' })).not.toThrow()
+    expect(() => authHeader({ user: 'dépôt', password: 'clé-é' })).not.toThrow()
   })
 })
 
@@ -130,17 +123,17 @@ describe('deposit', () => {
     expect(relues[0]?.samples.length).toBe(13)
   })
 
-  it('refuse de partir sans jeton, et le dit', async () => {
+  it('refuse de partir sans mot de passe, et le dit', async () => {
     const { impl, appels } = reseau({ put: new Response(null, { status: 201 }) })
 
-    const issue = await deposit(trace('essai'), { user: 'depot', token: '' }, impl)
+    const issue = await deposit(trace('essai'), { user: 'depot', password: '' }, impl)
 
     expect(issue).toMatchObject({ ok: false, reason: 'no-credentials' })
     // Et surtout : rien n'est parti sur le réseau.
     expect(appels).toHaveLength(0)
   })
 
-  it('distingue un jeton refusé d un droit d écriture manquant', async () => {
+  it('distingue un refus d authentification d un droit d écriture manquant', async () => {
     const refus = await deposit(
       trace('essai'),
       IDENTIFIANTS,
@@ -153,7 +146,7 @@ describe('deposit', () => {
     )
 
     expect(refus).toMatchObject({ ok: false, reason: 'refused' })
-    expect((refus as { detail: string }).detail).toContain('jeton')
+    expect((refus as { detail: string }).detail).toContain('mot de passe')
     expect(interdit).toMatchObject({ ok: false, reason: 'refused' })
     expect((interdit as { detail: string }).detail).toContain('droit')
   })
@@ -202,9 +195,9 @@ describe('deposit', () => {
     expect(appels.some((appel) => appel.method === 'PUT')).toBe(true)
   })
 
-  it('dit qu on est hors couverture plutôt que d accuser le jeton', async () => {
+  it('dit qu on est hors couverture plutôt que d accuser le mot de passe', async () => {
     // Le cas normal en roulant : la trace reste locale, et l'on ne va pas
-    // envoyer l'utilisateur vérifier un jeton qui est bon.
+    // envoyer l'utilisateur vérifier un mot de passe qui est bon.
     const issue = await deposit(
       trace('essai'),
       IDENTIFIANTS,
@@ -224,73 +217,5 @@ describe('deposit', () => {
 
     expect(issue).toMatchObject({ ok: false, reason: 'network' })
     expect((issue as { detail: string }).detail).toContain('405')
-  })
-})
-
-describe('jeton reçu par l adresse', () => {
-  const oublie = () => {}
-
-  it('lit le nom et le jeton', () => {
-    // Réglé au poste, le jeton n'est nulle part dans la voiture : il y arrive
-    // par l'adresse, comme un profil partagé.
-    expect(readCredentialsFromUrl('#depot=depot:route-moteur-tesla', oublie)).toEqual({
-      user: 'depot',
-      token: 'route-moteur-tesla',
-    })
-  })
-
-  it('accepte le jeton seul, sous le nom par défaut', () => {
-    // La forme à taper dans la voiture : il n'y a pas de caméra dans son
-    // navigateur, donc l'adresse s'y saisit à la main et chaque caractère
-    // compte.
-    expect(readCredentialsFromUrl('#depot=route-moteur-tesla', oublie)).toEqual({
-      user: 'depot',
-      token: 'route-moteur-tesla',
-    })
-  })
-
-  it('efface le fragment même quand il est illisible', () => {
-    // Sans quoi il resterait dans la barre d'adresse et se réinstallerait à
-    // chaque rechargement.
-    let efface = 0
-    readCredentialsFromUrl('#depot=:sansnom', () => { efface += 1 })
-
-    expect(efface).toBe(1)
-  })
-
-  it('produit une adresse courte pour le nom par défaut', () => {
-    const court = credentialsUrl('https://exemple', { user: 'depot', token: 'mon-jeton' })
-    const long = credentialsUrl('https://exemple', { user: 'autre', token: 'mon-jeton' })
-
-    expect(court).toBe('https://exemple/#depot=mon-jeton')
-    expect(long).toBe('https://exemple/#depot=autre%3Amon-jeton')
-  })
-
-  it('accepte un jeton qui contient des deux-points', () => {
-    // Seul le premier sépare : un jeton n'a pas à s'interdire un caractère.
-    expect(readCredentialsFromUrl('#depot=depot:a:b:c', oublie)?.token).toBe('a:b:c')
-  })
-
-  it('accepte un jeton encodé', () => {
-    const url = credentialsUrl('https://exemple', { user: 'depot', token: 'clé à moi' })
-
-    expect(readCredentialsFromUrl(url.slice(url.indexOf('#')), oublie)).toEqual({
-      user: 'depot',
-      token: 'clé à moi',
-    })
-  })
-
-  it('ne trouve rien quand il n y a rien', () => {
-    expect(readCredentialsFromUrl('', oublie)).toBeNull()
-    expect(readCredentialsFromUrl('#p=unprofil', oublie)).toBeNull()
-  })
-
-  it('refuse une forme incomplète plutôt que de retenir un jeton vide', () => {
-    expect(readCredentialsFromUrl('#depot=depot:', oublie)).toBeNull()
-    expect(readCredentialsFromUrl('#depot=:jeton', oublie)).toBeNull()
-  })
-
-  it('cohabite avec un profil partagé dans la même adresse', () => {
-    expect(readCredentialsFromUrl('#p=abc&depot=depot:mon-jeton', oublie)?.user).toBe('depot')
   })
 })

@@ -52,7 +52,6 @@ import {
   calibrationOverrides,
   depositCredentials,
   setDepositCredentials,
-  depositLink,
 } from '../state'
 
 /**
@@ -67,63 +66,27 @@ import {
 const profile = activeProfile
 const importError = ref('')
 
-/** Le jeton de dépôt se retient dès la frappe : il n'y a rien à valider. */
-function onDeposit(user: string, token: string): void {
-  setDepositCredentials(user, token)
+/** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
+function onDeposit(user: string, password: string): void {
+  setDepositCredentials(user, password)
 }
 
 /**
- * Ce que l'écran dit de l'état du jeton.
+ * Ce que l'écran dit de l'état du mot de passe.
  *
  * L'écran de configuration n'a pas de bouton « enregistrer » — tout s'applique à
  * la frappe, c'est la règle du projet. Pour un curseur cela se voit ; pour un
- * jeton masqué, rien ne se voit, et l'on ne sait pas si la saisie a pris. La
+ * champ masqué, rien ne se voit, et l'on ne sait pas si la saisie a pris. La
  * question a été posée dès le premier usage, ce qui suffit à la trancher.
  *
- * La longueur est dite plutôt que le jeton : elle permet de reconnaître une
+ * La longueur est dite plutôt que la valeur : elle permet de reconnaître une
  * saisie tronquée ou un collage parti de travers, sans montrer le secret.
  */
-const depotLien = ref('')
-const depotQr = ref('')
-const depotNote = ref('')
-
-/**
- * Le lien qui installe le jeton dans la voiture.
- *
- * Le même mécanisme que le partage d'un profil, et pour le même motif : faire
- * arriver une donnée sur un appareil où l'on ne veut rien taper.
- */
-function onDepositLink(): void {
-  if (depotLien.value) {
-    depotLien.value = ''
-    depotQr.value = ''
-    depotNote.value = ''
-    return
-  }
-  depotLien.value = depositLink()
-  const code = qrcode(0, 'M')
-  code.addData(depotLien.value)
-  code.make()
-  depotQr.value = code.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
-  depotNote.value = isReachableOrigin(window.location.origin)
-    ? ''
-    : "Cette adresse est celle du poste de développement : elle ne mènera nulle part dans la voiture. Refaites l'opération depuis l'adresse du serveur."
-}
-
-async function onCopyDepositLink(): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(depotLien.value)
-    depotNote.value = 'Lien copié.'
-  } catch {
-    depotNote.value = 'Copie refusée par le navigateur : sélectionnez le lien à la main.'
-  }
-}
-
-const jetonEtat = computed(() => {
-  const { user, token } = depositCredentials.value
-  if (!token) return 'aucun jeton'
-  if (!user.trim()) return 'jeton retenu, mais il manque le nom d’utilisateur'
-  return `retenu — ${token.length} caractères, rien à valider`
+const compteEtat = computed(() => {
+  const { user, password } = depositCredentials.value
+  if (!password) return 'aucun mot de passe'
+  if (!user.trim()) return 'mot de passe retenu, mais il manque le nom'
+  return `retenu — ${password.length} caractères, rien à valider`
 })
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -756,57 +719,29 @@ function impliedCylinders(index: number): number | null {
       </div>
 
       <div class="deposit">
-        <span class="note">Jeton de dépôt</span>
+        <span class="note">Compte de dépôt</span>
         <input
           :value="depositCredentials.user"
           type="text"
           placeholder="nom d’utilisateur"
-          @input="onDeposit(($event.target as HTMLInputElement).value, depositCredentials.token)"
+          @input="onDeposit(($event.target as HTMLInputElement).value, depositCredentials.password)"
         />
         <input
-          :value="depositCredentials.token"
+          :value="depositCredentials.password"
           type="password"
-          placeholder="jeton"
+          placeholder="mot de passe"
           @input="onDeposit(depositCredentials.user, ($event.target as HTMLInputElement).value)"
         />
-        <span class="note">{{ jetonEtat }}</span>
-        <button v-if="depositCredentials.token" @click="onDepositLink()">
-          {{ depotLien ? 'Masquer' : 'Installer dans la voiture…' }}
-        </button>
-      </div>
-
-      <div v-if="depotLien" class="share">
-        <p class="note">
-          Le jeton appartient à <strong>cet appareil</strong> : réglé ici, il
-          n'est pas dans la voiture. Ouvrez cette adresse une fois dans son
-          navigateur et il s'y installe. Le jeton est dans la partie après le
-          <code>#</code>, qui n'est jamais transmise au serveur, et elle est
-          effacée aussitôt lue.
-        </p>
-        <p class="note">
-          <strong>Dans une voiture, l'adresse se tape</strong> : son navigateur
-          n'a pas de caméra. C'est pourquoi elle est aussi courte que possible,
-          et pourquoi un jeton prononçable vaut mieux qu'une suite aléatoire.
-          Elle fonctionne aussi collée dans un onglet déjà ouvert sur
-          l'application.
-        </p>
-        <div class="qr" v-html="depotQr" />
-        <p class="note">
-          Le code ci-dessus ne sert qu'aux appareils qui ont une caméra — un
-          téléphone, une tablette.
-        </p>
-        <input :value="depotLien" readonly @focus="($event.target as HTMLInputElement).select()" />
-        <div class="choices">
-          <button @click="onCopyDepositLink()">Copier le lien</button>
-        </div>
-        <p v-if="depotNote" class="note">{{ depotNote }}</p>
+        <span class="note">{{ compteEtat }}</span>
       </div>
       <p class="note">
         Sert à envoyer une trace sur le serveur depuis la voiture, dont le
-        navigateur refuse les téléchargements. Un jeton dédié, et non votre mot
-        de passe : il ne donne que le droit d’écrire un fichier dans le dossier
-        des traces, et il reste en clair dans ce navigateur. Il se crée avec
-        <code>npm run htpasswd</code>, sous le nom <code>depot</code>.
+        navigateur refuse les téléchargements. C’est un nom et un mot de passe du
+        fichier <code>htpasswd</code> du serveur, et il reste en clair dans ce
+        navigateur — d’où l’intérêt d’un compte <strong>dédié</strong> au dépôt
+        plutôt que du vôtre : il se révoque seul, et il ne donnerait pas accès au
+        site entier si vous activiez l’authentification générale. Un compte se
+        crée avec <code>npm run htpasswd</code>.
       </p>
 
       <div class="reset">

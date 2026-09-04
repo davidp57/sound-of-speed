@@ -406,10 +406,10 @@ function onRateChange(event: Event): void {
       <p v-else class="note">Aucune trace enregistrée.</p>
 
       <p v-if="depositMessage" class="note">{{ depositMessage }}</p>
-      <p v-if="!depositCredentials.token" class="note">
+      <p v-if="!depositCredentials.password" class="note">
         Le dépôt envoie une trace sur le serveur, d'où on peut la reprendre sur un
         autre appareil — c'est le seul moyen de la sortir d'une voiture dont le
-        navigateur refuse les téléchargements. Il demande un jeton, à régler une
+        navigateur refuse les téléchargements. Il demande un compte, à régler une
         fois à l'écran de configuration.
       </p>
 
