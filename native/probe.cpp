@@ -947,17 +947,24 @@ int bench_impulse_samples() { return g_rig == nullptr ? 0 : (int)g_rig->impulseS
 int main(int argc, char **argv) {
     double duration = 1.0;
     if (argc > 1) duration = std::atof(argv[1]);
+    // Second argument : le nombre de cylindres, 4 ou 8. Ce n'est pas un detail
+    // de confort. La question n'est pas de savoir si le temps reel passe, mais
+    // jusqu'a combien de cylindres il passe : un bicylindre bien simule vaudrait
+    // mieux qu'un V8 echantillonne.
+    int cylinders = 8;
+    if (argc > 2) cylinders = std::atoi(argv[2]);
 
-    std::printf("Sonde native engine-sim - %g s de son par releve\n", duration);
+    std::printf("Sonde native engine-sim - %g s de son par releve, %d cylindres\n",
+        duration, cylinders);
     std::printf("Chaque ligne : cout processeur pour une seconde de son.\n\n");
 
     // 10 000 echantillons : la reponse impulsionnelle pleine, telle que le code
     // la plafonne. 100 : le meme calcul sans le poids de la convolution, pour
     // voir ce qu'un ConvolverNode de Web Audio deporterait.
-    report("Chaine complete, 10 kHz", run(10000, duration, 10000));
-    report("Chaine complete, 20 kHz", run(20000, duration, 10000));
-    report("Convolution courte, 10 kHz", run(10000, duration, 100));
-    report("Convolution courte, 20 kHz", run(20000, duration, 100));
+    report("Chaine complete, 10 kHz", run(10000, duration, 10000, cylinders));
+    report("Chaine complete, 20 kHz", run(20000, duration, 10000, cylinders));
+    report("Convolution courte, 10 kHz", run(10000, duration, 100, cylinders));
+    report("Convolution courte, 20 kHz", run(20000, duration, 100, cylinders));
 
     return 0;
 }
