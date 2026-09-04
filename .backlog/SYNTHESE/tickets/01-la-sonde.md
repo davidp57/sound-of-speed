@@ -54,28 +54,40 @@ nombre de cœurs annoncé. Un chiffre sans son contexte ne se relit pas trois
 semaines plus tard — et le relevé du poste de David n'a pas la même valeur que
 celui de la voiture.
 
-## Ce que coûte WebAssembly, mesuré
+## Ce que coûte WebAssembly : rien, ou presque
 
-Le rapport de faisabilité donnait des chiffres **natifs**. Il manquait le facteur
-de conversion vers WebAssembly, sans quoi le relevé de la sonde ne se compare à
-rien. Mesuré ici, sur deux noyaux repris du vrai code — une convolution par
-produit direct, qui pèse 65 % du coût audio, et un solveur itératif comme celui
-des contraintes du vilebrequin :
+Mesuré sur le **vrai code**, une fois le cœur compilé par les deux chaînes depuis
+le même arbre, mêmes sources, mêmes patchs, même `-O2`. Un Ryzen 7 7800X3D, un
+seul fil ; le WebAssembly tourne sous Node, qui emploie le moteur de Chrome.
 
-| Noyau | Natif, g++ -O2 | WebAssembly, Chromium | Surcoût |
+| Relevé | Natif, g++ | WebAssembly | Surcoût |
 |---|---|---|---|
-| Convolution, 48 000 sorties sur 10 000 points | 0,308 s | 0,410 s | ×1,33 |
-| Solveur, 100 000 pas de 8 itérations | 0,219 s | 0,254 s | ×1,16 |
+| Chaîne complète, 10 kHz | ×1,68 | ×1,76 | aucun |
+| Chaîne complète, 20 kHz | ×1,13 | ×1,08 | ×1,05 |
+| Convolution courte, 10 kHz | ×3,29 | ×3,17 | ×1,04 |
+| Convolution courte, 20 kHz | ×1,74 | ×1,64 | ×1,06 |
 
-Deux passes, écarts sous 1 %. **WebAssembly coûte donc 16 à 33 % de plus que le
-natif**, bien moins que le facteur deux qu'on avance souvent.
+**Zéro à six pour cent.** Un banc synthétique fait au préalable — une convolution
+et un solveur écrits pour l'occasion — annonçait 16 à 33 % ; il **surestimait**.
+Sur le vrai code, le choix de WebAssembly ne coûte rien de mesurable, et c'est la
+chaîne de compilation qui s'efface devant ce que le processeur sait faire.
 
-Le banc recoupe au passage la mesure du rapport de faisabilité : 0,308 s pour
-48 000 échantillons ici, contre 0,266 s pour 44 100 sur le vrai code, soit le
-même ordre à 8 % près.
+Le binaire pèse **128 592 octets**. Il tiendra sans peine dans le cache hors
+réseau.
 
-Ce qui reste inconnu est donc **le seul rapport entre ce poste et la voiture** —
-et c'est exactement ce que la sonde va chercher.
+### Ce que ces chiffres disent déjà
+
+La convolution longue coûte la moitié du budget : ×1,76 avec, ×3,17 sans. La
+déporter sur un `ConvolverNode` de Web Audio n'est donc pas une optimisation
+parmi d'autres, c'est **la** condition pour espérer passer le seuil.
+
+Et une fois qu'elle est sortie, **c'est la simulation qui domine** — 0,310 s sur
+0,315 s. Toute optimisation ultérieure portera là, pas sur l'audio.
+
+Reste que ×3,17 est relevé sur un processeur de bureau haut de gamme, et que le
+seuil est ×3 **dans la voiture**. La marge est donc mince, et c'est bien la
+mesure sur place qui tranchera — mais on sait déjà qu'un portage qui garderait la
+convolution dans le WebAssembly est perdu d'avance.
 
 ## Une fausse piste, pour qu'on ne la reprenne pas
 

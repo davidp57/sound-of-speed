@@ -1,0 +1,12 @@
+diff --git a/src/synthesizer.cpp b/src/synthesizer.cpp
+index 0997bbf..4284ad5 100644
+--- a/src/synthesizer.cpp
++++ b/src/synthesizer.cpp
+@@ -1,7 +1,6 @@
+ #include "../include/synthesizer.h"
+ 
+ #include "../include/utilities.h"
+-#include "../include/delta.h"
+ 
+ #include <cassert>
+ #include <cmath>

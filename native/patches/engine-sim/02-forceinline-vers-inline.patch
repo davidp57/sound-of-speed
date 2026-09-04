@@ -1,0 +1,80 @@
+diff --git a/include/butterworth_low_pass_filter.h b/include/butterworth_low_pass_filter.h
+index a9794ad..7509723 100644
+--- a/include/butterworth_low_pass_filter.h
++++ b/include/butterworth_low_pass_filter.h
+@@ -8,6 +8,15 @@
+ 
+ #include <cmath>
+ 
++#ifndef _MSC_VER
++// __forceinline est propre a Visual C++. Ailleurs, on laisse le compilateur
++// decider. MinGW en donne deja une definition, incompatible avec une methode
++// de classe : on la remplace.
++#undef __forceinline
++#define __forceinline inline
++#endif
++
++
+ template <typename T_Real>
+ class ButterworthLowPassFilter : public Filter {
+ public:
+diff --git a/include/jitter_filter.h b/include/jitter_filter.h
+index be33962..0dd7639 100644
+--- a/include/jitter_filter.h
++++ b/include/jitter_filter.h
+@@ -8,6 +8,15 @@
+ 
+ #include <random>
+ 
++#ifndef _MSC_VER
++// __forceinline est propre a Visual C++. Ailleurs, on laisse le compilateur
++// decider. MinGW en donne deja une definition, incompatible avec une methode
++// de classe : on la remplace.
++#undef __forceinline
++#define __forceinline inline
++#endif
++
++
+ class JitterFilter : public Filter {
+ public:
+     JitterFilter();
+diff --git a/include/low_pass_filter.h b/include/low_pass_filter.h
+index 3a3ba01..36e56e1 100644
+--- a/include/low_pass_filter.h
++++ b/include/low_pass_filter.h
+@@ -5,6 +5,15 @@
+ 
+ #include "constants.h"
+ 
++#ifndef _MSC_VER
++// __forceinline est propre a Visual C++. Ailleurs, on laisse le compilateur
++// decider. MinGW en donne deja une definition, incompatible avec une methode
++// de classe : on la remplace.
++#undef __forceinline
++#define __forceinline inline
++#endif
++
++
+ class LowPassFilter : public Filter {
+     public:
+         LowPassFilter();
+diff --git a/include/preemphasis_filter.h b/include/preemphasis_filter.h
+index b56ea93..2a74cdb 100644
+--- a/include/preemphasis_filter.h
++++ b/include/preemphasis_filter.h
+@@ -7,6 +7,15 @@
+ 
+ #include <random>
+ 
++#ifndef _MSC_VER
++// __forceinline est propre a Visual C++. Ailleurs, on laisse le compilateur
++// decider. MinGW en donne deja une definition, incompatible avec une methode
++// de classe : on la remplace.
++#undef __forceinline
++#define __forceinline inline
++#endif
++
++
+ class PreemphasisFilter : public Filter {
+ public:
+     PreemphasisFilter() { m_lastSample = 0; }
