@@ -12,9 +12,29 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
  * permettait donc de savoir si l'on essayait la version qu'on croyait — et un
  * correctif jugé sur la version précédente est un correctif jugé pour rien.
  */
-const version = JSON.parse(
-  readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf-8'),
-).version
+const packageJson = fileURLToPath(new URL('./package.json', import.meta.url))
+const version = JSON.parse(readFileSync(packageJson, 'utf-8')).version
+
+/**
+ * Redémarre le serveur de développement quand la version change.
+ *
+ * Elle est injectée à la construction : sans cela, le serveur garde celle qu'il
+ * a lue à son démarrage et l'affiche pendant qu'on travaille sur une autre.
+ * Relevé le jour même de sa mise en place — l'écran annonçait 0.1.27 sur du
+ * 0.1.30, et le numéro censé lever les doutes en créait un.
+ *
+ * Vite surveille sa propre configuration et ce qu'elle importe, mais pas ce
+ * qu'elle lit elle-même.
+ */
+const watchVersion = {
+  name: 'speed:watch-version',
+  configureServer(server: { watcher: { add: (p: string) => void; on: (e: string, cb: (f: string) => void) => void }; restart: () => void }) {
+    server.watcher.add(packageJson)
+    server.watcher.on('change', (file: string) => {
+      if (file === packageJson) void server.restart()
+    })
+  },
+}
 
 /**
  * Le HTTPS n'est activé qu'à la demande, par `npm run dev:mobile`.
@@ -32,7 +52,7 @@ const useHttps = process.env['HTTPS'] === '1'
 
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(version) },
-  plugins: [vue(), ...(useHttps ? [basicSsl()] : [])],
+  plugins: [vue(), watchVersion, ...(useHttps ? [basicSsl()] : [])],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
