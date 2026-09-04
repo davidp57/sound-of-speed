@@ -550,6 +550,7 @@ export const telemetry = shallowRef<Telemetry>({
     audibleRpm: activeProfile.value.engine.idleRpm,
     kinematicRpm: 0,
     load: 0,
+    effort: 0,
     rpmFraction: 0,
     firingHz: 0,
     limiterActive: false,

@@ -1343,6 +1343,15 @@ function impliedCylinders(index: number): number | null {
         unit="m/s²"
         hint="Accélération au-delà de laquelle la charge est considérée maximale."
       />
+      <NumberField
+        v-model="profile.mix.dragRefKmh"
+        label="Repère de traînée"
+        :min="60"
+        :max="250"
+        :step="5"
+        unit="km/h"
+        hint="Vitesse à laquelle tenir l'allure demande la moitié de l'effort maximal. Faute de pédale, tenir une allure vaudrait sinon toujours la même chose, à 30 comme à 130 km/h. Bas, tout devient chargé tôt ; haut, la traînée compte peu."
+      />
       <NumberField v-model="profile.mix.loadSmoothingS" label="Lissage de la charge" :min="0.02" :max="1.5" :step="0.01" unit="s"
         hint="Temps que met la charge à suivre la pédale. Trop court, le fondu papillonne ; trop long, le son traîne derrière la conduite."
       />

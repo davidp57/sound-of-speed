@@ -66,8 +66,22 @@ export interface EngineState {
   audibleRpm: number
   /** Régime imposé par la vitesse et le rapport, avant inertie et rupteur. */
   kinematicRpm: number
-  /** De 0 (pied levé) à 1 (pleine charge). Pilote le fondu on/off. */
+  /** De 0 (pied levé) à 1 (pleine charge). Pilote la boîte et ses seuils. */
   load: number
+  /**
+   * Le travail du moteur, de 0 à 1 : l'accélération **plus** la traînée à
+   * vaincre. Pilote le fondu on/off et le relief de charge.
+   *
+   * Deux grandeurs plutôt qu'une, parce que la boîte et le son ne demandent pas
+   * la même chose. La boîte veut l'**intention** du conducteur — demande-t-il de
+   * l'accélération ? — et cela ne dépend pas de la vitesse. Le son veut le
+   * **travail** — combien le moteur pousse —, et tenir 130 km/h en demande
+   * beaucoup quand tenir 30 n'en demande presque pas.
+   *
+   * Les avoir confondues faisait que toute vitesse tenue donnait le même demi,
+   * de l'arrêt à 130 km/h : mesuré, cinq allures tenues à 0,50 au centième près.
+   */
+  effort: number
   /** Fraction du rupteur, de 0 à 1. */
   rpmFraction: number
   /** Fréquence d'allumage, en hertz. Diagnostic. */
@@ -96,6 +110,7 @@ export interface EngineInput {
 export class Engine {
   private rpm: number
   private load = 0
+  private effort = 0
   private limiterCutRemainingS = 0
   private limiterActive = false
   /**
@@ -120,6 +135,7 @@ export class Engine {
   reset(): void {
     this.rpm = this.preset.idleRpm
     this.load = 0
+    this.effort = 0
     this.limiterCutRemainingS = 0
     this.limiterActive = false
     this.flutterTimeS = 0
@@ -148,6 +164,7 @@ export class Engine {
       audibleRpm: this.advanceFlutter(step),
       kinematicRpm: kinematic,
       load: this.load,
+      effort: this.effort,
       rpmFraction: fraction,
       firingHz: (this.rpm / 120) * this.preset.cylinders,
       limiterActive: this.limiterActive,
@@ -228,6 +245,29 @@ export class Engine {
     const tau = Math.max(0.01, this.mix.loadSmoothingS)
     this.load += (raw - this.load) * clamp(dt / tau, 0, 1)
     this.load = clamp(this.load, 0, 1)
+
+    this.advanceEffort(dt, input, tau)
+  }
+
+  /**
+   * Effort : ce que le moteur fournit vraiment.
+   *
+   * L'accélération demandée, plus la traînée à vaincre — laquelle croît comme le
+   * carré de la vitesse, et vaut la moitié de la charge disponible au repère
+   * réglé. Sans ce second terme, tenir une allure vaut toujours le même demi,
+   * que ce soit à 30 ou à 130 km/h, et la moitié de l'échelle reste inutilisée.
+   *
+   * Le lissage est celui de la charge : les deux grandeurs suivent la même
+   * mesure d'entrée, et les désaccorder ferait entendre deux moteurs.
+   */
+  private advanceEffort(dt: number, input: EngineInput, tau: number): void {
+    const full = Math.max(0.1, this.mix.fullLoadAccelMs2)
+    const dragRef = Math.max(1, this.mix.dragRefKmh)
+    const share = Math.max(0, input.kmh) / dragRef
+    const raw = clamp(input.accelMs2 / full + 0.5 * share * share, 0, 1)
+
+    this.effort += (raw - this.effort) * clamp(dt / tau, 0, 1)
+    this.effort = clamp(this.effort, 0, 1)
   }
 
   /**

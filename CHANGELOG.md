@@ -8,6 +8,32 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **L'effort du moteur tient compte de la vitesse : la croisière n'est plus
+  plate.** Faute de pédale, tout se déduisait de l'accélération, si bien que
+  tenir une allure donnait toujours le même demi — mesuré, cinq allures tenues à
+  0,50 au centième près, de l'arrêt à 130 km/h. Or tenir 130 demande beaucoup de
+  couple et tenir 30 presque rien : la traînée croît comme le carré de la vitesse.
+
+  Deux grandeurs remplacent donc l'unique charge. La **charge** dit l'intention
+  du conducteur et pilote la boîte, inchangée. L'**effort** dit le travail du
+  moteur — l'accélération plus la traînée — et pilote le son : le fondu entre
+  « en charge » et « pied levé », et le relief de charge. Un réglage nouveau, le
+  **repère de traînée**, donne la vitesse à laquelle tenir l'allure consomme la
+  moitié de l'effort maximal : 130 km/h sur Route, 150 sur Sport.
+
+  Mesuré sur Route : l'effort passe de 0,07 à 30 km/h tenus à 0,57 à 130, et la
+  croisière s'étage sur 3,4 dB là où elle était plate. Une reprise douce à
+  130 km/h passe 2,2 dB au-dessus de la croisière à la même vitesse. La charge,
+  elle, n'a pas bougé d'un centième — aucun seuil de passage n'est à recaler, et
+  les tests de la boîte le vérifient.
+
+  `idleLevelDb` est recalé de −5 à −1 sur Route et de −5 à 0 sur Sport : l'effort
+  vaut zéro à l'arrêt là où la charge valait un demi sans raison, et le relief lui
+  retirait donc ses décibels pleins. **Un profil déjà enregistré est repris de la
+  même façon** — sans quoi son ralenti aurait sonné quatre à cinq décibels plus
+  bas qu'hier, sans que rien ne le dise.
+
+
 - **Trois modes de simulation**, pour éprouver toute la chaîne sans rouler. Le
   simulateur livrait jusqu'ici une vitesse parfaite à chaque image, ce qui fait
   disparaître toute la difficulté du produit : mesuré en croisière tenue à

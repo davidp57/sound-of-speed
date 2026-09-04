@@ -311,7 +311,18 @@ function onRateChange(event: Event): void {
         unit="Hz"
         hint="Régime ÷ 120 × cylindres. C'est la hauteur fondamentale du son."
       />
-      <ValueRow label="Charge" :value="fixed(telemetry.engine.load, 3)" :bar="telemetry.engine.load" />
+      <ValueRow
+        label="Charge"
+        :value="fixed(telemetry.engine.load, 3)"
+        :bar="telemetry.engine.load"
+        hint="L'intention : demande-t-on de l'accélération ? C'est elle que lit la boîte, et elle ne dépend pas de la vitesse."
+      />
+      <ValueRow
+        label="Effort"
+        :value="fixed(telemetry.engine.effort, 3)"
+        :bar="telemetry.engine.effort"
+        hint="Le travail du moteur : l'accélération plus la traînée à vaincre, laquelle croît avec le carré de la vitesse. C'est lui que le son suit — le timbre et le niveau."
+      />
       <ValueRow label="Rupteur" :value="telemetry.engine.limiterActive ? 'actif' : '—'" :warn="telemetry.engine.limiterActive" />
       <ValueRow label="Au ralenti" :value="telemetry.engine.idling ? 'oui' : 'non'" />
     </section>

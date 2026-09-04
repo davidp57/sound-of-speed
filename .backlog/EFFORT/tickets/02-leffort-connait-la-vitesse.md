@@ -1,6 +1,6 @@
 # 02 — L'effort du moteur tient compte de la vitesse
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré, reste à écouter en roulant
 
 **Bloqué par :** 01 — Remesurer, et dire si le lot vaut encore
 

@@ -846,12 +846,13 @@ fort.
 
 | Réglage | Ce qu'il fait |
 |---|---|
-| **Relief de charge** | Autant en moins pied levé, autant en plus pied au plancher, rien en croisière. **C'est le réglage qui fait entendre l'effort** : sans lui, les fondus étant à puissance constante, ralenti, croisière et pleine charge tenaient dans 1,3 dB — le son changeait de couleur et jamais de volume. À 4, il y a 8 dB entre lever le pied et écraser |
+| **Relief de charge** | Autant en moins sans effort, autant en plus à pleine charge, rien à mi-effort. **C'est le réglage qui fait entendre l'effort** : sans lui, les fondus étant à puissance constante, ralenti, croisière et pleine charge tenaient dans 1,3 dB — le son changeait de couleur et jamais de volume. À 4, il y a 8 dB entre lever le pied et écraser |
 | **Relief du régime** | Gain gagné entre le ralenti et le rupteur : le rugissement qui monte avec les tours. Il **s'ajoute** aux 4 dB que la banque livrée donne déjà, sa prise haut régime étant enregistrée plus fort que la basse |
 | **Niveau au ralenti** | Le ralenti n'a pas de couche dédiée dans la banque livrée : on y entend la prise « pied levé » jouée deux octaves plus bas. Sans ce réglage elle sonnait aussi fort que tout le reste |
 | **Désaccord des couches** | Écart de justesse entre les couches d'une même famille, en centièmes de demi-ton. Au rapport exact elles sont parfaitement justes l'une par rapport à l'autre, ce qui n'arrive sur aucun moteur : les inégalités entre cylindres et les deux lignes d'échappement produisent un battement lent. L'écart est réparti de part et d'autre, donc la hauteur moyenne ne bouge pas, et il ne déplace aucun gain. Mesuré, 12 centièmes donnent un battement à 2,4 Hz à 5100 tr/min et 1,5 Hz à 3200 |
 | **Début / fin de bascule** | Régimes entre lesquels la couche haute remplace la basse. **Indépendants des régimes d'ancrage**, qui règlent la justesse |
-| **Accélération pleine charge** | Accélération au-delà de laquelle la charge est maximale. Faute de pédale dans une voiture électrique, c'est elle qui arbitre le fondu entre « en charge » et « pied levé » |
+| **Accélération pleine charge** | Accélération au-delà de laquelle la charge est maximale. Faute de pédale dans une voiture électrique, c'est elle qui mesure l'intention du conducteur — et c'est la charge qui pilote la boîte |
+| **Repère de traînée** | Vitesse à laquelle **tenir** l'allure demande la moitié de l'effort maximal. Sans lui, tenir une vitesse valait toujours la même chose, à 30 comme à 130 km/h, alors que la traînée croît comme le carré de la vitesse : la croisière était plate d'un bout à l'autre. Livré à 130 km/h sur Route, 150 sur Sport. Bas, tout devient chargé tôt ; haut, la traînée compte peu |
 | **Lissage de la charge** | Évite que le fondu papillonne sur le bruit d'accélération |
 | **Effacement du ralenti** | Régime au-dessus duquel la couche de ralenti disparaît |
 | **Gain pied levé** | Curseur de goût sur toute la famille « pied levé ». La compensation des prises plus douces vit dans le gain de chaque couche, où le déficit se mesure — 9,6 dB pour la basse, 6,5 pour la haute : à laisser à 1 sauf pour forcer le trait |
@@ -1308,6 +1309,44 @@ l'accélération : son niveau ne dit pas « on demande fort » mais « on accél
 Le seuil se franchissait dès 3,6 km/h par seconde, et la boîte descendait pour
 cela.
 
+### Deux grandeurs, et non une : la charge et l'effort
+
+Faute de pédale, tout se déduit de l'accélération. Mais la boîte et le son ne
+demandent pas la même chose :
+
+- la **charge** dit l'**intention** du conducteur — demande-t-il de
+  l'accélération ? Cela ne dépend pas de la vitesse. C'est elle que lit la boîte,
+  avec ses seuils de passage et son rétrogradage appuyé ;
+- l'**effort** dit le **travail du moteur** — combien il pousse. C'est
+  l'accélération **plus** la traînée à vaincre, laquelle croît comme le carré de
+  la vitesse. C'est lui que suit le son : le fondu entre « en charge » et « pied
+  levé », et le relief de charge.
+
+Les avoir confondues rendait la croisière plate : tenir 30 km/h et tenir 130
+donnaient la même charge, donc le même niveau et le même timbre, alors que l'un
+ne demande presque rien et l'autre beaucoup. Mesuré avant : cinq allures tenues
+à 0,50 au centième près, de l'arrêt à 130 km/h.
+
+Le repère de traînée est la vitesse à laquelle tenir l'allure consomme la moitié
+de l'effort maximal — 130 km/h sur Route. Mesuré après, profil Route :
+
+| Situation | Charge | Effort | Relief de charge |
+|---|---|---|---|
+| Arrêt, au ralenti | 0,50 | 0,00 | −4,0 dB |
+| 50 km/h tenu | 0,54 | 0,15 | −2,8 dB |
+| 90 km/h tenu | 0,51 | 0,26 | −1,9 dB |
+| 130 km/h tenu | 0,53 | 0,57 | +0,6 dB |
+| 110 km/h roue libre | 0,19 | 0,00 | −4,0 dB |
+| 130 km/h, reprise douce | — | 0,85 | +2,8 dB |
+
+La croisière s'étage désormais sur 3,4 dB entre 50 et 130 km/h, là où elle était
+plate. Et la charge, elle, n'a pas bougé d'un centième : aucun seuil de passage
+n'est à recaler, ce qui était la condition pour que ce changement n'en défasse
+pas d'autres.
+
+Le ralenti, lui, perdait les 4 dB que le relief lui retire maintenant que
+l'effort y vaut zéro : `idleLevelDb` les lui rend.
+
 ### La pièce importante, et ce n'est pas le son
 
 C'est `conditioner.ts`. Le GPS ne livre qu'une mesure par seconde : piloter
@@ -1485,6 +1524,7 @@ chaque essai.
 | 25 | Un étalonnage ne s'applique qu'entier, et une source qui rejette tout dit pourquoi | fait, reste à rouler |
 | 26 | Une manette Xbox conduit le simulateur, gâchettes analogiques comprises | fait |
 | 27 | Trois modes de simulation, dont un qui traverse la vraie source GPS | fait |
+| 28 | L'effort du moteur tient compte de la vitesse : la croisière n'est plus plate | fait, reste à écouter |
 | — | Déposer une trace et un profil depuis l'application | prévu |
 | — | Plusieurs banques de son, choisies par profil | prévu |
 | — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | à remesurer |

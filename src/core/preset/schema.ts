@@ -216,6 +216,21 @@ export interface MixPreset {
    * C'est elle qui arbitre le fondu entre les couches « en charge » et « pied levé ».
    */
   fullLoadAccelMs2: number
+  /**
+   * Vitesse à laquelle tenir l'allure consomme la moitié de la charge
+   * disponible, en km/h.
+   *
+   * Faute de pédale, la charge se déduit de l'accélération — et tenir une
+   * vitesse, quelle qu'elle soit, donne donc toujours le même demi. Or tenir
+   * 130 km/h demande beaucoup de couple et tenir 30 presque rien : la traînée
+   * croît comme le carré de la vitesse. Ce repère est ce qui rend cet effort-là
+   * au son.
+   *
+   * Ce n'est pas un réglage de physique — `fullLoadAccelMs2` vaut déjà 2 m/s² là
+   * où une électrique en fait cinq. C'est un curseur de contraste : bas, tout
+   * devient chargé tôt ; haut, la traînée compte peu.
+   */
+  dragRefKmh: number
   /** Constante de lissage de la charge, en secondes. */
   loadSmoothingS: number
   /**
