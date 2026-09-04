@@ -4,7 +4,7 @@
 # `--platform=$BUILDPLATFORM` sur l'étape de construction n'est pas un détail :
 # sans lui, produire une image pour un NAS à processeur ARM ferait tourner npm
 # sous émulation, pour de longues minutes. Avec lui, la construction se fait
-# nativement sur le coureur, et seule l'image finale — qui ne fait que servir des
+# nativement sur le runner, et seule l'image finale — qui ne fait que servir des
 # fichiers — est bâtie pour l'architecture visée.
 #
 # Les échantillons restent dehors, montés en volume : ils ne sont pas dans le
