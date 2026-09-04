@@ -233,17 +233,6 @@ const SPEED_STEP_KMH = 20
       </span>
     </section>
 
-      <section v-if="favoriteProfiles.length > 1" class="favorites" :class="{ large: immersive }">
-      <button
-        v-for="entry in favoriteProfiles"
-        :key="entry.id"
-        :aria-pressed="entry.id === selectedProfileId"
-        @click="selectProfile(entry.id)"
-      >
-        {{ entry.name }}
-      </button>
-    </section>
-
     <!--
       Les deux visages de l'écran.
       Les cadrans se lisent mieux en roulant ; on ne règle pas un profil sur une
@@ -261,6 +250,17 @@ const SPEED_STEP_KMH = 20
           Chiffres
         </button>
       </section>
+
+      <section v-if="favoriteProfiles.length > 1" class="favorites" :class="{ large: immersive }">
+      <button
+        v-for="entry in favoriteProfiles"
+        :key="entry.id"
+        :aria-pressed="entry.id === selectedProfileId"
+        @click="selectProfile(entry.id)"
+      >
+        {{ entry.name }}
+      </button>
+    </section>
     </div>
 
     <section v-if="driveFace === 'dials'" class="dashboard">
@@ -569,10 +569,21 @@ const SPEED_STEP_KMH = 20
   margin-left: 0.5rem;
 }
 
+/*
+ * Trois ancrages plutôt que trois places au fil du texte : la source à gauche,
+ * l'affichage au centre, les profils à droite. Chacun garde sa place quand les
+ * autres changent de largeur — un nom de profil plus long ne doit pas déplacer
+ * les boutons de source, qu'on cherche au même endroit à chaque fois.
+ *
+ * Les marges automatiques tombent d'elles-mêmes quand la barre se replie : les
+ * groupes se rangent alors les uns sous les autres, alignés à gauche.
+ */
 .face-switch {
-  /* Poussé à droite quand tout tient : c'est un réglage d'affichage, pas une
-     commande de conduite, et le laisser au milieu le fait confondre avec le
-     choix de profil. */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.favorites {
   margin-left: auto;
 }
 
