@@ -72,7 +72,13 @@ position, la courante et les douze dernières. C'est ce relevé, et non une
 supposition, qui doit servir à régler le seuil *Précision GPS acceptée* : le
 seuil livré est large exprès, faute de connaître les valeurs de la voiture.
 
-La section *Appareil* répond à trois questions qu'aucun code ne devine : la
+La section *Appareil* commence par le **numéro de version** servi à cette page.
+Ce n'est pas décoratif : dans la voiture, il n'y a ni console ni outils de
+développement, un service worker garde un cache, et rien ne permettait de savoir
+si l'on essayait bien la version qu'on croyait. Un correctif jugé sur la version
+précédente est un correctif jugé pour rien.
+
+Elle répond ensuite à trois questions qu'aucun code ne devine : la
 largeur et la hauteur dont la page dispose réellement — le zoom du navigateur
 d'une voiture n'est pas réglable —, ce que répond l'API de maintien d'écran
 allumé, et si l'autorisation de géolocalisation est retenue d'une session à

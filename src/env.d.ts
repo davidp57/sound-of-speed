@@ -5,3 +5,6 @@ declare module '*.vue' {
   const component: DefineComponent<Record<string, unknown>, Record<string, unknown>, unknown>
   export default component
 }
+
+/** Version de `package.json`, injectée à la construction par Vite. */
+declare const __APP_VERSION__: string
