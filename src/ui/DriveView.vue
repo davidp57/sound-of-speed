@@ -8,8 +8,12 @@ import {
   driveFace,
   favoriteProfiles,
   masterVolume,
+  setBenchOptions,
   setDriveFace,
   setMasterVolume,
+  setSimulationMode,
+  simulationMode,
+  simulatorAvailable,
   selectProfile,
   selectedProfileId,
   audioStatus,
@@ -29,6 +33,7 @@ import {
   setThrottle,
   shiftDown,
   shiftUp,
+  benchOptions,
   padConnected,
   padLabel,
   padMapping,
@@ -37,6 +42,7 @@ import {
   sourceKind,
   sourceStatus,
   telemetry,
+  type SimulationMode,
   type SourceKind,
 } from '../state'
 
@@ -50,10 +56,37 @@ withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
  */
 const emit = defineEmits<{ exit: [] }>()
 
+// Le simulateur n'est proposé qu'en développement : dans une voiture, il n'est
+// qu'un moyen de se tromper sur ce qu'on entend.
 const SOURCES: { id: SourceKind; label: string }[] = [
-  { id: 'simulator', label: 'Simulateur' },
+  ...(simulatorAvailable ? [{ id: 'simulator' as const, label: 'Simulateur' }] : []),
   { id: 'geolocation', label: 'GPS' },
   { id: 'replay', label: 'Rejeu' },
+]
+
+/**
+ * Les trois modes du banc, et ce que chacun met à l'épreuve.
+ *
+ * L'ordre est celui de la fidélité croissante, et le libellé dit ce qu'on gagne
+ * à descendre d'un cran — sans quoi personne ne saurait pourquoi choisir le
+ * troisième.
+ */
+const MODES: { id: SimulationMode; label: string; hint: string }[] = [
+  {
+    id: 'perfect',
+    label: 'Vitesse exacte',
+    hint: 'Une vitesse parfaite à chaque image. Commode pour juger un réglage de son, mais toute la difficulté du produit disparaît.',
+  },
+  {
+    id: 'measured',
+    label: 'Mesure GPS',
+    hint: 'La même vitesse, livrée à la cadence d’un récepteur et bruitée. Met le conditionnement à l’épreuve : extrapolation, charge qui frémit, passages parasites.',
+  },
+  {
+    id: 'positions',
+    label: 'Positions GPS',
+    hint: 'Des positions complètes, lues par la vraie source GPS. Le seul mode qui éprouve la dérivation par distance, le filtre de précision et le plafond de plausibilité.',
+  },
 ]
 
 const STATUS_LABELS: Record<string, string> = {
@@ -66,6 +99,23 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const manual = computed(() => telemetry.value.gearbox.mode === 'manual')
+
+const modeHint = computed(
+  () => MODES.find((mode) => mode.id === simulationMode.value)?.hint ?? '',
+)
+
+function patchBench(key: 'cadenceMs' | 'standstillCadenceMs' | 'noiseKmh' | 'accuracyM', event: Event): void {
+  const value = Number((event.target as HTMLInputElement).value)
+  if (!Number.isFinite(value)) return
+  setBenchOptions({ ...benchOptions.value, [key]: value })
+}
+
+function patchReportsSpeed(event: Event): void {
+  setBenchOptions({
+    ...benchOptions.value,
+    reportsSpeed: (event.target as HTMLInputElement).checked,
+  })
+}
 
 /**
  * Ce qui écarte les positions, quand la vitesse se fige alors que le GPS parle.
@@ -362,6 +412,87 @@ const SPEED_STEP_KMH = 20
             freinez pour reprendre la main.
           </span>
         </div>
+        <div class="group column">
+          <span class="note">Ce que le banc fabrique</span>
+          <div class="modes">
+            <button
+              v-for="mode in MODES"
+              :key="mode.id"
+              :aria-pressed="simulationMode === mode.id"
+              :title="mode.hint"
+              @click="setSimulationMode(mode.id)"
+            >
+              {{ mode.label }}
+            </button>
+          </div>
+          <span class="hint">{{ modeHint }}</span>
+        </div>
+
+        <div v-if="simulationMode !== 'perfect'" class="group column">
+          <label class="bench">
+            <span>Cadence en roulant</span>
+            <input
+              type="number"
+              min="10"
+              max="2000"
+              step="10"
+              :value="benchOptions.cadenceMs"
+              @input="patchBench('cadenceMs', $event)"
+            />
+            <span class="note">ms — 30 sur la voiture, mesuré</span>
+          </label>
+          <label class="bench">
+            <span>Cadence à l'arrêt</span>
+            <input
+              type="number"
+              min="100"
+              max="10000"
+              step="100"
+              :value="benchOptions.standstillCadenceMs"
+              @input="patchBench('standstillCadenceMs', $event)"
+            />
+            <span class="note">ms — le récepteur s'espace quand rien ne bouge</span>
+          </label>
+          <label class="bench">
+            <span>Bruit de mesure</span>
+            <input
+              type="number"
+              min="0"
+              max="10"
+              step="0.1"
+              :value="benchOptions.noiseKmh"
+              @input="patchBench('noiseKmh', $event)"
+            />
+            <span class="note">km/h d'écart-type</span>
+          </label>
+          <template v-if="simulationMode === 'positions'">
+            <label class="bench">
+              <span>Précision annoncée</span>
+              <input
+                type="number"
+                min="1"
+                max="500"
+                step="1"
+                :value="benchOptions.accuracyM"
+                @input="patchBench('accuracyM', $event)"
+              />
+              <span class="note">m — au-delà du seuil réglé, la source écarte tout</span>
+            </label>
+            <label class="bench">
+              <input
+                type="checkbox"
+                :checked="benchOptions.reportsSpeed"
+                @change="patchReportsSpeed($event)"
+              />
+              <span>Le récepteur annonce sa vitesse</span>
+              <span class="note">
+                Décoché, la source doit la dériver de deux positions — le chemin
+                où elle s'était tue en roulant.
+              </span>
+            </label>
+          </template>
+        </div>
+
         <p class="hint">
           Au clavier : flèches haut et bas pour accélérer et freiner, flèches gauche
           et droite pour changer de rapport en mode manuel.
@@ -557,6 +688,29 @@ const SPEED_STEP_KMH = 20
 .label {
   color: var(--muted);
   min-width: 5rem;
+}
+
+.modes {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.modes button {
+  flex: 1;
+  min-width: 8rem;
+}
+
+/* Une ligne de réglage du banc : libellé, saisie courte, explication dessous. */
+.bench {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.bench input[type='number'] {
+  width: 6rem;
 }
 
 .pedals {

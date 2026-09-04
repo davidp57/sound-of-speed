@@ -12,6 +12,7 @@ import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditione
 import { GeolocationSource } from './core/speed/geolocation'
 import { ReplaySource, TraceRecorder, type Trace } from './core/speed/replay'
 import { SimulatorSource } from './core/speed/simulator'
+import { GpsBench, DEFAULT_BENCH, type BenchOptions } from './core/speed/gps-bench'
 import { GamepadReader, type PadSnapshot } from './core/input/gamepad'
 import { RejectionWatch, type RejectionCause } from './core/speed/rejection'
 import { FixWatchdog } from './core/speed/watchdog'
@@ -157,6 +158,7 @@ export const runtimeProfile = computed<Profile>(() =>
 )
 
 const simulator = new SimulatorSource()
+const gpsBench = new GpsBench(simulator)
 const geolocation = new GeolocationSource({
   maxPlausibleKmh: activeProfile.value.speed.maxPlausibleKmh,
   maxAccuracyM: activeProfile.value.speed.maxAccuracyM,
@@ -177,7 +179,35 @@ const screenLock = new ScreenLock()
 const mediaSession = new MediaSession()
 const offline = new Offline()
 
-export const sourceKind = ref<SourceKind>('simulator')
+/**
+ * Le simulateur n'existe qu'en développement.
+ *
+ * Un simulateur de vitesse n'a aucun sens dans une voiture : il n'y est qu'un
+ * moyen de se tromper sur ce qu'on entend. Décidé par David le 4 septembre 2026.
+ *
+ * Ce qu'on y perd mérite d'être écrit : le simulateur avait servi de **test
+ * discriminant en roulant** — « le simulateur fonctionne encore, repasser au GPS
+ * rebloque aussitôt » est la phrase qui a orienté le diagnostic du GPS muet. Le
+ * journal de bord et les comptes de rejet, désormais lisibles à l'écran, le
+ * remplacent en partie.
+ */
+export const simulatorAvailable = import.meta.env.DEV
+
+/**
+ * Ce que le banc fabrique, quand le simulateur est la source.
+ *
+ * - `perfect` : une vitesse exacte à chaque image. Toute la difficulté du
+ *   produit disparaît, ce qui reste commode pour juger un réglage de son.
+ * - `measured` : la même vitesse, livrée à la cadence d'un GPS et bruitée.
+ * - `positions` : des positions complètes, lues par la **vraie** source GPS.
+ *   C'est le seul mode qui traverse `GeolocationSource`, où vivaient les deux
+ *   derniers défauts relevés en roulant.
+ */
+export type SimulationMode = 'perfect' | 'measured' | 'positions'
+export const simulationMode = ref<SimulationMode>('perfect')
+export const benchOptions = ref<BenchOptions>({ ...DEFAULT_BENCH })
+
+export const sourceKind = ref<SourceKind>(simulatorAvailable ? 'simulator' : 'geolocation')
 export const sourceStatus = ref<SourceStatus>('idle')
 export const sourceDetail = ref<string>('')
 export const isRunning = ref(false)
@@ -546,7 +576,15 @@ export const telemetry = shallowRef<Telemetry>({
 function currentSource(): SpeedSource {
   if (sourceKind.value === 'geolocation') return geolocation
   if (sourceKind.value === 'replay') return replay
+  // En mode « positions », c'est la vraie source GPS qui travaille : le banc ne
+  // fait que lui fournir à lire. Rien en aval ne doit pouvoir distinguer les deux.
+  if (simulationMode.value === 'positions') return geolocation
   return simulator
+}
+
+/** Vrai quand le banc doit être avancé à la place de la source. */
+function benchDrives(): boolean {
+  return sourceKind.value === 'simulator' && simulationMode.value === 'positions'
 }
 
 // Chaque source alimente le même conditionneur, et l'enregistreur écoute au
@@ -606,7 +644,8 @@ function step(dt: number): void {
   applyPad(dt)
 
   const source = currentSource()
-  source.tick(dt)
+  if (benchDrives()) gpsBench.tick(dt)
+  else source.tick(dt)
 
   const speed = conditioner.tick(dt)
   const profile = runtimeProfile.value
@@ -1002,6 +1041,7 @@ export function setMuted(value: boolean): void {
 }
 
 export function setSource(kind: SourceKind): void {
+  if (kind === 'simulator' && !simulatorAvailable) return
   if (kind === sourceKind.value) return
   const wasRunning = isRunning.value
   currentSource().stop()
@@ -1024,6 +1064,38 @@ export function setThrottle(value: number): void {
 
 export function setBrake(value: number): void {
   simulator.setBrake(value)
+}
+
+/**
+ * Change ce que le banc fabrique.
+ *
+ * La source est arrêtée puis reprise autour du changement : passer de la vitesse
+ * exacte aux positions change la source active elle-même, et un suivi laissé
+ * ouvert continuerait de nourrir le conditionnement pendant la bascule.
+ */
+export function setSimulationMode(mode: SimulationMode): void {
+  if (mode === simulationMode.value) return
+  const wasRunning = isRunning.value && sourceKind.value === 'simulator'
+  if (wasRunning) currentSource().stop()
+
+  simulationMode.value = mode
+  simulator.setMode(mode === 'measured' ? 'measured' : 'perfect')
+  // Le fournisseur n'est branché qu'en mode « positions » : le laisser en place
+  // ferait lire un banc à la place du vrai récepteur, dans la voiture.
+  geolocation.setProvider(mode === 'positions' ? gpsBench : null)
+  gpsBench.reset()
+  conditioner.reset()
+  rejectionWatch.reset()
+  rejectionCause.value = null
+
+  if (wasRunning) currentSource().start()
+}
+
+/** Réglages du signal imité : cadence, bruit, précision, vitesse annoncée. */
+export function setBenchOptions(options: BenchOptions): void {
+  benchOptions.value = { ...options }
+  gpsBench.setOptions(options)
+  simulator.setSignal(options)
 }
 
 /** Vitesse à tenir au simulateur, ou `null` pour rendre la main. */
