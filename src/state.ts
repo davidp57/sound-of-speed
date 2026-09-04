@@ -12,6 +12,7 @@ import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditione
 import { GeolocationSource } from './core/speed/geolocation'
 import { ReplaySource, TraceRecorder, type Trace } from './core/speed/replay'
 import { SimulatorSource } from './core/speed/simulator'
+import { GamepadReader, type PadSnapshot } from './core/input/gamepad'
 import { RejectionWatch, type RejectionCause } from './core/speed/rejection'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
@@ -201,6 +202,15 @@ export const fixRestarts = ref(0)
  */
 const rejectionWatch = new RejectionWatch()
 export const rejectionCause = ref<RejectionCause | null>(null)
+
+/**
+ * Manette de jeu, pour conduire le simulateur au bureau.
+ *
+ * Elle n'apparaît qu'après un premier appui — le navigateur ne la révèle pas
+ * avant, pour ne pas la donner comme empreinte à toute page ouverte.
+ */
+const padReader = new GamepadReader()
+export const padConnected = ref(false)
 /**
  * Ce que la source GPS a vu passer, pour l'écran de télémétrie.
  *
@@ -567,6 +577,8 @@ let loadWasHigh = false
 let rpmWhenLoaded = 0
 
 function step(dt: number): void {
+  applyPad(dt)
+
   const source = currentSource()
   source.tick(dt)
 
@@ -1008,6 +1020,66 @@ export function shiftUp(): void {
 export function shiftDown(): void {
   gearbox.shiftDown()
 }
+
+/**
+ * Manette : ce que le navigateur en dit, à ce tour précis.
+ *
+ * L'objet rendu par `getGamepads` est un instantané figé — il faut le
+ * redemander à chaque image, et non garder la référence. La première manette
+ * en agencement standard suffit : deux manettes branchées ne conduiraient pas
+ * deux voitures.
+ */
+function readPad(): PadSnapshot | null {
+  if (typeof navigator === 'undefined' || !navigator.getGamepads) return null
+  for (const pad of navigator.getGamepads()) {
+    if (!pad || !pad.connected || pad.mapping !== 'standard') continue
+    return { buttons: pad.buttons.map((button) => button.value), axes: [...pad.axes] }
+  }
+  return null
+}
+
+/**
+ * La manette commande le simulateur.
+ *
+ * Une gâchette analogique vaut mieux qu'une flèche du clavier pour juger un son :
+ * la charge s'entend sur des transitions, et une commande tout ou rien ne
+ * produit que la plus brutale. Les intentions sont appliquées ici, où vivent
+ * déjà les commandes de l'écran — la manette n'est qu'une autre main.
+ */
+function applyPad(dt: number): void {
+  const snapshot = readPad()
+  padConnected.value = snapshot !== null
+  const intent = padReader.read(snapshot, dt)
+  if (!snapshot) return
+
+  if (intent.throttle > 0 || padThrottleWasOn) simulator.setThrottle(intent.throttle)
+  if (intent.brake > 0 || padBrakeWasOn) simulator.setBrake(intent.brake)
+  padThrottleWasOn = intent.throttle > 0
+  padBrakeWasOn = intent.brake > 0
+
+  if (intent.shiftUp) gearbox.shiftUp()
+  if (intent.shiftDown) gearbox.shiftDown()
+  if (intent.toggleMode) gearbox.setMode(gearbox.getMode() === 'manual' ? 'auto' : 'manual')
+  if (intent.toggleCruise) {
+    simulator.setCruise(simulator.getCruise() === null ? telemetry.value.speed.kmh : null)
+  }
+  // Bornée comme le curseur de l'écran, qui va de zéro à un : `setMasterVolume`
+  // ne plafonne pas, personne n'ayant jamais pu lui demander davantage.
+  if (intent.volumeDelta !== 0) {
+    setMasterVolume(Math.min(1, Math.max(0, masterVolume.value + intent.volumeDelta)))
+  }
+}
+
+/**
+ * Mémoire de la dernière commande de la manette.
+ *
+ * Sans elle, une manette au repos remettrait l'accélérateur à zéro soixante fois
+ * par seconde et le curseur de l'écran ne servirait plus à rien dès qu'une
+ * manette est branchée. La manette ne reprend la main qu'en étant touchée, et la
+ * rend quand elle revient au repos.
+ */
+let padThrottleWasOn = false
+let padBrakeWasOn = false
 
 export function startRecording(): void {
   recorder.start()

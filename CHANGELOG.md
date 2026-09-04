@@ -8,6 +8,20 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Une manette Xbox conduit le simulateur.** Deux gâchettes analogiques valent
+  mieux qu'une flèche du clavier pour juger un son : la charge s'entend sur des
+  transitions, et une commande tout ou rien ne produit que la plus brutale.
+  Gâchette droite pour accélérer, gauche pour freiner, A et B pour changer de
+  rapport, X pour la boîte automatique ou manuelle, Y pour tenir la vitesse ou
+  rendre la main, stick gauche pour le volume.
+
+  La lecture est une pièce du cœur qui ne parle pas au navigateur : elle reçoit
+  un instantané de boutons et rend des intentions, ce qui la rend vérifiable
+  sans manette — onze tests couvrent les zones mortes, le redressement de course,
+  les bascules qui ne comptent qu'une fois par appui et la manette débranchée en
+  pleine accélération. La manette ne prend la main sur les curseurs de l'écran
+  qu'en étant touchée, et la rend en revenant au repos.
+
 - **Un journal de bord, déposé tout seul.** Le navigateur de la voiture n'a pas
   de console : on ne consulte rien au volant, et le diagnostic se faisait donc en
   devinant. Le drapeau qui distingue une vitesse lue d'une vitesse déduite
