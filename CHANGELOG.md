@@ -150,6 +150,11 @@ Toutes les évolutions notables du projet. Format
   Cela compte, la largeur utile du navigateur de la voiture n'étant pas connue et
   son zoom pas réglable.
 
+  Sous les cadrans, même traitement : **son, écran et boîte tiennent sur une
+  ligne** — 38 pixels au lieu de trois lignes. Et l'ordre suit l'usage : les
+  réglages qu'on touche à l'arrêt d'abord, puis le choix de ce que le banc
+  fabrique, puis les commandes du simulateur tout en bas.
+
 
 - **Le simulateur n'existe plus qu'en développement.** Dans une voiture il n'a
   aucun sens, et il n'y serait qu'un moyen de se tromper sur ce qu'on entend. La
