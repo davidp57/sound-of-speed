@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { Gearbox } from './gearbox'
 import { Engine } from '../engine/engine'
+import { SpeedConditioner } from '../speed/conditioner'
 import { createDefaultProfile } from '../preset/defaults'
 import type { DrivetrainPreset, FeelPreset, Profile } from '../preset/schema'
 
@@ -118,13 +119,27 @@ function hold(
   at: (t: number) => { load: number; accelMs2: number },
 ): { shifts: { from: number; to: number; t: number }[]; gear: number } {
   const gearbox = makeGearbox(p)
-  const rpmInGear = rpmInGearAt(p, kmh)
   const shifts: { from: number; to: number; t: number }[] = []
-  let previous = gearbox.tick(FRAME_S, { rpmInGear, atStandstill: false, kmh, ...at(0) }).gear
+  // La vitesse **intègre** l'accélération déclarée, au lieu de rester figée.
+  //
+  // Tenir la vitesse fixe tout en déclarant une accélération non nulle décrit
+  // une situation qui n'existe pas, et la boîte juge maintenant la croisière sur
+  // la dérive de la vitesse : elle verrait une vitesse tenue là où le banc
+  // annonce une allure qui bouge. C'est le reproche que `drive` fait déjà à ce
+  // genre de banc — « il mentirait à la boîte, et les règles qui en dépendent se
+  // vérifieraient sur une fiction ».
+  let vitesse = kmh
+  const pas = (t: number) => {
+    const entree = at(t)
+    vitesse = Math.max(0, vitesse + entree.accelMs2 * 3.6 * FRAME_S)
+    return { rpmInGear: rpmInGearAt(p, vitesse), atStandstill: false, kmh: vitesse, ...entree }
+  }
+
+  let previous = gearbox.tick(FRAME_S, pas(0)).gear
 
   for (let frame = 1; frame * FRAME_S <= seconds; frame += 1) {
     const t = frame * FRAME_S
-    const state = gearbox.tick(FRAME_S, { rpmInGear, atStandstill: false, kmh, ...at(t) })
+    const state = gearbox.tick(FRAME_S, pas(t))
     if (state.gear !== previous) {
       shifts.push({ from: previous, to: state.gear, t })
       previous = state.gear
@@ -338,22 +353,37 @@ describe('Gearbox — rétrogradage', () => {
   it('reste sur son rapport quand rétrograder ferait aussitôt remonter', () => {
     const p = profile()
     const gearbox = makeGearbox(p)
-    // Hors croisière : à accélération nulle, la montée en croisière prendrait la
-    // main et le sujet du test — la garde anti-va-et-vient — ne serait plus
-    // observable.
-    const accelMs2 = 1.2
+
+    // Le sujet du test est la garde anti-va-et-vient, qui protège la **descente
+    // au régime**. Or celle-ci n'est examinée que hors croisière. Il faut donc
+    // une vitesse qui ne se tienne pas — et c'est la vitesse qui le dit
+    // maintenant, non une accélération déclarée à côté d'elle. Un déclin lent
+    // suffit à sortir de la bande sans déplacer beaucoup le point de mesure :
+    // trois secondes à −0,3 m/s² coûtent 3,2 km/h.
+    const decelMs2 = -0.3
 
     // Vitesse telle que le rapport inférieur dépasserait son propre seuil de
     // montée : rétrograder relancerait un passage dans la foulée.
-    const kmh = kmhForRpm(p, 2, p.drivetrain.upshiftRpm[2]! + 200)
-    const rpmInGear = rpmInGearAt(p, kmh)
+    const depart = kmhForRpm(p, 2, p.drivetrain.upshiftRpm[2]! + 200)
+    let kmh = depart
+    const avance = () => {
+      kmh = Math.max(0, kmh + decelMs2 * 3.6 * FRAME_S)
+      return {
+        rpmInGear: rpmInGearAt(p, kmh),
+        atStandstill: false,
+        load: 0.5,
+        kmh,
+        accelMs2: decelMs2,
+      }
+    }
+
     // On amène la boîte sur un rapport long à cette vitesse.
-    for (let f = 0; f * FRAME_S < 5; f += 1) gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 0.5, kmh: kmh, accelMs2 })
-    const gear = gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 0.5, kmh: kmh, accelMs2 }).gear
+    for (let f = 0; f * FRAME_S < 5; f += 1) gearbox.tick(FRAME_S, avance())
+    const gear = gearbox.tick(FRAME_S, avance()).gear
 
     // Le rapport se stabilise : pas de va-et-vient d'une image à l'autre.
     for (let f = 0; f * FRAME_S < 3; f += 1) {
-      expect(gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 0.5, kmh: kmh, accelMs2 }).gear).toBe(gear)
+      expect(gearbox.tick(FRAME_S, avance()).gear).toBe(gear)
     }
   })
 
@@ -671,12 +701,19 @@ describe('Gearbox — montée en croisière', () => {
   })
 
   it('ne monte pas quand la vitesse n’est pas tenue', () => {
-    const p = profile()
+    // Les seuils de régime sont mis hors d'atteinte : toute montée observée est
+    // alors nécessairement une montée **en croisière**, qui est le sujet. Sans
+    // cela le test relèverait aussi les montées au régime, légitimes, puisque la
+    // vitesse monte réellement pendant la première moitié de l'oscillation.
+    const p = profile({ upshiftRpm: [8500, 8500, 8500, 8500, 8500] })
 
-    // Une accélération qui oscille sans jamais se tenir dans la bande.
+    // Une allure qui va et vient : l'accélération oscille assez lentement pour
+    // que la vitesse en garde la trace — ±6,8 km/h autour de 70. Une oscillation
+    // rapide, elle, ne déplacerait la vitesse que d'un demi km/h, et ce serait
+    // alors une vitesse tenue quoi qu'en dise l'accélération instantanée.
     const { shifts } = hold(p, 70, 60, (t) => ({
       load: 0.5,
-      accelMs2: Math.sin(t * 4) * 1.5,
+      accelMs2: Math.sin(t * 0.8) * 1.5,
     }))
 
     expect(shifts.filter((s) => s.to > s.from)).toHaveLength(0)
@@ -860,14 +897,44 @@ describe('Gearbox — ralentir n’est pas croiser', () => {
   it('distingue un tremblement d’un vrai changement d’allure', () => {
     const p = profile()
 
-    // Même forme, six fois l'amplitude : ce n'est plus du bruit, c'est une
-    // allure qui bouge. Aucune montée en croisière.
-    const { shifts } = hold(p, 90, 60, (t) => ({
-      load: 0.5,
-      accelMs2: Math.sin(t * 7) * 1.5,
-    }))
+    /** Une vitesse pilotée directement, l'accélération en étant déduite. */
+    function suivre(
+      depart: number,
+      vitesseA: (t: number) => number,
+      seconds: number,
+    ): { from: number; to: number; t: number }[] {
+      const gearbox = makeGearbox(p)
+      gearbox.settleFor(rpmInGearAt(p, depart))
+      const shifts: { from: number; to: number; t: number }[] = []
+      let previous = -1
+      for (let frame = 0; frame * FRAME_S <= seconds; frame += 1) {
+        const t = frame * FRAME_S
+        const kmh = vitesseA(t)
+        const state = gearbox.tick(FRAME_S, {
+          rpmInGear: rpmInGearAt(p, kmh),
+          atStandstill: false,
+          load: 0.5,
+          kmh,
+          accelMs2: (kmh - vitesseA(t - FRAME_S)) / FRAME_S / 3.6,
+        })
+        if (previous >= 0 && state.gear !== previous) {
+          shifts.push({ from: previous, to: state.gear, t })
+        }
+        previous = state.gear
+      }
+      return shifts
+    }
 
-    expect(shifts.filter((s) => s.to > s.from && s.t > 5)).toHaveLength(0)
+    // Un tremblement : la vitesse bouge de moins d'un km/h. C'est une croisière,
+    // et la boîte doit monter — c'est le défaut qu'on avait à l'inverse, où le
+    // moindre frémissement l'empêchait tout à fait.
+    const tremblement = suivre(90, (t) => 90 + Math.sin(t * 7) * 0.4, 60)
+    expect(tremblement.filter((s) => s.to > s.from).length).toBeGreaterThan(0)
+
+    // Une allure qui bouge vraiment : dix km/h d'amplitude sur quelques
+    // secondes. Aucune montée en croisière.
+    const allure = suivre(90, (t) => 90 + Math.sin(t * 0.8) * 10, 60)
+    expect(allure.filter((s) => s.to > s.from && s.t > 5)).toHaveLength(0)
   })
 })
 
@@ -906,6 +973,126 @@ describe('Gearbox — on ne monte pas en freinant', () => {
     // cascade est vérifiée ailleurs. Ce qui compte ici : aucune remontée.
     expect(enFreinant.filter((s) => s.to > s.from)).toHaveLength(0)
     expect(enFreinant.filter((s) => s.to < s.from).length).toBeGreaterThan(0)
+  })
+
+  it('tient son rapport sur une vitesse tenue malgré le bruit de mesure', () => {
+    // Le défaut : la boîte jugeait « vitesse tenue » sur l'accélération, dont le
+    // bruit résiduel est du même ordre que la borne basse de sa bande — un
+    // dixième de m/s². Une seule image dans la bande remettait le compte à zéro,
+    // si bien qu'elle se croyait en croisière deux fois sur trois en
+    // ralentissant, gardait un rapport long, et laissait le régime se plaquer au
+    // ralenti sous 26 km/h en quatrième. À l'inverse, sur une vitesse vraiment
+    // tenue, elle faisait le va-et-vient — mesuré, quarante-trois passages par
+    // minute à 90 km/h.
+    //
+    // Une vitesse tenue se mesure sur la vitesse, pas sur sa dérivée.
+    const p = profile()
+
+    /** Bruit blanc reproductible, en unités crête. */
+    function bruit(amplitude: number, graine: number): () => number {
+      let seed = graine
+      return () => {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff
+        return (seed / 0x7fffffff - 0.5) * 2 * amplitude
+      }
+    }
+
+    // La vitesse et l'accélération viennent du **conditionnement réel**, et non
+    // de deux bruits tirés séparément : c'est ce qui compte ici. Le bruit de la
+    // vitesse lissée et celui de la pente estimée sont corrélés — quand l'une
+    // baisse, l'autre est négative —, et deux tirages indépendants perdent
+    // exactement cette corrélation. Un premier essai bâti ainsi passait avant
+    // le correctif comme après : il ne prouvait rien.
+    for (const vitesse of [25, 40, 60, 90]) {
+      for (const fenetreMs of [200, 1000, 2000]) {
+        const profilBruite = {
+          ...p,
+          speed: { ...p.speed, accelWindowMs: fenetreMs },
+        }
+        const gearbox = makeGearbox(p)
+        const conditioner = new SpeedConditioner(profilBruite.speed)
+        const bruitKmh = bruit(1, 12345)
+        gearbox.setMode('auto')
+        gearbox.settleFor(rpmInGearAt(p, vitesse))
+        const graine = fenetreMs
+
+        // La charge est calculée par le moteur, et non figée : c'est elle qui
+        // décale le seuil de passage — de huit cents tours de part et d'autre
+        // sur ce profil. Une charge figée à un demi masquerait entièrement le
+        // défaut qu'on cherche.
+        const engine = new Engine(p.engine, p.mix)
+        const passages: { t: number; from: number; to: number }[] = []
+        let precedent = -1
+        let load = 0.5
+        let prochaineMesureMs = 0
+        for (let frame = 0; frame * FRAME_S <= 60; frame += 1) {
+          const t = frame * FRAME_S
+          // La cadence relevée dans la voiture : une position toutes les trente
+          // millisecondes dès qu'elle roule.
+          while (prochaineMesureMs <= t * 1000) {
+            conditioner.push({
+              kmh: vitesse + bruitKmh(),
+              at: prochaineMesureMs,
+              accuracyM: 5,
+              derived: false,
+            })
+            prochaineMesureMs += 30
+          }
+          const speed = conditioner.tick(FRAME_S)
+          const kmh = speed.kmh
+          const accelMs2 = speed.accelMs2
+          const state = gearbox.tick(FRAME_S, {
+            rpmInGear: rpmInGearAt(p, kmh),
+            atStandstill: false,
+            load,
+            kmh,
+            accelMs2,
+          })
+          load = engine.tick(FRAME_S, {
+            kmh,
+            accelMs2,
+            totalRatio: state.ratio * p.drivetrain.finalDrive,
+            wheelRadiusM: p.drivetrain.wheelRadiusM,
+            atStandstill: false,
+            isShifting: state.isShifting,
+            throttle: null,
+          }).load
+          if (precedent >= 0 && state.gear !== precedent) {
+            passages.push({ t, from: precedent, to: state.gear })
+          }
+          precedent = state.gear
+        }
+
+        // La boîte a le droit de monter en croisière — c'est son métier — mais
+        // une fois posée elle ne doit plus bouger. On laisse vingt secondes à la
+        // cascade, puis on n'accepte plus rien.
+        // Les dix premières secondes laissent la vitesse lissée s'établir et la
+        // cascade de croisière se faire ; ensuite, plus rien ne doit bouger.
+        const apres = passages.filter((p) => p.t > 20)
+        expect(apres, `${vitesse} km/h, fenêtre ${graine} ms`).toHaveLength(0)
+        // Et aucun aller-retour, même pendant la cascade : un rapport quitté ne
+        // se réengage pas.
+        const montees = passages.filter((p) => p.to > p.from).length
+        const descentes = passages.filter((p) => p.to < p.from).length
+        expect(descentes, `${vitesse} km/h, fenêtre ${graine} ms`).toBe(0)
+        expect(montees).toBeLessThanOrEqual(p.drivetrain.gearRatios.length - 1)
+      }
+    }
+  })
+
+  it('voit un ralentissement doux malgré le bruit, et descend', () => {
+    // La contrepartie du test précédent : un critère insensible au bruit ne doit
+    // pas devenir insensible à un vrai ralentissement. Un lever de pied à
+    // 0,3 m/s² doit sortir la boîte de la croisière.
+    const p = profile()
+    const { shifts } = drive(
+      p,
+      (t) => (t < 20 ? 90 : Math.max(20, 90 - (t - 20) * 1.08)),
+      90,
+    )
+
+    const descentes = shifts.filter((s) => s.to < s.from)
+    expect(descentes.length).toBeGreaterThan(0)
   })
 
   it('ne descend pas dans un rapport au-delà de son seuil de montée', () => {
