@@ -21,6 +21,10 @@ export default ts.config(
       // Service worker : écrit pour le navigateur, servi tel quel, hors chaîne
       // de construction.
       'public/sw.js',
+      // Copies de travail que les agents créent dans le dépôt. Sans cette
+      // exclusion, `npm run lint` y voit une seconde racine TypeScript et rend
+      // cent quarante erreurs d'analyse qui ne parlent d'aucun code du projet.
+      '.claude/worktrees/**',
     ],
   },
   js.configs.recommended,

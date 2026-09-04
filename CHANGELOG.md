@@ -6,6 +6,60 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Un journal de bord, déposé tout seul.** Le navigateur de la voiture n'a pas
+  de console : on ne consulte rien au volant, et le diagnostic se faisait donc en
+  devinant. Le drapeau qui distingue une vitesse lue d'une vitesse déduite
+  existait depuis le premier jour sans être affiché nulle part — il aurait
+  désigné en une seconde un défaut qui a vécu une semaine.
+
+  L'application retient désormais des **événements horodatés** — source de
+  vitesse et son état, bascule de l'origine de la vitesse, relances du suivi,
+  mesures rejetées par motif, suspensions du son, erreurs — plus un relevé
+  toutes les dix secondes. Des faits qui se comptent, et non du texte : on ne
+  répond pas à « combien de fois » avec de la prose. Les états ne sont inscrits
+  qu'à leurs **transitions**, sans quoi la boucle en produirait deux cent seize
+  mille lignes à l'heure ; mesuré sur une minute de conduite étale, il en reste
+  sept.
+
+  Le dépôt est **automatique**, toutes les cinq minutes ou dès qu'une tranche
+  atteint sa taille, par le chemin d'écriture déjà en place sur le serveur — dans
+  un dossier `journal/` séparé de celui des traces, dont l'index est téléchargé
+  par l'application pour les lister. Pas de connexion permanente : une voiture
+  traverse des zones sans réseau, et le temps réel n'a de valeur que si quelqu'un
+  regarde, or celui qui pourrait regarder conduit. Ce qui n'a pas pu partir est
+  gardé et **joint à la tranche suivante**, si bien qu'un tunnel ne coûte pas un
+  journal — et non un fichier par tentative.
+
+  Des tranches, et non un fichier réécrit à chaque envoi. Le stockage aurait été
+  le même, mais ce qu'on renvoie grossit à chaque fois puisque c'est le journal
+  complet depuis le début : sur une demi-heure, huit fois trop de données
+  transférées, et un dernier envoi de deux cents kilo-octets qui doit réussir en
+  entier sur un réseau intermittent.
+
+  **Rien ne part par défaut, et l'accord a deux crans.** Une fenêtre de
+  confirmation dit ce qui sera envoyé avant que cela ne parte. Le minimum couvre
+  ce que fait l'application ; le cran étendu ajoute **la position**, un point par
+  seconde, et se choisit séparément — il ne se déduit jamais du premier, une
+  donnée de déplacement se disant avant et non après. Couper est immédiat, sans
+  confirmation : on n'a pas à confirmer qu'on ne veut plus rien envoyer.
+
+  La règle vit dans le cœur et non dans l'interface : c'est une fonction
+  vérifiable par un test qui décide de ce qui peut être inscrit, et un test
+  échoue si une position se glisse au cran minimum. Une promesse faite à
+  l'utilisateur mérite mieux qu'une condition d'affichage.
+
+  La position est tenue **hors du flux des mesures**. Ce flux est recopié tel
+  quel par l'enregistreur de traces, et une trace s'exporte et se dépose sans
+  accord particulier : y faire entrer des coordonnées les aurait fait sortir par
+  une porte déjà ouverte.
+
+  L'application ne peut pas effacer ses journaux — le serveur ne lui ouvre que
+  l'écriture — et c'est voulu : un témoin qui peut effacer ses notes est un
+  mauvais témoin. Le ménage se fait avec File Station, et l'écran dit ce qui a
+  été déposé.
+
 ### Modifié
 
 - **On quitte le plein écran par une flèche de retour**, à gauche de la rangée de

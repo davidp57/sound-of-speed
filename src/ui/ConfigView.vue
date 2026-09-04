@@ -51,6 +51,10 @@ import {
   refreshLibrary,
   calibrationOverrides,
   depositCredentials,
+  journalConsent,
+  journalDeposits,
+  journalError,
+  setJournalConsent,
   setDepositCredentials,
 } from '../state'
 
@@ -67,6 +71,32 @@ const profile = activeProfile
 const importError = ref('')
 
 /** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
+/**
+ * Cran en attente de confirmation.
+ *
+ * Couper le journal est immédiat — on n'a pas à confirmer qu'on ne veut plus
+ * rien envoyer. C'est l'inverse qui demande un temps d'arrêt : le reste de cet
+ * écran s'applique à la frappe, et un envoi de données ne doit pas partir du
+ * même geste distrait qu'un curseur qu'on déplace.
+ */
+const journalPending = ref<'minimal' | 'extended' | null>(null)
+
+function onJournal(consent: 'none' | 'minimal' | 'extended'): void {
+  if (consent === 'none') {
+    journalPending.value = null
+    setJournalConsent('none')
+    return
+  }
+  if (journalConsent.value === consent) return
+  journalPending.value = consent
+}
+
+function onJournalConfirm(): void {
+  if (journalPending.value === null) return
+  setJournalConsent(journalPending.value)
+  journalPending.value = null
+}
+
 function onDeposit(user: string, password: string): void {
   setDepositCredentials(user, password)
 }
@@ -743,6 +773,67 @@ function impliedCylinders(index: number): number | null {
         site entier si vous activiez l’authentification générale. Un compte se
         crée avec <code>npm run htpasswd</code>.
       </p>
+
+      <!--
+        Le journal de bord. Deux crans, et le second est un choix distinct : la
+        position est une donnée de déplacement, et cela se dit avant l'envoi,
+        pas après. La confirmation est un temps d'arrêt volontaire — le réglage
+        s'applique sinon à la frappe partout ailleurs dans cet écran.
+      -->
+      <div class="journal">
+        <span class="note">Journal de bord</span>
+        <button
+          :class="{ 'is-active': journalConsent === 'none' }"
+          @click="onJournal('none')"
+        >
+          Rien n’est envoyé
+        </button>
+        <button
+          :class="{ 'is-active': journalConsent === 'minimal' }"
+          @click="onJournal('minimal')"
+        >
+          Le minimum
+        </button>
+        <button
+          :class="{ 'is-active': journalConsent === 'extended' }"
+          @click="onJournal('extended')"
+        >
+          Et la position
+        </button>
+      </div>
+
+      <p v-if="journalPending" class="confirm">
+        <strong>{{ journalPending === 'minimal' ? 'Le minimum' : 'Le minimum et la position' }}</strong>
+        sera déposé sur votre serveur, tout seul, toutes les cinq minutes.
+        <span v-if="journalPending === 'minimal'">
+          Ce qui part : ce que fait l’application — source de vitesse, vitesses,
+          accélérations, régimes, rapports, relances du suivi, mesures rejetées,
+          état du son, et les erreurs. Aucune coordonnée.
+        </span>
+        <span v-else>
+          Ce qui part : tout ce que contient « le minimum », <strong>plus votre
+          position</strong> — un point par seconde, soit un trajet reconstituable.
+          C’est ce qui permet de comprendre un défaut lié à un endroit précis.
+        </span>
+        Les fichiers arrivent dans le dossier <code>journal/</code> de votre
+        serveur, et rien ne sort d’ici : l’application ne sait pas les effacer,
+        c’est à vous de faire le ménage.
+        <span class="confirm-actions">
+          <button class="is-active" @click="onJournalConfirm()">J’accepte</button>
+          <button @click="journalPending = null">Annuler</button>
+        </span>
+      </p>
+      <p class="note">
+        Sert à comprendre après coup ce que l’application a vécu en roulant : le
+        navigateur de la voiture n’a pas de console, et rien ne s’y consulte au
+        volant. Le dépôt emploie le même compte que celui des traces, ci-dessus.
+        <span v-if="journalDeposits.length > 0">
+          Déposé jusqu’ici : <strong>{{ journalDeposits.length }}</strong>
+          fichier{{ journalDeposits.length > 1 ? 's' : '' }},
+          {{ Math.round(journalDeposits.reduce((total, entry) => total + entry.bytes, 0) / 1024) }} Ko.
+        </span>
+      </p>
+      <p v-if="journalError" class="note warn">{{ journalError }}</p>
 
       <div class="reset">
         <span class="note">Réinitialiser</span>
@@ -1659,6 +1750,42 @@ td input[type='number'] {
 .deposit input {
   flex: 1 1 8rem;
   min-width: 0;
+}
+
+.journal {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/*
+ * La demande de confirmation : encadrée, pour qu'on la lise.
+ *
+ * Elle dit ce qui part avant que cela ne parte, et c'est le seul endroit de cet
+ * écran où un réglage attend un second geste.
+ */
+.confirm {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0.5rem 0;
+  padding: 0.7rem 0.9rem;
+}
+
+/*
+ * Un bloc et non une colonne souple : en `flex-direction: column`, chaque bout
+ * de phrase — un `span`, un `code` — prenait sa propre ligne, et le texte se
+ * lisait en trois morceaux.
+ */
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
 }
 
 .reset {

@@ -408,3 +408,30 @@ describe('GeolocationSource — la précision des positions', () => {
     expect(source.stats.recentAccuracyM.length).toBeLessThanOrEqual(12)
   })
 })
+
+describe('GeolocationSource — la dernière position', () => {
+  it('est tenue à part, et non dans le flux des mesures', () => {
+    // Le flux est recopié tel quel par l'enregistreur de traces, et une trace
+    // s'exporte et se dépose sans accord particulier : des coordonnées y
+    // entreraient par une porte déjà ouverte.
+    const { samples, source } = drive({
+      kmh: 90,
+      cadenceMs: 1000,
+      seconds: 5,
+      reportsSpeed: true,
+    })
+
+    expect(JSON.stringify(samples)).not.toContain('latitude')
+    expect(JSON.stringify(samples)).not.toContain('longitude')
+    expect(source.lastPosition).not.toBeNull()
+    expect(source.lastPosition?.latitude).toBeGreaterThan(49)
+  })
+
+  it('est oubliée à l’arrêt du suivi', () => {
+    const { source } = drive({ kmh: 50, cadenceMs: 1000, seconds: 3, reportsSpeed: true })
+    expect(source.lastPosition).not.toBeNull()
+
+    source.stop()
+    expect(source.lastPosition).toBeNull()
+  })
+})
