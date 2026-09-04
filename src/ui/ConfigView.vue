@@ -1046,6 +1046,9 @@ function impliedCylinders(index: number): number | null {
       <NumberField v-model="profile.speed.maxPlausibleKmh" label="Vitesse plausible max" :min="50" :max="400" :step="10" unit="km/h"
         hint="Au-delà, la mesure est rejetée comme aberrante. Le GPS produit parfois des sauts sous un pont ou entre deux immeubles."
       />
+      <NumberField v-model="profile.speed.maxAccuracyM" label="Précision GPS acceptée" :min="20" :max="1000" :step="10" unit="m"
+        hint="Au-delà, la position est écartée : trop floue pour en tirer une vitesse. Volontairement large — relevez la précision réelle sur l'écran de télémétrie avant de resserrer, un seuil trop serré fait taire le GPS."
+      />
       <NumberField v-model="profile.speed.maxAccelMs2" label="Accélération max retenue" :min="1" :max="30" :step="0.5" unit="m/s²"
         hint="Ignore les accélérations plus fortes que cette valeur : ce sont des sauts du GPS, pas votre conduite."
       />

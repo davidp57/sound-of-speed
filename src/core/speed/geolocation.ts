@@ -11,16 +11,29 @@ import { SpeedSource, type SpeedSample } from './source'
  * 2. Le GPS produit des aberrations — un saut de position sous un pont donne une
  *    vitesse de 400 km/h. Tout ce qui dépasse le plausible est rejeté plutôt que
  *    lissé, sinon le lissage étale l'aberration sur plusieurs secondes.
+ * 3. Une position s'accompagne de sa propre incertitude. À trois cents mètres
+ *    près, elle ne dit plus rien d'exploitable — mais le seuil de rejet est un
+ *    réglage, large par défaut : trop serré, il ferait taire la source.
  */
 
 /** Rayon terrestre moyen, en mètres. */
 const EARTH_RADIUS_M = 6_371_000
 /** Intervalle minimal entre deux positions pour en dériver une vitesse, en secondes. */
 const MIN_DELTA_S = 0.15
+/**
+ * Nombre de précisions conservées pour l'affichage.
+ *
+ * Douze, parce que le GPS de la voiture livre une position toutes les quelques
+ * dizaines de millisecondes : ce n'est pas un historique, c'est de quoi lire un
+ * ordre de grandeur d'un coup d'œil en roulant.
+ */
+const RECENT_ACCURACY = 12
 
 export interface GeolocationSourceOptions {
   /** Au-delà, la mesure est considérée comme aberrante et rejetée. */
   maxPlausibleKmh: number
+  /** Au-delà, la position est trop floue pour en tirer une vitesse. */
+  maxAccuracyM: number
 }
 
 /**
@@ -37,11 +50,22 @@ export interface GeolocationStats {
   received: number
   /** Vitesses effectivement produites. */
   emitted: number
+  /**
+   * Précision annoncée avec la dernière position reçue, en mètres.
+   *
+   * Relevée même quand la position est rejetée : c'est la mauvaise valeur qu'on
+   * cherche à voir. `null` quand le navigateur ne renseigne pas le champ.
+   */
+  lastAccuracyM: number | null
+  /** Les dernières précisions reçues, de la plus ancienne à la plus récente. */
+  recentAccuracyM: number[]
   rejected: {
     /** Au-delà du plausible : une erreur, pas une vitesse. */
     implausible: number
     /** Deux positions trop rapprochées pour en tirer une vitesse. */
     tooClose: number
+    /** Précision annoncée au-delà du seuil : la position n'est pas exploitée. */
+    inaccurate: number
   }
 }
 
@@ -63,7 +87,9 @@ export class GeolocationSource extends SpeedSource {
   readonly stats: GeolocationStats = {
     received: 0,
     emitted: 0,
-    rejected: { implausible: 0, tooClose: 0 },
+    lastAccuracyM: null,
+    recentAccuracyM: [],
+    rejected: { implausible: 0, tooClose: 0, inaccurate: 0 },
   }
 
   constructor(private options: GeolocationSourceOptions) {
@@ -100,6 +126,16 @@ export class GeolocationSource extends SpeedSource {
 
   private handlePosition(position: GeolocationPosition): void {
     this.stats.received += 1
+
+    const accuracyM = this.recordAccuracy(position)
+    if (accuracyM !== null && accuracyM > this.options.maxAccuracyM) {
+      // Le filtre est en tête, avant tout usage : une position trop floue n'est
+      // ni une mesure ni une référence. La garder comme référence reviendrait à
+      // faire calculer la vitesse suivante depuis un point douteux — le rejet
+      // se contenterait alors de changer de nom.
+      this.stats.rejected.inaccurate += 1
+      return
+    }
 
     const reported = position.coords.speed
     const hasReported = typeof reported === 'number' && Number.isFinite(reported) && reported >= 0
@@ -142,9 +178,29 @@ export class GeolocationSource extends SpeedSource {
     this.emit({
       kmh,
       at: position.timestamp,
-      accuracyM: position.coords.accuracy ?? null,
+      accuracyM,
       derived,
     } satisfies SpeedSample)
+  }
+
+  /**
+   * Note la précision annoncée, et la rend telle qu'elle sera comparée au seuil.
+   *
+   * Une précision absente ou absurde vaut « inconnue » et non « mauvaise » :
+   * tous les navigateurs ne renseignent pas le champ, et filtrer sur son absence
+   * refuserait toutes les positions d'un appareil qui se tait.
+   */
+  private recordAccuracy(position: GeolocationPosition): number | null {
+    const reported = position.coords.accuracy
+    const known = typeof reported === 'number' && Number.isFinite(reported) && reported >= 0
+    this.stats.lastAccuracyM = known ? reported : null
+    if (known) {
+      this.stats.recentAccuracyM.push(reported)
+      if (this.stats.recentAccuracyM.length > RECENT_ACCURACY) {
+        this.stats.recentAccuracyM.shift()
+      }
+    }
+    return known ? reported : null
   }
 
   private speedFromPositions(

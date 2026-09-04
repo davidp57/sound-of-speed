@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import ValueRow from './components/ValueRow.vue'
 import { computeMix } from '../core/audio/mix'
@@ -9,6 +9,11 @@ import {
   audioStatus,
   fixRestarts,
   fixStats,
+  geolocationPermissionAtStart,
+  keepScreenOn,
+  screenLockError,
+  screenLockHeld,
+  screenLockSupported,
   deleteTrace,
   exportTraces,
   importTraces,
@@ -91,6 +96,48 @@ const sampleRate = computed(() => {
       ? (gaps[middle] ?? 0)
       : ((gaps[middle - 1] ?? 0) + (gaps[middle] ?? 0)) / 2
   return String(Math.round(median))
+})
+
+/** Ordre de grandeur des dernières précisions, arrondi : on lit en roulant. */
+const recentAccuracy = computed(() =>
+  fixStats.value.recentAccuracyM.map((m) => Math.round(m)).join(' · '),
+)
+
+/**
+ * Ce que la page occupe réellement, en pixels CSS.
+ *
+ * Aucune de ces valeurs ne se déduit : le zoom du navigateur de la voiture n'est
+ * pas réglable, et sa valeur par défaut a changé avec le logiciel de bord. La
+ * mise en page ne peut donc être calée que sur un relevé.
+ */
+const pageWidth = ref(0)
+const pageHeight = ref(0)
+const pixelRatio = ref(1)
+const screenSize = ref('—')
+
+function readViewport(): void {
+  if (typeof window === 'undefined') return
+  const root = document.documentElement
+  pageWidth.value = root.clientWidth
+  pageHeight.value = root.clientHeight
+  pixelRatio.value = window.devicePixelRatio
+  screenSize.value = `${window.screen.width} × ${window.screen.height}`
+}
+
+onMounted(() => {
+  readViewport()
+  window.addEventListener('resize', readViewport)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', readViewport)
+})
+
+/** Réponse de l'API de verrou d'écran, en clair plutôt qu'en trois booléens. */
+const verrou = computed(() => {
+  if (!screenLockSupported) return 'API absente'
+  if (!keepScreenOn.value) return 'disponible, non demandé'
+  return screenLockHeld.value ? 'tenu' : 'demandé, non obtenu'
 })
 
 function fixed(value: number, digits = 1): string {
@@ -209,9 +256,26 @@ function onRateChange(event: Event): void {
           hint="Ce qui en est ressorti. À vitesse déduite, il en faut deux positions assez espacées pour en tirer une : l'écart est normal. Un compte à zéro alors que les positions arrivent veut dire que la source ne délivre plus rien, et c'est ce défaut-là qui immobilisait la vitesse."
         />
         <ValueRow
+          label="Précision annoncée"
+          :value="fixStats.lastAccuracyM === null ? '—' : Math.round(fixStats.lastAccuracyM)"
+          unit="m"
+          :warn="
+            fixStats.lastAccuracyM !== null &&
+            fixStats.lastAccuracyM > activeProfile.speed.maxAccuracyM
+          "
+          hint="Incertitude que le navigateur donne avec la dernière position, rejetée ou non. C'est ce chiffre qui décide du seuil « Précision GPS acceptée » : le relever en roulant, puis resserrer le seuil sur ce qu'on a vu. Un tiret veut dire que le navigateur ne renseigne pas le champ — rien n'est alors filtré là-dessus."
+        />
+        <ValueRow
+          label="Précisions récentes"
+          :value="recentAccuracy || '—'"
+          unit="m"
+          hint="Les douze dernières, de la plus ancienne à la plus récente. Une valeur isolée ne dit rien ; c'est l'ordre de grandeur, et sa dispersion, qui disent où placer le seuil."
+        />
+        <ValueRow
           label="Rejets"
-          :value="`${fixStats.implausible} aberrantes · ${fixStats.tooClose} trop proches`"
-          hint="Les aberrantes dépassent la vitesse plausible et ne sont pas transmises. Les trop proches n'ont pas assez d'écart avec la position de référence, qui est alors conservée en attendant la suivante."
+          :value="`${fixStats.implausible} aberrantes · ${fixStats.tooClose} trop proches · ${fixStats.inaccurate} imprécises`"
+          :warn="fixStats.received > 20 && fixStats.inaccurate === fixStats.received"
+          hint="Les aberrantes dépassent la vitesse plausible et ne sont pas transmises. Les trop proches n'ont pas assez d'écart avec la position de référence, qui est alors conservée en attendant la suivante. Les imprécises dépassent la précision acceptée : ni mesure, ni référence. Si tout part en imprécises, le seuil est trop serré."
         />
       </template>
       <ValueRow label="Durée d'image" :value="fixed(telemetry.frameMs)" unit="ms" />
@@ -366,6 +430,54 @@ function onRateChange(event: Event): void {
         :value="fixRestarts"
         :warn="fixRestarts > 0"
         hint="Le suivi GPS est relancé quand il se tait plus de vingt secondes : sans cela le son se figerait sur la dernière vitesse connue."
+      />
+    </section>
+
+    <!--
+      Ce bloc répond à des questions qu'aucun code ne peut deviner : la place
+      dont la page dispose dans le navigateur de la voiture, dont le zoom n'est
+      pas réglable, ce que l'API de verrou d'écran répond vraiment, et si
+      l'autorisation de géolocalisation survit d'une session à l'autre. On les
+      relève en roulant, puis on règle.
+    -->
+    <section class="panel">
+      <h2>Appareil</h2>
+      <ValueRow
+        label="Largeur utile"
+        :value="pageWidth"
+        unit="px"
+        :warn="pageWidth > 0 && pageWidth < 360"
+        hint="Largeur de la page en pixels CSS, celle que voit la mise en page. Les panneaux font 21 rem, soit 336 px : en dessous de 360, ils ne tiennent plus côte à côte et la page se réduit à une colonne."
+      />
+      <ValueRow label="Hauteur utile" :value="pageHeight" unit="px" />
+      <ValueRow
+        label="Écran annoncé"
+        :value="screenSize"
+        unit="px"
+        hint="Ce que le navigateur déclare pour l'écran. Comparé à la largeur utile, il situe le zoom : sans zoom et sans marge, les deux se rejoignent."
+      />
+      <ValueRow
+        label="Densité de pixels"
+        :value="fixed(pixelRatio, 2)"
+        hint="Pixels physiques par pixel CSS. Un zoom du navigateur s'y répercute aussi."
+      />
+      <ValueRow
+        label="Verrou d'écran"
+        :value="verrou"
+        :warn="!screenLockSupported || (keepScreenOn && !screenLockHeld)"
+        hint="Ce que répond l'API de maintien d'écran allumé. « API absente » : le navigateur ne la fournit pas, l'écran s'éteindra. « Demandé, non obtenu » : elle existe et a refusé — la raison est en dessous."
+      />
+      <ValueRow
+        v-if="screenLockError"
+        label="Raison du refus"
+        :value="screenLockError"
+        warn
+      />
+      <ValueRow
+        label="Autorisation GPS à l'ouverture"
+        :value="geolocationPermissionAtStart"
+        :warn="geolocationPermissionAtStart === 'refusée'"
+        hint="État relevé au chargement de la page, avant tout suivi. « Accordée » sans avoir rien demandé cette fois-ci veut dire que la voiture retient l'autorisation d'une session à l'autre ; « à demander » qu'il faut la redonner à chaque fois."
       />
     </section>
 
