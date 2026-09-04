@@ -211,6 +211,32 @@ export const rejectionCause = ref<RejectionCause | null>(null)
  */
 const padReader = new GamepadReader()
 export const padConnected = ref(false)
+/** Ce que le navigateur dit de la manette : son nom, et l'agencement annoncé. */
+export const padLabel = ref('')
+export const padMapping = ref('')
+
+/**
+ * La manette se signale d'elle-même, sans attendre la boucle.
+ *
+ * La lecture des commandes vit dans la boucle, avec le reste ; mais la
+ * **détection** ne peut pas en dépendre. Boucle à l'arrêt, l'écran affirmait
+ * qu'aucune manette n'était branchée, et rien ne permettait de savoir si le
+ * navigateur la voyait. L'événement, lui, arrive au premier appui — le moment
+ * exact où le navigateur consent à la révéler.
+ */
+if (typeof window !== 'undefined') {
+  window.addEventListener('gamepadconnected', (event) => {
+    const pad = (event as GamepadEvent).gamepad
+    padConnected.value = true
+    padLabel.value = pad.id
+    padMapping.value = pad.mapping
+  })
+  window.addEventListener('gamepaddisconnected', () => {
+    padConnected.value = false
+    padLabel.value = ''
+    padMapping.value = ''
+  })
+}
 /**
  * Ce que la source GPS a vu passer, pour l'écran de télémétrie.
  *
@@ -1025,14 +1051,24 @@ export function shiftDown(): void {
  * Manette : ce que le navigateur en dit, à ce tour précis.
  *
  * L'objet rendu par `getGamepads` est un instantané figé — il faut le
- * redemander à chaque image, et non garder la référence. La première manette
- * en agencement standard suffit : deux manettes branchées ne conduiraient pas
- * deux voitures.
+ * redemander à chaque image, et non garder la référence. La **première manette
+ * non nulle** est prise : deux manettes branchées ne conduiraient pas deux
+ * voitures.
+ *
+ * On ne filtre **pas** sur l'agencement annoncé, et c'est une correction. Exiger
+ * `mapping === 'standard'` écartait en silence toute manette qui s'annonce
+ * autrement — ce qui arrive selon le navigateur, le pilote et le mode de
+ * liaison, et laisse l'écran affirmer qu'aucune manette n'est branchée. Ce que
+ * le navigateur annonce est désormais affiché plutôt que jugé : si l'agencement
+ * n'est pas standard, l'écran le dit et prévient que les boutons peuvent ne pas
+ * correspondre.
  */
 function readPad(): PadSnapshot | null {
   if (typeof navigator === 'undefined' || !navigator.getGamepads) return null
   for (const pad of navigator.getGamepads()) {
-    if (!pad || !pad.connected || pad.mapping !== 'standard') continue
+    if (!pad) continue
+    padLabel.value = pad.id
+    padMapping.value = pad.mapping
     return { buttons: pad.buttons.map((button) => button.value), axes: [...pad.axes] }
   }
   return null
@@ -1048,7 +1084,7 @@ function readPad(): PadSnapshot | null {
  */
 function applyPad(dt: number): void {
   const snapshot = readPad()
-  padConnected.value = snapshot !== null
+  if (snapshot !== null) padConnected.value = true
   const intent = padReader.read(snapshot, dt)
   if (!snapshot) return
 

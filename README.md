@@ -185,8 +185,14 @@ transitions, et une touche tout ou rien ne produit que la plus brutale.
 La manette n'apparaît **qu'après un premier appui** sur un de ses boutons : le
 navigateur ne la révèle pas avant, pour ne pas la donner comme empreinte à toute
 page ouverte. Elle ne reprend la main sur les curseurs de l'écran qu'en étant
-touchée, et la rend en revenant au repos. Tout autre agencement que le standard
-est ignoré.
+touchée, et la rend en revenant au repos.
+
+L'écran affiche **ce que le navigateur annonce** — le nom de la manette et son
+agencement — plutôt que de le juger. Aucun agencement n'est refusé : exiger le
+standard écartait en silence des manettes qui s'annoncent autrement selon le
+navigateur, le pilote et le mode de liaison, et l'écran affirmait alors qu'aucune
+manette n'était branchée. Quand l'agencement n'est pas standard, l'écran prévient
+que les boutons peuvent ne pas correspondre à ceux du tableau.
 
 Le curseur **Allure maintenue** est un régulateur : le simulateur tient la
 vitesse choisie, comme on le fait sur autoroute, jusqu'à ce qu'on accélère ou
