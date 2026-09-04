@@ -1,6 +1,6 @@
 # 05 — la banque jouée à sa hauteur
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ fait — l'essai écarte la piste, voir [SYNTHESE](../../SYNTHESE/spec.md)
 
 **Bloqué par :** aucun, mais il faut un essai à l'oreille que seul David peut
 faire
@@ -46,3 +46,24 @@ matière, pas du code. Le README le dit déjà.
       supposée.
 - [ ] Si le calibrage du profil bouge, les chiffres du README qui le décrivent
       bougent avec.
+
+## Résultat de l'essai, le 4 septembre 2026
+
+David a essayé l'ancrage à 1564 tr/min, son actif :
+
+> ce n'était pas mieux qu'avant ; c'était différent, mais faux quand même. On
+> avait un son très aigu (genre moto de course) à faible régime et le gros son
+> lourd qui revenait à partir de 5000 tours.
+
+**L'essai écarte l'hypothèse de l'octave.** Si l'ancrage déclaré avait valu le
+double du vrai, 1564 aurait rendu le son juste ; il l'a aiguisé, ce qui est le
+comportement attendu d'un ancrage abaissé sur un modèle qui rééchantillonne.
+L'ancrage de 3128 tr/min est donc conservé.
+
+Ce que l'essai a établi en creux est plus important : le défaut n'est pas dans
+le nombre, il est dans le modèle. Le rééchantillonnage déplace le spectre entier,
+résonances comprises, alors qu'un moteur change de régime sans changer de corps.
+Les deux autres pistes du ticket — raccourcir le pont, enregistrer une prise de
+ralenti — ne corrigeraient que l'ampleur du déplacement, pas sa nature.
+
+D'où le lot [SYNTHESE](../../SYNTHESE/spec.md), ouvert le soir même.
