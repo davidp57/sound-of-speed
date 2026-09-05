@@ -478,3 +478,44 @@ s'agit plus de corriger un moteur dans le C++, mais de régler un profil.
 4. Pour conduire : revenir sur **Conduite**, source *Simulateur*, manette ou
    flèches du clavier. Le son suit le régime du cadran.
 5. Le bouton **Arrêté / En marche** de la barre coupe la synthèse avec le reste.
+
+
+## Ce que gouvernent les deux réglages d'échappement, relevé dans le code
+
+Le 5 septembre 2026, David a bloqué la 454 à 5 682 tr/min dans le simulateur et
+n'a bougé qu'un curseur à la fois. Ses constats, puis ce que fait le code.
+
+**Le débit du primaire** — « c'est clairement lui qui fait la différence entre
+vivant et rugueux quand on l'augmente, et doux mais fade quand on le diminue » ;
+« on dirait que ça ajoute des fréquences, ce qui rend le son plus réaliste. C'est
+mieux au ralenti quand on le diminue, parce qu'à ce moment ces fréquences en plus
+rendent mal ».
+
+Dans `combustion_chamber.cpp:294`, c'est le `k_flow` du transfert **tube primaire
+→ collecteur** : le passage entre la volute d'un cylindre et le volume commun
+d'où sort le son. Haut, il n'étrangle pas, et la bouffée débouche en front raide
+— un front raide porte des harmoniques hautes. Bas, le primaire se vide
+lentement et les bouffées se fondent.
+
+**La longueur de collecteur** — « au ralenti, agit comme un ampli du son des
+cylindres (pout pout pout), qu'on entend bien mieux quand c'est haut ».
+
+Elle agit à deux endroits : elle s'ajoute au tube primaire pour donner le volume
+tampon devant le cylindre (`combustion_chamber.cpp:96`), et elle pose un
+**retard par cylindre**, `delay = longueur / 343 m/s`
+(`piston_engine_simulator.cpp:221`). À 20 pouces sur le premier — donc 20, 15,
+10, 5 — les cylindres d'une banque sortent décalés d'environ 0,37 ms au lieu de
+se superposer. Au ralenti, où les coups sont espacés, chacun se détache.
+
+### La piste que ça ouvre
+
+Le compromis rugueux/feutré pourrait ne pas en être un : il suffirait que le
+débit du primaire **suive la charge**, bas au ralenti et haut en charge.
+
+`m_primaryToCollectorFlowRate` est copié une seule fois à la construction
+(`combustion_chamber.cpp:65`) et déclaré `protected`. Un setter public — un
+patch d'une ligne, dans le dossier `patches/engine-sim/` qui existe déjà — le
+rendrait modifiable à chaud, sans la seconde de coupure d'un rebâtissage.
+
+Reste à mesurer : un changement de ce `k_flow` en cours de route s'entend-il
+comme un à-coup ? Le volume du primaire, lui, ne bouge pas.
