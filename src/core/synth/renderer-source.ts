@@ -128,7 +128,14 @@ async function boot(message) {
   // Deux entrees, et l'ordre compte. Le banc d'abord — cadences, convolution,
   // niveleur — parce qu'il ne decrit pas un moteur et n'a donc pas sa place dans
   // le tableau du contrat. Le moteur ensuite.
-  const setRig = core.cwrap('synth_set_rig', null, ['number', 'number', 'number', 'number', 'number'])
+  const setRig = core.cwrap('synth_set_rig', null, [
+    'number',
+    'number',
+    'number',
+    'number',
+    'number',
+    'number',
+  ])
   const createFrom = core.cwrap('synth_create_from', 'number', ['number', 'number'])
   render = core.cwrap('synth_render', 'number', ['number', 'number'])
   setTarget = core.cwrap('synth_set_target', null, ['number', 'number'])
@@ -160,6 +167,7 @@ async function boot(message) {
       settings.impulseSamples,
       settings.leveler ? 1 : 0,
       settings.levelerGain,
+      settings.levelerTarget,
     )
     built = createFrom(engine, values.length)
   } finally {

@@ -1274,6 +1274,16 @@ struct RigSettings {
     int impulseSamples = 0;
     int leveler = 1;
     double levelerGain = 0.5;
+    // La crete que le niveleur vise, sur l'echelle des entiers 16 bits.
+    //
+    // engine-sim vise 30 000 sur 32 767, soit 92 % du plafond : 0,8 dB de
+    // marge. Or `Synthesizer::renderAudio` borne la sortie a INT16_MAX, et le
+    // niveleur monte instantanement mais ne redescend qu'en 0,23 ms — le front
+    // d'une bouffee passe donc toujours au gain d'avant. Simule sur un V8 au
+    // ralenti, un signal de 50 000 de crete ressort ecrete a 17,5 % avec la
+    // cible d'origine, contre 0,4 % a 12 000. Le volume perdu se rattrape dans
+    // Web Audio, en flottant, ou il n'y a pas de plafond dur.
+    double levelerTarget = 12000.0;
 };
 
 RigSettings g_rigSettings;
@@ -1295,6 +1305,7 @@ int createLive(const RigSettings &rig, const EngineDefinition &def) {
     const int impulseSamples = rig.impulseSamples;
     const int leveler = rig.leveler;
     const double levelerGain = rig.levelerGain;
+    const double levelerTarget = rig.levelerTarget;
 
     Live *live = new Live;
     live->audioSampleRate = (double)audioSampleRate;
@@ -1337,6 +1348,11 @@ int createLive(const RigSettings &rig, const EngineDefinition &def) {
     ap.inputSampleNoise = (float)live->engine->getInitialJitter();
     ap.airNoise = (float)live->engine->getInitialNoise();
     ap.dF_F_mix = (float)live->engine->getInitialHighFrequencyGain();
+    // La cible se pose ici comme le reste, mais elle est le seul parametre du
+    // niveleur que `renderAudio` relit a chaque echantillon : la changer sans
+    // rebatir marcherait. Elle passe quand meme par la construction, pour que
+    // le reglage se lise au meme endroit que ses deux bornes.
+    ap.levelerTarget = (float)levelerTarget;
     if (leveler == 0) {
         // Gain fige : la dynamique du modele passe telle quelle, et l'effort
         // s'entend. C'est ce que le niveleur, qui vise une crete constante,
@@ -1422,12 +1438,13 @@ extern "C" {
 
 /** Pose les reglages du banc. A appeler avant `synth_create_from`. */
 void synth_set_rig(int simFrequency, int audioSampleRate, int impulseSamples,
-                   int leveler, double levelerGain) {
+                   int leveler, double levelerGain, double levelerTarget) {
     g_rigSettings.simFrequency = simFrequency;
     g_rigSettings.audioSampleRate = audioSampleRate;
     g_rigSettings.impulseSamples = impulseSamples;
     g_rigSettings.leveler = leveler;
     g_rigSettings.levelerGain = levelerGain;
+    g_rigSettings.levelerTarget = levelerTarget;
 }
 
 /**
@@ -1467,7 +1484,9 @@ int synth_create_from(const double *values, int count) {
  */
 int synth_create(int simFrequency, int audioSampleRate, int cylinders, int impulseSamples,
                  int leveler, double levelerGain, double revLimitRpm) {
-    synth_set_rig(simFrequency, audioSampleRate, impulseSamples, leveler, levelerGain);
+    // La valeur d'engine-sim : cette porte d'entrée courte reste au comportement
+    // d'origine, la cible se règle par `synth_set_rig` pour qui en a besoin.
+    synth_set_rig(simFrequency, audioSampleRate, impulseSamples, leveler, levelerGain, 30000.0);
     EngineDefinition def = defaultDefinition(cylinders);
     def.v[ENGINE_REV_LIMIT] = revLimitRpm;
     return synth_create_from(def.v, ENGINE_PARAM_COUNT);

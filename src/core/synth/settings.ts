@@ -109,6 +109,25 @@ export interface SynthSettings {
   leveler: boolean
   /** Gain fixe appliqué quand le niveleur est coupé. */
   levelerGain: number
+  /**
+   * La crête que vise le niveleur, sur l'échelle des entiers 16 bits.
+   *
+   * engine-sim vise 30 000 sur 32 767 — 92 % du plafond, 0,8 dB de marge. Or
+   * `Synthesizer::renderAudio` borne la sortie à `INT16_MAX` : ce qui dépasse
+   * n'est pas atténué, il est coupé au couteau. Et le niveleur monte
+   * instantanément mais ne redescend qu'en 0,23 ms, donc le front d'une bouffée
+   * passe toujours au gain d'avant.
+   *
+   * David l'a vu avant qu'on le mesure : « en déportée la GM a le niveau crête
+   * maximisé (rouge) à 1.000 », et le son qu'il préférait était chaque fois
+   * celui qui n'y touchait pas. Simulé sur un V8 au ralenti, un signal de
+   * 50 000 de crête ressort écrêté à 17,5 % avec la cible d'origine, contre
+   * 0,4 % à 12 000.
+   *
+   * Le volume perdu se rattrape dans Web Audio, en flottant, où il n'y a pas de
+   * plafond dur.
+   */
+  levelerTarget: number
   /** Imposer l'effort plutôt que de suivre celui du moteur. */
   forceEffort: boolean
   /** L'effort imposé, de 0 à 1. */
@@ -176,6 +195,8 @@ export const DEFAULT_SYNTH: SynthSettings = {
   exhaustHz: 57,
   leveler: true,
   levelerGain: 1,
+  // Nettement sous les 30 000 d'engine-sim : c'est la marge qui manquait.
+  levelerTarget: 12000,
   sweep: false,
   sweepSeconds: 12,
   forceEffort: false,
@@ -216,6 +237,7 @@ export function clampSynthSettings(settings: SynthSettings): SynthSettings {
     mufflerHz: Math.round(clamp(settings.mufflerHz, 120, 22000)),
     leveler: settings.leveler,
     levelerGain: clamp(settings.levelerGain, 0.01, 4),
+    levelerTarget: Math.round(clamp(settings.levelerTarget, 1000, 32000)),
     sweep: settings.sweep,
     sweepSeconds: clamp(settings.sweepSeconds, 2, 120),
     forceEffort: settings.forceEffort,
@@ -242,6 +264,11 @@ export function needsRebuild(previous: SynthSettings, next: SynthSettings): bool
     // Les deux bornes de gain du niveleur ne sont recopiées qu'une fois, dans
     // `Synthesizer::initialize` : les écrire à chaud ne fait rien, mesuré.
     previous.leveler !== next.leveler ||
-    previous.levelerGain !== next.levelerGain
+    previous.levelerGain !== next.levelerGain ||
+    // La cible, elle, est relue à chaque échantillon par `renderAudio` : elle
+    // pourrait s'écrire à chaud. Elle passe quand même par la construction,
+    // faute d'un point d'entrée qui l'écrive seule — et le rebâtissage reste
+    // rare, c'est un réglage qu'on pose une fois.
+    previous.levelerTarget !== next.levelerTarget
   )
 }

@@ -505,10 +505,37 @@ const gauge = computed(() => {
         />
         <span class="numeric">{{ synthSettings.levelerGain.toFixed(2) }}</span>
       </div>
+      <div class="field">
+        <label for="levt">Crête visée par le niveleur</label>
+        <input
+          id="levt"
+          type="range"
+          min="1000"
+          max="32000"
+          step="500"
+          :value="synthSettings.levelerTarget"
+          @input="onNumber('levelerTarget', $event)"
+        />
+        <span class="numeric">
+          {{ (synthSettings.levelerTarget / 32768).toFixed(2) }}
+          <em v-if="synthSettings.levelerTarget > 20000" class="gap">écrête</em>
+        </span>
+      </div>
       <p class="note">
-        La convolution interne est un produit direct : dix mille multiplications
-        par échantillon. Web Audio fait la même chose en transformée de Fourier
-        partitionnée, dans du code natif.
+        La convolution interne n'est pas qu'un choix de coût : c'est une
+        deuxième réponse impulsionnelle, en bruit blanc, empilée sur celle du
+        <code>ConvolverNode</code>. Elle divise le facteur de crête par 3,5 à
+        mille échantillons et par 5,7 à dix mille — elle lisse les fronts, donc
+        elle enlève le mordant. Sa contrepartie est de rester loin du plafond.
+      </p>
+      <p class="note">
+        La crête visée est le remède direct à ce plafond. engine-sim vise
+        30 000 sur 32 767 et coupe au couteau ce qui dépasse : un « niveau
+        crête » à 1,000 n'est pas un son fort, c'est un son écrêté. Le niveleur
+        monte instantanément mais ne redescend qu'en 0,23 ms, donc le front
+        d'une bouffée passe au gain d'avant — plus le front est raide, plus il
+        écrête. Le volume perdu se rattrape en aval, en flottant, où rien ne
+        plafonne.
       </p>
       <p class="note">
         Le niveleur vise une crête constante quel que soit le moteur — et efface

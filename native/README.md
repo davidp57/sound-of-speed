@@ -138,7 +138,7 @@ elles le deviennent.
 
 ```c
 void synth_set_rig(int simFrequency, int audioSampleRate, int impulseSamples,
-                   int leveler, double levelerGain);
+                   int leveler, double levelerGain, double levelerTarget);
 int  synth_create_from(const double *values, int count);
 int  synth_create(int simFrequency, int audioSampleRate, int cylinders,
                   int impulseSamples, int leveler, double levelerGain,
@@ -146,9 +146,19 @@ int  synth_create(int simFrequency, int audioSampleRate, int cylinders,
 ```
 
 `synth_set_rig` pose ce qui n'est pas le moteur : cadence de simulation, cadence
-du contexte audio, longueur de la réponse impulsionnelle, niveleur. Ces
-réglages-là ne décrivent pas un moteur et n'ont donc pas leur place dans le
-contrat. `synth_create_from` construit ensuite depuis le tableau ; un tableau
+du contexte audio, longueur de la réponse impulsionnelle, niveleur, crête visée
+par le niveleur. Ces réglages-là ne décrivent pas un moteur et n'ont donc pas
+leur place dans le contrat.
+
+La crête visée mérite un mot à part : engine-sim la fixe à 30 000 sur 32 767,
+soit 0,8 dB de marge avant le plafond dur d'`INT16_MAX`, et le niveleur monte
+instantanément mais ne redescend qu'en 0,23 ms — le front d'une bouffée passe
+donc toujours au gain d'avant. C'est ce que David a repéré à l'oreille et au
+compteur : « en déportée la GM a le niveau crête maximisé (rouge) à 1.000 », un
+son qu'il jugeait moins bon que ceux où le niveau restait sous le plafond. La
+baisser (12 000 par défaut, contre 30 000 chez engine-sim) laisse les fronts
+intacts au lieu de les écrêter ; le volume perdu se rattrape en aval, dans Web
+Audio, où rien ne plafonne. `synth_create_from` construit ensuite depuis le tableau ; un tableau
 plus court que le contrat laisse les valeurs de référence en place sur la fin.
 `synth_create` reste la porte d'entrée courte : les valeurs de référence du
 moteur à tant de cylindres, avec le rupteur du profil. Elle appelle les deux
