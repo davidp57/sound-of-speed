@@ -30,7 +30,7 @@ export interface SynthSettings {
   throttleIdle: number
   /** Ouverture du papillon à plein effort, de 0 à 1. */
   throttleFull: number
-  /** Volume appliqué dans le synthétiseur, de 0 à 2. */
+  /** Volume appliqué dans le synthétiseur, de 0 à 6. */
   volume: number
   /** Taille d'un bloc rendu d'un coup, en échantillons. */
   blockFrames: number
@@ -42,6 +42,14 @@ export interface SynthSettings {
   convolverMs: number
   /** Part de son réverbéré dans la sortie, de 0 à 1. */
   convolverMix: number
+  /**
+   * L'accord du tube d'échappement, en hertz.
+   *
+   * C'est l'inverse du temps que met l'onde à faire l'aller-retour. Un tube de
+   * trois mètres accorde vers 57 Hz, un de deux vers 86. Plus haut, le son se
+   * pince ; plus bas, il s'épaissit.
+   */
+  exhaustHz: number
   /**
    * Le silencieux : coupure du passe-bas de sortie, en hertz.
    *
@@ -104,12 +112,18 @@ export const DEFAULT_SYNTH: SynthSettings = {
   blockFrames: 1024,
   reserveMs: 250,
   convolver: true,
-  convolverMs: 220,
-  convolverMix: 0.5,
+  // Cinquante millisecondes : la valeur trouvée à l'oreille. Deux cent vingt
+  // étaient une salle, pas un échappement — à 800 tr/min un V8 explose toutes
+  // les 19 ms, et douze explosions se superposaient dans la queue.
+  convolverMs: 50,
+  convolverMix: 1,
   // 3 500 Hz était mon estimation, calée sur le spectre moyen d'une prise réelle.
   // À l'écoute, David l'a descendu à 500 : le spectre moyen ne disait donc pas
   // tout, et c'est l'oreille qui tranche. On part de ce qu'elle a trouvé.
-  mufflerHz: 500,
+  mufflerHz: 1000,
+  // Trois mètres de tube, en gros. C'est un point de départ physique, pas une
+  // mesure : l'accord se juge à l'oreille.
+  exhaustHz: 57,
   leveler: true,
   levelerGain: 1,
   sweep: false,
@@ -138,12 +152,13 @@ export function clampSynthSettings(settings: SynthSettings): SynthSettings {
     impulseSamples: Math.round(clamp(settings.impulseSamples, 0, 10000)),
     throttleIdle: idle,
     throttleFull: clamp(settings.throttleFull, idle, 1),
-    volume: clamp(settings.volume, 0, 2),
+    volume: clamp(settings.volume, 0, 6),
     blockFrames: Math.round(clamp(settings.blockFrames, 128, 8192)),
     reserveMs: Math.round(clamp(settings.reserveMs, 40, 1000)),
     convolver: settings.convolver,
     convolverMs: Math.round(clamp(settings.convolverMs, 10, 2000)),
     convolverMix: clamp(settings.convolverMix, 0, 1),
+    exhaustHz: Math.round(clamp(settings.exhaustHz, 20, 400)),
     mufflerHz: Math.round(clamp(settings.mufflerHz, 120, 22000)),
     leveler: settings.leveler,
     levelerGain: clamp(settings.levelerGain, 0.01, 4),

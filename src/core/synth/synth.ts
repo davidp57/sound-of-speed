@@ -344,7 +344,10 @@ export class SynthEngine {
 
     const length = Math.max(1, Math.round((this.settings.convolverMs / 1000) * context.sampleRate))
     const buffer = context.createBuffer(1, length, context.sampleRate)
-    buffer.copyToChannel(exhaustImpulse(length), 0)
+    buffer.copyToChannel(
+      exhaustImpulse(length, context.sampleRate, this.settings.exhaustHz),
+      0,
+    )
     const convolver = context.createConvolver()
     // La réponse est déjà normalisée en énergie par `exhaustImpulse` : laisser le
     // nœud en remettre une couche ferait dépendre le niveau de sa longueur.

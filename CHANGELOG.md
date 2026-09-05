@@ -8,6 +8,41 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **La résonance d'échappement est un tube, et non plus un bruit.** C'est une
+  erreur de fond que je traînais depuis le début du portage : la réponse
+  impulsionnelle était un bruit blanc décroissant, repris d'engine-sim. Or
+  convoluer des explosions par du bruit rend du bruit. À haut régime les
+  explosions se succèdent assez vite pour que la texture tienne ; en dessous,
+  chaque explosion devient une bouffée de souffle au lieu d'un coup. David,
+  résonance à fond : « on n'entend pas du tout le moteur, juste le souffle,
+  comme des interférences sur une radio FM ».
+
+  Un échappement est un tube. L'onde court jusqu'au bout, se réfléchit sur
+  l'extrémité ouverte en changeant de signe, revient, et ainsi de suite en
+  s'affaiblissant. La réponse est donc une suite d'échos espacés du temps
+  d'aller-retour, adoucis à chaque réflexion — c'est ce qui donne sa note à un
+  échappement. Un réglage **Accord de l'échappement** en fixe la fréquence :
+  57 Hz par défaut, soit trois mètres de tube environ.
+
+  Mesuré sur un ralenti de V8 à 750 tr/min, tout en réverbéré, par le facteur de
+  crête — il dit si les coups restent détachés ou si tout s'étale :
+
+  | Réponse | Niveau efficace | Facteur de crête |
+  |---|---|---|
+  | aucune, son sec | 0,023 | 6,0 |
+  | bruit blanc | 0,023 | 3,4 |
+  | tube à 57 Hz | 0,062 | 5,7 |
+
+  Le bruit détruisait près de la moitié du relief ; le tube le rend intact. Il
+  sort au passage 2,7 fois plus fort, ce qui dégage le volume du plafond où il
+  butait — plafond relevé de 2 à 6, puisqu'il y butait quand même.
+
+  Les valeurs par défaut sont celles trouvées à l'oreille : silencieux à 1 kHz,
+  résonance entière, longueur 50 ms. Deux cent vingt millisecondes étaient une
+  salle et non un échappement — à 800 tr/min un V8 explose toutes les 19 ms,
+  et douze explosions se superposaient dans la queue.
+
+
 - **Le curseur de résonance d'échappement ne change plus le volume.** Il en
   faisait deux à la fois : monter la résonance rendait le son nettement plus
   faible, si bien qu'on ne pouvait pas juger la couleur sans juger le niveau en

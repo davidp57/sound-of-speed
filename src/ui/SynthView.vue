@@ -285,7 +285,7 @@ const gauge = computed(() => {
           id="vol"
           type="range"
           min="0"
-          max="2"
+          max="6"
           step="0.05"
           :value="synthSettings.volume"
           @input="onNumber('volume', $event)"
@@ -317,6 +317,19 @@ const gauge = computed(() => {
           @input="onNumber('convolverMix', $event)"
         />
         <span class="numeric">{{ synthSettings.convolverMix.toFixed(2) }}</span>
+      </div>
+      <div class="field">
+        <label for="tube">Accord de l'échappement</label>
+        <input
+          id="tube"
+          type="range"
+          min="20"
+          max="400"
+          step="1"
+          :value="synthSettings.exhaustHz"
+          @input="onNumber('exhaustHz', $event)"
+        />
+        <span class="numeric">{{ synthSettings.exhaustHz }} Hz</span>
       </div>
       <div class="field">
         <label for="len">Longueur de la résonance</label>

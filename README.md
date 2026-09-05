@@ -154,16 +154,41 @@ Ce qui se règle : le nombre de cylindres, la fréquence de simulation, la
 longueur de la réponse impulsionnelle interne, la taille de bloc et le niveleur
 d'engine-sim — ceux-là rebâtissent le moteur, une seconde de coupure — puis, à
 chaud, les deux bornes du papillon, le volume, le silencieux, la résonance
-d'échappement et la réserve visée.
+d'échappement, son accord, sa longueur et la réserve visée. Ces réglages vivent
+dans l'appareil et non dans le profil : le lot
+[SYNTHESE](.backlog/SYNTHESE/spec.md) prévoit de les y faire passer.
 
 Le **silencieux** est un passe-bas, placé avant la séparation du son sec et du
 son réverbéré puisque c'est le même échappement qui les porte. Il répare un
 manque : le modèle rend les impulsions crues et rien n'absorbait leur haut du
 spectre. Relevé au ralenti, la bande 4-16 kHz était à 12 dB seulement sous la
 bande 200-800 Hz, quand une prise faite dans une vraie voiture est à 22-37 dB en
-dessous. À 3 500 Hz, le réglage par défaut, l'écart passe à 26 dB — dans la
-fourchette du réel. Au-delà de 20 kHz le filtre est **coupé**. Ces réglages vivent dans l'appareil et non dans le profil : le
-lot [SYNTHESE](.backlog/SYNTHESE/spec.md) prévoit de les y faire passer.
+dessous. Au-delà de 20 kHz le filtre est **coupé**.
+
+Sa valeur par défaut vient de l'oreille et non du spectre : l'estimation tirée
+des bandes moyennes donnait 3 500 Hz, sept fois trop haut. Elle est à 1 kHz.
+
+La **résonance** simule un tube. L'onde court jusqu'au bout de l'échappement, se
+réfléchit sur l'extrémité ouverte en changeant de signe, revient, et ainsi de
+suite en s'affaiblissant : sa réponse est une suite d'échos dont l'**accord**
+donne la fréquence — 57 Hz vaut environ trois mètres de tube.
+
+Elle a longtemps été un bruit blanc, repris d'engine-sim, et c'était faux :
+convoluer des explosions par du bruit rend du bruit. À haut régime la texture
+tenait, mais en dessous on entendait un souffle à la place du moteur. Mesuré sur
+un ralenti de V8, tout en réverbéré, par le facteur de crête — il dit si les
+coups restent détachés :
+
+| Réponse | Niveau efficace | Facteur de crête |
+|---|---|---|
+| aucune, son sec | 0,023 | 6,0 |
+| bruit blanc | 0,023 | 3,4 |
+| tube à 57 Hz | 0,062 | 5,7 |
+
+La résonance et sa **longueur** ne changent que la couleur, pas le niveau : la
+réponse est normalisée en énergie et le mélange se fait en racine. Sans cela,
+monter la résonance baissait fortement le volume, et l'on ne pouvait juger ni
+l'un ni l'autre.
 
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le
 plaisir. Deux réserves, et deux seulement. Un **décor** défilant reste une
