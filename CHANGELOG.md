@@ -27,6 +27,40 @@ Toutes les évolutions notables du projet. Format
   Les profils déjà enregistrés sont repris en *enregistré*, ce qu'ils ont
   toujours été. La version du format de profil passe de 2 à 3.
 
+- **Une banque d'échantillons produite ici par engine-sim, et rejouée telle
+  quelle dans la voiture.** `scripts/generate-bank/` fait tourner le moteur
+  simulé au bureau, aussi lentement qu'il le faut, à un régime tenu par un
+  dynamomètre, et en tire une prise par plage de régime — en charge et pied
+  levé, plus le ralenti et le rupteur. Rien n'est modifié dans le moteur de
+  lecture : la banque et le profil qui la déclare s'importent tels quels.
+
+  Ce que ça corrige. La banque enregistrée est jouée entre 0,26 et 0,81 fois sa
+  vitesse sur toute la conduite ordinaire, et le rééchantillonnage descend les
+  résonances de l'échappement en même temps que la fréquence d'allumage : un
+  moteur change de régime sans changer de corps. Mesuré sur le V8 simulé, le
+  centroïde spectral ne suit le régime qu'à 8 % — 0,21 octave de timbre pour 2,67
+  octaves de régime. C'est bien le rééchantillonnage qui déplace le timbre, pas
+  le moteur.
+
+  Combien de prises faut-il ? La question se mesure : on génère au quart
+  d'octave, avec une prise témoin au milieu de chaque intervalle, puis on compare
+  ce que donneraient les écartements plus larges. Une octave laisse 2,7 demi-tons
+  d'erreur de timbre, un demi-octave 1,0, un quart 0,78 pour deux fois plus de
+  prises. **Le demi-octave est retenu** : huit ancrages par famille, plus le
+  ralenti et le rupteur, et une vitesse de lecture qui reste entre 0,74 et 1,36
+  au lieu de 0,26 à 0,81.
+
+  Les boucles font un nombre entier de cycles moteur, ce qui met leurs deux bouts
+  en phase par construction. Saut d'énergie au raccord, une fois la fermeture de
+  l'application appliquée : 1,6 % en médiane, 4,8 % au pire sur les 18 prises —
+  contre 2,3 % et 10,8 % mesurés de la même façon sur la banque enregistrée.
+
+  Les ancrages, les gains et les bornes de lecture sont **mesurés**, pas relevés
+  à la main : c'est ce que le lot BANQUES devait faire à l'oreille. Un seul
+  chiffre reste un choix — de combien rabattre le relief de niveau, qui couvre
+  37,4 dB bruts sur le V8 et 13,1 dB une fois rabattu. C'est le premier réglage à
+  juger à l'oreille, et le timbre n'a encore été écouté par personne.
+
 - **L'effort du moteur tient compte de la vitesse : la croisière n'est plus
   plate.** Faute de pédale, tout se déduisait de l'accélération, si bien que
   tenir une allure donnait toujours le même demi — mesuré, cinq allures tenues à

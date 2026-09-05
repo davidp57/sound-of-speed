@@ -1555,6 +1555,7 @@ chaque essai.
 | 26 | Une manette Xbox conduit le simulateur, gâchettes analogiques comprises | fait |
 | 27 | Trois modes de simulation, dont un qui traverse la vraie source GPS | fait |
 | 28 | L'effort du moteur tient compte de la vitesse : la croisière n'est plus plate | fait, reste à écouter |
+| 29 | Une banque produite ici par engine-sim, une prise par demi-octave, rejouée telle quelle dans la voiture | fait, reste à écouter |
 | — | Déposer une trace et un profil depuis l'application | prévu |
 | — | Plusieurs banques de son, choisies par profil | prévu |
 | — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | à remesurer |
