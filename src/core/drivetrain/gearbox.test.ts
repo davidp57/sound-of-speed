@@ -273,14 +273,34 @@ describe('Gearbox — montée des rapports', () => {
     expect(state.gear).toBeGreaterThan(1)
   })
 
-  it('quitte la première à la vitesse de lancement, sans seuil de régime', () => {
+  it('accélère en première jusqu’au seuil de régime, comme les autres rapports', () => {
+    // La première cédait la place dès la vitesse de lancement, sans regarder le
+    // régime : la deuxième tombait alors bien sous le ralenti. David : « elle
+    // passe la 2de au km/h suivant [...] et la 2de est en dessous de 800 rpm
+    // jusque 12-14 km/h, ce qui donne l'effet que je n'aime pas ».
     const p = profile()
-    const { shifts } = drive(p, (t) => t * 4, 10)
-    const amorce = shifts[0]
+    // Vingt secondes : en première, le seuil de 5 200 tr/min n'arrive qu'aux
+    // alentours de quarante kilomètres à l'heure sur ce profil.
+    const { shifts } = drive(p, (t) => t * 4, 20)
+    const premier = shifts[0]
 
-    expect(amorce?.from).toBe(0)
-    expect(amorce?.kmh).toBeGreaterThanOrEqual(p.drivetrain.launchUpshiftKmh)
-    expect(amorce?.kmh).toBeLessThan(p.drivetrain.launchUpshiftKmh + 1)
+    expect(premier?.from).toBe(0)
+    // Le seuil de régime commande, à la tolérance du pas de simulation près.
+    expect(premier?.rpm).toBeGreaterThan(p.drivetrain.upshiftRpm[0]! * 0.85)
+    // Et la deuxième y prend le relais bien au-dessus du ralenti.
+    const apres = premier!.rpm * (p.drivetrain.gearRatios[1]! / p.drivetrain.gearRatios[0]!)
+    expect(apres).toBeGreaterThan(p.engine.idleRpm * 1.5)
+  })
+
+  it('ne quitte pas la première avant que la voiture n’avance', () => {
+    // Un coup d'accélérateur ne doit pas faire monter les rapports à l'arrêt :
+    // `launchUpshiftKmh` empêche désormais le passage au lieu de le forcer.
+    const p = profile()
+    const { shifts } = drive(p, (t) => Math.min(4, t * 4), 6)
+
+    for (const shift of shifts) {
+      if (shift.from === 0) expect(shift.kmh).toBeGreaterThanOrEqual(p.drivetrain.launchUpshiftKmh)
+    }
   })
 
   it('ne monte pas au-delà du dernier rapport', () => {

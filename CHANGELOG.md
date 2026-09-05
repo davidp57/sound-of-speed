@@ -8,6 +8,28 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **La première se conduit comme un rapport, et l'on débraye en s'arrêtant.**
+  David : « la première passe tout de suite (logique) mais elle passe la 2de au
+  km/h suivant. Et la 2de est en dessous de 800 rpm (cappé à 800) jusque
+  12-14 km/h — ce qui donne l'effet que je n'aime pas ».
+
+  La première cédait la place dès la vitesse de lancement, **sans regarder le
+  régime** : cinq kilomètres à l'heure sur le profil Route, huit sur Sport. La
+  deuxième y tombait alors bien sous le ralenti. On y accélère désormais jusqu'au
+  seuil de régime, comme sur les autres rapports ; `launchUpshiftKmh` **empêche**
+  le passage en dessous au lieu de le forcer, pour qu'un coup d'accélérateur à
+  l'arrêt ne fasse pas monter les rapports.
+
+  Et l'on **débraye en s'arrêtant** : dès que les roues descendent sous le
+  ralenti en décélération, le moteur s'en détache et y retombe. C'est la règle que
+  David a donnée — « on freine jusqu'à l'arrêt en 2de, et quand on arrive sous
+  800 rpm on débraye avant de caler ». La première, elle, ne se reprend jamais en
+  roulant : c'est tout ce que `firstGearLaunchOnly` commande désormais.
+
+  Relevé au simulateur, profil Sport : 7 km/h à 1 500 tr/min en première,
+  passage en deuxième à 40 km/h. Plus aucun relevé au ralenti en roulant.
+
+
 - **Le V8 portait l'échappement d'une Subaru.** Sa géométrie est bien relevée sur
   le GM LS livré avec engine-sim — angle de V, point mort haut, manetons, ordre
   d'allumage, répartition des bancs — mais **l'échappement n'était pas dans cette
