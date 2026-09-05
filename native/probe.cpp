@@ -944,6 +944,280 @@ int bench_impulse_samples() { return g_rig == nullptr ? 0 : (int)g_rig->impulseS
 
 } // extern "C"
 
+// ---------------------------------------------------------------------------
+// Banc vivant, pour faire sortir le son.
+//
+// Le banc precedent mesure : il tourne a son rythme et jette ce qu'il produit.
+// Celui-ci alimente un haut-parleur, ce qui change trois choses.
+//
+// 1. **Le regime est impose, pas trouve.** Speed calcule deja un regime a
+//    partir de la vitesse et du rapport ; c'est lui qui s'affiche au cadran. Le
+//    dynamometre d'engine-sim existe exactement pour cela : `m_hold` a vrai, il
+//    tient l'arbre a la vitesse demandee quoi que fasse la combustion. Laisser
+//    le moteur trouver son regime serait plus fidele, mais le regime entendu ne
+//    serait plus celui du cadran — et c'est le cadran qu'on croirait faux.
+//
+// 2. **La cadence audio est celle du navigateur.** engine-sim cable 44 100 Hz
+//    dans `Simulator::initializeSynthesizer`. On ne le patche pas : on detruit
+//    le synthetiseur juste apres sa construction et on le reinitialise a la
+//    frequence du contexte audio. Rien a reechantillonner ensuite.
+//
+// 3. **L'effort commande le papillon.** A regime tenu, ouvrir le papillon
+//    remplit davantage les cylindres : la pression de combustion monte, les
+//    bouffees d'echappement changent de forme. Le timbre bouge, pas seulement
+//    le niveau.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+struct Live {
+    Engine *engine = nullptr;
+    Vehicle *vehicle = nullptr;
+    Transmission *transmission = nullptr;
+    Simulator *simulator = nullptr;
+    double audioSampleRate = 48000.0;
+    /** Regime demande par la chaine de Speed, en tours par minute. */
+    double targetRpm = 800.0;
+    /** Regime effectivement impose au dynamometre, apres limitation de pente. */
+    double heldRpm = 800.0;
+    /** Effort, de 0 a 1, tel que le calcule `core/engine/engine.ts`. */
+    double effort = 0.0;
+    /** Ouverture du papillon a effort nul, puis a plein effort. */
+    double throttleIdle = 0.06;
+    double throttleFull = 1.0;
+    std::vector<int16_t> scratch;
+};
+
+Live *g_live = nullptr;
+
+/**
+ * Pente maximale du regime impose, en tours par minute et par seconde.
+ *
+ * Le dynamometre est une contrainte rigide : un saut de regime d'une trame a
+ * l'autre secoue le solveur et s'entend comme un claquement. La chaine de Speed
+ * ne saute pas — le conditionnement et l'inertie du moteur l'en empechent —,
+ * mais un changement de rapport, lui, saute. La limitation absorbe ce cas-la et
+ * ne se voit pas ailleurs : 12 000 tr/min par seconde, c'est plus vite que ce
+ * qu'un moteur fait a vide.
+ */
+const double MAX_RPM_SLEW = 12000.0;
+
+} // namespace
+
+extern "C" {
+
+/**
+ * Construit le moteur qui va jouer.
+ *
+ * `audioSampleRate` est la cadence du contexte audio du navigateur, pas les
+ * 44 100 Hz cables dans engine-sim : le synthetiseur est reinitialise dessus.
+ * `impulseSamples` a 0 supprime la convolution interne — c'est le mode ou la
+ * reverberation d'echappement est deportee sur un `ConvolverNode`, que Web
+ * Audio calcule en FFT partitionnee au lieu d'un produit direct.
+ */
+int synth_create(int simFrequency, int audioSampleRate, int cylinders, int impulseSamples,
+                 int leveler, double levelerGain) {
+    if (g_live != nullptr) return 0;
+
+    Live *live = new Live;
+    live->audioSampleRate = (double)audioSampleRate;
+    live->engine = (cylinders == 4) ? buildInline4() : buildCrossplaneV8();
+    live->scratch.resize(4096);
+
+    live->vehicle = new Vehicle;
+    Vehicle::Parameters vp;
+    vp.mass = units::mass(2700.0, units::lb);
+    vp.dragCoefficient = 0.2;
+    vp.crossSectionArea =
+        units::distance(66.0, units::inch) * units::distance(56.0, units::inch);
+    vp.diffRatio = 3.9;
+    vp.tireRadius = units::distance(10.0, units::inch);
+    vp.rollingResistance = units::force(300.0, units::N);
+    live->vehicle->initialize(vp);
+
+    static const double gearRatios[6] = { 3.636, 2.375, 1.761, 1.346, 0.971, 0.756 };
+    live->transmission = new Transmission;
+    Transmission::Parameters tp;
+    tp.GearCount = 6;
+    tp.GearRatios = gearRatios;
+    tp.MaxClutchTorque = units::torque(300.0, units::ft_lb);
+    live->transmission->initialize(tp);
+
+    live->simulator = live->engine->createSimulator(live->vehicle, live->transmission);
+    live->simulator->setSimulationFrequency(simFrequency);
+
+    // Reinitialisation du synthetiseur a la cadence du navigateur. `destroy()`
+    // libere ce que `initialize()` avait alloue : sans lui, on fuirait un
+    // tampon de 44 100 flottants et autant de filtres a chaque construction.
+    Synthesizer &synth = live->simulator->synthesizer();
+
+    // Le niveleur se regle **ici et nulle part ailleurs**. `renderAudio` ne
+    // relit que sa cible a chaque echantillon ; ses deux bornes de gain, elles,
+    // sont recopiees une seule fois, dans `Synthesizer::initialize`. Les ecrire
+    // par `setAudioParameters` apres coup ne fait rien — mesure : le gain fixe
+    // passe de 0,5 a 0,05 sans que le niveau bouge d'un centieme.
+    Synthesizer::AudioParameters ap;
+    ap.inputSampleNoise = (float)live->engine->getInitialJitter();
+    ap.airNoise = (float)live->engine->getInitialNoise();
+    ap.dF_F_mix = (float)live->engine->getInitialHighFrequencyGain();
+    if (leveler == 0) {
+        // Gain fige : la dynamique du modele passe telle quelle, et l'effort
+        // s'entend. C'est ce que le niveleur, qui vise une crete constante,
+        // efface par construction.
+        ap.levelerMinGain = (float)levelerGain;
+        ap.levelerMaxGain = (float)levelerGain;
+    }
+
+    Synthesizer::Parameters sp;
+    sp.audioBufferSize = audioSampleRate;
+    sp.audioSampleRate = (float)audioSampleRate;
+    sp.inputBufferSize = audioSampleRate;
+    sp.inputChannelCount = live->engine->getExhaustSystemCount();
+    sp.inputSampleRate = (float)simFrequency;
+    sp.initialAudioParameters = ap;
+    synth.destroy();
+    synth.initialize(sp);
+
+    // Une reponse impulsionnelle par sortie d'echappement : le V8 en a deux, une
+    // par banc, et le synthetiseur convolue sur un registre par banc.
+    //
+    // Convolution deportee (`impulseSamples` a zero) : un seul coefficient, egal
+    // a un. Le synthetiseur laisse alors passer son signal tel quel et c'est le
+    // `ConvolverNode` qui resonne. Une reponse courte tiree au hasard, elle,
+    // donnait un gain de l'ordre du millieme et **variable d'un demarrage a
+    // l'autre** : mesure a 0,009 de niveau crete contre 0,9 attendu, le meme
+    // reglage sonnant cinquante fois plus faible selon le tirage.
+    const std::vector<int16_t> unitTap(1, (int16_t)32767);
+    const std::vector<int16_t> ir =
+        impulseSamples > 0 ? makeImpulseResponse((unsigned int)impulseSamples) : unitTap;
+    const float irVolume = impulseSamples > 0 ? 0.01f : 1.0f;
+    for (int i = 0; i < live->engine->getExhaustSystemCount(); ++i) {
+        synth.initializeImpulseResponse(ir.data(), (unsigned int)ir.size(), irVolume, i);
+    }
+
+    live->simulator->startAudioRenderingThread();
+    live->engine->getIgnitionModule()->m_enabled = true;
+    live->engine->setSpeedControl(live->throttleIdle);
+
+    // Le dynamometre tient l'arbre, le demarreur ne sert donc a rien : c'est la
+    // contrainte qui amene le moteur a son regime des la premiere trame.
+    live->simulator->m_starterMotor.m_enabled = false;
+    live->simulator->m_dyno.m_enabled = true;
+    live->simulator->m_dyno.m_hold = true;
+    live->simulator->m_dyno.m_rotationSpeed = units::rpm(live->heldRpm);
+
+    // Reserve interne du synthetiseur : c'est le tampon qu'engine-sim se
+    // constitue tout seul, en ajustant le nombre de pas de simulation par
+    // trame. 60 ms suffisent ici — le tampon du lecteur, en aval, absorbe le
+    // reste, et allonger celui-ci ne ferait qu'ajouter du retard au son.
+    live->simulator->setTargetSynthesizerLatency(0.06);
+
+    // Rodage hors mesure : les chambres partent a la pression atmospherique et
+    // la premiere combustion n'a pas encore eu lieu.
+    for (int i = 0; i < 60; ++i) {
+        live->simulator->startFrame(1.0 / 60.0);
+        while (live->simulator->simulateStep()) { /* void */ }
+        live->simulator->endFrame();
+        live->simulator->readAudioOutput(
+            (int)live->scratch.size(), live->scratch.data());
+    }
+
+    g_live = live;
+    return 1;
+}
+
+void synth_dispose() {
+    if (g_live == nullptr) return;
+    g_live->simulator->endAudioRenderingThread();
+    g_live->simulator->releaseSimulation();
+    delete g_live->simulator;
+    g_live->engine->destroy();
+    delete g_live->engine;
+    delete g_live->vehicle;
+    delete g_live->transmission;
+    delete g_live;
+    g_live = nullptr;
+}
+
+/** Le regime que le cadran affiche, et l'effort que le moteur fournit. */
+void synth_set_target(double rpm, double effort) {
+    if (g_live == nullptr) return;
+    g_live->targetRpm = rpm < 0.0 ? 0.0 : rpm;
+    g_live->effort = effort < 0.0 ? 0.0 : (effort > 1.0 ? 1.0 : effort);
+}
+
+/** Les deux bornes du papillon, pour regler ce que l'effort change. */
+void synth_set_throttle_range(double idle, double full) {
+    if (g_live == nullptr) return;
+    g_live->throttleIdle = idle;
+    g_live->throttleFull = full;
+}
+
+void synth_set_volume(double volume) {
+    if (g_live == nullptr) return;
+    Synthesizer &synth = g_live->simulator->synthesizer();
+    Synthesizer::AudioParameters ap = synth.getAudioParameters();
+    ap.volume = (float)volume;
+    synth.setAudioParameters(ap);
+}
+
+/**
+ * Rend un bloc d'echantillons, en flottants de -1 a 1.
+ *
+ * La trame de simulation dure exactement le bloc demande : c'est ce qui garde
+ * la physique et le son sur la meme horloge, celle du lecteur, plutot que sur
+ * un minuteur qui deriverait.
+ *
+ * Rend le nombre d'echantillons reellement produits. Un chiffre inferieur au
+ * demande est un creux : le reste du bloc est mis a zero, et l'appelant le
+ * compte.
+ */
+int synth_render(float *dest, int frames) {
+    if (g_live == nullptr || frames <= 0) return 0;
+
+    const double blockSeconds = frames / g_live->audioSampleRate;
+
+    const double step = MAX_RPM_SLEW * blockSeconds;
+    const double delta = g_live->targetRpm - g_live->heldRpm;
+    if (delta > step) g_live->heldRpm += step;
+    else if (delta < -step) g_live->heldRpm -= step;
+    else g_live->heldRpm = g_live->targetRpm;
+
+    g_live->simulator->m_dyno.m_rotationSpeed = units::rpm(g_live->heldRpm);
+    g_live->engine->setSpeedControl(
+        g_live->throttleIdle + (g_live->throttleFull - g_live->throttleIdle) * g_live->effort);
+
+    g_live->simulator->startFrame(blockSeconds);
+    while (g_live->simulator->simulateStep()) { /* void */ }
+    g_live->simulator->endFrame();
+
+    int produced = 0;
+    int guard = 0;
+    while (produced < frames && guard < 16) {
+        const int want = std::min(frames - produced, (int)g_live->scratch.size());
+        const int n = g_live->simulator->readAudioOutput(want, g_live->scratch.data());
+        if (n <= 0) break;
+        for (int i = 0; i < n; ++i) {
+            dest[produced + i] = g_live->scratch[i] / 32768.0f;
+        }
+        produced += n;
+        ++guard;
+    }
+    for (int i = produced; i < frames; ++i) dest[i] = 0.0f;
+
+    return produced;
+}
+
+/** Le regime que le moteur simule tient vraiment, pour verifier qu'il suit. */
+double synth_rpm() { return g_live == nullptr ? 0.0 : g_live->engine->getRpm(); }
+
+/** Reserve interne du synthetiseur, en secondes. Diagnostic. */
+double synth_latency() {
+    return g_live == nullptr ? 0.0 : g_live->simulator->getSynthesizerInputLatency();
+}
+
+} // extern "C"
+
 int main(int argc, char **argv) {
     double duration = 1.0;
     if (argc > 1) duration = std::atof(argv[1]);

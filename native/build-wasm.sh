@@ -48,16 +48,23 @@ CXXFLAGS="-std=c++17 -O2 -DNDEBUG -w"
 
 echo "Compilation de ${#SOURCES[@]} fichiers en WebAssembly"
 em++ $CXXFLAGS $INCLUDES "${SOURCES[@]}" \
-    -sENVIRONMENT=node,web \
+    -sENVIRONMENT=node,web,worker \
     -sALLOW_MEMORY_GROWTH \
     -sINITIAL_MEMORY=134217728 \
     -sMODULARIZE -sEXPORT_ES6 \
-    -sEXPORTED_RUNTIME_METHODS=callMain,ccall,cwrap \
-    -sEXPORTED_FUNCTIONS=_main,_bench_create,_bench_dispose,_bench_simulate,_bench_synthesize,_bench_run,_bench_rpm,_bench_impulse_samples \
+    -sEXPORTED_RUNTIME_METHODS=callMain,ccall,cwrap,HEAPF32 \
+    -sEXPORTED_FUNCTIONS=_main,_malloc,_free,_bench_create,_bench_dispose,_bench_simulate,_bench_synthesize,_bench_run,_bench_rpm,_bench_impulse_samples,_synth_create,_synth_dispose,_synth_set_target,_synth_set_throttle_range,_synth_set_volume,_synth_render,_synth_rpm,_synth_latency \
     -sINVOKE_RUN=0 \
     -o "$BUILD/probe.mjs"
 
 echo "Produit : $BUILD/probe.wasm ($(stat -c%s "$BUILD/probe.wasm" 2>/dev/null || stat -f%z "$BUILD/probe.wasm") octets)"
+
+# Le binaire est depose dans public/, d'ou la page de mesure et le son de
+# synthese le chargent tous les deux. Le recopier a la main s'oubliait, et l'on
+# mesurait alors la version d'avant sans le savoir.
+SERVED="$HERE/../public/sonde"
+cp "$BUILD/probe.mjs" "$BUILD/probe.wasm" "$SERVED/"
+echo "Copie dans public/sonde/"
 echo
 
 cat > "$BUILD/run.mjs" <<'EOF'
