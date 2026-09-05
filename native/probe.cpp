@@ -1277,12 +1277,16 @@ struct RigSettings {
     // La crete que le niveleur vise, sur l'echelle des entiers 16 bits.
     //
     // engine-sim vise 30 000 sur 32 767, soit 92 % du plafond : 0,8 dB de
-    // marge. Or `Synthesizer::renderAudio` borne la sortie a INT16_MAX, et le
-    // niveleur monte instantanement mais ne redescend qu'en 0,23 ms — le front
-    // d'une bouffee passe donc toujours au gain d'avant. Simule sur un V8 au
-    // ralenti, un signal de 50 000 de crete ressort ecrete a 17,5 % avec la
-    // cible d'origine, contre 0,4 % a 12 000. Le volume perdu se rattrape dans
-    // Web Audio, en flottant, ou il n'y a pas de plafond dur.
+    // marge. Or `Synthesizer::renderAudio` borne la sortie a INT16_MAX. Deux
+    // constantes de temps du filtre expliquent l'ecretage : le gain applique
+    // est lisse par un coefficient 0,9 par echantillon (~0,2 ms), donc un front
+    // soudain n'a que 10 % du bon gain applique quand il arrive ; la crete
+    // elle-meme decroit par un coefficient 0,999 (~23 ms), donc le gain reduit
+    // par une bouffee met ce temps a remonter — a comparer aux 19-38 ms entre
+    // deux coups d'un V8 au ralenti. Simule sur un V8 au ralenti, un signal de
+    // 50 000 de crete ressort ecrete a 17,5 % avec la cible d'origine, contre
+    // 0,4 % a 12 000. Le volume perdu se rattrape dans Web Audio, en flottant,
+    // ou il n'y a pas de plafond dur.
     double levelerTarget = 12000.0;
 };
 
