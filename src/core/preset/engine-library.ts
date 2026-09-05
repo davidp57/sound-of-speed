@@ -23,6 +23,13 @@ export interface LibraryEngine {
   id: string
   /** Ce qui s'affiche à l'écran. */
   label: string
+  /**
+   * Le même nom, en court, pour les boutons de section.
+   *
+   * Une section porte huit boutons ; avec les noms entiers la page devient
+   * illisible, et à cet endroit le contexte suffit à lever l'ambiguïté.
+   */
+  short: string
   /** D'où vient la définition, pour qu'on puisse y retourner. */
   source: string
   /** Le rupteur du moteur d'origine, en tours par minute. */
@@ -303,6 +310,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
   {
     id: 'gm-ls',
     label: 'GM LS — V8 5,7 L',
+    short: 'GM LS',
     source: 'assets/engines/atg-video-2/07_gm_ls.mr',
     redlineRpm: 6500,
     definition: GM_LS_V8,
@@ -310,6 +318,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
   {
     id: 'subaru-ej25',
     label: 'Subaru EJ25 — 4 cylindres',
+    short: 'EJ25',
     source: 'assets/engines/atg-video-1/06_subaru_ej25.mr',
     redlineRpm: 6500,
     definition: SUBARU_EJ25,
@@ -317,6 +326,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
   {
     id: 'chevrolet-454',
     label: 'Chevrolet 454 — V8 gros bloc',
+    short: '454',
     source: 'assets/engines/chevrolet/chev_truck_454.mr',
     redlineRpm: 5500,
     definition: CHEVROLET_454,
@@ -324,6 +334,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
   {
     id: 'chevrolet-454-comp-cams',
     label: 'Chevrolet 454 — V8 gros bloc, came Comp Cams',
+    short: '454 Comp',
     source: 'assets/engines/chevrolet/engine_03_for_e1.mr',
     redlineRpm: 5500,
     definition: CHEVROLET_454_COMP_CAMS,
@@ -331,6 +342,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
   {
     id: 'honda-b18c5',
     label: 'Honda B18C5 — 4 cylindres VTEC',
+    short: 'B18C5',
     source: 'assets/engines/atg-video-1/05_honda_vtec.mr',
     redlineRpm: 8400,
     definition: HONDA_B18C5,
@@ -338,6 +350,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
   {
     id: 'suzuki-hayabusa',
     label: 'Suzuki Hayabusa — 4 cylindres de moto',
+    short: 'Hayabusa',
     source: 'assets/engines/atg-video-1/04_hayabusa.mr',
     redlineRpm: 11000,
     definition: SUZUKI_HAYABUSA,
@@ -345,6 +358,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
   {
     id: 'subaru-ej25-equal-header',
     label: 'Subaru EJ25 — collecteur égal',
+    short: 'EJ25 égal',
     source: 'assets/engines/atg-video-2/01_subaru_ej25_eh.mr',
     redlineRpm: 6500,
     definition: SUBARU_EJ25_EQUAL_HEADER,
@@ -352,6 +366,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
   {
     id: 'subaru-ej25-unequal-header',
     label: 'Subaru EJ25 — collecteur inégal',
+    short: 'EJ25 inégal',
     source: 'assets/engines/atg-video-2/02_subaru_ej25_uh.mr',
     redlineRpm: 6500,
     definition: SUBARU_EJ25_UNEQUAL_HEADER,

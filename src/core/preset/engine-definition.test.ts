@@ -4,6 +4,8 @@ import { GM_LS_V8, SUBARU_EJ25 } from './defaults'
 import {
   clampEngineDefinition,
   engineDefinitionValues,
+  groupVaries,
+  mergeEngineGroup,
   needsEngineRebuild,
 } from './engine-definition'
 import { ENGINE_FIELDS, ENGINE_VALUE_COUNT, type EngineDefinition } from './schema'
@@ -142,5 +144,51 @@ describe('needsEngineRebuild', () => {
 
   it('ne rebâtit pas quand rien ne change', () => {
     expect(needsEngineRebuild(GM_LS_V8, { ...GM_LS_V8 })).toBe(false)
+  })
+})
+
+describe('mergeEngineGroup', () => {
+  it('prend l’échappement d’un moteur et laisse le reste', () => {
+    // Le cas que David voulait essayer : « le moteur de la 454 avec
+    // l'échappement de la GM ».
+    const mixte = mergeEngineGroup(SUBARU_EJ25, GM_LS_V8, 'exhaust')
+    expect(mixte.primaryTubeLength).toBe(GM_LS_V8.primaryTubeLength)
+    expect(mixte.primaryFlowRate).toBe(GM_LS_V8.primaryFlowRate)
+    expect(mixte.headerLength).toBe(GM_LS_V8.headerLength)
+    // La géométrie, elle, reste celle du Subaru.
+    expect(mixte.bore).toBe(SUBARU_EJ25.bore)
+    expect(mixte.cylinders).toBe(SUBARU_EJ25.cylinders)
+  })
+
+  it('ne touche à rien quand la section est déjà celle du moteur donné', () => {
+    expect(mergeEngineGroup(GM_LS_V8, GM_LS_V8, 'head')).toEqual(
+      clampEngineDefinition(GM_LS_V8),
+    )
+  })
+
+  it('ne transporte pas le rupteur', () => {
+    // `revLimit` occupe sa place dans le tableau passé au C++, mais sa valeur
+    // vient du profil : elle n'est pas dans la définition, et une section
+    // transplantée n'a donc aucun moyen de l'emporter avec elle.
+    const mixte = mergeEngineGroup(GM_LS_V8, SUBARU_EJ25, 'limiter')
+    expect('revLimit' in mixte).toBe(false)
+    // Ce que la section porte vraiment : la durée de coupure.
+    expect(mixte.limiterDuration).toBe(SUBARU_EJ25.limiterDuration)
+  })
+})
+
+describe('groupVaries', () => {
+  it('voit que les moteurs diffèrent sur l’échappement', () => {
+    expect(groupVaries([GM_LS_V8, SUBARU_EJ25], 'exhaust')).toBe(true)
+  })
+
+  it('ne voit aucune différence sur les bruits', () => {
+    // Ils sont jugés à l'oreille, pas relevés : tous les moteurs portent la
+    // même valeur, et y proposer un choix ne donnerait que des boutons inertes.
+    expect(groupVaries([GM_LS_V8, SUBARU_EJ25], 'noise')).toBe(false)
+  })
+
+  it('ne compare rien avec un seul moteur', () => {
+    expect(groupVaries([GM_LS_V8], 'exhaust')).toBe(false)
   })
 })

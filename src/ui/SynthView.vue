@@ -8,7 +8,13 @@ import {
   type ExhaustResponse,
   type SynthSettings,
 } from '../core/synth/settings'
-import { ENGINE_GROUPS, ENGINE_FIELDS, type EngineDefinition } from '../core/preset/schema'
+import {
+  ENGINE_GROUPS,
+  ENGINE_FIELDS,
+  type EngineDefinition,
+  type EngineGroup,
+} from '../core/preset/schema'
+import { mergeEngineGroup, groupVaries } from '../core/preset/engine-definition'
 import { GM_LS_V8, SUBARU_EJ25 } from '../core/preset/defaults'
 import { ENGINE_LIBRARY, type LibraryEngine } from '../core/preset/engine-library'
 import {
@@ -150,8 +156,35 @@ const engineGroups = computed(() =>
   ENGINE_GROUPS.map((group) => ({
     ...group,
     fields: ENGINE_FIELDS.filter((field) => field.group === group.id),
+    // Les moteurs ne sont proposés que là où ils se distinguent : sur les
+    // bruits, tous portent la même valeur et les boutons seraient inertes.
+    engines: groupVaries(LIBRARY_DEFINITIONS, group.id) ? ENGINE_LIBRARY : [],
   })),
 )
+
+/** Les définitions de la bibliothèque, pour savoir où les sections varient. */
+const LIBRARY_DEFINITIONS = ENGINE_LIBRARY.map((entry) => entry.definition)
+
+/**
+ * Poser la section d'un moteur sur celui qui est réglé.
+ *
+ * David : « avoir les boutons de choix de moteur dans chaque section pour
+ * essayer par exemple le moteur de la 454 avec l'échappement de la GM ». Le
+ * rupteur ne suit pas — il vient du profil.
+ */
+function loadGroup(entry: LibraryEngine, group: EngineGroup): void {
+  void applyEngineDefinition(mergeEngineGroup(engineDefinition.value, entry.definition, group))
+}
+
+/** Cette section est-elle déjà exactement celle de ce moteur ? */
+function groupIsFrom(entry: LibraryEngine, group: EngineGroup): boolean {
+  const pose = mergeEngineGroup(engineDefinition.value, entry.definition, group)
+  return ENGINE_FIELDS.every((field) => {
+    if (field.group !== group || field.fromProfile === true) return true
+    const key = field.key as keyof EngineDefinition
+    return Math.abs(pose[key] - engineDefinition.value[key]) < 1e-9
+  })
+}
 
 /**
  * La définition de référence à laquelle se comparer.
@@ -659,6 +692,18 @@ const gauge = computed(() => {
       <div class="groups">
         <div v-for="group in engineGroups" :key="group.id" class="group">
           <h3>{{ group.label }}</h3>
+          <div v-if="group.engines.length > 0" class="section-library">
+            <button
+              v-for="entry in group.engines"
+              :key="entry.id"
+              type="button"
+              :aria-pressed="groupIsFrom(entry, group.id)"
+              :title="`Prendre la section « ${group.label} » du ${entry.label}`"
+              @click="loadGroup(entry, group.id)"
+            >
+              {{ entry.short }}
+            </button>
+          </div>
           <div v-for="field in group.fields" :key="field.key" class="field">
             <label :for="`eng-${field.key}`">{{ field.label }}</label>
             <input
@@ -875,6 +920,23 @@ h2 {
 
 .library button {
   text-align: left;
+}
+
+/*
+ * Les moteurs proposés dans une section : huit boutons sous un titre, donc
+ * courts et serrés. Ils ne doivent pas prendre le pas sur les curseurs qui
+ * suivent, qui sont le sujet de la section.
+ */
+.section-library {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.section-library button {
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
 }
 
 .library + .actions {

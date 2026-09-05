@@ -10,7 +10,7 @@
  */
 
 import { GM_LS_V8 } from './defaults'
-import { ENGINE_FIELDS, type EngineDefinition } from './schema'
+import { ENGINE_FIELDS, type EngineDefinition, type EngineGroup } from './schema'
 
 function clampValue(value: unknown, min: number, max: number, fallback: number): number {
   // Une valeur illisible ne retombe pas sur la borne basse mais sur celle du V8
@@ -80,5 +80,51 @@ export function needsEngineRebuild(
     if (field.fromProfile === true || field.hot === true) return false
     const key = field.key as keyof EngineDefinition
     return avant[key] !== apres[key]
+  })
+}
+
+/**
+ * Prendre une section d'un moteur et la poser sur un autre.
+ *
+ * David : « avoir les boutons de choix de moteur dans chaque section (culasse,
+ * échappement) pour essayer par exemple le moteur de la 454 avec l'échappement
+ * de la GM ». Un moteur est un ensemble, mais ses sections se transplantent —
+ * c'est même ce que font les préparateurs.
+ *
+ * Le rupteur ne suit pas : il vient du profil, et une section d'échappement
+ * n'a pas d'avis sur le régime maximal.
+ */
+export function mergeEngineGroup(
+  base: Partial<EngineDefinition>,
+  source: Partial<EngineDefinition>,
+  group: EngineGroup,
+): EngineDefinition {
+  const out = clampEngineDefinition(base)
+  const sain = clampEngineDefinition(source)
+  for (const field of ENGINE_FIELDS) {
+    if (field.group !== group || field.fromProfile === true) continue
+    const key = field.key as keyof EngineDefinition
+    out[key] = sain[key]
+  }
+  return out
+}
+
+/**
+ * Les moteurs se distinguent-ils sur cette section ?
+ *
+ * Les bruits sont jugés à l'oreille et portent la même valeur partout : y
+ * proposer un choix de moteur ne donnerait que des boutons sans effet. Plutôt
+ * que d'écrire la liste des sections à exclure, on la mesure.
+ */
+export function groupVaries(
+  definitions: readonly Partial<EngineDefinition>[],
+  group: EngineGroup,
+): boolean {
+  if (definitions.length < 2) return false
+  const sains = definitions.map(clampEngineDefinition)
+  return ENGINE_FIELDS.some((field) => {
+    if (field.group !== group || field.fromProfile === true) return false
+    const key = field.key as keyof EngineDefinition
+    return sains.some((d) => d[key] !== sains[0]?.[key])
   })
 }
