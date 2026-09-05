@@ -1,6 +1,6 @@
 # 01 — La sonde : engine-sim tient-il dans la voiture ?
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — la sonde tourne et a servi, reste le relevé dans la Tesla
 
 **Bloqué par :** aucun
 
@@ -109,17 +109,39 @@ voiture ne prouve rien à elle seule**. La sonde doit distinguer une panne de
 réseau d'un refus du service worker et le dire à l'écran, sans quoi le verdict
 du lot se jouera sur une ambiguïté du même genre.
 
+## Ce que la sonde a donné
+
+Relevé par David le 4 septembre 2026, Firefox 154 sur son poste, moteur
+quatre cylindres :
+
+| Relevé | Facteur temps réel |
+|---|---|
+| Chaîne complète, 10 kHz | ×1,62 |
+| Chaîne complète, 20 kHz | ×1,16 |
+| Convolution déportée, 10 kHz | ×3,70 |
+| Convolution déportée, 20 kHz | ×3,24 |
+
+Verdict affiché : entre ×1 et ×3. La suite est dans le ticket 02.
+
+**Une fausse piste, consignée pour ne pas y revenir.** J'avais diagnostiqué que le
+service worker bloquait le chargement du WebAssembly, et commité un correctif. En
+cherchant à reproduire la panne, **tout** échouait — y compris `/index.html` et le
+chemin déjà exempté — pendant que `curl` répondait en deux millisecondes. Ce
+n'était pas le service worker, c'était la connexion du navigateur de test. Le
+correctif a été annulé.
+
 ## Critères d'acceptation
 
-- [ ] Le cœur compile en WebAssembly, sans interface, sans piranha
-- [ ] La sonde ne joue aucun son et ne demande aucune autorisation
-- [ ] Elle affiche les trois relevés et le facteur temps réel de chacun
-- [ ] Elle affiche le navigateur et le matériel annoncé
+- [x] Le cœur compile en WebAssembly, sans interface, sans piranha
+- [x] La sonde ne joue aucun son et ne demande aucune autorisation
+- [x] Elle affiche les trois relevés et le facteur temps réel de chacun
+- [x] Elle affiche le navigateur et le matériel annoncé
 - [ ] Elle est servie par le même nginx que l'application, pour s'ouvrir dans la
-      voiture comme le reste
-- [ ] Le poids du `.wasm` est indiqué : il devra être mis en cache hors réseau
-- [ ] La page se charge avec le service worker actif, module compris — vérifié,
+      voiture comme le reste — `public/sonde/` part dans le build, mais personne
+      ne l'a ouverte depuis le NAS
+- [x] Le poids du `.wasm` est indiqué : il devra être mis en cache hors réseau
+- [x] La page se charge avec le service worker actif, module compris — vérifié,
       pas supposé
-- [ ] Quand un chargement échoue, la page dit **pourquoi** : réseau injoignable,
+- [x] Quand un chargement échoue, la page dit **pourquoi** : réseau injoignable,
       module absent, ou service worker qui l'intercepte
 - [ ] 🧑 Relevé fait dans la Tesla, et le chiffre écrit dans le ticket 02
