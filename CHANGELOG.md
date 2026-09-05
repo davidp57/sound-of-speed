@@ -8,6 +8,24 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le V8 portait l'échappement d'une Subaru.** Sa géométrie est bien relevée sur
+  le GM LS livré avec engine-sim — angle de V, point mort haut, manetons, ordre
+  d'allumage, répartition des bancs — mais **l'échappement n'était pas dans cette
+  liste** : ses valeurs venaient du quatre cylindres, dont la ligne est celle
+  d'un EJ25.
+
+  | Paramètre | GM LS | Avant |
+  |---|---|---|
+  | Longueur du tube primaire | 29 pouces | 10 |
+  | Débit primaire | k_carb(500) | k_carb(300) |
+  | Volume audio | 4,0 | 1,0 |
+
+  C'est l'échappement qui fait le son d'un moteur, et c'est la première
+  explication mesurée du retrait du V8 sur le quatre cylindres — dont
+  l'échappement, lui, était juste. Le volume audio de l'EJ25 (`0.5 * 8`) est
+  rétabli sur les deux moteurs.
+
+
 - **Les menus déroulants du banc de synthèse bloquaient l'écran.** « Le focus
   clignote », et un clic sur une valeur figeait tout, rechargement obligatoire.
   Mesuré : **soixante-neuf remaniements du DOM par seconde** dans la section des
