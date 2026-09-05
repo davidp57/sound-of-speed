@@ -193,9 +193,18 @@ export class Engine {
    * **Dès que la voiture avance, c'est l'embrayage qui commande**, et non plus le
    * ralenti. Le plancher était le ralenti : de zéro à six kilomètres à l'heure
    * sur le profil Sport, les roues tournant moins vite, le régime restait à 780
-   * et le son était celui de l'arrêt. Aucune voiture ne fait cela — on lâche
-   * l'embrayage, le moteur monte au régime de décollage et **y reste** pendant
-   * que la voiture prend de la vitesse, jusqu'à ce que les roues le rejoignent.
+   * et le son était celui de l'arrêt.
+   *
+   * **L'embrayage se ferme progressivement.** Une première version tenait un
+   * palier : le régime sautait au régime de décollage et y restait jusqu'à ce
+   * que les roues le rattrapent. David l'a écouté et c'était faux — « on passe
+   * de 800 à 1 300 sans aucun changement même en accélérant doucement ; seulement
+   * à partir d'une dizaine de km/h ça commence à augmenter ». On ne lâche pas
+   * l'embrayage d'un coup : le régime monte du ralenti vers le régime de
+   * décollage à mesure que la voiture avance, puis suit les roues.
+   *
+   * Et la hauteur atteinte dépend des gaz : on ne démarre pas en douceur comme
+   * on démarre vite.
    */
   private resolveTarget(kinematic: number, input: EngineInput): number {
     if (input.atStandstill) {
@@ -211,13 +220,23 @@ export class Engine {
     // en freinant jusqu'à l'arrêt, où l'on reste en deuxième.
     if (input.accelMs2 < 0 && kinematic < this.preset.idleRpm) return this.preset.idleRpm
 
-    // En partant, l'embrayage patine : le moteur tient le régime de décollage
-    // pendant que la voiture prend de la vitesse, et les roues le rejoignent.
     // Jamais sous le ralenti, même si le profil est mal réglé.
-    const launch = Math.max(this.preset.idleRpm, this.preset.launchRpm)
-    if (input.kmh < CLUTCH_KMH && kinematic < launch) return launch
+    const idle = this.preset.idleRpm
+    const launch = Math.max(idle, this.preset.launchRpm)
 
-    return Math.max(this.preset.idleRpm, kinematic)
+    if (input.kmh < CLUTCH_KMH && kinematic < launch) {
+      // Ce que les gaz demandent. Un plancher : même pied levé on décolle un peu,
+      // sinon la voiture avancerait à régime de ralenti, ce qu'on cherche
+      // justement à supprimer.
+      const demand = clamp(input.throttle ?? this.load, 0.3, 1)
+      const reached = idle + (launch - idle) * demand
+      // Le glissement se referme à mesure que les roues montent : zéro à
+      // l'arrêt, un quand elles atteignent le régime demandé.
+      const closing = clamp(kinematic / Math.max(1, reached), 0, 1)
+      return Math.max(idle + (reached - idle) * closing, kinematic)
+    }
+
+    return Math.max(idle, kinematic)
   }
 
   /**
