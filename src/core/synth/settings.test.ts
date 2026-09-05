@@ -3,6 +3,21 @@ import { describe, expect, it } from 'vitest'
 import { clampSynthSettings, DEFAULT_SYNTH, needsRebuild } from './settings'
 
 describe('clampSynthSettings', () => {
+  it('garde le silencieux dans une plage qui s’entend', () => {
+    // Au-dessus de 22 kHz le filtre ne retire plus rien d'audible. Le plancher
+    // est bas exprès : le premier réglage jugé correct à l'oreille était à
+    // 500 Hz, et il faut pouvoir descendre en dessous de ce qu'on croit juste.
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, mufflerHz: 10 }).mufflerHz).toBe(120)
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, mufflerHz: 96000 }).mufflerHz).toBe(22000)
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, mufflerHz: Number.NaN }).mufflerHz).toBe(120)
+  })
+
+  it('règle le silencieux sans reconstruire le moteur', () => {
+    // C'est un nœud de Web Audio, pas un paramètre du modèle : le tourner en
+    // écoutant ne doit pas couper le son une seconde à chaque cran.
+    expect(needsRebuild(DEFAULT_SYNTH, { ...DEFAULT_SYNTH, mufflerHz: 1200 })).toBe(false)
+  })
+
   it('garde les valeurs par défaut telles quelles', () => {
     expect(clampSynthSettings(DEFAULT_SYNTH)).toEqual(DEFAULT_SYNTH)
   })

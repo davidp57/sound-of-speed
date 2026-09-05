@@ -54,6 +54,16 @@ function onFlag(key: keyof SynthSettings, event: Event): void {
  * ×3 dans la voiture : le son n'y sera pas seul. Ce poste-ci n'est pas la
  * voiture, mais un chiffre sous 1 ici veut dire que rien ne tiendra là-bas.
  */
+/**
+ * Au-delà de 20 kHz le passe-bas ne retire plus rien d'audible : autant le dire
+ * plutôt que d'afficher un chiffre qui ne veut rien dire à cet endroit.
+ */
+const silencieux = computed(() =>
+  synthSettings.value.mufflerHz >= 20000
+    ? 'coupé'
+    : `${(synthSettings.value.mufflerHz / 1000).toFixed(1)} kHz`,
+)
+
 const realtime = computed(() => synthStatus.value.realtime)
 const realtimeWarn = computed(() => realtime.value > 0 && realtime.value < 1.5)
 
@@ -281,6 +291,19 @@ const gauge = computed(() => {
           @input="onNumber('volume', $event)"
         />
         <span class="numeric">{{ synthSettings.volume.toFixed(2) }}</span>
+      </div>
+      <div class="field">
+        <label for="pot">Silencieux</label>
+        <input
+          id="pot"
+          type="range"
+          min="120"
+          max="22000"
+          step="20"
+          :value="synthSettings.mufflerHz"
+          @input="onNumber('mufflerHz', $event)"
+        />
+        <span class="numeric">{{ silencieux }}</span>
       </div>
       <div class="field">
         <label for="mix">Résonance d'échappement</label>

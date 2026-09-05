@@ -43,6 +43,20 @@ export interface SynthSettings {
   /** Part de son réverbéré dans la sortie, de 0 à 1. */
   convolverMix: number
   /**
+   * Le silencieux : coupure du passe-bas de sortie, en hertz.
+   *
+   * Le modèle rend les impulsions d'échappement crues, et rien dans la chaîne
+   * n'absorbait leur haut du spectre — la résonance est un bruit blanc, donc
+   * plate. Mesuré au ralenti, la bande 4-16 kHz restait à 12 dB seulement sous
+   * la bande 200-800 Hz, et cet écart **se resserre** quand on affine la
+   * simulation : 15,2 dB à 6 kHz, 12,4 à 10, 9,9 à 20. L'aigu vient donc du
+   * modèle, pas d'un artefact de calcul — il manquait le pot.
+   *
+   * Un échappement réel est un fort passe-bas. Au-delà de 20 kHz le filtre ne
+   * fait plus rien : c'est la position « coupé ».
+   */
+  mufflerHz: number
+  /**
    * Balayage de régime, du ralenti au rupteur et retour.
    *
    * C'est le seul moyen de juger « à régime tenu, puis en accélération » sans
@@ -92,6 +106,10 @@ export const DEFAULT_SYNTH: SynthSettings = {
   convolver: true,
   convolverMs: 220,
   convolverMix: 0.5,
+  // 3 500 Hz était mon estimation, calée sur le spectre moyen d'une prise réelle.
+  // À l'écoute, David l'a descendu à 500 : le spectre moyen ne disait donc pas
+  // tout, et c'est l'oreille qui tranche. On part de ce qu'elle a trouvé.
+  mufflerHz: 500,
   leveler: true,
   levelerGain: 1,
   sweep: false,
@@ -126,6 +144,7 @@ export function clampSynthSettings(settings: SynthSettings): SynthSettings {
     convolver: settings.convolver,
     convolverMs: Math.round(clamp(settings.convolverMs, 10, 2000)),
     convolverMix: clamp(settings.convolverMix, 0, 1),
+    mufflerHz: Math.round(clamp(settings.mufflerHz, 120, 22000)),
     leveler: settings.leveler,
     levelerGain: clamp(settings.levelerGain, 0.01, 4),
     sweep: settings.sweep,

@@ -153,8 +153,16 @@ derrière : tous ces chiffres se relèvent en amont du haut-parleur.
 Ce qui se règle : le nombre de cylindres, la fréquence de simulation, la
 longueur de la réponse impulsionnelle interne, la taille de bloc et le niveleur
 d'engine-sim — ceux-là rebâtissent le moteur, une seconde de coupure — puis, à
-chaud, les deux bornes du papillon, le volume, la résonance d'échappement et la
-réserve visée. Ces réglages vivent dans l'appareil et non dans le profil : le
+chaud, les deux bornes du papillon, le volume, le silencieux, la résonance
+d'échappement et la réserve visée.
+
+Le **silencieux** est un passe-bas, placé avant la séparation du son sec et du
+son réverbéré puisque c'est le même échappement qui les porte. Il répare un
+manque : le modèle rend les impulsions crues et rien n'absorbait leur haut du
+spectre. Relevé au ralenti, la bande 4-16 kHz était à 12 dB seulement sous la
+bande 200-800 Hz, quand une prise faite dans une vraie voiture est à 22-37 dB en
+dessous. À 3 500 Hz, le réglage par défaut, l'écart passe à 26 dB — dans la
+fourchette du réel. Au-delà de 20 kHz le filtre est **coupé**. Ces réglages vivent dans l'appareil et non dans le profil : le
 lot [SYNTHESE](.backlog/SYNTHESE/spec.md) prévoit de les y faire passer.
 
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le

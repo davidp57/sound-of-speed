@@ -42,5 +42,29 @@ export function exhaustImpulse(length: number, decay = 4): Float32Array {
     const envelope = Math.exp((-decay * i) / samples)
     out[i] = (2 * random() - 1) * envelope
   }
-  return out
+  return normalizeEnergy(out)
+}
+
+/**
+ * Ramène la réponse à une énergie de un.
+ *
+ * Sans cela, allonger la résonance rend le son plus fort et la raccourcir le
+ * rend plus faible — deux réglages pour un seul curseur, impossible à régler
+ * à l'oreille. La normalisation du `ConvolverNode` vise autre chose et n'est pas
+ * sous notre main : on la coupe et l'on fait la nôtre.
+ *
+ * L'énergie plutôt que la crête, parce qu'un bruit convolué se comporte comme
+ * une somme de contributions indépendantes : c'est la somme des carrés qui se
+ * conserve, pas le maximum.
+ */
+export function normalizeEnergy(response: Float32Array): Float32Array {
+  let energy = 0
+  for (let i = 0; i < response.length; i += 1) {
+    const value = response[i] ?? 0
+    energy += value * value
+  }
+  if (energy <= 0) return response
+  const gain = 1 / Math.sqrt(energy)
+  for (let i = 0; i < response.length; i += 1) response[i] = (response[i] ?? 0) * gain
+  return response
 }

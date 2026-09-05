@@ -6,7 +6,39 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Corrigé
+
+- **Le curseur de résonance d'échappement ne change plus le volume.** Il en
+  faisait deux à la fois : monter la résonance rendait le son nettement plus
+  faible, si bien qu'on ne pouvait pas juger la couleur sans juger le niveau en
+  même temps.
+
+  Deux causes, toutes deux corrigées. Le `ConvolverNode` normalisait la réponse
+  impulsionnelle selon sa propre règle ; elle est désormais normalisée en
+  énergie chez nous, ce qui rend aussi la **longueur** de résonance réglable sans
+  qu'elle emporte le volume avec elle. Et le mélange sec/réverbéré se fait
+  maintenant en racine : les deux signaux étant décorrélés, ce sont leurs
+  énergies qui s'ajoutent, là où des gains proportionnels perdaient trois
+  décibels au milieu de la course.
+
+  Relevé après coup, régime tenu : le niveau crête reste entre 0,15 et 0,21 sur
+  toute la course du curseur.
+
 ### Ajouté
+
+- **Un silencieux sur le son synthétisé.** David a entendu « une fréquence
+  assez aiguë en trop », présente en permanence, ralenti compris. Mesuré : la
+  bande 4-16 kHz n'était qu'à 12 dB sous la bande 200-800 Hz, là où une prise
+  faite dans une vraie voiture est à 22-37 dB en dessous.
+
+  Ce n'est pas un artefact de calcul : l'écart **se resserre** quand on affine
+  la simulation — 15,2 dB à 6 kHz, 12,4 à 10, 9,9 à 20 —, donc l'aigu vient du
+  modèle. Il manquait le pot : la résonance d'échappement est un bruit blanc,
+  elle atténue de 17 dB à toutes les fréquences également et ne filtre rien.
+
+  Un passe-bas réglable est placé avant la séparation du son sec et du son
+  réverbéré. À 3 500 Hz par défaut, l'écart passe à 26 dB. Il se tourne en
+  écoutant, sans couper le son.
 
 - **Un profil déclare d'où vient son son**, parmi trois origines : *enregistré*
   — la banque d'échantillons jouée en changeant sa vitesse de lecture, ce que

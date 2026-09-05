@@ -3,6 +3,15 @@ import { describe, expect, it } from 'vitest'
 import { exhaustImpulse } from './impulse'
 
 describe('exhaustImpulse', () => {
+  it('porte la même énergie quelle que soit sa longueur', () => {
+    // C'est ce qui rend la longueur de résonance réglable à l'oreille : sans
+    // cela, l'allonger montait le volume et la raccourcir le baissait, si bien
+    // qu'on ne savait plus lequel des deux on jugeait.
+    const energie = (ir: Float32Array) => ir.reduce((somme, v) => somme + v * v, 0)
+    expect(energie(exhaustImpulse(512))).toBeCloseTo(1, 5)
+    expect(energie(exhaustImpulse(8192))).toBeCloseTo(1, 5)
+  })
+
   it('rend la longueur demandée', () => {
     expect(exhaustImpulse(512).length).toBe(512)
   })
