@@ -16,7 +16,13 @@ import {
   type Usage,
 } from '../core/preset/wizard'
 import { SIMPLE_GEAR_COUNTS } from '../core/preset/character'
-import type { LayerRole } from '../core/preset/schema'
+import {
+  SOUND_SOURCES,
+  isSoundSourceReady,
+  soundSourceOf,
+  type LayerRole,
+  type SoundSource,
+} from '../core/preset/schema'
 import {
   activeProfile,
   addProfile,
@@ -70,6 +76,25 @@ import {
 
 const profile = activeProfile
 const importError = ref('')
+
+/**
+ * Origine du son, avec son libellé.
+ *
+ * La lecture passe par `soundSourceOf` : un profil reçu par lien depuis une
+ * version antérieure n'a pas le champ, et l'affichage ne doit pas rester vide.
+ */
+const SOUND_SOURCE_LABELS: Record<SoundSource, string> = {
+  recorded: 'Enregistré',
+  live: 'Généré en direct',
+  prerendered: 'Généré à l’avance',
+}
+
+const soundSource = computed<SoundSource>({
+  get: () => soundSourceOf(profile.value),
+  set: (value) => {
+    profile.value.soundSource = value
+  },
+})
 
 /** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
 /**
@@ -878,6 +903,28 @@ function impliedCylinders(index: number): number | null {
       </div>
 
       <label class="inline">
+        Origine du son
+        <select v-model="soundSource">
+          <option v-for="source in SOUND_SOURCES" :key="source" :value="source">
+            {{ SOUND_SOURCE_LABELS[source] }}
+          </option>
+        </select>
+      </label>
+      <p class="note">
+        D'où vient le son de ce profil. <strong>Enregistré</strong> joue la banque
+        d'échantillons en changeant sa vitesse de lecture, ce que fait l'application
+        depuis le début. <strong>Généré en direct</strong> simule le moteur pendant la
+        conduite, sans le moindre échantillon. <strong>Généré à l'avance</strong> rejoue
+        une banque que cette simulation a produite au bureau, une prise par plage de
+        régime.
+      </p>
+      <p v-if="!isSoundSourceReady(soundSource)" class="note warn">
+        Cette origine n'est pas encore gréée : le son reste celui de la banque
+        d'échantillons. Le choix est bien enregistré dans le profil, il prendra effet
+        quand la synthèse arrivera.
+      </p>
+
+      <label class="inline">
         Dossier d'échantillons
         <input v-model="profile.sampleDir" type="text" />
       </label>
@@ -1596,6 +1643,15 @@ h2 {
   color: var(--muted);
   font-size: 0.82rem;
   margin: 0.4rem 0 0.6rem;
+}
+
+/*
+ * Une note qui avertit. La classe était déjà employée dans cet écran sans être
+ * définie : l'avertissement s'y lisait dans le gris de tout le reste, donc il ne
+ * se lisait pas.
+ */
+.note.warn {
+  color: var(--warn);
 }
 
 .derived {
