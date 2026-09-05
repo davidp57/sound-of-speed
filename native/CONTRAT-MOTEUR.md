@@ -140,8 +140,14 @@ David a écouté le V8 avec les curseurs à sa main et retenu deux écarts —
 
 | Paramètre | Référence GM LS | Retenu | Pourquoi |
 |---|---|---|---|
-| `primaryFlowRate` | 500 | **760** | Jugé à l'oreille |
-| `headerLength` | 6.8 | **20** | Jugé à l'oreille, sur le compromis rugueux / parasites. C'est la valeur du 454 |
+| `primaryFlowRate` | 500 | **1130** | Jugé à l'oreille |
+| `headerLength` | 6.8 | **23** | Jugé à l'oreille |
 
 Tout le reste est celui du GM LS. Ce n'est pas un verdict : c'est le meilleur
 point trouvé à ce jour, écrit pour ne pas le perdre entre deux essais.
+
+Un premier point, 760 et 20 pouces, était « pas mal » ; celui-ci est « pas mal
+du tout pour le ralenti, et pour la charge ». Les deux valeurs ont monté
+ensemble, ce qui va dans le sens de ce que fait chacune : le débit donne le
+mordant, la longueur sépare les coups au ralenti — l'une compense l'autre au
+lieu de s'y opposer.
