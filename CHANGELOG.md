@@ -6,7 +6,104 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Corrigé
+
+- **Les deux bruits d'engine-sim étaient restés à leurs valeurs de
+  démonstration.** C'est la cause du parasite que David entendait à tous les
+  régimes — « une fréquence assez aiguë en trop », puis « on n'entend pas du
+  tout le moteur, juste le souffle, comme des interférences sur une radio FM ».
+
+  Le spectre du ralenti montrait deux anomalies qu'aucune prise faite sur une
+  vraie voiture ne présente : un plateau plat de 250 Hz à 2 kHz, et une remontée
+  de 11 dB entre 2 et 8 kHz. Elles correspondent exactement aux deux bruits
+  qu'engine-sim ajoute à dessein, avec leurs coupures à 2 et 10 kHz :
+  `airNoise` à 1,0 et `inputSampleNoise` à 0,5.
+
+  Le premier ne s'ajoute pas au signal, il le **multiplie** : à un, le moteur
+  est entièrement modulé par un bruit blanc. Les deux sont maintenant réglables,
+  et ramenés à 0,15 et 0,05 — pas à zéro, un moteur a du souffle.
+
+  Ralenti d'un quatre cylindres, silencieux coupé : le parasite à 8 kHz chute de
+  17 dB, le corps à 250 Hz gagne 6 dB, et la remontée vers l'aigu disparaît
+  (+10,8 dB avant, −1,3 après). Sur le V8, le rapport entre le corps et le
+  plateau passe de 5,7 à 10,6 dB.
+
+  Le **silencieux** est coupé par défaut : il avait été ajouté pour masquer ce
+  parasite, et il fallait le descendre si bas qu'il rendait le moteur sourd.
+
+
+- **Un bouton « Réglages d'origine » sur le banc de synthèse.** Sept curseurs,
+  dont plusieurs se compensent : on s'y perd en tâtonnant à l'oreille, et la
+  seule issue était de recharger la page — ce qui coupe le son et rebâtit le
+  moteur. Le bouton remet les valeurs par défaut sans rien interrompre.
+
+
+- **La résonance d'échappement est un tube, et non plus un bruit.** C'est une
+  erreur de fond que je traînais depuis le début du portage : la réponse
+  impulsionnelle était un bruit blanc décroissant, repris d'engine-sim. Or
+  convoluer des explosions par du bruit rend du bruit. À haut régime les
+  explosions se succèdent assez vite pour que la texture tienne ; en dessous,
+  chaque explosion devient une bouffée de souffle au lieu d'un coup. David,
+  résonance à fond : « on n'entend pas du tout le moteur, juste le souffle,
+  comme des interférences sur une radio FM ».
+
+  Un échappement est un tube. L'onde court jusqu'au bout, se réfléchit sur
+  l'extrémité ouverte en changeant de signe, revient, et ainsi de suite en
+  s'affaiblissant. La réponse est donc une suite d'échos espacés du temps
+  d'aller-retour, adoucis à chaque réflexion — c'est ce qui donne sa note à un
+  échappement. Un réglage **Accord de l'échappement** en fixe la fréquence :
+  57 Hz par défaut, soit trois mètres de tube environ.
+
+  Mesuré sur un ralenti de V8 à 750 tr/min, tout en réverbéré, par le facteur de
+  crête — il dit si les coups restent détachés ou si tout s'étale :
+
+  | Réponse | Niveau efficace | Facteur de crête |
+  |---|---|---|
+  | aucune, son sec | 0,023 | 6,0 |
+  | bruit blanc | 0,023 | 3,4 |
+  | tube à 57 Hz | 0,062 | 5,7 |
+
+  Le bruit détruisait près de la moitié du relief ; le tube le rend intact. Il
+  sort au passage 2,7 fois plus fort, ce qui dégage le volume du plafond où il
+  butait — plafond relevé de 2 à 6, puisqu'il y butait quand même.
+
+  Les valeurs par défaut sont celles trouvées à l'oreille : silencieux à 1 kHz,
+  résonance entière, longueur 50 ms. Deux cent vingt millisecondes étaient une
+  salle et non un échappement — à 800 tr/min un V8 explose toutes les 19 ms,
+  et douze explosions se superposaient dans la queue.
+
+
+- **Le curseur de résonance d'échappement ne change plus le volume.** Il en
+  faisait deux à la fois : monter la résonance rendait le son nettement plus
+  faible, si bien qu'on ne pouvait pas juger la couleur sans juger le niveau en
+  même temps.
+
+  Deux causes, toutes deux corrigées. Le `ConvolverNode` normalisait la réponse
+  impulsionnelle selon sa propre règle ; elle est désormais normalisée en
+  énergie chez nous, ce qui rend aussi la **longueur** de résonance réglable sans
+  qu'elle emporte le volume avec elle. Et le mélange sec/réverbéré se fait
+  maintenant en racine : les deux signaux étant décorrélés, ce sont leurs
+  énergies qui s'ajoutent, là où des gains proportionnels perdaient trois
+  décibels au milieu de la course.
+
+  Relevé après coup, régime tenu : le niveau crête reste entre 0,15 et 0,21 sur
+  toute la course du curseur.
+
 ### Ajouté
+
+- **Un silencieux sur le son synthétisé.** David a entendu « une fréquence
+  assez aiguë en trop », présente en permanence, ralenti compris. Mesuré : la
+  bande 4-16 kHz n'était qu'à 12 dB sous la bande 200-800 Hz, là où une prise
+  faite dans une vraie voiture est à 22-37 dB en dessous.
+
+  Ce n'est pas un artefact de calcul : l'écart **se resserre** quand on affine
+  la simulation — 15,2 dB à 6 kHz, 12,4 à 10, 9,9 à 20 —, donc l'aigu vient du
+  modèle. Il manquait le pot : la résonance d'échappement est un bruit blanc,
+  elle atténue de 17 dB à toutes les fréquences également et ne filtre rien.
+
+  Un passe-bas réglable est placé avant la séparation du son sec et du son
+  réverbéré. À 3 500 Hz par défaut, l'écart passe à 26 dB. Il se tourne en
+  écoutant, sans couper le son.
 
 - **Un profil déclare d'où vient son son**, parmi trois origines : *enregistré*
   — la banque d'échantillons jouée en changeant sa vitesse de lecture, ce que

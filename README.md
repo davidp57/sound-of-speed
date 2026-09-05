@@ -153,9 +153,57 @@ derrière : tous ces chiffres se relèvent en amont du haut-parleur.
 Ce qui se règle : le nombre de cylindres, la fréquence de simulation, la
 longueur de la réponse impulsionnelle interne, la taille de bloc et le niveleur
 d'engine-sim — ceux-là rebâtissent le moteur, une seconde de coupure — puis, à
-chaud, les deux bornes du papillon, le volume, la résonance d'échappement et la
-réserve visée. Ces réglages vivent dans l'appareil et non dans le profil : le
-lot [SYNTHESE](.backlog/SYNTHESE/spec.md) prévoit de les y faire passer.
+chaud, les deux bornes du papillon, le volume, les deux bruits d'engine-sim, le
+silencieux, la résonance d'échappement, son accord, sa longueur et la réserve
+visée. Ces réglages vivent
+dans l'appareil et non dans le profil : le lot
+[SYNTHESE](.backlog/SYNTHESE/spec.md) prévoit de les y faire passer.
+
+Le **silencieux** est un passe-bas, placé avant la séparation du son sec et du
+son réverbéré puisque c'est le même échappement qui les porte. Il répare un
+manque : le modèle rend les impulsions crues et rien n'absorbait leur haut du
+spectre. Relevé au ralenti, la bande 4-16 kHz était à 12 dB seulement sous la
+bande 200-800 Hz, quand une prise faite dans une vraie voiture est à 22-37 dB en
+dessous. Au-delà de 20 kHz le filtre est **coupé**.
+
+Il est **coupé par défaut**, et c'est une histoire instructive. Il avait été
+ajouté pour masquer un parasite aigu, réglé d'abord à 3 500 Hz sur la foi du
+spectre moyen, puis descendu à 1 kHz à l'oreille — où il « coupe trop d'autres
+sons et rend le moteur sourd ». La vraie cause était ailleurs : les deux bruits
+d'engine-sim ci-dessous. Une fois ceux-ci réglés, le spectre décroît tout seul et
+le filtre n'a plus rien à retirer.
+
+Le **bruit d'air** et la **gigue d'échantillonnage** sont deux bruits
+qu'engine-sim ajoute à dessein, et qui étaient restés aux valeurs de sa
+structure — des valeurs de démonstration, pas un réglage. Le bruit d'air ne
+s'ajoute pas au signal : il le **multiplie**, si bien qu'à un le moteur est
+entièrement modulé par un bruit blanc filtré à 2 kHz. La gigue, filtrée à
+10 kHz, produisait une remontée du spectre dans l'aigu — ce qu'aucun moteur ne
+fait. Ramenés à 0,15 et 0,05, le parasite à 8 kHz recule de 17 dB et le corps du
+moteur gagne 6 dB. Pas zéro : un moteur a du souffle, et le retirer tout à fait
+sonne synthétique.
+
+La **résonance** simule un tube. L'onde court jusqu'au bout de l'échappement, se
+réfléchit sur l'extrémité ouverte en changeant de signe, revient, et ainsi de
+suite en s'affaiblissant : sa réponse est une suite d'échos dont l'**accord**
+donne la fréquence — 57 Hz vaut environ trois mètres de tube.
+
+Elle a longtemps été un bruit blanc, repris d'engine-sim, et c'était faux :
+convoluer des explosions par du bruit rend du bruit. À haut régime la texture
+tenait, mais en dessous on entendait un souffle à la place du moteur. Mesuré sur
+un ralenti de V8, tout en réverbéré, par le facteur de crête — il dit si les
+coups restent détachés :
+
+| Réponse | Niveau efficace | Facteur de crête |
+|---|---|---|
+| aucune, son sec | 0,023 | 6,0 |
+| bruit blanc | 0,023 | 3,4 |
+| tube à 57 Hz | 0,062 | 5,7 |
+
+La résonance et sa **longueur** ne changent que la couleur, pas le niveau : la
+réponse est normalisée en énergie et le mélange se fait en racine. Sans cela,
+monter la résonance baissait fortement le volume, et l'on ne pouvait juger ni
+l'un ni l'autre.
 
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le
 plaisir. Deux réserves, et deux seulement. Un **décor** défilant reste une

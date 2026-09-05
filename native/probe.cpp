@@ -1166,6 +1166,54 @@ void synth_set_throttle_range(double idle, double full) {
     g_live->throttleFull = full;
 }
 
+/**
+ * La fermete du dynamometre, en livres-pied.
+ *
+ * Il tient le regime par une contrainte du solveur, resolue a chaque pas, et
+ * son couple maximal vaut dix mille livres-pied par defaut. A chaque explosion
+ * il freine d'un coup, entre deux il entraine : ce va-et-vient injecte du bruit
+ * large bande dans la rotation, et la rotation module tout le son.
+ *
+ * Baisser ce couple laisse le regime respirer entre les explosions — ce que
+ * fait un vrai volant d'inertie. Trop bas, le regime ne suit plus le cadran.
+ */
+void synth_set_dyno(double maxTorqueFtLb) {
+    if (g_live == nullptr) return;
+    g_live->simulator->m_dyno.m_maxTorque = units::torque(maxTorqueFtLb, units::ft_lb);
+}
+
+/**
+ * Les deux bruits qu'engine-sim ajoute a dessein.
+ *
+ * Ils sont a leurs valeurs d'origine depuis le debut du portage, et personne
+ * ne les avait regardees. Elles expliquent les deux anomalies mesurees dans le
+ * spectre :
+ *
+ * `airNoise` a 1,0 ne s'ajoute pas au signal, il le **multiplie** :
+ *   r_mixed = airNoise * bruit + (1 - airNoise)
+ *   v_in    = ... + f * r_mixed * ...
+ * A un, le moteur est donc entierement module par un bruit blanc filtre a
+ * 2 kHz. C'est le plateau plat mesure jusqu'a 2 kHz. A zero, r_mixed vaut un
+ * et le signal passe intact.
+ *
+ * `inputSampleNoise` a 0,5 est une gigue appliquee a l'echantillon d'entree,
+ * filtree a 10 kHz. C'est la bosse mesuree de 3 a 10 kHz, qui culmine a 8 kHz
+ * onze decibels au-dessus du creux a 2 kHz — une remontee qu'aucun moteur reel
+ * ne produit.
+ *
+ * L'application d'origine d'engine-sim expose ces deux reglages a l'ecran ;
+ * nous avions garde les valeurs de la structure, qui sont des valeurs de
+ * demonstration, pas un reglage.
+ */
+void synth_set_noise(double airNoise, double inputSampleNoise) {
+    if (g_live == nullptr) return;
+    Synthesizer &synth = g_live->simulator->synthesizer();
+    Synthesizer::AudioParameters ap = synth.getAudioParameters();
+    ap.airNoise = (float)airNoise;
+    ap.inputSampleNoise = (float)inputSampleNoise;
+    synth.setAudioParameters(ap);
+}
+
 void synth_set_volume(double volume) {
     if (g_live == nullptr) return;
     Synthesizer &synth = g_live->simulator->synthesizer();

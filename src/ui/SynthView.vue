@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 
 import ValueRow from './components/ValueRow.vue'
-import type { SynthSettings } from '../core/synth/settings'
+import { DEFAULT_SYNTH, type SynthSettings } from '../core/synth/settings'
 import {
   applySynthSettings,
   setSynthEnabled,
@@ -43,6 +43,17 @@ function onNumber(key: keyof SynthSettings, event: Event): void {
   void applySynthSettings({ ...synthSettings.value, [key]: Number(target.value) })
 }
 
+/**
+ * Revenir aux réglages d'origine.
+ *
+ * On tâtonne à l'oreille sur ce banc, et l'on s'y perd : sept curseurs, dont
+ * plusieurs se compensent. Sans point de retour, la seule issue était de
+ * recharger la page — ce qui coupe aussi le son et rebatît le moteur.
+ */
+function reset(): void {
+  void applySynthSettings({ ...DEFAULT_SYNTH })
+}
+
 function onFlag(key: keyof SynthSettings, event: Event): void {
   const target = event.target as HTMLInputElement
   void applySynthSettings({ ...synthSettings.value, [key]: target.checked })
@@ -54,6 +65,16 @@ function onFlag(key: keyof SynthSettings, event: Event): void {
  * ×3 dans la voiture : le son n'y sera pas seul. Ce poste-ci n'est pas la
  * voiture, mais un chiffre sous 1 ici veut dire que rien ne tiendra là-bas.
  */
+/**
+ * Au-delà de 20 kHz le passe-bas ne retire plus rien d'audible : autant le dire
+ * plutôt que d'afficher un chiffre qui ne veut rien dire à cet endroit.
+ */
+const silencieux = computed(() =>
+  synthSettings.value.mufflerHz >= 20000
+    ? 'coupé'
+    : `${(synthSettings.value.mufflerHz / 1000).toFixed(1)} kHz`,
+)
+
 const realtime = computed(() => synthStatus.value.realtime)
 const realtimeWarn = computed(() => realtime.value > 0 && realtime.value < 1.5)
 
@@ -87,6 +108,7 @@ const gauge = computed(() => {
         <button :disabled="busy" @click="toggle()">
           {{ running ? 'Couper la synthèse' : 'Activer la synthèse' }}
         </button>
+        <button :disabled="busy" @click="reset()">Réglages d'origine</button>
         <label class="silent">
           <input
             type="checkbox"
@@ -275,12 +297,51 @@ const gauge = computed(() => {
           id="vol"
           type="range"
           min="0"
-          max="2"
+          max="6"
           step="0.05"
           :value="synthSettings.volume"
           @input="onNumber('volume', $event)"
         />
         <span class="numeric">{{ synthSettings.volume.toFixed(2) }}</span>
+      </div>
+      <div class="field">
+        <label for="air">Bruit d'air</label>
+        <input
+          id="air"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          :value="synthSettings.airNoise"
+          @input="onNumber('airNoise', $event)"
+        />
+        <span class="numeric">{{ synthSettings.airNoise.toFixed(2) }}</span>
+      </div>
+      <div class="field">
+        <label for="gigue">Gigue d'échantillonnage</label>
+        <input
+          id="gigue"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          :value="synthSettings.inputSampleNoise"
+          @input="onNumber('inputSampleNoise', $event)"
+        />
+        <span class="numeric">{{ synthSettings.inputSampleNoise.toFixed(2) }}</span>
+      </div>
+      <div class="field">
+        <label for="pot">Silencieux</label>
+        <input
+          id="pot"
+          type="range"
+          min="120"
+          max="22000"
+          step="20"
+          :value="synthSettings.mufflerHz"
+          @input="onNumber('mufflerHz', $event)"
+        />
+        <span class="numeric">{{ silencieux }}</span>
       </div>
       <div class="field">
         <label for="mix">Résonance d'échappement</label>
@@ -294,6 +355,19 @@ const gauge = computed(() => {
           @input="onNumber('convolverMix', $event)"
         />
         <span class="numeric">{{ synthSettings.convolverMix.toFixed(2) }}</span>
+      </div>
+      <div class="field">
+        <label for="tube">Accord de l'échappement</label>
+        <input
+          id="tube"
+          type="range"
+          min="20"
+          max="400"
+          step="1"
+          :value="synthSettings.exhaustHz"
+          @input="onNumber('exhaustHz', $event)"
+        />
+        <span class="numeric">{{ synthSettings.exhaustHz }} Hz</span>
       </div>
       <div class="field">
         <label for="len">Longueur de la résonance</label>

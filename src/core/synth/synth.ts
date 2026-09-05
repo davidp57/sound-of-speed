@@ -110,6 +110,7 @@ export class SynthEngine {
   private wet: GainNode | null = null
   private output: GainNode | null = null
   private convolver: ConvolverNode | null = null
+  private muffler: BiquadFilterNode | null = null
   private muted = false
   /** Volume général de l'appareil, le même que celui du moteur à échantillons. */
   private masterVolume = 1
@@ -281,6 +282,9 @@ export class SynthEngine {
       throttleIdle: next.throttleIdle,
       throttleFull: next.throttleFull,
       volume: next.volume,
+      dynoTorque: next.dynoTorque,
+      airNoise: next.airNoise,
+      inputSampleNoise: next.inputSampleNoise,
       reserveMs: next.reserveMs,
       sweep: next.sweep,
       sweepSeconds: next.sweepSeconds,
@@ -307,16 +311,32 @@ export class SynthEngine {
     this.wet?.disconnect()
     this.output?.disconnect()
     this.convolver?.disconnect()
+    this.muffler?.disconnect()
 
     const output = context.createGain()
     output.gain.value = this.muted ? 0 : this.masterVolume
     output.connect(context.destination)
     this.output = output
 
+    // Le silencieux, avant la séparation : il doit agir sur le son sec comme
+    // sur le son réverbéré, puisque c'est le même échappement qui les porte.
+    // Le placer après la résonance seulement laisserait passer l'aigu cru.
+    const muffler = context.createBiquadFilter()
+    muffler.type = 'lowpass'
+    muffler.frequency.value = this.settings.mufflerHz
+    // Sans surtension : on cherche à absorber, pas à faire chanter le pot.
+    muffler.Q.value = 0.707
+    node.connect(muffler)
+    this.muffler = muffler
+
     const mix = this.settings.convolver ? this.settings.convolverMix : 0
     const dry = context.createGain()
-    dry.gain.value = 1 - mix
-    node.connect(dry).connect(output)
+    // Racine, et non proportion directe : le son sec et le son réverbéré sont
+    // décorrélés, donc ce sont leurs énergies qui s'ajoutent. En gains linéaires
+    // le milieu du curseur perdait trois décibels, et l'on croyait régler une
+    // couleur alors qu'on baissait le volume.
+    dry.gain.value = Math.sqrt(1 - mix)
+    muffler.connect(dry).connect(output)
     this.dry = dry
 
     if (mix <= 0) {
@@ -327,13 +347,18 @@ export class SynthEngine {
 
     const length = Math.max(1, Math.round((this.settings.convolverMs / 1000) * context.sampleRate))
     const buffer = context.createBuffer(1, length, context.sampleRate)
-    buffer.copyToChannel(exhaustImpulse(length), 0)
+    buffer.copyToChannel(
+      exhaustImpulse(length, context.sampleRate, this.settings.exhaustHz),
+      0,
+    )
     const convolver = context.createConvolver()
-    convolver.normalize = true
+    // La réponse est déjà normalisée en énergie par `exhaustImpulse` : laisser le
+    // nœud en remettre une couche ferait dépendre le niveau de sa longueur.
+    convolver.normalize = false
     convolver.buffer = buffer
     const wet = context.createGain()
-    wet.gain.value = mix
-    node.connect(convolver).connect(wet).connect(output)
+    wet.gain.value = Math.sqrt(mix)
+    muffler.connect(convolver).connect(wet).connect(output)
     this.convolver = convolver
     this.wet = wet
   }

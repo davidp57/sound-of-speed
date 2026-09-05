@@ -21,6 +21,8 @@ let render = null
 let setTarget = null
 let setThrottleRange = null
 let setVolume = null
+let setDyno = null
+let setNoise = null
 let readRpm = null
 let readLatency = null
 let buffer = 0
@@ -121,6 +123,8 @@ async function boot(message) {
   setTarget = core.cwrap('synth_set_target', null, ['number', 'number'])
   setThrottleRange = core.cwrap('synth_set_throttle_range', null, ['number', 'number'])
   setVolume = core.cwrap('synth_set_volume', null, ['number'])
+  setDyno = core.cwrap('synth_set_dyno', null, ['number'])
+  setNoise = core.cwrap('synth_set_noise', null, ['number', 'number'])
   readRpm = core.cwrap('synth_rpm', 'number', [])
   readLatency = core.cwrap('synth_latency', 'number', [])
 
@@ -147,6 +151,8 @@ async function boot(message) {
   buffer = core._malloc(blockFrames * 4)
   setThrottleRange(settings.throttleIdle, settings.throttleFull)
   setVolume(settings.volume)
+  setDyno(settings.dynoTorque)
+  setNoise(settings.airNoise, settings.inputSampleNoise)
   sweep = settings.sweep
   sweepSeconds = settings.sweepSeconds
   sweepLow = message.sweepLow
@@ -188,6 +194,8 @@ self.onmessage = (event) => {
   } else if (message.type === 'tune') {
     if (setThrottleRange !== null) setThrottleRange(message.throttleIdle, message.throttleFull)
     if (setVolume !== null) setVolume(message.volume)
+    if (setDyno !== null) setDyno(message.dynoTorque)
+    if (setNoise !== null) setNoise(message.airNoise, message.inputSampleNoise)
     reserveFrames = Math.round((message.reserveMs / 1000) * sampleRate)
     sweep = message.sweep
     sweepSeconds = message.sweepSeconds
