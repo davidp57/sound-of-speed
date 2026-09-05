@@ -245,7 +245,16 @@ inline Engine *buildInline4() {
     intakeParams.InputFlowK = GasSystem::k_carb(800.0);
     intakeParams.IdleFlowK = GasSystem::k_carb(0.0);
     intakeParams.RunnerFlowRate = GasSystem::k_carb(250.0);
-    intakeParams.IdleThrottlePlatePosition = 0.9985;
+    // Le papillon au ralenti, a la valeur de reference d'engine-sim.
+    //
+    // Il valait 0,9985 chez nous, quasiment ferme. Le debit d'air passe en
+    // cosinus de l'angle : cos(0,9985 * pi/2) = 0,0024 contre 0,0393 a 0,975,
+    // soit **dix-sept fois moins d'air**. Le moteur etait asphyxie au ralenti,
+    // il ne brulait presque pas, et ce qu'on entendait etait le pompage.
+    //
+    // C'est le defaut d'engine-sim (intake.h), et les moteurs qu'il livre le
+    // gardent tel quel.
+    intakeParams.IdleThrottlePlatePosition = 0.975;
     intakeParams.RunnerLength = units::distance(12.0, units::inch);
     intakeParams.VelocityDecay = 0.5;
     intake->initialize(intakeParams);
@@ -495,7 +504,16 @@ inline Engine *buildCrossplaneV8() {
     intakeParams.InputFlowK = GasSystem::k_carb(1200.0);
     intakeParams.IdleFlowK = GasSystem::k_carb(0.0);
     intakeParams.RunnerFlowRate = GasSystem::k_carb(300.0);
-    intakeParams.IdleThrottlePlatePosition = 0.9985;
+    // Le papillon au ralenti, a la valeur de reference d'engine-sim.
+    //
+    // Il valait 0,9985 chez nous, quasiment ferme. Le debit d'air passe en
+    // cosinus de l'angle : cos(0,9985 * pi/2) = 0,0024 contre 0,0393 a 0,975,
+    // soit **dix-sept fois moins d'air**. Le moteur etait asphyxie au ralenti,
+    // il ne brulait presque pas, et ce qu'on entendait etait le pompage.
+    //
+    // C'est le defaut d'engine-sim (intake.h), et les moteurs qu'il livre le
+    // gardent tel quel.
+    intakeParams.IdleThrottlePlatePosition = 0.975;
     intakeParams.RunnerLength = units::distance(8.0, units::inch);
     intakeParams.VelocityDecay = 0.5;
     intake->initialize(intakeParams);

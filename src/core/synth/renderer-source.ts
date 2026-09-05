@@ -118,7 +118,7 @@ async function boot(message) {
   const module = await import(message.moduleUrl)
   core = await module.default({ noInitialRun: true })
 
-  const create = core.cwrap('synth_create', 'number', ['number', 'number', 'number', 'number', 'number', 'number'])
+  const create = core.cwrap('synth_create', 'number', ['number', 'number', 'number', 'number', 'number', 'number', 'number'])
   render = core.cwrap('synth_render', 'number', ['number', 'number'])
   setTarget = core.cwrap('synth_set_target', null, ['number', 'number'])
   setThrottleRange = core.cwrap('synth_set_throttle_range', null, ['number', 'number'])
@@ -141,6 +141,7 @@ async function boot(message) {
     settings.impulseSamples,
     settings.leveler ? 1 : 0,
     settings.levelerGain,
+    message.redlineRpm,
   )
   if (built !== 1) {
     self.postMessage({ type: 'error', error: 'le moteur simule n a pas pu etre construit' })

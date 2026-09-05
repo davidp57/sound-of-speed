@@ -59,6 +59,34 @@ function reset(): void {
   void applySynthSettings({ ...DEFAULT_SYNTH })
 }
 
+/**
+ * Dehors ou dedans.
+ *
+ * Le passe-bas de sortie faisait déjà cela sans qu'on l'ait cherché : coupé, on
+ * entend la voiture de l'extérieur ; refermé bas, on l'entend à travers la
+ * tôle et les vitres. C'est David qui l'a remarqué en réglant à l'oreille — le
+ * réglage existait, le sens lui manquait.
+ *
+ * Mille hertz pour l'habitacle : la valeur qu'il avait trouvée lui-même.
+ */
+const DEDANS_HZ = 1000
+const DEHORS_HZ = 22000
+
+const place = computed(() => {
+  if (synthSettings.value.mufflerHz >= DEHORS_HZ) return 'dehors'
+  if (synthSettings.value.mufflerHz === DEDANS_HZ) return 'dedans'
+  return 'libre'
+})
+
+function onPlace(event: Event): void {
+  const choix = (event.target as HTMLSelectElement).value
+  if (choix === 'libre') return
+  void applySynthSettings({
+    ...synthSettings.value,
+    mufflerHz: choix === 'dedans' ? DEDANS_HZ : DEHORS_HZ,
+  })
+}
+
 /** Le choix d'échappement : une valeur de texte, pas un nombre. */
 function onChoice(event: Event): void {
   const target = event.target as HTMLSelectElement
@@ -353,6 +381,14 @@ const gauge = computed(() => {
         <span class="numeric">{{ synthSettings.inputSampleNoise.toFixed(2) }}</span>
       </div>
       <div class="field">
+        <label for="place">Où l'on écoute</label>
+        <select id="place" :value="place" @change="onPlace($event)">
+          <option value="dehors">Dehors, à côté de la voiture</option>
+          <option value="dedans">Dedans, vitres fermées</option>
+          <option value="libre">Réglage libre</option>
+        </select>
+      </div>
+      <div v-if="place === 'libre'" class="field">
         <label for="pot">Silencieux</label>
         <input
           id="pot"

@@ -133,6 +133,8 @@ export class SynthEngine {
   private responses = new Map<string, AudioBuffer>()
   /** La réponse enregistrée en service, ou `null` quand on fabrique un tube. */
   private recorded: AudioBuffer | null = null
+  /** Le rupteur avec lequel le moteur en service a été bâti. */
+  private builtRedline = 0
   private muted = false
   /** Volume général de l'appareil, le même que celui du moteur à échantillons. */
   private masterVolume = 1
@@ -215,6 +217,7 @@ export class SynthEngine {
 
       const rendererUrl = blobUrl(RENDERER_SOURCE)
       this.urls.push(rendererUrl)
+      this.builtRedline = this.rpmRange[1]
       const worker = new Worker(rendererUrl, { type: 'module' })
       this.worker = worker
       worker.onmessage = (event: MessageEvent) => this.onWorkerMessage(event.data)
@@ -231,6 +234,9 @@ export class SynthEngine {
         moduleUrl: new URL(MODULE_PATH, location.origin).href,
         sampleRate: context.sampleRate,
         settings: this.settings,
+        // Le rupteur du profil, et non celui qu'on avait fige : passe le sien,
+        // engine-sim coupe l'allumage et il ne reste que le pompage.
+        redlineRpm: this.rpmRange[1],
         sweepLow: this.rpmRange[0],
         sweepHigh: this.rpmRange[1],
       })
@@ -284,6 +290,18 @@ export class SynthEngine {
   }
 
   /**
+   * Le rupteur a-t-il changé depuis qu'on a bâti le moteur ?
+   *
+   * Il est figé à la construction, dans le module d'allumage. Passer d'un profil
+   * qui coupe à 6 500 à un profil qui monte à 8 500 sans rebâtir laisserait la
+   * coupure au mauvais endroit — et une coupure d'allumage ne fait pas taire le
+   * moteur, elle laisse le pompage d'air, aigu et sans corps.
+   */
+  private redlineChanged(): boolean {
+    return this.builtRedline !== 0 && Math.abs(this.builtRedline - this.rpmRange[1]) > 1
+  }
+
+  /**
    * Applique des réglages.
    *
    * Le papillon, le volume et la réserve s'écrivent à chaud. Le nombre de
@@ -293,7 +311,7 @@ export class SynthEngine {
    */
   async apply(settings: SynthSettings): Promise<void> {
     const next = clampSynthSettings(settings)
-    const rebuild = needsRebuild(this.settings, next)
+    const rebuild = needsRebuild(this.settings, next) || this.redlineChanged()
     this.settings = next
     if (this.state.phase !== 'ready' && this.state.phase !== 'loading') return
     if (rebuild) {
