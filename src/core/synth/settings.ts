@@ -1,11 +1,11 @@
 /**
  * Les réglages du son synthétisé.
  *
- * Ils ne vivent pas dans le profil : le lot SYNTHESE prévoit un champ
- * `soundSource` à la racine du profil, et une définition de moteur en JSON,
- * mais ni l'un ni l'autre n'existe encore. Ce qui suit est le banc de réglage —
- * de quoi trouver un timbre au bureau. Ce qui sera trouvé partira ensuite dans
- * le profil, qui, lui, voyage.
+ * Ce qui décrit le **moteur** vit dans le profil, où il voyage : c'est
+ * `EngineDefinition`, les vingt-sept nombres du contrat. Ce qui reste ici est ce
+ * qui décrit le **calcul et le poste** — la fréquence de simulation, la taille
+ * de bloc, la réserve, la résonance de sortie —, et qui n'a aucune raison de
+ * suivre un profil d'une machine à l'autre.
  *
  * Deux familles de réglages, et la distinction compte : certains s'appliquent
  * sans rien interrompre, les autres exigent de reconstruire le moteur simulé,
@@ -28,8 +28,6 @@ export function exhaustResponseFile(id: ExhaustResponse): string | null {
 }
 
 export interface SynthSettings {
-  /** Quatre cylindres en ligne, ou V8 à vilebrequin croisé. */
-  cylinders: 4 | 8
   /** Fréquence de la simulation physique, en hertz. */
   simulationHz: number
   /**
@@ -116,23 +114,6 @@ export interface SynthSettings {
   /** L'effort imposé, de 0 à 1. */
   forcedEffort: number
   /**
-   * Le bruit d'air d'engine-sim, de 0 à 1.
-   *
-   * Il ne s'ajoute pas au signal : il le **multiplie**. À un — la valeur
-   * d'origine — le moteur est entièrement modulé par un bruit blanc filtré à
-   * 2 kHz, ce qui explique le plateau plat mesuré jusqu'à cette fréquence. À
-   * zéro, le signal passe intact.
-   */
-  airNoise: number
-  /**
-   * La gigue appliquée à l'échantillon d'entrée, de 0 à 1.
-   *
-   * Filtrée à 10 kHz par engine-sim. À 0,5 — la valeur d'origine — elle produit
-   * la bosse mesurée de 3 à 10 kHz, qui culmine onze décibels au-dessus du creux
-   * à 2 kHz. Un spectre de moteur ne remonte jamais dans l'aigu.
-   */
-  inputSampleNoise: number
-  /**
    * La fermeté du dynamomètre, en livres-pied.
    *
    * Il tient le régime par une contrainte du solveur, résolue à chaque pas, et
@@ -148,7 +129,6 @@ export interface SynthSettings {
 }
 
 export const DEFAULT_SYNTH: SynthSettings = {
-  cylinders: 8,
   simulationHz: 10000,
   // Convolution déportée par défaut : c'est le seul réglage qui a fait passer
   // le V8 au-dessus du temps réel sur le poste de bureau.
@@ -200,11 +180,6 @@ export const DEFAULT_SYNTH: SynthSettings = {
   sweepSeconds: 12,
   forceEffort: false,
   forcedEffort: 0.5,
-  // Les deux bruits d'engine-sim, ramenés de leurs valeurs de démonstration à ce
-  // que la mesure demande. Ce ne sont pas zéro : un moteur a du souffle, et le
-  // retirer tout à fait sonne synthétique.
-  airNoise: 0.15,
-  inputSampleNoise: 0.05,
   dynoTorque: 10000,
 }
 
@@ -223,7 +198,6 @@ function clamp(value: number, low: number, high: number): number {
 export function clampSynthSettings(settings: SynthSettings): SynthSettings {
   const idle = clamp(settings.throttleIdle, 0, 1)
   return {
-    cylinders: settings.cylinders === 4 ? 4 : 8,
     simulationHz: Math.round(clamp(settings.simulationHz, 4000, 24000)),
     impulseSamples: Math.round(clamp(settings.impulseSamples, 0, 10000)),
     throttleIdle: idle,
@@ -239,8 +213,6 @@ export function clampSynthSettings(settings: SynthSettings): SynthSettings {
       ? settings.exhaustResponse
       : 'smooth_39',
     dynoTorque: Math.round(clamp(settings.dynoTorque, 20, 10000)),
-    airNoise: clamp(settings.airNoise, 0, 1),
-    inputSampleNoise: clamp(settings.inputSampleNoise, 0, 1),
     mufflerHz: Math.round(clamp(settings.mufflerHz, 120, 22000)),
     leveler: settings.leveler,
     levelerGain: clamp(settings.levelerGain, 0.01, 4),
@@ -254,15 +226,16 @@ export function clampSynthSettings(settings: SynthSettings): SynthSettings {
 /**
  * Le changement demande-t-il de reconstruire le moteur simulé ?
  *
- * Le nombre de cylindres, la fréquence de simulation et la longueur de la
- * réponse impulsionnelle sont figés à la construction, dans des tableaux
- * dimensionnés une fois pour toutes. Le reste — papillon, volume — s'écrit à
- * chaud, et c'est ce qui rend le réglage du timbre supportable : on l'entend
- * changer sans coupure.
+ * La fréquence de simulation et la longueur de la réponse impulsionnelle sont
+ * figées à la construction, dans des tableaux dimensionnés une fois pour toutes.
+ * Le reste — papillon, volume — s'écrit à chaud, et c'est ce qui rend le réglage
+ * du timbre supportable : on l'entend changer sans coupure.
+ *
+ * La description du moteur, elle, ne passe plus par ici : elle vit dans le
+ * profil, et c'est `needsEngineRebuild` qui répond la même question pour elle.
  */
 export function needsRebuild(previous: SynthSettings, next: SynthSettings): boolean {
   return (
-    previous.cylinders !== next.cylinders ||
     previous.simulationHz !== next.simulationHz ||
     previous.impulseSamples !== next.impulseSamples ||
     previous.blockFrames !== next.blockFrames ||

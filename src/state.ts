@@ -18,7 +18,8 @@ import { RejectionWatch, type RejectionCause } from './core/speed/rejection'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
 import { soundSourceOf } from './core/preset/schema'
-import type { Profile, ProfileOrigin } from './core/preset/schema'
+import type { EngineDefinition, Profile, ProfileOrigin } from './core/preset/schema'
+import { clampEngineDefinition } from './core/preset/engine-definition'
 import {
   applyResponsiveness,
   applySportiness,
@@ -366,6 +367,28 @@ synth.onStatus = (status) => {
   synthStatus.value = status
 }
 
+/**
+ * Le moteur que décrit le profil actif.
+ *
+ * C'est le profil qui porte la définition, et l'écran de synthèse la modifie
+ * dedans : cette lecture est ce qui relie les deux, et elle est tolérante parce
+ * qu'un profil reçu par lien depuis une version antérieure n'en porte pas.
+ */
+export const engineDefinition = computed<EngineDefinition>(() =>
+  clampEngineDefinition(activeProfile.value.engineDefinition ?? {}),
+)
+
+/**
+ * Écrit une définition de moteur dans le profil actif, et la fait entendre.
+ *
+ * Tout sauf les deux bruits demande de rebâtir le moteur simulé, soit une
+ * coupure d'une seconde environ : c'est `SynthEngine` qui en décide.
+ */
+export async function applyEngineDefinition(definition: EngineDefinition): Promise<void> {
+  activeProfile.value.engineDefinition = clampEngineDefinition(definition)
+  await synth.setEngineDefinition(activeProfile.value.engineDefinition)
+}
+
 /** Allume ou coupe le son synthétisé. À appeler depuis un geste de l'écran. */
 export async function setSynthEnabled(enabled: boolean): Promise<void> {
   // Le silence est appliqué avant la construction du graphe, et non au premier
@@ -375,6 +398,7 @@ export async function setSynthEnabled(enabled: boolean): Promise<void> {
   // Le balayage du banc va du ralenti au rupteur du profil actif : le régime
   // qu'on écoute doit être celui que la voiture atteindra vraiment.
   synth.setRpmRange(runtimeProfile.value.engine.idleRpm, runtimeProfile.value.engine.redlineRpm)
+  await synth.setEngineDefinition(engineDefinition.value)
   if (enabled) await synth.start(synthSettings.value)
   else await synth.stop()
 }

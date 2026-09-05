@@ -14,6 +14,13 @@
  * La mesure de charge se fait par fenêtre et non en cumul : un total divisé par
  * la durée depuis le démarrage dirait ce qui s'est passé en moyenne, pas ce qui
  * se passe pendant qu'on écoute.
+ *
+ * **Le moteur qu'il construit vient du profil.** `synth_create_from` reçoit le
+ * tableau de doubles décrit par `native/CONTRAT-MOTEUR.md` : les deux premiers
+ * arguments sont ceux du contrat — le pointeur et le compte —, les cinq suivants
+ * sont ce que le contrat ne couvre pas, parce que cela décrit le calcul et le
+ * poste et non le moteur : fréquence de simulation, cadence de sortie, longueur
+ * de la réponse impulsionnelle, et les deux bornes du niveleur.
  */
 export const RENDERER_SOURCE = `
 let core = null
@@ -118,7 +125,7 @@ async function boot(message) {
   const module = await import(message.moduleUrl)
   core = await module.default({ noInitialRun: true })
 
-  const create = core.cwrap('synth_create', 'number', ['number', 'number', 'number', 'number', 'number', 'number', 'number'])
+  const createFrom = core.cwrap('synth_create_from', 'number', ['number', 'number', 'number', 'number', 'number', 'number', 'number'])
   render = core.cwrap('synth_render', 'number', ['number', 'number'])
   setTarget = core.cwrap('synth_set_target', null, ['number', 'number'])
   setThrottleRange = core.cwrap('synth_set_throttle_range', null, ['number', 'number'])
@@ -133,16 +140,29 @@ async function boot(message) {
   blockFrames = settings.blockFrames
   reserveFrames = Math.round((settings.reserveMs / 1000) * sampleRate)
 
+  // La definition du moteur part en doubles, dans l'ordre du contrat. Le C++ la
+  // lit par position : pas d'analyseur JSON de l'autre cote, l'ordre suffit.
+  const values = message.engineValues
+  const bytes = values.length * 8
+  const engine = core._malloc(bytes)
+  core.HEAPF64.set(values, engine >> 3)
+
   const started = performance.now()
-  const built = create(
-    settings.simulationHz,
-    sampleRate,
-    settings.cylinders,
-    settings.impulseSamples,
-    settings.leveler ? 1 : 0,
-    settings.levelerGain,
-    message.redlineRpm,
-  )
+  let built = 0
+  try {
+    built = createFrom(
+      engine,
+      values.length,
+      settings.simulationHz,
+      sampleRate,
+      settings.impulseSamples,
+      settings.leveler ? 1 : 0,
+      settings.levelerGain,
+    )
+  } finally {
+    // Le C++ recopie ce qu'il lui faut pendant l'appel : rien ne survit ici.
+    core._free(engine)
+  }
   if (built !== 1) {
     self.postMessage({ type: 'error', error: 'le moteur simule n a pas pu etre construit' })
     return
@@ -153,7 +173,6 @@ async function boot(message) {
   setThrottleRange(settings.throttleIdle, settings.throttleFull)
   setVolume(settings.volume)
   setDyno(settings.dynoTorque)
-  setNoise(settings.airNoise, settings.inputSampleNoise)
   sweep = settings.sweep
   sweepSeconds = settings.sweepSeconds
   sweepLow = message.sweepLow
@@ -204,6 +223,10 @@ self.onmessage = (event) => {
     sweepHigh = message.sweepHigh
     forceEffort = message.forceEffort
     forcedEffort = message.forcedEffort
+  } else if (message.type === 'noise') {
+    // Les deux bruits du moteur, seuls parametres de la definition qui
+    // s'ecrivent sans rebatir.
+    if (setNoise !== null) setNoise(message.airNoise, message.inputSampleNoise)
   } else if (message.type === 'stop') {
     stopped = true
     clearInterval(pump)

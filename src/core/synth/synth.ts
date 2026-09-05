@@ -1,3 +1,10 @@
+import { GM_LS_V8 } from '../preset/defaults'
+import {
+  clampEngineDefinition,
+  engineDefinitionValues,
+  needsEngineRebuild,
+} from '../preset/engine-definition'
+import type { EngineDefinition } from '../preset/schema'
 import { exhaustImpulse } from './impulse'
 import { PLAYER_PROCESSOR, PLAYER_SOURCE } from './player-source'
 import { RENDERER_SOURCE } from './renderer-source'
@@ -26,10 +33,9 @@ import {
  * temps réel en moyenne craque sans elle dès qu'une trame coûte le double —
  * et c'est ce que fait engine-sim à chaque allumage.
  *
- * Ce module ne connaît ni Vue ni le profil. Le lot SYNTHESE prévoit un champ
- * `soundSource` à la racine du profil ; quand il existera, il suffira d'appeler
- * `start()` et `stop()` selon sa valeur. En attendant, l'onglet de
- * développement s'en charge.
+ * Ce module ne connaît pas Vue. Il connaît en revanche la **définition de
+ * moteur** que porte le profil : c'est elle qui décide de ce qu'on construit, et
+ * elle lui est donnée par `setEngineDefinition`.
  */
 
 export type SynthPhase = 'idle' | 'loading' | 'ready' | 'error'
@@ -146,6 +152,10 @@ export class SynthEngine {
   private restartWanted = false
   /** Les bornes du balayage : le ralenti et le rupteur du profil actif. */
   private rpmRange: [number, number] = [800, 6000]
+  /** Le moteur que décrit le profil actif. Le V8 tant que rien n'est donné. */
+  private definition: EngineDefinition = { ...GM_LS_V8 }
+  /** La définition avec laquelle le moteur en service a été bâti. */
+  private builtDefinition: EngineDefinition | null = null
 
   /** Appelé à chaque compte rendu du calculateur, quatre fois par seconde. */
   onStatus: ((status: SynthStatus) => void) | null = null
@@ -218,6 +228,7 @@ export class SynthEngine {
       const rendererUrl = blobUrl(RENDERER_SOURCE)
       this.urls.push(rendererUrl)
       this.builtRedline = this.rpmRange[1]
+      this.builtDefinition = { ...this.definition }
       const worker = new Worker(rendererUrl, { type: 'module' })
       this.worker = worker
       worker.onmessage = (event: MessageEvent) => this.onWorkerMessage(event.data)
@@ -234,9 +245,10 @@ export class SynthEngine {
         moduleUrl: new URL(MODULE_PATH, location.origin).href,
         sampleRate: context.sampleRate,
         settings: this.settings,
-        // Le rupteur du profil, et non celui qu'on avait fige : passe le sien,
-        // engine-sim coupe l'allumage et il ne reste que le pompage.
-        redlineRpm: this.rpmRange[1],
+        // Le moteur, en doubles, dans l'ordre du contrat. Le rupteur y prend sa
+        // place depuis le profil, et non depuis une valeur figee : passe le
+        // sien, engine-sim coupe l'allumage et il ne reste que le pompage.
+        engineValues: engineDefinitionValues(this.definition, this.rpmRange[1]),
         sweepLow: this.rpmRange[0],
         sweepHigh: this.rpmRange[1],
       })
@@ -289,6 +301,34 @@ export class SynthEngine {
     this.rpmRange = [idleRpm, redlineRpm]
   }
 
+  getEngineDefinition(): EngineDefinition {
+    return this.definition
+  }
+
+  /**
+   * Le moteur que décrit le profil actif.
+   *
+   * Retenu même à l'arrêt : le prochain démarrage doit bâtir celui du profil
+   * courant, pas celui du profil qu'on écoutait avant d'en changer.
+   */
+  async setEngineDefinition(definition: EngineDefinition): Promise<void> {
+    const next = clampEngineDefinition(definition)
+    const before = this.definition
+    this.definition = next
+    if (this.state.phase !== 'ready' && this.state.phase !== 'loading') return
+    if (needsEngineRebuild(this.builtDefinition ?? before, next)) {
+      await this.start(this.settings)
+      return
+    }
+    // Les deux bruits s'écrivent à chaud : on les entend bouger sans la coupure
+    // d'une seconde que coûte un rebâtissage.
+    this.worker?.postMessage({
+      type: 'noise',
+      airNoise: next.airNoise,
+      inputSampleNoise: next.inputSampleNoise,
+    })
+  }
+
   /**
    * Le rupteur a-t-il changé depuis qu'on a bâti le moteur ?
    *
@@ -304,10 +344,10 @@ export class SynthEngine {
   /**
    * Applique des réglages.
    *
-   * Le papillon, le volume et la réserve s'écrivent à chaud. Le nombre de
-   * cylindres, la fréquence de simulation, la longueur de la réponse
-   * impulsionnelle et la taille de bloc sont figés à la construction : ils
-   * imposent de tout reconstruire, et donc une coupure.
+   * Le papillon, le volume et la réserve s'écrivent à chaud. La fréquence de
+   * simulation, la longueur de la réponse impulsionnelle et la taille de bloc
+   * sont figées à la construction : elles imposent de tout reconstruire, et donc
+   * une coupure.
    */
   async apply(settings: SynthSettings): Promise<void> {
     const next = clampSynthSettings(settings)
@@ -324,8 +364,10 @@ export class SynthEngine {
       throttleFull: next.throttleFull,
       volume: next.volume,
       dynoTorque: next.dynoTorque,
-      airNoise: next.airNoise,
-      inputSampleNoise: next.inputSampleNoise,
+      // Les bruits appartiennent au moteur, pas au banc : ils viennent de la
+      // définition du profil, et repassent ici parce qu'ils s'écrivent à chaud.
+      airNoise: this.definition.airNoise,
+      inputSampleNoise: this.definition.inputSampleNoise,
       reserveMs: next.reserveMs,
       sweep: next.sweep,
       sweepSeconds: next.sweepSeconds,
