@@ -19,4 +19,17 @@ describe.skipIf(!PROFIL)('le profil produit', () => {
     expect(profile.engine.cylinders).toBeGreaterThan(0)
     expect(profile.drivetrain.gearRatios.length).toBeGreaterThan(0)
   })
+
+  it('se déclare généré à l’avance et garde de quoi se refaire', () => {
+    const profile = fromFile(readFileSync(PROFIL, 'utf8'))
+
+    // Sans ces deux champs, la banque serait une boîte noire : on ne saurait
+    // plus ni d'où vient son son, ni comment la refaire après avoir changé un
+    // réglage du moteur.
+    expect(profile.soundSource).toBe('prerendered')
+    expect(profile.engineDefinition).toMatchObject({
+      sampleDir: profile.sampleDir,
+      cylinders: profile.engine.cylinders,
+    })
+  })
 })

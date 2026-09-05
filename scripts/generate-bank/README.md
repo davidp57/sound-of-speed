@@ -49,7 +49,10 @@ Le dossier produit contient les WAV, plus deux fichiers :
 
 - **`profil.json`** — un profil partiel. L'application le complète avec ses
   valeurs par défaut à l'import : on le charge par « Importer un profil » dans
-  l'écran de configuration, et il n'y a rien d'autre à régler.
+  l'écran de configuration, et il n'y a rien d'autre à régler. Il se déclare
+  d'origine **générée à l'avance** et emporte la définition de moteur qui l'a
+  produit : sans elle, la banque serait une boîte noire qu'on ne saurait plus
+  refaire après avoir changé un réglage.
 - **`mesures.json`** — le relevé complet : régimes tenus, sauts d'énergie,
   niveaux mesurés, centroïdes, couple au dynamomètre, température de chambre.
   Aucun chiffre annoncé ailleurs n'est invérifiable.

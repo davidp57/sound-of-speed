@@ -388,6 +388,11 @@ async function main() {
 
   const profile = {
     name: definition.name,
+    // Le profil dit d'où vient son son, et garde la définition qui l'a produit.
+    // Sans elle, une banque générée deviendrait une boîte noire : personne ne
+    // saurait plus la refaire après avoir changé un réglage du moteur.
+    soundSource: 'prerendered',
+    engineDefinition: definition,
     sampleDir: definition.sampleDir,
     engine: {
       cylinders: definition.cylinders,
