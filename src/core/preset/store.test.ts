@@ -26,7 +26,13 @@ import {
 import { createDefaultProfile, createFactoryProfiles, createRoadProfile } from './defaults'
 import { buildProfile } from './wizard'
 import { decodeProfile, encodeProfile } from './share'
-import { PROFILE_FORMAT_VERSION, type Profile } from './schema'
+import {
+  PROFILE_FORMAT_VERSION,
+  SOUND_SOURCES,
+  isSoundSourceReady,
+  soundSourceOf,
+  type Profile,
+} from './schema'
 
 /**
  * Tests de la persistance des profils.
@@ -739,5 +745,93 @@ describe('reprise — arrivée de l’effort', () => {
     const repris = loadProfiles().find((profil) => profil.id === recent.id)
 
     expect(repris?.mix.idleLevelDb).toBe(-3)
+  })
+})
+
+describe('origine du son', () => {
+  it('reprend en « enregistré » un profil qui n’a pas le champ', () => {
+    // Le cas de tous les profils déjà réglés sur les appareils : ils sonnent par
+    // échantillons depuis toujours, et une mise à jour ne doit ni les priver de
+    // leur son ni leur inventer une nature.
+    const ancien = deepCopy(createRoadProfile()) as unknown as Record<string, unknown>
+    delete ancien['soundSource']
+
+    saveProfiles([ancien as unknown as Profile])
+
+    expect(loadProfiles()[0]?.soundSource).toBe('recorded')
+  })
+
+  it('garde l’origine choisie d’un rechargement à l’autre', () => {
+    const profile: Profile = { ...createRoadProfile(), soundSource: 'live' }
+
+    saveProfiles([profile])
+
+    expect(loadProfiles()[0]?.soundSource).toBe('live')
+  })
+
+  it('écarte une valeur qu’il ne connaît pas', () => {
+    const bancal = { ...createRoadProfile(), soundSource: 'magique' } as unknown as Profile
+
+    saveProfiles([bancal])
+
+    expect(loadProfiles()[0]?.soundSource).toBe('recorded')
+  })
+
+  it('lit une origine absente comme « enregistré », sans passer par le stockage', () => {
+    // Un profil reçu par lien ne repasse pas par la reprise : la lecture doit
+    // être tolérante partout, pas seulement au chargement.
+    expect(soundSourceOf({})).toBe('recorded')
+    expect(soundSourceOf({ soundSource: 'prerendered' })).toBe('prerendered')
+    expect(soundSourceOf({ soundSource: 42 })).toBe('recorded')
+  })
+
+  it('ne dit gréé que l’enregistré, les deux autres restant à faire', () => {
+    expect(SOUND_SOURCES).toEqual(['recorded', 'live', 'prerendered'])
+    expect(isSoundSourceReady('recorded')).toBe(true)
+    expect(isSoundSourceReady('live')).toBe(false)
+    expect(isSoundSourceReady('prerendered')).toBe(false)
+  })
+
+  it('suit le profil par fichier et par lien', async () => {
+    const original: Profile = { ...createRoadProfile(), soundSource: 'prerendered' }
+
+    expect(fromFile(toFile(original)).soundSource).toBe('prerendered')
+    expect((await decodeProfile(await encodeProfile(original))).soundSource).toBe('prerendered')
+  })
+
+  it('ne change pas quand on réinitialise le profil entier', () => {
+    // Réinitialiser rend les réglages d'usine, pas une autre nature de son : un
+    // profil synthétisé qu'on remet à plat reste synthétisé.
+    const profile: Profile = { ...createRoadProfile(), soundSource: 'live' }
+    profile.mix = { ...profile.mix, drive: 0.9 }
+
+    const remis = resetProfileSection(profile, 'all')
+
+    expect(remis.soundSource).toBe('live')
+    expect(remis.mix.drive).toBe(createRoadProfile().mix.drive)
+  })
+
+  it('garde la définition de moteur attachée au profil', () => {
+    // Sa forme n'est pas encore fixée ; ce qui compte ici est qu'elle ne se
+    // perde pas, sans quoi la banque qu'elle a produite deviendrait une boîte
+    // noire qu'on ne saurait plus refaire.
+    const definition = { name: 'V8 croisé', cylinders: 8 }
+    const profile: Profile = {
+      ...createRoadProfile(),
+      soundSource: 'prerendered',
+      engineDefinition: definition,
+    }
+
+    saveProfiles([profile])
+
+    expect(loadProfiles()[0]?.engineDefinition).toEqual(definition)
+    expect(fromFile(toFile(profile)).engineDefinition).toEqual(definition)
+    expect(duplicateProfile(profile, 'Copie').engineDefinition).toEqual(definition)
+  })
+
+  it('n’invente pas de définition de moteur là où il n’y en a pas', () => {
+    saveProfiles([createRoadProfile()])
+
+    expect(loadProfiles()[0]?.engineDefinition).toBeUndefined()
   })
 })
