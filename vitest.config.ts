@@ -18,7 +18,10 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    // L'outillage de `scripts/` s'ajoute à `src/` : le générateur de banque y
+    // tient l'arithmétique des ancrages et des longueurs de boucle, qui décide
+    // de toute la banque produite et qui se vérifie sans rien faire tourner.
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     environment: 'node',
     coverage: {
       provider: 'v8',

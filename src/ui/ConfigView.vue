@@ -16,7 +16,13 @@ import {
   type Usage,
 } from '../core/preset/wizard'
 import { SIMPLE_GEAR_COUNTS } from '../core/preset/character'
-import type { LayerRole } from '../core/preset/schema'
+import {
+  SOUND_SOURCES,
+  needsSimulatedEngine,
+  soundSourceOf,
+  type LayerRole,
+  type SoundSource,
+} from '../core/preset/schema'
 import {
   activeProfile,
   addProfile,
@@ -57,6 +63,7 @@ import {
   journalError,
   setJournalConsent,
   setDepositCredentials,
+  synthSupported,
 } from '../state'
 
 /**
@@ -70,6 +77,25 @@ import {
 
 const profile = activeProfile
 const importError = ref('')
+
+/**
+ * Origine du son, avec son libellé.
+ *
+ * La lecture passe par `soundSourceOf` : un profil reçu par lien depuis une
+ * version antérieure n'a pas le champ, et l'affichage ne doit pas rester vide.
+ */
+const SOUND_SOURCE_LABELS: Record<SoundSource, string> = {
+  recorded: 'Enregistré',
+  live: 'Généré en direct',
+  prerendered: 'Généré à l’avance',
+}
+
+const soundSource = computed<SoundSource>({
+  get: () => soundSourceOf(profile.value),
+  set: (value) => {
+    profile.value.soundSource = value
+  },
+})
 
 /** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
 /**
@@ -878,6 +904,28 @@ function impliedCylinders(index: number): number | null {
       </div>
 
       <label class="inline">
+        Origine du son
+        <select v-model="soundSource">
+          <option v-for="source in SOUND_SOURCES" :key="source" :value="source">
+            {{ SOUND_SOURCE_LABELS[source] }}
+          </option>
+        </select>
+      </label>
+      <p class="note">
+        D'où vient le son de ce profil. <strong>Enregistré</strong> joue la banque
+        d'échantillons en changeant sa vitesse de lecture, ce que fait l'application
+        depuis le début. <strong>Généré en direct</strong> simule le moteur pendant la
+        conduite, sans le moindre échantillon. <strong>Généré à l'avance</strong> rejoue
+        une banque que cette simulation a produite au bureau, une prise par plage de
+        régime.
+      </p>
+      <p v-if="needsSimulatedEngine(soundSource) && !synthSupported" class="note warn">
+        Ce navigateur ne sait pas faire tourner le moteur simulé : il lui manque
+        l'`AudioWorklet` ou le WebAssembly. Le profil garde son origine, mais le son
+        restera celui de la banque d'échantillons tant qu'il sera ouvert ici.
+      </p>
+
+      <label class="inline">
         Dossier d'échantillons
         <input v-model="profile.sampleDir" type="text" />
       </label>
@@ -1596,6 +1644,15 @@ h2 {
   color: var(--muted);
   font-size: 0.82rem;
   margin: 0.4rem 0 0.6rem;
+}
+
+/*
+ * Une note qui avertit. La classe était déjà employée dans cet écran sans être
+ * définie : l'avertissement s'y lisait dans le gris de tout le reste, donc il ne
+ * se lisait pas.
+ */
+.note.warn {
+  color: var(--warn);
 }
 
 .derived {

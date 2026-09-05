@@ -18,6 +18,8 @@ import {
   selectedProfileId,
   audioStatus,
   isMuted,
+  synthIsOrigin,
+  synthStatus,
   isRunning,
   keepScreenOn,
   screenLockError,
@@ -171,9 +173,15 @@ const cruiseActive = computed(() => cruiseOn.value && getSimulatedCruise() !== n
  * qui montre un état allumé doit pouvoir l'éteindre, sans quoi il ment.
  */
 const audioLabel = computed(() => {
-  switch (audioStatus.value.phase) {
+  // Un profil « généré en direct » ne charge pas de banque : c'est l'état du
+  // moteur simulé que le bouton doit montrer, sans quoi il dirait « Activer le
+  // son » pendant que le son sort.
+  const phase = synthIsOrigin.value ? synthStatus.value.phase : audioStatus.value.phase
+  switch (phase) {
     case 'loading':
-      return `Chargement ${audioStatus.value.loaded}/${audioStatus.value.total}`
+      return synthIsOrigin.value
+        ? 'Moteur en construction'
+        : `Chargement ${audioStatus.value.loaded}/${audioStatus.value.total}`
     case 'ready':
       return isMuted.value ? 'Son coupé' : 'Son actif'
     case 'error':
@@ -184,7 +192,8 @@ const audioLabel = computed(() => {
 })
 
 function toggleAudio(): void {
-  if (audioStatus.value.phase === 'ready') setMuted(!isMuted.value)
+  const phase = synthIsOrigin.value ? synthStatus.value.phase : audioStatus.value.phase
+  if (phase === 'ready') setMuted(!isMuted.value)
   else void activateAudio()
 }
 

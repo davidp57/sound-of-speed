@@ -1,6 +1,7 @@
 import { createDefaultProfile, createFactoryProfiles } from './defaults'
 import {
   PROFILE_FORMAT_VERSION,
+  soundSourceOf,
   type Profile,
   type ProfileFile,
   type ProfileOrigin,
@@ -397,6 +398,11 @@ function reconcile(profile: Partial<Profile>): Profile {
     id: typeof profile.id === 'string' && profile.id ? profile.id : newId(),
     name: typeof profile.name === 'string' && profile.name ? profile.name : base.name,
     favorite: profile.favorite === true,
+    // Un profil enregistré avant l'arrivée du champ — ou porteur d'une valeur
+    // qu'on ne connaît pas — est repris en « enregistré » : c'est ce qu'il a
+    // toujours été, et c'est la seule origine qui ne demande rien de plus que
+    // la banque qu'il désigne déjà.
+    soundSource: soundSourceOf(profile),
     sampleDir:
       typeof profile.sampleDir === 'string' && profile.sampleDir
         ? profile.sampleDir
@@ -420,6 +426,11 @@ function reconcile(profile: Partial<Profile>): Profile {
   // sinon : un profil venu d'une version antérieure garde le repli d'avant
   // plutôt que de se voir attribuer une origine inventée.
   if (isRecord(profile.origin)) complet.origin = profile.origin as ProfileOrigin
+
+  // La définition de moteur traverse sans être lue : sa forme n'est pas encore
+  // fixée, et la perdre en rechargeant reviendrait à ne plus savoir refaire la
+  // banque qu'elle a produite.
+  if (profile.engineDefinition !== undefined) complet.engineDefinition = profile.engineDefinition
 
   return complet
 }

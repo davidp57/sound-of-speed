@@ -8,6 +8,90 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un profil déclare d'où vient son son**, parmi trois origines : *enregistré*
+  — la banque d'échantillons jouée en changeant sa vitesse de lecture, ce que
+  fait l'application depuis le début —, *généré en direct* — le moteur simulé
+  pendant la conduite — et *généré à l'avance* — une banque produite au bureau
+  par cette simulation, une prise par plage de régime, que la voiture rejoue.
+
+  Le choix se fait dans l'écran de configuration, panneau *Profils*, et suit le
+  profil dans un export en fichier comme dans un lien de partage. Un profil peut
+  aussi porter la définition du moteur qui a produit sa banque, pour qu'une
+  banque générée ne devienne pas une boîte noire qu'on ne saurait plus refaire.
+
+  Les trois origines sont gréées, et c'est le même bouton « Activer le son » qui
+  les démarre. Un navigateur sans `AudioWorklet` ni WebAssembly ne peut pas faire
+  tourner le moteur simulé : il le dit, et la banque continue de jouer plutôt que
+  de grésiller.
+
+  Les profils déjà enregistrés sont repris en *enregistré*, ce qu'ils ont
+  toujours été. La version du format de profil passe de 2 à 3.
+
+- **Une banque d'échantillons produite ici par engine-sim, et rejouée telle
+  quelle dans la voiture.** `scripts/generate-bank/` fait tourner le moteur
+  simulé au bureau, aussi lentement qu'il le faut, à un régime tenu par un
+  dynamomètre, et en tire une prise par plage de régime — en charge et pied
+  levé, plus le ralenti et le rupteur. Rien n'est modifié dans le moteur de
+  lecture : la banque et le profil qui la déclare s'importent tels quels.
+
+  Ce que ça corrige. La banque enregistrée est jouée entre 0,26 et 0,81 fois sa
+  vitesse sur toute la conduite ordinaire, et le rééchantillonnage descend les
+  résonances de l'échappement en même temps que la fréquence d'allumage : un
+  moteur change de régime sans changer de corps. Mesuré sur le V8 simulé, le
+  centroïde spectral ne suit le régime qu'à 8 % — 0,21 octave de timbre pour 2,67
+  octaves de régime. C'est bien le rééchantillonnage qui déplace le timbre, pas
+  le moteur.
+
+  Combien de prises faut-il ? La question se mesure : on génère au quart
+  d'octave, avec une prise témoin au milieu de chaque intervalle, puis on compare
+  ce que donneraient les écartements plus larges. Une octave laisse 2,7 demi-tons
+  d'erreur de timbre, un demi-octave 1,0, un quart 0,78 pour deux fois plus de
+  prises. **Le demi-octave est retenu** : huit ancrages par famille, plus le
+  ralenti et le rupteur, et une vitesse de lecture qui reste entre 0,74 et 1,36
+  au lieu de 0,26 à 0,81.
+
+  Les boucles font un nombre entier de cycles moteur, ce qui met leurs deux bouts
+  en phase par construction. Saut d'énergie au raccord, une fois la fermeture de
+  l'application appliquée : 1,6 % en médiane, 4,8 % au pire sur les 18 prises —
+  contre 2,3 % et 10,8 % mesurés de la même façon sur la banque enregistrée.
+
+  Les ancrages, les gains et les bornes de lecture sont **mesurés**, pas relevés
+  à la main : c'est ce que le lot BANQUES devait faire à l'oreille. Un seul
+  chiffre reste un choix — de combien rabattre le relief de niveau, qui couvre
+  37,4 dB bruts sur le V8 et 13,1 dB une fois rabattu. C'est le premier réglage à
+  juger à l'oreille, et le timbre n'a encore été écouté par personne.
+
+- **Le son d'engine-sim sort, et il suit le régime.** Le portage WebAssembly ne
+  produisait que des chiffres ; il produit maintenant du son, joué en direct, à
+  la cadence du navigateur. Un onglet **Synthèse**, réservé au développement
+  comme le simulateur, l'allume et le règle.
+
+  Trois fils : le fil principal transmet à chaque tour de boucle le **régime du
+  cadran** et l'**effort** ; un fil de calcul fait tourner engine-sim et remplit
+  une réserve ; un `AudioWorklet` la vide et compte ce qui manque. Le calcul
+  n'est pas dans le fil audio, faute de pouvoir y instancier un module
+  Emscripten sans `SharedArrayBuffer` — donc sans les en-têtes COOP/COEP que le
+  lot a écartés. Ce qu'on y gagne : une pointe de calcul mange la réserve au
+  lieu de faire un trou.
+
+  Le **régime est imposé au dynamomètre** d'engine-sim plutôt que trouvé par le
+  moteur : le régime entendu et celui du cadran doivent dire la même chose,
+  sinon c'est le compteur qu'on croira faux. Mesuré, du ralenti au rupteur :
+  écart nul, à l'unité près.
+
+  Relevé sur un Ryzen 7 7800X3D, contexte audio à 48 kHz, l'application entière
+  tournant à côté, résonance d'échappement déportée sur un `ConvolverNode` :
+  **×2,0 temps réel** pour le V8 à 10 kHz de simulation, **×3,7** pour un quatre
+  cylindres, **×0,95** si l'on laisse engine-sim convoluer lui-même. Réserve
+  tenue à 250 ms, **aucun creux** sur un balayage complet 800 → 6 500 tr/min. Le
+  seuil du lot est ×3 dans la voiture, où rien de tout cela n'a encore été
+  mesuré : sur ce poste, seul le quatre cylindres le passe.
+
+  Le banc affiche ce qui se mesure — régime demandé et entendu, coefficient
+  temps réel, charge, creux, réserve, niveau crête, niveau efficace, brillance —
+  et donne un **balayage de régime** pour écouter la montée sans rouler. **Le
+  timbre, lui, reste à juger à l'oreille** : la machine ne peut pas le faire.
+
 - **L'effort du moteur tient compte de la vitesse : la croisière n'est plus
   plate.** Faute de pédale, tout se déduisait de l'accélération, si bien que
   tenir une allure donnait toujours le même demi — mesuré, cinq allures tenues à

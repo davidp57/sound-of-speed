@@ -1,4 +1,5 @@
 import { deepCopy, newId } from './store'
+import { soundSourceOf } from './schema'
 import type { Profile } from './schema'
 
 /**
@@ -47,7 +48,11 @@ export async function decodeProfile(token: string): Promise<Profile> {
     throw new Error('Ce lien ne contient pas de profil.')
   }
   // L'identifiant est renouvelé : un profil reçu ne doit pas écraser le sien.
-  return { ...(parsed as { p: Profile }).p, id: newId() }
+  // L'origine du son est repliée ici plutôt qu'à la lecture : un lien émis avant
+  // l'arrivée du champ rendrait sinon un profil sans origine, là où son type en
+  // annonce une.
+  const reçu = (parsed as { p: Profile }).p
+  return { ...reçu, id: newId(), soundSource: soundSourceOf(reçu) }
 }
 
 /** Adresse complète, prête à être envoyée ou transformée en code. */

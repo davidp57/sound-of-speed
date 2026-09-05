@@ -7,7 +7,7 @@ de boîte, et joue le son correspondant à partir d'enregistrements réels. Tout
 règle sans couper le son, et les réglages se rangent dans des profils qu'on
 sauvegarde, exporte et recharge.
 
-- [Les quatre écrans](#les-quatre-écrans)
+- [Les écrans](#les-écrans)
 - [Démarrer en développement](#démarrer-en-développement)
 - [Installation sur un NAS Synology](#installation-sur-un-nas-synology)
 - [Une seconde pile, pour essayer l'intégration](#une-seconde-pile-pour-essayer-lintégration)
@@ -21,7 +21,7 @@ sauvegarde, exporte et recharge.
 
 ---
 
-## Les quatre écrans
+## Les écrans
 
 **Conduite** — la vitesse, le rapport, le régime. Le choix de la source
 (simulateur, GPS, rejeu), l'activation du son, le volume, la boîte automatique ou
@@ -130,6 +130,32 @@ un bouchon à moins de 30 km/h, portait la vitesse plausible maximale à 40 km/h
 au-delà, chaque mesure était rejetée comme aberrante et la vitesse se figeait.
 Les propositions, elles, restent affichées étape par étape et se recopient à la
 main.
+
+**Synthèse** — un cinquième écran, qui **n'existe qu'en développement**, comme
+le simulateur de vitesse. Il fait jouer engine-sim en direct au lieu de la
+banque d'échantillons, et sert à trouver un timbre au bureau : on ne règle pas
+un timbre en conduisant, et l'écran embarqué reste sobre.
+
+Le régime affiché au cadran est **imposé** au dynamomètre du moteur simulé, et
+l'effort ouvre son papillon. Le choix compte : laisser le moteur trouver son
+régime serait plus fidèle, mais le régime entendu ne serait plus celui du
+cadran, et c'est le cadran qu'on croirait faux.
+
+L'écran règle et **mesure** à la fois. Il donne le régime demandé et le régime
+tenu, le coefficient temps réel du calcul, la charge, le nombre et la durée des
+creux, la réserve du lecteur, le niveau crête, le niveau efficace et la
+**brillance** — la part de l'énergie au-dessus d'un kilohertz, qui dit si
+l'effort change le timbre ou seulement le volume. Un **balayage de régime** va
+du ralenti au rupteur et revient, à cadence fixe, pour écouter la montée sans
+rouler. Une case *Mesurer en silence* coupe la sortie sans rien arrêter
+derrière : tous ces chiffres se relèvent en amont du haut-parleur.
+
+Ce qui se règle : le nombre de cylindres, la fréquence de simulation, la
+longueur de la réponse impulsionnelle interne, la taille de bloc et le niveleur
+d'engine-sim — ceux-là rebâtissent le moteur, une seconde de coupure — puis, à
+chaud, les deux bornes du papillon, le volume, la résonance d'échappement et la
+réserve visée. Ces réglages vivent dans l'appareil et non dans le profil : le
+lot [SYNTHESE](.backlog/SYNTHESE/spec.md) prévoit de les y faire passer.
 
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le
 plaisir. Deux réserves, et deux seulement. Un **décor** défilant reste une
@@ -740,6 +766,43 @@ suivent — moteur, transmission, signal de vitesse, mixage, caractère, couches
 sont celles du **mode avancé** : la bascule en haut de l'écran les fait
 apparaître. En mode simplifié, elles sont remplacées par quelques curseurs
 globaux qui les commandent.
+
+### Origine du son
+
+Dans le panneau **Profils**, et visible dans les deux modes : chaque profil
+déclare **d'où vient son son**. Le choix se fait dans la voiture, et il est
+enregistré dans le profil — il suit donc l'export en fichier et le partage par
+lien.
+
+| Origine | Ce que c'est | Ce qu'elle coûte |
+|---|---|---|
+| **Enregistré** | La banque d'échantillons, jouée en changeant sa vitesse de lecture. C'est ce que fait l'application depuis le début | rien de neuf |
+| **Généré en direct** | Le moteur est simulé pendant la conduite, sans le moindre échantillon | tout le budget processeur |
+| **Généré à l'avance** | La simulation tourne au bureau, produit une banque — une prise par plage de régime — et la voiture la rejoue | comme l'enregistré |
+
+Trois et non deux : le rendu à l'avance n'est pas un repli du direct. Il corrige
+un défaut que ni l'un ni l'autre des deux autres ne corrige — la banque livrée
+est jouée entre 0,26 et 0,81 fois sa vitesse sur toute la conduite ordinaire, ce
+qui descend les résonances de l'échappement en même temps que la fréquence
+d'allumage, alors qu'un moteur change de régime sans changer de corps. Une prise
+par plage de régime se lit près de un, et le timbre ne se déplace plus. Le
+direct, lui, garde ce que la génération perd : un son continu, sans domaine ni
+bascule.
+
+**Les trois sont gréées.** C'est le même bouton « Activer le son » qui les
+démarre : un profil *généré en direct* allume le moteur simulé là où les deux
+autres chargent une banque. Changer de profil en cours de route bascule d'une
+origine à l'autre, les deux ne jouant jamais ensemble.
+
+*Généré à l'avance* ne demande rien de plus qu'*enregistré* — c'est un dossier
+d'échantillons comme un autre, produit par
+[`scripts/generate-bank/`](scripts/generate-bank/README.md). *Généré en direct*,
+lui, a besoin d'un `AudioWorklet` et du WebAssembly : un navigateur qui n'en a
+pas le dit dans l'écran de configuration, et la banque continue de jouer plutôt
+que de grésiller.
+
+Un profil réglé avant l'arrivée de ce champ est repris en **enregistré**, ce
+qu'il a toujours été.
 
 ### Mode simplifié
 
@@ -1525,6 +1588,8 @@ chaque essai.
 | 26 | Une manette Xbox conduit le simulateur, gâchettes analogiques comprises | fait |
 | 27 | Trois modes de simulation, dont un qui traverse la vraie source GPS | fait |
 | 28 | L'effort du moteur tient compte de la vitesse : la croisière n'est plus plate | fait, reste à écouter |
+| 29 | Une banque produite ici par engine-sim, une prise par demi-octave, rejouée telle quelle dans la voiture | fait, reste à écouter |
+| 30 | engine-sim en WebAssembly : le son sort en direct et suit le régime | fait, reste à écouter |
 | — | Déposer une trace et un profil depuis l'application | prévu |
 | — | Plusieurs banques de son, choisies par profil | prévu |
 | — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | à remesurer |

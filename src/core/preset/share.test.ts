@@ -25,6 +25,30 @@ describe('encodeProfile et decodeProfile', () => {
     expect({ ...relu, id: original.id }).toEqual({ ...original, favorite: false })
   })
 
+  it('replie un lien émis avant l\'origine du son sur « enregistré »', async () => {
+    // Un lien parti d'une version antérieure ne porte pas le champ. Le profil
+    // reçu en aurait donc été dépourvu, là où son type en annonce un.
+    const ancien = createRoadProfile() as Partial<Profile>
+    delete ancien.soundSource
+
+    const relu = await decodeProfile(await encodeProfile(ancien as Profile))
+
+    expect(relu.soundSource).toBe('recorded')
+  })
+
+  it('fait voyager l\'origine du son et la définition de moteur', async () => {
+    const original: Profile = {
+      ...createRoadProfile(),
+      soundSource: 'prerendered',
+      engineDefinition: { cylinders: 8 },
+    }
+
+    const relu = await decodeProfile(await encodeProfile(original))
+
+    expect(relu.soundSource).toBe('prerendered')
+    expect(relu.engineDefinition).toEqual({ cylinders: 8 })
+  })
+
   it('ne fait pas voyager le statut de favori', async () => {
     const original = { ...createRoadProfile(), favorite: true }
 

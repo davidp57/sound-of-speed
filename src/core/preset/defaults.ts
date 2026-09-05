@@ -146,6 +146,9 @@ export function createDefaultProfile(): Profile {
     id: 'procar',
     name: 'Sport',
     favorite: true,
+    // Les deux profils livrés sonnent par échantillons : c'est la seule origine
+    // gréée, et la banque de `procar/` est ce sur quoi ils sont réglés.
+    soundSource: 'recorded',
     sampleDir: 'procar',
     engine: {
       cylinders: 8,

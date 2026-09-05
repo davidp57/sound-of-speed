@@ -51,6 +51,15 @@ describe('profils livrés', () => {
     expect(profiles.map((p) => p.name)).toEqual(['Route', 'Sport'])
   })
 
+  it('les fait sonner par échantillons, sans définition de moteur', () => {
+    // La seule origine gréée aujourd'hui, et celle sur laquelle les deux
+    // profils sont réglés.
+    for (const profile of createFactoryProfiles()) {
+      expect(profile.soundSource).toBe('recorded')
+      expect(profile.engineDefinition).toBeUndefined()
+    }
+  })
+
   it('rend des copies neuves à chaque appel', () => {
     const premier = createFactoryProfiles()
     premier[0]!.engine.redlineRpm = 42

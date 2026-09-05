@@ -6,9 +6,11 @@ import HelpView from './ui/HelpView.vue'
 import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
 import CalibrationPanel from './ui/CalibrationPanel.vue'
+import SynthView from './ui/SynthView.vue'
 import {
   applyUpdate,
   offlineStatus,
+  synthAvailable,
   setBrake,
   importFromUrl,
   setThrottle,
@@ -20,7 +22,7 @@ import {
   isRunning,
 } from './state'
 
-type Tab = 'drive' | 'telemetry' | 'config' | 'calibration'
+type Tab = 'drive' | 'telemetry' | 'config' | 'calibration' | 'synth'
 
 const tab = ref<Tab>('drive')
 
@@ -84,6 +86,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'telemetry', label: 'Télémétrie' },
   { id: 'config', label: 'Configuration' },
   { id: 'calibration', label: 'Étalonnage' },
+  // Le banc de synthèse ne suit pas dans la voiture, comme le simulateur : on
+  // ne règle pas un timbre en conduisant.
+  ...(synthAvailable ? [{ id: 'synth' as Tab, label: 'Synthèse' }] : []),
 ]
 
 /**
@@ -208,6 +213,7 @@ onBeforeUnmount(() => {
       />
       <TelemetryView v-else-if="tab === 'telemetry'" />
       <CalibrationPanel v-else-if="tab === 'calibration'" />
+      <SynthView v-else-if="tab === 'synth' && synthAvailable" />
       <ConfigView v-else />
     </main>
 

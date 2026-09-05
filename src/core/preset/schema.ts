@@ -9,6 +9,58 @@
 /** Rôle d'une couche dans le mixage. */
 export type LayerRole = 'idle' | 'on' | 'off' | 'limiter'
 
+/**
+ * D'où vient le son d'un profil.
+ *
+ * - `recorded` : la banque d'échantillons, jouée en changeant sa vitesse de
+ *   lecture. C'est ce que fait l'application depuis le début.
+ * - `live` : le moteur est simulé pendant la conduite, sans aucun échantillon.
+ * - `prerendered` : la simulation a tourné au bureau et produit une banque, que
+ *   la voiture rejoue comme les autres.
+ *
+ * Trois et non deux : le rendu à l'avance n'est pas un repli du direct. Il
+ * corrige un défaut que ni l'un ni l'autre des deux autres ne corrige — une
+ * prise par plage de régime, donc une lecture proche de un, où le timbre ne se
+ * déplace plus avec le régime. Et le direct garde ce que la génération perd : un
+ * son continu, sans domaine ni bascule. Le choix est par profil parce qu'il
+ * dépend du moteur imité : un bicylindre tient en direct là où un V8 ne tient
+ * peut-être pas.
+ */
+export type SoundSource = 'recorded' | 'live' | 'prerendered'
+
+/** Les trois origines, dans l'ordre où l'écran de configuration les propose. */
+export const SOUND_SOURCES: readonly SoundSource[] = ['recorded', 'live', 'prerendered']
+
+export function isSoundSource(value: unknown): value is SoundSource {
+  return SOUND_SOURCES.includes(value as SoundSource)
+}
+
+/**
+ * Origine déclarée par un profil, avec le repli des profils d'avant.
+ *
+ * Un profil enregistré ou partagé avant l'arrivée du champ n'en porte pas : il
+ * sonne par échantillons, c'est donc `recorded` qu'il faut lui rendre. La
+ * reprise du stockage l'écrit une fois pour toutes, mais un profil reçu par lien
+ * ne repasse pas par elle — d'où cette lecture tolérante, à employer partout où
+ * l'on interroge l'origine.
+ */
+export function soundSourceOf(profile: { soundSource?: unknown }): SoundSource {
+  return isSoundSource(profile.soundSource) ? profile.soundSource : 'recorded'
+}
+
+/**
+ * Cette origine demande-t-elle de quoi simuler un moteur ?
+ *
+ * Enregistré et généré à l'avance jouent tous deux une banque d'échantillons, par
+ * le même moteur de lecture : ils marchent partout où le son marche. Généré en
+ * direct, lui, fait tourner le moteur simulé dans la page, ce qui demande un
+ * `AudioWorklet` et du WebAssembly. La question est posée ici parce qu'elle tient
+ * à l'origine ; c'est à l'appelant de savoir ce que son navigateur sait faire.
+ */
+export function needsSimulatedEngine(source: SoundSource): boolean {
+  return source === 'live'
+}
+
 export interface LayerPreset {
   /** Identifiant stable, sert de clé dans l'éditeur. */
   key: string
@@ -359,6 +411,29 @@ export interface Profile {
    * configuration : les profils marqués ainsi apparaissent en accès direct.
    */
   favorite: boolean
+  /**
+   * D'où vient le son de ce profil.
+   *
+   * À la racine, et non dans une section : ce n'est pas un réglage qu'on
+   * tâtonne, c'est la déclaration de ce qui produit le son. Elle décide de ce
+   * que les autres sections veulent dire — une banque d'échantillons d'un côté,
+   * une définition de moteur de l'autre — et elle ne se réinitialise donc pas
+   * avec elles.
+   */
+  soundSource: SoundSource
+  /**
+   * Définition du moteur simulé, pour les deux origines générées.
+   *
+   * Elle vit dans le profil parce que tout l'outillage y est déjà : export en
+   * fichier, partage par lien, reprise des profils enregistrés. Un profil rendu
+   * à l'avance la garde à côté de sa banque — sans quoi la banque deviendrait
+   * une boîte noire dont personne ne sait plus d'où elle vient, ni comment la
+   * refaire après un changement de réglage.
+   *
+   * Sa forme reste à fixer : elle est ici transportée et conservée telle quelle,
+   * sans être lue. Absente sur un profil enregistré, qui n'en a que faire.
+   */
+  engineDefinition?: unknown
   /** Dossier d'échantillons, relatif à la racine des assets. */
   sampleDir: string
   engine: EnginePreset
@@ -391,14 +466,16 @@ export interface Profile {
  * Valeurs d'origine d'un profil : ce qu'il était au moment de sa création.
  *
  * Tout sauf son identité — l'identifiant, le nom et le statut de favori ne se
- * réinitialisent pas.
+ * réinitialisent pas. L'origine du son et la définition de moteur non plus :
+ * elles disent ce qui produit le son, pas comment il est réglé, et remettre un
+ * profil « aux valeurs d'usine » ne doit pas le faire changer de nature.
  */
 export type ProfileOrigin = Pick<
   Profile,
   'sampleDir' | 'engine' | 'drivetrain' | 'speed' | 'mix' | 'feel' | 'layers'
 >
 
-export const PROFILE_FORMAT_VERSION = 2
+export const PROFILE_FORMAT_VERSION = 3
 
 export interface ProfileFile {
   version: number

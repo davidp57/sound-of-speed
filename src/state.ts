@@ -17,6 +17,7 @@ import { GamepadReader, type PadSnapshot } from './core/input/gamepad'
 import { RejectionWatch, type RejectionCause } from './core/speed/rejection'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
+import { soundSourceOf } from './core/preset/schema'
 import type { Profile, ProfileOrigin } from './core/preset/schema'
 import {
   applyResponsiveness,
@@ -26,6 +27,8 @@ import {
   setGearCount as withGearCount,
   sportinessOf,
 } from './core/preset/character'
+import { SynthEngine, type SynthStatus } from './core/synth/synth'
+import { DEFAULT_SYNTH, type SynthSettings } from './core/synth/settings'
 import { Journal, newSessionId } from './core/journal/journal'
 import { JournalCollector, type JournalConsent } from './core/journal/collect'
 import { depositSlice } from './core/journal/deposit'
@@ -175,6 +178,7 @@ const engine = new Engine(activeProfile.value.engine, activeProfile.value.mix)
 const recorder = new TraceRecorder()
 const loop = new Loop()
 const audio = new AudioEngine()
+const synth = new SynthEngine()
 const screenLock = new ScreenLock()
 const mediaSession = new MediaSession()
 const offline = new Offline()
@@ -318,6 +322,75 @@ export const traceStorageError = ref('')
 export const replayProgress = ref(0)
 export const audioStatus = ref<AudioStatus>({ ...audio.status })
 export const isMuted = ref(false)
+
+/**
+ * Le son synthétisé — engine-sim, en direct.
+ *
+ * C'est le profil qui décide, par son champ `soundSource` : une origine
+ * « généré en direct » fait sonner le moteur simulé là où les deux autres font
+ * jouer la banque. Le même bouton « Activer le son » sert aux deux, puisque le
+ * navigateur ne laisse démarrer un son que sur un geste.
+ *
+ * Les deux origines ne cohabitent pas : allumer la synthèse coupe les
+ * échantillons, et l'éteindre les rend.
+ *
+ * Ce qui est réservé au développement, c'est le **banc de réglage** — on ne
+ * règle pas un timbre en conduisant —, pas la synthèse elle-même : tout
+ * l'enjeu du lot est justement de savoir ce qu'elle coûte dans la voiture.
+ */
+export const synthAvailable = import.meta.env.DEV
+/**
+ * Ce navigateur sait-il faire tourner le moteur simulé ?
+ *
+ * Il lui faut un `AudioWorklet` — le calcul ne peut pas vivre sur le fil de la
+ * page sans creuser le son — et du WebAssembly. Un profil « généré en direct »
+ * ouvert sur un navigateur qui n'a ni l'un ni l'autre doit le dire, pas grésiller.
+ */
+export const synthSupported =
+  typeof AudioWorkletNode !== 'undefined' && typeof WebAssembly !== 'undefined'
+/** L'origine de son que le profil actif déclare. */
+export const soundOrigin = computed(() => soundSourceOf(activeProfile.value))
+/** Le profil actif fait-il sonner le moteur simulé plutôt que la banque ? */
+export const synthIsOrigin = computed(() => soundOrigin.value === 'live')
+export const synthSettings = ref<SynthSettings>({ ...DEFAULT_SYNTH })
+/**
+ * Faire tourner la synthèse sans qu'elle sorte du haut-parleur.
+ *
+ * Ce n'est pas un confort : la charge, les creux et le niveau crête se
+ * mesurent tous en amont de la sortie. On relève donc ce que coûte un réglage
+ * sans avoir à l'écouter — et sans réveiller la maison.
+ */
+export const synthSilent = ref(false)
+export const synthStatus = ref<SynthStatus>({ ...synth.status })
+synth.onStatus = (status) => {
+  synthStatus.value = status
+}
+
+/** Allume ou coupe le son synthétisé. À appeler depuis un geste de l'écran. */
+export async function setSynthEnabled(enabled: boolean): Promise<void> {
+  // Le silence est appliqué avant la construction du graphe, et non au premier
+  // tour de boucle : sinon la première image sort à plein niveau alors qu'on
+  // avait demandé le silence.
+  synth.setMuted(isMuted.value || synthSilent.value)
+  // Le balayage du banc va du ralenti au rupteur du profil actif : le régime
+  // qu'on écoute doit être celui que la voiture atteindra vraiment.
+  synth.setRpmRange(runtimeProfile.value.engine.idleRpm, runtimeProfile.value.engine.redlineRpm)
+  if (enabled) await synth.start(synthSettings.value)
+  else await synth.stop()
+}
+
+/** Coupe la sortie du banc sans rien arrêter derrière. */
+export function setSynthSilent(silent: boolean): void {
+  synthSilent.value = silent
+  synth.setMuted(isMuted.value || silent)
+}
+
+/** Applique les réglages du banc. Certains coupent le son le temps de rebâtir. */
+export async function applySynthSettings(settings: SynthSettings): Promise<void> {
+  synthSettings.value = settings
+  synth.setRpmRange(runtimeProfile.value.engine.idleRpm, runtimeProfile.value.engine.redlineRpm)
+  await synth.apply(settings)
+}
 export const screenLockSupported = screenLock.supported
 export const screenLockHeld = ref(false)
 export const screenLockError = ref('')
@@ -358,6 +431,7 @@ export const masterVolume = ref(
 )
 saveMasterVolume(masterVolume.value)
 audio.setMasterVolume(masterVolume.value)
+synth.setMasterVolume(masterVolume.value)
 
 /**
  * Mode avancé de l'écran de configuration : une préférence de **cet appareil**.
@@ -705,7 +779,15 @@ function step(dt: number): void {
     }
   }
 
-  if (isMuted.value) audio.mute()
+  // Une seule origine de son à la fois. Le régime transmis est celui du
+  // cadran — `rpm` et non `audibleRpm` : le tremblement que le moteur à
+  // échantillons ajoute à la main sort tout seul du modèle physique, et
+  // l'ajouter deux fois le doublerait.
+  if (synth.isRunning) {
+    audio.mute()
+    synth.setMuted(isMuted.value || synthSilent.value)
+    synth.setTarget(engineState.rpm, engineState.effort)
+  } else if (isMuted.value) audio.mute()
   else {
     audio.update(profile, engineState, {
       isShifting: gearboxState.isShifting,
@@ -906,6 +988,13 @@ watch(
   },
 )
 
+// Passer d'un profil à l'autre peut changer d'origine de son. Sans cela, la
+// synthèse continuerait de tourner sous un profil à échantillons, qui resterait
+// muet : la boucle coupe la banque tant que le moteur simulé tourne.
+watch(synthIsOrigin, (direct) => {
+  if (!direct && synth.isRunning) void setSynthEnabled(false)
+})
+
 watch(profiles, (list) => saveProfiles(list), { deep: true })
 watch(selectedId, (id) => {
   saveSelectedId(id)
@@ -926,6 +1015,9 @@ export function stop(): void {
   currentSource().stop()
   loop.stop()
   isRunning.value = false
+  // Le son synthétisé n'est plus alimenté en régime : le laisser tourner
+  // reviendrait à tenir indéfiniment le dernier régime reçu.
+  void synth.stop()
 }
 
 /** Adresses des échantillons du profil actif, telles que le cache les connaît. */
@@ -975,6 +1067,13 @@ function refreshAudioStatus(): void {
  * refusent d'ouvrir un contexte audio autrement, et l'échec est silencieux.
  */
 export async function activateAudio(): Promise<void> {
+  // Un profil « généré en direct » n'a pas de banque à charger : c'est le moteur
+  // simulé qu'on allume. « Généré à l'avance », lui, passe par ici comme
+  // « enregistré » — sa banque est un dossier d'échantillons comme un autre.
+  if (synthIsOrigin.value) {
+    await setSynthEnabled(true)
+    return
+  }
   await audio.activate(activeProfile.value)
   // L'activation met le maintien de session en place d'office ; le réglage,
   // lui, peut avoir été coupé avant. Sans cette ligne il était ignoré, et
@@ -1043,6 +1142,7 @@ export function setMasterVolume(value: number): void {
   masterVolume.value = volume
   saveMasterVolume(volume)
   audio.setMasterVolume(volume)
+  synth.setMasterVolume(volume)
 }
 
 export function setBackgroundAudio(value: boolean): void {
