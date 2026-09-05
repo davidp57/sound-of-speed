@@ -1097,14 +1097,18 @@ int synth_create(int simFrequency, int audioSampleRate, int cylinders, int impul
 
     live->simulator->startAudioRenderingThread();
     live->engine->getIgnitionModule()->m_enabled = true;
-    live->engine->setSpeedControl(live->throttleIdle);
+    // Un peu plus de gaz que le ralenti le temps que le moteur prenne : c'est
+    // ce que fait le banc hors ligne, et en dessous il cale.
+    live->engine->setSpeedControl(0.10);
 
-    // Le dynamometre tient l'arbre, le demarreur ne sert donc a rien : c'est la
-    // contrainte qui amene le moteur a son regime des la premiere trame.
-    live->simulator->m_starterMotor.m_enabled = false;
-    live->simulator->m_dyno.m_enabled = true;
-    live->simulator->m_dyno.m_hold = true;
-    live->simulator->m_dyno.m_rotationSpeed = units::rpm(live->heldRpm);
+    // On demarre au demarreur, dynamometre coupe. Engager le dynamometre sur un
+    // moteur a l'arret le fait tourner sans jamais s'allumer : le banc hors
+    // ligne l'a mesure — a 3 000 tr/min tenus, plein gaz, la chambre la plus
+    // chaude plafonnait a 530 K et le couple restait negatif. Le son entendu
+    // etait alors celui du pompage d'air, plus fort papillon **ferme** que
+    // papillon ouvert, d'ou un effort qui agissait a l'envers.
+    live->simulator->m_dyno.m_enabled = false;
+    live->simulator->m_starterMotor.m_enabled = true;
 
     // Reserve interne du synthetiseur : c'est le tampon qu'engine-sim se
     // constitue tout seul, en ajustant le nombre de pas de simulation par
@@ -1113,14 +1117,23 @@ int synth_create(int simFrequency, int audioSampleRate, int cylinders, int impul
     live->simulator->setTargetSynthesizerLatency(0.06);
 
     // Rodage hors mesure : les chambres partent a la pression atmospherique et
-    // la premiere combustion n'a pas encore eu lieu.
-    for (int i = 0; i < 60; ++i) {
+    // la premiere combustion n'a pas encore eu lieu. Le demarreur lache a la
+    // soixantieme trame, le moteur doit tenir seul ensuite.
+    for (int i = 0; i < 240; ++i) {
         live->simulator->startFrame(1.0 / 60.0);
         while (live->simulator->simulateStep()) { /* void */ }
         live->simulator->endFrame();
         live->simulator->readAudioOutput(
             (int)live->scratch.size(), live->scratch.data());
+        if (i == 60) live->simulator->m_starterMotor.m_enabled = false;
     }
+
+    // Le dynamometre prend alors le relais et tient le regime dans les deux
+    // sens : il absorbe quand le moteur pousse, il entraine quand il freine.
+    live->simulator->m_dyno.m_rotationSpeed = units::rpm(live->heldRpm);
+    live->simulator->m_dyno.m_enabled = true;
+    live->simulator->m_dyno.m_hold = true;
+    live->engine->setSpeedControl(live->throttleIdle);
 
     g_live = live;
     return 1;

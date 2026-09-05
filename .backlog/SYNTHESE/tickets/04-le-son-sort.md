@@ -145,22 +145,57 @@ vaut 28.
 
   Le niveau croît normalement avec le régime dans les deux cas (0,006 à 800
   tr/min contre 0,268 à 6 300, papillon ouvert), donc le modèle tourne. Reste
-  que sur ce V8 codé en dur, ouvrir le papillon à bas régime rend l'échappement
-  plus discret au lieu de plus fort. Trois pistes, non départagées : la
-  définition du moteur (`native/probe.cpp`, jamais comparée à l'oreille au EJ25
-  dont elle reprend les cotes), la position de plateau au ralenti (0,9985, là où
-  les moteurs livrés avec engine-sim sont autour de 0,975), ou le fait que le
-  signal d'échappement soit dominé par le pompage plutôt que par la combustion.
+  que sur ce V8 codé en dur, ouvrir le papillon à bas régime rendait
+  l'échappement plus discret au lieu de plus fort.
+
+  **C'était la troisième piste : le moteur ne brûlait pas.** Le banc vivant
+  coupait le démarreur — « le dynamomètre tient l'arbre, le démarreur ne sert
+  donc à rien » — et engageait le dynamomètre sur un moteur à l'arrêt. Le banc
+  hors ligne du ticket 05 avait pourtant mesuré l'inverse et corrigé le sien :
+  ainsi lancé, le moteur tourne sans jamais s'allumer, la chambre la plus chaude
+  plafonne à 530 K et le couple reste négatif. Le son était donc celui du
+  **pompage d'air**, et le pompage est plus bruyant papillon fermé qu'ouvert.
+  D'où l'inversion, exactement.
+
+  Le démarreur lance maintenant le moteur, dynamomètre coupé, avant que
+  celui-ci ne prenne le relais — la même séquence que le banc hors ligne. La
+  construction passe de 0,5 à 2,2 secondes, prix du rodage.
+
+  **Remesuré après correction**, à 800 tr/min tenus, niveleur coupé, gain fixe à
+  0,05 pour ne pas saturer :
+
+  | Effort | Niveau crête | Niveau efficace | Brillance |
+  |---|---|---|---|
+  | 0,1 | 0,343 | 0,027 | 0,658 |
+  | 0,4 | 0,563 | 0,035 | 0,636 |
+  | 0,7 | 0,555 | 0,041 | 0,611 |
+  | 1,0 | 0,634 | 0,034 | 0,630 |
+
+  Le sens est rétabli : la crête croît avec l'effort au lieu de s'effondrer.
+  **Mais le critère n'est pas tenu pour autant** — l'ampleur reste faible, un
+  facteur 1,8 en crête, et la brillance ne monte pas : elle baisse légèrement.
+  Or ce qu'on cherche est un spectre qui se remplit quand on ouvre les gaz. Le
+  réglage reste à faire, et il se juge à l'oreille.
+
+  Deux pistes toujours ouvertes pour cela : la définition du moteur
+  (`native/probe.cpp`, jamais comparée à l'oreille au EJ25 dont elle reprend les
+  cotes) et la position de plateau au ralenti (0,9985, là où les moteurs livrés
+  avec engine-sim sont autour de 0,975).
+
+  À noter aussi, vu à la mesure : au gain par défaut le signal **sature**, crête
+  à 1,000 dès un effort de 0,25. La dynamique disparaît dans l'écrêtage avant
+  même d'être entendue.
 
 - **La voiture.** Rien n'a été relevé dans la Tesla. Le seuil du lot est ×3
   temps réel là-bas ; ce poste-ci donne ×2 pour le V8 et ×3,8 pour le quatre
   cylindres.
 
-- **La boucle de l'application n'a pas pu être exercée ici.** Le volet du
-  navigateur de développement reste masqué, `requestAnimationFrame` ne bat pas,
-  et la chaîne vitesse → régime est donc figée. Le câblage de `state.ts` est
-  écrit et compile, mais **le trajet manette → vitesse → régime → son n'a pas
-  été vu tourner**. C'est le balayage du banc qui a servi à tout mesurer.
+- ~~**La boucle de l'application n'a pas pu être exercée ici.**~~ Elle l'a été
+  depuis, profil « généré en direct » sélectionné, source *Simulateur*,
+  régulateur poussé de 0 à 130 km/h. La chaîne se déroule entièrement : 85 km/h
+  au troisième rapport, 4 157 tr/min au cadran, **4 157 tr/min entendus, écart
+  nul**, ×1,79 temps réel, zéro creux, réserve à 253 ms. Le trajet vitesse →
+  rapport → régime → son synthétisé fonctionne de bout en bout.
 
 ## Critères d'acceptation
 
@@ -168,8 +203,9 @@ vaut 28.
       zéro creux mesuré, balayage complet compris
 - [x] Le régime entendu est celui du cadran, à quelques dizaines de tours près —
       écart nul à l'unité près
-- [ ] L'effort agit sur le timbre, et pas seulement sur le niveau — la brillance
-      bouge, mais le niveau part à l'envers ; voir ci-dessus
+- [ ] L'effort agit sur le timbre, et pas seulement sur le niveau — le niveau ne
+      part plus à l'envers, mais il bouge peu et la brillance ne suit pas ; voir
+      ci-dessus
 - [x] La charge processeur pendant la lecture est relevée, à côté du reste de
       l'application qui tourne
 - [x] Le son se coupe proprement quand on change de source ou d'origine
