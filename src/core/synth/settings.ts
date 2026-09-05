@@ -12,6 +12,21 @@
  * donc une coupure d'une seconde environ.
  */
 
+/** Les réponses d'échappement disponibles. */
+export const EXHAUST_RESPONSES = [
+  { id: 'smooth_39', label: 'V8 Chevrolet 454', file: 'smooth_39.wav' },
+  { id: 'mild_exhaust', label: 'Silencieux doux', file: 'mild_exhaust.wav' },
+  { id: 'minimal_muffling_01', label: 'Silencieux minimal', file: 'minimal_muffling_01.wav' },
+  { id: 'sharp_01', label: 'Sec', file: 'sharp_01.wav' },
+  { id: 'tube', label: 'Tube fabriqué', file: null },
+] as const
+
+export type ExhaustResponse = (typeof EXHAUST_RESPONSES)[number]['id']
+
+export function exhaustResponseFile(id: ExhaustResponse): string | null {
+  return EXHAUST_RESPONSES.find((entry) => entry.id === id)?.file ?? null
+}
+
 export interface SynthSettings {
   /** Quatre cylindres en ligne, ou V8 à vilebrequin croisé. */
   cylinders: 4 | 8
@@ -42,6 +57,18 @@ export interface SynthSettings {
   convolverMs: number
   /** Part de son réverbéré dans la sortie, de 0 à 1. */
   convolverMix: number
+  /**
+   * D'où vient la résonance d'échappement.
+   *
+   * `tube` la fabrique — une suite d'échos, modèle simple et réglable. Les
+   * autres sont des réponses **enregistrées sur de vrais échappements**, celles
+   * qu'engine-sim livre et utilise : c'est ce qui porte la signature acoustique
+   * complète — la géométrie du tube, le silencieux, la caisse, le lieu. Aucun
+   * modèle synthétique ne la reproduit.
+   *
+   * `smooth_39` est celle du V8 Chevrolet 454 livré avec engine-sim.
+   */
+  exhaustResponse: ExhaustResponse
   /**
    * L'accord du tube d'échappement, en hertz.
    *
@@ -156,8 +183,11 @@ export const DEFAULT_SYNTH: SynthSettings = {
   // cylindres, là où une prise réelle en montre 39. Filtrer davantage
   // n'enlèverait plus que du moteur.
   mufflerHz: 22000,
-  // Trois mètres de tube, en gros. C'est un point de départ physique, pas une
-  // mesure : l'accord se juge à l'oreille.
+  // La réponse du V8 Chevrolet 454, telle qu'engine-sim la livre. Une captation
+  // réelle plutôt qu'un modèle : c'est la différence entre un échappement et
+  // l'idée qu'on s'en fait.
+  exhaustResponse: 'smooth_39',
+  // Trois mètres de tube, en gros. Ne sert qu'à la réponse fabriquée.
   exhaustHz: 57,
   leveler: true,
   levelerGain: 1,
@@ -200,6 +230,9 @@ export function clampSynthSettings(settings: SynthSettings): SynthSettings {
     convolverMs: Math.round(clamp(settings.convolverMs, 10, 2000)),
     convolverMix: clamp(settings.convolverMix, 0, 1),
     exhaustHz: Math.round(clamp(settings.exhaustHz, 20, 400)),
+    exhaustResponse: EXHAUST_RESPONSES.some((e) => e.id === settings.exhaustResponse)
+      ? settings.exhaustResponse
+      : 'smooth_39',
     dynoTorque: Math.round(clamp(settings.dynoTorque, 20, 10000)),
     airNoise: clamp(settings.airNoise, 0, 1),
     inputSampleNoise: clamp(settings.inputSampleNoise, 0, 1),

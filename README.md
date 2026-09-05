@@ -183,10 +183,16 @@ fait. Ramenés à 0,15 et 0,05, le parasite à 8 kHz recule de 17 dB et le corps
 moteur gagne 6 dB. Pas zéro : un moteur a du souffle, et le retirer tout à fait
 sonne synthétique.
 
-La **résonance** simule un tube. L'onde court jusqu'au bout de l'échappement, se
-réfléchit sur l'extrémité ouverte en changeant de signe, revient, et ainsi de
-suite en s'affaiblissant : sa réponse est une suite d'échos dont l'**accord**
-donne la fréquence — 57 Hz vaut environ trois mètres de tube.
+La **résonance** est une captation réelle : un enregistrement fait sur un vrai
+échappement, choisi par le sélecteur **Échappement**. Elle porte ce qu'aucun
+modèle ne reproduit — la géométrie du tube, le silencieux, la caisse, le lieu de
+la prise. Quatre sont livrées, reprises de la bibliothèque d'engine-sim (voir
+[`public/impulse/`](public/impulse/LISEZMOI.md)) ; celle du V8 Chevrolet 454 est
+retenue par défaut.
+
+Le **tube fabriqué** reste disponible en repli, et son **accord** en donne la
+fréquence — 57 Hz vaut environ trois mètres. Il a servi de remède intermédiaire
+et garde son intérêt : il ne demande aucun fichier.
 
 Elle a longtemps été un bruit blanc, repris d'engine-sim, et c'était faux :
 convoluer des explosions par du bruit rend du bruit. À haut régime la texture

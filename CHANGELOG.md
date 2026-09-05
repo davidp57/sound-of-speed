@@ -8,6 +8,25 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **La résonance d'échappement est maintenant une captation réelle**, et non
+  plus un modèle. C'est ce que fait engine-sim depuis toujours, et nous ne
+  l'avions pas vu : son application charge un fichier WAV enregistré sur un vrai
+  échappement, là où nous fabriquions une réponse — d'abord un bruit blanc, puis
+  un tube. Une captation porte ce qu'aucun modèle ne reproduit : la géométrie du
+  tube, le silencieux, la caisse, le lieu de la prise.
+
+  Quatre réponses sont reprises de sa bibliothèque, dont celle du V8 Chevrolet
+  454 qu'il livre, retenue par défaut. Un sélecteur **Échappement** permet d'en
+  changer, et la réponse fabriquée reste disponible en repli.
+
+  Relevé sur le ralenti du V8, sortie complète : l'écart entre le grave et la
+  bande de 8 kHz vaut **40,1 dB**, quand une prise faite sur une vraie voiture en
+  montre 39,1. Le spectre décroît de 33 dB entre 2 et 8 kHz au lieu de remonter.
+
+  Au passage, notre gain de convolution valait 0,01 là où engine-sim applique
+  0,001 — dix fois trop.
+
+
 - **La banque générée portait le même parasite que le son en direct**, et un de
   plus. Les deux bruits d'engine-sim y étaient aussi restés à leurs valeurs de
   démonstration — ils sont fixés dans les définitions de moteur, où est leur
