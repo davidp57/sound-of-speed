@@ -124,7 +124,8 @@ enum EngineParam {
     ENGINE_LIMITER_DURATION = 25,     // limiterDuration
     ENGINE_AIR_NOISE = 26,            // airNoise
     ENGINE_INPUT_SAMPLE_NOISE = 27,   // inputSampleNoise
-    ENGINE_PARAM_COUNT = 28
+    ENGINE_HEADER_LENGTH = 28,        // headerLength
+    ENGINE_PARAM_COUNT = 29
 };
 
 namespace {
@@ -166,7 +167,8 @@ const EngineDefinition DEFAULT_INLINE4 = {{
     6500,     // revLimit — le contrat ne le fixe pas, il vient du profil
     0.08,     // limiterDuration
     0.15,     // airNoise
-    0.05      // inputSampleNoise
+    0.05,     // inputSampleNoise
+    10,       // headerLength
 }};
 
 // Colonne GM LS du contrat, memes remarques : la chambre, les sections de
@@ -200,7 +202,8 @@ const EngineDefinition DEFAULT_CROSSPLANE_V8 = {{
     6800,     // revLimit — le contrat ne le fixe pas, il vient du profil
     0.2,      // limiterDuration
     0.15,     // airNoise
-    0.05      // inputSampleNoise
+    0.05,     // inputSampleNoise
+    20,       // headerLength
 }};
 
 const EngineDefinition &defaultDefinition(int cylinders) {
@@ -438,8 +441,11 @@ Engine *buildInline4(const EngineDefinition &def) {
         head->setIntake(i, intake);
         head->setExhaustSystem(i, exhaust);
         head->setSoundAttenuation(i, 1.0);
+        // Le quatre cylindres n'etage pas ses collecteurs — l'EJ25 n'en declare
+        // aucune longueur, et c'est pourquoi il n'a pas les resonances
+        // multiples du V8.
         head->setHeaderPrimaryLength(
-            i, units::distance(def[ENGINE_PRIMARY_TUBE_LENGTH], units::inch));
+            i, units::distance(def[ENGINE_HEADER_LENGTH], units::inch));
     }
 
     Function *timingCurve = new Function;
@@ -779,7 +785,13 @@ Engine *buildCrossplaneV8(const EngineDefinition &def) {
             // pouces, soit 20, 15, 10 et 5. On reprend cette regle : le premier
             // cylindre porte le collecteur le plus long, et les suivants s'en
             // deduisent par quarts.
-            const double header = 20.0 * (4.0 - i) / 4.0;
+            // La longueur est reglable parce qu'elle arbitre : longue, elle
+            // apporte le cote rugueux et vivant en charge **et** des frequences
+            // parasites au ralenti ; courte, elle enleve les deux. David :
+            // « moins (mais toujours) de parasites, et par contre un moteur
+            // bien moins vivant en charge ». C'est un compromis, donc un
+            // curseur, et non une valeur qu'on tranche a sa place.
+            const double header = def[ENGINE_HEADER_LENGTH] * (4.0 - i) / 4.0;
             head->setHeaderPrimaryLength(i, units::distance(header, units::inch));
         }
     }

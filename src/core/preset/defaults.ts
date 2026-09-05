@@ -51,6 +51,7 @@ export const GM_LS_V8: EngineDefinition = {
   limiterDuration: 0.2,
   airNoise: 0.15,
   inputSampleNoise: 0.05,
+  headerLength: 6.8,
 }
 
 /**
@@ -93,6 +94,7 @@ export const SUBARU_EJ25: EngineDefinition = {
   limiterDuration: 0.08,
   airNoise: 0.15,
   inputSampleNoise: 0.05,
+  headerLength: 10,
 }
 
 /** Les définitions de référence, dans l'ordre où le banc les propose. */

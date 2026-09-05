@@ -9,10 +9,10 @@ import {
 import { ENGINE_FIELDS, ENGINE_VALUE_COUNT, type EngineDefinition } from './schema'
 
 describe('le contrat', () => {
-  it('a vingt-huit places, dont vingt-sept réglables', () => {
+  it('a vingt-neuf places, dont vingt-huit réglables', () => {
     // Le nombre est le contrat lui-même : le C++ lit ce tableau par position.
     // Une place de plus ou de moins et tout ce qui suit se décale.
-    expect(ENGINE_VALUE_COUNT).toBe(28)
+    expect(ENGINE_VALUE_COUNT).toBe(29)
     expect(ENGINE_FIELDS.filter((field) => field.fromProfile === true)).toHaveLength(1)
   })
 
@@ -21,11 +21,13 @@ describe('le contrat', () => {
     expect(new Set(keys).size).toBe(keys.length)
   })
 
-  it('commence par les cylindres et finit par la gigue', () => {
+  it('commence par les cylindres et finit par le collecteur', () => {
     // Les deux bouts de l'ordre, écrits en clair : une relecture distraite qui
     // insérerait un paramètre au début ferait tomber ce test.
     expect(ENGINE_FIELDS[0]?.key).toBe('cylinders')
-    expect(ENGINE_FIELDS[ENGINE_VALUE_COUNT - 1]?.key).toBe('inputSampleNoise')
+    expect(ENGINE_FIELDS[ENGINE_VALUE_COUNT - 1]?.key).toBe('headerLength')
+    // La gigue garde sa place : un paramètre neuf s'ajoute après elle.
+    expect(ENGINE_FIELDS[27]?.key).toBe('inputSampleNoise')
     expect(ENGINE_FIELDS[24]?.key).toBe('revLimit')
   })
 
