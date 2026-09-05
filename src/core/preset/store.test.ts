@@ -23,7 +23,13 @@ import {
   tracesFromFile,
   tracesToFile,
 } from './store'
-import { createDefaultProfile, createFactoryProfiles, createRoadProfile } from './defaults'
+import {
+  createDefaultProfile,
+  createFactoryProfiles,
+  createRoadProfile,
+  GM_LS_V8,
+  SUBARU_EJ25,
+} from './defaults'
 import { buildProfile } from './wizard'
 import { decodeProfile, encodeProfile } from './share'
 import {
@@ -828,10 +834,9 @@ describe('origine du son', () => {
   })
 
   it('garde la définition de moteur attachée au profil', () => {
-    // Sa forme n'est pas encore fixée ; ce qui compte ici est qu'elle ne se
-    // perde pas, sans quoi la banque qu'elle a produite deviendrait une boîte
-    // noire qu'on ne saurait plus refaire.
-    const definition = { name: 'V8 croisé', cylinders: 8 }
+    // Elle ne doit pas se perdre, sans quoi la banque qu'elle a produite
+    // deviendrait une boîte noire qu'on ne saurait plus refaire.
+    const definition = { ...SUBARU_EJ25 }
     const profile: Profile = {
       ...createRoadProfile(),
       soundSource: 'prerendered',
@@ -845,9 +850,33 @@ describe('origine du son', () => {
     expect(duplicateProfile(profile, 'Copie').engineDefinition).toEqual(definition)
   })
 
-  it('n’invente pas de définition de moteur là où il n’y en a pas', () => {
-    saveProfiles([createRoadProfile()])
+  it('donne une définition de moteur à un profil qui n’en avait pas', () => {
+    // Le champ est né sans forme à la version 4 : un profil enregistré avant la
+    // version 5 n'en porte pas. Il reçoit celle de son profil d'usine, comme
+    // tout autre réglage ajouté au schéma — sinon basculer son origine en
+    // direct ne donnerait aucun son.
+    const ancien = createRoadProfile() as unknown as Record<string, unknown>
+    delete ancien['engineDefinition']
 
-    expect(loadProfiles()[0]?.engineDefinition).toBeUndefined()
+    saveProfiles([ancien as unknown as Profile])
+
+    expect(loadProfiles()[0]?.engineDefinition).toEqual(GM_LS_V8)
+  })
+
+  it('complète et borne une définition de moteur écrite à la main', () => {
+    // Un profil s'exporte en JSON lisible, et se modifie donc à la main. Une
+    // valeur aberrante ne doit pas partir telle quelle dans la mémoire du
+    // module WebAssembly.
+    const bricole = {
+      ...createRoadProfile(),
+      engineDefinition: { cylinders: 4, chamberVolume: -50 },
+    }
+
+    const relu = fromFile(JSON.stringify(bricole))
+
+    expect(relu.engineDefinition?.cylinders).toBe(4)
+    expect(relu.engineDefinition?.chamberVolume).toBe(30)
+    // Ce qui manquait vient du profil d'usine, pas d'un zéro.
+    expect(relu.engineDefinition?.bore).toBe(GM_LS_V8.bore)
   })
 })

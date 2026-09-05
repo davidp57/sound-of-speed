@@ -61,6 +61,223 @@ export function needsSimulatedEngine(source: SoundSource): boolean {
   return source === 'live'
 }
 
+/**
+ * Le moteur simulé, décrit en nombres.
+ *
+ * Les moteurs d'engine-sim étaient écrits en dur dans le C++ : changer un volume
+ * de chambre demandait de recompiler le WebAssembly, et personne ne pouvait donc
+ * régler à l'oreille. Ces vingt-sept valeurs vivent maintenant dans le profil,
+ * comme les autres réglages, et voyagent avec lui — fichier, lien, stockage.
+ *
+ * La source de vérité de ces paramètres, de leurs unités et de leurs valeurs de
+ * référence est `native/CONTRAT-MOTEUR.md`. Le C++ les lit dans **l'ordre** de
+ * `ENGINE_FIELDS`, sans analyseur JSON : cet ordre est le contrat.
+ *
+ * Le rupteur n'est pas ici. Il est bien passé au moteur simulé — le C++ l'attend
+ * à la place 24 — mais il se règle déjà dans `engine.redlineRpm`, et deux
+ * réglages pour un seul chiffre finiraient par se contredire.
+ *
+ * Ce qui reste en dur dans `probe.cpp` : les courbes de débit des soupapes, qui
+ * sont des relevés de banc et non des réglages, l'ordre d'allumage et les angles
+ * de manetons, qui *définissent* le moteur et suivent le nombre de cylindres.
+ */
+export interface EngineDefinition {
+  /** Nombre de cylindres. Rebâtit tout : l'ordre d'allumage en découle. */
+  cylinders: number
+  /** Alésage, en pouces. */
+  bore: number
+  /** Course, en pouces. */
+  stroke: number
+  /** Longueur de bielle, en pouces. */
+  rodLength: number
+  /**
+   * Volume de la chambre de combustion, en centimètres cubes — donc le **taux
+   * de compression**.
+   *
+   * À 90 cc le LS3 est à 9,6:1 ; à 68, à 12,3:1, soit un moteur de compétition.
+   * C'est la violence de la combustion, et donc celle de l'impulsion
+   * d'échappement.
+   */
+  chamberVolume: number
+  /** Volume du conduit d'admission, en centimètres cubes. */
+  intakeRunnerVolume: number
+  /** Section du conduit d'admission, en pouces carrés. */
+  intakeRunnerArea: number
+  /** Volume du conduit d'échappement, en centimètres cubes. */
+  exhaustRunnerVolume: number
+  /** Section du conduit d'échappement, en pouces carrés. */
+  exhaustRunnerArea: number
+  /** Écartement des lobes de came, en degrés. */
+  lobeSeparation: number
+  /** Centre du lobe d'admission, en degrés. */
+  intakeLobeCenter: number
+  /** Centre du lobe d'échappement, en degrés. */
+  exhaustLobeCenter: number
+  /** Levée d'admission, en pouces. */
+  intakeLift: number
+  /** Levée d'échappement, en pouces. */
+  exhaustLift: number
+  /** Durée d'ouverture d'admission, en degrés. */
+  intakeDuration: number
+  /** Durée d'ouverture d'échappement, en degrés. */
+  exhaustDuration: number
+  /** Volume de la boîte à air, en litres. */
+  plenumVolume: number
+  /** Débit d'admission, en k_carb. */
+  intakeFlowRate: number
+  /**
+   * Ouverture du papillon au ralenti, de 0 à 1.
+   *
+   * Le débit passe en cosinus : 0,9985 laisse dix-sept fois moins d'air que
+   * 0,975, et le moteur s'asphyxie. D'où un pas de curseur très fin.
+   */
+  idleThrottlePlate: number
+  /** Longueur du tube primaire, en pouces. Elle fixe la résonance d'échappement. */
+  primaryTubeLength: number
+  /** Débit du tube primaire, en k_carb. */
+  primaryFlowRate: number
+  /** Débit en sortie, en k_carb. */
+  outletFlowRate: number
+  /** Volume du collecteur, en litres. */
+  collectorVolume: number
+  /** Poids de cette ligne d'échappement dans le son. */
+  exhaustAudioVolume: number
+  /** Durée d'une coupure au rupteur, en secondes. */
+  limiterDuration: number
+  /**
+   * Bruit d'air d'engine-sim, de 0 à 1.
+   *
+   * Il ne s'ajoute pas au signal : il le **multiplie**. À un, le moteur
+   * disparaît derrière sa modulation.
+   */
+  airNoise: number
+  /** Gigue d'échantillonnage, de 0 à 1. Filtrée à 10 kHz par engine-sim. */
+  inputSampleNoise: number
+}
+
+/**
+ * Les familles de réglages, dans l'ordre où l'écran les présente.
+ *
+ * Elles suivent l'ordre du contrat plutôt que de le réarranger : chaque famille
+ * est une tranche contiguë de `ENGINE_FIELDS`.
+ */
+export const ENGINE_GROUPS = [
+  { id: 'geometry', label: 'Géométrie' },
+  { id: 'head', label: 'Culasse' },
+  { id: 'cams', label: 'Cames' },
+  { id: 'intake', label: 'Admission' },
+  { id: 'exhaust', label: 'Échappement' },
+  { id: 'limiter', label: 'Rupteur' },
+  { id: 'noise', label: 'Bruits' },
+] as const
+
+export type EngineGroup = (typeof ENGINE_GROUPS)[number]['id']
+
+/**
+ * Une clé du contrat : les vingt-sept réglables, plus le rupteur.
+ *
+ * `revLimit` occupe une place dans le tableau envoyé au C++ mais pas dans la
+ * définition : sa valeur vient de `engine.redlineRpm`.
+ */
+export type EngineFieldKey = keyof EngineDefinition | 'revLimit'
+
+export interface EngineField {
+  key: EngineFieldKey
+  /** Libellé affiché. */
+  label: string
+  /** Unité affichée à côté de la valeur ; vide quand le nombre est sans unité. */
+  unit: string
+  min: number
+  max: number
+  step: number
+  group: EngineGroup
+  /**
+   * La valeur vient d'ailleurs dans le profil : elle ne se règle pas ici.
+   *
+   * Seul le rupteur est dans ce cas. Il tient sa place dans le tableau, sinon
+   * tout ce qui suit se décalerait.
+   */
+  fromProfile?: true
+  /**
+   * Le changer ne demande pas de rebâtir le moteur simulé.
+   *
+   * Les deux bruits s'écrivent à chaud, et c'est ce qui rend leur réglage
+   * supportable : on les entend bouger sans coupure d'une seconde à chaque cran.
+   */
+  hot?: true
+}
+
+/**
+ * Les paramètres du moteur simulé, **dans l'ordre du contrat**.
+ *
+ * Cet ordre est ce que le C++ lit : il ne se réarrange pas. Un paramètre neuf
+ * s'ajoute à la fin ; un paramètre retiré laisse sa place occupée plutôt que de
+ * décaler les suivants.
+ *
+ * Les bornes ne viennent pas du contrat, qui n'en donne pas : elles encadrent
+ * largement les deux définitions de référence. Ce sont des garde-fous de
+ * curseur, pas des limites physiques — s'en approcher n'est pas interdit, mais
+ * les valeurs de référence restent le repère.
+ */
+export const ENGINE_FIELDS: readonly EngineField[] = [
+  // Quatre ou huit, et rien entre les deux : l'ordre d'allumage et les angles de
+  // manetons sont écrits en dur dans `probe.cpp` pour ces deux moteurs-là.
+  { key: 'cylinders', label: 'Cylindres', unit: '', min: 4, max: 8, step: 4, group: 'geometry' },
+  { key: 'bore', label: 'Alésage', unit: 'po', min: 2, max: 5, step: 0.001, group: 'geometry' },
+  { key: 'stroke', label: 'Course', unit: 'po', min: 2, max: 5, step: 0.001, group: 'geometry' },
+  { key: 'rodLength', label: 'Bielle', unit: 'po', min: 3, max: 9, step: 0.001, group: 'geometry' },
+  { key: 'chamberVolume', label: 'Chambre', unit: 'cc', min: 30, max: 150, step: 1, group: 'geometry' },
+  { key: 'intakeRunnerVolume', label: 'Conduit d’admission', unit: 'cc', min: 20, max: 400, step: 0.1, group: 'head' },
+  { key: 'intakeRunnerArea', label: 'Section d’admission', unit: 'po²', min: 1, max: 12, step: 0.01, group: 'head' },
+  { key: 'exhaustRunnerVolume', label: 'Conduit d’échappement', unit: 'cc', min: 10, max: 200, step: 0.1, group: 'head' },
+  // Un pas plus fin que sa voisine, et c'est voulu : la section du V8 vaut
+  // 3,0625 po², qu'un pas au centième ne permettrait pas de retrouver après
+  // s'en être écarté.
+  { key: 'exhaustRunnerArea', label: 'Section d’échappement', unit: 'po²', min: 0.5, max: 10, step: 0.0025, group: 'head' },
+  { key: 'lobeSeparation', label: 'Écartement des lobes', unit: '°', min: 90, max: 130, step: 0.5, group: 'cams' },
+  { key: 'intakeLobeCenter', label: 'Centre du lobe d’admission', unit: '°', min: 90, max: 130, step: 0.5, group: 'cams' },
+  { key: 'exhaustLobeCenter', label: 'Centre du lobe d’échappement', unit: '°', min: 90, max: 130, step: 0.5, group: 'cams' },
+  { key: 'intakeLift', label: 'Levée d’admission', unit: 'po', min: 0.1, max: 0.9, step: 0.001, group: 'cams' },
+  { key: 'exhaustLift', label: 'Levée d’échappement', unit: 'po', min: 0.1, max: 0.9, step: 0.001, group: 'cams' },
+  { key: 'intakeDuration', label: 'Durée d’admission', unit: '°', min: 160, max: 320, step: 1, group: 'cams' },
+  { key: 'exhaustDuration', label: 'Durée d’échappement', unit: '°', min: 160, max: 320, step: 1, group: 'cams' },
+  { key: 'plenumVolume', label: 'Boîte à air', unit: 'l', min: 0.2, max: 10, step: 0.025, group: 'intake' },
+  { key: 'intakeFlowRate', label: 'Débit d’admission', unit: 'k', min: 50, max: 1500, step: 10, group: 'intake' },
+  // Pas très fin, et c'est mesuré : le débit passe en cosinus, dix-sept fois
+  // moins d'air entre 0,975 et 0,9985.
+  { key: 'idleThrottlePlate', label: 'Papillon au ralenti', unit: '', min: 0.8, max: 1, step: 0.0005, group: 'intake' },
+  { key: 'primaryTubeLength', label: 'Tube primaire', unit: 'po', min: 4, max: 60, step: 0.5, group: 'exhaust' },
+  { key: 'primaryFlowRate', label: 'Débit du primaire', unit: 'k', min: 50, max: 2000, step: 10, group: 'exhaust' },
+  { key: 'outletFlowRate', label: 'Débit de sortie', unit: 'k', min: 100, max: 4000, step: 25, group: 'exhaust' },
+  { key: 'collectorVolume', label: 'Collecteur', unit: 'l', min: 1, max: 500, step: 1, group: 'exhaust' },
+  { key: 'exhaustAudioVolume', label: 'Poids dans le son', unit: '', min: 0, max: 10, step: 0.1, group: 'exhaust' },
+  {
+    key: 'revLimit',
+    label: 'Rupteur',
+    unit: 'tr/min',
+    min: 2000,
+    max: 12000,
+    step: 100,
+    group: 'limiter',
+    fromProfile: true,
+  },
+  { key: 'limiterDuration', label: 'Durée de coupure', unit: 's', min: 0.01, max: 1, step: 0.01, group: 'limiter' },
+  { key: 'airNoise', label: 'Bruit d’air', unit: '', min: 0, max: 1, step: 0.01, group: 'noise', hot: true },
+  {
+    key: 'inputSampleNoise',
+    label: 'Gigue d’échantillonnage',
+    unit: '',
+    min: 0,
+    max: 1,
+    step: 0.01,
+    group: 'noise',
+    hot: true,
+  },
+]
+
+/** Nombre de doubles attendus par le C++. Le contrat, en un chiffre. */
+export const ENGINE_VALUE_COUNT = ENGINE_FIELDS.length
+
 export interface LayerPreset {
   /** Identifiant stable, sert de clé dans l'éditeur. */
   key: string
@@ -440,10 +657,12 @@ export interface Profile {
    * une boîte noire dont personne ne sait plus d'où elle vient, ni comment la
    * refaire après un changement de réglage.
    *
-   * Sa forme reste à fixer : elle est ici transportée et conservée telle quelle,
-   * sans être lue. Absente sur un profil enregistré, qui n'en a que faire.
+   * Sa forme est celle du contrat, décrite par `EngineDefinition` : les mêmes
+   * nombres que le C++ lit, dans l'ordre de `ENGINE_FIELDS`. Facultative dans le
+   * schéma parce qu'un profil reçu par lien depuis une version antérieure n'en a
+   * pas — la reprise du stockage lui rend celle de son profil d'usine.
    */
-  engineDefinition?: unknown
+  engineDefinition?: EngineDefinition
   /** Dossier d'échantillons, relatif à la racine des assets. */
   sampleDir: string
   engine: EnginePreset
@@ -485,7 +704,14 @@ export type ProfileOrigin = Pick<
   'sampleDir' | 'engine' | 'drivetrain' | 'speed' | 'mix' | 'feel' | 'layers'
 >
 
-export const PROFILE_FORMAT_VERSION = 4
+/**
+ * Version 5 : la définition de moteur a une forme.
+ *
+ * Elle traversait le stockage sans être lue depuis la version 4 ; elle porte
+ * maintenant les vingt-sept nombres du contrat, et un profil qui n'en avait pas
+ * reçoit celle de son profil d'usine.
+ */
+export const PROFILE_FORMAT_VERSION = 5
 
 export interface ProfileFile {
   version: number

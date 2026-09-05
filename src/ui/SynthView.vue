@@ -8,8 +8,13 @@ import {
   type ExhaustResponse,
   type SynthSettings,
 } from '../core/synth/settings'
+import { ENGINE_GROUPS, ENGINE_FIELDS, type EngineDefinition } from '../core/preset/schema'
+import { ENGINE_REFERENCES, GM_LS_V8, SUBARU_EJ25 } from '../core/preset/defaults'
 import {
+  activeProfile,
+  applyEngineDefinition,
   applySynthSettings,
+  engineDefinition,
   setSynthEnabled,
   setSynthSilent,
   synthSettings,
@@ -77,11 +82,6 @@ const place = computed(() => {
   return 'libre'
 })
 
-const CYLINDRES = [
-  { id: 4, label: '4 en ligne' },
-  { id: 8, label: '8, vilebrequin croisé' },
-] as const
-
 const FREQUENCES = [
   { id: 6000, label: '6 kHz' },
   { id: 8000, label: '8 kHz' },
@@ -131,6 +131,74 @@ function choosePlace(choix: string): void {
 /** Le choix d'échappement : une valeur de texte, pas un nombre. */
 function chooseResponse(id: string): void {
   void applySynthSettings({ ...synthSettings.value, exhaustResponse: id as ExhaustResponse })
+}
+
+/**
+ * Le moteur, paramètre par paramètre.
+ *
+ * Ils vivent dans le profil et voyagent avec lui ; ce panneau est seulement
+ * l'endroit où on les tourne. L'ordre suivi est celui du contrat — le même que
+ * lit le C++ — et les familles sont des tranches contiguës de cette liste, pas
+ * un réarrangement.
+ *
+ * Des curseurs, pas de menu déroulant : le panneau se remanie à chaque mesure et
+ * un menu ouvert se refermerait sous le doigt.
+ */
+const engineGroups = computed(() =>
+  ENGINE_GROUPS.map((group) => ({
+    ...group,
+    fields: ENGINE_FIELDS.filter((field) => field.group === group.id),
+  })),
+)
+
+/**
+ * La définition de référence à laquelle se comparer.
+ *
+ * Celle du moteur qui a le même nombre de cylindres : comparer un quatre
+ * cylindres aux cotes d'un V8 ne dirait rien. Un écart affiché est un écart
+ * qu'on a choisi.
+ */
+const reference = computed<EngineDefinition>(() =>
+  engineDefinition.value.cylinders === 4 ? SUBARU_EJ25 : GM_LS_V8,
+)
+
+/** Le rupteur ne se règle pas ici : il vient de la section moteur du profil. */
+const redlineRpm = computed(() => activeProfile.value.engine.redlineRpm)
+
+function engineValue(key: string): number {
+  if (key === 'revLimit') return redlineRpm.value
+  return engineDefinition.value[key as keyof EngineDefinition]
+}
+
+/** La valeur de référence, ou `null` quand celle qu'on a réglée la vaut. */
+function engineGap(key: string): number | null {
+  if (key === 'revLimit') return null
+  const attendue = reference.value[key as keyof EngineDefinition]
+  return Math.abs(attendue - engineValue(key)) < 1e-9 ? null : attendue
+}
+
+/**
+ * Le nombre tel quel, à quatre décimales près.
+ *
+ * Pas un arrondi au pas du curseur : la section d'échappement du V8 vaut
+ * 3,0625 po², et l'afficher « 3,06 » ferait croire à un écart à la référence là
+ * où il n'y en a pas.
+ */
+function engineText(value: number): string {
+  return String(Number(value.toFixed(4)))
+}
+
+function onEngine(key: string, event: Event): void {
+  const target = event.target as HTMLInputElement
+  void applyEngineDefinition({
+    ...engineDefinition.value,
+    [key]: Number(target.value),
+  })
+}
+
+/** Reposer le moteur sur une des deux définitions livrées avec engine-sim. */
+function loadReference(definition: EngineDefinition): void {
+  void applyEngineDefinition({ ...definition })
 }
 
 function onFlag(key: keyof SynthSettings, event: Event): void {
@@ -274,20 +342,7 @@ const gauge = computed(() => {
     </section>
 
     <section class="panel">
-      <h2>Le moteur — coupe le son le temps de rebâtir</h2>
-      <div class="field">
-        <label>Cylindres</label>
-        <div class="choices">
-          <button
-            v-for="entry in CYLINDRES"
-            :key="entry.id"
-            :aria-pressed="synthSettings.cylinders === entry.id"
-            @click="chooseNumber('cylinders', entry.id)"
-          >
-            {{ entry.label }}
-          </button>
-        </div>
-      </div>
+      <h2>Le calcul — coupe le son le temps de rebâtir</h2>
       <div class="field">
         <label>Simulation</label>
         <div class="choices">
@@ -418,32 +473,6 @@ const gauge = computed(() => {
         </div>
       </div>
       <div class="field">
-        <label for="air">Bruit d'air</label>
-        <input
-          id="air"
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          :value="synthSettings.airNoise"
-          @input="onNumber('airNoise', $event)"
-        />
-        <span class="numeric">{{ synthSettings.airNoise.toFixed(2) }}</span>
-      </div>
-      <div class="field">
-        <label for="gigue">Gigue d'échantillonnage</label>
-        <input
-          id="gigue"
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          :value="synthSettings.inputSampleNoise"
-          @input="onNumber('inputSampleNoise', $event)"
-        />
-        <span class="numeric">{{ synthSettings.inputSampleNoise.toFixed(2) }}</span>
-      </div>
-      <div class="field">
         <label>Où l'on écoute</label>
         <div class="choices">
           <button
@@ -525,6 +554,60 @@ const gauge = computed(() => {
         La réserve absorbe les pointes de calcul. Elle se paie en retard entre
         le cadran et le son : l'allonger fait disparaître les creux et éloigne
         le son de ce qu'on voit.
+      </p>
+    </section>
+
+    <section class="panel wide">
+      <h2>Le moteur — il vit dans le profil « {{ activeProfile.name }} »</h2>
+      <p class="note">
+        Ces nombres décrivent le moteur simulé et voyagent avec le profil :
+        fichier, lien, stockage. Ils étaient écrits en dur dans le C++, où les
+        changer demandait de recompiler. Tout, sauf les deux bruits, coupe le
+        son le temps de rebâtir.
+      </p>
+      <div class="actions">
+        <span class="state">Repartir d'une référence d'engine-sim :</span>
+        <button
+          v-for="entry in ENGINE_REFERENCES"
+          :key="entry.id"
+          @click="loadReference(entry.definition)"
+        >
+          {{ entry.label }}
+        </button>
+      </div>
+      <div class="groups">
+        <div v-for="group in engineGroups" :key="group.id" class="group">
+          <h3>{{ group.label }}</h3>
+          <div v-for="field in group.fields" :key="field.key" class="field">
+            <label :for="`eng-${field.key}`">{{ field.label }}</label>
+            <input
+              :id="`eng-${field.key}`"
+              type="range"
+              :min="field.min"
+              :max="field.max"
+              :step="field.step"
+              :value="engineValue(field.key)"
+              :disabled="field.fromProfile === true"
+              @input="onEngine(field.key, $event)"
+            />
+            <span class="numeric">
+              {{ engineText(engineValue(field.key)) }}{{ field.unit ? ' ' + field.unit : '' }}
+              <em v-if="engineGap(field.key) !== null" class="gap">
+                réf. {{ engineText(engineGap(field.key) as number) }}
+              </em>
+            </span>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        La colonne de droite rappelle la valeur de référence quand on s'en
+        écarte — celle du GM LS pour un huit cylindres, celle du Subaru EJ25
+        pour un quatre. S'en écarter est un choix ; c'est ce qui a manqué au V8,
+        dont l'échappement portait les cotes d'un EJ25 sans que rien ne le dise.
+      </p>
+      <p class="note">
+        Le rupteur est en gris : il se règle dans la section moteur du profil,
+        et deux réglages pour un seul chiffre finiraient par se contredire.
       </p>
     </section>
 
@@ -686,5 +769,38 @@ h2 {
 .field .numeric {
   text-align: right;
   min-width: 4rem;
+}
+
+/* Vingt-huit curseurs : en une colonne ils dépasseraient l'écran. */
+.groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: 0 1.4rem;
+  align-items: start;
+}
+
+h3 {
+  margin: 0.9rem 0 0.2rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.group .field:last-of-type {
+  border-bottom: 1px solid var(--line);
+}
+
+/* L'écart à la référence, sous la valeur réglée : on doit le voir sans le lire. */
+.gap {
+  display: block;
+  font-style: normal;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.field input:disabled {
+  opacity: 0.4;
 }
 </style>

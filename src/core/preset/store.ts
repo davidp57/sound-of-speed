@@ -1,4 +1,5 @@
 import { createDefaultProfile, createFactoryProfiles } from './defaults'
+import { clampEngineDefinition } from './engine-definition'
 import {
   PROFILE_FORMAT_VERSION,
   soundSourceOf,
@@ -427,10 +428,15 @@ function reconcile(profile: Partial<Profile>): Profile {
   // plutôt que de se voir attribuer une origine inventée.
   if (isRecord(profile.origin)) complet.origin = profile.origin as ProfileOrigin
 
-  // La définition de moteur traverse sans être lue : sa forme n'est pas encore
-  // fixée, et la perdre en rechargeant reviendrait à ne plus savoir refaire la
-  // banque qu'elle a produite.
-  if (profile.engineDefinition !== undefined) complet.engineDefinition = profile.engineDefinition
+  // La définition de moteur est reprise sur celle du profil d'usine : un profil
+  // enregistré avant qu'elle ait une forme n'en portait pas, et un profil qui la
+  // porte peut venir d'une main ou d'une version antérieure. Dans les deux cas
+  // il ressort avec les vingt-sept nombres du contrat, dans leur domaine —
+  // aucun profil ne se retrouve sans moteur à décrire.
+  complet.engineDefinition = clampEngineDefinition({
+    ...(base.engineDefinition ?? {}),
+    ...(isRecord(profile.engineDefinition) ? profile.engineDefinition : {}),
+  })
 
   return complet
 }

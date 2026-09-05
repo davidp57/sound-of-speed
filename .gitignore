@@ -28,3 +28,9 @@ coverage/
 
 # Fichier d essai du dépôt de traces, produit à la main sur le poste.
 essai.json
+
+# Ce qu'em++ laisse tomber quand une commande de compilation casse en
+# chemin : deux fichiers a.out a la racine, qui ont déjà été commités une
+# fois et fait échouer le contrôle qualité.
+a.out.js
+a.out.wasm

@@ -1,4 +1,98 @@
-import type { Profile } from './schema'
+import type { EngineDefinition, Profile } from './schema'
+
+/**
+ * Le V8 américain d'engine-sim, un GM LS.
+ *
+ * Les valeurs viennent de la définition livrée avec engine-sim, relevées dans
+ * `native/CONTRAT-MOTEUR.md`. Elles servent de repère autant que de départ :
+ * s'en écarter est un choix, pas un accident, et l'écran de synthèse affiche la
+ * valeur de référence à côté de celle qu'on a réglée.
+ *
+ * C'est ce moteur-là que portent les deux profils livrés — leur banque
+ * d'échantillons est celle d'un V8.
+ */
+export const GM_LS_V8: EngineDefinition = {
+  cylinders: 8,
+  bore: 3.78,
+  stroke: 3.622,
+  rodLength: 6.299,
+  // Avec l'alésage réel de 3,78 pouces, 90 cc donne 8,4:1. Le GM LS livré avec
+  // engine-sim est un 5,7 litres, pas un LS3 — je l'avais pris pour tel.
+  chamberVolume: 90,
+  intakeRunnerVolume: 149.6,
+  // 2,2 × 2,2 pouces.
+  intakeRunnerArea: 4.84,
+  exhaustRunnerVolume: 50,
+  // 1,75 × 1,75 pouces.
+  exhaustRunnerArea: 3.0625,
+  lobeSeparation: 114,
+  intakeLobeCenter: 114,
+  exhaustLobeCenter: 114,
+  intakeLift: 0.551,
+  exhaustLift: 0.551,
+  intakeDuration: 234,
+  exhaustDuration: 234,
+  plenumVolume: 1.325,
+  intakeFlowRate: 700,
+  idleThrottlePlate: 0.996,
+  // Vingt-neuf pouces de primaire : c'est ce qui fait la résonance grave d'un V8
+  // américain, là où l'EJ25 n'en a que dix.
+  primaryTubeLength: 29,
+  primaryFlowRate: 500,
+  outletFlowRate: 1000,
+  collectorVolume: 100,
+  exhaustAudioVolume: 4,
+  limiterDuration: 0.2,
+  airNoise: 0.15,
+  inputSampleNoise: 0.05,
+}
+
+/**
+ * Le quatre cylindres à plat de Subaru, un EJ25.
+ *
+ * Même origine que le V8 : la définition livrée avec engine-sim. Il n'est porté
+ * par aucun profil livré — la banque d'échantillons de l'application est celle
+ * d'un V8 — mais il sert de second point de départ sur le banc de réglage.
+ */
+export const SUBARU_EJ25: EngineDefinition = {
+  cylinders: 4,
+  bore: 3.917,
+  stroke: 3.11,
+  rodLength: 5.142,
+  chamberVolume: 67,
+  intakeRunnerVolume: 149.6,
+  // 2 × 2 pouces.
+  intakeRunnerArea: 1.8225,
+  exhaustRunnerVolume: 50,
+  // 1,5 × 1,5 pouces.
+  exhaustRunnerArea: 1.5625,
+  lobeSeparation: 114,
+  intakeLobeCenter: 114,
+  exhaustLobeCenter: 114,
+  intakeLift: 0.395,
+  exhaustLift: 0.377,
+  intakeDuration: 220,
+  exhaustDuration: 220,
+  plenumVolume: 1.325,
+  intakeFlowRate: 800,
+  idleThrottlePlate: 0.9985,
+  primaryTubeLength: 10,
+  primaryFlowRate: 200,
+  outletFlowRate: 1000,
+  collectorVolume: 100,
+  exhaustAudioVolume: 4,
+  limiterDuration: 0.08,
+  airNoise: 0.15,
+  inputSampleNoise: 0.05,
+}
+
+/** Les définitions de référence, dans l'ordre où le banc les propose. */
+export const ENGINE_REFERENCES = [
+  { id: 'gm-ls', label: 'GM LS — V8', definition: GM_LS_V8 },
+  { id: 'subaru-ej25', label: 'Subaru EJ25 — 4 cylindres', definition: SUBARU_EJ25 },
+] as const
+
+export type EngineReferenceId = (typeof ENGINE_REFERENCES)[number]['id']
 
 /**
  * Régime moteur atteint dans le dernier rapport à une vitesse donnée.
@@ -152,6 +246,10 @@ export function createDefaultProfile(): Profile {
     // Les deux profils livrés sonnent par échantillons : c'est la seule origine
     // gréée, et la banque de `procar/` est ce sur quoi ils sont réglés.
     soundSource: 'recorded',
+    // Le moteur simulé est décrit même sur un profil qui sonne par échantillons :
+    // c'est ce qui permet de basculer son origine en direct et d'entendre quelque
+    // chose, plutôt que d'avoir à décrire un moteur de zéro avant le premier son.
+    engineDefinition: { ...GM_LS_V8 },
     sampleDir: 'procar',
     engine: {
       cylinders: 8,

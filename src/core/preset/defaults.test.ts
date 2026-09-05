@@ -5,6 +5,7 @@ import {
   createFactoryProfiles,
   createRoadProfile,
   finalDriveFor,
+  GM_LS_V8,
   rpmAtSpeed,
 } from './defaults'
 import { Engine } from '../engine/engine'
@@ -51,12 +52,15 @@ describe('profils livrés', () => {
     expect(profiles.map((p) => p.name)).toEqual(['Route', 'Sport'])
   })
 
-  it('les fait sonner par échantillons, sans définition de moteur', () => {
-    // La seule origine gréée aujourd'hui, et celle sur laquelle les deux
-    // profils sont réglés.
+  it('les fait sonner par échantillons, et décrit quand même leur moteur', () => {
+    // L'origine enregistrée est la seule gréée aujourd'hui, et celle sur
+    // laquelle les deux profils sont réglés. La définition de moteur est là
+    // malgré tout : basculer un profil en direct doit donner un son, pas un
+    // formulaire de vingt-sept nombres à remplir avant d'entendre quoi que ce
+    // soit. Les deux profils imitent un V8, comme leur banque.
     for (const profile of createFactoryProfiles()) {
       expect(profile.soundSource).toBe('recorded')
-      expect(profile.engineDefinition).toBeUndefined()
+      expect(profile.engineDefinition).toEqual(GM_LS_V8)
     }
   })
 
