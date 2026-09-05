@@ -306,15 +306,28 @@ vaut rien. Ordre de grandeur : `Crr · m · g` ≈ 0,01 × 1800 × 9,81 ≈ 177 
 pour cent** de l'échelle, présents dès qu'un rapport est engagé et absents au
 point mort.
 
-### Deux façons de le prendre, non tranchées
+### Ce n'était pas l'effort — diagnostic corrigé par David
 
-1. **Ajouter le terme de roulement à l'effort**, et mettre l'effort à zéro franc
-   au point mort. C'est physique, cela se teste, et le symptôme du ralenti n'est
-   qu'un cas particulier du défaut : tenir 30 et tenir 130 souffrent du même
-   oubli.
-2. **Traiter le ralenti à part** : voiture à l'arrêt, papillon au ralenti pur et
-   aucune charge. Plus ciblé, moins de risque de dérégler ce qui est réglé.
+J'avais proposé d'ajouter le terme de roulement à l'effort. **C'était viser à
+côté**, et David a donné la vraie cause :
 
-La première est recommandée, mais elle **change le son partout** : les profils
-sont réglés sur le modèle actuel. C'est à David de trancher, et il ne l'a pas
-encore fait.
+> en pratique un moteur qui démarre utilise son embrayage, puis la 1ère (même
+> juste pour lancer, jusque 20 km/h) et donc les RPM sont *toujours* au-dessus du
+> ralenti
+
+Le défaut était en amont de l'effort, dans le **régime** lui-même. La chaine
+bornait le régime au ralenti tant que les roues tournaient moins vite — de zéro
+à six kilomètres à l'heure sur le profil Sport. Le son y était celui de l'arrêt
+parce que **le régime y était celui de l'arrêt**, et aucun réglage de charge n'y
+aurait changé quoi que ce soit.
+
+Corrigé par un **régime de décollage** dans `core/engine`, livré le 5 septembre
+2026 : voir le journal des changements. Le lot EFFORT n'y touche pas.
+
+### Ce qui reste vrai malgré tout
+
+L'effort **ignore toujours la résistance au roulement**, et cela reste un défaut :
+tenir trente et tenir cent trente ne diffèrent que par la traînée, quand une
+partie constante manque. Ce n'est simplement pas ce que David entendait. À
+reprendre si le relief de charge paraît plat à basse vitesse, et à mesurer avant
+de toucher : les profils sont réglés sur le modèle actuel.
