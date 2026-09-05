@@ -277,3 +277,44 @@ Conséquence pour le critère « une reprise douce à 130 s'entend 3 dB au-dessu
 la croisière » : le relief en apporte **2,2**, et le reste dépend du fondu de
 timbre, qui ne se mesure pas d'ici. À juger à l'oreille ; si l'écart manque,
 `loadReliefDb` est le curseur, et c'est un réglage, pas un correctif.
+
+## Ce que l'écoute a montré ensuite : la résistance au roulement manque
+
+Le 5 septembre 2026, en écoutant le son synthétisé, David :
+
+> le ralenti est meilleur, quoiqu'il pourrait être plus « ralenti » — pour
+> l'instant c'est la même chose que si je roule à 800 rpm, le son est le même.
+
+C'est exact, et le modèle le dit. L'effort ne porte que deux termes :
+l'accélération demandée et la **traînée aérodynamique**, laquelle croît comme le
+carré de la vitesse. À basse vitesse ce second terme est négligeable :
+
+| Situation | Effort |
+|---|---|
+| À l'arrêt, au point mort | 0 |
+| À 15 km/h, allure tenue (environ 800 tr/min en première) | **0,007** |
+
+Sept millièmes d'écart sur une échelle qui va jusqu'à un : rien ne peut
+s'entendre. Or les deux situations n'ont rien de commun — au point mort le
+moteur ne fournit que ses propres frottements, en première il traîne une tonne
+huit.
+
+**Ce qui manque est la résistance au roulement.** Elle est à peu près constante,
+et elle domine en dessous de cinquante kilomètres à l'heure, là où la traînée ne
+vaut rien. Ordre de grandeur : `Crr · m · g` ≈ 0,01 × 1800 × 9,81 ≈ 177 N, contre
+3 600 N pour accélérer à la charge pleine du profil Route — soit environ **cinq
+pour cent** de l'échelle, présents dès qu'un rapport est engagé et absents au
+point mort.
+
+### Deux façons de le prendre, non tranchées
+
+1. **Ajouter le terme de roulement à l'effort**, et mettre l'effort à zéro franc
+   au point mort. C'est physique, cela se teste, et le symptôme du ralenti n'est
+   qu'un cas particulier du défaut : tenir 30 et tenir 130 souffrent du même
+   oubli.
+2. **Traiter le ralenti à part** : voiture à l'arrêt, papillon au ralenti pur et
+   aucune charge. Plus ciblé, moins de risque de dérégler ce qui est réglé.
+
+La première est recommandée, mais elle **change le son partout** : les profils
+sont réglés sur le modèle actuel. C'est à David de trancher, et il ne l'a pas
+encore fait.
