@@ -107,17 +107,69 @@ Deux pièges rencontrés en écrivant le troisième, tous deux mesurés :
   niveau crête là où 0,9 était attendu. Un coefficient unique égal à un règle la
   question.
 
+## Le moteur vient du profil
+
+Les deux moteurs — un quatre cylindres en ligne, un V8 à vilebrequin croisé —
+étaient écrits en dur. Ils se construisent maintenant à partir d'un **tableau de
+doubles**, celui que décrit [`CONTRAT-MOTEUR.md`](CONTRAT-MOTEUR.md). L'ordre du
+tableau est le contrat, et il est tenu par l'énumération `EngineParam` de
+`probe.cpp`.
+
+Un test relit cette énumération dans la source pour vérifier qu'elle ne diverge
+pas de la liste TypeScript. Il attend une ligne par paramètre, de la forme
+exacte :
+
+```c
+    ENGINE_CHAMBER_VOLUME = 4,        // chamberVolume
+```
+
+— le nom de la clé du contrat en fin de ligne, précédé de `// ` et de rien
+d'autre. Y toucher casse le test, ce qui est bien le but.
+
+Ce qui reste en dur est la liste du contrat : courbes de débit des soupapes,
+ordre d'allumage, angles de manetons, angle de V, point mort haut. S'y ajoutent
+les masses et inerties (bielle, piston, vilebrequin, volant), le couple de
+démarreur, la courbe d'avance à l'allumage, la section et la longueur du conduit
+d'admission, le débit du conduit, et la section du collecteur d'échappement.
+Aucune de ces valeurs n'est un réglage d'oreille ; le contrat les ajoutera si
+elles le deviennent.
+
+**Trois entrées dans le banc vivant**, et l'ordre compte :
+
+```c
+void synth_set_rig(int simFrequency, int audioSampleRate, int impulseSamples,
+                   int leveler, double levelerGain);
+int  synth_create_from(const double *values, int count);
+int  synth_create(int simFrequency, int audioSampleRate, int cylinders,
+                  int impulseSamples, int leveler, double levelerGain,
+                  double revLimitRpm);
+```
+
+`synth_set_rig` pose ce qui n'est pas le moteur : cadence de simulation, cadence
+du contexte audio, longueur de la réponse impulsionnelle, niveleur. Ces
+réglages-là ne décrivent pas un moteur et n'ont donc pas leur place dans le
+contrat. `synth_create_from` construit ensuite depuis le tableau ; un tableau
+plus court que le contrat laisse les valeurs de référence en place sur la fin.
+`synth_create` reste la porte d'entrée courte : les valeurs de référence du
+moteur à tant de cylindres, avec le rupteur du profil. Elle appelle les deux
+autres.
+
 ## Ce que la sonde mesure
 
-`probe.cpp` construit un **quatre cylindres en ligne** codé en dur, décalqué des
-valeurs du Subaru EJ25 livré avec engine-sim, sans passer par piranha (son
-langage de script, dix mille lignes qu'on n'embarque pas). Il fait exactement ce
+`probe.cpp` construit ses moteurs sans passer par piranha (le langage de script
+d'engine-sim, dix mille lignes qu'on n'embarque pas). Il fait exactement ce
 que fait `es_script::EngineNode::buildEngine()` : remplir les structures
 `Parameters` et appeler les `initialize()`.
 
-Le moteur est lancé au démarreur, puis tourne seul autour de 3 300 tr/min,
-papillon à peine ouvert, boîte au point mort. La sortie audio est lue puis
-jetée : **rien n'est joué**.
+Le moteur est lancé au démarreur, puis tourne seul, papillon à peine ouvert
+(0,10), boîte au point mort. La sortie audio est lue puis jetée : **rien n'est
+joué**.
+
+Le régime qu'il trouve dépend de la définition qu'on lui donne, et il a bougé
+quand les valeurs de référence du contrat ont remplacé celles qui étaient en
+dur : 4 580 tr/min avant, 2 300 après, sur le V8 à 10 kHz. Le débit d'admission
+explique à lui seul tout l'écart — remis à 1 200 au lieu des 400 du contrat, le
+V8 remonte à 4 480 tr/min. Le coût processeur, lui, n'a pas bougé.
 
 Le chronomètre sépare deux postes, ce que le retrait du fil rend facile :
 
