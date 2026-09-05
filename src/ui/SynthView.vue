@@ -2,7 +2,12 @@
 import { computed, ref } from 'vue'
 
 import ValueRow from './components/ValueRow.vue'
-import { DEFAULT_SYNTH, type SynthSettings } from '../core/synth/settings'
+import {
+  DEFAULT_SYNTH,
+  EXHAUST_RESPONSES,
+  type ExhaustResponse,
+  type SynthSettings,
+} from '../core/synth/settings'
 import {
   applySynthSettings,
   setSynthEnabled,
@@ -52,6 +57,15 @@ function onNumber(key: keyof SynthSettings, event: Event): void {
  */
 function reset(): void {
   void applySynthSettings({ ...DEFAULT_SYNTH })
+}
+
+/** Le choix d'échappement : une valeur de texte, pas un nombre. */
+function onChoice(event: Event): void {
+  const target = event.target as HTMLSelectElement
+  void applySynthSettings({
+    ...synthSettings.value,
+    exhaustResponse: target.value as ExhaustResponse,
+  })
 }
 
 function onFlag(key: keyof SynthSettings, event: Event): void {
@@ -303,6 +317,14 @@ const gauge = computed(() => {
           @input="onNumber('volume', $event)"
         />
         <span class="numeric">{{ synthSettings.volume.toFixed(2) }}</span>
+      </div>
+      <div class="field">
+        <label for="exhaust">Échappement</label>
+        <select id="exhaust" :value="synthSettings.exhaustResponse" @change="onChoice($event)">
+          <option v-for="entry in EXHAUST_RESPONSES" :key="entry.id" :value="entry.id">
+            {{ entry.label }}
+          </option>
+        </select>
       </div>
       <div class="field">
         <label for="air">Bruit d'air</label>

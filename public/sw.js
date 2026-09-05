@@ -44,6 +44,11 @@ self.addEventListener('install', (event) => {
           '/icons/icon-512.png',
           '/icons/icon-maskable-512.png',
           '/icons/apple-touch-icon.png',
+          // La réponse d'échappement par défaut du son synthétisé. Sans elle, un
+          // profil « généré en direct » sonnerait sans corps hors réseau —
+          // c'est-à-dire dans la voiture, là où il sert. Les autres réponses se
+          // chargent à la demande : on ne les choisit qu'au bureau.
+          '/impulse/smooth_39.wav',
         ]),
       )
       // Un fichier manquant ne doit pas empêcher l'installation.

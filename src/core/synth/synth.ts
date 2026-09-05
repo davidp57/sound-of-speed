@@ -2,7 +2,13 @@ import { exhaustImpulse } from './impulse'
 import { PLAYER_PROCESSOR, PLAYER_SOURCE } from './player-source'
 import { RENDERER_SOURCE } from './renderer-source'
 import { realtimeFactor } from './reserve'
-import { clampSynthSettings, DEFAULT_SYNTH, needsRebuild, type SynthSettings } from './settings'
+import {
+  clampSynthSettings,
+  DEFAULT_SYNTH,
+  exhaustResponseFile,
+  needsRebuild,
+  type SynthSettings,
+} from './settings'
 
 /**
  * Le son produit par engine-sim, joué en direct.
@@ -98,6 +104,18 @@ const IDLE_STATUS: SynthStatus = {
  */
 const MODULE_PATH = '/sonde/probe.mjs'
 
+/**
+ * Où vivent les réponses d'échappement enregistrées.
+ *
+ * Elles sont versées au dépôt, contrairement aux banques d'échantillons qui
+ * restent sur le NAS : sans elles le moteur simulé n'a pas de corps, elles font
+ * donc partie de l'application. Cent quatre-vingt-douze kilo-octets pour les
+ * quatre, mises en cache hors réseau comme le reste.
+ *
+ * Elles viennent d'engine-sim (MIT, Ange Yaghi), qui les livre et les utilise.
+ */
+const RESPONSE_DIR = '/impulse'
+
 function blobUrl(source: string): string {
   return URL.createObjectURL(new Blob([source], { type: 'text/javascript' }))
 }
@@ -111,6 +129,10 @@ export class SynthEngine {
   private output: GainNode | null = null
   private convolver: ConvolverNode | null = null
   private muffler: BiquadFilterNode | null = null
+  /** Les réponses déjà chargées, par nom de fichier. */
+  private responses = new Map<string, AudioBuffer>()
+  /** La réponse enregistrée en service, ou `null` quand on fabrique un tube. */
+  private recorded: AudioBuffer | null = null
   private muted = false
   /** Volume général de l'appareil, le même que celui du moteur à échantillons. */
   private masterVolume = 1
@@ -188,6 +210,7 @@ export class SynthEngine {
         processorOptions: { reportEvery: 8 },
       })
       this.node = node
+      await this.pickResponse(context)
       this.buildGraph(context, node)
 
       const rendererUrl = blobUrl(RENDERER_SOURCE)
@@ -293,7 +316,50 @@ export class SynthEngine {
       forceEffort: next.forceEffort,
       forcedEffort: next.forcedEffort,
     })
-    if (this.context !== null && this.node !== null) this.buildGraph(this.context, this.node)
+    if (this.context !== null && this.node !== null) {
+      await this.pickResponse(this.context)
+      this.buildGraph(this.context, this.node)
+    }
+  }
+
+  /** Met en service la réponse que les réglages demandent. */
+  private async pickResponse(context: AudioContext): Promise<void> {
+    const file = exhaustResponseFile(this.settings.exhaustResponse)
+    this.recorded = file === null ? null : await this.loadResponse(context, file)
+  }
+
+  /**
+   * Charge une réponse d'échappement enregistrée, et la garde.
+   *
+   * Ce sont les captations qu'engine-sim livre et utilise. Une réponse réelle
+   * porte ce qu'aucun modèle ne reproduit : la géométrie du tube, le
+   * silencieux, la caisse, le lieu de la prise. C'est la différence entre un
+   * échappement et l'idée qu'on s'en fait.
+   *
+   * Normalisée en énergie comme la réponse fabriquée, pour qu'on puisse passer
+   * de l'une à l'autre sans que le volume saute.
+   */
+  private async loadResponse(context: AudioContext, file: string): Promise<AudioBuffer | null> {
+    const known = this.responses.get(file)
+    if (known !== undefined) return known
+    try {
+      const reply = await fetch(`${RESPONSE_DIR}/${file}`)
+      if (!reply.ok) return null
+      const decoded = await context.decodeAudioData(await reply.arrayBuffer())
+      const samples = decoded.getChannelData(0)
+      let energy = 0
+      for (let i = 0; i < samples.length; i += 1) energy += samples[i]! * samples[i]!
+      if (energy > 0) {
+        const gain = 1 / Math.sqrt(energy)
+        for (let i = 0; i < samples.length; i += 1) samples[i] = samples[i]! * gain
+      }
+      this.responses.set(file, decoded)
+      return decoded
+    } catch {
+      // Un fichier absent ne doit pas faire taire le moteur : on retombe sur la
+      // réponse fabriquée, qui ne demande rien au réseau.
+      return null
+    }
   }
 
   /**
@@ -345,12 +411,20 @@ export class SynthEngine {
       return
     }
 
-    const length = Math.max(1, Math.round((this.settings.convolverMs / 1000) * context.sampleRate))
-    const buffer = context.createBuffer(1, length, context.sampleRate)
-    buffer.copyToChannel(
-      exhaustImpulse(length, context.sampleRate, this.settings.exhaustHz),
-      0,
-    )
+    // Une captation réelle si on en a une, sinon le tube. La longueur réglée ne
+    // s'applique qu'au tube : couper une vraie réponse la dénaturerait.
+    const recorded = this.recorded
+    let buffer: AudioBuffer
+    if (recorded !== null) {
+      buffer = recorded
+    } else {
+      const length = Math.max(1, Math.round((this.settings.convolverMs / 1000) * context.sampleRate))
+      buffer = context.createBuffer(1, length, context.sampleRate)
+      buffer.copyToChannel(
+        exhaustImpulse(length, context.sampleRate, this.settings.exhaustHz),
+        0,
+      )
+    }
     const convolver = context.createConvolver()
     // La réponse est déjà normalisée en énergie par `exhaustImpulse` : laisser le
     // nœud en remettre une couche ferait dépendre le niveau de sa longueur.
