@@ -8,6 +8,12 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Un bouton « Réglages d'origine » sur le banc de synthèse.** Sept curseurs,
+  dont plusieurs se compensent : on s'y perd en tâtonnant à l'oreille, et la
+  seule issue était de recharger la page — ce qui coupe le son et rebâtit le
+  moteur. Le bouton remet les valeurs par défaut sans rien interrompre.
+
+
 - **La résonance d'échappement est un tube, et non plus un bruit.** C'est une
   erreur de fond que je traînais depuis le début du portage : la réponse
   impulsionnelle était un bruit blanc décroissant, repris d'engine-sim. Or

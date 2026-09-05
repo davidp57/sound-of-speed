@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 
 import ValueRow from './components/ValueRow.vue'
-import type { SynthSettings } from '../core/synth/settings'
+import { DEFAULT_SYNTH, type SynthSettings } from '../core/synth/settings'
 import {
   applySynthSettings,
   setSynthEnabled,
@@ -41,6 +41,17 @@ async function toggle(): Promise<void> {
 function onNumber(key: keyof SynthSettings, event: Event): void {
   const target = event.target as HTMLInputElement | HTMLSelectElement
   void applySynthSettings({ ...synthSettings.value, [key]: Number(target.value) })
+}
+
+/**
+ * Revenir aux réglages d'origine.
+ *
+ * On tâtonne à l'oreille sur ce banc, et l'on s'y perd : sept curseurs, dont
+ * plusieurs se compensent. Sans point de retour, la seule issue était de
+ * recharger la page — ce qui coupe aussi le son et rebatît le moteur.
+ */
+function reset(): void {
+  void applySynthSettings({ ...DEFAULT_SYNTH })
 }
 
 function onFlag(key: keyof SynthSettings, event: Event): void {
@@ -97,6 +108,7 @@ const gauge = computed(() => {
         <button :disabled="busy" @click="toggle()">
           {{ running ? 'Couper la synthèse' : 'Activer la synthèse' }}
         </button>
+        <button :disabled="busy" @click="reset()">Réglages d'origine</button>
         <label class="silent">
           <input
             type="checkbox"
