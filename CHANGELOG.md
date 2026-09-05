@@ -51,6 +51,31 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un régime de décollage, et le ralenti cesse de s'entendre en roulant.**
+  David : « le bruit du moteur qui pousse ne commence que vers 15 km/h [...] en
+  pratique un moteur qui démarre utilise son embrayage, puis la première, et donc
+  les tours sont *toujours* au-dessus du ralenti ».
+
+  Le régime était borné au ralenti tant que les roues tournaient moins vite — de
+  zéro à six kilomètres à l'heure sur le profil Sport, où la première ne donne
+  que 385 tr/min à trois kilomètres à l'heure et 642 à cinq. Le son y était donc
+  exactement celui de l'arrêt, ce qu'aucune voiture ne fait.
+
+  Dès que la voiture avance, c'est maintenant l'embrayage qui commande : le
+  moteur monte au **régime de décollage** et l'y tient pendant qu'elle prend de la
+  vitesse, jusqu'à ce que les roues le rejoignent. Réglable par profil, 1 300
+  tr/min sur Route et 1 500 sur Sport.
+
+  Un garde-fou est nécessaire : l'embrayage ne patine qu'en partant. Au-delà de
+  vingt-cinq kilomètres à l'heure il est tenu pour fermé, faute de quoi une
+  allure tenue sur un rapport long — trente kilomètres à l'heure à mille cent
+  tours — passerait pour un décollage et verrait son régime relevé à tort. Ce
+  sont deux tests existants qui l'ont montré.
+
+  La version du format de profil passe de 3 à 4 ; les profils enregistrés
+  reçoivent le régime de décollage de leur profil d'usine.
+
+
 - **Un choix « où l'on écoute »** sur le banc de synthèse : dehors à côté de la
   voiture, ou dedans vitres fermées. Le passe-bas de sortie faisait déjà cela
   sans qu'on l'ait cherché — c'est David qui l'a remarqué en réglant à

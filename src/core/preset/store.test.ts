@@ -785,6 +785,20 @@ describe('origine du son', () => {
     expect(soundSourceOf({ soundSource: 42 })).toBe('recorded')
   })
 
+  it('donne un régime de décollage aux profils qui n’en avaient pas', () => {
+    // Le champ est né avec la version 4 du format. Un profil enregistré avant
+    // doit recevoir celui de son profil d'usine, sans quoi le moteur resterait
+    // collé au ralenti à très basse vitesse et sonnerait comme à l'arrêt.
+    const ancien = createRoadProfile() as unknown as {
+      engine: Partial<Record<string, unknown>>
+    }
+    delete ancien.engine['launchRpm']
+
+    const relu = fromFile(JSON.stringify(ancien))
+
+    expect(relu.engine.launchRpm).toBeGreaterThan(relu.engine.idleRpm)
+  })
+
   it('ne demande un moteur simulé que pour le direct', () => {
     expect(SOUND_SOURCES).toEqual(['recorded', 'live', 'prerendered'])
     // Une banque produite à l'avance se joue comme une banque enregistrée : même

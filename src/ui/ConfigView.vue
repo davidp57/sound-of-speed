@@ -994,6 +994,9 @@ function impliedCylinders(index: number): number | null {
       <NumberField v-model="profile.engine.idleRpm" label="Ralenti" :min="400" :max="3000" :step="10" unit="tr/min"
         hint="Régime moteur à l'arrêt, embrayage débrayé. C'est le son qu'on entend au feu rouge."
       />
+      <NumberField v-model="profile.engine.launchRpm" label="Régime de décollage" :min="600" :max="4000" :step="50" unit="tr/min"
+        hint="Ce que l'embrayage impose dès que la voiture avance. Le moteur y monte et l'y tient pendant qu'elle prend de la vitesse, jusqu'à ce que les roues le rejoignent. Sans lui, le régime resterait au ralenti à très basse vitesse, et le son serait celui de l'arrêt."
+      />
       <NumberField
         v-model="profile.engine.softLimitRpm"
         label="Seuil de coupure"

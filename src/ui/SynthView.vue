@@ -482,7 +482,7 @@ const gauge = computed(() => {
         />
         <span class="numeric">{{ synthSettings.convolverMix.toFixed(2) }}</span>
       </div>
-      <div class="field">
+      <div v-if="synthSettings.exhaustResponse === 'tube'" class="field">
         <label for="tube">Accord de l'échappement</label>
         <input
           id="tube"
@@ -495,7 +495,7 @@ const gauge = computed(() => {
         />
         <span class="numeric">{{ synthSettings.exhaustHz }} Hz</span>
       </div>
-      <div class="field">
+      <div v-if="synthSettings.exhaustResponse === 'tube'" class="field">
         <label for="len">Longueur de la résonance</label>
         <input
           id="len"
