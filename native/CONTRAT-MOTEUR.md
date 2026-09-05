@@ -34,8 +34,11 @@ s'ajoute **à la fin**. Un paramètre retiré laisse sa place occupée plutôt q
 décaler les suivants.
 
 ```c
-// C++
-int synth_create_from(const double *values, int count);
+// C++ — le banc (cadences, convolution, niveleur) se pose d'abord : il ne
+// décrit pas un moteur.
+void synth_set_rig(int simFrequency, int audioSampleRate, int impulseSamples,
+                   int leveler, double levelerGain);
+int  synth_create_from(const double *values, int count);
 ```
 
 ```ts
@@ -46,56 +49,83 @@ const values = ENGINE_FIELDS.map((f) => definition[f.key])
 Un test compare la liste TypeScript à l'énumération C++ extraite de la source :
 deux listes qui se désaccordent sans bruit sont exactement ce qu'on veut éviter.
 
-## Les paramètres
+## Les valeurs de référence, relevées et non déduites
 
-Les colonnes « GM LS » et « EJ25 » donnent les valeurs des définitions livrées
-avec engine-sim, dont nos deux moteurs sont tirés. Elles servent de valeurs par
-défaut et de repère : s'en écarter est un choix, pas un accident.
+**Chaque valeur des deux colonnes est relevée dans le fichier `.mr`**, à la ligne
+indiquée. La première version de ce contrat en déduisait plusieurs, et neuf sur
+vingt-huit étaient fausses — dont une qui a fait dévisser le V8 de 4 580 à
+2 300 tr/min en roue libre. Ce qui n'est pas dans un fichier ne s'invente pas :
+la colonne porte alors un tiret.
+
+Sources : `assets/engines/atg-video-2/07_gm_ls.mr` et
+`assets/engines/atg-video-1/06_subaru_ej25.mr`, dans l'arbre cloné par
+`prepare.mjs`.
 
 | # | Clé | Unité | GM LS | EJ25 | Ce que ça change |
 |---|---|---|---|---|---|
-| 0 | `cylinders` | — | 8 | 4 | Nombre de cylindres. Rebâtit tout |
-| 1 | `bore` | pouce | 4.065 | 3.898 | Alésage |
-| 2 | `stroke` | pouce | 3.622 | 3.11 | Course |
-| 3 | `rodLength` | pouce | 6.098 | 5.5 | Longueur de bielle |
-| 4 | `chamberVolume` | cc | 90 | 51 | **Le taux de compression.** À 90 cc le LS3 est à 9,6:1 ; à 68, à 12,3:1 — un moteur de compétition. C'est la violence de la combustion, donc celle de l'impulsion d'échappement |
+| 0 | `cylinders` | — | 8 | 4 | Nombre de cylindres. Choisit le constructeur |
+| 1 | `bore` | pouce | 3.78 | 3.917 (99,5 mm) | Alésage |
+| 2 | `stroke` | pouce | 3.622 | 3.110 (79 mm) | Course |
+| 3 | `rodLength` | pouce | 6.299 (160 mm) | 5.142 | Longueur de bielle |
+| 4 | `chamberVolume` | cc | 90 | 67 | **Le taux de compression.** Avec l'alésage réel du LS (3,78), 90 cc donne 8,4:1 |
 | 5 | `intakeRunnerVolume` | cc | 149.6 | 149.6 | Volume du conduit d'admission |
-| 6 | `intakeRunnerArea` | pouce² | 4.84 | 4.0 | Section du conduit d'admission (2,2 × 2,2) |
+| 6 | `intakeRunnerArea` | pouce² | 4.84 (2,2²) | 1.8225 (1,35²) | Section du conduit d'admission |
 | 7 | `exhaustRunnerVolume` | cc | 50 | 50 | Volume du conduit d'échappement |
-| 8 | `exhaustRunnerArea` | pouce² | 3.0625 | 2.25 | Section du conduit d'échappement (1,75 × 1,75) |
-| 9 | `lobeSeparation` | degré | 114 | 114 | Écartement des lobes de came |
-| 10 | `intakeLobeCenter` | degré | 114 | 116 | Centre du lobe d'admission |
-| 11 | `exhaustLobeCenter` | degré | 114 | 116 | Centre du lobe d'échappement |
-| 12 | `intakeLift` | pouce | 0.551 | 0.395 | Levée d'admission |
-| 13 | `exhaustLift` | pouce | 0.551 | 0.377 | Levée d'échappement |
-| 14 | `intakeDuration` | degré | 234 | 220 | Durée d'ouverture d'admission |
-| 15 | `exhaustDuration` | degré | 234 | 220 | Durée d'ouverture d'échappement |
-| 16 | `plenumVolume` | litre | 1.325 | 2.0 | Volume de la boîte à air |
-| 17 | `intakeFlowRate` | k_carb | 400 | 400 | Débit d'admission |
-| 18 | `idleThrottlePlate` | 0-1 | 0.975 | 0.975 | **Le papillon au ralenti.** Le débit passe en cosinus : 0,9985 laisse dix-sept fois moins d'air que 0,975, et le moteur s'asphyxie |
+| 8 | `exhaustRunnerArea` | pouce² | 3.0625 (1,75²) | 1.5625 (1,25²) | Section du conduit d'échappement |
+| 9 | `lobeSeparation` | degré | 114 | 114 | Ne sert qu'à donner leur valeur par défaut aux deux centres de lobe |
+| 10 | `intakeLobeCenter` | degré | 114 | 114 | Centre du lobe d'admission |
+| 11 | `exhaustLobeCenter` | degré | 114 | 114 | Centre du lobe d'échappement |
+| 12 | `intakeLift` | pouce | — | — | Levée d'admission. Garder l'existant |
+| 13 | `exhaustLift` | pouce | — | — | Levée d'échappement. Garder l'existant |
+| 14 | `intakeDuration` | degré | — | — | Durée d'admission. Garder l'existant |
+| 15 | `exhaustDuration` | degré | — | — | Durée d'échappement. Garder l'existant |
+| 16 | `plenumVolume` | litre | 1.325 | 1.325 | Volume de la boîte à air |
+| 17 | `intakeFlowRate` | k_carb | **700** | **800** | Débit d'admission. **Le paramètre le plus lourd** : à 400, le V8 tombe de 4 580 à 2 300 tr/min en roue libre. Les vingt-sept autres pèsent cent tours à eux tous |
+| 18 | `idleThrottlePlate` | 0-1 | **0.996** | **0.9985** | **Le papillon au ralenti.** Le débit passe en cosinus, donc l'échelle est très serrée près de un : 0,975 laisse dix-sept fois plus d'air que 0,9985 |
 | 19 | `primaryTubeLength` | pouce | 29 | 10 | **La longueur du tube primaire**, qui fixe la résonance de l'échappement |
 | 20 | `primaryFlowRate` | k_carb | 500 | 200 | Débit du tube primaire |
 | 21 | `outletFlowRate` | k_carb | 1000 | 1000 | Débit en sortie |
-| 22 | `collectorVolume` | litre | 100 | 100 | Volume du collecteur |
-| 23 | `exhaustAudioVolume` | — | 4.0 | 4.0 | Poids de cette ligne dans le son |
-| 24 | `revLimit` | tr/min | — | — | Rupteur. Vient du profil, pas du moteur |
-| 25 | `limiterDuration` | seconde | 0.2 | 0.08 | Durée d'une coupure au rupteur |
-| 26 | `airNoise` | 0-1 | 0.15 | 0.15 | Bruit d'air d'engine-sim. **Il multiplie le signal** : à un, le moteur disparaît derrière sa modulation |
-| 27 | `inputSampleNoise` | 0-1 | 0.05 | 0.05 | Gigue d'échantillonnage, filtrée à 10 kHz |
+| 22 | `collectorVolume` | litre | — (voir plus bas) | 100 | Volume du collecteur |
+| 23 | `exhaustAudioVolume` | — | 4.0 | 4.0 (0,5 × 8) | Poids de cette ligne dans le son |
+| 24 | `revLimit` | tr/min | — | 6500 | Rupteur. Vient du profil, pas du moteur |
+| 25 | `limiterDuration` | seconde | — | 0.08 | Durée d'une coupure au rupteur |
+| 26 | `airNoise` | 0-1 | — | — | Bruit d'air d'engine-sim. **Il multiplie le signal** : à un, le moteur disparaît derrière sa modulation. Retenu à 0,15, à l'oreille |
+| 27 | `inputSampleNoise` | 0-1 | — | — | Gigue d'échantillonnage, filtrée à 10 kHz. Retenue à 0,05, à l'oreille |
+
+### Le collecteur, deux formes pour la même chose
+
+L'EJ25 déclare `volume: 100 L`, le GM LS `length: 100 inch` sur un banc et
+`172 inch` sur l'autre. L'API C++ ne prend qu'une longueur ; notre code convertit
+le volume en longueur par la section. Le paramètre reste un **volume**, la forme
+de l'EJ25, faute de pouvoir porter les deux — et le V8 s'en écarte donc par
+construction. C'est le seul endroit du contrat où la référence ne se transpose
+pas telle quelle.
 
 ## Ce qui reste en dur, et pourquoi
 
 - **Les courbes de débit des soupapes.** Dix points par courbe, deux courbes par
-  moteur : ce sont des données de banc d'essai, pas des réglages. Elles restent
-  dans `probe.cpp`, où elles sont déjà relevées sur les fichiers de référence.
+  moteur : ce sont des données de banc d'essai, pas des réglages.
 - **L'ordre d'allumage et les angles de manetons.** Ils *définissent* le moteur —
-  un V8 croisé cesse d'en être un si on les change. Ils suivent le nombre de
-  cylindres.
+  un V8 croisé cesse d'en être un si on les change.
 - **L'angle de V et le point mort haut**, qui en découlent.
+- Masses et inerties, démarreur, avance à l'allumage, turbulence, carburant,
+  conduit d'admission, atténuation sonore. Aucun ne se juge à l'oreille.
 
-## La règle
+## La règle, et ce qu'elle nous a coûté
 
-Une valeur qui s'écarte de la colonne de référence doit dire pourquoi, dans le
-profil ou dans un commentaire. C'est ce qui a manqué au V8 : son échappement
-portait les valeurs d'un EJ25 Subaru sans que rien ne le signale, et il a fallu
-comparer ligne à ligne pour s'en apercevoir.
+**Une valeur qui s'écarte de la colonne de référence doit dire pourquoi.**
+
+C'est ce qui a manqué au V8 : son échappement portait les valeurs d'un EJ25 sans
+que rien ne le signale. Et c'est ce qui a manqué à ma propre correction du
+papillon de ralenti — j'ai remplacé le 0,9985 du code par le 0,975 de la
+structure C++ en croyant corriger, alors que 0,9985 **est** la valeur relevée de
+l'EJ25. Le défaut d'une structure n'est pas une référence : c'est ce qui reste
+quand personne n'a rien déclaré.
+
+Les écarts assumés aujourd'hui :
+
+| Paramètre | Référence | Retenu | Pourquoi |
+|---|---|---|---|
+| `airNoise` | — | 0.15 | Jugé à l'oreille ; à 1, le moteur disparaît derrière sa modulation |
+| `inputSampleNoise` | — | 0.05 | Jugé à l'oreille ; à 0,5, le spectre remonte de 11 dB entre 2 et 8 kHz |
+| `idleThrottlePlate` | 0.996 / 0.9985 | **à trancher** | 0,975 a été livré par erreur. David a trouvé le ralenti meilleur, mais le lot comportait trois autres corrections : à comparer maintenant que le réglage est à sa main |
