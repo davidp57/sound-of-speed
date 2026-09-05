@@ -284,7 +284,8 @@ Engine *buildInline4(double revLimitRpm = 6500) {
     exhaustParams.primaryTubeLength = units::distance(10.0, units::inch);
     exhaustParams.primaryFlowRate = GasSystem::k_carb(200.0);
     exhaustParams.velocityDecay = 1.0;
-    exhaustParams.audioVolume = 1.0;
+    // L'EJ25 declare `audio_volume: 0.5 * 8`, soit quatre.
+    exhaustParams.audioVolume = 4.0;
     exhaustParams.impulseResponse = impulse;
     exhaust->initialize(exhaustParams);
 
@@ -586,11 +587,19 @@ Engine *buildCrossplaneV8(double revLimitRpm = 6800) {
             * units::distance(2.0, units::inch) * units::distance(2.0, units::inch);
         exhaustParams.length = (100.0 * units::L) / collectorArea;
         exhaustParams.collectorCrossSectionArea = collectorArea;
+        // L'echappement, releve sur le GM LS lui aussi.
+        //
+        // Il ne l'etait pas : ces valeurs venaient du quatre cylindres, dont
+        // l'echappement est celui d'un EJ25 Subaru. Le V8 portait donc la ligne
+        // d'une Subaru — et c'est l'echappement qui fait le son. Le commentaire
+        // en tete disait « rien n'y est invente » en enumerant ce qui est
+        // recopie : angle de V, point mort haut, manetons, ordre d'allumage,
+        // repartition des bancs. L'echappement n'etait pas dans la liste.
         exhaustParams.outletFlowRate = GasSystem::k_carb(1000.0);
-        exhaustParams.primaryTubeLength = units::distance(10.0, units::inch);
-        exhaustParams.primaryFlowRate = GasSystem::k_carb(300.0);
+        exhaustParams.primaryTubeLength = units::distance(29.0, units::inch);
+        exhaustParams.primaryFlowRate = GasSystem::k_carb(500.0);
         exhaustParams.velocityDecay = 1.0;
-        exhaustParams.audioVolume = 1.0;
+        exhaustParams.audioVolume = 4.0;
         exhaustParams.impulseResponse = impulse;
         exhaust->initialize(exhaustParams);
 
@@ -598,8 +607,10 @@ Engine *buildCrossplaneV8(double revLimitRpm = 6800) {
             head->setIntake(i, intake);
             head->setExhaustSystem(i, exhaust);
             head->setSoundAttenuation(i, 1.0);
+            // Vingt-neuf pouces, comme le tube primaire, avec le meme
+            // etagement d'un cylindre a l'autre.
             head->setHeaderPrimaryLength(
-                i, units::distance(10.0 + i * 2.0, units::inch));
+                i, units::distance(29.0 + i * 2.0, units::inch));
         }
     }
 

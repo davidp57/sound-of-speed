@@ -8,6 +8,46 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **La première se conduit comme un rapport, et l'on débraye en s'arrêtant.**
+  David : « la première passe tout de suite (logique) mais elle passe la 2de au
+  km/h suivant. Et la 2de est en dessous de 800 rpm (cappé à 800) jusque
+  12-14 km/h — ce qui donne l'effet que je n'aime pas ».
+
+  La première cédait la place dès la vitesse de lancement, **sans regarder le
+  régime** : cinq kilomètres à l'heure sur le profil Route, huit sur Sport. La
+  deuxième y tombait alors bien sous le ralenti. On y accélère désormais jusqu'au
+  seuil de régime, comme sur les autres rapports ; `launchUpshiftKmh` **empêche**
+  le passage en dessous au lieu de le forcer, pour qu'un coup d'accélérateur à
+  l'arrêt ne fasse pas monter les rapports.
+
+  Et l'on **débraye en s'arrêtant** : dès que les roues descendent sous le
+  ralenti en décélération, le moteur s'en détache et y retombe. C'est la règle que
+  David a donnée — « on freine jusqu'à l'arrêt en 2de, et quand on arrive sous
+  800 rpm on débraye avant de caler ». La première, elle, ne se reprend jamais en
+  roulant : c'est tout ce que `firstGearLaunchOnly` commande désormais.
+
+  Relevé au simulateur, profil Sport : 7 km/h à 1 500 tr/min en première,
+  passage en deuxième à 40 km/h. Plus aucun relevé au ralenti en roulant.
+
+
+- **Le V8 portait l'échappement d'une Subaru.** Sa géométrie est bien relevée sur
+  le GM LS livré avec engine-sim — angle de V, point mort haut, manetons, ordre
+  d'allumage, répartition des bancs — mais **l'échappement n'était pas dans cette
+  liste** : ses valeurs venaient du quatre cylindres, dont la ligne est celle
+  d'un EJ25.
+
+  | Paramètre | GM LS | Avant |
+  |---|---|---|
+  | Longueur du tube primaire | 29 pouces | 10 |
+  | Débit primaire | k_carb(500) | k_carb(300) |
+  | Volume audio | 4,0 | 1,0 |
+
+  C'est l'échappement qui fait le son d'un moteur, et c'est la première
+  explication mesurée du retrait du V8 sur le quatre cylindres — dont
+  l'échappement, lui, était juste. Le volume audio de l'EJ25 (`0.5 * 8`) est
+  rétabli sur les deux moteurs.
+
+
 - **Les menus déroulants du banc de synthèse bloquaient l'écran.** « Le focus
   clignote », et un clic sur une valeur figeait tout, rechargement obligatoire.
   Mesuré : **soixante-neuf remaniements du DOM par seconde** dans la section des

@@ -483,16 +483,21 @@ export class Gearbox {
     const downThresholdSeen = this.engine.redlineRpm * this.drivetrain.downshiftAtRedlineRatio
     const auto = this.mode === 'auto' && this.hasGearbox && this.shiftRemainingS === 0
 
-    // La première n'est qu'une amorce : passé la vitesse de lancement, elle cède
-    // la place sans attendre le moindre seuil de régime.
-    if (
-      auto &&
-      this.drivetrain.firstGearLaunchOnly &&
-      this.gear === 0 &&
-      kmh >= this.drivetrain.launchUpshiftKmh
-    ) {
-      this.applyShift(1)
-      return this.report(atStandstill, false, false, upThresholdSeen, downThresholdSeen)
+    // La première se conduit comme les autres : on y accélère jusqu'au seuil de
+    // régime, et c'est lui qui décide du passage.
+    //
+    // Elle cédait auparavant la place dès la vitesse de lancement, sans regarder
+    // le régime : huit kilomètres à l'heure sur le profil Sport, soit le
+    // kilomètre-heure suivant le démarrage. La deuxième y tombait alors bien sous
+    // le ralenti, et le régime restait borné jusqu'à douze ou quatorze
+    // kilomètres à l'heure. David : « il faut accélérer en première jusqu'à
+    // passer la deuxième, comme n'importe quelle vitesse ».
+    //
+    // `launchUpshiftKmh` ne force plus le passage : il l'**empêche** en dessous.
+    // Un coup d'accélérateur au démarrage ne doit pas faire monter les rapports
+    // avant que la voiture n'avance vraiment.
+    if (auto && this.gear === 0 && kmh < this.drivetrain.launchUpshiftKmh) {
+      blocked = true
     }
 
     // Le rétrogradage forcé passe avant tout le reste : c'est une demande
@@ -633,6 +638,12 @@ export class Gearbox {
    *
    * Quand la première n'est qu'une amorce de lancement, elle ne se réengage pas
    * en roulant : on ne redescend pas en dessous de la deuxième.
+   *
+   * C'est désormais le seul rôle de `firstGearLaunchOnly`. Il commandait aussi le
+   * passage immédiat de la première à la deuxième ; ce n'est plus le cas, la
+   * première se conduisant comme un rapport ordinaire. Ce qui reste vrai, et que
+   * David a formulé ainsi : « la seule différence de la première est qu'on ne
+   * revient pas dessus — on freine jusqu'à l'arrêt en deuxième ».
    */
   private downshiftFloor(): number {
     return this.drivetrain.firstGearLaunchOnly ? 1 : 0

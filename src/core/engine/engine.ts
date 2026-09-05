@@ -206,10 +206,18 @@ export class Engine {
     if (input.isShifting) {
       return Math.max(this.preset.idleRpm, kinematic * 0.72)
     }
+    // En ralentissant, on débraye avant de caler : dès que les roues descendent
+    // sous le ralenti, le moteur s'en détache et y retombe. C'est ce qui se passe
+    // en freinant jusqu'à l'arrêt, où l'on reste en deuxième.
+    if (input.accelMs2 < 0 && kinematic < this.preset.idleRpm) return this.preset.idleRpm
+
+    // En partant, l'embrayage patine : le moteur tient le régime de décollage
+    // pendant que la voiture prend de la vitesse, et les roues le rejoignent.
     // Jamais sous le ralenti, même si le profil est mal réglé.
     const launch = Math.max(this.preset.idleRpm, this.preset.launchRpm)
-    const slipping = input.kmh < CLUTCH_KMH && kinematic < launch
-    return slipping ? launch : Math.max(this.preset.idleRpm, kinematic)
+    if (input.kmh < CLUTCH_KMH && kinematic < launch) return launch
+
+    return Math.max(this.preset.idleRpm, kinematic)
   }
 
   /**

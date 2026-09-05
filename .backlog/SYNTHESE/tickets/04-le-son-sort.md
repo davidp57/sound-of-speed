@@ -353,10 +353,34 @@ V8 contre environ 27 pour le quatre cylindres. David l'avait entendu avant qu'on
 le mesure — « sur un 4 cylindres j'entends le ralenti (c'est chouette
 d'ailleurs) ».
 
-Le V8 croisé de `native/probe.cpp` a été écrit à la main et n'a jamais été
-comparé à une définition de référence, contrairement au quatre cylindres qui
-reprend les cotes d'un moteur réel. **C'est le prochain chantier**, et il se
-mène en comparant à une définition existante, pas en réglant au jugé.
+**Correction : le V8 n'a pas été écrit au jugé.** Je l'ai affirmé quatre fois
+sans ouvrir le fichier, et David a demandé sur quoi je me basais. Le
+commentaire en tête de `buildCrossplaneV8` dit le contraire :
+
+> Un V8 americain a vilebrequin croise, releve sur le GM LS livre avec
+> engine-sim (assets/engines/atg-video-2/07_gm_ls.mr). Rien n'y est invente :
+> angle de V, point mort haut, angles de manetons, ordre d'allumage et
+> repartition des cylindres entre les bancs sont recopies du fichier.
+
+Les cotes aussi sont réelles : 4,065 × 3,622 pouces est un LS3 de 6,2 litres.
+
+**Mais l'échappement, lui, ne figurait pas dans cette liste** — et c'est lui qui
+fait le son. Ses valeurs venaient du quatre cylindres, dont la ligne est celle
+d'un EJ25 Subaru :
+
+| Paramètre | GM LS | Notre V8, avant |
+|---|---|---|
+| Longueur du tube primaire | 29 pouces | 10 |
+| Débit primaire | k_carb(500) | k_carb(300) |
+| Volume audio | 4,0 | 1,0 |
+
+Le V8 portait donc l'échappement d'une Subaru. C'est la première explication
+**mesurée** de son retrait sur le quatre cylindres, dont l'échappement était
+juste. Corrigé le 5 septembre 2026.
+
+Reste à vérifier ce que d'autres paramètres non énumérés valent par rapport au
+LS : cames, admission, volumes de chambre et de conduits. La méthode est
+établie — comparer ligne à ligne au `.mr`, et ne rien laisser au jugement.
 
 **Et les références sont là.** Le dépôt cloné contient les définitions livrées
 avec engine-sim, dans `native/.work/engine-sim/assets/engines/` :
