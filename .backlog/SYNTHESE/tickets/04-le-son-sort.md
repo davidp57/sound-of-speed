@@ -179,8 +179,10 @@ vaut 28.
 
   Deux pistes toujours ouvertes pour cela : la définition du moteur
   (`native/probe.cpp`, jamais comparée à l'oreille au EJ25 dont elle reprend les
-  cotes) et la position de plateau au ralenti (0,9985, là où les moteurs livrés
-  avec engine-sim sont autour de 0,975).
+  cotes) et la position de plateau au ralenti — **note du 5 septembre : cette
+  seconde piste était fausse dès son énoncé.** Les moteurs livrés avec engine-sim
+  ne sont pas à 0,975 : l'EJ25 déclare 0,9985 et le GM LS 0,996. C'est la
+  *structure* C++ qui vaut 0,975 par défaut, ce qui n'est pas la même chose.
 
   À noter aussi, vu à la mesure : au gain par défaut le signal **sature**, crête
   à 1,000 dès un effort de 0,25. La dynamique disparaît dans l'écrêtage avant
@@ -318,7 +320,7 @@ passage de rapport fait chuter le régime de deux mille cinq cents tours d'un
 coup : plus de deux dixièmes de seconde à cette pente, soixante millisecondes à
 40 000.
 
-**Le papillon de ralenti, presque fermé.** Il valait 0,9985 là où engine-sim
+**Le papillon de ralenti — correction à refaire, voir plus bas.** Il valait 0,9985 là où engine-sim
 retient 0,975. Le débit d'air passe en cosinus de l'angle : `cos(0,9985·π/2)`
 vaut 0,0024 contre 0,0393, soit **dix-sept fois moins d'air**. Le moteur était
 asphyxié au ralenti, il ne brûlait presque pas, et l'on entendait le pompage. À
@@ -422,6 +424,36 @@ d'échappement était un bruit blanc**, reprise d'engine-sim. Convoluer des
 explosions par du bruit rend du bruit. Mesuré sur un ralenti de V8, par le
 facteur de crête : son sec 6,0, bruit blanc 3,4, tube 5,7. Elle simule désormais
 un tube — une suite d'échos espacés du temps d'aller-retour.
+
+## Rectificatif du 5 septembre : le papillon, la compression, et le moteur en profil
+
+En écrivant le contrat de définition de moteur, les valeurs des deux fichiers de
+référence ont été relevées une par une. Deux affirmations de ce ticket n'y ont
+pas survécu.
+
+**Le papillon de ralenti.** J'ai remplacé le 0,9985 du code par 0,975 en
+invoquant « le défaut d'engine-sim ». Or 0,9985 **est** la valeur déclarée par
+l'EJ25, et le GM LS déclare 0,996. Le 0,975 est le défaut de la structure C++ —
+ce qui reste quand aucun moteur n'a rien déclaré. J'ai donc remplacé une valeur
+relevée par une valeur d'attente, en croyant faire l'inverse.
+
+David a trouvé le ralenti meilleur après ce changement, mais le même lot portait
+trois autres corrections — rupteur, réserve, pente du régime. L'amélioration ne
+lui est pas attribuable. Les valeurs relevées sont rétablies, et le réglage est
+désormais un curseur : 0,975, 0,9985 et 0,996 se comparent à l'oreille.
+
+**Le taux de compression annoncé était faux.** J'avais lu 4,065 pouces d'alésage
+sur le GM LS et conclu à un LS3 de 6,2 litres à 9,6:1. Le fichier déclare
+**3,78 pouces** : c'est un 5,7 litres, et 90 cc de chambre le mettent à 8,4:1.
+
+**Et le moteur ne vit plus dans le code.** Vingt-huit paramètres passent du
+profil au moteur simulé, réglables à l'oreille depuis l'écran et conservés dans
+le profil — voir `native/CONTRAT-MOTEUR.md`. C'est ce que la spécification du lot
+prévoyait depuis le début, et ce que David a redemandé : « des paramètres qu'on
+pourrait retenir dans des profils ».
+
+Le chantier du V8 énoncé plus haut se clot donc autrement que prévu : il ne
+s'agit plus de corriger un moteur dans le C++, mais de régler un profil.
 
 ## Critères d'acceptation
 
