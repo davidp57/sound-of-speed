@@ -177,11 +177,15 @@ function engineGap(key: string): number | null {
   return Math.abs(attendue - engineValue(key)) < 1e-9 ? null : attendue
 }
 
-/** Assez de décimales pour que le pas du curseur se voie. */
-function engineText(key: string, value: number): number | string {
-  const step = ENGINE_FIELDS.find((field) => field.key === key)?.step ?? 1
-  if (step >= 1) return Math.round(value)
-  return value.toFixed(Math.min(4, Math.ceil(-Math.log10(step))))
+/**
+ * Le nombre tel quel, à quatre décimales près.
+ *
+ * Pas un arrondi au pas du curseur : la section d'échappement du V8 vaut
+ * 3,0625 po², et l'afficher « 3,06 » ferait croire à un écart à la référence là
+ * où il n'y en a pas.
+ */
+function engineText(value: number): string {
+  return String(Number(value.toFixed(4)))
 }
 
 function onEngine(key: string, event: Event): void {
@@ -587,9 +591,9 @@ const gauge = computed(() => {
               @input="onEngine(field.key, $event)"
             />
             <span class="numeric">
-              {{ engineText(field.key, engineValue(field.key)) }}{{ field.unit ? ' ' + field.unit : '' }}
+              {{ engineText(engineValue(field.key)) }}{{ field.unit ? ' ' + field.unit : '' }}
               <em v-if="engineGap(field.key) !== null" class="gap">
-                réf. {{ engineText(field.key, engineGap(field.key) as number) }}
+                réf. {{ engineText(engineGap(field.key) as number) }}
               </em>
             </span>
           </div>

@@ -6,6 +6,30 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Le moteur simulé se décrit dans le profil, et se règle à l'oreille.** Les
+  deux moteurs d'engine-sim étaient écrits en dur dans le C++ : changer un
+  volume de chambre demandait de recompiler le WebAssembly, une minute, et
+  personne d'autre que la machine ne pouvait le faire. Or c'est à l'oreille que
+  ces valeurs se trouvent.
+
+  Vingt-sept nombres décrivent maintenant le moteur — géométrie, culasse, cames,
+  admission, échappement, bruits — dans une section du profil. Ils voyagent avec
+  lui : stockage, fichier exporté, lien de partage. L'onglet Synthèse les donne
+  en curseurs, groupés par famille, avec la valeur de **référence** affichée dès
+  qu'on s'en écarte — celle du GM LS pour un huit cylindres, celle du Subaru
+  EJ25 pour un quatre. Deux boutons reposent le moteur sur l'une ou l'autre.
+
+  Le rupteur figure dans la liste mais reste en gris : il se règle déjà dans la
+  section moteur du profil. Le nombre de cylindres et les deux bruits quittent
+  les réglages du banc, où ils faisaient double emploi. La liste des paramètres
+  et leur ordre — que le C++ lit par position — sont dans
+  `native/CONTRAT-MOTEUR.md`.
+
+  Le format de profil passe en version 5 : un profil enregistré sans définition
+  reçoit celle de son profil d'usine.
+
 ### Corrigé
 
 - **L'embrayage se ferme progressivement, au lieu de sauter à un palier.** David,

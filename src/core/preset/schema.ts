@@ -230,7 +230,10 @@ export const ENGINE_FIELDS: readonly EngineField[] = [
   { key: 'intakeRunnerVolume', label: 'Conduit d’admission', unit: 'cc', min: 20, max: 400, step: 0.1, group: 'head' },
   { key: 'intakeRunnerArea', label: 'Section d’admission', unit: 'po²', min: 1, max: 12, step: 0.01, group: 'head' },
   { key: 'exhaustRunnerVolume', label: 'Conduit d’échappement', unit: 'cc', min: 10, max: 200, step: 0.1, group: 'head' },
-  { key: 'exhaustRunnerArea', label: 'Section d’échappement', unit: 'po²', min: 0.5, max: 10, step: 0.01, group: 'head' },
+  // Un pas plus fin que sa voisine, et c'est voulu : la section du V8 vaut
+  // 3,0625 po², qu'un pas au centième ne permettrait pas de retrouver après
+  // s'en être écarté.
+  { key: 'exhaustRunnerArea', label: 'Section d’échappement', unit: 'po²', min: 0.5, max: 10, step: 0.0025, group: 'head' },
   { key: 'lobeSeparation', label: 'Écartement des lobes', unit: '°', min: 90, max: 130, step: 0.5, group: 'cams' },
   { key: 'intakeLobeCenter', label: 'Centre du lobe d’admission', unit: '°', min: 90, max: 130, step: 0.5, group: 'cams' },
   { key: 'exhaustLobeCenter', label: 'Centre du lobe d’échappement', unit: '°', min: 90, max: 130, step: 0.5, group: 'cams' },

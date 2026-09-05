@@ -150,14 +150,46 @@ du ralenti au rupteur et revient, à cadence fixe, pour écouter la montée sans
 rouler. Une case *Mesurer en silence* coupe la sortie sans rien arrêter
 derrière : tous ces chiffres se relèvent en amont du haut-parleur.
 
-Ce qui se règle : le nombre de cylindres, la fréquence de simulation, la
-longueur de la réponse impulsionnelle interne, la taille de bloc et le niveleur
-d'engine-sim — ceux-là rebâtissent le moteur, une seconde de coupure — puis, à
-chaud, les deux bornes du papillon, le volume, les deux bruits d'engine-sim, le
-silencieux, la résonance d'échappement, son accord, sa longueur et la réserve
-visée. Ces réglages vivent
-dans l'appareil et non dans le profil : le lot
-[SYNTHESE](.backlog/SYNTHESE/spec.md) prévoit de les y faire passer.
+L'écran sépare deux choses qui se confondaient. **Le calcul et le poste** — la
+fréquence de simulation, la longueur de la réponse impulsionnelle interne, la
+taille de bloc, le niveleur d'engine-sim, puis à chaud les deux bornes du
+papillon, le volume, le silencieux, la résonance d'échappement, son accord, sa
+longueur et la réserve visée — restent des préférences de l'appareil : ils
+décrivent la machine qui calcule, et n'ont aucune raison de suivre un profil
+d'une voiture à l'autre. **Le moteur**, lui, vit dans le profil.
+
+### Le moteur se décrit dans le profil
+
+Les deux moteurs simulés étaient écrits en dur dans le C++ : changer un volume
+de chambre demandait de recompiler le WebAssembly, une minute, et personne
+d'autre que la machine ne pouvait le faire. Or c'est à l'oreille que ces valeurs
+se trouvent.
+
+Vingt-sept nombres décrivent maintenant le moteur, dans une section du profil.
+Ils voyagent avec lui — stockage, fichier exporté, lien de partage — et se
+règlent dans l'onglet Synthèse, groupés par famille : géométrie, culasse, cames,
+admission, échappement, rupteur, bruits. Deux boutons reposent le moteur sur une
+des deux définitions livrées avec engine-sim, un **GM LS** à huit cylindres et
+un **Subaru EJ25** à quatre.
+
+À côté de chaque valeur réglée, la valeur de **référence** apparaît dès qu'elle
+en diffère — celle du GM LS pour un huit cylindres, celle de l'EJ25 pour un
+quatre. C'est ce qui a manqué au V8 : son échappement portait les cotes d'un
+EJ25 sans que rien ne le signale, et il a fallu comparer ligne à ligne pour s'en
+apercevoir. S'écarter d'une référence doit être un choix visible.
+
+Tout, sauf les deux bruits, rebâtit le moteur simulé — une seconde de coupure.
+Le **rupteur** figure dans la liste mais en gris : il se règle dans la section
+moteur du profil, et deux réglages pour un seul chiffre finiraient par se
+contredire. Restent en dur dans le C++ les courbes de débit des soupapes, qui
+sont des relevés de banc et non des réglages, ainsi que l'ordre d'allumage et
+les angles de manetons, qui *définissent* le moteur et suivent le nombre de
+cylindres — d'où deux valeurs possibles pour lui, quatre ou huit.
+
+La liste des paramètres, leurs unités et les valeurs des deux définitions de
+référence sont dans [`native/CONTRAT-MOTEUR.md`](native/CONTRAT-MOTEUR.md).
+C'est la source de vérité : le C++ lit ces nombres **par position**, et cet
+ordre est le contrat.
 
 Le **silencieux** est un passe-bas, placé avant la séparation du son sec et du
 son réverbéré puisque c'est le même échappement qui les porte. Il répare un
@@ -857,6 +889,21 @@ que de grésiller.
 
 Un profil réglé avant l'arrivée de ce champ est repris en **enregistré**, ce
 qu'il a toujours été.
+
+### Définition du moteur simulé
+
+Vingt-sept nombres décrivent le moteur qu'engine-sim construit — alésage,
+course, volume de chambre, cames, tubes d'échappement, bruits. Ils sont dans le
+profil, voyagent avec lui, et se règlent dans l'onglet **Synthèse**, réservé au
+développement : on ne décrit pas un moteur en conduisant. Le détail est plus
+haut, dans la présentation de cet écran ; la liste complète, les unités et les
+deux définitions de référence sont dans
+[`native/CONTRAT-MOTEUR.md`](native/CONTRAT-MOTEUR.md).
+
+Un profil enregistré avant que ce champ ait une forme reçoit la définition de
+son profil d'usine — le V8 des deux profils livrés. Aucun profil ne se retrouve
+sans moteur à décrire, et basculer son origine en *généré en direct* donne
+toujours un son.
 
 ### Mode simplifié
 
