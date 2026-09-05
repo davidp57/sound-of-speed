@@ -233,7 +233,7 @@ Bench *buildBench(const std::string &engineName, int simFrequency, unsigned int 
     bench->simulator->synthesizer().m_levelingFilter.p_maxLevel = 1.0f;
     bench->simulator->synthesizer().m_levelingFilter.p_minLevel = 1.0f;
 
-    const std::vector<int16_t> ir = engines::makeImpulseResponse(impulseSamples);
+    const std::vector<int16_t> ir = engines::makeImpulseResponse(impulseSamples, kAudioRate);
     for (int i = 0; i < bench->engine->getExhaustSystemCount(); ++i) {
         bench->simulator->synthesizer().initializeImpulseResponse(
             ir.data(), (unsigned int)ir.size(), 0.01f, i);

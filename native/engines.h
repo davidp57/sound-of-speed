@@ -102,8 +102,18 @@ inline Engine *buildInline4() {
     params.dynoHoldStep = units::rpm(100);
     params.initialSimulationFrequency = 10000;
     params.initialHighFrequencyGain = 0.01;
-    params.initialNoise = 1.0;
-    params.initialJitter = 0.5;
+    // Les deux bruits que le synthetiseur ajoute a dessein. Sans ces deux
+    // lignes, ils valent 1,0 et 0,5 — les valeurs de la structure d'engine-sim,
+    // qui sont des valeurs de demonstration. Mesure sur le ralenti d'un quatre
+    // cylindres : elles produisaient un plateau plat de 250 Hz a 2 kHz et une
+    // remontee de 11 dB entre 2 et 8 kHz, la ou un moteur decroit. Le bruit
+    // d'air ne s'ajoute pas au signal, il le **multiplie** : a un, le moteur
+    // disparait derriere sa propre modulation.
+    //
+    // Pas zero pour autant : un moteur a du souffle, et le retirer tout a fait
+    // sonne synthetique.
+    params.initialNoise = 0.15;
+    params.initialJitter = 0.05;
 
     DirectThrottleLinkage *throttle = new DirectThrottleLinkage;
     DirectThrottleLinkage::Parameters throttleParams;
@@ -369,8 +379,18 @@ inline Engine *buildCrossplaneV8() {
     params.dynoHoldStep = units::rpm(100);
     params.initialSimulationFrequency = 10000;
     params.initialHighFrequencyGain = 0.01;
-    params.initialNoise = 1.0;
-    params.initialJitter = 0.5;
+    // Les deux bruits que le synthetiseur ajoute a dessein. Sans ces deux
+    // lignes, ils valent 1,0 et 0,5 — les valeurs de la structure d'engine-sim,
+    // qui sont des valeurs de demonstration. Mesure sur le ralenti d'un quatre
+    // cylindres : elles produisaient un plateau plat de 250 Hz a 2 kHz et une
+    // remontee de 11 dB entre 2 et 8 kHz, la ou un moteur decroit. Le bruit
+    // d'air ne s'ajoute pas au signal, il le **multiplie** : a un, le moteur
+    // disparait derriere sa propre modulation.
+    //
+    // Pas zero pour autant : un moteur a du souffle, et le retirer tout a fait
+    // sonne synthetique.
+    params.initialNoise = 0.15;
+    params.initialJitter = 0.05;
 
     DirectThrottleLinkage *throttle = new DirectThrottleLinkage;
     DirectThrottleLinkage::Parameters throttleParams;
@@ -602,17 +622,56 @@ inline Engine *buildCrossplaneV8() {
     return engine;
 }
 
-// Une reponse impulsionnelle synthetique. Le contenu importe peu : seule sa
-// longueur pese sur le cout de la convolution, qui est un produit direct.
-// 10 000 echantillons est le plafond que le code impose de toute facon
-// (synthesizer.cpp, initializeImpulseResponse).
-inline std::vector<int16_t> makeImpulseResponse(unsigned int samples) {
-    std::vector<int16_t> ir(samples);
-    std::srand(1);
+/**
+ * La reponse d'un tube d'echappement.
+ *
+ * **Ce n'est pas un bruit.** La premiere version tirait un bruit blanc
+ * decroissant, avec ce commentaire : « le contenu importe peu, seule sa
+ * longueur pese sur le cout ». C'etait vrai tant qu'on mesurait le cout
+ * processeur ; c'est faux des qu'on produit du son a ecouter. Convoluer des
+ * explosions par du bruit rend du bruit : mesure sur la banque produite, le
+ * spectre remontait de 10 dB entre 2 et 8 kHz, la ou une prise faite sur une
+ * vraie voiture descend de 17.
+ *
+ * Un echappement est un tube. L'onde court jusqu'au bout, se reflechit sur
+ * l'extremite ouverte — en changeant de signe —, revient, et ainsi de suite en
+ * s'affaiblissant. Sa reponse est donc une suite d'echos espaces du temps
+ * d'aller-retour, adoucis a chaque reflexion.
+ *
+ * Miroir de `exhaustImpulse` dans `src/core/synth/impulse.ts`, qui fait la meme
+ * chose pour le son en direct. Toute correction portee la doit l'etre ici.
+ */
+inline std::vector<int16_t> makeImpulseResponse(
+        unsigned int samples, double sampleRate = 44100.0, double tubeHz = 57.0) {
+    std::vector<double> reponse(samples, 0.0);
+
+    const double period = sampleRate / (tubeHz > 1.0 ? tubeHz : 1.0);
+    for (unsigned int k = 0; k * period < (double)samples; ++k) {
+        const unsigned int position = (unsigned int)(k * period + 0.5);
+        if (position >= samples) break;
+        // Le signe alterne : l'extremite ouverte reflechit une onde de pression
+        // en onde de depression. C'est ce qui met la fondamentale a un demi-tour
+        // de tube et non a un tour entier.
+        const double sign = (k % 2 == 0) ? 1.0 : -1.0;
+        reponse[position] += sign * std::exp(-4.0 * (double)position / samples);
+    }
+
+    // Une reflexion reelle s'etale et perd ses aigus. Un train de pics nus
+    // sonnerait comme un tuyau d'orgue, pas comme un echappement.
+    const double a = 1.0 - std::exp(-2.0 * 3.14159265358979 * 2000.0 / sampleRate);
+    double state = 0.0;
+    double crete = 0.0;
     for (unsigned int i = 0; i < samples; ++i) {
-        const double decay = std::exp(-4.0 * (double)i / samples);
-        const double noise = 2.0 * ((double)std::rand() / RAND_MAX) - 1.0;
-        ir[i] = (int16_t)(noise * decay * 20000.0);
+        state += a * (reponse[i] - state);
+        reponse[i] = state;
+        const double abs = state < 0 ? -state : state;
+        if (abs > crete) crete = abs;
+    }
+
+    std::vector<int16_t> ir(samples);
+    const double echelle = crete > 0.0 ? 20000.0 / crete : 0.0;
+    for (unsigned int i = 0; i < samples; ++i) {
+        ir[i] = (int16_t)(reponse[i] * echelle);
     }
     // Le chargeur coupe la queue sous 100 en valeur absolue : on garantit que
     // le dernier echantillon compte, sinon la reponse serait tronquee.
