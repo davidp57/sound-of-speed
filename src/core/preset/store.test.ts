@@ -875,7 +875,7 @@ describe('origine du son', () => {
     const relu = fromFile(JSON.stringify(bricole))
 
     expect(relu.engineDefinition?.cylinders).toBe(4)
-    expect(relu.engineDefinition?.chamberVolume).toBe(30)
+    expect(relu.engineDefinition?.chamberVolume).toBe(15)
     // Ce qui manquait vient du profil d'usine, pas d'un zéro.
     expect(relu.engineDefinition?.bore).toBe(GM_LS_V8.bore)
   })

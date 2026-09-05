@@ -55,10 +55,8 @@ export const CHEVROLET_454: EngineDefinition = {
   intakeRunnerArea: 5.859,
   // La culasse ne déclare ni volume ni section d'échappement : elles retombent
   // sur `cylinder_head_parameters` (es/objects/objects.mr), qui donne 300 cc et
-  // un cercle de 0,85 pouce de rayon. 300 cc dépasse la borne haute du réglage,
-  // fixée à 200 : la valeur y est ramenée, comme le ferait de toute façon
-  // `clampEngineDefinition` au chargement.
-  exhaustRunnerVolume: 200,
+  // un cercle de 0,85 pouce de rayon.
+  exhaustRunnerVolume: 300,
   // π × 0,85², soit 2,2698 po².
   exhaustRunnerArea: 2.2698,
   // Défaut de `chevy_bbc_camshaft_builder`, que la came d'origine ne change pas.
@@ -193,11 +191,10 @@ export const SUZUKI_HAYABUSA: EngineDefinition = {
   // 65 mm.
   stroke: 2.5591,
   rodLength: 4.705,
-  // Le fichier déclare 19,2 cc, soit un rapport volumétrique de moteur de
-  // course. La borne basse du réglage est à 30 : la valeur y est ramenée, comme
-  // le ferait `clampEngineDefinition` au chargement. C'est le seul endroit où
-  // cette définition s'écarte de son fichier.
-  chamberVolume: 30,
+  // Dix-neuf virgule deux centimètres cubes : un rapport volumétrique de moteur
+  // de course, et la raison pour laquelle la borne basse du réglage a été
+  // descendue à quinze.
+  chamberVolume: 19.2,
   intakeRunnerVolume: 149.6,
   // 20 cm², soit 3,1 po².
   intakeRunnerArea: 3.1,

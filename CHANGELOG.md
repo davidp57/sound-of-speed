@@ -8,6 +8,35 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Huit moteurs à charger d'un clic**, dans l'onglet Synthèse. David, après
+  avoir essayé les vingt-huit curseurs : « c'est vraiment difficile de trouver
+  des réglages qui sont bien, ils ont tous des effets les uns sur les autres et
+  y'en a beaucoup ». Un moteur n'est pas vingt-huit valeurs indépendantes : c'est
+  un ensemble où elles s'accordent. On en charge un entier, puis on affine.
+
+  | Moteur | Rupteur |
+  |---|---|
+  | Chevrolet 454, gros bloc | 5 500 |
+  | Chevrolet 454, came Comp Cams | 5 500 |
+  | GM LS, V8 5,7 L | 6 500 |
+  | Honda B18C5 VTEC | 8 400 |
+  | Suzuki Hayabusa | 11 000 |
+  | Subaru EJ25, et ses variantes à collecteur égal et inégal | 6 500 |
+
+  Toutes relevées dans les définitions livrées avec engine-sim, valeur par
+  valeur : ce qu'un fichier ne déclare pas est allé se lire dans le nœud qui
+  porte le défaut, et chaque commentaire dit lequel.
+
+  L'écran indique ce qui est chargé, compte les retouches, et sait revenir au
+  moteur d'origine — de quoi essayer sans crainte.
+
+  **Ce qui limite la liste**, ce n'est pas le nombre de définitions disponibles
+  mais les deux architectures que le C++ sait construire : quatre cylindres en
+  ligne, et V8 à quatre-vingt-dix degrés à vilebrequin croisé. Le V8 à
+  vilebrequin plat de la Ferrari F136, les six et cinq en ligne, les V6, le V10
+  de la LFA, les V12 et les radiaux demanderaient chacun leur constructeur.
+
+
 - **Le moteur simulé se décrit dans le profil, et se règle à l'oreille.** Les
   deux moteurs d'engine-sim étaient écrits en dur dans le C++ : changer un
   volume de chambre demandait de recompiler le WebAssembly, une minute, et

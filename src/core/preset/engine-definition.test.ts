@@ -88,7 +88,7 @@ describe('engineDefinitionValues', () => {
 
     const values = engineDefinitionValues(abime, 6500)
 
-    expect(values[4]).toBe(30)
+    expect(values[4]).toBe(15)
     expect(values[26]).toBe(1)
   })
 })

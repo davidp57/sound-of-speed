@@ -26,12 +26,14 @@ export const GM_LS_V8: EngineDefinition = {
   // 1,75 × 1,75 pouces.
   exhaustRunnerArea: 3.0625,
   lobeSeparation: 114,
-  intakeLobeCenter: 114,
-  exhaustLobeCenter: 114,
+  // Relevé dans le fichier : le nœud de came le passe explicitement, là où la
+  // première version avait pris le défaut de la structure.
+  intakeLobeCenter: 116,
+  exhaustLobeCenter: 116,
   intakeLift: 0.551,
   exhaustLift: 0.551,
   intakeDuration: 234,
-  exhaustDuration: 234,
+  exhaustDuration: 235,
   plenumVolume: 1.325,
   intakeFlowRate: 700,
   // 0,9985, jugé à l'oreille et non relevé : le GM LS déclare 0,996, et à cette
@@ -65,18 +67,20 @@ export const SUBARU_EJ25: EngineDefinition = {
   rodLength: 5.142,
   chamberVolume: 67,
   intakeRunnerVolume: 149.6,
-  // 2 × 2 pouces.
+  // 1,35 × 1,35 pouces.
   intakeRunnerArea: 1.8225,
   exhaustRunnerVolume: 50,
-  // 1,5 × 1,5 pouces.
+  // 1,25 × 1,25 pouces.
   exhaustRunnerArea: 1.5625,
   lobeSeparation: 114,
-  intakeLobeCenter: 114,
-  exhaustLobeCenter: 114,
-  intakeLift: 0.395,
-  exhaustLift: 0.377,
-  intakeDuration: 220,
-  exhaustDuration: 220,
+  // Relevé dans le fichier : le nœud de came le passe explicitement, là où la
+  // première version avait pris le défaut de la structure.
+  intakeLobeCenter: 117,
+  exhaustLobeCenter: 112,
+  intakeLift: 0.385,
+  exhaustLift: 0.378,
+  intakeDuration: 232,
+  exhaustDuration: 236,
   plenumVolume: 1.325,
   intakeFlowRate: 800,
   // La valeur du fichier, et celle que l'oreille confirme.

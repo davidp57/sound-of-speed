@@ -226,10 +226,14 @@ export const ENGINE_FIELDS: readonly EngineField[] = [
   { key: 'bore', label: 'Alésage', unit: 'po', min: 2, max: 5, step: 0.001, group: 'geometry' },
   { key: 'stroke', label: 'Course', unit: 'po', min: 2, max: 5, step: 0.001, group: 'geometry' },
   { key: 'rodLength', label: 'Bielle', unit: 'po', min: 3, max: 9, step: 0.001, group: 'geometry' },
-  { key: 'chamberVolume', label: 'Chambre', unit: 'cc', min: 30, max: 150, step: 1, group: 'geometry' },
+  // La Hayabusa déclare 19,2 cc — un rapport volumétrique de moteur de course. La
+  // borne était à 30 parce qu'on ne connaissait alors que deux moteurs de route.
+  { key: 'chamberVolume', label: 'Chambre', unit: 'cc', min: 15, max: 150, step: 1, group: 'geometry' },
   { key: 'intakeRunnerVolume', label: 'Conduit d’admission', unit: 'cc', min: 20, max: 400, step: 0.1, group: 'head' },
   { key: 'intakeRunnerArea', label: 'Section d’admission', unit: 'po²', min: 1, max: 12, step: 0.01, group: 'head' },
-  { key: 'exhaustRunnerVolume', label: 'Conduit d’échappement', unit: 'cc', min: 10, max: 200, step: 0.1, group: 'head' },
+  // Trois cents centimètres cubes est le défaut d'`cylinder_head_parameters`, que
+  // le gros bloc Chevrolet ne redresse pas : la borne haute l'écrêtait.
+  { key: 'exhaustRunnerVolume', label: 'Conduit d’échappement', unit: 'cc', min: 10, max: 350, step: 0.1, group: 'head' },
   // Un pas plus fin que sa voisine, et c'est voulu : la section du V8 vaut
   // 3,0625 po², qu'un pas au centième ne permettrait pas de retrouver après
   // s'en être écarté.
