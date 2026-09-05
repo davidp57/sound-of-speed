@@ -114,9 +114,18 @@ export interface SynthSettings {
    *
    * engine-sim vise 30 000 sur 32 767 — 92 % du plafond, 0,8 dB de marge. Or
    * `Synthesizer::renderAudio` borne la sortie à `INT16_MAX` : ce qui dépasse
-   * n'est pas atténué, il est coupé au couteau. Et le niveleur monte
-   * instantanément mais ne redescend qu'en 0,23 ms, donc le front d'une bouffée
-   * passe toujours au gain d'avant.
+   * n'est pas atténué, il est coupé au couteau.
+   *
+   * Le filtre a deux constantes de temps distinctes, et c'est la première qui
+   * cause l'écrêtage : `LevelingFilter::f` lisse le gain appliqué par un
+   * coefficient 0,9 par échantillon, soit environ 0,2 ms — le gain qu'il
+   * faudrait pour un front soudain n'est encore qu'à 10 % appliqué quand ce
+   * front arrive, et les 90 % restants passent au gain d'avant, trop haut. La
+   * crête elle-même décroît par un coefficient 0,999, soit environ 23 ms : une
+   * fois qu'une bouffée est passée, le gain réduit qu'elle a imposé met ce
+   * temps-là à remonter. Au ralenti d'un V8, les cylindres tirent tous les
+   * 19 à 38 ms — assez proche de ces 23 ms pour que le gain n'ait pas le temps
+   * de remonter entre deux coups.
    *
    * David l'a vu avant qu'on le mesure : « en déportée la GM a le niveau crête
    * maximisé (rouge) à 1.000 », et le son qu'il préférait était chaque fois

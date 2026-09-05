@@ -151,10 +151,13 @@ par le niveleur. Ces réglages-là ne décrivent pas un moteur et n'ont donc pas
 leur place dans le contrat.
 
 La crête visée mérite un mot à part : engine-sim la fixe à 30 000 sur 32 767,
-soit 0,8 dB de marge avant le plafond dur d'`INT16_MAX`, et le niveleur monte
-instantanément mais ne redescend qu'en 0,23 ms — le front d'une bouffée passe
-donc toujours au gain d'avant. C'est ce que David a repéré à l'oreille et au
-compteur : « en déportée la GM a le niveau crête maximisé (rouge) à 1.000 », un
+soit 0,8 dB de marge avant le plafond dur d'`INT16_MAX`. Le filtre a deux
+constantes de temps : le gain appliqué se lisse par un coefficient 0,9 par
+échantillon (environ 0,2 ms), donc un front soudain ne reçoit encore que 10 %
+du bon gain quand il arrive ; la crête elle-même décroît par un coefficient
+0,999 (environ 23 ms), donc le gain réduit qu'une bouffée impose met ce
+temps-là à remonter — à comparer aux 19-38 ms qui séparent deux coups d'un V8
+au ralenti. C'est ce que David a repéré à l'oreille et au compteur : « en déportée la GM a le niveau crête maximisé (rouge) à 1.000 », un
 son qu'il jugeait moins bon que ceux où le niveau restait sous le plafond. La
 baisser (12 000 par défaut, contre 30 000 chez engine-sim) laisse les fronts
 intacts au lieu de les écrêter ; le volume perdu se rattrape en aval, dans Web
