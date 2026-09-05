@@ -132,3 +132,16 @@ Les écarts assumés aujourd'hui :
 | `airNoise` | — | 0.15 | Jugé à l'oreille ; à 1, le moteur disparaît derrière sa modulation |
 | `inputSampleNoise` | — | 0.05 | Jugé à l'oreille ; à 0,5, le spectre remonte de 11 dB entre 2 et 8 kHz |
 | `idleThrottlePlate` | 0.996 / 0.9985 | **à trancher** | 0,975 a été livré par erreur. David a trouvé le ralenti meilleur, mais le lot comportait trois autres corrections : à comparer maintenant que le réglage est à sa main |
+
+### Le GM LS à l'oreille, le 5 septembre 2026
+
+David a écouté le V8 avec les curseurs à sa main et retenu deux écarts —
+« ce réglage est pas mal » :
+
+| Paramètre | Référence GM LS | Retenu | Pourquoi |
+|---|---|---|---|
+| `primaryFlowRate` | 500 | **760** | Jugé à l'oreille |
+| `headerLength` | 6.8 | **20** | Jugé à l'oreille, sur le compromis rugueux / parasites. C'est la valeur du 454 |
+
+Tout le reste est celui du GM LS. Ce n'est pas un verdict : c'est le meilleur
+point trouvé à ce jour, écrit pour ne pas le perdre entre deux essais.
