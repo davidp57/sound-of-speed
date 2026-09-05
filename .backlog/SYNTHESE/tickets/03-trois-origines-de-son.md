@@ -1,6 +1,6 @@
 # 03 — Trois origines de son, au choix dans le profil
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun — la conception ne dépend pas du verdict du ticket 02
 
@@ -50,10 +50,34 @@ générée devienne une boîte noire dont personne ne sait plus d'où elle vient
 
 ## Critères d'acceptation
 
-- [ ] `soundSource` existe dans le schéma de profil, avec ses trois valeurs, et
+- [x] `soundSource` existe dans le schéma de profil, avec ses trois valeurs, et
       les profils déjà enregistrés sont repris en « enregistré »
-- [ ] L'écran de configuration montre l'origine et permet d'en changer
-- [ ] Une origine indisponible se dit et ne casse rien : un profil « direct » sur
+- [x] L'écran de configuration montre l'origine et permet d'en changer
+- [x] Une origine indisponible se dit et ne casse rien : un profil « direct » sur
       un appareil qui ne tient pas le temps réel doit se plaindre, pas grésiller
-- [ ] Le choix se fait **dans la voiture**, sans reconstruire l'application
-- [ ] Un profil généré à l'avance garde la définition qui a produit sa banque
+- [x] Le choix se fait **dans la voiture**, sans reconstruire l'application
+- [x] Un profil généré à l'avance garde la définition qui a produit sa banque
+
+## Ce qui a été fait
+
+`soundSource` est à la racine du profil, à côté des sections, avec ses trois
+valeurs `recorded` / `live` / `prerendered`. Il ne fait pas partie de
+`ProfileOrigin` : réinitialiser un profil rend ses réglages d'usine, pas une
+autre nature de son. La version du format de profil passe de 2 à 3, et un profil
+sans le champ — ou porteur d'une valeur inconnue — est repris en `recorded`.
+
+Le profil porte aussi `engineDefinition`, facultatif. Il est **transporté et
+conservé** — stockage, export en fichier, duplication, lien de partage — sans
+être lu : sa forme est celle du ticket 04, qui la fixera.
+
+L'écran de configuration montre l'origine dans le panneau *Profils*, visible dans
+les deux modes. Choisir une origine non gréée affiche un avertissement en clair
+et ne change rien au son : rien ne lit encore `soundSource` dans la chaîne audio,
+la banque continue donc de jouer. Le branchement de la chaîne, lui, appartient
+aux tickets 04 et 05.
+
+Deux points laissés ouverts : la version de correctif de `package.json` n'est pas
+montée, et `decodeProfile` ne repasse pas par la reprise du stockage — un profil
+reçu par un lien émis avant ce champ n'a pas de `soundSource` jusqu'au
+rechargement suivant. La lecture passe donc partout par `soundSourceOf`, qui rend
+`recorded` en l'absence du champ.

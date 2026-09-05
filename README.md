@@ -741,6 +741,36 @@ sont celles du **mode avancé** : la bascule en haut de l'écran les fait
 apparaître. En mode simplifié, elles sont remplacées par quelques curseurs
 globaux qui les commandent.
 
+### Origine du son
+
+Dans le panneau **Profils**, et visible dans les deux modes : chaque profil
+déclare **d'où vient son son**. Le choix se fait dans la voiture, et il est
+enregistré dans le profil — il suit donc l'export en fichier et le partage par
+lien.
+
+| Origine | Ce que c'est | Ce qu'elle coûte |
+|---|---|---|
+| **Enregistré** | La banque d'échantillons, jouée en changeant sa vitesse de lecture. C'est ce que fait l'application depuis le début | rien de neuf |
+| **Généré en direct** | Le moteur est simulé pendant la conduite, sans le moindre échantillon | tout le budget processeur |
+| **Généré à l'avance** | La simulation tourne au bureau, produit une banque — une prise par plage de régime — et la voiture la rejoue | comme l'enregistré |
+
+Trois et non deux : le rendu à l'avance n'est pas un repli du direct. Il corrige
+un défaut que ni l'un ni l'autre des deux autres ne corrige — la banque livrée
+est jouée entre 0,26 et 0,81 fois sa vitesse sur toute la conduite ordinaire, ce
+qui descend les résonances de l'échappement en même temps que la fréquence
+d'allumage, alors qu'un moteur change de régime sans changer de corps. Une prise
+par plage de régime se lit près de un, et le timbre ne se déplace plus. Le
+direct, lui, garde ce que la génération perd : un son continu, sans domaine ni
+bascule.
+
+**Seul l'enregistré est gréé aujourd'hui.** Choisir l'une des deux autres
+origines n'a donc pas encore d'effet sur le son : le profil garde sa déclaration,
+l'écran le dit en clair, et la banque continue de jouer. Rien ne grésille et rien
+ne se tait.
+
+Un profil réglé avant l'arrivée de ce champ est repris en **enregistré**, ce
+qu'il a toujours été.
+
 ### Mode simplifié
 
 Le guide de création sait déduire une cinquantaine de réglages de quatre

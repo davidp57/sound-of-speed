@@ -8,6 +8,25 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un profil déclare d'où vient son son**, parmi trois origines : *enregistré*
+  — la banque d'échantillons jouée en changeant sa vitesse de lecture, ce que
+  fait l'application depuis le début —, *généré en direct* — le moteur simulé
+  pendant la conduite — et *généré à l'avance* — une banque produite au bureau
+  par cette simulation, une prise par plage de régime, que la voiture rejoue.
+
+  Le choix se fait dans l'écran de configuration, panneau *Profils*, et suit le
+  profil dans un export en fichier comme dans un lien de partage. Un profil peut
+  aussi porter la définition du moteur qui a produit sa banque, pour qu'une
+  banque générée ne devienne pas une boîte noire qu'on ne saurait plus refaire.
+
+  **Seul l'enregistré est gréé aujourd'hui** : choisir l'une des deux autres
+  origines n'a pas encore d'effet sur le son. L'écran le dit en clair et la
+  banque continue de jouer — la déclaration est conservée, rien ne grésille et
+  rien ne se tait.
+
+  Les profils déjà enregistrés sont repris en *enregistré*, ce qu'ils ont
+  toujours été. La version du format de profil passe de 2 à 3.
+
 - **L'effort du moteur tient compte de la vitesse : la croisière n'est plus
   plate.** Faute de pédale, tout se déduisait de l'accélération, si bien que
   tenir une allure donnait toujours le même demi — mesuré, cinq allures tenues à

@@ -155,6 +155,26 @@ rétrogradage **forcé**, sur une demande franche du conducteur.
 
 ## Le son
 
+**Origine du son** (_sound source_, `soundSource`) :
+D'où vient le son d'un profil, parmi trois : **enregistré** (`recorded`, la
+banque d'échantillons jouée en changeant sa vitesse de lecture),
+**généré en direct** (`live`, le moteur simulé pendant la conduite) et
+**généré à l'avance** (`prerendered`, une banque produite par cette simulation
+au bureau, une prise par plage de régime, que la voiture rejoue). Le choix est
+par profil, parce qu'il dépend du moteur imité. Seul l'enregistré est gréé
+aujourd'hui.
+_Attention_ : sans « du son », **origine** désigne autre chose — les valeurs de
+création d'un profil, `ProfileOrigin`. Toujours dire l'expression entière.
+_Éviter_ : mode, source (qui désigne une source de vitesse), synthèse (qui ne
+couvre que deux des trois).
+
+**Définition de moteur** (_engine definition_, `engineDefinition`) :
+La description du moteur simulé, portée par le profil pour les deux origines
+générées. Un profil généré à l'avance la garde à côté de sa banque : sans elle,
+la banque serait une boîte noire qu'on ne saurait plus refaire après un
+changement de réglage. Sa forme n'est pas encore fixée.
+_Éviter_ : moteur (qui désigne le moteur simulé du régime), modèle.
+
 **Échantillon** (_sample_) :
 Un fichier audio d'enregistrement réel de moteur, à régime fixe ou en montée. Il
 reste **hors de l'image Docker** : les échantillons vivent dans un volume du
@@ -245,6 +265,9 @@ Ce qu'un profil était à sa création, tout sauf son identité — identifiant,
 et statut de favori n'en font pas partie. C'est à elle que la réinitialisation le
 ramène, et elle survit à l'opération pour qu'on puisse la refaire. Facultative :
 les deux profils livrés se retrouvent à leur identifiant.
+_Attention_ : à ne pas confondre avec l'**origine du son**, qui dit d'où vient le
+son. L'origine du son n'entre d'ailleurs pas dans `ProfileOrigin` : réinitialiser
+un profil ne le fait pas changer de nature.
 _Éviter_ : valeurs d'usine (qui désigne les profils livrés), défaut.
 
 **Section** (_section_, `ProfileSection`) :
