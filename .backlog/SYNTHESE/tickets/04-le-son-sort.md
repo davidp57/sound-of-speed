@@ -257,6 +257,44 @@ le moteur sourd ». Il est coupé par défaut. Mesuré après correction : 47 dB
 d'écart entre 50 Hz et 4 kHz sur le quatre cylindres, là où une prise réelle en
 montre 39. Filtrer davantage n'enlèverait plus que du moteur.
 
+### Il manquait la captation réelle
+
+Les bruits corrigés, David a réécouté : « ça sonne encore faux ». La cause tenait
+à une différence avec engine-sim que nous n'avions jamais regardée.
+
+**Son application charge un fichier WAV enregistré sur un vrai échappement.**
+
+```cpp
+ysWindowsAudioWaveFile waveFile;
+waveFile.OpenFile(response->getFilename().c_str());
+m_simulator->synthesizer().initializeImpulseResponse(...);
+```
+
+Nous fabriquions la nôtre — d'abord un bruit blanc, puis un tube. Une captation
+porte ce qu'aucun modèle ne reproduit : la géométrie du tube, le silencieux, la
+caisse, le lieu de la prise.
+
+Ces fichiers étaient dans le dépôt cloné depuis le début, sous licence MIT.
+Quatre sont repris dans `public/impulse/`, dont celui du V8 Chevrolet 454 livré
+avec engine-sim, retenu par défaut. Relevé sur le ralenti du V8, sortie
+complète : l'écart entre le grave et la bande de 8 kHz vaut **40,1 dB**, quand
+une prise faite sur une vraie voiture en montre 39,1 ; le spectre décroît de
+33 dB entre 2 et 8 kHz au lieu de remonter.
+
+Notre gain de convolution valait par ailleurs 0,01 là où engine-sim applique
+0,001 — dix fois trop.
+
+### Une cinquième hypothèse écartée : l'espacement des allumages
+
+Le grondement d'un V8 croisé vient de l'inégalité des intervalles entre
+explosions. Le soupçon était que notre définition les rende réguliers.
+
+**Le témoin l'a tué.** Mesurés de la même façon — détection des sommets
+d'enveloppe, dispersion des intervalles — le véhicule réel donne 86,5 % et
+53,2 % de dispersion, le nôtre 37,6 % et 52,1 %. La méthode mesure surtout son
+propre bruit de détection : elle ne discrimine rien, et l'on ne peut rien en
+conclure. Sans ce témoin, une fausse cause était annoncée.
+
 ### Le V8 reste en retrait du quatre cylindres
 
 Même après correction, et c'est mesuré : rapport corps/plateau de 10,6 dB pour le
@@ -268,6 +306,20 @@ Le V8 croisé de `native/probe.cpp` a été écrit à la main et n'a jamais ét�
 comparé à une définition de référence, contrairement au quatre cylindres qui
 reprend les cotes d'un moteur réel. **C'est le prochain chantier**, et il se
 mène en comparant à une définition existante, pas en réglant au jugé.
+
+**Et les références sont là.** Le dépôt cloné contient les définitions livrées
+avec engine-sim, dans `native/.work/engine-sim/assets/engines/` :
+
+| Fichier | Ce que c'est |
+|---|---|
+| `chevrolet/chev_truck_454.mr` | un big block Chevrolet 454 — le V8 américain visé |
+| `atg-video-2/07_gm_ls.mr` | un GM LS |
+| `atg-video-2/08_ferrari_f136_v8.mr` | un V8 à plat, pour comparer |
+
+Elles sont écrites en `.mr`, dont la spécification a écarté l'interpréteur — mais
+rien n'empêche de les **lire** et d'en traduire les valeurs. C'est exactement ce
+que ce ticket réclamait : partir d'une définition existante plutôt que de régler
+au jugé. Le chantier est balisé.
 
 ### Quatre hypothèses écartées, pour n'y pas revenir
 
