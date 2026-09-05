@@ -8,6 +8,21 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Les menus déroulants du banc de synthèse bloquaient l'écran.** « Le focus
+  clignote », et un clic sur une valeur figeait tout, rechargement obligatoire.
+  Mesuré : **soixante-neuf remaniements du DOM par seconde** dans la section des
+  réglages, parce que le panneau affichait le régime tiré de la télémétrie, qui
+  change à la cadence de la boucle de conduite. Un menu ouvert se refermait donc
+  sous le doigt.
+
+  Deux corrections. Le régime demandé vient désormais du statut de la synthèse et
+  non de la télémétrie — les deux valent la même chose, mais l'un ne bat que
+  quatre fois par seconde. Et les six menus déroulants deviennent des groupes de
+  boutons : un bouton n'a pas d'état ouvert à perdre, et c'est le style de tout
+  le reste de l'application. Vérifié sur sept clics enchaînés, sans blocage ni
+  creux.
+
+
 - **Le rupteur du moteur simulé suit le profil.** Il était figé à 6 800 tr/min
   quand le profil Sport monte à 8 500 : au-delà, engine-sim coupait l'allumage,
   et il ne restait que le pompage d'air — aigu et sans corps. David l'a entendu

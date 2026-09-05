@@ -15,7 +15,6 @@ import {
   synthSettings,
   synthSilent,
   synthStatus,
-  telemetry,
 } from '../state'
 
 /**
@@ -78,9 +77,51 @@ const place = computed(() => {
   return 'libre'
 })
 
-function onPlace(event: Event): void {
-  const choix = (event.target as HTMLSelectElement).value
-  if (choix === 'libre') return
+const CYLINDRES = [
+  { id: 4, label: '4 en ligne' },
+  { id: 8, label: '8, vilebrequin croisé' },
+] as const
+
+const FREQUENCES = [
+  { id: 6000, label: '6 kHz' },
+  { id: 8000, label: '8 kHz' },
+  { id: 10000, label: '10 kHz' },
+  { id: 12000, label: '12 kHz' },
+  { id: 20000, label: '20 kHz' },
+] as const
+
+const CONVOLUTIONS = [
+  { id: 0, label: 'déportée' },
+  { id: 1000, label: '1 000 éch.' },
+  { id: 10000, label: '10 000 éch.' },
+] as const
+
+const BLOCS = [
+  { id: 256, label: '256' },
+  { id: 512, label: '512' },
+  { id: 1024, label: '1024' },
+  { id: 2048, label: '2048' },
+] as const
+
+/** Un choix chiffré pris sur un bouton, et non lu dans un événement. */
+function chooseNumber(key: keyof SynthSettings, value: number): void {
+  void applySynthSettings({ ...synthSettings.value, [key]: value })
+}
+
+const PLACES = [
+  { id: 'dehors', label: 'Dehors' },
+  { id: 'dedans', label: 'Dedans' },
+  { id: 'libre', label: 'Libre' },
+] as const
+
+function choosePlace(choix: string): void {
+  if (choix === 'libre') {
+    // On s'écarte des deux valeurs rondes, sans quoi le choix ne se verrait pas.
+    if (place.value !== 'libre') {
+      void applySynthSettings({ ...synthSettings.value, mufflerHz: 6000 })
+    }
+    return
+  }
   void applySynthSettings({
     ...synthSettings.value,
     mufflerHz: choix === 'dedans' ? DEDANS_HZ : DEHORS_HZ,
@@ -88,12 +129,8 @@ function onPlace(event: Event): void {
 }
 
 /** Le choix d'échappement : une valeur de texte, pas un nombre. */
-function onChoice(event: Event): void {
-  const target = event.target as HTMLSelectElement
-  void applySynthSettings({
-    ...synthSettings.value,
-    exhaustResponse: target.value as ExhaustResponse,
-  })
+function chooseResponse(id: string): void {
+  void applySynthSettings({ ...synthSettings.value, exhaustResponse: id as ExhaustResponse })
 }
 
 function onFlag(key: keyof SynthSettings, event: Event): void {
@@ -129,9 +166,12 @@ const realtimeWarn = computed(() => realtime.value > 0 && realtime.value < 1.5)
  * ment.
  */
 const gauge = computed(() => {
-  const asked = synthSettings.value.sweep
-    ? synthStatus.value.targetRpm
-    : telemetry.value.engine.rpm
+  // Le régime demandé vient du statut, jamais de la télémétrie — même hors
+  // balayage, où l'un vaut l'autre. La télémétrie change soixante fois par
+  // seconde : en dépendre faisait remanier tout le panneau à cette cadence, ce
+  // qui refermait les menus déroulants sous le doigt. Mesuré : soixante-neuf
+  // mutations du DOM par seconde dans la seule section des réglages.
+  const asked = synthStatus.value.targetRpm
   const heard = synthStatus.value.engineRpm
   return { asked, heard, gap: heard - asked }
 })
@@ -236,38 +276,56 @@ const gauge = computed(() => {
     <section class="panel">
       <h2>Le moteur — coupe le son le temps de rebâtir</h2>
       <div class="field">
-        <label for="cyl">Cylindres</label>
-        <select id="cyl" :value="synthSettings.cylinders" @change="onNumber('cylinders', $event)">
-          <option :value="4">4 en ligne</option>
-          <option :value="8">8, vilebrequin croisé</option>
-        </select>
+        <label>Cylindres</label>
+        <div class="choices">
+          <button
+            v-for="entry in CYLINDRES"
+            :key="entry.id"
+            :aria-pressed="synthSettings.cylinders === entry.id"
+            @click="chooseNumber('cylinders', entry.id)"
+          >
+            {{ entry.label }}
+          </button>
+        </div>
       </div>
       <div class="field">
-        <label for="hz">Simulation</label>
-        <select id="hz" :value="synthSettings.simulationHz" @change="onNumber('simulationHz', $event)">
-          <option :value="6000">6 kHz</option>
-          <option :value="8000">8 kHz</option>
-          <option :value="10000">10 kHz</option>
-          <option :value="12000">12 kHz</option>
-          <option :value="20000">20 kHz</option>
-        </select>
+        <label>Simulation</label>
+        <div class="choices">
+          <button
+            v-for="entry in FREQUENCES"
+            :key="entry.id"
+            :aria-pressed="synthSettings.simulationHz === entry.id"
+            @click="chooseNumber('simulationHz', entry.id)"
+          >
+            {{ entry.label }}
+          </button>
+        </div>
       </div>
       <div class="field">
-        <label for="ir">Convolution interne</label>
-        <select id="ir" :value="synthSettings.impulseSamples" @change="onNumber('impulseSamples', $event)">
-          <option :value="0">aucune — déportée sur Web Audio</option>
-          <option :value="1000">1 000 échantillons</option>
-          <option :value="10000">10 000 échantillons</option>
-        </select>
+        <label>Convolution interne</label>
+        <div class="choices">
+          <button
+            v-for="entry in CONVOLUTIONS"
+            :key="entry.id"
+            :aria-pressed="synthSettings.impulseSamples === entry.id"
+            @click="chooseNumber('impulseSamples', entry.id)"
+          >
+            {{ entry.label }}
+          </button>
+        </div>
       </div>
       <div class="field">
-        <label for="block">Bloc rendu</label>
-        <select id="block" :value="synthSettings.blockFrames" @change="onNumber('blockFrames', $event)">
-          <option :value="256">256</option>
-          <option :value="512">512</option>
-          <option :value="1024">1024</option>
-          <option :value="2048">2048</option>
-        </select>
+        <label>Bloc rendu</label>
+        <div class="choices">
+          <button
+            v-for="entry in BLOCS"
+            :key="entry.id"
+            :aria-pressed="synthSettings.blockFrames === entry.id"
+            @click="chooseNumber('blockFrames', entry.id)"
+          >
+            {{ entry.label }}
+          </button>
+        </div>
       </div>
       <div class="field">
         <label for="lev">Niveleur d'engine-sim</label>
@@ -347,12 +405,17 @@ const gauge = computed(() => {
         <span class="numeric">{{ synthSettings.volume.toFixed(2) }}</span>
       </div>
       <div class="field">
-        <label for="exhaust">Échappement</label>
-        <select id="exhaust" :value="synthSettings.exhaustResponse" @change="onChoice($event)">
-          <option v-for="entry in EXHAUST_RESPONSES" :key="entry.id" :value="entry.id">
+        <label>Échappement</label>
+        <div class="choices">
+          <button
+            v-for="entry in EXHAUST_RESPONSES"
+            :key="entry.id"
+            :aria-pressed="synthSettings.exhaustResponse === entry.id"
+            @click="chooseResponse(entry.id)"
+          >
             {{ entry.label }}
-          </option>
-        </select>
+          </button>
+        </div>
       </div>
       <div class="field">
         <label for="air">Bruit d'air</label>
@@ -381,12 +444,17 @@ const gauge = computed(() => {
         <span class="numeric">{{ synthSettings.inputSampleNoise.toFixed(2) }}</span>
       </div>
       <div class="field">
-        <label for="place">Où l'on écoute</label>
-        <select id="place" :value="place" @change="onPlace($event)">
-          <option value="dehors">Dehors, à côté de la voiture</option>
-          <option value="dedans">Dedans, vitres fermées</option>
-          <option value="libre">Réglage libre</option>
-        </select>
+        <label>Où l'on écoute</label>
+        <div class="choices">
+          <button
+            v-for="entry in PLACES"
+            :key="entry.id"
+            :aria-pressed="place === entry.id"
+            @click="choosePlace(entry.id)"
+          >
+            {{ entry.label }}
+          </button>
+        </div>
       </div>
       <div v-if="place === 'libre'" class="field">
         <label for="pot">Silencieux</label>
@@ -595,6 +663,24 @@ h2 {
 
 .field select {
   grid-column: 2 / -1;
+}
+
+/*
+ * Des boutons, et non un menu déroulant.
+ *
+ * Le panneau se remanie à chaque mesure ; un menu ouvert se refermait alors sous
+ * le doigt. Un bouton n'a pas d'état à perdre — et c'est le style de tout le
+ * reste de l'application.
+ */
+.choices {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.choices button {
+  padding: 0.3rem 0.6rem;
 }
 
 .field .numeric {
