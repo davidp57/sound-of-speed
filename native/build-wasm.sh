@@ -53,7 +53,7 @@ em++ $CXXFLAGS $INCLUDES "${SOURCES[@]}" \
     -sINITIAL_MEMORY=134217728 \
     -sMODULARIZE -sEXPORT_ES6 \
     -sEXPORTED_RUNTIME_METHODS=callMain,ccall,cwrap,HEAPF32 \
-    -sEXPORTED_FUNCTIONS=_main,_malloc,_free,_bench_create,_bench_dispose,_bench_simulate,_bench_synthesize,_bench_run,_bench_rpm,_bench_impulse_samples,_synth_create,_synth_dispose,_synth_set_target,_synth_set_throttle_range,_synth_set_dyno,_synth_set_noise,_synth_set_volume,_synth_render,_synth_rpm,_synth_latency \
+    -sEXPORTED_FUNCTIONS=_main,_malloc,_free,_bench_create,_bench_dispose,_bench_simulate,_bench_synthesize,_bench_run,_bench_rpm,_bench_impulse_samples,_synth_create,_synth_create_from,_synth_set_rig,_synth_dispose,_synth_set_target,_synth_set_throttle_range,_synth_set_dyno,_synth_set_noise,_synth_set_volume,_synth_render,_synth_rpm,_synth_latency \
     -sINVOKE_RUN=0 \
     -o "$BUILD/probe.mjs"
 
