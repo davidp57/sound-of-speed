@@ -259,11 +259,13 @@ const origin = computed(() => {
 /** Ce qui est chargé, en une phrase. */
 const loadedText = computed(() => {
   const near = closest.value
-  if (near === null) return 'la bibliothèque est vide'
-  if (near.gaps === 0) return near.entry.label
-  if (near.gaps > ORIGIN_MAX_GAPS) return 'réglages personnels — aucun moteur connu ne s’en approche'
+  if (near === null) return 'La bibliothèque de moteurs est vide.'
+  if (near.gaps === 0) return `Chargé : ${near.entry.label}`
+  if (near.gaps > ORIGIN_MAX_GAPS) {
+    return 'Réglages personnels : aucun moteur de la bibliothèque ne s’en approche.'
+  }
   const s = near.gaps > 1 ? 's' : ''
-  return `${near.entry.label}, modifié — ${near.gaps} valeur${s} changée${s}`
+  return `Chargé : ${near.entry.label}, modifié — ${near.gaps} valeur${s} changée${s}`
 })
 
 function onFlag(key: keyof SynthSettings, event: Event): void {
@@ -631,9 +633,7 @@ const gauge = computed(() => {
         son le temps de rebâtir.
       </p>
       <h3>Charger un moteur</h3>
-      <p class="loaded">
-        Chargé : <strong>{{ loadedText }}</strong>
-      </p>
+      <p class="loaded">{{ loadedText }}</p>
       <div v-if="ENGINE_LIBRARY.length > 0" class="library">
         <button
           v-for="entry in ENGINE_LIBRARY"
@@ -647,7 +647,7 @@ const gauge = computed(() => {
       </div>
       <div v-if="origin" class="actions">
         <button @click="loadEngine(origin.entry)">
-          Annuler les retouches — recharger {{ origin.entry.label }}
+          Annuler les retouches et recharger « {{ origin.entry.label }} »
         </button>
       </div>
       <p class="note">
