@@ -140,14 +140,22 @@ David a écouté le V8 avec les curseurs à sa main et retenu deux écarts —
 
 | Paramètre | Référence GM LS | Retenu | Pourquoi |
 |---|---|---|---|
-| `primaryFlowRate` | 500 | **1130** | Jugé à l'oreille |
-| `headerLength` | 6.8 | **23** | Jugé à l'oreille |
+| `primaryFlowRate` | 500 | **1000** | Jugé à l'oreille |
+| `headerLength` | 6.8 | **20** | Jugé à l'oreille |
+
+Un réglage de banc s'y ajoute, hors du contrat puisqu'il ne décrit pas un
+moteur mais l'appareil qui l'écoute — voir `levelerTarget` dans
+`native/README.md` :
+
+| Réglage | Défaut | Retenu | Pourquoi |
+|---|---|---|---|
+| Crête visée par le niveleur | 12 000 (0,37) | **23 000 (0,70)** | Compromis entre le rauque en charge et un ralenti stable, sans fréquence parasite |
 
 Tout le reste est celui du GM LS. Ce n'est pas un verdict : c'est le meilleur
 point trouvé à ce jour, écrit pour ne pas le perdre entre deux essais.
 
-Un premier point, 760 et 20 pouces, était « pas mal » ; celui-ci est « pas mal
-du tout pour le ralenti, et pour la charge ». Les deux valeurs ont monté
-ensemble, ce qui va dans le sens de ce que fait chacune : le débit donne le
-mordant, la longueur sépare les coups au ralenti — l'une compense l'autre au
-lieu de s'y opposer.
+Trois points ont été essayés dans cet ordre : 760/20, puis 1130/23, puis
+1000/20 avec la crête du niveleur descendue à 0,70. Les deux premiers
+n'avaient pas encore ce troisième réglage — une fois la saturation du niveleur
+comprise, le compromis s'est trouvé à des valeurs de débit et de collecteur
+plus modérées que le point précédent.
