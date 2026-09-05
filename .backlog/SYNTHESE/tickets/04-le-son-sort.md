@@ -519,3 +519,48 @@ rendrait modifiable à chaud, sans la seconde de coupure d'un rebâtissage.
 
 Reste à mesurer : un changement de ce `k_flow` en cours de route s'entend-il
 comme un à-coup ? Le volume du primaire, lui, ne bouge pas.
+
+
+## La crête du niveleur devrait suivre la charge, pas rester fixe
+
+Le 5 septembre 2026, David a réglé la crête visée par le niveleur (issue de
+[PR #57](https://github.com/davidp57/speed/pull/57)) à 0,70, puis 0,60 :
+« pas mal aussi ». Son constat, en une phrase : « la saturation est
+intéressante en charge, ça ajoute du caractère, mais en régime constant,
+surtout au ralenti, ça rend le son moins bon. Il faut un réglage qui laisse un
+peu de saturation en charge mais permet d'avoir un son plus pur au ralenti ».
+
+C'est exactement le même compromis que celui déjà noté plus haut pour le débit
+du primaire — un réglage figé fait un compromis entre deux régimes qui n'en
+demandent pas.
+
+**Différence importante : celui-ci coûte presque rien à faire suivre la
+charge.** Vérifié dans engine-sim, `synthesizer.cpp:359` :
+
+```cpp
+m_levelingFilter.p_target = m_audioParameters.levelerTarget;
+```
+
+Cette ligne s'exécute dans `renderAudio(int inputSample)`, donc à **chaque
+échantillon** — pas seulement à la construction, contrairement à
+`primaryFlowRate` qui est recopié une fois dans un tableau figé
+(`combustion_chamber.cpp:65`). `Synthesizer::setAudioParameters()` est déjà
+publique et déjà appelée en direct par `synth_set_noise`
+(`probe.cpp:1561`) pour `airNoise` et `inputSampleNoise`. Ajouter
+`levelerTarget` au même appel, ou un `synth_set_leveler_target` dédié, suffit :
+pas de rebâtissage, pas de coupure d'une seconde.
+
+### Proposition, non codée
+
+- Une cible haute (proche du défaut actuel, 12 000, voire la valeur d'origine
+  d'engine-sim) au ralenti et en régime constant.
+- Une cible plus basse — plus de marge, donc plus de saturation assumée —
+  quand l'effort monte.
+- Le paramètre qui pilote la bascule : l'effort transmis
+  (`core/audio/mix.ts`), pas le régime. Un moteur qui redescend en roue libre
+  ne doit pas rester saturé.
+
+Reste à décider : la forme de la courbe effort → cible, et si le curseur
+actuel devient la cible **au ralenti** pendant qu'un second réglage donne le
+plancher en pleine charge, ou si un seul curseur règle l'amplitude de la
+bascule.
