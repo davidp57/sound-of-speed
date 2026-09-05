@@ -295,6 +295,57 @@ d'enveloppe, dispersion des intervalles — le véhicule réel donne 86,5 % et
 propre bruit de détection : elle ne discrimine rien, et l'on ne peut rien en
 conclure. Sans ce témoin, une fausse cause était annoncée.
 
+### Quatre constantes figées, quatre défauts
+
+La captation réelle en place, David a réécouté : « c'est pas mal ; sauf pour le
+ralenti, comme d'habitude ». Trois autres points avec, et chacun tenait à une
+valeur écrite en dur.
+
+**Le rupteur, figé à 6 800 tr/min.** « Le son change étrangement quand on arrive
+haut dans les tours (mode sport, vers 6 900) — comme si la fréquence liée à la
+charge, sourde, était tout d'un coup coupée. » Le profil Sport monte à 8 500 ;
+passé 6 800, engine-sim coupait l'allumage et il ne restait que le pompage d'air.
+À cent tours près de ce qu'il a entendu. Le rupteur suit désormais le profil,
+avec cinq pour cent de marge, et changer de profil rebâtit le moteur — il est
+lu à la construction du module d'allumage. Vérifié : le régime monte à 7 985
+tr/min, écart nul, crête 0,314 en haut contre 0,334 en bas.
+
+**Le décalage entre le geste et le son.** « C'est flagrant sur le changement de
+rapport : les tours affichés retombent avant le son. » Deux causes qui
+s'ajoutaient — la réserve du lecteur à 250 ms, ramenée à 120 sans qu'aucun creux
+apparaisse, et le limiteur de pente du régime à 12 000 tr/min par seconde. Un
+passage de rapport fait chuter le régime de deux mille cinq cents tours d'un
+coup : plus de deux dixièmes de seconde à cette pente, soixante millisecondes à
+40 000.
+
+**Le papillon de ralenti, presque fermé.** Il valait 0,9985 là où engine-sim
+retient 0,975. Le débit d'air passe en cosinus de l'angle : `cos(0,9985·π/2)`
+vaut 0,0024 contre 0,0393, soit **dix-sept fois moins d'air**. Le moteur était
+asphyxié au ralenti, il ne brûlait presque pas, et l'on entendait le pompage. À
+papillon égal, la sonde monte maintenant à 4 565 tr/min au lieu de 2 337.
+
+**Ce dernier point n'est pas mesuré à l'oreille, et il ne peut pas l'être ici** :
+le niveleur d'engine-sim vise une crête constante, si bien que le niveau au
+ralenti n'a pas bougé (crête 0,108 contre 0,107–0,151 avant). Ce que la mesure
+établit, c'est que le moteur respire ; ce qu'il en sort reste à juger.
+
+**Une piste écartée, et elle était tentante.** `dynoMinSpeed` vaut 1 000 et
+`dynoMaxSpeed` 6 500 — exactement les deux bornes où tombaient les deux
+symptômes, un ralenti à 780 en dessous et un décrochage à 6 900 au-dessus. Trop
+beau : ces bornes ne servent qu'à limiter le curseur de l'application d'origine
+(`engine_sim_application.cpp`), ni le solveur ni notre code ne les lisent.
+
+### Dehors ou dedans, trouvé par l'usage
+
+« Le réglage silencieux permet de sélectionner un son extérieur (coupé) ou
+assourdi, donc intérieur. C'est un truc sympa, qu'on pourrait mettre en
+paramètre intérieur / extérieur. »
+
+Le passe-bas de sortie faisait cela sans qu'on l'ait cherché : c'est en réglant
+à l'oreille que David l'a vu. Il devient un choix qui se comprend — dehors à
+côté de la voiture, ou dedans vitres fermées —, le réglage libre restant
+accessible. Mille hertz pour l'habitacle : la valeur qu'il avait trouvée.
+
 ### Le V8 reste en retrait du quatre cylindres
 
 Même après correction, et c'est mesuré : rapport corps/plateau de 10,6 dB pour le

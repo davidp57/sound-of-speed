@@ -220,6 +220,19 @@ chouette », et le seul dont la définition reprenne les cotes d'un moteur réel
 | Saut d'énergie au bouclage | 15,4 % au pire |
 | Génération | 85 s pour 21 prises |
 
+## À régénérer
+
+La banque de `public/audio/i4-check/` date d'avant deux corrections qui touchent
+le modèle lui-même, et qui valent aussi pour le générateur :
+
+- la **captation réelle** d'échappement, qui remplace la réponse fabriquée (voir
+  le ticket 04) — le générateur utilise encore le tube ;
+- le **papillon de ralenti** à 0,975 au lieu de 0,9985, dix-sept fois plus d'air.
+
+La seconde est déjà dans `engines.h` ; la première demande de charger un WAV
+dans le générateur, comme le fait l'application d'engine-sim. À faire avant de
+juger une banque produite.
+
 ## Critères d'acceptation
 
 - [x] L'outil produit une banque complète depuis une définition de moteur, sans
