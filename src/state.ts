@@ -389,6 +389,26 @@ export async function applyEngineDefinition(definition: EngineDefinition): Promi
   await synth.setEngineDefinition(activeProfile.value.engineDefinition)
 }
 
+/**
+ * Charge un moteur entier : sa définition **et** son rupteur, en une fois.
+ *
+ * Les deux vont ensemble. Un GM LS chargé sous le rupteur d'un quatre
+ * cylindres ne serait plus un GM LS, et l'écran n'aurait plus rien de fiable à
+ * dire sur ce qui est chargé. C'est aussi pour cela que le rupteur reste en
+ * gris dans le banc de synthèse : il se règle dans la section moteur du profil,
+ * ou il arrive avec le moteur.
+ */
+export async function applyLibraryEngine(
+  definition: EngineDefinition,
+  redlineRpm: number,
+): Promise<void> {
+  activeProfile.value.engine.redlineRpm = redlineRpm
+  // Le balayage du banc doit suivre le rupteur qui vient d'arriver, sinon il
+  // continue de monter jusqu'à l'ancien.
+  synth.setRpmRange(runtimeProfile.value.engine.idleRpm, runtimeProfile.value.engine.redlineRpm)
+  await applyEngineDefinition(definition)
+}
+
 /** Allume ou coupe le son synthétisé. À appeler depuis un geste de l'écran. */
 export async function setSynthEnabled(enabled: boolean): Promise<void> {
   // Le silence est appliqué avant la construction du graphe, et non au premier
