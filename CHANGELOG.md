@@ -8,6 +8,22 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **La crête que vise le niveleur, réglable.** David a mesuré ce que l'écran
+  appelait « niveau crête » : à 1,000 en rouge sur le GM LS en convolution
+  déportée, le son écrasé n'était pas plus fort, il était **écrêté**. engine-sim
+  vise 30 000 sur 32 767 — 0,8 dB de marge avant le plafond dur d'`INT16_MAX` —
+  et son niveleur monte instantanément mais ne redescend qu'en 0,23 ms : le
+  front d'une bouffée passe toujours au gain d'avant, et plus il est raide,
+  plus il écrête. C'est ce qui expliquait ses trois observations à la fois :
+  la GM sature, l'EJ25 reste sous le plafond et sonne mieux, la convolution
+  interne — en atténuant les fronts — élimine l'écrêtage en même temps que le
+  mordant.
+
+  Un curseur neuf règle cette cible, avec un repère « écrête » au-delà de
+  20 000. Le défaut passe à 12 000 : simulé sur un V8 au ralenti, un signal qui
+  écrêtait à 17,5 % avec la cible d'origine tombe à 0,4 %. Le volume perdu se
+  rattrape en aval, dans Web Audio, où rien ne plafonne.
+
 - **Charger un moteur section par section.** Idée de David : « avoir les
   boutons de choix de moteur dans chaque section (culasse, échappement) pour
   essayer par exemple le moteur de la 454 avec l'échappement de la GM ». Chaque

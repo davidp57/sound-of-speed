@@ -152,7 +152,7 @@ derrière : tous ces chiffres se relèvent en amont du haut-parleur.
 
 L'écran sépare deux choses qui se confondaient. **Le calcul et le poste** — la
 fréquence de simulation, la longueur de la réponse impulsionnelle interne, la
-taille de bloc, le niveleur d'engine-sim, puis à chaud les deux bornes du
+taille de bloc, le niveleur d'engine-sim et sa crête visée, puis à chaud les deux bornes du
 papillon, le volume, le silencieux, la résonance d'échappement, son accord, sa
 longueur et la réserve visée — restent des préférences de l'appareil : ils
 décrivent la machine qui calcule, et n'ont aucune raison de suivre un profil

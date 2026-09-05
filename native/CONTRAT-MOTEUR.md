@@ -39,7 +39,7 @@ décaler les suivants.
 // C++ — le banc (cadences, convolution, niveleur) se pose d'abord : il ne
 // décrit pas un moteur.
 void synth_set_rig(int simFrequency, int audioSampleRate, int impulseSamples,
-                   int leveler, double levelerGain);
+                   int leveler, double levelerGain, double levelerTarget);
 int  synth_create_from(const double *values, int count);
 ```
 

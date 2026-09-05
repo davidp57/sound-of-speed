@@ -37,6 +37,15 @@ describe('clampSynthSettings', () => {
     expect(out.reserveMs).toBe(1000)
     expect(out.blockFrames).toBe(128)
   })
+
+  it('borne la crête visée par le niveleur', () => {
+    // Le plafond dur d'engine-sim est à 32 767 : au-dessus, plus de marge du
+    // tout et l'écrêtage constaté par David redevient systématique.
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, levelerTarget: 500 }).levelerTarget).toBe(1000)
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, levelerTarget: 40000 }).levelerTarget).toBe(
+      32000,
+    )
+  })
 })
 
 describe('needsRebuild', () => {
@@ -54,5 +63,12 @@ describe('needsRebuild', () => {
       convolverMix: 0.9,
     }
     expect(needsRebuild(DEFAULT_SYNTH, next)).toBe(false)
+  })
+
+  it('reconstruit quand la crête visée change', () => {
+    // Relue à chaque échantillon côté C++, mais sans point d'entrée qui
+    // l'écrive seule : elle passe donc par la construction, comme les deux
+    // bornes de gain du niveleur.
+    expect(needsRebuild(DEFAULT_SYNTH, { ...DEFAULT_SYNTH, levelerTarget: 8000 })).toBe(true)
   })
 })
