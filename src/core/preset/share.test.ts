@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { decodeProfile, encodeProfile, isComfortable, isReachableOrigin, shareUrl } from './share'
-import { createDefaultProfile, createRoadProfile } from './defaults'
+import { createDefaultProfile, createRoadProfile, SUBARU_EJ25 } from './defaults'
 import type { Profile } from './schema'
 
 /**
@@ -40,13 +40,16 @@ describe('encodeProfile et decodeProfile', () => {
     const original: Profile = {
       ...createRoadProfile(),
       soundSource: 'prerendered',
-      engineDefinition: { cylinders: 8 },
+      engineDefinition: { ...SUBARU_EJ25 },
     }
 
     const relu = await decodeProfile(await encodeProfile(original))
 
     expect(relu.soundSource).toBe('prerendered')
-    expect(relu.engineDefinition).toEqual({ cylinders: 8 })
+    // Le lien porte le moteur en entier, et non celui du profil livré : un
+    // profil partagé qui perdrait sa définition sonnerait comme un autre moteur
+    // chez celui qui le reçoit.
+    expect(relu.engineDefinition).toEqual(SUBARU_EJ25)
   })
 
   it('ne fait pas voyager le statut de favori', async () => {
