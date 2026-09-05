@@ -140,24 +140,24 @@ struct EngineDefinition {
 // d'admission s'en ecartaient, sans que rien ne le dise. Le contrat tranche.
 const EngineDefinition DEFAULT_INLINE4 = {{
     4,        // cylinders
-    3.898,    // bore
+    3.917,    // bore
     3.11,     // stroke
-    5.5,      // rodLength
-    51,       // chamberVolume
+    5.142,    // rodLength
+    67,       // chamberVolume
     149.6,    // intakeRunnerVolume
-    4.0,      // intakeRunnerArea
+    1.8225,   // intakeRunnerArea
     50,       // exhaustRunnerVolume
-    2.25,     // exhaustRunnerArea
+    1.5625,   // exhaustRunnerArea
     114,      // lobeSeparation
-    116,      // intakeLobeCenter
-    116,      // exhaustLobeCenter
+    114,      // intakeLobeCenter
+    114,      // exhaustLobeCenter
     0.395,    // intakeLift
     0.377,    // exhaustLift
     220,      // intakeDuration
     220,      // exhaustDuration
-    2.0,      // plenumVolume
-    400,      // intakeFlowRate
-    0.975,    // idleThrottlePlate
+    1.325,    // plenumVolume
+    800,      // intakeFlowRate
+    0.9985,   // idleThrottlePlate
     10,       // primaryTubeLength
     200,      // primaryFlowRate
     1000,     // outletFlowRate
@@ -174,9 +174,9 @@ const EngineDefinition DEFAULT_INLINE4 = {{
 // s'ecartaient de la reference.
 const EngineDefinition DEFAULT_CROSSPLANE_V8 = {{
     8,        // cylinders
-    4.065,    // bore
+    3.78,     // bore
     3.622,    // stroke
-    6.098,    // rodLength
+    6.299,    // rodLength
     90,       // chamberVolume
     149.6,    // intakeRunnerVolume
     4.84,     // intakeRunnerArea
@@ -190,8 +190,8 @@ const EngineDefinition DEFAULT_CROSSPLANE_V8 = {{
     234,      // intakeDuration
     234,      // exhaustDuration
     1.325,    // plenumVolume
-    400,      // intakeFlowRate
-    0.975,    // idleThrottlePlate
+    700,      // intakeFlowRate
+    0.996,    // idleThrottlePlate
     29,       // primaryTubeLength
     500,      // primaryFlowRate
     1000,     // outletFlowRate

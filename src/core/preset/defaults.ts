@@ -13,10 +13,11 @@ import type { EngineDefinition, Profile } from './schema'
  */
 export const GM_LS_V8: EngineDefinition = {
   cylinders: 8,
-  bore: 4.065,
+  bore: 3.78,
   stroke: 3.622,
-  rodLength: 6.098,
-  // 90 cc met le LS3 à 9,6:1, un taux de moteur de série.
+  rodLength: 6.299,
+  // Avec l'alésage réel de 3,78 pouces, 90 cc donne 8,4:1. Le GM LS livré avec
+  // engine-sim est un 5,7 litres, pas un LS3 — je l'avais pris pour tel.
   chamberVolume: 90,
   intakeRunnerVolume: 149.6,
   // 2,2 × 2,2 pouces.
@@ -32,8 +33,8 @@ export const GM_LS_V8: EngineDefinition = {
   intakeDuration: 234,
   exhaustDuration: 234,
   plenumVolume: 1.325,
-  intakeFlowRate: 400,
-  idleThrottlePlate: 0.975,
+  intakeFlowRate: 700,
+  idleThrottlePlate: 0.996,
   // Vingt-neuf pouces de primaire : c'est ce qui fait la résonance grave d'un V8
   // américain, là où l'EJ25 n'en a que dix.
   primaryTubeLength: 29,
@@ -55,26 +56,26 @@ export const GM_LS_V8: EngineDefinition = {
  */
 export const SUBARU_EJ25: EngineDefinition = {
   cylinders: 4,
-  bore: 3.898,
+  bore: 3.917,
   stroke: 3.11,
-  rodLength: 5.5,
-  chamberVolume: 51,
+  rodLength: 5.142,
+  chamberVolume: 67,
   intakeRunnerVolume: 149.6,
   // 2 × 2 pouces.
-  intakeRunnerArea: 4,
+  intakeRunnerArea: 1.8225,
   exhaustRunnerVolume: 50,
   // 1,5 × 1,5 pouces.
-  exhaustRunnerArea: 2.25,
+  exhaustRunnerArea: 1.5625,
   lobeSeparation: 114,
-  intakeLobeCenter: 116,
-  exhaustLobeCenter: 116,
+  intakeLobeCenter: 114,
+  exhaustLobeCenter: 114,
   intakeLift: 0.395,
   exhaustLift: 0.377,
   intakeDuration: 220,
   exhaustDuration: 220,
-  plenumVolume: 2,
-  intakeFlowRate: 400,
-  idleThrottlePlate: 0.975,
+  plenumVolume: 1.325,
+  intakeFlowRate: 800,
+  idleThrottlePlate: 0.9985,
   primaryTubeLength: 10,
   primaryFlowRate: 200,
   outletFlowRate: 1000,

@@ -54,7 +54,9 @@ describe('engineDefinitionValues', () => {
 
     expect(values).toHaveLength(ENGINE_VALUE_COUNT)
     expect(values[0]).toBe(8)
-    expect(values[1]).toBe(4.065)
+    // 3,78 pouces : l'alésage relevé dans le fichier du GM LS. C'est donc un
+    // 5,7 litres, et non le LS3 qu'on avait cru lire.
+    expect(values[1]).toBe(3.78)
     expect(values[4]).toBe(90)
     expect(values[19]).toBe(29)
     expect(values[25]).toBe(0.2)

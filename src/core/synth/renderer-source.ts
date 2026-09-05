@@ -125,7 +125,11 @@ async function boot(message) {
   const module = await import(message.moduleUrl)
   core = await module.default({ noInitialRun: true })
 
-  const createFrom = core.cwrap('synth_create_from', 'number', ['number', 'number', 'number', 'number', 'number', 'number', 'number'])
+  // Deux entrees, et l'ordre compte. Le banc d'abord — cadences, convolution,
+  // niveleur — parce qu'il ne decrit pas un moteur et n'a donc pas sa place dans
+  // le tableau du contrat. Le moteur ensuite.
+  const setRig = core.cwrap('synth_set_rig', null, ['number', 'number', 'number', 'number', 'number'])
+  const createFrom = core.cwrap('synth_create_from', 'number', ['number', 'number'])
   render = core.cwrap('synth_render', 'number', ['number', 'number'])
   setTarget = core.cwrap('synth_set_target', null, ['number', 'number'])
   setThrottleRange = core.cwrap('synth_set_throttle_range', null, ['number', 'number'])
@@ -150,15 +154,14 @@ async function boot(message) {
   const started = performance.now()
   let built = 0
   try {
-    built = createFrom(
-      engine,
-      values.length,
+    setRig(
       settings.simulationHz,
       sampleRate,
       settings.impulseSamples,
       settings.leveler ? 1 : 0,
       settings.levelerGain,
     )
+    built = createFrom(engine, values.length)
   } finally {
     // Le C++ recopie ce qu'il lui faut pendant l'appel : rien ne survit ici.
     core._free(engine)
