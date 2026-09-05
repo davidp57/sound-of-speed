@@ -382,6 +382,63 @@ describe('Engine — rupteur', () => {
   })
 })
 
+describe('Engine — décollage', () => {
+  /**
+   * Le régime que le moteur tient après deux secondes d'établissement.
+   *
+   * On laisse passer le transitoire : ce qu'on juge est le régime tenu, pas la
+   * montée qui y mène.
+   */
+  function tenu(over: Partial<EngineInput>): number {
+    const engine = makeEngine()
+    let rpm = 0
+    for (let f = 0; f * FRAME_S <= 2; f += 1) rpm = engine.tick(FRAME_S, input(over)).rpm
+    return rpm
+  }
+
+  /** La première, celle où l'on décolle. */
+  const premiere = profile.drivetrain.gearRatios[0]! * profile.drivetrain.finalDrive
+
+  it('quitte le ralenti dès que la voiture avance', () => {
+    // Le défaut que David a entendu : de zéro à six kilomètres à l'heure, le
+    // régime restait collé au ralenti et le son était celui de l'arrêt. Une
+    // voiture ne fait pas cela — on lâche l'embrayage et le moteur monte.
+    const arret = tenu({ kmh: 0, atStandstill: true, throttle: 0 })
+    const lance = tenu({ kmh: 5, atStandstill: false, throttle: 0, totalRatio: premiere })
+
+    expect(arret).toBeCloseTo(profile.engine.idleRpm, 0)
+    expect(lance).toBeGreaterThan(profile.engine.idleRpm + 300)
+  })
+
+  it('tient le régime de décollage pendant que la voiture prend de la vitesse', () => {
+    // C'est ce qu'on entend en vrai : le moteur monte, **reste** là, et les
+    // roues le rejoignent ensuite.
+    const trois = tenu({ kmh: 3, atStandstill: false, throttle: 0, totalRatio: premiere })
+    const cinq = tenu({ kmh: 5, atStandstill: false, throttle: 0, totalRatio: premiere })
+
+    expect(trois).toBeCloseTo(cinq, 0)
+    expect(trois).toBeCloseTo(profile.engine.launchRpm, 0)
+  })
+
+  it('laisse les roues commander quand elles tournent assez vite', () => {
+    // En première, vingt kilomètres à l'heure font tourner les roues bien
+    // au-dessus du régime de décollage : l'embrayage est fermé.
+    const vite = tenu({ kmh: 20, atStandstill: false, throttle: 0, totalRatio: premiere })
+
+    expect(vite).toBeGreaterThan(2400)
+  })
+
+  it('ne relève pas un régime bas sur un grand rapport', () => {
+    // Trente kilomètres à l'heure à mille cent tours n'est pas un décollage,
+    // c'est une allure tenue sur un rapport long. L'embrayage y est fermé.
+    // Le rapport de croisière du banc, celui que `input` pose par défaut.
+    const long = tenu({ kmh: 30, atStandstill: false, throttle: 0 })
+
+    expect(long).toBeCloseTo(1118, -1)
+    expect(long).toBeLessThan(profile.engine.launchRpm)
+  })
+})
+
 describe('Engine — tremblement de régime', () => {
   /**
    * Excursion du régime entendu autour du régime net, sur trente secondes.

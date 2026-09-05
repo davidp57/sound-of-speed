@@ -91,6 +91,16 @@ export interface EngineState {
   idling: boolean
 }
 
+/**
+ * Vitesse au-delà de laquelle l'embrayage est forcément fermé, en km/h.
+ *
+ * Sans cette borne, un régime bas sur un grand rapport — trente kilomètres à
+ * l'heure à mille cent tours — passerait pour un décollage, et le régime serait
+ * relevé à tort. On ne patine qu'en partant : « la première, même juste pour
+ * lancer, jusque vingt kilomètres à l'heure ».
+ */
+const CLUTCH_KMH = 25
+
 export interface EngineInput {
   kmh: number
   accelMs2: number
@@ -179,6 +189,13 @@ export class Engine {
    * librement si on donne des gaz — c'est ce qui permet un coup d'accélérateur à
    * l'arrêt. Pendant un passage de rapport le couple est coupé, donc le régime
    * chute vers le ralenti au lieu de suivre les roues.
+   *
+   * **Dès que la voiture avance, c'est l'embrayage qui commande**, et non plus le
+   * ralenti. Le plancher était le ralenti : de zéro à six kilomètres à l'heure
+   * sur le profil Sport, les roues tournant moins vite, le régime restait à 780
+   * et le son était celui de l'arrêt. Aucune voiture ne fait cela — on lâche
+   * l'embrayage, le moteur monte au régime de décollage et **y reste** pendant
+   * que la voiture prend de la vitesse, jusqu'à ce que les roues le rejoignent.
    */
   private resolveTarget(kinematic: number, input: EngineInput): number {
     if (input.atStandstill) {
@@ -189,7 +206,10 @@ export class Engine {
     if (input.isShifting) {
       return Math.max(this.preset.idleRpm, kinematic * 0.72)
     }
-    return Math.max(this.preset.idleRpm, kinematic)
+    // Jamais sous le ralenti, même si le profil est mal réglé.
+    const launch = Math.max(this.preset.idleRpm, this.preset.launchRpm)
+    const slipping = input.kmh < CLUTCH_KMH && kinematic < launch
+    return slipping ? launch : Math.max(this.preset.idleRpm, kinematic)
   }
 
   /**

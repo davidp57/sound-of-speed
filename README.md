@@ -912,6 +912,7 @@ l'échappement.
 |---|---|
 | **Cylindres enregistrés** | Décrit le moteur des **échantillons**, pas celui qu'on veut entendre : il ne modifie pas le son, celui-ci venant d'enregistrements où le moteur est figé. Il sert à convertir la raie d'allumage en régime lors de l'analyse — une valeur fausse y proposerait des ancrages faux, dans le même rapport |
 | **Ralenti** | Régime au point mort, moteur non entraîné |
+| **Régime de décollage** | Ce que l'embrayage impose dès que la voiture avance. Le moteur y monte et l'y tient pendant qu'elle prend de la vitesse, jusqu'à ce que les roues le rejoignent. Sans lui, le régime restait au ralenti sous six kilomètres à l'heure et le son était celui de l'arrêt |
 | **Seuil de coupure** | Régime auquel l'allumage commence à être coupé |
 | **Rupteur** | Plafond absolu du régime |
 | **Durée de coupure** | C'est le hachage qui produit le crépitement, pas le plafonnement |

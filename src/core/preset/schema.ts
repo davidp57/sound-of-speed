@@ -85,6 +85,16 @@ export interface EnginePreset {
   /** Nombre de cylindres : fixe la fréquence d'allumage (rpm / 120 × cylindres). */
   cylinders: number
   idleRpm: number
+  /**
+   * Régime de décollage : ce que l'embrayage impose dès que la voiture avance.
+   *
+   * Sans lui, le régime restait collé au ralenti tant que les roues tournaient
+   * moins vite — de zéro à six kilomètres à l'heure sur le profil Sport, et le
+   * son y était le même qu'à l'arrêt. Une vraie voiture ne connaît pas cet
+   * état : on embraye, le moteur monte, et il **tient** ce régime pendant que la
+   * voiture prend de la vitesse. Les roues le rejoignent ensuite.
+   */
+  launchRpm: number
   /** Régime où la coupure commence à mordre. */
   softLimitRpm: number
   /** Rupteur dur : le régime n'ira jamais au-delà. */
@@ -475,7 +485,7 @@ export type ProfileOrigin = Pick<
   'sampleDir' | 'engine' | 'drivetrain' | 'speed' | 'mix' | 'feel' | 'layers'
 >
 
-export const PROFILE_FORMAT_VERSION = 3
+export const PROFILE_FORMAT_VERSION = 4
 
 export interface ProfileFile {
   version: number

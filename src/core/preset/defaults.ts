@@ -63,6 +63,9 @@ export function createRoadProfile(): Profile {
     engine: {
       ...base.engine,
       idleRpm: 800,
+      // Un peu plus de la moitié au-dessus du ralenti : c'est à ce régime qu'on
+      // lâche l'embrayage sans forcer.
+      launchRpm: 1300,
       softLimitRpm: 6300,
       redlineRpm: 6500,
       inertia: 1.2,
@@ -153,6 +156,9 @@ export function createDefaultProfile(): Profile {
     engine: {
       cylinders: 8,
       idleRpm: 780,
+      // Plus haut que sur le profil Route : on ne démarre pas une sportive au
+      // ralenti.
+      launchRpm: 1500,
       softLimitRpm: 8200,
       redlineRpm: 8500,
       limiterHoldMs: 120,
