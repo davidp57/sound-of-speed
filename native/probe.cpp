@@ -191,7 +191,7 @@ const EngineDefinition DEFAULT_CROSSPLANE_V8 = {{
     234,      // exhaustDuration
     1.325,    // plenumVolume
     700,      // intakeFlowRate
-    0.996,    // idleThrottlePlate
+    0.9985,   // idleThrottlePlate — juge a l oreille, voir defaults.ts
     29,       // primaryTubeLength
     500,      // primaryFlowRate
     1000,     // outletFlowRate

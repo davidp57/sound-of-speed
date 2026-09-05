@@ -34,7 +34,11 @@ export const GM_LS_V8: EngineDefinition = {
   exhaustDuration: 234,
   plenumVolume: 1.325,
   intakeFlowRate: 700,
-  idleThrottlePlate: 0.996,
+  // 0,9985, jugé à l'oreille et non relevé : le GM LS déclare 0,996, et à cette
+  // valeur le ralenti craque et sort des fréquences parasites. 0,9975 et 0,9985
+  // sont équivalents et nettement meilleurs. C'est la valeur que le code portait
+  // avant que je la remplace par le défaut de la structure C++.
+  idleThrottlePlate: 0.9985,
   // Vingt-neuf pouces de primaire : c'est ce qui fait la résonance grave d'un V8
   // américain, là où l'EJ25 n'en a que dix.
   primaryTubeLength: 29,
@@ -75,6 +79,7 @@ export const SUBARU_EJ25: EngineDefinition = {
   exhaustDuration: 220,
   plenumVolume: 1.325,
   intakeFlowRate: 800,
+  // La valeur du fichier, et celle que l'oreille confirme.
   idleThrottlePlate: 0.9985,
   primaryTubeLength: 10,
   primaryFlowRate: 200,
