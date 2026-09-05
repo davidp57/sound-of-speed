@@ -763,11 +763,24 @@ Engine *buildCrossplaneV8(const EngineDefinition &def) {
             head->setIntake(i, intake);
             head->setExhaustSystem(i, exhaust);
             head->setSoundAttenuation(i, 1.0);
-            // La longueur du tube primaire, avec le meme etagement de deux
-            // pouces d'un cylindre a l'autre.
-            head->setHeaderPrimaryLength(
-                i, units::distance(def[ENGINE_PRIMARY_TUBE_LENGTH] + i * 2.0,
-                                   units::inch));
+            // La longueur de collecteur de chaque cylindre.
+            //
+            // **Ce n'est pas la longueur du tube primaire**, et les confondre
+            // etait une erreur : le tube primaire vaut vingt-neuf pouces sur le
+            // GM LS, quand ses quatre collecteurs mesurent de 6,79 a 1,97 pouce.
+            // On posait 29, 31, 33 et 35 pouces — cinq a dix fois trop long, et
+            // croissant la ou les fichiers decroissent. Quatre resonances
+            // fausses, que le quatre cylindres n'a pas puisqu'il n'etage rien :
+            // c'est ce que David entendait comme « des frequences parasites par
+            // dessus, qu'on dirait synchro sur le cote rugueux mais plus
+            // aigues ».
+            //
+            // Le 454 les ecrit `distance * 4, 3, 2, 1` avec `distance` a cinq
+            // pouces, soit 20, 15, 10 et 5. On reprend cette regle : le premier
+            // cylindre porte le collecteur le plus long, et les suivants s'en
+            // deduisent par quarts.
+            const double header = 20.0 * (4.0 - i) / 4.0;
+            head->setHeaderPrimaryLength(i, units::distance(header, units::inch));
         }
     }
 
