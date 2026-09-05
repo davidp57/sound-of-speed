@@ -82,7 +82,7 @@ Function *flowCurve(const std::vector<std::pair<double, double>> &samples) {
 }
 
 // Le pendant direct de es_script::EngineNode::buildEngine(), sans piranha.
-Engine *buildInline4() {
+Engine *buildInline4(double revLimitRpm = 6500) {
     const double stroke = units::distance(79.0, units::mm);
     const double bore = units::distance(99.5, units::mm);
     const double rodLength = units::distance(5.142, units::inch);
@@ -253,7 +253,16 @@ Engine *buildInline4() {
     intakeParams.InputFlowK = GasSystem::k_carb(800.0);
     intakeParams.IdleFlowK = GasSystem::k_carb(0.0);
     intakeParams.RunnerFlowRate = GasSystem::k_carb(250.0);
-    intakeParams.IdleThrottlePlatePosition = 0.9985;
+    // Le papillon au ralenti, a la valeur de reference d'engine-sim.
+    //
+    // Il valait 0,9985 chez nous, quasiment ferme. Le debit d'air passe en
+    // cosinus de l'angle : cos(0,9985 * pi/2) = 0,0024 contre 0,0393 a 0,975,
+    // soit **dix-sept fois moins d'air**. Le moteur etait asphyxie au ralenti,
+    // il ne brulait presque pas, et ce qu'on entendait etait le pompage.
+    //
+    // C'est le defaut d'engine-sim (intake.h), et les moteurs qu'il livre le
+    // gardent tel quel.
+    intakeParams.IdleThrottlePlatePosition = 0.975;
     intakeParams.RunnerLength = units::distance(12.0, units::inch);
     intakeParams.VelocityDecay = 0.5;
     intake->initialize(intakeParams);
@@ -298,7 +307,13 @@ Engine *buildInline4() {
     ignitionParams.cylinderCount = 4;
     ignitionParams.crankshaft = crank;
     ignitionParams.timingCurve = timingCurve;
-    ignitionParams.revLimit = units::rpm(6500);
+    // Le rupteur suit le profil, il n'est plus fige.
+    //
+    // Il valait 6 500 et 6 800 en dur, quand le profil Sport monte a 8 500 :
+    // passe 6 800, engine-sim coupait l'allumage. Il ne restait alors que le
+    // pompage d'air, aigu et sans corps — David l'a entendu comme « la
+    // frequence sourde tout d'un coup coupee », vers 6 900 tr/min.
+    ignitionParams.revLimit = units::rpm(revLimitRpm);
     ignitionParams.limiterDuration = 0.08;
     engine->getIgnitionModule()->initialize(ignitionParams);
     for (int i = 0; i < 4; ++i) {
@@ -359,7 +374,7 @@ Engine *buildInline4() {
  *   vilebrequin croise. C'est de la que vient le grondement inegal : chaque banc
  *   voit ses allumages espaces de 90 puis 180 degres, et non regulierement.
  */
-Engine *buildCrossplaneV8() {
+Engine *buildCrossplaneV8(double revLimitRpm = 6800) {
     const double stroke = units::distance(3.622, units::inch);
     const double bore = units::distance(4.065, units::inch);
     const double rodLength = units::distance(6.098, units::inch);
@@ -503,7 +518,16 @@ Engine *buildCrossplaneV8() {
     intakeParams.InputFlowK = GasSystem::k_carb(1200.0);
     intakeParams.IdleFlowK = GasSystem::k_carb(0.0);
     intakeParams.RunnerFlowRate = GasSystem::k_carb(300.0);
-    intakeParams.IdleThrottlePlatePosition = 0.9985;
+    // Le papillon au ralenti, a la valeur de reference d'engine-sim.
+    //
+    // Il valait 0,9985 chez nous, quasiment ferme. Le debit d'air passe en
+    // cosinus de l'angle : cos(0,9985 * pi/2) = 0,0024 contre 0,0393 a 0,975,
+    // soit **dix-sept fois moins d'air**. Le moteur etait asphyxie au ralenti,
+    // il ne brulait presque pas, et ce qu'on entendait etait le pompage.
+    //
+    // C'est le defaut d'engine-sim (intake.h), et les moteurs qu'il livre le
+    // gardent tel quel.
+    intakeParams.IdleThrottlePlatePosition = 0.975;
     intakeParams.RunnerLength = units::distance(8.0, units::inch);
     intakeParams.VelocityDecay = 0.5;
     intake->initialize(intakeParams);
@@ -591,7 +615,13 @@ Engine *buildCrossplaneV8() {
     ignitionParams.cylinderCount = 8;
     ignitionParams.crankshaft = crank;
     ignitionParams.timingCurve = timingCurve;
-    ignitionParams.revLimit = units::rpm(6800);
+    // Le rupteur suit le profil, il n'est plus fige.
+    //
+    // Il valait 6 500 et 6 800 en dur, quand le profil Sport monte a 8 500 :
+    // passe 6 800, engine-sim coupait l'allumage. Il ne restait alors que le
+    // pompage d'air, aigu et sans corps — David l'a entendu comme « la
+    // frequence sourde tout d'un coup coupee », vers 6 900 tr/min.
+    ignitionParams.revLimit = units::rpm(revLimitRpm);
     ignitionParams.limiterDuration = 0.2;
     engine->getIgnitionModule()->initialize(ignitionParams);
     for (int i = 0; i < 8; ++i) {
@@ -1016,11 +1046,15 @@ Live *g_live = nullptr;
  * Le dynamometre est une contrainte rigide : un saut de regime d'une trame a
  * l'autre secoue le solveur et s'entend comme un claquement. La chaine de Speed
  * ne saute pas — le conditionnement et l'inertie du moteur l'en empechent —,
- * mais un changement de rapport, lui, saute. La limitation absorbe ce cas-la et
- * ne se voit pas ailleurs : 12 000 tr/min par seconde, c'est plus vite que ce
- * qu'un moteur fait a vide.
+ * mais un changement de rapport, lui, saute. La limitation absorbe ce cas-la.
+ *
+ * Elle valait 12 000 tr/min par seconde, ce qui etait trop lent : un passage de
+ * rapport fait chuter le regime de deux mille cinq cents tours d'un coup, soit
+ * plus de deux dixiemes de seconde a cette pente. David l'a entendu — « les
+ * tours retombent avant le son ». A 40 000, la meme chute prend soixante
+ * millisecondes, sous le seuil ou l'oreille separe deux evenements.
  */
-const double MAX_RPM_SLEW = 12000.0;
+const double MAX_RPM_SLEW = 40000.0;
 
 } // namespace
 
@@ -1036,12 +1070,16 @@ extern "C" {
  * Audio calcule en FFT partitionnee au lieu d'un produit direct.
  */
 int synth_create(int simFrequency, int audioSampleRate, int cylinders, int impulseSamples,
-                 int leveler, double levelerGain) {
+                 int leveler, double levelerGain, double revLimitRpm) {
     if (g_live != nullptr) return 0;
 
     Live *live = new Live;
     live->audioSampleRate = (double)audioSampleRate;
-    live->engine = (cylinders == 4) ? buildInline4() : buildCrossplaneV8();
+    // Un peu au-dessus du rupteur du profil : c'est la boite qui doit tenir le
+    // regime, pas la coupure d'allumage. Sans marge, le moindre depassement
+    // ferait taire le moteur juste au moment ou on l'ecoute le plus.
+    const double revLimit = revLimitRpm > 1000.0 ? revLimitRpm * 1.05 : 6800.0;
+    live->engine = (cylinders == 4) ? buildInline4(revLimit) : buildCrossplaneV8(revLimit);
     live->scratch.resize(4096);
 
     live->vehicle = new Vehicle;

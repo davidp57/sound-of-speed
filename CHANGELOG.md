@@ -8,6 +8,40 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le rupteur du moteur simulé suit le profil.** Il était figé à 6 800 tr/min
+  quand le profil Sport monte à 8 500 : au-delà, engine-sim coupait l'allumage,
+  et il ne restait que le pompage d'air — aigu et sans corps. David l'a entendu
+  à 100 tr/min près : « vers 6 900, comme si la fréquence sourde était tout d'un
+  coup coupée ». Vérifié après correction : le régime monte à 7 985 tr/min avec
+  un écart nul et un niveau qui tient. Changer de profil rebâtit le moteur,
+  puisque le rupteur est figé à la construction.
+
+- **Le décalage entre le geste et le son est réduit de moitié.** « Les tours
+  retombent avant le son », au changement de rapport. Deux causes cumulées : la
+  réserve du lecteur, à 250 ms, ramenée à 120 — zéro creux mesuré à cette
+  valeur —, et le limiteur de pente du régime, qui valait 12 000 tr/min par
+  seconde. Un passage de rapport fait chuter le régime de deux mille cinq cents
+  tours d'un coup : plus de deux dixièmes de seconde à cette pente. Porté à
+  40 000, la même chute prend soixante millisecondes.
+
+- **Le papillon de ralenti était presque fermé.** Il valait 0,9985 là où
+  engine-sim retient 0,975. Le débit d'air passe en cosinus de l'angle : cela
+  fait **dix-sept fois moins d'air**. Le moteur était asphyxié au ralenti, il ne
+  brûlait presque pas, et ce qu'on entendait était le pompage. À papillon égal,
+  la sonde monte désormais à 4 565 tr/min au lieu de 2 337.
+
+  **Ce que cela donne à l'oreille n'est pas mesuré** : le niveleur d'engine-sim
+  vise une crête constante et masque tout changement d'amplitude. Le ralenti
+  reste à juger.
+
+### Ajouté
+
+- **Un choix « où l'on écoute »** sur le banc de synthèse : dehors à côté de la
+  voiture, ou dedans vitres fermées. Le passe-bas de sortie faisait déjà cela
+  sans qu'on l'ait cherché — c'est David qui l'a remarqué en réglant à
+  l'oreille. Le réglage libre reste accessible.
+
+
 - **La résonance d'échappement est maintenant une captation réelle**, et non
   plus un modèle. C'est ce que fait engine-sim depuis toujours, et nous ne
   l'avions pas vu : son application charge un fichier WAV enregistré sur un vrai

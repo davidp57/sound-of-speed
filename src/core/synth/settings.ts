@@ -167,7 +167,12 @@ export const DEFAULT_SYNTH: SynthSettings = {
    */
   volume: 0.25,
   blockFrames: 1024,
-  reserveMs: 250,
+  // Cent vingt millisecondes, et non deux cent cinquante. La réserve absorbe les
+  // pointes de calcul, mais elle se paie en retard entre le geste et le son :
+  // David l'a vu au changement de rapport, « les tours retombent avant le son ».
+  // Avec la réserve interne d'engine-sim par-dessus, on était à plus de trois
+  // dixièmes de seconde.
+  reserveMs: 120,
   convolver: true,
   // Cinquante millisecondes : la valeur trouvée à l'oreille. Deux cent vingt
   // étaient une salle, pas un échappement — à 800 tr/min un V8 explose toutes
