@@ -168,9 +168,7 @@ se trouvent.
 Vingt-sept nombres décrivent maintenant le moteur, dans une section du profil.
 Ils voyagent avec lui — stockage, fichier exporté, lien de partage — et se
 règlent dans l'onglet Synthèse, groupés par famille : géométrie, culasse, cames,
-admission, échappement, rupteur, bruits. Deux boutons reposent le moteur sur une
-des deux définitions livrées avec engine-sim, un **GM LS** à huit cylindres et
-un **Subaru EJ25** à quatre.
+admission, échappement, rupteur, bruits.
 
 À côté de chaque valeur réglée, la valeur de **référence** apparaît dès qu'elle
 en diffère — celle du GM LS pour un huit cylindres, celle de l'EJ25 pour un
@@ -190,6 +188,35 @@ La liste des paramètres, leurs unités et les valeurs des deux définitions de
 référence sont dans [`native/CONTRAT-MOTEUR.md`](native/CONTRAT-MOTEUR.md).
 C'est la source de vérité : le C++ lit ces nombres **par position**, et cet
 ordre est le contrat.
+
+### On charge un moteur, puis on affine
+
+Vingt-huit curseurs ne se règlent pas un par un. « C'est vraiment difficile de
+trouver des réglages qui sont bien, ils ont tous des effets les uns sur les
+autres et y'en a beaucoup » : un moteur est un ensemble où les valeurs
+s'accordent, pas vingt-huit nombres indépendants.
+
+L'onglet Synthèse ouvre donc la section du moteur sur une **bibliothèque de
+moteurs**, un bouton par moteur, avant les curseurs. Charger un moteur écrit
+d'un coup sa définition **et** son rupteur dans le profil actif : les deux
+décrivent le même moteur, et un GM LS sous le rupteur d'un quatre cylindres n'en
+serait plus un.
+
+Une ligne dit ce qui est chargé. Trois cas :
+
+| Ce qu'on lit | Ce que ça veut dire |
+|---|---|
+| `Chargé : GM LS — V8 5,7 L` | les vingt-sept valeurs et le rupteur sont exactement ceux de ce moteur |
+| `Chargé : GM LS — V8 5,7 L, modifié — 3 valeurs changées` | on est parti de ce moteur et on l'a retouché ; le bouton **Annuler les retouches** le recharge tel quel |
+| `Réglages personnels` | plus de la moitié des valeurs diffèrent du moteur le plus proche : rien ne dit plus d'où l'on est parti, et l'écran préfère ne rien affirmer |
+
+Le départ n'est pas mémorisé : il se **déduit** en comptant les valeurs qui
+diffèrent de chaque moteur connu. Un profil reçu par lien se lit donc comme un
+autre, et la ligne reste juste après un rechargement de la page.
+
+Ce qui limite la liste n'est pas le nombre de définitions disponibles, mais les
+architectures que le C++ sait construire : quatre cylindres en ligne, et V8 à
+quatre-vingt-dix degrés à vilebrequin croisé.
 
 Le **silencieux** est un passe-bas, placé avant la séparation du son sec et du
 son réverbéré puisque c'est le même échappement qui les porte. Il répare un
@@ -895,7 +922,10 @@ qu'il a toujours été.
 Vingt-sept nombres décrivent le moteur qu'engine-sim construit — alésage,
 course, volume de chambre, cames, tubes d'échappement, bruits. Ils sont dans le
 profil, voyagent avec lui, et se règlent dans l'onglet **Synthèse**, réservé au
-développement : on ne décrit pas un moteur en conduisant. Le détail est plus
+développement : on ne décrit pas un moteur en conduisant. On ne les tourne
+d'ailleurs pas un par un : une **bibliothèque de moteurs** en tête de la section
+charge un moteur entier — sa définition et son rupteur — et les curseurs servent
+ensuite à retoucher. Le détail est plus
 haut, dans la présentation de cet écran ; la liste complète, les unités et les
 deux définitions de référence sont dans
 [`native/CONTRAT-MOTEUR.md`](native/CONTRAT-MOTEUR.md).

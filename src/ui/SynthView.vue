@@ -9,10 +9,12 @@ import {
   type SynthSettings,
 } from '../core/synth/settings'
 import { ENGINE_GROUPS, ENGINE_FIELDS, type EngineDefinition } from '../core/preset/schema'
-import { ENGINE_REFERENCES, GM_LS_V8, SUBARU_EJ25 } from '../core/preset/defaults'
+import { GM_LS_V8, SUBARU_EJ25 } from '../core/preset/defaults'
+import { ENGINE_LIBRARY, type LibraryEngine } from '../core/preset/engine-library'
 import {
   activeProfile,
   applyEngineDefinition,
+  applyLibraryEngine,
   applySynthSettings,
   engineDefinition,
   setSynthEnabled,
@@ -196,10 +198,75 @@ function onEngine(key: string, event: Event): void {
   })
 }
 
-/** Reposer le moteur sur une des deux définitions livrées avec engine-sim. */
-function loadReference(definition: EngineDefinition): void {
-  void applyEngineDefinition({ ...definition })
+/**
+ * Charger un moteur entier, plutôt que tourner vingt-huit boutons.
+ *
+ * « C'est vraiment difficile de trouver des réglages qui sont bien, ils ont
+ * tous des effets les uns sur les autres et y'en a beaucoup » — et c'est exact :
+ * un moteur est un ensemble où les valeurs s'accordent, pas vingt-huit chiffres
+ * indépendants. On part donc d'un moteur relevé, puis on retouche.
+ *
+ * Le rupteur part avec la définition : les deux décrivent le même moteur.
+ */
+function loadEngine(entry: LibraryEngine): void {
+  void applyLibraryEngine({ ...entry.definition }, entry.redlineRpm)
 }
+
+/**
+ * Les valeurs comparées pour reconnaître un moteur.
+ *
+ * Prises sur une définition de référence plutôt qu'écrites à la main : la liste
+ * suit le contrat sans qu'on ait à la tenir à jour.
+ */
+const ENGINE_KEYS = Object.keys(GM_LS_V8) as (keyof EngineDefinition)[]
+
+/** Combien de valeurs séparent ce qui est réglé du moteur `entry`, rupteur compris. */
+function gapsTo(entry: LibraryEngine): number {
+  let gaps = entry.redlineRpm === redlineRpm.value ? 0 : 1
+  for (const key of ENGINE_KEYS) {
+    if (Math.abs(entry.definition[key] - engineDefinition.value[key]) > 1e-9) gaps += 1
+  }
+  return gaps
+}
+
+/**
+ * Au-delà de la moitié des valeurs changées, plus rien ne dit d'où l'on est
+ * parti : ce n'est plus un moteur retouché, c'en est un autre. On préfère ne
+ * rien affirmer plutôt que désigner un départ au hasard.
+ */
+const ORIGIN_MAX_GAPS = Math.ceil((ENGINE_KEYS.length + 1) / 2)
+
+/** Le moteur de la bibliothèque le plus proche de ce qui est réglé. */
+const closest = computed<{ entry: LibraryEngine; gaps: number } | null>(() => {
+  let best: { entry: LibraryEngine; gaps: number } | null = null
+  for (const entry of ENGINE_LIBRARY) {
+    const gaps = gapsTo(entry)
+    if (best === null || gaps < best.gaps) best = { entry, gaps }
+  }
+  return best
+})
+
+/** Le moteur chargé, quand ce qui est réglé lui correspond exactement. */
+const loaded = computed(() => (closest.value?.gaps === 0 ? closest.value.entry : null))
+
+/** Le moteur dont on est parti, quand on l'a retouché sans le méconnaître. */
+const origin = computed(() => {
+  const near = closest.value
+  if (near === null || near.gaps === 0 || near.gaps > ORIGIN_MAX_GAPS) return null
+  return near
+})
+
+/** Ce qui est chargé, en une phrase. */
+const loadedText = computed(() => {
+  const near = closest.value
+  if (near === null) return 'La bibliothèque de moteurs est vide.'
+  if (near.gaps === 0) return `Chargé : ${near.entry.label}`
+  if (near.gaps > ORIGIN_MAX_GAPS) {
+    return 'Réglages personnels : aucun moteur de la bibliothèque ne s’en approche.'
+  }
+  const s = near.gaps > 1 ? 's' : ''
+  return `Chargé : ${near.entry.label}, modifié — ${near.gaps} valeur${s} changée${s}`
+})
 
 function onFlag(key: keyof SynthSettings, event: Event): void {
   const target = event.target as HTMLInputElement
@@ -565,16 +632,30 @@ const gauge = computed(() => {
         changer demandait de recompiler. Tout, sauf les deux bruits, coupe le
         son le temps de rebâtir.
       </p>
-      <div class="actions">
-        <span class="state">Repartir d'une référence d'engine-sim :</span>
+      <h3>Charger un moteur</h3>
+      <p class="loaded">{{ loadedText }}</p>
+      <div v-if="ENGINE_LIBRARY.length > 0" class="library">
         <button
-          v-for="entry in ENGINE_REFERENCES"
+          v-for="entry in ENGINE_LIBRARY"
           :key="entry.id"
-          @click="loadReference(entry.definition)"
+          :aria-pressed="entry.id === loaded?.id"
+          :title="entry.source"
+          @click="loadEngine(entry)"
         >
           {{ entry.label }}
         </button>
       </div>
+      <div v-if="origin" class="actions">
+        <button @click="loadEngine(origin.entry)">
+          Annuler les retouches et recharger « {{ origin.entry.label }} »
+        </button>
+      </div>
+      <p class="note">
+        Charger écrit d'un coup les vingt-sept valeurs du moteur et son rupteur.
+        Les curseurs qui suivent servent ensuite à retoucher : on charge
+        d'abord, on affine après. Rien n'est perdu — recharger le moteur d'origine
+        remet tout en place.
+      </p>
       <div class="groups">
         <div v-for="group in engineGroups" :key="group.id" class="group">
           <h3>{{ group.label }}</h3>
@@ -769,6 +850,35 @@ h2 {
 .field .numeric {
   text-align: right;
   min-width: 4rem;
+}
+
+.loaded {
+  margin: 0.2rem 0 0.6rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/*
+ * La liste des moteurs — des boutons, jamais un menu déroulant.
+ *
+ * Elle s'allonge à mesure qu'on relève des définitions : une grille qui se
+ * replie, et une hauteur bornée pour que les curseurs restent atteignables
+ * sans traverser la liste entière.
+ */
+.library {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.4rem;
+  max-height: 13rem;
+  overflow-y: auto;
+}
+
+.library button {
+  text-align: left;
+}
+
+.library + .actions {
+  margin-top: 0.6rem;
 }
 
 /* Vingt-huit curseurs : en une colonne ils dépasseraient l'écran. */
