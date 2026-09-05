@@ -18,7 +18,7 @@ import {
 import { SIMPLE_GEAR_COUNTS } from '../core/preset/character'
 import {
   SOUND_SOURCES,
-  isSoundSourceReady,
+  needsSimulatedEngine,
   soundSourceOf,
   type LayerRole,
   type SoundSource,
@@ -63,6 +63,7 @@ import {
   journalError,
   setJournalConsent,
   setDepositCredentials,
+  synthSupported,
 } from '../state'
 
 /**
@@ -918,10 +919,10 @@ function impliedCylinders(index: number): number | null {
         une banque que cette simulation a produite au bureau, une prise par plage de
         régime.
       </p>
-      <p v-if="!isSoundSourceReady(soundSource)" class="note warn">
-        Cette origine n'est pas encore gréée : le son reste celui de la banque
-        d'échantillons. Le choix est bien enregistré dans le profil, il prendra effet
-        quand la synthèse arrivera.
+      <p v-if="needsSimulatedEngine(soundSource) && !synthSupported" class="note warn">
+        Ce navigateur ne sait pas faire tourner le moteur simulé : il lui manque
+        l'`AudioWorklet` ou le WebAssembly. Le profil garde son origine, mais le son
+        restera celui de la banque d'échantillons tant qu'il sera ouvert ici.
       </p>
 
       <label class="inline">

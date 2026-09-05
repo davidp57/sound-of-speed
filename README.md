@@ -789,10 +789,17 @@ par plage de régime se lit près de un, et le timbre ne se déplace plus. Le
 direct, lui, garde ce que la génération perd : un son continu, sans domaine ni
 bascule.
 
-**Seul l'enregistré est gréé aujourd'hui.** Choisir l'une des deux autres
-origines n'a donc pas encore d'effet sur le son : le profil garde sa déclaration,
-l'écran le dit en clair, et la banque continue de jouer. Rien ne grésille et rien
-ne se tait.
+**Les trois sont gréées.** C'est le même bouton « Activer le son » qui les
+démarre : un profil *généré en direct* allume le moteur simulé là où les deux
+autres chargent une banque. Changer de profil en cours de route bascule d'une
+origine à l'autre, les deux ne jouant jamais ensemble.
+
+*Généré à l'avance* ne demande rien de plus qu'*enregistré* — c'est un dossier
+d'échantillons comme un autre, produit par
+[`scripts/generate-bank/`](scripts/generate-bank/README.md). *Généré en direct*,
+lui, a besoin d'un `AudioWorklet` et du WebAssembly : un navigateur qui n'en a
+pas le dit dans l'écran de configuration, et la banque continue de jouer plutôt
+que de grésiller.
 
 Un profil réglé avant l'arrivée de ce champ est repris en **enregistré**, ce
 qu'il a toujours été.

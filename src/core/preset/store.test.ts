@@ -29,7 +29,7 @@ import { decodeProfile, encodeProfile } from './share'
 import {
   PROFILE_FORMAT_VERSION,
   SOUND_SOURCES,
-  isSoundSourceReady,
+  needsSimulatedEngine,
   soundSourceOf,
   type Profile,
 } from './schema'
@@ -785,11 +785,13 @@ describe('origine du son', () => {
     expect(soundSourceOf({ soundSource: 42 })).toBe('recorded')
   })
 
-  it('ne dit gréé que l’enregistré, les deux autres restant à faire', () => {
+  it('ne demande un moteur simulé que pour le direct', () => {
     expect(SOUND_SOURCES).toEqual(['recorded', 'live', 'prerendered'])
-    expect(isSoundSourceReady('recorded')).toBe(true)
-    expect(isSoundSourceReady('live')).toBe(false)
-    expect(isSoundSourceReady('prerendered')).toBe(false)
+    // Une banque produite à l'avance se joue comme une banque enregistrée : même
+    // moteur de lecture, mêmes exigences. Seul le direct a besoin de simuler.
+    expect(needsSimulatedEngine('recorded')).toBe(false)
+    expect(needsSimulatedEngine('prerendered')).toBe(false)
+    expect(needsSimulatedEngine('live')).toBe(true)
   })
 
   it('suit le profil par fichier et par lien', async () => {

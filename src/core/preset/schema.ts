@@ -49,15 +49,16 @@ export function soundSourceOf(profile: { soundSource?: unknown }): SoundSource {
 }
 
 /**
- * Cette origine est-elle gréée ?
+ * Cette origine demande-t-elle de quoi simuler un moteur ?
  *
- * Seul l'enregistré l'est aujourd'hui ; la synthèse arrive avec la suite du lot.
- * Un profil qui déclare une origine absente n'en devient pas muet pour autant :
- * il joue sa banque, et l'écran de configuration dit que le choix ne prend pas
- * encore effet. Une déclaration sans moteur derrière doit se voir, pas grésiller.
+ * Enregistré et généré à l'avance jouent tous deux une banque d'échantillons, par
+ * le même moteur de lecture : ils marchent partout où le son marche. Généré en
+ * direct, lui, fait tourner le moteur simulé dans la page, ce qui demande un
+ * `AudioWorklet` et du WebAssembly. La question est posée ici parce qu'elle tient
+ * à l'origine ; c'est à l'appelant de savoir ce que son navigateur sait faire.
  */
-export function isSoundSourceReady(source: SoundSource): boolean {
-  return source === 'recorded'
+export function needsSimulatedEngine(source: SoundSource): boolean {
+  return source === 'live'
 }
 
 export interface LayerPreset {

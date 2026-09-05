@@ -17,6 +17,7 @@ import { GamepadReader, type PadSnapshot } from './core/input/gamepad'
 import { RejectionWatch, type RejectionCause } from './core/speed/rejection'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
+import { soundSourceOf } from './core/preset/schema'
 import type { Profile, ProfileOrigin } from './core/preset/schema'
 import {
   applyResponsiveness,
@@ -325,15 +326,32 @@ export const isMuted = ref(false)
 /**
  * Le son synthétisé — engine-sim, en direct.
  *
- * Réservé au développement, comme le simulateur : le lot SYNTHESE prévoit un
- * champ `soundSource` à la racine du profil, et c'est lui qui décidera un jour.
- * En attendant, l'onglet Synthèse l'allume à la main, ce qui suffit pour juger
- * un timbre au bureau — le seul endroit où l'on puisse le juger.
+ * C'est le profil qui décide, par son champ `soundSource` : une origine
+ * « généré en direct » fait sonner le moteur simulé là où les deux autres font
+ * jouer la banque. Le même bouton « Activer le son » sert aux deux, puisque le
+ * navigateur ne laisse démarrer un son que sur un geste.
  *
- * Les deux origines de son ne cohabitent pas : allumer la synthèse coupe les
+ * Les deux origines ne cohabitent pas : allumer la synthèse coupe les
  * échantillons, et l'éteindre les rend.
+ *
+ * Ce qui est réservé au développement, c'est le **banc de réglage** — on ne
+ * règle pas un timbre en conduisant —, pas la synthèse elle-même : tout
+ * l'enjeu du lot est justement de savoir ce qu'elle coûte dans la voiture.
  */
 export const synthAvailable = import.meta.env.DEV
+/**
+ * Ce navigateur sait-il faire tourner le moteur simulé ?
+ *
+ * Il lui faut un `AudioWorklet` — le calcul ne peut pas vivre sur le fil de la
+ * page sans creuser le son — et du WebAssembly. Un profil « généré en direct »
+ * ouvert sur un navigateur qui n'a ni l'un ni l'autre doit le dire, pas grésiller.
+ */
+export const synthSupported =
+  typeof AudioWorkletNode !== 'undefined' && typeof WebAssembly !== 'undefined'
+/** L'origine de son que le profil actif déclare. */
+export const soundOrigin = computed(() => soundSourceOf(activeProfile.value))
+/** Le profil actif fait-il sonner le moteur simulé plutôt que la banque ? */
+export const synthIsOrigin = computed(() => soundOrigin.value === 'live')
 export const synthSettings = ref<SynthSettings>({ ...DEFAULT_SYNTH })
 /**
  * Faire tourner la synthèse sans qu'elle sorte du haut-parleur.
@@ -970,6 +988,13 @@ watch(
   },
 )
 
+// Passer d'un profil à l'autre peut changer d'origine de son. Sans cela, la
+// synthèse continuerait de tourner sous un profil à échantillons, qui resterait
+// muet : la boucle coupe la banque tant que le moteur simulé tourne.
+watch(synthIsOrigin, (direct) => {
+  if (!direct && synth.isRunning) void setSynthEnabled(false)
+})
+
 watch(profiles, (list) => saveProfiles(list), { deep: true })
 watch(selectedId, (id) => {
   saveSelectedId(id)
@@ -1042,6 +1067,13 @@ function refreshAudioStatus(): void {
  * refusent d'ouvrir un contexte audio autrement, et l'échec est silencieux.
  */
 export async function activateAudio(): Promise<void> {
+  // Un profil « généré en direct » n'a pas de banque à charger : c'est le moteur
+  // simulé qu'on allume. « Généré à l'avance », lui, passe par ici comme
+  // « enregistré » — sa banque est un dossier d'échantillons comme un autre.
+  if (synthIsOrigin.value) {
+    await setSynthEnabled(true)
+    return
+  }
   await audio.activate(activeProfile.value)
   // L'activation met le maintien de session en place d'office ; le réglage,
   // lui, peut avoir été coupé avant. Sans cette ligne il était ignoré, et

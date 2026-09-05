@@ -19,10 +19,10 @@ Toutes les évolutions notables du projet. Format
   aussi porter la définition du moteur qui a produit sa banque, pour qu'une
   banque générée ne devienne pas une boîte noire qu'on ne saurait plus refaire.
 
-  **Seul l'enregistré est gréé aujourd'hui** : choisir l'une des deux autres
-  origines n'a pas encore d'effet sur le son. L'écran le dit en clair et la
-  banque continue de jouer — la déclaration est conservée, rien ne grésille et
-  rien ne se tait.
+  Les trois origines sont gréées, et c'est le même bouton « Activer le son » qui
+  les démarre. Un navigateur sans `AudioWorklet` ni WebAssembly ne peut pas faire
+  tourner le moteur simulé : il le dit, et la banque continue de jouer plutôt que
+  de grésiller.
 
   Les profils déjà enregistrés sont repris en *enregistré*, ce qu'ils ont
   toujours été. La version du format de profil passe de 2 à 3.
