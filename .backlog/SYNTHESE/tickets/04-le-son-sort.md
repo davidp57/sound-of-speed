@@ -197,6 +197,105 @@ vaut 28.
   nul**, ×1,79 temps réel, zéro creux, réserve à 253 ms. Le trajet vitesse →
   rapport → régime → son synthétisé fonctionne de bout en bout.
 
+## Le parasite entendu par David, et sa cause
+
+David, après la première écoute : « le son est pas mal, mais y'a une fréquence
+assez aiguë en trop ». Puis, résonance à fond : « on n'entend pas du tout le
+moteur, juste le souffle, comme des interférences sur une radio FM ». Et sur un
+quatre cylindres : « y'a toujours ce son en trop partout dans la courbe ».
+
+### Ce que la mesure a montré
+
+Spectre du ralenti, en tiers d'octave, silencieux coupé. Deux anomalies, dont
+aucune n'apparaît dans une prise faite sur une vraie voiture :
+
+1. un **plateau plat** de 250 Hz à 2 kHz, là où un moteur décroît ;
+2. une **remontée de 11 dB** entre 2 et 8 kHz. Un spectre de moteur ne remonte
+   jamais dans l'aigu.
+
+### La cause : les deux bruits qu'engine-sim ajoute à dessein
+
+Ils étaient à leurs valeurs d'origine depuis le début du portage, et personne ne
+les avait regardées. Elles ne sont pas un réglage, ce sont des valeurs de
+démonstration — l'application d'origine d'engine-sim les expose à l'écran.
+
+| Paramètre | Valeur d'origine | Coupure | Ce qu'il produisait |
+|---|---|---|---|
+| `airNoise` | 1,0 | 2 kHz | le plateau |
+| `inputSampleNoise` | 0,5 | 10 kHz | la remontée |
+
+Le premier ne s'ajoute pas au signal, il le **multiplie** :
+
+```cpp
+r_mixed = airNoise * bruit + (1 - airNoise);
+v_in    = f_p * dF_F_mix + f * r_mixed * (1 - dF_F_mix);
+```
+
+À un, le moteur est donc entièrement modulé par un bruit blanc filtré à 2 kHz.
+À zéro, `r_mixed` vaut un et le signal passe intact. C'est exactement le
+« souffle » entendu.
+
+### Ce que le réglage a donné
+
+Ramenés à 0,15 et 0,05 — pas à zéro : un moteur a du souffle, et le retirer tout
+à fait sonne synthétique. Ralenti, quatre cylindres, silencieux coupé :
+
+| | Avant | Après |
+|---|---|---|
+| 50 Hz, le corps | −56,4 | **−53,5** |
+| 250 Hz | −76,2 | **−70,5** |
+| 4 kHz | −83,7 | **−100,8** |
+| 8 kHz | −78,5 | **−96,1** |
+| Remontée 2 → 8 kHz | **+10,8 dB** | **−1,3 dB** |
+
+Le parasite chute de 17 dB, le grave gagne 3 à 6 dB. Sur le V8, le rapport entre
+le corps et le plateau passe de **5,7 à 10,6 dB** et la bosse disparaît aussi.
+
+Le **silencieux** devient inutile : il avait été ajouté pour masquer ce parasite,
+et David avait dû le descendre à 1 kHz, ce qui « coupe trop d'autres sons et rend
+le moteur sourd ». Il est coupé par défaut. Mesuré après correction : 47 dB
+d'écart entre 50 Hz et 4 kHz sur le quatre cylindres, là où une prise réelle en
+montre 39. Filtrer davantage n'enlèverait plus que du moteur.
+
+### Le V8 reste en retrait du quatre cylindres
+
+Même après correction, et c'est mesuré : rapport corps/plateau de 10,6 dB pour le
+V8 contre environ 27 pour le quatre cylindres. David l'avait entendu avant qu'on
+le mesure — « sur un 4 cylindres j'entends le ralenti (c'est chouette
+d'ailleurs) ».
+
+Le V8 croisé de `native/probe.cpp` a été écrit à la main et n'a jamais été
+comparé à une définition de référence, contrairement au quatre cylindres qui
+reprend les cotes d'un moteur réel. **C'est le prochain chantier**, et il se
+mène en comparant à une définition existante, pas en réglant au jugé.
+
+### Quatre hypothèses écartées, pour n'y pas revenir
+
+Chacune paraissait plausible, chacune a été tuée par une mesure.
+
+- **Le rééchantillonnage de la simulation.** La bosse 5-10 kHz aurait dû se
+  déplacer en passant la simulation de 10 à 20 kHz. Elle n'a pas bougé :
+  −91,4 dB puis −90,9.
+- **La quantification en entiers 16 bits.** `readAudioOutput` rend des `int16`,
+  et un plancher de quantification est plat comme le plateau observé. Mais
+  monter le volume interne d'un facteur seize n'a amélioré le rapport que de
+  1,4 dB, quand la quantification aurait donné 24.
+- **Le dynamomètre.** Il tient le régime par une contrainte du solveur à 10 000
+  livres-pied, résolue à chaque pas ; le soupçon était qu'il injecte du bruit
+  dans la rotation. Desserré à 300, l'écart n'a pas bougé : 5,7 dB puis 6,1.
+  L'export `synth_set_dyno` reste, pour pouvoir refaire l'essai ; son curseur a
+  quitté l'écran, un réglage sans effet mesuré n'y a pas sa place.
+- **Le filtrage comme remède.** Cherché la meilleure coupure et le meilleur ordre
+  contre une prise réelle : le résidu ne descend jamais sous 4,5 dB, contre 8,3
+  sans filtre. Un filtre ne pouvait pas réparer un signal dont le défaut est à la
+  source — et mon réglage à 1 kHz, lui, dégradait (7,5 dB).
+
+Une correction intermédiaire, elle, était fondée et reste : la **résonance
+d'échappement était un bruit blanc**, reprise d'engine-sim. Convoluer des
+explosions par du bruit rend du bruit. Mesuré sur un ralenti de V8, par le
+facteur de crête : son sec 6,0, bruit blanc 3,4, tube 5,7. Elle simule désormais
+un tube — une suite d'échos espacés du temps d'aller-retour.
+
 ## Critères d'acceptation
 
 - [x] Le son sort sans creux ni craquement à régime tenu, puis en accélération —

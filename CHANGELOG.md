@@ -8,6 +8,30 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Les deux bruits d'engine-sim étaient restés à leurs valeurs de
+  démonstration.** C'est la cause du parasite que David entendait à tous les
+  régimes — « une fréquence assez aiguë en trop », puis « on n'entend pas du
+  tout le moteur, juste le souffle, comme des interférences sur une radio FM ».
+
+  Le spectre du ralenti montrait deux anomalies qu'aucune prise faite sur une
+  vraie voiture ne présente : un plateau plat de 250 Hz à 2 kHz, et une remontée
+  de 11 dB entre 2 et 8 kHz. Elles correspondent exactement aux deux bruits
+  qu'engine-sim ajoute à dessein, avec leurs coupures à 2 et 10 kHz :
+  `airNoise` à 1,0 et `inputSampleNoise` à 0,5.
+
+  Le premier ne s'ajoute pas au signal, il le **multiplie** : à un, le moteur
+  est entièrement modulé par un bruit blanc. Les deux sont maintenant réglables,
+  et ramenés à 0,15 et 0,05 — pas à zéro, un moteur a du souffle.
+
+  Ralenti d'un quatre cylindres, silencieux coupé : le parasite à 8 kHz chute de
+  17 dB, le corps à 250 Hz gagne 6 dB, et la remontée vers l'aigu disparaît
+  (+10,8 dB avant, −1,3 après). Sur le V8, le rapport entre le corps et le
+  plateau passe de 5,7 à 10,6 dB.
+
+  Le **silencieux** est coupé par défaut : il avait été ajouté pour masquer ce
+  parasite, et il fallait le descendre si bas qu'il rendait le moteur sourd.
+
+
 - **Un bouton « Réglages d'origine » sur le banc de synthèse.** Sept curseurs,
   dont plusieurs se compensent : on s'y perd en tâtonnant à l'oreille, et la
   seule issue était de recharger la page — ce qui coupe le son et rebâtit le

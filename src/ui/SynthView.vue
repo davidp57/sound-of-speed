@@ -305,6 +305,32 @@ const gauge = computed(() => {
         <span class="numeric">{{ synthSettings.volume.toFixed(2) }}</span>
       </div>
       <div class="field">
+        <label for="air">Bruit d'air</label>
+        <input
+          id="air"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          :value="synthSettings.airNoise"
+          @input="onNumber('airNoise', $event)"
+        />
+        <span class="numeric">{{ synthSettings.airNoise.toFixed(2) }}</span>
+      </div>
+      <div class="field">
+        <label for="gigue">Gigue d'échantillonnage</label>
+        <input
+          id="gigue"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          :value="synthSettings.inputSampleNoise"
+          @input="onNumber('inputSampleNoise', $event)"
+        />
+        <span class="numeric">{{ synthSettings.inputSampleNoise.toFixed(2) }}</span>
+      </div>
+      <div class="field">
         <label for="pot">Silencieux</label>
         <input
           id="pot"
