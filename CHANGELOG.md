@@ -8,6 +8,21 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **L'embrayage se ferme progressivement, au lieu de sauter à un palier.** David,
+  après l'arrivée du régime de décollage : « on passe de 800 rpm à 1 300, sans
+  aucun changement même en accélérant doucement ; seulement à partir d'une
+  dizaine de km/h ça commence à augmenter ».
+
+  Le modèle tenait un palier : le régime sautait au régime de décollage et y
+  restait jusqu'à ce que les roues le rattrapent. On ne lâche pas l'embrayage
+  d'un coup. Le régime monte désormais du ralenti vers le régime de décollage à
+  mesure que la voiture avance, et la hauteur atteinte **dépend des gaz** : on
+  ne démarre pas en douceur comme on démarre vite.
+
+  Relevé au simulateur, profil Route, démarrage doux : 923 tr/min à 7 km/h,
+  1 447 à 14, 1 845 à 17. Aucun palier plat.
+
+
 - **La première se conduit comme un rapport, et l'on débraye en s'arrêtant.**
   David : « la première passe tout de suite (logique) mais elle passe la 2de au
   km/h suivant. Et la 2de est en dessous de 800 rpm (cappé à 800) jusque

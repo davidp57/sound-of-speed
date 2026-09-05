@@ -400,24 +400,35 @@ describe('Engine — décollage', () => {
   const premiere = profile.drivetrain.gearRatios[0]! * profile.drivetrain.finalDrive
 
   it('quitte le ralenti dès que la voiture avance', () => {
-    // Le défaut que David a entendu : de zéro à six kilomètres à l'heure, le
-    // régime restait collé au ralenti et le son était celui de l'arrêt. Une
-    // voiture ne fait pas cela — on lâche l'embrayage et le moteur monte.
+    // Le défaut que David a entendu d'abord : de zéro à six kilomètres à
+    // l'heure, le régime restait collé au ralenti et le son était celui de
+    // l'arrêt.
     const arret = tenu({ kmh: 0, atStandstill: true, throttle: 0 })
     const lance = tenu({ kmh: 5, atStandstill: false, throttle: 0, totalRatio: premiere })
 
     expect(arret).toBeCloseTo(profile.engine.idleRpm, 0)
-    expect(lance).toBeGreaterThan(profile.engine.idleRpm + 300)
+    expect(lance).toBeGreaterThan(profile.engine.idleRpm + 80)
   })
 
-  it('tient le régime de décollage pendant que la voiture prend de la vitesse', () => {
-    // C'est ce qu'on entend en vrai : le moteur monte, **reste** là, et les
-    // roues le rejoignent ensuite.
-    const trois = tenu({ kmh: 3, atStandstill: false, throttle: 0, totalRatio: premiere })
-    const cinq = tenu({ kmh: 5, atStandstill: false, throttle: 0, totalRatio: premiere })
+  it('monte progressivement, sans palier', () => {
+    // Le défaut qu'il a entendu ensuite : « on passe de 800 à 1 300 sans aucun
+    // changement même en accélérant doucement ». On ne lâche pas l'embrayage
+    // d'un coup — le régime monte à mesure que la voiture avance.
+    const trois = tenu({ kmh: 3, atStandstill: false, throttle: 0.5, totalRatio: premiere })
+    const cinq = tenu({ kmh: 5, atStandstill: false, throttle: 0.5, totalRatio: premiere })
+    const huit = tenu({ kmh: 8, atStandstill: false, throttle: 0.5, totalRatio: premiere })
 
-    expect(trois).toBeCloseTo(cinq, 0)
-    expect(trois).toBeCloseTo(profile.engine.launchRpm, 0)
+    expect(cinq).toBeGreaterThan(trois + 20)
+    expect(huit).toBeGreaterThan(cinq + 20)
+  })
+
+  it('monte plus haut quand on accélère fort', () => {
+    // On ne démarre pas en douceur comme on démarre vite.
+    const doux = tenu({ kmh: 4, atStandstill: false, throttle: 0, totalRatio: premiere })
+    const franc = tenu({ kmh: 4, atStandstill: false, throttle: 1, totalRatio: premiere })
+
+    expect(franc).toBeGreaterThan(doux + 100)
+    expect(franc).toBeLessThanOrEqual(profile.engine.launchRpm)
   })
 
   it('laisse les roues commander quand elles tournent assez vite', () => {
