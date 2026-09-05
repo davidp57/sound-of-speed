@@ -153,6 +153,20 @@ export interface EngineDefinition {
   airNoise: number
   /** Gigue d'échantillonnage, de 0 à 1. Filtrée à 10 kHz par engine-sim. */
   inputSampleNoise: number
+  /**
+   * Longueur du collecteur du premier cylindre, en pouces.
+   *
+   * Sur un V8, les suivants s'en déduisent par quarts — la règle du 454, qui
+   * écrit ses quatre longueurs `distance * 4, 3, 2, 1`. Sur un quatre cylindres,
+   * tous portent la même : l'EJ25 n'en déclare aucune, et c'est pourquoi il n'a
+   * pas les résonances multiples du V8.
+   *
+   * **Ce réglage arbitre.** Long, il donne le côté rugueux et vivant en charge,
+   * et des fréquences parasites au ralenti ; court, il enlève les deux. C'est
+   * David qui l'a constaté en écoutant les deux extrêmes, et c'est pour cela que
+   * c'est un curseur.
+   */
+  headerLength: number
 }
 
 /**
@@ -276,6 +290,17 @@ export const ENGINE_FIELDS: readonly EngineField[] = [
     step: 0.01,
     group: 'noise',
     hot: true,
+  },
+  // En dernier, et c'est la règle du contrat : un paramètre neuf s'ajoute à la
+  // fin, jamais au milieu, pour que l'ordre ne se décale pas côté C++.
+  {
+    key: 'headerLength',
+    label: 'Collecteur du 1er cylindre',
+    unit: 'po',
+    min: 1,
+    max: 60,
+    step: 0.5,
+    group: 'exhaust',
   },
 ]
 

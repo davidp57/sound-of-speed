@@ -8,6 +8,19 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **La longueur du collecteur devient un curseur.** Elle était écrite en dur :
+  chaque cylindre du V8 recevait la sienne, et le quatre cylindres une longueur
+  unique. Or c'est ce nombre qui arbitre le compromis que David a entendu — long,
+  le moteur est rugueux et vivant en charge, mais des fréquences parasites
+  montent au ralenti ; court, les parasites tombent et la vie avec.
+
+  Le curseur donne la longueur du **premier** cylindre ; sur un V8 les trois
+  autres s'en déduisent par quarts, la règle du 454 qui écrit ses quatre
+  longueurs `distance * 4, 3, 2, 1`. Sur un quatre cylindres, tous portent la
+  même. C'est le vingt-neuvième paramètre du contrat, ajouté en dernier comme
+  la règle l'exige ; un profil enregistré avant lui reprend la valeur d'origine
+  de son moteur, rien ne se perd.
+
 - **Huit moteurs à charger d'un clic**, dans l'onglet Synthèse. David, après
   avoir essayé les vingt-huit curseurs : « c'est vraiment difficile de trouver
   des réglages qui sont bien, ils ont tous des effets les uns sur les autres et

@@ -92,6 +92,7 @@ export const CHEVROLET_454: EngineDefinition = {
   // celles que le projet a retenues à l'oreille, comme les deux références.
   airNoise: 0.15,
   inputSampleNoise: 0.05,
+  headerLength: 20,
 }
 
 /**
@@ -177,6 +178,7 @@ export const HONDA_B18C5: EngineDefinition = {
   // rendrait les comparaisons illisibles. Écart assumé, comme au contrat.
   airNoise: 0.15,
   inputSampleNoise: 0.05,
+  headerLength: 10,
 }
 
 /**
@@ -224,6 +226,7 @@ export const SUZUKI_HAYABUSA: EngineDefinition = {
   // que pour le B18C5.
   airNoise: 0.15,
   inputSampleNoise: 0.05,
+  headerLength: 10,
 }
 
 /**
@@ -281,6 +284,7 @@ export const SUBARU_EJ25_EQUAL_HEADER: EngineDefinition = {
   // que le contrat écarte — à un, le moteur disparaît derrière sa modulation.
   airNoise: 0.15,
   inputSampleNoise: 0.05,
+  headerLength: 10,
 }
 
 /**
@@ -292,6 +296,7 @@ export const SUBARU_EJ25_EQUAL_HEADER: EngineDefinition = {
 export const SUBARU_EJ25_UNEQUAL_HEADER: EngineDefinition = {
   ...SUBARU_EJ25_EQUAL_HEADER,
   primaryTubeLength: 24,
+  headerLength: 10,
 }
 
 export const ENGINE_LIBRARY: readonly LibraryEngine[] = [

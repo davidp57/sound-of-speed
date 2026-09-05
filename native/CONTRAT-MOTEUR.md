@@ -23,6 +23,8 @@ d'avoir des paramètres, qu'on pourrait retenir dans des profils — exactement 
 que sont les fichiers `.mr` finalement, non ? ». Oui, à ceci près qu'un `.mr`
 est un langage et que ceci est un tableau de nombres.
 
+**Vingt-neuf paramètres** depuis que la longueur de collecteur s'est ajoutée — en dernier, comme la règle l'exige.
+
 ## Comment ça passe
 
 Un **tableau de doubles**, écrit par le JavaScript dans la mémoire du module et
@@ -91,6 +93,7 @@ Sources : `assets/engines/atg-video-2/07_gm_ls.mr` et
 | 25 | `limiterDuration` | seconde | — | 0.08 | Durée d'une coupure au rupteur |
 | 26 | `airNoise` | 0-1 | — | — | Bruit d'air d'engine-sim. **Il multiplie le signal** : à un, le moteur disparaît derrière sa modulation. Retenu à 0,15, à l'oreille |
 | 27 | `inputSampleNoise` | 0-1 | — | — | Gigue d'échantillonnage, filtrée à 10 kHz. Retenue à 0,05, à l'oreille |
+| 28 | `headerLength` | pouce | 6.8 | — | **Longueur du collecteur du premier cylindre.** Sur un V8 les suivants s'en déduisent par quarts, comme le 454 qui écrit `distance * 4, 3, 2, 1` ; sur un quatre cylindres tous portent la même. Ce réglage arbitre : long, il donne le rugueux en charge **et** des parasites au ralenti ; court, il enlève les deux |
 
 ### Le collecteur, deux formes pour la même chose
 
