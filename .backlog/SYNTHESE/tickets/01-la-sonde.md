@@ -1,6 +1,6 @@
 # 01 — La sonde : engine-sim tient-il dans la voiture ?
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — la sonde tourne et a servi, reste le relevé dans la Tesla
 
 **Bloqué par :** aucun
 
@@ -54,28 +54,40 @@ nombre de cœurs annoncé. Un chiffre sans son contexte ne se relit pas trois
 semaines plus tard — et le relevé du poste de David n'a pas la même valeur que
 celui de la voiture.
 
-## Ce que coûte WebAssembly, mesuré
+## Ce que coûte WebAssembly : rien, ou presque
 
-Le rapport de faisabilité donnait des chiffres **natifs**. Il manquait le facteur
-de conversion vers WebAssembly, sans quoi le relevé de la sonde ne se compare à
-rien. Mesuré ici, sur deux noyaux repris du vrai code — une convolution par
-produit direct, qui pèse 65 % du coût audio, et un solveur itératif comme celui
-des contraintes du vilebrequin :
+Mesuré sur le **vrai code**, une fois le cœur compilé par les deux chaînes depuis
+le même arbre, mêmes sources, mêmes patchs, même `-O2`. Un Ryzen 7 7800X3D, un
+seul fil ; le WebAssembly tourne sous Node, qui emploie le moteur de Chrome.
 
-| Noyau | Natif, g++ -O2 | WebAssembly, Chromium | Surcoût |
+| Relevé | Natif, g++ | WebAssembly | Surcoût |
 |---|---|---|---|
-| Convolution, 48 000 sorties sur 10 000 points | 0,308 s | 0,410 s | ×1,33 |
-| Solveur, 100 000 pas de 8 itérations | 0,219 s | 0,254 s | ×1,16 |
+| Chaîne complète, 10 kHz | ×1,68 | ×1,76 | aucun |
+| Chaîne complète, 20 kHz | ×1,13 | ×1,08 | ×1,05 |
+| Convolution courte, 10 kHz | ×3,29 | ×3,17 | ×1,04 |
+| Convolution courte, 20 kHz | ×1,74 | ×1,64 | ×1,06 |
 
-Deux passes, écarts sous 1 %. **WebAssembly coûte donc 16 à 33 % de plus que le
-natif**, bien moins que le facteur deux qu'on avance souvent.
+**Zéro à six pour cent.** Un banc synthétique fait au préalable — une convolution
+et un solveur écrits pour l'occasion — annonçait 16 à 33 % ; il **surestimait**.
+Sur le vrai code, le choix de WebAssembly ne coûte rien de mesurable, et c'est la
+chaîne de compilation qui s'efface devant ce que le processeur sait faire.
 
-Le banc recoupe au passage la mesure du rapport de faisabilité : 0,308 s pour
-48 000 échantillons ici, contre 0,266 s pour 44 100 sur le vrai code, soit le
-même ordre à 8 % près.
+Le binaire pèse **128 592 octets**. Il tiendra sans peine dans le cache hors
+réseau.
 
-Ce qui reste inconnu est donc **le seul rapport entre ce poste et la voiture** —
-et c'est exactement ce que la sonde va chercher.
+### Ce que ces chiffres disent déjà
+
+La convolution longue coûte la moitié du budget : ×1,76 avec, ×3,17 sans. La
+déporter sur un `ConvolverNode` de Web Audio n'est donc pas une optimisation
+parmi d'autres, c'est **la** condition pour espérer passer le seuil.
+
+Et une fois qu'elle est sortie, **c'est la simulation qui domine** — 0,310 s sur
+0,315 s. Toute optimisation ultérieure portera là, pas sur l'audio.
+
+Reste que ×3,17 est relevé sur un processeur de bureau haut de gamme, et que le
+seuil est ×3 **dans la voiture**. La marge est donc mince, et c'est bien la
+mesure sur place qui tranchera — mais on sait déjà qu'un portage qui garderait la
+convolution dans le WebAssembly est perdu d'avance.
 
 ## Une fausse piste, pour qu'on ne la reprenne pas
 
@@ -97,17 +109,39 @@ voiture ne prouve rien à elle seule**. La sonde doit distinguer une panne de
 réseau d'un refus du service worker et le dire à l'écran, sans quoi le verdict
 du lot se jouera sur une ambiguïté du même genre.
 
+## Ce que la sonde a donné
+
+Relevé par David le 4 septembre 2026, Firefox 154 sur son poste, moteur
+quatre cylindres :
+
+| Relevé | Facteur temps réel |
+|---|---|
+| Chaîne complète, 10 kHz | ×1,62 |
+| Chaîne complète, 20 kHz | ×1,16 |
+| Convolution déportée, 10 kHz | ×3,70 |
+| Convolution déportée, 20 kHz | ×3,24 |
+
+Verdict affiché : entre ×1 et ×3. La suite est dans le ticket 02.
+
+**Une fausse piste, consignée pour ne pas y revenir.** J'avais diagnostiqué que le
+service worker bloquait le chargement du WebAssembly, et commité un correctif. En
+cherchant à reproduire la panne, **tout** échouait — y compris `/index.html` et le
+chemin déjà exempté — pendant que `curl` répondait en deux millisecondes. Ce
+n'était pas le service worker, c'était la connexion du navigateur de test. Le
+correctif a été annulé.
+
 ## Critères d'acceptation
 
-- [ ] Le cœur compile en WebAssembly, sans interface, sans piranha
-- [ ] La sonde ne joue aucun son et ne demande aucune autorisation
-- [ ] Elle affiche les trois relevés et le facteur temps réel de chacun
-- [ ] Elle affiche le navigateur et le matériel annoncé
+- [x] Le cœur compile en WebAssembly, sans interface, sans piranha
+- [x] La sonde ne joue aucun son et ne demande aucune autorisation
+- [x] Elle affiche les trois relevés et le facteur temps réel de chacun
+- [x] Elle affiche le navigateur et le matériel annoncé
 - [ ] Elle est servie par le même nginx que l'application, pour s'ouvrir dans la
-      voiture comme le reste
-- [ ] Le poids du `.wasm` est indiqué : il devra être mis en cache hors réseau
-- [ ] La page se charge avec le service worker actif, module compris — vérifié,
+      voiture comme le reste — `public/sonde/` part dans le build, mais personne
+      ne l'a ouverte depuis le NAS
+- [x] Le poids du `.wasm` est indiqué : il devra être mis en cache hors réseau
+- [x] La page se charge avec le service worker actif, module compris — vérifié,
       pas supposé
-- [ ] Quand un chargement échoue, la page dit **pourquoi** : réseau injoignable,
+- [x] Quand un chargement échoue, la page dit **pourquoi** : réseau injoignable,
       module absent, ou service worker qui l'intercepte
 - [ ] 🧑 Relevé fait dans la Tesla, et le chiffre écrit dans le ticket 02

@@ -54,7 +54,29 @@ Le jugement se fait sur la **chaîne complète**, en conduisant à la manette �
 sur un régime tenu isolé. C'est le choix de David, et il tient depuis que le banc
 GPS et la manette permettent de conduire au bureau.
 
-## La décision de fond, et son inconnue
+## Trois origines de son, et non une
+
+Décidé par David le 4 septembre 2026, après les premières mesures : un profil
+choisit **d'où vient son son**, parmi trois origines.
+
+| Origine | Ce que c'est | Coût dans la voiture |
+|---|---|---|
+| **Enregistré** | la banque d'échantillons d'aujourd'hui | l'existant |
+| **Généré en direct** | engine-sim tourne dans la voiture | tout le budget processeur |
+| **Généré à l'avance** | engine-sim tourne ici, la voiture rejoue | comme l'enregistré |
+
+Le troisième mode vient d'une idée de David, proposée comme repli et retenue
+comme option : faire tourner engine-sim au moment de la conception, produire une
+banque, et la rejouer avec le moteur de lecture existant. Il corrige un défaut
+que ni l'un ni l'autre des deux autres ne corrige — voir le ticket 05.
+
+Et le choix par profil évite de trancher globalement une question qui n'a pas de
+réponse unique : **il se peut que le direct ne tienne que pour les petits
+moteurs**. Un bicylindre bien simulé en direct vaudrait mieux qu'un V8
+échantillonné. La question du ticket 02 n'est donc pas « le temps réel
+passe-t-il » mais « jusqu'à combien de cylindres ».
+
+## Le temps réel, et son inconnue
 
 **On tente engine-sim en WebAssembly, et on mesure avant de s'engager.**
 
@@ -91,10 +113,19 @@ dynamique des gaz en simple précision pour tenir, sur un navigateur de bureau.
 
 Ces chiffres sont un **plancher** : ni WASM, ni la Tesla.
 
+**Et le premier relevé du V8 est à refaire.** Il donnait ×0,82 en chaîne complète
+et ×1,60 avec la convolution déportée, ce dont j'avais conclu que le temps réel
+était hors d'atteinte. Un jeu récent tournait pendant la mesure : la machine
+était encore à 25,6 % de charge après coup, le jeu totalisant 16 442 secondes de
+processeur. On n'a donc pas mesuré ce que le poste sait faire, mais ce qu'il en
+restait. La conclusion est retirée, la mesure est à reprendre à froid.
+
 ### Le seuil, fixé d'avance
 
-**×3 temps réel mesuré dans la voiture.** En dessous, le portage est abandonné et
-l'on écrit la synthèse maison.
+**×3 temps réel mesuré dans la voiture** — mais il ne condamne plus le lot, il
+**borne le mode direct**. En dessous pour un moteur donné, ce moteur-là ne se
+génère pas en direct ; il se génère à l'avance. Le seuil décide donc d'un
+domaine, pas d'un abandon.
 
 Trois, parce que le son ne sera pas seul : l'écran se rafraîchit, le GPS livre
 une position toutes les trente millisecondes, le service worker travaille. Un

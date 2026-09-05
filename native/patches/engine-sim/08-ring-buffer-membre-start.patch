@@ -1,0 +1,13 @@
+diff --git a/include/ring_buffer.h b/include/ring_buffer.h
+index f2a5f60..1f45af9 100644
+--- a/include/ring_buffer.h
++++ b/include/ring_buffer.h
+@@ -46,7 +46,7 @@ public:
+     }
+ 
+     inline void overwrite(T_Data data, size_t index) {
+-        if (start + index < m_capacity) {
++        if (m_start + index < m_capacity) {
+             m_buffer[m_start + index] = data;
+         }
+         else {

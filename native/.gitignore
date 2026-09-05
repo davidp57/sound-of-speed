@@ -1,0 +1,7 @@
+# Sources tierces rapatriees par prepare.mjs, et produits de compilation.
+# Rien de tout ca n'est versionne : le depot ne garde que les patchs.
+.work/
+.build/
+*.o
+*.exe
+*.wasm
