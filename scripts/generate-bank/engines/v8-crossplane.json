@@ -1,0 +1,19 @@
+{
+  "name": "V8 croisé (généré)",
+  "sampleDir": "v8-crossplane",
+  "base": "crossplaneV8",
+  "cylinders": 8,
+  "idleRpm": 750,
+  "redlineRpm": 6500,
+  "simulationHz": 10000,
+  "impulseSamples": 10000,
+  "bank": {
+    "spacingOctaves": 0.5,
+    "takeSeconds": 3.0,
+    "settleSeconds": 5.0,
+    "idleThrottle": 0.08,
+    "limiterRpm": 6950,
+    "reliefCompression": 0.35,
+    "witnesses": true
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Quatre cylindres (essai)",
+  "sampleDir": "i4-check",
+  "base": "inline4",
+  "cylinders": 4,
+  "idleRpm": 800,
+  "redlineRpm": 6300,
+  "simulationHz": 10000,
+  "impulseSamples": 10000,
+  "bank": {
+    "spacingOctaves": 0.5,
+    "takeSeconds": 3.0,
+    "settleSeconds": 3.0,
+    "idleThrottle": 0.08,
+    "limiterRpm": 0,
+    "reliefCompression": 0.35,
+    "witnesses": true
+  }
+}
