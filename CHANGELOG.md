@@ -8,6 +8,23 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Charger un moteur section par section.** Idée de David : « avoir les
+  boutons de choix de moteur dans chaque section (culasse, échappement) pour
+  essayer par exemple le moteur de la 454 avec l'échappement de la GM ». Chaque
+  section de l'onglet Synthèse porte maintenant la liste des huit moteurs, en
+  noms courts : un clic pose cette section-là sur le moteur réglé, et laisse
+  tout le reste en place.
+
+  Le bouton s'allume quand la section vient déjà de ce moteur — deux boutons
+  peuvent l'être à la fois, quand deux moteurs partagent la section.
+
+  La section « Bruits » n'a pas de boutons, et ce n'est pas une exception
+  écrite à la main : les moteurs y portent tous la même valeur, puisqu'elle est
+  jugée à l'oreille et non relevée. Une section dont les moteurs ne se
+  distinguent pas ne propose rien.
+
+  Le rupteur ne voyage pas avec une section : il vient du profil.
+
 - **La longueur du collecteur devient un curseur.** Elle était écrite en dur :
   chaque cylindre du V8 recevait la sienne, et le quatre cylindres une longueur
   unique. Or c'est ce nombre qui arbitre le compromis que David a entendu — long,
