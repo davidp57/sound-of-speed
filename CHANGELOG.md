@@ -8,6 +8,20 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **La banque générée portait le même parasite que le son en direct**, et un de
+  plus. Les deux bruits d'engine-sim y étaient aussi restés à leurs valeurs de
+  démonstration — ils sont fixés dans les définitions de moteur, où est leur
+  place. Et sa réponse impulsionnelle était un bruit blanc, avec ce commentaire :
+  « le contenu importe peu, seule sa longueur pèse sur le coût ». Vrai quand on
+  mesurait le coût processeur, faux dès qu'on produit du son à écouter. Elle
+  simule maintenant un tube, comme celle du son en direct.
+
+  Mesuré sur les prises produites, l'écart entre le grave et la bande de 8 kHz
+  passe de **3,4 à 42,9 dB** — une prise faite sur une vraie voiture en montre
+  39,1. En revanche le saut d'énergie au bouclage recule de 7,1 à 15,4 % au
+  pire : la queue d'un tube est tonale et se raccorde moins bien que du bruit.
+
+
 - **Les deux bruits d'engine-sim étaient restés à leurs valeurs de
   démonstration.** C'est la cause du parasite que David entendait à tous les
   régimes — « une fréquence assez aiguë en trop », puis « on n'entend pas du

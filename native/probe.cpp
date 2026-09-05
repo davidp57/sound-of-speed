@@ -110,8 +110,18 @@ Engine *buildInline4() {
     params.dynoHoldStep = units::rpm(100);
     params.initialSimulationFrequency = 10000;
     params.initialHighFrequencyGain = 0.01;
-    params.initialNoise = 1.0;
-    params.initialJitter = 0.5;
+    // Les deux bruits que le synthetiseur ajoute a dessein. Sans ces deux
+    // lignes, ils valent 1,0 et 0,5 — les valeurs de la structure d'engine-sim,
+    // qui sont des valeurs de demonstration. Mesure sur le ralenti d'un quatre
+    // cylindres : elles produisaient un plateau plat de 250 Hz a 2 kHz et une
+    // remontee de 11 dB entre 2 et 8 kHz, la ou un moteur decroit. Le bruit
+    // d'air ne s'ajoute pas au signal, il le **multiplie** : a un, le moteur
+    // disparait derriere sa propre modulation.
+    //
+    // Pas zero pour autant : un moteur a du souffle, et le retirer tout a fait
+    // sonne synthetique.
+    params.initialNoise = 0.15;
+    params.initialJitter = 0.05;
 
     DirectThrottleLinkage *throttle = new DirectThrottleLinkage;
     DirectThrottleLinkage::Parameters throttleParams;
@@ -377,8 +387,18 @@ Engine *buildCrossplaneV8() {
     params.dynoHoldStep = units::rpm(100);
     params.initialSimulationFrequency = 10000;
     params.initialHighFrequencyGain = 0.01;
-    params.initialNoise = 1.0;
-    params.initialJitter = 0.5;
+    // Les deux bruits que le synthetiseur ajoute a dessein. Sans ces deux
+    // lignes, ils valent 1,0 et 0,5 — les valeurs de la structure d'engine-sim,
+    // qui sont des valeurs de demonstration. Mesure sur le ralenti d'un quatre
+    // cylindres : elles produisaient un plateau plat de 250 Hz a 2 kHz et une
+    // remontee de 11 dB entre 2 et 8 kHz, la ou un moteur decroit. Le bruit
+    // d'air ne s'ajoute pas au signal, il le **multiplie** : a un, le moteur
+    // disparait derriere sa propre modulation.
+    //
+    // Pas zero pour autant : un moteur a du souffle, et le retirer tout a fait
+    // sonne synthetique.
+    params.initialNoise = 0.15;
+    params.initialJitter = 0.05;
 
     DirectThrottleLinkage *throttle = new DirectThrottleLinkage;
     DirectThrottleLinkage::Parameters throttleParams;

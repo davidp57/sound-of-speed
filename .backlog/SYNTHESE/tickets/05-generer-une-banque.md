@@ -172,6 +172,54 @@ Environ onze secondes de calcul par prise sur le V8, quatre sur le quatre
 cylindres, dont l'essentiel part dans la stabilisation. Le temps réel n'a aucune
 importance ici — c'est tout l'intérêt du mode.
 
+## Le même parasite était dans la banque produite
+
+Trouvé en corrigeant le son en direct (voir le ticket 04) : le modèle portait
+deux défauts qui s'entendaient. Le générateur, qui fait tourner le même modèle,
+les portait aussi — il en portait même un de plus.
+
+**Les deux bruits d'engine-sim.** `airNoise` à 1,0 et `inputSampleNoise` à 0,5,
+les valeurs de la structure. Le premier ne s'ajoute pas au signal, il le
+multiplie : à un, le moteur disparaît derrière sa propre modulation. Fixés à
+0,15 et 0,05 dans les définitions de moteur, où est leur place.
+
+**La réponse impulsionnelle était un bruit blanc**, et le commentaire l'assumait :
+« le contenu importe peu, seule sa longueur pèse sur le coût ». C'était vrai
+quand on mesurait le coût processeur — c'est faux dès qu'on produit du son à
+écouter. Elle simule désormais un tube, comme celle du son en direct : une suite
+d'échos espacés du temps d'aller-retour, adoucis à chaque réflexion.
+
+Cette seconde correction est celle qui compte. Mesuré sur les prises produites,
+l'écart entre le grave (60-250 Hz) et la bande de 8 kHz :
+
+| Banque | Écart grave → 8 kHz |
+|---|---|
+| V8 généré, avant | 3,4 dB |
+| **Quatre cylindres, après** | **42,9 dB** |
+| Enregistrée sur une vraie voiture | 39,1 dB |
+
+Le grave gagne 13 dB, l'aigu parasite en perd 26. La banque produite se tient
+désormais dans la même région qu'une prise réelle, là où elle en était à dix
+fois trop d'aigu.
+
+**Une réserve, et elle est mesurée.** Le saut d'énergie au bouclage passe de
+7,1 % à **15,4 %** au pire — la queue du tube est tonale et se raccorde moins
+bien qu'une queue de bruit. La banque enregistrée est à 10,8 %. Ce n'est pas
+rédhibitoire, mais c'est un recul : à reprendre si une boucle claque à l'oreille.
+
+## Une banque de quatre cylindres, prête à écouter
+
+`public/audio/i4-check/`, 15 prises, une par demi-octave. Le quatre cylindres
+plutôt que le V8 : c'est celui dont David dit « j'entends le ralenti, c'est
+chouette », et le seul dont la définition reprenne les cotes d'un moteur réel.
+
+| | |
+|---|---|
+| Vitesse de lecture | 0,71 à 1,40 |
+| Erreur de timbre | 0,67 demi-ton |
+| Saut d'énergie au bouclage | 15,4 % au pire |
+| Génération | 85 s pour 21 prises |
+
 ## Critères d'acceptation
 
 - [x] L'outil produit une banque complète depuis une définition de moteur, sans
