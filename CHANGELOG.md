@@ -61,6 +61,37 @@ Toutes les évolutions notables du projet. Format
   37,4 dB bruts sur le V8 et 13,1 dB une fois rabattu. C'est le premier réglage à
   juger à l'oreille, et le timbre n'a encore été écouté par personne.
 
+- **Le son d'engine-sim sort, et il suit le régime.** Le portage WebAssembly ne
+  produisait que des chiffres ; il produit maintenant du son, joué en direct, à
+  la cadence du navigateur. Un onglet **Synthèse**, réservé au développement
+  comme le simulateur, l'allume et le règle.
+
+  Trois fils : le fil principal transmet à chaque tour de boucle le **régime du
+  cadran** et l'**effort** ; un fil de calcul fait tourner engine-sim et remplit
+  une réserve ; un `AudioWorklet` la vide et compte ce qui manque. Le calcul
+  n'est pas dans le fil audio, faute de pouvoir y instancier un module
+  Emscripten sans `SharedArrayBuffer` — donc sans les en-têtes COOP/COEP que le
+  lot a écartés. Ce qu'on y gagne : une pointe de calcul mange la réserve au
+  lieu de faire un trou.
+
+  Le **régime est imposé au dynamomètre** d'engine-sim plutôt que trouvé par le
+  moteur : le régime entendu et celui du cadran doivent dire la même chose,
+  sinon c'est le compteur qu'on croira faux. Mesuré, du ralenti au rupteur :
+  écart nul, à l'unité près.
+
+  Relevé sur un Ryzen 7 7800X3D, contexte audio à 48 kHz, l'application entière
+  tournant à côté, résonance d'échappement déportée sur un `ConvolverNode` :
+  **×2,0 temps réel** pour le V8 à 10 kHz de simulation, **×3,7** pour un quatre
+  cylindres, **×0,95** si l'on laisse engine-sim convoluer lui-même. Réserve
+  tenue à 250 ms, **aucun creux** sur un balayage complet 800 → 6 500 tr/min. Le
+  seuil du lot est ×3 dans la voiture, où rien de tout cela n'a encore été
+  mesuré : sur ce poste, seul le quatre cylindres le passe.
+
+  Le banc affiche ce qui se mesure — régime demandé et entendu, coefficient
+  temps réel, charge, creux, réserve, niveau crête, niveau efficace, brillance —
+  et donne un **balayage de régime** pour écouter la montée sans rouler. **Le
+  timbre, lui, reste à juger à l'oreille** : la machine ne peut pas le faire.
+
 - **L'effort du moteur tient compte de la vitesse : la croisière n'est plus
   plate.** Faute de pédale, tout se déduisait de l'accélération, si bien que
   tenir une allure donnait toujours le même demi — mesuré, cinq allures tenues à

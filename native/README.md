@@ -18,7 +18,8 @@ une révision figée.
 | `prepare.mjs` | rapatrie engine-sim et son sous-module `simple-2d-constraint-solver`, à révision figée, dans `.work/`, puis applique les patchs |
 | `patches/` | les correctifs de portabilité, un par sujet, appliqués dans l'ordre de leur numéro |
 | `build-native.sh` | compile les 70 fichiers du cœur avec `g++ -std=c++17 -O2` et produit `probe.exe`, puis le lance |
-| `probe.cpp` | la sonde : construit un moteur en dur, le fait tourner, chronomètre |
+| `probe.cpp` | la sonde : construit un moteur en dur, le fait tourner, chronomètre — et depuis le ticket 04, le **banc vivant** qui rend des échantillons pour l'application |
+| `build-wasm.sh` | compile la même liste de fichiers avec Emscripten, produit `probe.mjs` + `probe.wasm` et les dépose dans `public/sonde/` |
 | `.work/`, `.build/` | plan de travail jetable, ignorés par git |
 
 ## Comment relancer
@@ -27,7 +28,12 @@ une révision figée.
 node native/prepare.mjs        # sources + patchs
 bash native/build-native.sh    # compile, puis mesure sur 1 s de son
 bash native/build-native.sh 5  # mesure sur 5 s de son
+bash native/build-wasm.sh      # compile en WebAssembly, depose dans public/sonde/
 ```
+
+`build-wasm.sh` recopie `probe.mjs` et `probe.wasm` dans `public/sonde/`, d'où la
+page de mesure **et** le son de synthèse les chargent tous les deux. Le faire à
+la main s'oubliait, et l'on mesurait alors la version d'avant sans le savoir.
 
 `prepare.mjs` est idempotent : il remet les deux dépôts à leur révision épinglée
 avant de réappliquer les patchs. Ce qu'on aurait modifié à la main dans `.work/`
@@ -68,6 +74,38 @@ branche `wasm-build`.
 | `06-synthesizer-sans-fil` | **le plus important.** Le synthétiseur rend l'audio dans un `std::thread`, réveillé par une variable de condition. On reprend l'approche de `bobsayshilol` (commit `66562efe`) : un `#define SEPARATE_THREAD 0`, et `readAudioOutput()` appelle `renderAudio()` au lieu d'attendre. Conséquence : pas de pthreads sous Emscripten, donc **pas de SharedArrayBuffer, donc pas d'en-têtes COOP/COEP à ajouter au nginx**. |
 | `07-constantes-linkage-interne` | `units.h` et `constants.h` déclarent 60 `extern constexpr double` dans un en-tête. Chaque unité de compilation qui en utilise une en émet une définition, et l'éditeur de liens les refuse en double. `inline constexpr` (C++17) n'en garde qu'une. Ce défaut n'apparaît qu'à l'édition de liens d'un programme complet, pas à la compilation fichier par fichier. |
 | `simple-2d-constraint-solver/01-matrix-cstring` | `<cstring>` manquant : `memset` n'est pas déclaré. |
+
+## Trois interfaces dans un seul binaire
+
+`probe.cpp` expose trois choses, et il vaut mieux ne pas les confondre :
+
+1. un **programme** (`main`) qui imprime quatre relevés et sort ;
+2. un **banc de mesure** persistant (`bench_*`), pour la page `/sonde/` : la page
+   chronomètre de l'extérieur, il lui faut donc un moteur qui vive entre deux
+   appels et trois opérations séparables — physique seule, synthèse seule,
+   chaîne complète ;
+3. un **banc vivant** (`synth_*`), qui rend les échantillons que l'application
+   joue. Trois différences avec les deux autres :
+   - le régime est **imposé** au dynamomètre (`m_dyno.m_hold`) et non trouvé par
+     le moteur, pour que le régime entendu soit celui du cadran de Speed ;
+   - la cadence audio est celle du **contexte du navigateur** : engine-sim câble
+     44 100 Hz dans `Simulator::initializeSynthesizer`, on ne le patche pas, on
+     détruit son synthétiseur juste après sa construction et on le réinitialise ;
+   - l'**effort** ouvre le papillon (`setSpeedControl`), entre deux bornes
+     réglables.
+
+Deux pièges rencontrés en écrivant le troisième, tous deux mesurés :
+
+- **le niveleur ne se règle qu'à la construction.** `renderAudio` relit sa cible
+  à chaque échantillon, mais ses deux bornes de gain sont recopiées une seule
+  fois, dans `Synthesizer::initialize`. Les écrire par `setAudioParameters` après
+  coup ne fait rien : le gain fixe passé de 0,5 à 0,05 laissait le niveau
+  inchangé au centième près. Elles passent donc par `synth_create` ;
+- **une réponse impulsionnelle courte tirée au hasard n'a pas de gain défini.**
+  Le mode « convolution déportée » installait deux coefficients de bruit, soit un
+  gain de l'ordre du millième et **variable d'un démarrage à l'autre** : 0,009 de
+  niveau crête là où 0,9 était attendu. Un coefficient unique égal à un règle la
+  question.
 
 ## Ce que la sonde mesure
 
@@ -124,16 +162,40 @@ Ces chiffres sont un **plancher**. Ni WebAssembly, ni la Tesla.
   probablement à la définition de moteur et à la longueur de la réponse
   impulsionnelle, qui est ici au plafond de 10 000 échantillons.
 - Le poids du `.wasm` n'est pas connu : rien n'a encore été compilé pour le
-  navigateur.
+  navigateur. *(Fait depuis : 138 ko.)*
+- **Le papillon agit à l'envers sur le niveau, à bas régime.** Mesuré dans le
+  navigateur, régime tenu à 800 tr/min, niveleur coupé pour voir la dynamique
+  brute : papillon fermé, 0,231 de niveau efficace ; papillon grand ouvert,
+  0,006. Un facteur 38, dans le mauvais sens. La brillance, elle, monte bien
+  avec l'ouverture (0,63 à 0,73), et le niveau croît normalement avec le régime.
+  Le moteur tourne donc, mais sa réponse au papillon n'est pas celle d'un vrai
+  moteur. Trois pistes non départagées : la définition codée en dur, la position
+  de plateau au ralenti (0,9985, contre 0,975 environ sur les moteurs livrés
+  avec engine-sim), ou un signal d'échappement dominé par le pompage plutôt que
+  par la combustion.
+
+## Le relevé dans le navigateur
+
+Chrome, contexte audio à 48 kHz, l'application entière tournant à côté, même
+poste. Le son sort vraiment : ce ne sont plus des chiffres jetés.
+
+| Réglage | Temps réel | Creux |
+|---|---|---|
+| V8 croisé, 10 kHz, convolution déportée sur Web Audio | ×1,95 à ×2,06 | 0 |
+| V8 croisé, 10 kHz, convolution interne à 10 000 | ×0,95 | 0 |
+| V8 croisé, 20 kHz, convolution déportée | ×1,02 à ×1,08 | 0 |
+| 4 cylindres, 10 kHz, convolution déportée | ×3,60 à ×3,85 | 0 |
+| 4 cylindres, 20 kHz, convolution déportée | ×1,96 à ×2,04 | 0 |
+
+Déporter la convolution double le débit, doubler la fréquence de simulation le
+divise par deux, et le quatre cylindres coûte la moitié du huit. Le seuil du lot
+est ×3 dans la voiture : ici, seul le quatre cylindres à 10 kHz le passe.
 
 ## Ce qui reste à faire
 
-1. Compiler la même liste de fichiers avec Emscripten. La chaîne de compilation
-   change, les sources non : c'est ce que ce dossier établit.
-2. Écrire la page de la sonde (ticket
-   [01](../.backlog/SYNTHESE/tickets/01-la-sonde.md)) : les mêmes relevés, plus
-   le navigateur, la taille de l'écran, le nombre de cœurs annoncé et le poids du
-   `.wasm`.
-3. La servir par le même nginx que l'application, pour l'ouvrir dans la voiture.
-4. Faire le relevé dans la Tesla et l'écrire dans le ticket 02. Le seuil est fixé
+1. Faire le relevé dans la Tesla et l'écrire dans le ticket 02. Le seuil est fixé
    d'avance : **×3 temps réel**.
+2. Comprendre la réponse au papillon (voir ci-dessus) : c'est ce qui empêche
+   aujourd'hui l'effort d'agir dans le bon sens.
+3. Comparer le moteur codé en dur à l'oreille avec le même moteur chargé par le
+   langage de script, ou renoncer à cette définition-là.

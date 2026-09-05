@@ -1,6 +1,7 @@
 # 04 — Le son sort, et suit le régime
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — le son sort et suit le régime ; le timbre est à
+juger à l'oreille, et un défaut du modèle est relevé plus bas.
 
 **Bloqué par :** 02 — savoir jusqu'à combien de cylindres le direct tient
 
@@ -43,12 +44,143 @@ volume.
 comme étalon. La machine ne peut pas juger ce ticket : elle fournit les réglages
 et mesure ce qui se mesure.
 
+## Comment c'est fait
+
+**Trois fils, et le calcul n'est pas dans le fil audio.** Faire tourner le
+WebAssembly dans l'`AudioWorklet` serait plus direct — c'est ce que demande
+l'énoncé —, mais ce n'est pas possible ici : un module Emscripten ne s'instancie
+pas dans un `AudioWorkletGlobalScope` (ni `fetch`, ni chargement asynchrone), et
+l'option `AUDIO_WORKLET` d'Emscripten passe par des fils WebAssembly, donc par
+`SharedArrayBuffer`, donc par les en-têtes COOP/COEP que la spécification du lot
+a explicitement écartés — le NAS ne les sert pas.
+
+Le partage retenu :
+
+- le **fil principal** transmet, à chaque tour de la boucle de Speed, le régime
+  du cadran et l'effort (`src/state.ts`) ;
+- le **calculateur** (`src/core/synth/renderer-source.ts`) fait tourner
+  engine-sim dans un `Worker` et remplit une réserve, bloc par bloc ;
+- le **lecteur** (`src/core/synth/player-source.ts`), dans le fil audio, vide
+  cette réserve et compte ce qui manque.
+
+Ce que le détour rapporte : **une pointe de calcul mange la réserve au lieu de
+faire un trou**. Le fil audio ne fait jamais qu'une recopie. Le calculateur et
+le lecteur se parlent par un `MessageChannel` direct, sans repasser par le fil
+principal, où un rendu de Vue s'intercalerait.
+
+**Le régime est imposé au dynamomètre**, comme le ticket le tranchait
+(`m_dyno.m_hold`), avec une limitation de pente à 12 000 tr/min par seconde : la
+contrainte est rigide et un saut de rapport la secouerait.
+
+**La cadence audio est celle du navigateur.** engine-sim câble 44 100 Hz dans
+`Simulator::initializeSynthesizer` ; on ne le patche pas, on détruit le
+synthétiseur juste après sa construction et on le réinitialise à la fréquence du
+contexte. Rien à rééchantillonner ensuite.
+
+**La résonance d'échappement est déportée** sur un `ConvolverNode` par défaut :
+engine-sim la calcule en produit direct, dix mille multiplications par
+échantillon, et Web Audio la fait en transformée de Fourier partitionnée.
+
+**L'écran de réglage** est l'onglet *Synthèse*, réservé au développement comme le
+simulateur (`import.meta.env.DEV`).
+
+## Ce qui est mesuré
+
+Ryzen 7 7800X3D, Chrome, contexte audio à 48 kHz, l'application entière
+tournant à côté, machine par ailleurs au repos. Coefficient temps réel = secondes
+de son produites par seconde de processeur, relevé par fenêtres de 250 ms.
+
+| Réglage | Temps réel | Creux |
+|---|---|---|
+| V8 croisé, 10 kHz, convolution déportée | ×1,95 à ×2,06 | 0 |
+| V8 croisé, 10 kHz, convolution interne à 10 000 | ×0,95 | 0 |
+| V8 croisé, 20 kHz, convolution déportée | ×1,02 à ×1,08 | 0 |
+| 4 cylindres, 10 kHz, convolution déportée | ×3,60 à ×3,85 | 0 |
+| 4 cylindres, 20 kHz, convolution déportée | ×1,96 à ×2,04 | 0 |
+
+Trois choses s'en lisent. Déporter la convolution **double** le débit — c'est le
+seul réglage qui fasse passer le V8 nettement au-dessus du temps réel, et il
+confirme la mesure native. Doubler la fréquence de simulation **divise le débit
+par deux**, exactement : le coût est celui des pas de physique. Et le quatre
+cylindres coûte **la moitié** du huit, ce qui reprend la proportionnalité au
+nombre de cylindres déjà relevée en natif.
+
+Rapporté au seuil du lot — ×3 dans la voiture, un poste que celui-ci n'est pas —
+un seul de ces réglages passe ici : le quatre cylindres à 10 kHz.
+
+**Attendre la reconstruction avant de relever.** Trois mesures fausses ont été
+prises et jetées avant que la règle soit tenue : le chiffre affiché est celui de
+la fenêtre en cours, et un relevé fait deux secondes après un changement de
+cylindres mesure encore le moteur d'avant. Huit secondes suffisent.
+
+**Le régime suit exactement.** Balayage du ralenti au rupteur (800 → 6 500
+tr/min, aller-retour en 60 s) : l'écart entre le régime demandé et le régime que
+le moteur simulé tient est **nul à l'unité près**, sur toute la plage.
+
+**Aucun creux.** Ni à régime tenu, ni pendant un balayage complet, ni pendant un
+changement de réglage à chaud. La réserve reste à sa cible, 250 ms, à trois
+millisecondes près. Le compte de creux ne démarre qu'au premier bloc reçu : la
+construction du moteur, 0,6 à 1,3 s, n'est pas un creux de lecture.
+
+**Le volume par défaut est 0,25, et c'est mesuré.** Le niveleur d'engine-sim vise
+une crête de 30 000 sur 32 767 mais son suiveur de crête décroît en vingt
+millisecondes — l'intervalle entre deux allumages d'un V8 à 800 tr/min. Le gain
+remonte donc entre deux bouffées et la suivante déborde : la crête reste collée à
+1,000 jusqu'à un volume de 0,35, et tombe à 0,890 à 0,25. Le facteur de crête
+vaut 28.
+
+## Ce qui n'est pas vérifié, et un défaut relevé
+
+- **Le timbre.** Personne ne l'a écouté. C'est le ticket qui le dit : la machine
+  ne peut pas juger ce point.
+
+- **L'effort ne fait pas ce qu'il devrait, et c'est mesuré.** À régime tenu,
+  niveleur d'engine-sim actif — le réglage par défaut —, passer l'effort de 0 à
+  1 change le niveau efficace de 0,055 à 0,062, et la brillance ne bouge pas
+  au-delà de la dispersion. Niveleur coupé, la dynamique brute du modèle
+  apparaît, et elle est **inversée** : papillon fermé, 0,231 de niveau
+  efficace ; papillon grand ouvert, 0,006. Un facteur 38 dans le mauvais sens.
+  La brillance, elle, monte bien avec l'ouverture — 0,63 à 0,73 —, donc le
+  timbre change ; c'est le niveau qui part à l'envers.
+
+  Le niveau croît normalement avec le régime dans les deux cas (0,006 à 800
+  tr/min contre 0,268 à 6 300, papillon ouvert), donc le modèle tourne. Reste
+  que sur ce V8 codé en dur, ouvrir le papillon à bas régime rend l'échappement
+  plus discret au lieu de plus fort. Trois pistes, non départagées : la
+  définition du moteur (`native/probe.cpp`, jamais comparée à l'oreille au EJ25
+  dont elle reprend les cotes), la position de plateau au ralenti (0,9985, là où
+  les moteurs livrés avec engine-sim sont autour de 0,975), ou le fait que le
+  signal d'échappement soit dominé par le pompage plutôt que par la combustion.
+
+- **La voiture.** Rien n'a été relevé dans la Tesla. Le seuil du lot est ×3
+  temps réel là-bas ; ce poste-ci donne ×2 pour le V8 et ×3,8 pour le quatre
+  cylindres.
+
+- **La boucle de l'application n'a pas pu être exercée ici.** Le volet du
+  navigateur de développement reste masqué, `requestAnimationFrame` ne bat pas,
+  et la chaîne vitesse → régime est donc figée. Le câblage de `state.ts` est
+  écrit et compile, mais **le trajet manette → vitesse → régime → son n'a pas
+  été vu tourner**. C'est le balayage du banc qui a servi à tout mesurer.
+
 ## Critères d'acceptation
 
-- [ ] Le son sort sans creux ni craquement à régime tenu, puis en accélération
-- [ ] Le régime entendu est celui du cadran, à quelques dizaines de tours près
-- [ ] L'effort agit sur le timbre, et pas seulement sur le niveau
-- [ ] La charge processeur pendant la lecture est relevée, à côté du reste de
+- [x] Le son sort sans creux ni craquement à régime tenu, puis en accélération —
+      zéro creux mesuré, balayage complet compris
+- [x] Le régime entendu est celui du cadran, à quelques dizaines de tours près —
+      écart nul à l'unité près
+- [ ] L'effort agit sur le timbre, et pas seulement sur le niveau — la brillance
+      bouge, mais le niveau part à l'envers ; voir ci-dessus
+- [x] La charge processeur pendant la lecture est relevée, à côté du reste de
       l'application qui tourne
-- [ ] Le son se coupe proprement quand on change de source ou d'origine
+- [x] Le son se coupe proprement quand on change de source ou d'origine
 - [ ] 🧑 Jugé à l'oreille par David, et le verdict écrit
+
+## Comment l'essayer
+
+1. `npm run dev`, puis l'onglet **Synthèse**.
+2. **Activer la synthèse** — le navigateur exige ce clic, sans lui le contexte
+   audio reste suspendu et rien ne sort.
+3. Pour écouter sans conduire : cocher **Balayage du régime**.
+4. Pour conduire : revenir sur **Conduite**, source *Simulateur*, manette ou
+   flèches du clavier. Le son suit le régime du cadran.
+5. Le bouton **Arrêté / En marche** de la barre coupe la synthèse avec le reste.
