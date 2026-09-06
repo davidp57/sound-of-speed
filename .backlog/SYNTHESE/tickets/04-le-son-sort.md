@@ -564,3 +564,53 @@ Reste à décider : la forme de la courbe effort → cible, et si le curseur
 actuel devient la cible **au ralenti** pendant qu'un second réglage donne le
 plancher en pleine charge, ou si un seul curseur règle l'amplitude de la
 bascule.
+
+### Fait, le 5 septembre 2026
+
+David a précisé la demande après avoir testé plusieurs moteurs : « avec
+d'autres moteurs, d'autres échappements, le réglage nécessaire est différent
+[...] ça serait bien d'avoir un truc plus dynamique, qui calcule et se
+modifie en temps réel ». Première réponse : le curseur devenait un **plafond**
+et un **plancher** descendait tout seul dès que la crête mesurée restait
+écrêtée à faible effort. `synth_set_leveler_target` rend `levelerTarget` hot
+côté C++, sur le modèle de `synth_set_noise` — ça, ça reste.
+
+### Repris, le 6 septembre 2026 — la piste était fausse
+
+La correction automatique a été écrite, essayée, puis retirée. Et avec elle,
+c'est toute la piste du lot qui tombe.
+
+**Ce que l'essai a mesuré.** Sur la GM aux valeurs par défaut, la crête de
+sortie ne dépassait jamais 0,70 au ralenti ni 0,60 en charge : le seuil de
+descente, posé à 0,98, ne s'est pas déclenché une seule fois. Ce qui décide de
+la saturation n'est pas la cible seule mais le produit `cible × volume` — le
+niveleur ramène la crête vers la cible, puis le volume multiplie avant la
+conversion en entiers 16 bits, qui est l'endroit où ça coupe. Il a fallu monter
+le volume à 0,70 pour retrouver l'écrêtage.
+
+**Et une fois la boucle déclenchée, elle faisait l'inverse du but** : elle
+mangeait la saturation en charge, puis laissait un demi-quart de seconde de son
+sale au relâchement, le temps que la cible redescende.
+
+**Le point décisif est ailleurs.** À pleine charge tenue, passer la crête visée
+de « n'écrête pas du tout » à « écrête sec » **ne s'entend pas** — vérifié deux
+fois, avec le son entièrement réverbéré puis avec la résonance à 0,45. Ce qui
+enlevait le mordant, c'est le mélange de résonance d'échappement
+(`convolverMix`), à 1,00 par défaut : `dry.gain = √(1 − 1) = 0`, donc plus rien
+du son direct n'atteint la sortie, et la convolution étale les fronts. À 0,00,
+David : « le rauque revient franchement ». Son réglage : **0,45**.
+
+C'était écrit dans le journal depuis le début, sans qu'on en tire la
+conséquence : « la convolution interne — en atténuant les fronts — élimine
+l'écrêtage en même temps que le mordant ».
+
+**Ce qui reste du lot** : la crête visée s'écrit à chaud
+(`synth_set_leveler_target`), donc la régler ne coupe plus le son une seconde ;
+et le témoin « écrête » de l'écran compte les échantillons réellement butés sur
+le plafond au lieu de comparer le curseur à un nombre en dur. Le curseur
+redevient unique, et l'écran dit ce qu'il fait : le niveau, pas le timbre.
+
+**Reste ouvert** : les défauts du banc à revoir à l'oreille — la résonance à
+1,00 alors que David préfère 0,45, et la réserve à 120 ms alors qu'il tient à
+60. Ni l'un ni l'autre n'est posé en défaut ici, faute d'avoir mesuré les creux
+à 60 ms.

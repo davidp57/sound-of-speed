@@ -398,7 +398,7 @@ const gauge = computed(() => {
         :value="synthStatus.peak.toFixed(3)"
         :bar="synthStatus.peak"
         :warn="synthStatus.peak >= 0.999"
-        hint="À 1,000 la sortie du synthétiseur bute sur son plafond : baisser le volume."
+        hint="À 1,000 la sortie du synthétiseur bute sur son plafond — voulu en charge, pas au ralenti."
       />
       <ValueRow label="Niveau efficace" :value="synthStatus.rms.toFixed(3)" :bar="synthStatus.rms" />
       <ValueRow
@@ -518,7 +518,9 @@ const gauge = computed(() => {
         />
         <span class="numeric">
           {{ (synthSettings.levelerTarget / 32768).toFixed(2) }}
-          <em v-if="synthSettings.levelerTarget > 20000" class="gap">écrête</em>
+          <em v-if="synthStatus.clipped > 0" class="gap">
+            écrête {{ (synthStatus.clipped * 100).toFixed(1) }} %
+          </em>
         </span>
       </div>
       <p class="note">
@@ -531,11 +533,21 @@ const gauge = computed(() => {
       <p class="note">
         La crête visée est le remède direct à ce plafond. engine-sim vise
         30 000 sur 32 767 et coupe au couteau ce qui dépasse : un « niveau
-        crête » à 1,000 n'est pas un son fort, c'est un son écrêté. Le niveleur
-        monte instantanément mais ne redescend qu'en 0,23 ms, donc le front
-        d'une bouffée passe au gain d'avant — plus le front est raide, plus il
-        écrête. Le volume perdu se rattrape en aval, en flottant, où rien ne
-        plafonne.
+        crête » à 1,000 n'est pas un son fort, c'est un son écrêté. Le gain
+        appliqué se lisse en environ 0,2 ms, donc le front d'une bouffée
+        soudaine ne reçoit encore que 10 % du bon gain quand il arrive — plus
+        le front est raide, plus il écrête. Le volume perdu se rattrape en
+        aval, en flottant, où rien ne plafonne. « Écrête » compte les
+        échantillons réellement butés sur ce plafond, pas la position d'un
+        curseur.
+      </p>
+      <p class="note">
+        Ce réglage change le <strong>niveau</strong>, pas le timbre. Essayé sur
+        le banc à pleine charge tenue, de « n'écrête pas du tout » à « écrête
+        sec » : aucune différence audible, une fois avec le son entièrement
+        réverbéré, une fois avec la résonance à 0,45. Le mordant se règle avec
+        la <em>résonance d'échappement</em> plus bas — la convolution étale les
+        fronts, et à 1,00 plus rien du son direct n'arrive à la sortie.
       </p>
       <p class="note">
         Le niveleur vise une crête constante quel que soit le moteur — et efface

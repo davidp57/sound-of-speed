@@ -1580,6 +1580,23 @@ void synth_set_volume(double volume) {
 }
 
 /**
+ * Change la crete visee par le niveleur, sans rebatir.
+ *
+ * `Synthesizer::renderAudio` relit `m_audioParameters.levelerTarget` a chaque
+ * echantillon (`synthesizer.cpp:359`) : ce n'est pas fige a la construction
+ * comme les deux bornes de gain. Le meme mecanisme que `synth_set_noise`, pour
+ * la meme raison : une correction qui suit la charge en temps reel demanderait
+ * une coupure d'une seconde a chaque pas si elle passait par un rebatissage.
+ */
+void synth_set_leveler_target(double target) {
+    if (g_live == nullptr) return;
+    Synthesizer &synth = g_live->simulator->synthesizer();
+    Synthesizer::AudioParameters ap = synth.getAudioParameters();
+    ap.levelerTarget = (float)target;
+    synth.setAudioParameters(ap);
+}
+
+/**
  * Rend un bloc d'echantillons, en flottants de -1 a 1.
  *
  * La trame de simulation dure exactement le bloc demande : c'est ce qui garde

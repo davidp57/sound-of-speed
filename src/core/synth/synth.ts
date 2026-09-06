@@ -79,6 +79,15 @@ export interface SynthStatus {
    * monte, c'est un coup de volume déguisé.
    */
   brightness: number
+  /**
+   * La part d'échantillons butés sur le plafond des entiers 16 bits depuis le
+   * dernier compte rendu, de 0 à 1.
+   *
+   * C'est la mesure de l'écrêtage, et non plus la position d'un curseur
+   * comparée à un nombre en dur : un même réglage écrête sur un moteur et pas
+   * sur un autre.
+   */
+  clipped: number
 }
 
 const IDLE_STATUS: SynthStatus = {
@@ -99,6 +108,7 @@ const IDLE_STATUS: SynthStatus = {
   peak: 0,
   rms: 0,
   brightness: 0,
+  clipped: 0,
 }
 
 /**
@@ -206,7 +216,6 @@ export class SynthEngine {
     try {
       await this.stop()
       this.publish({ ...IDLE_STATUS, phase: 'loading' })
-
       const context = new AudioContext()
       this.context = context
       if (context.state === 'suspended') await context.resume()
@@ -375,6 +384,9 @@ export class SynthEngine {
       sweepHigh: this.rpmRange[1],
       forceEffort: next.forceEffort,
       forcedEffort: next.forcedEffort,
+      // La crête visée s'écrit à chaud, contrairement aux deux bornes de gain
+      // du niveleur : la régler ne coupe plus le son une seconde.
+      levelerTarget: next.levelerTarget,
     })
     if (this.context !== null && this.node !== null) {
       await this.pickResponse(this.context)
@@ -539,10 +551,12 @@ export class SynthEngine {
     const cpu = Number(message['cpuSeconds'] ?? 0)
     const audio = Number(message['audioSeconds'] ?? 0)
     const underrunFrames = Number(message['underrunFrames'] ?? 0)
+    const effort = Number(message['effort'] ?? 0)
+    const peak = Number(message['peak'] ?? 0)
     this.publish({
       ...this.state,
       targetRpm: Number(message['targetRpm'] ?? 0),
-      effort: Number(message['effort'] ?? 0),
+      effort: effort,
       engineRpm: Number(message['engineRpm'] ?? 0),
       realtime: realtimeFactor(cpu, audio),
       cpuLoad: audio > 0 ? cpu / audio : 0,
@@ -551,9 +565,10 @@ export class SynthEngine {
       underruns: Number(message['underruns'] ?? 0),
       underrunMs: (underrunFrames / rate) * 1000,
       shortfall: Number(message['shortfall'] ?? 0),
-      peak: Number(message['peak'] ?? 0),
+      peak: peak,
       rms: Number(message['rms'] ?? 0),
       brightness: Number(message['brightness'] ?? 0),
+      clipped: Number(message['clipped'] ?? 0),
     })
   }
 

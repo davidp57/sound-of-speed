@@ -30,6 +30,7 @@ let setThrottleRange = null
 let setVolume = null
 let setDyno = null
 let setNoise = null
+let setLevelerTarget = null
 let readRpm = null
 let readLatency = null
 let buffer = 0
@@ -44,6 +45,7 @@ let shortfall = 0
 let underruns = 0
 let underrunFrames = 0
 let peak = 0
+let clipped = 0
 let rms = 0
 let brightness = 0
 let windowCpu = 0
@@ -113,12 +115,14 @@ function publish() {
     underruns: underruns,
     underrunFrames: underrunFrames,
     peak: peak,
+    clipped: clipped,
     rms: rms,
     brightness: brightness,
   })
   windowCpu = 0
   windowFrames = 0
   peak = 0
+  clipped = 0
 }
 
 async function boot(message) {
@@ -143,6 +147,7 @@ async function boot(message) {
   setVolume = core.cwrap('synth_set_volume', null, ['number'])
   setDyno = core.cwrap('synth_set_dyno', null, ['number'])
   setNoise = core.cwrap('synth_set_noise', null, ['number', 'number'])
+  setLevelerTarget = core.cwrap('synth_set_leveler_target', null, ['number'])
   readRpm = core.cwrap('synth_rpm', 'number', [])
   readLatency = core.cwrap('synth_latency', 'number', [])
 
@@ -211,6 +216,9 @@ self.onmessage = (event) => {
       underruns = level.underruns
       underrunFrames = level.underrunFrames
       if (level.peak > peak) peak = level.peak
+      // La part la plus ecretee des rapports du lecteur, pas leur moyenne :
+      // un ecretage bref se voit, et c'est ce qu'on veut entendre.
+      if (level.clipped > clipped) clipped = level.clipped
       rms = level.rms
       brightness = level.brightness
       topUp()
@@ -234,6 +242,10 @@ self.onmessage = (event) => {
     sweepHigh = message.sweepHigh
     forceEffort = message.forceEffort
     forcedEffort = message.forcedEffort
+    // La crete visee s'ecrit a chaud : renderAudio la relit a chaque
+    // echantillon, contrairement aux deux bornes de gain du niveleur, qui
+    // imposent de rebatir.
+    if (setLevelerTarget !== null) setLevelerTarget(message.levelerTarget)
   } else if (message.type === 'noise') {
     // Les deux bruits du moteur, seuls parametres de la definition qui
     // s'ecrivent sans rebatir.

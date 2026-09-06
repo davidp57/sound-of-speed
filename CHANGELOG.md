@@ -8,19 +8,25 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **La crête visée par le niveleur ne coupe plus le son pour changer.** Elle est
+  relue à chaque échantillon par engine-sim, donc `synth_set_leveler_target`
+  l'écrit à chaud, sur le modèle de `synth_set_noise`. La régler n'impose plus la
+  seconde de rebâtissage à chaque cran du curseur.
+
 - **La crête que vise le niveleur, réglable.** David a mesuré ce que l'écran
   appelait « niveau crête » : à 1,000 en rouge sur le GM LS en convolution
   déportée, le son écrasé n'était pas plus fort, il était **écrêté**. engine-sim
   vise 30 000 sur 32 767 — 0,8 dB de marge avant le plafond dur d'`INT16_MAX` —
-  et son niveleur monte instantanément mais ne redescend qu'en 0,23 ms : le
-  front d'une bouffée passe toujours au gain d'avant, et plus il est raide,
-  plus il écrête. C'est ce qui expliquait ses trois observations à la fois :
+  et le gain qu'applique son niveleur se lisse en environ 0,2 ms : le front
+  d'une bouffée soudaine ne reçoit encore que 10 % du bon gain quand il
+  arrive, et plus il est raide, plus il écrête. C'est ce qui expliquait ses
+  trois observations à la fois :
   la GM sature, l'EJ25 reste sous le plafond et sonne mieux, la convolution
   interne — en atténuant les fronts — élimine l'écrêtage en même temps que le
   mordant.
 
-  Un curseur neuf règle cette cible, avec un repère « écrête » au-delà de
-  20 000. Le défaut passe à 12 000 : simulé sur un V8 au ralenti, un signal qui
+  Un curseur neuf règle cette cible, avec le compte d'échantillons écrêtés à
+  côté. Le défaut passe à 12 000 : simulé sur un V8 au ralenti, un signal qui
   écrêtait à 17,5 % avec la cible d'origine tombe à 0,4 %. Le volume perdu se
   rattrape en aval, dans Web Audio, où rien ne plafonne.
 
@@ -106,6 +112,29 @@ Toutes les évolutions notables du projet. Format
   reçoit celle de son profil d'usine.
 
 ### Corrigé
+
+- **Le mordant se règle avec la résonance d'échappement, pas avec le niveleur.**
+  David cherchait depuis plusieurs séances à retrouver « quelque chose
+  d'organique, de réel » en charge, et la piste suivie était la saturation du
+  niveleur. Elle était fausse : à pleine charge tenue, passer le réglage de
+  « n'écrête pas du tout » à « écrête sec » ne s'entend pas — deux fois, avec le
+  son entièrement réverbéré puis avec la résonance à 0,45. Ce qui l'enlevait,
+  c'est le **mélange de résonance d'échappement**, à 1,00 par défaut : plus rien
+  du son direct n'arrivait à la sortie, et la convolution étale les fronts. À
+  0,00 le rauque revient franchement.
+
+  Une tentative de correction automatique de la crête visée a été écrite puis
+  retirée dans la foulée : outre qu'elle visait la mauvaise grandeur, elle
+  mangeait en charge la saturation qu'on voulait garder et laissait un demi-quart
+  de seconde de son sale au relâchement. L'écran dit maintenant ce que le réglage
+  fait réellement — le niveau, pas le timbre.
+
+- **Le témoin « écrête » du banc mesure enfin l'écrêtage.** Il comparait la
+  position du curseur à un nombre en dur : il s'allumait sur un réglage haut
+  même quand la sortie ne touchait pas son plafond, et restait éteint sur un
+  moteur qui saturait à un réglage plus bas. Il compte maintenant les
+  échantillons réellement butés sur le plafond des entiers 16 bits, relevés dans
+  le lecteur, et affiche leur part.
 
 - **L'embrayage se ferme progressivement, au lieu de sauter à un palier.** David,
   après l'arrivée du régime de décollage : « on passe de 800 rpm à 1 300, sans

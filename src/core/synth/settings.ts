@@ -127,14 +127,20 @@ export interface SynthSettings {
    * 19 à 38 ms — assez proche de ces 23 ms pour que le gain n'ait pas le temps
    * de remonter entre deux coups.
    *
-   * David l'a vu avant qu'on le mesure : « en déportée la GM a le niveau crête
-   * maximisé (rouge) à 1.000 », et le son qu'il préférait était chaque fois
-   * celui qui n'y touchait pas. Simulé sur un V8 au ralenti, un signal de
-   * 50 000 de crête ressort écrêté à 17,5 % avec la cible d'origine, contre
-   * 0,4 % à 12 000.
-   *
    * Le volume perdu se rattrape dans Web Audio, en flottant, où il n'y a pas de
    * plafond dur.
+   *
+   * Relue à chaque échantillon par `Synthesizer::renderAudio`, donc écrite à
+   * chaud (`synth_set_leveler_target`) : la changer ne coupe plus le son une
+   * seconde le temps de rebâtir.
+   *
+   * **Ce réglage change le niveau, pas le timbre.** Essayé sur le banc le
+   * 6 septembre 2026, à pleine charge tenue, de « n'écrête pas du tout » à
+   * « écrête sec » : aucune différence audible, deux fois — une fois avec le
+   * son entièrement réverbéré, une fois avec la résonance à 0,45. Le mordant
+   * que David cherchait vient du **mélange de résonance d'échappement**
+   * (`convolverMix`), pas d'ici : la convolution étale les fronts, et à 1,00
+   * plus rien du son direct n'arrive à la sortie.
    */
   levelerTarget: number
   /** Imposer l'effort plutôt que de suivre celui du moteur. */
@@ -205,6 +211,8 @@ export const DEFAULT_SYNTH: SynthSettings = {
   leveler: true,
   levelerGain: 1,
   // Nettement sous les 30 000 d'engine-sim : c'est la marge qui manquait.
+  // Douze mille : la valeur mesurée propre sur un V8, 0,4 % d'échantillons
+  // écrêtés contre 17,5 % à la cible d'origine d'engine-sim.
   levelerTarget: 12000,
   sweep: false,
   sweepSeconds: 12,
@@ -273,11 +281,9 @@ export function needsRebuild(previous: SynthSettings, next: SynthSettings): bool
     // Les deux bornes de gain du niveleur ne sont recopiées qu'une fois, dans
     // `Synthesizer::initialize` : les écrire à chaud ne fait rien, mesuré.
     previous.leveler !== next.leveler ||
-    previous.levelerGain !== next.levelerGain ||
-    // La cible, elle, est relue à chaque échantillon par `renderAudio` : elle
-    // pourrait s'écrire à chaud. Elle passe quand même par la construction,
-    // faute d'un point d'entrée qui l'écrive seule — et le rebâtissage reste
-    // rare, c'est un réglage qu'on pose une fois.
-    previous.levelerTarget !== next.levelerTarget
+    previous.levelerGain !== next.levelerGain
+    // La cible du niveleur n'est volontairement pas ici : elle est relue à
+    // chaque échantillon par `renderAudio` et s'écrit à chaud
+    // (`synth_set_leveler_target`), donc la régler ne coupe plus le son.
   )
 }
