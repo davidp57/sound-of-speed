@@ -1,6 +1,6 @@
 # MOTEURS-EN-VOITURE — essayer les moteurs simulés au volant
 
-**Statut :** 🔄 en cours
+**Statut :** 🧑 attend David — le code est prêt, la preuve demande la voiture
 
 ## Le besoin, dans les mots de David
 
@@ -73,6 +73,16 @@ Elle reste donc là où elle est, avec les réglages du calcul.
 
 Hors périmètre, à traiter séparément : pousser les relevés de mesure sur le
 NAS.
+
+## Fait, le 6 septembre 2026
+
+Les quatre points sont livrés. Vérifié dans le navigateur, sans le son : les
+trois listes n'apparaissent que sur un profil *généré en direct*, changer de
+moteur amène son rendu et son rupteur, et un profil enregistré avant la
+version 6 ressort avec un rendu complet.
+
+Ce qui n'est **pas** vérifié : le son lui-même, et le comportement en voiture.
+La réserve à 60 ms n'a été mesurée sans creux que sur le poste de bureau.
 
 ## Les réglages relevés par David, le 6 septembre 2026
 

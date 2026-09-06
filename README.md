@@ -902,6 +902,31 @@ par plage de régime se lit près de un, et le timbre ne se déplace plus. Le
 direct, lui, garde ce que la génération perd : un son continu, sans domaine ni
 bascule.
 
+#### Le moteur simulé, en conduisant
+
+Un profil *généré en direct* ouvre trois listes sous l'origine du son. Elles se
+choisissent au volant ; tout le reste du réglage se fait au banc, sur un
+ordinateur.
+
+| Liste | Ce qu'elle change |
+|---|---|
+| **Moteur** | Le moteur simulé, avec son rupteur **et son réglage de son**. Seul le GM LS est réglé à ce jour ; les autres sonnent avec le réglage par défaut, ce qui s'entend |
+| **Échappement** | Combien de résonance passe par-dessus le son direct. *Direct* ne garde que le son cru du moteur, où le grain s'entend le plus ; *enveloppé* ne laisse que le son réverbéré, qui étale les fronts |
+| **On écoute** | Le silencieux : refermé bas, la voiture s'entend à travers la tôle et les vitres ; ouvert en grand, on l'entend de dehors |
+
+Chaque liste garde une entrée pour la valeur qui ne tombe sur aucun palier :
+un réglage fin fait au banc ne se fait pas écraser en ouvrant l'écran. Pour le
+moteur, cette entrée dit **de qui il descend** plutôt que « réglé à la main » —
+« 454, retouché — 5 valeurs ».
+
+**Le son suit le moteur, pas la voiture.** Échappement, volume, crête visée et
+papillon sont enregistrés dans le profil, et chaque moteur de la bibliothèque
+pose les siens en arrivant. Sans cela, essayer plusieurs moteurs les ferait tous
+écouter à travers l'échappement du premier, et l'on ne saurait plus lequel des
+deux on entend. La réserve reste en dehors : elle décrit la machine qui calcule,
+et ce qui tient sans un creux sur un poste de bureau n'a pas la même marge sur un
+téléphone.
+
 **Les trois sont gréées.** C'est le même bouton « Activer le son » qui les
 démarre : un profil *généré en direct* allume le moteur simulé là où les deux
 autres chargent une banque. Changer de profil en cours de route bascule d'une

@@ -8,6 +8,38 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Choisir son moteur, son échappement et son point d'écoute en conduisant.**
+  David : « la page de réglage des moteurs c'est pour nous, sur PC ; rien à faire
+  dans l'app en voiture. En voiture on peut choisir un profil de synthèse, avec
+  le choix du moteur, le choix de l'échappement et de l'endroit d'où on écoute ».
+
+  Trois listes dans la configuration, sur un profil dont le son est simulé, et
+  pas un curseur : on choisit, on ne règle pas. Le réglage fin reste au banc, sur
+  un ordinateur.
+
+  Le moteur n'annonce plus « réglé à la main » quand il descend d'un moteur connu
+  qu'on a retouché : il dit de qui il descend et de combien de valeurs il s'en
+  écarte — « 454, retouché — 5 valeurs ».
+
+- **Le son d'un moteur voyage avec lui.** Échappement, volume, crête visée et
+  papillon vivaient dans les réglages du banc, en mémoire, perdus à chaque
+  rechargement de page : un moteur réglé à l'atelier n'emportait rien de son
+  réglage. Ils entrent dans le profil, et chaque moteur de la bibliothèque pose
+  les siens en arrivant. Sans quoi, essayer plusieurs moteurs au volant les
+  ferait tous écouter à travers l'échappement du premier.
+
+  Un seul est réglé à ce jour, le **GM LS**, aux valeurs relevées par David le
+  6 septembre : résonance 0,45, volume 0,70, crête visée au maximum. Les sept
+  autres portent le réglage par défaut, c'est-à-dire qu'ils ne sont pas réglés —
+  c'est écrit dans la bibliothèque plutôt que masqué.
+
+  Le format de profil passe en **version 6**. Un profil enregistré sans ces
+  valeurs reçoit celles de son profil d'usine ; rien ne se perd.
+
+  La réserve reste en dehors, volontairement : elle décrit la machine qui
+  calcule, et les 60 ms tenues sans un creux sur un poste de bureau n'ont pas la
+  même marge sur un téléphone.
+
 - **La crête visée par le niveleur ne coupe plus le son pour changer.** Elle est
   relue à chaque échantillon par engine-sim, donc `synth_set_leveler_target`
   l'écrit à chaud, sur le modèle de `synth_set_noise`. La régler n'impose plus la
