@@ -39,6 +39,7 @@ import { loadQueue, saveQueue } from './core/upload/store'
 import { putFile } from './core/upload/put'
 import { PROFILE_FOLDER, profileBody, profileFileName, profileUploadId } from './core/upload/profile'
 import { depositSlice } from './core/journal/deposit'
+import { fetchBanks, missingFiles, type Bank } from './core/audio/banks'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
 import {
@@ -1648,6 +1649,36 @@ export function toggleFavorite(id: string): void {
 export function selectProfile(id: string): void {
   if (profiles.value.some((p) => p.id === id)) selectedId.value = id
 }
+
+export const banks = ref<Bank[]>([])
+
+/**
+ * Interroge le serveur pour les banques d'échantillons qu'on y aurait déposées.
+ *
+ * Une liste vide n'est pas une panne : le serveur de production sait lister,
+ * mais rien n'oblige un autre à le faire, et la saisie du nom reste ouverte.
+ */
+export async function refreshBanks(): Promise<void> {
+  banks.value = await fetchBanks()
+}
+
+/** La banque du profil actif, si le serveur l'a listée. */
+export const activeBank = computed(() =>
+  banks.value.find((bank) => bank.name === activeProfile.value.sampleDir),
+)
+
+/**
+ * Fichiers que le profil actif déclare et que sa banque n'a pas.
+ *
+ * Seules les couches actives comptent : ce sont celles que le moteur ira
+ * chercher, et une couche éteinte peut porter un nom laissé pour plus tard.
+ */
+export const missingBankFiles = computed(() =>
+  missingFiles(
+    activeBank.value,
+    activeProfile.value.layers.filter((layer) => layer.enabled).map((layer) => layer.file),
+  ),
+)
 
 export const library = ref<LibraryEntry[]>([])
 export const libraryLoading = ref(false)

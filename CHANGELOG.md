@@ -22,6 +22,20 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **La banque d'un profil se choisit dans une liste.** C'était une saisie de
+  texte libre : on tapait un nom de dossier en aveugle, et une faute de frappe
+  se découvrait à l'activation du son, sous la forme d'un silence. La liste
+  donne les banques présentes sur le serveur et le nombre de fichiers de
+  chacune ; la saisie à la main reste possible, pour une banque que le serveur
+  ne sait pas lister.
+
+  Quand la banque est listée, **les fichiers que le profil déclare en vain sont
+  nommés** — le premier écueil quand on change de banque, les noms de fichiers
+  étant rarement les mêmes d'une banque à l'autre.
+
+  Réinitialiser **les couches** remet désormais la banque avec : des noms de
+  fichiers d'usine dans un autre dossier ne joueraient rien.
+
 - **`npm run banque` relève une banque entière.** Régler une banque nouvelle
   demandait de lancer l'analyse couche par couche, puis de trouver les gains à
   l'oreille — les deux écarts de la banque livrée, 9,6 et 6,5 dB, ont été

@@ -70,6 +70,22 @@ function isAudioFile(name: string): boolean {
   return AUDIO_EXTENSIONS.some((extension) => lower.endsWith(extension))
 }
 
+/**
+ * Fichiers qu'un profil déclare et que la banque n'a pas.
+ *
+ * Une banque nouvelle a rarement les mêmes noms de fichiers que l'ancienne :
+ * c'est le premier écueil quand on en change, et il se découvrait jusqu'ici à
+ * l'activation du son, sous la forme d'un silence.
+ *
+ * Sans banque connue — serveur qui ne liste pas, banque tapée à la main — rien
+ * n'est signalé : ne rien savoir n'est pas savoir qu'il manque quelque chose.
+ */
+export function missingFiles(bank: Bank | undefined, declared: string[]): string[] {
+  if (bank === undefined) return []
+  const present = new Set(bank.files)
+  return declared.filter((file) => file !== '' && !present.has(file))
+}
+
 /** Banques présentes sur le serveur, triées par nom. */
 export async function fetchBanks(fetchImpl: typeof fetch = fetch): Promise<Bank[]> {
   const directories = names(await listDirectory(AUDIO_PATH, fetchImpl), true)

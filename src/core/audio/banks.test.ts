@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { fetchBanks } from './banks'
+import { fetchBanks, missingFiles } from './banks'
 
 /**
  * Tests de la découverte des banques.
@@ -127,5 +127,27 @@ describe('la découverte des banques', () => {
     await fetchBanks(impl)
 
     expect(appels).toContain('/audio/moteur%20essence/')
+  })
+})
+
+describe('les fichiers qu’une banque n’a pas', () => {
+  const banque = { name: 'procar', files: ['a.wav', 'b.wav'] }
+
+  it('nomme ceux que le profil déclare en vain', () => {
+    expect(missingFiles(banque, ['a.wav', 'c.wav', 'd.wav'])).toEqual(['c.wav', 'd.wav'])
+  })
+
+  it('ne signale rien quand tout est là', () => {
+    expect(missingFiles(banque, ['a.wav', 'b.wav'])).toEqual([])
+  })
+
+  it('ne signale rien quand la banque est inconnue', () => {
+    // Ne rien savoir n'est pas savoir qu'il manque quelque chose : le serveur
+    // peut refuser de lister une banque qui existe.
+    expect(missingFiles(undefined, ['a.wav'])).toEqual([])
+  })
+
+  it('ignore une couche sans fichier déclaré', () => {
+    expect(missingFiles(banque, ['a.wav', ''])).toEqual([])
   })
 })

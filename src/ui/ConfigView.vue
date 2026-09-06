@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import NumberField from './components/NumberField.vue'
 import { finalDriveFor, rpmAtSpeed } from '../core/preset/defaults'
@@ -69,6 +69,9 @@ import {
   library,
   libraryLoading,
   refreshLibrary,
+  banks,
+  refreshBanks,
+  missingBankFiles,
   calibrationOverrides,
   calibrationMissing,
   depositCredentials,
@@ -197,6 +200,22 @@ function onPlace(event: Event): void {
   const id = (event.target as HTMLSelectElement).value
   if (id === 'inside') setRendering({ mufflerHz: MUFFLER_INSIDE_HZ })
   else if (id === 'outside') setRendering({ mufflerHz: MUFFLER_OUTSIDE_HZ })
+}
+
+// Les banques se lisent à l'ouverture de l'écran : c'est le seul endroit d'où
+// l'on en change, et une banque déposée entre-temps apparaît en y revenant.
+onMounted(() => void refreshBanks())
+
+/** La banque du profil, si le serveur l'a listée — sinon rien à sélectionner. */
+const knownBank = computed(() =>
+  banks.value.some((bank) => bank.name === profile.value.sampleDir) ? profile.value.sampleDir : '',
+)
+
+function onBank(event: Event): void {
+  const name = (event.target as HTMLSelectElement).value
+  // La ligne « réglée à la main » n'est pas un choix : elle dit seulement que la
+  // valeur tapée ne correspond à aucune banque listée.
+  if (name !== '') profile.value.sampleDir = name
 }
 
 /** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
@@ -474,7 +493,7 @@ const RESET_SECTIONS: { id: ProfileSection | 'all'; label: string }[] = [
   { id: 'speed', label: 'le signal de vitesse' },
   { id: 'mix', label: 'le mixage' },
   { id: 'feel', label: 'le caractère' },
-  { id: 'layers', label: 'les couches' },
+  { id: 'layers', label: 'les couches et la banque' },
 ]
 
 const resetSection = ref<ProfileSection | 'all'>('drivetrain')
@@ -1105,13 +1124,30 @@ function impliedCylinders(index: number): number | null {
         </p>
       </template>
 
+      <label v-if="banks.length > 0" class="inline">
+        Banque d'échantillons
+        <select :value="knownBank" @change="onBank($event)">
+          <option v-if="knownBank === ''" value="">Réglée à la main</option>
+          <option v-for="bank in banks" :key="bank.name" :value="bank.name">
+            {{ bank.name }} — {{ bank.files.length }} fichiers
+          </option>
+        </select>
+      </label>
+
       <label class="inline">
         Dossier d'échantillons
         <input v-model="profile.sampleDir" type="text" />
       </label>
       <p class="note">
-        Chemin relatif au dossier d'échantillons. Il n'est jamais versionné : remplacer
-        son contenu suffit à changer de banque sonore, sans toucher au code.
+        Un dossier par banque, dans le dossier d'échantillons du serveur. Il n'est
+        jamais versionné : y déposer un dossier suffit à ajouter une banque, sans
+        toucher au code. Le nom se tape aussi à la main, pour une banque que le
+        serveur ne sait pas lister.
+      </p>
+      <p v-if="missingBankFiles.length > 0" class="error">
+        Cette banque n'a pas {{ missingBankFiles.join(', ') }}. Une banque nouvelle
+        a rarement les mêmes noms de fichiers : ils se corrigent couche par couche,
+        plus bas.
       </p>
     </section>
 

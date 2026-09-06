@@ -349,6 +349,27 @@ describe('réinitialisation par section', () => {
 
     expect(createRoadProfile().drivetrain.gearRatios).toHaveLength(6)
   })
+
+  it('remet la banque en même temps que les couches', () => {
+    const usine = createDefaultProfile()
+    const ailleurs = {
+      ...usine,
+      sampleDir: 'une-autre-banque',
+      layers: usine.layers.map((couche) => ({ ...couche, file: 'inconnu.wav' })),
+    }
+
+    const remis = resetProfileSection(ailleurs, 'layers')
+
+    // Des noms de fichiers d'usine dans un autre dossier ne joueraient rien.
+    expect(remis.sampleDir).toBe(usine.sampleDir)
+    expect(remis.layers).toEqual(usine.layers)
+  })
+
+  it('ne touche pas à la banque quand on réinitialise une autre section', () => {
+    const ailleurs = { ...createDefaultProfile(), sampleDir: 'une-autre-banque' }
+
+    expect(resetProfileSection(ailleurs, 'engine').sampleDir).toBe('une-autre-banque')
+  })
 })
 
 describe('profils d’usine et duplication', () => {
