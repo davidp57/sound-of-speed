@@ -2,9 +2,16 @@
 import { computed, ref } from 'vue'
 
 import DialGauge from './components/DialGauge.vue'
+import { describesSimulatedEngine, soundSourceOf } from '../core/preset/schema'
+import {
+  ENGINE_LIBRARY,
+  ORIGIN_MAX_GAPS,
+  closestLibraryEngine,
+} from '../core/preset/engine-library'
 import {
   activateAudio,
   activeProfile,
+  applyLibraryEngine,
   driveFace,
   favoriteProfiles,
   masterVolume,
@@ -51,6 +58,46 @@ import {
 withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
 
 /**
+ * Les moteurs simulés, à portée de pouce.
+ *
+ * David : « on doit pouvoir changer facilement la source du son du profil
+ * [...] en sélectionnant le moteur simulé sur la page principale. Donc, des
+ * boutons pour le profil, et si le profil sélectionné correspond à un moteur
+ * simulé (ou à une simu enregistrée, d'ailleurs) des boutons pour chaque type
+ * de moteur dispo. »
+ *
+ * Le rang n'apparaît que si le profil décrit un moteur simulé. Sur un profil
+ * *généré à l'avance*, il choisit bien le moteur du profil, mais la banque
+ * déjà rendue continue de jouer : le son ne changera qu'au prochain rendu.
+ */
+const showsEngines = computed(() => describesSimulatedEngine(soundSourceOf(activeProfile.value)))
+
+const closestEngine = computed(() => {
+  const mine = activeProfile.value.engineDefinition
+  if (mine === undefined) return null
+  return closestLibraryEngine(mine, activeProfile.value.engine.redlineRpm)
+})
+
+/** Le bouton allumé : seulement quand le moteur est chargé tel quel. */
+const loadedEngineId = computed(() =>
+  closestEngine.value?.gaps === 0 ? closestEngine.value.engine.id : '',
+)
+
+/**
+ * Ce qui s'affiche en tête du rang.
+ *
+ * Un moteur retouché n'allume aucun bouton — mais le taire laisserait croire
+ * qu'aucun n'est chargé. Le libellé dit alors de qui il descend.
+ */
+const engineLabel = computed(() => {
+  const near = closestEngine.value
+  if (near === null || near.gaps > ORIGIN_MAX_GAPS) return 'Moteur'
+  if (near.gaps === 0) return 'Moteur'
+  const s = near.gaps > 1 ? 's' : ''
+  return `${near.engine.short}, retouché — ${near.gaps} valeur${s}`
+})
+
+/**
  * Quitter le plein écran.
  *
  * L'état est tenu par `App.vue`, qui commande aussi l'API plein écran du
@@ -58,13 +105,25 @@ withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
  */
 const emit = defineEmits<{ exit: [] }>()
 
-// Le simulateur n'est proposé qu'en développement : dans une voiture, il n'est
-// qu'un moyen de se tromper sur ce qu'on entend.
-const SOURCES: { id: SourceKind; label: string }[] = [
-  ...(simulatorAvailable ? [{ id: 'simulator' as const, label: 'Simulateur' }] : []),
-  { id: 'geolocation', label: 'GPS' },
-  { id: 'replay', label: 'Rejeu' },
-]
+/**
+ * Les sources de vitesse qu'on peut choisir, et pourquoi il n'y en a qu'une en
+ * voiture.
+ *
+ * David : « en voiture on est toujours en GPS, pas besoin des boutons simu ou
+ * rejeu ». Le simulateur et le rejeu sont des outils d'atelier — l'un fabrique
+ * une vitesse, l'autre en rejoue une enregistrée ; ni l'un ni l'autre n'a de
+ * sens au volant, où ils ne seraient qu'un moyen de se tromper sur ce qu'on
+ * entend. Ils ne sont donc proposés qu'en développement, et la rangée entière
+ * disparaît quand il ne reste que le GPS : un seul bouton qu'on ne peut pas
+ * désactiver n'est pas un choix.
+ */
+const SOURCES: { id: SourceKind; label: string }[] = simulatorAvailable
+  ? [
+      { id: 'simulator', label: 'Simulateur' },
+      { id: 'geolocation', label: 'GPS' },
+      { id: 'replay', label: 'Rejeu' },
+    ]
+  : [{ id: 'geolocation', label: 'GPS' }]
 
 /**
  * Les trois modes du banc, et ce que chacun met à l'épreuve.
@@ -228,14 +287,16 @@ const SPEED_STEP_KMH = 20
   <div class="drive" :class="{ immersive }">
     <div class="toolbar">
       <section v-if="!immersive" class="sources">
-      <button
-        v-for="entry in SOURCES"
-        :key="entry.id"
-        :aria-pressed="sourceKind === entry.id"
-        @click="setSource(entry.id)"
-      >
-        {{ entry.label }}
-      </button>
+      <template v-if="SOURCES.length > 1">
+        <button
+          v-for="entry in SOURCES"
+          :key="entry.id"
+          :aria-pressed="sourceKind === entry.id"
+          @click="setSource(entry.id)"
+        >
+          {{ entry.label }}
+        </button>
+      </template>
       <span class="status">
         {{ STATUS_LABELS[sourceStatus] ?? sourceStatus }}
         <template v-if="sourceDetail"> — {{ sourceDetail }}</template>
@@ -271,6 +332,18 @@ const SPEED_STEP_KMH = 20
       </button>
     </section>
     </div>
+
+    <section v-if="showsEngines" class="engines" :class="{ large: immersive }">
+      <span class="engines-label">{{ engineLabel }}</span>
+      <button
+        v-for="entry in ENGINE_LIBRARY"
+        :key="entry.id"
+        :aria-pressed="entry.id === loadedEngineId"
+        @click="applyLibraryEngine(entry)"
+      >
+        {{ entry.short }}
+      </button>
+    </section>
 
     <section v-if="driveFace === 'dials'" class="dashboard">
       <div class="cell speed">
@@ -606,6 +679,24 @@ const SPEED_STEP_KMH = 20
 }
 
 .favorites.large button {
+  flex: 1;
+  padding: 0.7rem 0.5rem;
+}
+
+.engines {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+
+.engines-label {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.engines.large button {
   flex: 1;
   padding: 0.7rem 0.5rem;
 }

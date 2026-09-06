@@ -8,6 +8,20 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Changer de moteur simulé depuis l'écran de conduite.** David : « on doit
+  pouvoir changer facilement la source du son du profil — exemple : Sport pour
+  régler la transmission et le comportement, son d'origine GM modifié — en
+  sélectionnant le moteur simulé sur la page principale ».
+
+  Un rang de boutons sous celui des profils, un par moteur de la bibliothèque,
+  qui n'apparaît que si le profil décrit un moteur simulé. Le moteur arrive avec
+  son rupteur et son réglage de son. Retouché au banc, il n'allume aucun bouton
+  mais le rang dit de qui il descend — « 454, retouché — 5 valeurs ».
+
+  Sur un profil *généré à l'avance*, le choix se fait aussi : il désigne le
+  moteur du profil, mais la banque déjà rendue continue de jouer — le son ne
+  changera qu'au prochain rendu.
+
 - **Choisir son moteur, son échappement et son point d'écoute en conduisant.**
   David : « la page de réglage des moteurs c'est pour nous, sur PC ; rien à faire
   dans l'app en voiture. En voiture on peut choisir un profil de synthèse, avec
@@ -142,6 +156,25 @@ Toutes les évolutions notables du projet. Format
 
   Le format de profil passe en version 5 : un profil enregistré sans définition
   reçoit celle de son profil d'usine.
+
+### Modifié
+
+- **L'écran de synthèse n'est plus troué.** Sa grille alignait ses lignes sur la
+  plus haute section : « Le calcul » faisait mille pixels de haut, ses deux
+  voisines deux cent soixante-dix, et sept cents pixels de vide s'ouvraient sous
+  chacune ; deux autres sections occupaient une colonne sur trois en laissant les
+  deux autres vides. « Plein de trous », a dit David, et c'était mesurable.
+
+  Les deux relevés passent côte à côte en haut, où ils restent sous les yeux
+  pendant qu'on règle, et le reste coule en colonnes qui se remplissent l'une
+  après l'autre. Mesuré après : les deux colonnes s'arrêtent à la même hauteur.
+
+- **Le choix de la source de vitesse disparaît en voiture.** David : « en voiture
+  on est toujours en GPS, pas besoin des boutons simu ou rejeu ». Le simulateur
+  et le rejeu sont des outils d'atelier ; ils ne sont proposés qu'en
+  développement, et la rangée entière s'efface quand il ne reste que le GPS — un
+  seul bouton qu'on ne peut pas désactiver n'est pas un choix. Le statut de la
+  source, lui, reste affiché.
 
 ### Corrigé
 

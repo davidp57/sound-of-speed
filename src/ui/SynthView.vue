@@ -360,6 +360,7 @@ const gauge = computed(() => {
       </div>
     </section>
 
+    <div class="readouts">
     <section class="panel">
       <h2>Ce qui sort</h2>
       <ValueRow label="Régime demandé" :value="Math.round(gauge.asked)" unit="tr/min" />
@@ -420,6 +421,9 @@ const gauge = computed(() => {
       <ValueRow label="Réserve interne" :value="synthStatus.innerLatencyMs.toFixed(0)" unit="ms" />
     </section>
 
+    </div>
+
+    <div class="columns">
     <section class="panel">
       <h2>Le calcul — coupe le son le temps de rebâtir</h2>
       <div class="field">
@@ -674,6 +678,64 @@ const gauge = computed(() => {
         le son de ce qu'on voit.
       </p>
     </section>
+    <section class="panel">
+      <h2>Le banc — écouter sans conduire</h2>
+      <div class="field">
+        <label for="sweep">Balayage du régime</label>
+        <input
+          id="sweep"
+          type="checkbox"
+          :checked="synthSettings.sweep"
+          @change="onFlag('sweep', $event)"
+        />
+        <span class="numeric">{{ synthSettings.sweep ? 'en cours' : 'coupé' }}</span>
+      </div>
+      <div class="field">
+        <label for="sweepsec">Durée d'un aller-retour</label>
+        <input
+          id="sweepsec"
+          type="range"
+          min="4"
+          max="60"
+          step="1"
+          :value="synthSettings.sweepSeconds"
+          @input="onNumber('sweepSeconds', $event)"
+        />
+        <span class="numeric">{{ synthSettings.sweepSeconds }} s</span>
+      </div>
+      <div class="field">
+        <label for="fe">Effort imposé</label>
+        <input
+          id="fe"
+          type="checkbox"
+          :checked="synthSettings.forceEffort"
+          @change="onFlag('forceEffort', $event)"
+        />
+        <span class="numeric">{{ synthSettings.forceEffort ? 'imposé' : 'suit la chaîne' }}</span>
+      </div>
+      <div class="field">
+        <label for="fev">Valeur imposée</label>
+        <input
+          id="fev"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          :value="synthSettings.forcedEffort"
+          @input="onNumber('forcedEffort', $event)"
+        />
+        <span class="numeric">{{ synthSettings.forcedEffort.toFixed(2) }}</span>
+      </div>
+      <p class="note">
+        Le balayage va du ralenti au rupteur du profil actif et revient, à
+        cadence fixe, en remplaçant le régime que la chaîne calcule. C'est ce
+        qui permet d'écouter la montée sans rouler — et de vérifier que le son
+        tient en accélération, pas seulement à régime tenu. L'effort imposé
+        sert à entendre ce qu'il change à régime constant : si seul le niveau
+        bouge, le timbre ne suit pas.
+      </p>
+    </section>
+    </div>
 
     <section class="panel wide">
       <h2>Le moteur — il vit dans le profil « {{ activeProfile.name }} »</h2>
@@ -754,75 +816,47 @@ const gauge = computed(() => {
         et deux réglages pour un seul chiffre finiraient par se contredire.
       </p>
     </section>
-
-    <section class="panel">
-      <h2>Le banc — écouter sans conduire</h2>
-      <div class="field">
-        <label for="sweep">Balayage du régime</label>
-        <input
-          id="sweep"
-          type="checkbox"
-          :checked="synthSettings.sweep"
-          @change="onFlag('sweep', $event)"
-        />
-        <span class="numeric">{{ synthSettings.sweep ? 'en cours' : 'coupé' }}</span>
-      </div>
-      <div class="field">
-        <label for="sweepsec">Durée d'un aller-retour</label>
-        <input
-          id="sweepsec"
-          type="range"
-          min="4"
-          max="60"
-          step="1"
-          :value="synthSettings.sweepSeconds"
-          @input="onNumber('sweepSeconds', $event)"
-        />
-        <span class="numeric">{{ synthSettings.sweepSeconds }} s</span>
-      </div>
-      <div class="field">
-        <label for="fe">Effort imposé</label>
-        <input
-          id="fe"
-          type="checkbox"
-          :checked="synthSettings.forceEffort"
-          @change="onFlag('forceEffort', $event)"
-        />
-        <span class="numeric">{{ synthSettings.forceEffort ? 'imposé' : 'suit la chaîne' }}</span>
-      </div>
-      <div class="field">
-        <label for="fev">Valeur imposée</label>
-        <input
-          id="fev"
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          :value="synthSettings.forcedEffort"
-          @input="onNumber('forcedEffort', $event)"
-        />
-        <span class="numeric">{{ synthSettings.forcedEffort.toFixed(2) }}</span>
-      </div>
-      <p class="note">
-        Le balayage va du ralenti au rupteur du profil actif et revient, à
-        cadence fixe, en remplaçant le régime que la chaîne calcule. C'est ce
-        qui permet d'écouter la montée sans rouler — et de vérifier que le son
-        tient en accélération, pas seulement à régime tenu. L'effort imposé
-        sert à entendre ce qu'il change à régime constant : si seul le niveau
-        bouge, le timbre ne suit pas.
-      </p>
-    </section>
   </div>
 </template>
 
 <style scoped>
 .synth {
+  max-width: 80rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/*
+ * Les deux relevés côte à côte, en haut : ils ont la même hauteur, donc aucun
+ * vide entre eux, et ils restent sous les yeux pendant qu'on règle en dessous.
+ */
+.readouts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(21rem, 1fr));
   gap: 1rem;
   align-items: start;
-  max-width: 80rem;
-  margin: 0 auto;
+}
+
+/*
+ * Des colonnes remplies l'une après l'autre, et non une grille.
+ *
+ * Une grille aligne ses lignes sur la plus haute section : « Le calcul » fait
+ * mille pixels de haut, ses voisines deux cent soixante-dix, et sept cents
+ * pixels de vide s'ouvraient sous chacune. « Plein de trous », a dit David, et
+ * c'était mesurable. Des colonnes CSS coulent le contenu de haut en bas puis
+ * passent à la suivante : il n'y a plus de ligne à aligner, donc plus de trou.
+ */
+.columns {
+  columns: 24rem 2;
+  column-gap: 1rem;
+}
+
+.columns > .panel {
+  /* Une section ne se coupe pas en deux entre deux colonnes. */
+  break-inside: avoid;
+  margin-bottom: 1rem;
 }
 
 .panel {
@@ -833,7 +867,7 @@ const gauge = computed(() => {
 }
 
 .panel.wide {
-  grid-column: 1 / -1;
+  width: 100%;
 }
 
 h2 {
