@@ -1,6 +1,6 @@
 # 03 — La boucle ne se répète plus à l'identique
 
-**Statut :** ⬜ prêt
+**Statut :** ⬜ prêt — débloqué, la mesure préalable est faite
 
 **Bloqué par :** 01 — Le régime tremble, d'autant plus qu'il est bas ; 02 — Deux
 couches ne jouent plus parfaitement d'accord
@@ -15,11 +15,23 @@ Sa position de départ est bien tirée au sort, mais seulement à l'allumage —
 la première seconde, la même tranche se répète pour toute la durée de la session,
 et l'oreille apprend une répétition périodique en quelques tours.
 
-**Une mesure vient d'abord** : la durée des boucles n'est pas connue, les
-échantillons vivant hors du dépôt, dans un volume du NAS. Elle décide de
-l'urgence et de la forme du remède — une prise de dix secondes se répète bien
-moins vite qu'une prise de deux. Si les boucles sont longues, ce ticket peut être
-abandonné sans regret.
+**La mesure est faite** — 6 septembre 2026. Elle était réputée impossible depuis
+le dépôt, les échantillons vivant dans un volume du NAS ; la banque livrée est en
+réalité présente en local, et il suffisait de lire l'entête de ses fichiers.
+
+| Couche de la banque `procar` | Durée |
+|---|---|
+| `procar-on-high` | 3,14 s |
+| `procar-off-low` | 4,22 s |
+| `procar-on-low` | 4,20 s |
+| `procar-off-high` | 5,37 s |
+
+Ce ticket prévoyait de s'abandonner si les boucles étaient longues. **Elles ne le
+sont pas** : la plus courte se répète dix-neuf fois par minute à vitesse de
+lecture normale. En conduite la vitesse de lecture mesurée va de 0,26 à 0,81, ce
+qui étire la période à quatre secondes au plus court et une vingtaine au plus
+long — assez lent pour ne pas gêner en accélération, assez court pour qu'une
+croisière tenue laisse l'oreille apprendre le motif.
 
 Deux voies possibles, à trancher sur cette mesure : redémarrer périodiquement la
 source à une nouvelle position avec un fondu court, ou entretenir deux instances
@@ -32,7 +44,7 @@ mesure ne montre pas de gain, on s'arrête.
 
 ## Critères d'acceptation
 
-- [ ] La durée des boucles de la banque livrée est mesurée et écrite
+- [x] La durée des boucles de la banque livrée est mesurée et écrite
 - [ ] Le son ne repasse plus par la même position à intervalle fixe
 - [ ] Le raccord ne s'entend pas : aucun saut de niveau ni de hauteur mesurable
       au moment du changement de position
