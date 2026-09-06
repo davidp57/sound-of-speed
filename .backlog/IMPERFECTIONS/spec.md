@@ -1,7 +1,7 @@
 # IMPERFECTIONS — un moteur ne tourne pas juste
 
-**Statut :** 🔄 en cours — tickets 01 et 02 faits, 03 en attente d'une mesure
-**Branche :** `feature/imperfections`
+**Statut :** ✅ fait — trois tickets sur trois, reste à écouter en roulant
+**Branche :** `feature/imperfections`, puis `feature/imperfections-boucle`
 **Version visée :** 0.3
 
 ## Le problème

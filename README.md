@@ -1136,6 +1136,7 @@ avait déjà été essayé deux fois sans qu'aucune différence s'entende.
 | **Relief du régime** | Gain gagné entre le ralenti et le rupteur : le rugissement qui monte avec les tours. Il **s'ajoute** aux 4 dB que la banque livrée donne déjà, sa prise haut régime étant enregistrée plus fort que la basse |
 | **Niveau au ralenti** | Le ralenti n'a pas de couche dédiée dans la banque livrée : on y entend la prise « pied levé » jouée deux octaves plus bas. Sans ce réglage elle sonnait aussi fort que tout le reste |
 | **Désaccord des couches** | Écart de justesse entre les couches d'une même famille, en centièmes de demi-ton. Au rapport exact elles sont parfaitement justes l'une par rapport à l'autre, ce qui n'arrive sur aucun moteur : les inégalités entre cylindres et les deux lignes d'échappement produisent un battement lent. L'écart est réparti de part et d'autre, donc la hauteur moyenne ne bouge pas, et il ne déplace aucun gain. Mesuré, 12 centièmes donnent un battement à 2,4 Hz à 5100 tr/min et 1,5 Hz à 3200 |
+| **Renouvellement de position** | Intervalle moyen entre deux reprises de la lecture ailleurs dans l'enregistrement, en secondes. Chaque couche est une boucle de trois à cinq secondes : sans cela elle se répète à l'identique toutes les quatre à vingt secondes selon la vitesse de lecture, et l'oreille apprend le motif. L'intervalle réel est tiré à quarante pour cent près, sinon on remplacerait une périodicité par une autre. À zéro, le comportement est celui d'avant ce réglage |
 | **Début / fin de bascule** | Régimes entre lesquels la couche haute remplace la basse. **Indépendants des régimes d'ancrage**, qui règlent la justesse |
 | **Accélération pleine charge** | Accélération au-delà de laquelle la charge est maximale. Faute de pédale dans une voiture électrique, c'est elle qui mesure l'intention du conducteur — et c'est la charge qui pilote la boîte |
 | **Repère de traînée** | Vitesse à laquelle **tenir** l'allure demande la moitié de l'effort maximal. Sans lui, tenir une vitesse valait toujours la même chose, à 30 comme à 130 km/h, alors que la traînée croît comme le carré de la vitesse : la croisière était plate d'un bout à l'autre. Livré à 130 km/h sur Route, 150 sur Sport. Bas, tout devient chargé tôt ; haut, la traînée compte peu |
@@ -1746,9 +1747,28 @@ famille, jamais du temps — et il s'applique **après** la décision de domaine
 jouable : régler ce curseur ne peut donc déplacer aucun gain, et ne peut pas
 sortir une couche de son domaine.
 
-Ce que ces deux écarts ne font pas : un moteur. Cinq fichiers bouclés se
-répètent, et l'oreille l'apprend en quelques tours. Ce plafond-là ne se franchit
-qu'avec plus de bancs moteur.
+**La boucle ne se referme plus au même endroit.** Chaque couche est un
+enregistrement de trois à cinq secondes lu en boucle ; à la vitesse de lecture
+réelle, de 0,26 à 0,81, il se répète toutes les quatre à vingt secondes, toujours
+identique. Le matériau, lui, n'est pas uniforme : le niveau varie de 2,4 dB sur
+la prise haut régime à 9,2 dB sur la prise bas régime au fil d'un tour de boucle,
+et deux tranches distantes d'une seconde diffèrent deux fois plus que deux
+tranches voisines. C'est ce motif-là que l'oreille apprend.
+
+Toutes les six secondes en moyenne, la lecture reprend donc ailleurs dans
+l'enregistrement, par un fondu croisé de vingt millisecondes. Le fondu est à
+**puissance constante** : deux positions d'un même enregistrement sont
+décorrélées, donc leurs énergies s'ajoutent et non leurs amplitudes — un fondu
+linéaire creuserait un trou de 1,8 dB à chaque passage. Mesuré ainsi, le raccord
+reste sous la respiration naturelle du son : 1,2 à 3,3 dB d'écart de niveau
+pendant le fondu, contre 2,3 à 2,8 dB pour le son qui ne saute pas.
+
+Aligner la nouvelle position sur le cycle moteur, comme le fait le recollement de
+boucle, a été essayé et abandonné : cela ne change rien (1,23 dB contre 1,19), le
+fondu étant trop court pour que la phase compte.
+
+Ce que ces trois écarts ne font pas : un moteur. Cinq fichiers restent cinq
+fichiers, et ce plafond-là ne se franchit qu'avec plus de bancs moteur.
 
 Trois points ont demandé une attention particulière :
 
@@ -1835,7 +1855,7 @@ chaque essai.
 | 18 | Le volume général sort du profil : c'est une préférence d'appareil | fait |
 | 19 | Mode simplifié : deux curseurs globaux, le détail derrière un mode avancé | fait, reste à écouter |
 | 20 | Tableau de bord à cadrans | fait, reste à essayer ; le décor défilant est retiré, à redessiner en perspective |
-| 21 | Imperfections : tremblement de régime, couches désaccordées | fait, reste à écouter |
+| 21 | Imperfections : tremblement de régime, couches désaccordées, boucle qui ne se répète plus | fait, reste à écouter |
 | 22 | Étalonnage : mesurer la vraie voiture pour régler les virtuelles | fait, reste à rouler |
 | 23 | Le serveur accepte le dépôt d'une trace | fait, éprouvé sur le NAS |
 | 24 | Ce que l'appareil réel impose : positions imprécises écartées, largeur utile, verrou d'écran et autorisation GPS affichés | fait, reste à relever en roulant |

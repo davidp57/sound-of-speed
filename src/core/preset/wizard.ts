@@ -135,6 +135,9 @@ function build(choices: WizardChoices, template: Profile): Profile {
       // Un moteur de sport a des cylindres plus inégaux et deux lignes
       // d'échappement : le battement entre couches y est plus large.
       layerDetuneCents: Math.round(6 + 8 * sportiness),
+      // Indépendant du tempérament : c'est la durée des enregistrements qui
+      // fixe la cadence utile, pas le caractère de la voiture.
+      layerRefreshS: 6,
     },
   }, sportiness)
 }

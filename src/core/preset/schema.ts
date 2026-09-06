@@ -623,6 +623,19 @@ export interface MixPreset {
    * dépend pas du temps : une même situation donne toujours le même mixage.
    */
   layerDetuneCents: number
+  /**
+   * Intervalle moyen entre deux renouvellements de position de lecture, en
+   * secondes. Zéro éteint le renouvellement.
+   *
+   * Chaque couche est une boucle de trois à cinq secondes, étirée par la vitesse
+   * de lecture : elle se répète toutes les quatre à vingt secondes, toujours à
+   * l'identique. Reprendre la lecture ailleurs de temps en temps empêche
+   * l'oreille d'apprendre ce motif.
+   *
+   * L'intervalle réel est tiré autour de cette valeur, à quarante pour cent
+   * près : un saut à cadence fixe remplacerait une périodicité par une autre.
+   */
+  layerRefreshS: number
 }
 
 /**

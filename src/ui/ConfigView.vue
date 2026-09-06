@@ -1554,6 +1554,15 @@ function impliedCylinders(index: number): number | null {
         hint="Écart de justesse entre les deux couches d'une même famille, en centièmes de demi-ton. Au rapport exact elles sont parfaitement justes l'une par rapport à l'autre, ce qui n'arrive sur aucun moteur : les inégalités entre cylindres et les deux lignes d'échappement produisent un battement lent. Mesuré, 12 centièmes donnent un battement à 2,4 Hz à 5100 tr/min et 1,5 Hz à 3200."
       />
       <NumberField
+        v-model="profile.mix.layerRefreshS"
+        label="Renouvellement de position"
+        :min="0"
+        :max="30"
+        :step="0.5"
+        unit="s"
+        hint="Intervalle moyen entre deux reprises de la lecture ailleurs dans l'enregistrement. Chaque couche est une boucle de trois à cinq secondes qui, sans cela, se répète à l'identique toutes les quatre à vingt secondes selon la vitesse de lecture. L'intervalle réel est tiré à quarante pour cent près, sinon on remplacerait une périodicité par une autre. À zéro, le comportement est celui d'avant ce réglage."
+      />
+      <NumberField
         v-model="profile.mix.crossfadeLowRpm"
         label="Début de bascule"
         :min="500"
