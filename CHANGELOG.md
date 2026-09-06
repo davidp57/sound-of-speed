@@ -22,6 +22,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un banc mesure ce que la chaîne de sortie fait au niveau.** Ouvert sur
+  `/banc/sortie.html` au serveur de développement — il n'entre pas dans
+  l'image —, il rejoue le mixage réel dans un contexte hors ligne et relève ce
+  que le saturateur, le limiteur et le gain de rattrapage conservent du relief de
+  charge. Aucun son n'en sort.
+
+  Il écarte la cause qu'on croyait tenir : la chaîne coûte 0,09 dB sur 6,58, et
+  le limiteur n'atténue jamais plus de 0,2 dB. Ce qui écrase le relief est
+  l'écrêtage en sortie, dû au gain de rattrapage placé après le limiteur — 1 %
+  des échantillons rognés au volume livré, 8 % au volume maximal.
+
 - **Tout ce qui naît dans la voiture remonte tout seul.** David : « l'objectif
   est de déposer régulièrement, en automatique sur le NAS, avec une option en
   opt-in, les traces, les logs, les relevés de mesure, les profils, tout ce qui

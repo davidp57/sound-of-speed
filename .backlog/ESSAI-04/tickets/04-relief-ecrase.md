@@ -1,6 +1,7 @@
 # 04 — l'effort s'entend en sortie, pas seulement dans le mixage
 
-**Statut :** 🔄 en cours
+**Statut :** 🧑 attend David — la mesure est faite, elle écarte la cause supposée
+et en désigne une autre ; la correction se décide
 
 **Bloqué par :** 01 — la charge doit être stable avant qu'on mesure le niveau ;
 et l'essai de l'ancrage du ticket 05, qui déplace le spectre entrant dans la
@@ -27,10 +28,94 @@ remonte le tout sans rendre la dynamique.
 
 ## Critères d'acceptation
 
-- [ ] Le banc de mesure existe, ne fait sortir aucun son, et son protocole est
+- [x] Le banc de mesure existe, ne fait sortir aucun son, et son protocole est
       écrit — signal employé, valeurs relevées et leur provenance.
 - [ ] L'écart conservé en sortie est chiffré avant et après correction.
-- [ ] La part du saturateur et celle du limiteur sont mesurées séparément.
+- [x] La part du saturateur et celle du limiteur sont mesurées séparément.
 - [ ] Après correction, l'écart entre croisière et accélération franche
       s'entend, et le niveau de sortie ne sature pas.
 - [ ] Le README dit ce que la chaîne de sortie fait au niveau.
+
+## Le banc
+
+`banc/sortie.html`, servi par le serveur de développement seul — il n'entre dans
+aucune entrée du build, la production ne l'embarque pas. Il rend dans un
+`OfflineAudioContext` : les tampons sont calculés, aucun son ne sort.
+
+**Le signal.** Les cinq couches du profil Route, décodées telles qu'elles sont
+livrées, jouées en boucle avec les gains et les vitesses de lecture que
+`computeMix` donne — la même fonction que celle qui pilote le moteur audio. Le
+banc ne rejoue pas une idée du mixage, il rejoue le mixage.
+
+**La chaîne.** `core/audio/output-chain.ts`, sortie de `engine.ts` pour cette
+mesure et utilisée par les deux : il n'y a pas de seconde copie qui pourrait
+dériver de celle qui sonne. Les court-circuits laissent les nœuds en place et les
+contournent, de sorte que le nombre d'étages ne change pas d'une ligne à l'autre.
+
+**Les états.** Même régime, seul l'effort change — 0,35 pour la croisière, 1,00
+pour l'accélération franche — de façon à isoler le relief de charge. Deux régimes,
+1800 et 2600 tr/min, pour lire aussi le relief de régime.
+
+**Les valeurs relevées.** Niveau efficace sur 1,5 s après une demi-seconde
+d'établissement, niveau crête, part des échantillons au-delà de la pleine
+échelle, et niveau efficace **après écrêtage à ±1** : le rendu hors ligne est en
+virgule flottante et laisse passer ce qui dépasse un, là où le convertisseur de
+l'appareil le rogne. Sans cette seconde mesure, le banc relèverait un relief que
+la voiture n'entend pas.
+
+**Deux écarts assumés avec ce qui joue** : les boucles ne sont pas recollées, et
+les positions de départ sont réparties régulièrement au lieu d'être tirées au
+sort — sinon deux passes ne donneraient pas le même chiffre. Ni l'un ni l'autre
+ne déplace un niveau moyen.
+
+## Ce que la mesure dit — 6 septembre 2026
+
+**Le relief traverse la chaîne.** Écart entre croisière et accélération franche
+à 1800 tr/min, au volume livré de 0,70 :
+
+| Configuration | Écart conservé |
+|---|---|
+| ni saturateur ni limiteur | 6,58 dB |
+| sans limiteur | 6,51 dB |
+| sans saturateur | 6,57 dB |
+| chaîne complète | **6,49 dB** |
+
+La chaîne coûte **0,09 dB** de relief. L'estimation analytique portée en tête de
+ce ticket — 3,9 dB en entrée, 0,3 dB conservés — se trompait d'un facteur vingt.
+Elle supposait un limiteur qui écrase en permanence ; il n'écrase pas.
+
+**Le limiteur ne limite pas.** Réduction relevée sur le nœud, signal stationnaire :
+0,0 dB au volume livré, **−0,2 dB** au maximum à volume 1,0, alors que la sortie
+y rogne 8 % de ses échantillons. Le niveau efficace, lui, ne dépasse jamais
+−7,2 dB : ce sont des crêtes brèves qui touchent le seuil, pas le corps du son.
+
+Il n'est pas neutre pour autant. À volume 0,05, soit quarante décibels sous son
+seuil, où un limiteur ne doit rien faire du tout, il rend **0,4 dB de plus** que
+lorsqu'il est court-circuité — mesuré, saturateur écarté et rattrapage neutre.
+Le nœud applique donc un gain qui n'a pas été demandé. C'est un comportement de
+l'implémentation, non un réglage du projet, et il explique que la chaîne complète
+sorte plus fort que la même chaîne sans limiteur.
+
+**Ce qui écrase, c'est l'écrêtage en sortie.** Il vient du gain de rattrapage de
+1,8 — +5,1 dB — placé **après** le limiteur, là où plus rien ne rattrape ce qui
+dépasse :
+
+| Volume général | Part rognée en accélération franche | Écart entendu |
+|---|---|---|
+| 0,25 | néant | 6,59 dB |
+| 0,50 | néant | 6,57 dB |
+| **0,70 (livré)** | **0,96 %** | 6,49 dB |
+| 1,00 | 8,28 % | **6,01 dB** |
+| 0,70, rattrapage neutre | néant | 6,54 dB |
+
+Le relief ne se perd donc pas dans la chaîne : il se perd dans ce que la chaîne
+laisse rogner, et seulement quand le volume monte.
+
+## Ce qui reste à décider
+
+Le limiteur est placé avant le seul gain qui fait dépasser la pleine échelle : il
+ne peut pas empêcher l'écrêtage qu'il est censé empêcher. Le remettre en dernier
+lui rendrait son travail. C'est une décision qui touche le son, et David en a déjà
+tranché une voisine — pour le moteur synthétisé, l'écrêtage au volume 0,70 est
+assumé, « essayé deux fois sans qu'aucune différence s'entende »
+(`core/preset/defaults.ts`). Elle lui revient donc.

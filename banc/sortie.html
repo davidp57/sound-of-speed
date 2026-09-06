@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Banc — chaîne de sortie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 2rem;
+        max-width: 70rem;
+        color: #1a1a1a;
+        background: #fafafa;
+      }
+      h1 {
+        font-size: 1.3rem;
+      }
+      p {
+        max-width: 45rem;
+        line-height: 1.5;
+      }
+      #etat {
+        font-variant-numeric: tabular-nums;
+        padding: 0.6rem 0.8rem;
+        background: #eef;
+        border-radius: 4px;
+      }
+      table {
+        border-collapse: collapse;
+        margin-top: 1.5rem;
+        font-variant-numeric: tabular-nums;
+        font-size: 0.9rem;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 0.35rem 0.6rem;
+        text-align: right;
+      }
+      thead th,
+      tbody th {
+        text-align: left;
+        background: #f0f0f0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Banc — ce que la chaîne de sortie fait au niveau</h1>
+    <p>
+      Rendu hors ligne : les tampons sont calculés, aucun son ne sort. Les niveaux sont
+      efficaces, en décibels par rapport à la pleine échelle, relevés après une demi-seconde
+      d’établissement. La colonne de droite donne l’écart entre croisière et accélération
+      franche à régime égal — c’est le relief de charge, tel qu’il survit à la chaîne.
+    </p>
+    <p id="etat">Démarrage…</p>
+    <div id="resultat"></div>
+    <script type="module" src="/src/bench/output-chain-page.ts"></script>
+  </body>
+</html>
