@@ -400,3 +400,51 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
 export function libraryEngine(id: string): LibraryEngine | undefined {
   return ENGINE_LIBRARY.find((entry) => entry.id === id)
 }
+
+/**
+ * Les valeurs comparées pour reconnaître un moteur.
+ *
+ * Prises sur une définition de référence plutôt qu'écrites à la main : la liste
+ * suit le contrat sans qu'on ait à la tenir à jour.
+ */
+const ENGINE_KEYS = Object.keys(GM_LS_V8) as (keyof EngineDefinition)[]
+
+/** Combien de valeurs séparent une définition du moteur `entry`, rupteur compris. */
+export function gapsToEngine(
+  entry: LibraryEngine,
+  definition: EngineDefinition,
+  redlineRpm: number,
+): number {
+  let gaps = entry.redlineRpm === redlineRpm ? 0 : 1
+  for (const key of ENGINE_KEYS) {
+    if (Math.abs(entry.definition[key] - definition[key]) > 1e-9) gaps += 1
+  }
+  return gaps
+}
+
+/**
+ * Au-delà de la moitié des valeurs changées, plus rien ne dit d'où l'on est
+ * parti : ce n'est plus un moteur retouché, c'en est un autre. On préfère ne
+ * rien affirmer plutôt que désigner un départ au hasard.
+ */
+export const ORIGIN_MAX_GAPS = Math.ceil((ENGINE_KEYS.length + 1) / 2)
+
+/**
+ * De quel moteur de la bibliothèque une définition est la plus proche, et de
+ * combien de valeurs elle s'en écarte.
+ *
+ * Elle mesure et ne juge pas : c'est à l'écran de décider ce qu'il fait d'un
+ * écart, en le comparant à `ORIGIN_MAX_GAPS`. Rend `null` seulement si la
+ * bibliothèque est vide.
+ */
+export function closestLibraryEngine(
+  definition: EngineDefinition,
+  redlineRpm: number,
+): { engine: LibraryEngine; gaps: number } | null {
+  let best: { engine: LibraryEngine; gaps: number } | null = null
+  for (const entry of ENGINE_LIBRARY) {
+    const gaps = gapsToEngine(entry, definition, redlineRpm)
+    if (best === null || gaps < best.gaps) best = { engine: entry, gaps }
+  }
+  return best
+}

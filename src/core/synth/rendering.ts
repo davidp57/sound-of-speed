@@ -39,13 +39,19 @@ export function exhaustResponseFile(id: ExhaustResponse): string | null {
 }
 
 /**
- * Les deux fréquences de silencieux que l'écran de conduite propose comme un
- * choix : dedans, dehors.
+ * Les deux fréquences de silencieux qui font le point d'écoute : dedans,
+ * dehors.
  *
- * Ce sont les mêmes valeurs que les repères du banc. Elles sont ici parce que
- * l'écran de conduite ne montre pas de curseur : il pose l'une ou l'autre.
+ * Le silencieux est un passe-bas ; ouvert en grand, on entend la voiture de
+ * l'extérieur, refermé bas on l'entend à travers la tôle et les vitres. C'est
+ * David qui l'a remarqué en réglant à l'oreille — le réglage existait, le sens
+ * lui manquait. Mille hertz pour l'habitacle : la valeur qu'il avait trouvée
+ * lui-même.
+ *
+ * Elles vivent ici et non dans l'écran du banc parce que l'écran de conduite
+ * les pose aussi, sans montrer de curseur.
  */
-export const MUFFLER_INSIDE_HZ = 6000
+export const MUFFLER_INSIDE_HZ = 1000
 export const MUFFLER_OUTSIDE_HZ = 22000
 
 export interface SynthRendering {
