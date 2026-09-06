@@ -119,3 +119,42 @@ lui rendrait son travail. C'est une décision qui touche le son, et David en a d
 tranché une voisine — pour le moteur synthétisé, l'écrêtage au volume 0,70 est
 assumé, « essayé deux fois sans qu'aucune différence s'entende »
 (`core/preset/defaults.ts`). Elle lui revient donc.
+
+## Ce que l'écrêtage fait entendre — 6 septembre 2026
+
+Compter les échantillons rognés dit qu'il y a de l'écrêtage ; ça ne dit pas si on
+l'entend. Le banc relève donc aussi l'énergie du signal d'erreur — la partie
+coupée — rapportée au son lui-même. Sous −60 dB elle est inaudible, vers −40 elle
+se devine sur un son tenu, au-delà de −30 elle s'entend franchement.
+
+En accélération franche, à 1800 tr/min :
+
+| Chaîne | Distorsion | Relief conservé | Niveau |
+|---|---|---|---|
+| livrée, volume 0,70 | **−31 dB** | 6,49 dB | −7,6 dB |
+| livrée, volume 1,00 | **−18 dB** | 6,01 dB | −5,0 dB |
+| limiteur en dernier, volume 0,70 | −49 dB | 6,07 dB | −8,0 dB |
+| limiteur en dernier, volume 1,00 | −38 dB | 4,49 dB | −6,5 dB |
+| **rattrapage 1,25 + limiteur en dernier** | **néant** | **6,54 dB** | −10,7 dB |
+| idem, volume 1,00 | −51 dB | 6,12 dB | −8,1 dB |
+
+**Remettre le limiteur en dernier ne suffit pas** : il rend alors son travail —
+1,4 dB d'atténuation au volume livré, 3,7 dB à volume 1,0 — et cette atténuation
+mange le relief qu'on cherchait à sauver. On échangerait de la distorsion contre
+la chose même que ce ticket veut faire entendre.
+
+**Ce qui marche est de ne pas produire l'écrêtage plutôt que de le rattraper.**
+Le gain de rattrapage ramené de 1,8 à 1,25 place la crête à −0,7 dB en
+accélération franche : plus rien ne dépasse, le relief passe entier à 6,54 dB, et
+le limiteur remis en dernier ne sert plus que de filet quand l'utilisateur monte
+le volume — où il garde encore 6,12 dB au lieu de 4,49.
+
+Le prix est **3,1 dB de niveau en moins**, à reprendre sur le volume de
+l'autoradio. C'est le seul point qui ne se tranche pas au banc : il dépend de ce
+que la sortie du téléphone donne dans cette voiture-là.
+
+**À écouter avant de décider.** Le banc produit un extrait de huit secondes —
+quatre telle que la chaîne sort aujourd'hui, quatre corrigée, **mises au même
+niveau efficace**, chacune rognée avant la mise à niveau comme le ferait le
+convertisseur. Sans cette égalisation, la plus forte des deux paraîtrait toujours
+la meilleure.

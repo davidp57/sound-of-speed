@@ -45,6 +45,8 @@ export interface BenchConfig {
   volume: number
   /** Gain de rattrapage. Le neutraliser sépare ce que la chaîne écrase de ce qu'elle rend. */
   makeup?: number
+  /** Place le limiteur après le rattrapage, l'ordre proposé en correction. */
+  limiterLast?: boolean
 }
 
 export interface BenchPoint {
@@ -65,6 +67,16 @@ export interface BenchPoint {
   clippedRmsDb: number
   /** Part du signal rognée par l'écrêtage, en pour cent des échantillons. */
   clippedRatio: number
+  /**
+   * Ce que l'écrêtage ajoute au son, rapporté au son lui-même, en dB.
+   *
+   * L'écrêtage ne fait pas que raboter une crête : il fabrique un signal
+   * d'erreur — la partie coupée — qui s'entend comme de la distorsion. Compter
+   * les échantillons rognés dit qu'il y en a ; ce rapport dit combien on
+   * l'entend. Sous −60 dB il est inaudible, vers −40 il se devine sur un son
+   * tenu, au-delà de −30 il s'entend franchement.
+   */
+  clipErrorDb: number
   /**
    * Réduction appliquée par le limiteur à la fin du rendu, en dB (négative).
    *
@@ -127,7 +139,30 @@ export async function renderPoint(
   benchState: BenchState,
   config: BenchConfig,
 ): Promise<BenchPoint> {
-  const frames = Math.round(BENCH_SAMPLE_RATE * BENCH_DURATION_S)
+  const rendered = await renderBuffer(profile, layers, benchState, config)
+  return {
+    ...measure(rendered.buffer),
+    state: benchState.label,
+    config: config.label,
+    volume: config.volume,
+    limiterReductionDb: rendered.limiterReductionDb,
+  }
+}
+
+/**
+ * Rend un extrait et retourne le tampon, pour l'écouter au lieu de le mesurer.
+ *
+ * Un tableau de décibels ne dit pas si une distorsion s'entend ; le même rendu,
+ * enregistré et comparé au casque, le dit.
+ */
+export async function renderBuffer(
+  profile: Profile,
+  layers: BenchLayer[],
+  benchState: BenchState,
+  config: BenchConfig,
+  durationSeconds: number = BENCH_DURATION_S,
+): Promise<{ buffer: AudioBuffer; limiterReductionDb: number }> {
+  const frames = Math.round(BENCH_SAMPLE_RATE * durationSeconds)
   const context = new OfflineAudioContext(2, frames, BENCH_SAMPLE_RATE)
 
   const chain = buildOutputChain(context, {
@@ -135,6 +170,7 @@ export async function renderPoint(
     bypassShaper: config.bypassShaper,
     bypassLimiter: config.bypassLimiter,
     ...(config.makeup === undefined ? {} : { makeup: config.makeup }),
+    ...(config.limiterLast === undefined ? {} : { limiterLast: config.limiterLast }),
   })
   chain.highpass.frequency.value = profile.mix.highpassHz
   chain.limiter.threshold.value = profile.mix.limiterThresholdDb
@@ -157,14 +193,8 @@ export async function renderPoint(
     source.start(0, offset)
   })
 
-  const rendered = await context.startRendering()
-  return {
-    ...measure(rendered),
-    state: benchState.label,
-    config: config.label,
-    volume: config.volume,
-    limiterReductionDb: config.bypassLimiter ? 0 : chain.limiter.reduction,
-  }
+  const buffer = await context.startRendering()
+  return { buffer, limiterReductionDb: config.bypassLimiter ? 0 : chain.limiter.reduction }
 }
 
 /**
@@ -177,6 +207,7 @@ function measure(buffer: AudioBuffer): {
   peakDb: number
   clippedRmsDb: number
   clippedRatio: number
+  clipErrorDb: number
 } {
   const from = Math.round(BENCH_WINDOW_START_S * buffer.sampleRate)
   let sum = 0
@@ -184,6 +215,7 @@ function measure(buffer: AudioBuffer): {
   let count = 0
   let over = 0
   let peak = 0
+  let errorSum = 0
   for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
     const data = buffer.getChannelData(channel)
     for (let i = from; i < data.length; i += 1) {
@@ -195,14 +227,18 @@ function measure(buffer: AudioBuffer): {
       if (magnitude > 1) over += 1
       const bounded = Math.max(-1, Math.min(1, value))
       clippedSum += bounded * bounded
+      const error = value - bounded
+      errorSum += error * error
     }
   }
   const rms = count > 0 ? Math.sqrt(sum / count) : 0
   const clippedRms = count > 0 ? Math.sqrt(clippedSum / count) : 0
+  const errorRms = count > 0 ? Math.sqrt(errorSum / count) : 0
   return {
     rmsDb: toDb(rms),
     peakDb: toDb(peak),
     clippedRmsDb: toDb(clippedRms),
     clippedRatio: count > 0 ? (over / count) * 100 : 0,
+    clipErrorDb: clippedRms > 0 ? toDb(errorRms / clippedRms) : -Infinity,
   }
 }
