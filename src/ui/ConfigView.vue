@@ -24,10 +24,24 @@ import {
   type SoundSource,
 } from '../core/preset/schema'
 import {
+  ENGINE_LIBRARY,
+  ORIGIN_MAX_GAPS,
+  closestLibraryEngine,
+} from '../core/preset/engine-library'
+import {
+  DEFAULT_RENDERING,
+  MUFFLER_INSIDE_HZ,
+  MUFFLER_OUTSIDE_HZ,
+  type SynthRendering,
+} from '../core/synth/settings'
+import {
   activeProfile,
   addProfile,
   advancedMode,
   analyzeLayerFile,
+  applyLibraryEngine,
+  applySynthSettings,
+  synthSettings,
   backgroundAudio,
   setAdvancedMode,
   setBackgroundAudio,
@@ -96,6 +110,90 @@ const soundSource = computed<SoundSource>({
     profile.value.soundSource = value
   },
 })
+
+/**
+ * Les trois choix du moteur simulé, en conduisant.
+ *
+ * David : « la page de réglage des moteurs c'est pour nous, sur PC ; rien à
+ * faire dans l'app en voiture. En voiture on peut choisir un profil de synthèse,
+ * avec le choix du moteur, le choix de l'échappement et de l'endroit d'où on
+ * écoute. On ajoutera des curseurs si besoin plus tard. »
+ *
+ * D'où des listes et pas des curseurs : on choisit, on ne règle pas. Chaque
+ * liste garde une entrée « réglé à la main », qui n'apparaît que si la valeur du
+ * profil ne tombe sur aucun palier — un réglage fin fait au banc ne doit pas se
+ * faire écraser par le simple fait d'ouvrir cet écran.
+ */
+const EXHAUSTS = [
+  { id: 'direct', label: 'Direct', mix: 0 },
+  { id: 'measured', label: 'Mesuré', mix: 0.45 },
+  { id: 'wrapped', label: 'Enveloppé', mix: 1 },
+] as const
+
+const rendering = computed(() => profile.value.rendering ?? DEFAULT_RENDERING)
+
+/**
+ * D'où vient le moteur du profil, et s'il a été retouché depuis.
+ *
+ * Un moteur chargé puis affiné au banc ne correspond plus exactement à son
+ * entrée de bibliothèque. Dire « Chevrolet 454, retouché » vaut mieux que
+ * « réglé à la main » : en conduisant, savoir d'où l'on est parti est la seule
+ * chose utile.
+ */
+const closestEngine = computed(() => {
+  const mine = profile.value.engineDefinition
+  if (mine === undefined) return null
+  return closestLibraryEngine(mine, profile.value.engine.redlineRpm)
+})
+
+const currentEngineId = computed(() =>
+  closestEngine.value !== null && closestEngine.value.gaps === 0
+    ? closestEngine.value.engine.id
+    : '',
+)
+
+/** Ce qu'affiche l'entrée « aucun moteur reconnu » de la liste. */
+const engineDrift = computed(() => {
+  const near = closestEngine.value
+  // Au-delà du seuil, plus rien ne dit d'où l'on est parti : mieux vaut ne rien
+  // affirmer que désigner un départ au hasard.
+  if (near === null || near.gaps > ORIGIN_MAX_GAPS) return 'Réglé à la main'
+  const s = near.gaps > 1 ? 's' : ''
+  return `${near.engine.short}, retouché — ${near.gaps} valeur${s}`
+})
+
+const currentExhaust = computed(
+  () => EXHAUSTS.find((entry) => entry.mix === rendering.value.convolverMix)?.id ?? '',
+)
+
+const currentPlace = computed(() => {
+  if (rendering.value.mufflerHz >= MUFFLER_OUTSIDE_HZ) return 'outside'
+  if (rendering.value.mufflerHz === MUFFLER_INSIDE_HZ) return 'inside'
+  return ''
+})
+
+function onEngine(event: Event): void {
+  const id = (event.target as HTMLSelectElement).value
+  const entry = ENGINE_LIBRARY.find((candidate) => candidate.id === id)
+  if (entry !== undefined) void applyLibraryEngine(entry)
+}
+
+/** Écrit un réglage de rendu dans le profil, et le fait entendre. */
+function setRendering(patch: Partial<SynthRendering>): void {
+  void applySynthSettings({ ...synthSettings.value, ...patch })
+}
+
+function onExhaust(event: Event): void {
+  const id = (event.target as HTMLSelectElement).value
+  const entry = EXHAUSTS.find((candidate) => candidate.id === id)
+  if (entry !== undefined) setRendering({ convolverMix: entry.mix })
+}
+
+function onPlace(event: Event): void {
+  const id = (event.target as HTMLSelectElement).value
+  if (id === 'inside') setRendering({ mufflerHz: MUFFLER_INSIDE_HZ })
+  else if (id === 'outside') setRendering({ mufflerHz: MUFFLER_OUTSIDE_HZ })
+}
 
 /** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
 /**
@@ -924,6 +1022,52 @@ function impliedCylinders(index: number): number | null {
         l'`AudioWorklet` ou le WebAssembly. Le profil garde son origine, mais le son
         restera celui de la banque d'échantillons tant qu'il sera ouvert ici.
       </p>
+
+      <template v-if="needsSimulatedEngine(soundSource)">
+        <label class="inline">
+          Moteur
+          <select :value="currentEngineId" @change="onEngine($event)">
+            <option v-if="currentEngineId === ''" value="">{{ engineDrift }}</option>
+            <option v-for="entry in ENGINE_LIBRARY" :key="entry.id" :value="entry.id">
+              {{ entry.label }}
+            </option>
+          </select>
+        </label>
+        <p class="note">
+          Le moteur simulé, avec son rupteur et son réglage de son. Seul le GM LS
+          est réglé à ce jour ; les autres sonnent avec le réglage par défaut, ce
+          qui s'entend. Les régler se fait au banc, sur un ordinateur.
+        </p>
+
+        <label class="inline">
+          Échappement
+          <select :value="currentExhaust" @change="onExhaust($event)">
+            <option v-if="currentExhaust === ''" value="">Réglé à la main</option>
+            <option v-for="entry in EXHAUSTS" :key="entry.id" :value="entry.id">
+              {{ entry.label }}
+            </option>
+          </select>
+        </label>
+        <p class="note">
+          Combien de résonance d'échappement passe par-dessus le son direct.
+          <strong>Direct</strong> ne garde que le son cru du moteur, et c'est là
+          que le grain s'entend le plus ; <strong>enveloppé</strong> ne laisse
+          plus que le son réverbéré, qui étale les fronts et adoucit tout.
+        </p>
+
+        <label class="inline">
+          On écoute
+          <select :value="currentPlace" @change="onPlace($event)">
+            <option v-if="currentPlace === ''" value="">Réglé à la main</option>
+            <option value="inside">De l'habitacle</option>
+            <option value="outside">De l'extérieur</option>
+          </select>
+        </label>
+        <p class="note">
+          Le silencieux, refermé bas, fait entendre la voiture à travers la tôle
+          et les vitres ; ouvert en grand, on l'entend de dehors.
+        </p>
+      </template>
 
       <label class="inline">
         Dossier d'échantillons

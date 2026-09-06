@@ -5,6 +5,8 @@ import ValueRow from './components/ValueRow.vue'
 import {
   DEFAULT_SYNTH,
   EXHAUST_RESPONSES,
+  MUFFLER_INSIDE_HZ,
+  MUFFLER_OUTSIDE_HZ,
   type ExhaustResponse,
   type SynthSettings,
 } from '../core/synth/settings'
@@ -16,7 +18,12 @@ import {
 } from '../core/preset/schema'
 import { mergeEngineGroup, groupVaries } from '../core/preset/engine-definition'
 import { GM_LS_V8, SUBARU_EJ25 } from '../core/preset/defaults'
-import { ENGINE_LIBRARY, type LibraryEngine } from '../core/preset/engine-library'
+import {
+  ENGINE_LIBRARY,
+  ORIGIN_MAX_GAPS,
+  closestLibraryEngine,
+  type LibraryEngine,
+} from '../core/preset/engine-library'
 import {
   activeProfile,
   applyEngineDefinition,
@@ -81,8 +88,8 @@ function reset(): void {
  *
  * Mille hertz pour l'habitacle : la valeur qu'il avait trouvée lui-même.
  */
-const DEDANS_HZ = 1000
-const DEHORS_HZ = 22000
+const DEDANS_HZ = MUFFLER_INSIDE_HZ
+const DEHORS_HZ = MUFFLER_OUTSIDE_HZ
 
 const place = computed(() => {
   if (synthSettings.value.mufflerHz >= DEHORS_HZ) return 'dehors'
@@ -239,48 +246,20 @@ function onEngine(key: string, event: Event): void {
  * un moteur est un ensemble où les valeurs s'accordent, pas vingt-huit chiffres
  * indépendants. On part donc d'un moteur relevé, puis on retouche.
  *
- * Le rupteur part avec la définition : les deux décrivent le même moteur.
+ * Le rupteur et le rendu partent avec la définition : les trois décrivent le
+ * même moteur.
  */
 function loadEngine(entry: LibraryEngine): void {
-  void applyLibraryEngine({ ...entry.definition }, entry.redlineRpm)
+  void applyLibraryEngine(entry)
 }
-
-/**
- * Les valeurs comparées pour reconnaître un moteur.
- *
- * Prises sur une définition de référence plutôt qu'écrites à la main : la liste
- * suit le contrat sans qu'on ait à la tenir à jour.
- */
-const ENGINE_KEYS = Object.keys(GM_LS_V8) as (keyof EngineDefinition)[]
-
-/** Combien de valeurs séparent ce qui est réglé du moteur `entry`, rupteur compris. */
-function gapsTo(entry: LibraryEngine): number {
-  let gaps = entry.redlineRpm === redlineRpm.value ? 0 : 1
-  for (const key of ENGINE_KEYS) {
-    if (Math.abs(entry.definition[key] - engineDefinition.value[key]) > 1e-9) gaps += 1
-  }
-  return gaps
-}
-
-/**
- * Au-delà de la moitié des valeurs changées, plus rien ne dit d'où l'on est
- * parti : ce n'est plus un moteur retouché, c'en est un autre. On préfère ne
- * rien affirmer plutôt que désigner un départ au hasard.
- */
-const ORIGIN_MAX_GAPS = Math.ceil((ENGINE_KEYS.length + 1) / 2)
 
 /** Le moteur de la bibliothèque le plus proche de ce qui est réglé. */
-const closest = computed<{ entry: LibraryEngine; gaps: number } | null>(() => {
-  let best: { entry: LibraryEngine; gaps: number } | null = null
-  for (const entry of ENGINE_LIBRARY) {
-    const gaps = gapsTo(entry)
-    if (best === null || gaps < best.gaps) best = { entry, gaps }
-  }
-  return best
-})
+const closest = computed(() =>
+  closestLibraryEngine(engineDefinition.value, redlineRpm.value),
+)
 
 /** Le moteur chargé, quand ce qui est réglé lui correspond exactement. */
-const loaded = computed(() => (closest.value?.gaps === 0 ? closest.value.entry : null))
+const loaded = computed(() => (closest.value?.gaps === 0 ? closest.value.engine : null))
 
 /** Le moteur dont on est parti, quand on l'a retouché sans le méconnaître. */
 const origin = computed(() => {
@@ -293,12 +272,12 @@ const origin = computed(() => {
 const loadedText = computed(() => {
   const near = closest.value
   if (near === null) return 'La bibliothèque de moteurs est vide.'
-  if (near.gaps === 0) return `Chargé : ${near.entry.label}`
+  if (near.gaps === 0) return `Chargé : ${near.engine.label}`
   if (near.gaps > ORIGIN_MAX_GAPS) {
     return 'Réglages personnels : aucun moteur de la bibliothèque ne s’en approche.'
   }
   const s = near.gaps > 1 ? 's' : ''
-  return `Chargé : ${near.entry.label}, modifié — ${near.gaps} valeur${s} changée${s}`
+  return `Chargé : ${near.engine.label}, modifié — ${near.gaps} valeur${s} changée${s}`
 })
 
 function onFlag(key: keyof SynthSettings, event: Event): void {
@@ -718,8 +697,8 @@ const gauge = computed(() => {
         </button>
       </div>
       <div v-if="origin" class="actions">
-        <button @click="loadEngine(origin.entry)">
-          Annuler les retouches et recharger « {{ origin.entry.label }} »
+        <button @click="loadEngine(origin.engine)">
+          Annuler les retouches et recharger « {{ origin.engine.label }} »
         </button>
       </div>
       <p class="note">

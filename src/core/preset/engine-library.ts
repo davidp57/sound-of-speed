@@ -1,4 +1,5 @@
-import { GM_LS_V8, SUBARU_EJ25 } from './defaults'
+import { DEFAULT_RENDERING, type SynthRendering } from '../synth/rendering'
+import { GM_LS_RENDERING, GM_LS_V8, SUBARU_EJ25 } from './defaults'
 import type { EngineDefinition } from './schema'
 
 /**
@@ -35,6 +36,20 @@ export interface LibraryEngine {
   /** Le rupteur du moteur d'origine, en tours par minute. */
   redlineRpm: number
   definition: EngineDefinition
+  /**
+   * Comment ce moteur se rend : échappement, volume, crête visée, papillon.
+   *
+   * Il voyage avec la définition parce qu'essayer plusieurs moteurs au volant
+   * n'a de sens que si chacun arrive avec son réglage — sinon on écoute un
+   * moteur à travers l'échappement du précédent, et l'on ne sait plus lequel
+   * des deux on entend.
+   *
+   * **Un seul est réglé à ce jour** : le GM LS, aux valeurs relevées par David
+   * le 6 septembre 2026. Les autres portent le rendu par défaut, c'est-à-dire
+   * qu'ils ne sont pas réglés — c'est écrit plutôt que masqué, pour qu'on sache
+   * ce qu'on écoute.
+   */
+  rendering: SynthRendering
 }
 
 /**
@@ -314,6 +329,8 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-2/07_gm_ls.mr',
     redlineRpm: 6500,
     definition: GM_LS_V8,
+    // Le seul moteur réglé à ce jour, aux valeurs relevées par David.
+    rendering: GM_LS_RENDERING,
   },
   {
     id: 'subaru-ej25',
@@ -322,6 +339,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-1/06_subaru_ej25.mr',
     redlineRpm: 6500,
     definition: SUBARU_EJ25,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'chevrolet-454',
@@ -330,6 +348,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/chevrolet/chev_truck_454.mr',
     redlineRpm: 5500,
     definition: CHEVROLET_454,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'chevrolet-454-comp-cams',
@@ -338,6 +357,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/chevrolet/engine_03_for_e1.mr',
     redlineRpm: 5500,
     definition: CHEVROLET_454_COMP_CAMS,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'honda-b18c5',
@@ -346,6 +366,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-1/05_honda_vtec.mr',
     redlineRpm: 8400,
     definition: HONDA_B18C5,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'suzuki-hayabusa',
@@ -354,6 +375,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-1/04_hayabusa.mr',
     redlineRpm: 11000,
     definition: SUZUKI_HAYABUSA,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'subaru-ej25-equal-header',
@@ -362,6 +384,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-2/01_subaru_ej25_eh.mr',
     redlineRpm: 6500,
     definition: SUBARU_EJ25_EQUAL_HEADER,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'subaru-ej25-unequal-header',
@@ -370,9 +393,58 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-2/02_subaru_ej25_uh.mr',
     redlineRpm: 6500,
     definition: SUBARU_EJ25_UNEQUAL_HEADER,
+    rendering: DEFAULT_RENDERING,
   },
 ]
 
 export function libraryEngine(id: string): LibraryEngine | undefined {
   return ENGINE_LIBRARY.find((entry) => entry.id === id)
+}
+
+/**
+ * Les valeurs comparées pour reconnaître un moteur.
+ *
+ * Prises sur une définition de référence plutôt qu'écrites à la main : la liste
+ * suit le contrat sans qu'on ait à la tenir à jour.
+ */
+const ENGINE_KEYS = Object.keys(GM_LS_V8) as (keyof EngineDefinition)[]
+
+/** Combien de valeurs séparent une définition du moteur `entry`, rupteur compris. */
+export function gapsToEngine(
+  entry: LibraryEngine,
+  definition: EngineDefinition,
+  redlineRpm: number,
+): number {
+  let gaps = entry.redlineRpm === redlineRpm ? 0 : 1
+  for (const key of ENGINE_KEYS) {
+    if (Math.abs(entry.definition[key] - definition[key]) > 1e-9) gaps += 1
+  }
+  return gaps
+}
+
+/**
+ * Au-delà de la moitié des valeurs changées, plus rien ne dit d'où l'on est
+ * parti : ce n'est plus un moteur retouché, c'en est un autre. On préfère ne
+ * rien affirmer plutôt que désigner un départ au hasard.
+ */
+export const ORIGIN_MAX_GAPS = Math.ceil((ENGINE_KEYS.length + 1) / 2)
+
+/**
+ * De quel moteur de la bibliothèque une définition est la plus proche, et de
+ * combien de valeurs elle s'en écarte.
+ *
+ * Elle mesure et ne juge pas : c'est à l'écran de décider ce qu'il fait d'un
+ * écart, en le comparant à `ORIGIN_MAX_GAPS`. Rend `null` seulement si la
+ * bibliothèque est vide.
+ */
+export function closestLibraryEngine(
+  definition: EngineDefinition,
+  redlineRpm: number,
+): { engine: LibraryEngine; gaps: number } | null {
+  let best: { engine: LibraryEngine; gaps: number } | null = null
+  for (const entry of ENGINE_LIBRARY) {
+    const gaps = gapsToEngine(entry, definition, redlineRpm)
+    if (best === null || gaps < best.gaps) best = { engine: entry, gaps }
+  }
+  return best
 }

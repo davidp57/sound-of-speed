@@ -1,5 +1,6 @@
 import { createDefaultProfile, createFactoryProfiles } from './defaults'
 import { clampEngineDefinition } from './engine-definition'
+import { DEFAULT_RENDERING, clampSynthRendering, type SynthRendering } from '../synth/rendering'
 import {
   PROFILE_FORMAT_VERSION,
   soundSourceOf,
@@ -437,6 +438,16 @@ function reconcile(profile: Partial<Profile>): Profile {
     ...(base.engineDefinition ?? {}),
     ...(isRecord(profile.engineDefinition) ? profile.engineDefinition : {}),
   })
+
+  // Le rendu suit la même règle que la définition, et pour la même raison : un
+  // profil enregistré avant la version 6 n'en portait pas, et un profil qui en
+  // porte un peut venir d'une main. Il ressort avec un rendu complet et borné,
+  // repris sur celui de son profil d'usine.
+  complet.rendering = clampSynthRendering({
+    ...DEFAULT_RENDERING,
+    ...(base.rendering ?? {}),
+    ...(isRecord(profile.rendering) ? profile.rendering : {}),
+  } as SynthRendering)
 
   return complet
 }

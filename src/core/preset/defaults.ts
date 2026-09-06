@@ -1,4 +1,27 @@
+import { DEFAULT_RENDERING, type SynthRendering } from '../synth/rendering'
 import type { EngineDefinition, Profile } from './schema'
+
+/**
+ * Comment le GM LS se rend, relevé par David au banc le 6 septembre 2026.
+ *
+ * La résonance à 0,45 est le cœur du réglage : à 1,00 — l'ancien défaut — plus
+ * rien du son direct n'atteignait la sortie, et « on n'a plus du tout le son
+ * rauque ». À 0,00, « le rauque revient franchement ». Il s'est arrêté entre
+ * les deux.
+ *
+ * La crête visée au maximum avec un volume de 0,70 fait écrêter la sortie.
+ * C'est assumé : passer de « n'écrête pas du tout » à « écrête sec » a été
+ * essayé deux fois sans qu'aucune différence s'entende.
+ *
+ * Il vit ici et non dans la bibliothèque de moteurs parce que le profil d'usine
+ * s'en sert aussi, et que la bibliothèque lit déjà ce fichier.
+ */
+export const GM_LS_RENDERING: SynthRendering = {
+  ...DEFAULT_RENDERING,
+  volume: 0.7,
+  convolverMix: 0.45,
+  levelerTarget: 32000,
+}
 
 /**
  * Le V8 américain d'engine-sim, un GM LS.
@@ -261,6 +284,10 @@ export function createDefaultProfile(): Profile {
     // c'est ce qui permet de basculer son origine en direct et d'entendre quelque
     // chose, plutôt que d'avoir à décrire un moteur de zéro avant le premier son.
     engineDefinition: { ...GM_LS_V8 },
+    // Et comment il se rend, pour la même raison : basculer l'origine du son en
+    // direct doit donner quelque chose d'écoutable, pas un moteur non réglé.
+    // Ce sont les valeurs du GM LS en bibliothèque, relevées par David.
+    rendering: { ...GM_LS_RENDERING },
     sampleDir: 'procar',
     engine: {
       cylinders: 8,

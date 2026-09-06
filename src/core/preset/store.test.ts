@@ -111,6 +111,31 @@ describe('loadProfiles', () => {
     expect(relu).toEqual(original)
   })
 
+  it('rend un rendu complet à un profil enregistré avant la version 6', () => {
+    // Le son du moteur simulé vivait dans les réglages du banc, en mémoire :
+    // aucun profil enregistré avant cette version n'en porte.
+    const ancien = { ...createRoadProfile(), id: 'ancien' } as Record<string, unknown>
+    delete ancien.rendering
+    saveProfiles([ancien as unknown as Profile])
+
+    const relu = loadProfiles()[0]
+    expect(relu?.rendering).toEqual(createRoadProfile().rendering)
+  })
+
+  it('borne un rendu venu d’une main', () => {
+    const bricole = { ...createRoadProfile(), id: 'bricole' } as Record<string, unknown>
+    bricole.rendering = { volume: 99, convolverMix: -1, levelerTarget: 'beaucoup' }
+    saveProfiles([bricole as unknown as Profile])
+
+    const relu = loadProfiles()[0]
+    expect(relu?.rendering?.volume).toBe(6)
+    expect(relu?.rendering?.convolverMix).toBe(0)
+    // Une valeur qui n'est pas un nombre retombe sur la borne basse plutôt que
+    // de propager un NaN jusque dans le graphe audio, où il fait taire la
+    // sortie sans rien dire.
+    expect(relu?.rendering?.levelerTarget).toBe(1000)
+  })
+
   it('n’interrompt rien quand l’écriture échoue', () => {
     install(fakeStorage({ failWrites: true }))
 

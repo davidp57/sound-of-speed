@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { ENGINE_LIBRARY, libraryEngine } from './engine-library'
+import {
+  ENGINE_LIBRARY,
+  ORIGIN_MAX_GAPS,
+  closestLibraryEngine,
+  libraryEngine,
+} from './engine-library'
 import { ENGINE_FIELDS } from './schema'
 
 // Les clés qu'une définition doit porter : tout le contrat sauf le rupteur, qui
@@ -62,5 +67,59 @@ describe('bibliothèque de moteurs', () => {
     for (const entry of ENGINE_LIBRARY) {
       expect([4, 8]).toContain(entry.definition.cylinders)
     }
+  })
+})
+
+describe('closestLibraryEngine', () => {
+  it('reconnaît un moteur chargé tel quel, sans écart', () => {
+    const gm = libraryEngine('gm-ls')!
+    const near = closestLibraryEngine(gm.definition, gm.redlineRpm)
+    expect(near?.engine.id).toBe('gm-ls')
+    expect(near?.gaps).toBe(0)
+  })
+
+  it('désigne le moteur d’origine d’une définition retouchée', () => {
+    // Le cas réel : David avait chargé le 454 puis affiné trois valeurs au
+    // banc. « Chevrolet 454, retouché » est plus utile que « réglé à la main ».
+    const gros = libraryEngine('chevrolet-454')!
+    const retouche = {
+      ...gros.definition,
+      chamberVolume: gros.definition.chamberVolume + 3,
+      intakeRunnerVolume: gros.definition.intakeRunnerVolume + 5,
+    }
+    const near = closestLibraryEngine(retouche, gros.redlineRpm)
+    expect(near?.engine.id).toBe('chevrolet-454')
+    expect(near?.gaps).toBe(2)
+  })
+
+  it('compte le rupteur comme un écart', () => {
+    const gm = libraryEngine('gm-ls')!
+    expect(closestLibraryEngine(gm.definition, gm.redlineRpm + 500)?.gaps).toBe(1)
+  })
+
+  it('mesure sans juger : l’écart peut dépasser le seuil', () => {
+    // La fonction rend toujours le plus proche ; c'est l'écran qui décide
+    // qu'au-delà de `ORIGIN_MAX_GAPS` plus rien ne dit d'où l'on est parti.
+    const gm = libraryEngine('gm-ls')!
+    const ailleurs = Object.fromEntries(
+      Object.keys(gm.definition).map((key) => [key, 1]),
+    ) as unknown as typeof gm.definition
+    const near = closestLibraryEngine(ailleurs, 1)
+    expect(near).not.toBeNull()
+    expect(near!.gaps).toBeGreaterThan(ORIGIN_MAX_GAPS)
+  })
+})
+
+describe('rendu des moteurs', () => {
+  it('donne un rendu à chaque moteur', () => {
+    for (const entry of ENGINE_LIBRARY) {
+      expect(entry.rendering.volume).toBeGreaterThan(0)
+    }
+  })
+
+  it('livre le GM LS avec les valeurs relevées par David', () => {
+    const gm = libraryEngine('gm-ls')!
+    expect(gm.rendering.convolverMix).toBe(0.45)
+    expect(gm.rendering.volume).toBe(0.7)
   })
 })
