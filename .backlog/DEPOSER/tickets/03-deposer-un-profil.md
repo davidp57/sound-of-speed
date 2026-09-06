@@ -1,6 +1,6 @@
 # 03 — Déposer un profil dans la bibliothèque
 
-**Statut :** ⬜ prêt
+**Statut :** 🚫 abandonné — repris par [REMONTEE](../../REMONTEE/spec.md)
 
 **Bloqué par :** 01 — Le serveur accepte un dépôt, et lui seul
 
@@ -27,3 +27,10 @@ n'importe pas.
       d'origine comprises
 - [ ] Le statut de favori ne voyage pas
 - [ ] Déposer un profil du même nom ne détruit pas le précédent en silence
+
+## Repris ailleurs, le 6 septembre 2026
+
+Ce ticket devient [REMONTEE 03 — Un profil réglé en voiture se retrouve sur les
+autres appareils](../../REMONTEE/tickets/03-un-profil-se-retrouve-ailleurs.md).
+Le besoin est le même ; ce qui change est qu'il ne se fait plus d'un geste mais
+tout seul, par le même mécanisme que les traces et le journal.

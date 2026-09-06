@@ -1,0 +1,38 @@
+# 02 — Une trace part toute seule, et repart au retour du réseau
+
+**Statut :** ⬜ prêt
+
+**Bloqué par :** 01 — Un seul accord, qui dit tout ce qui part
+
+## Ce qu'il faut obtenir
+
+Une trace enregistrée en roulant part sur le NAS sans qu'on y pense, dès que
+l'enregistrement s'arrête et que l'accord le permet. Enregistrée hors réseau —
+le cas normal sur une route — elle attend, et part d'elle-même quand le réseau
+revient.
+
+C'est ici que naît la **file de dépôt**, parce que c'est ici qu'elle sert
+d'abord : le journal la rejoindra, et les autres natures s'y poseront sans
+réécrire ce mécanisme. Ce qu'on pose dans la file y reste jusqu'à ce qu'il soit
+parti ; ce qui est parti la quitte.
+
+Trois échecs se distinguent, et ils ne se traitent pas pareil : un compte absent
+se corrige à l'écran de configuration, un refus veut dire que le mot de passe ne
+correspond pas, et un réseau injoignable n'est **pas** une erreur — c'est le seul
+cas qui justifie de garder pour plus tard.
+
+Une trace déjà déposée ne se dépose pas deux fois, et une trace n'est jamais
+effacée du stockage local au motif qu'elle est partie.
+
+## Critères d'acceptation
+
+- [ ] Une trace enregistrée avec l'accord au troisième cran part sans geste
+- [ ] Une trace enregistrée sans réseau est mise en attente, pas perdue
+- [ ] Le retour du réseau déclenche le dépôt sans intervention
+- [ ] Ce qui est parti quitte la file ; ce qui a échoué pour cause de réseau y
+      reste
+- [ ] Un compte absent ou refusé ne fait pas boucler la file, et se dit
+- [ ] Une trace déjà déposée n'est pas redéposée
+- [ ] La trace reste dans le stockage local après son dépôt
+- [ ] Rien ne part quand l'accord est en dessous du troisième cran
+- [ ] La file se vérifie sans réseau ni serveur, dans les tests de `core/`

@@ -47,6 +47,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [DECOR-PERSPECTIVE](DECOR-PERSPECTIVE/spec.md) — un décor vu de la place du conducteur, et non de côté | ⬜ |
 | [BANC-GPS](BANC-GPS/spec.md) — éprouver toute la chaîne sans rouler : trois modes de simulation, dont un qui traverse la vraie source GPS | ✅ |
 | [SYNTHESE](SYNTHESE/spec.md) — produire le son au lieu de le rejouer : trois origines au choix par profil — enregistré, généré en direct, généré à l'avance | 🔄 |
+| [REMONTEE](REMONTEE/spec.md) — tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils, sur un accord unique | 🔄 |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
@@ -87,6 +88,12 @@ tranche : si EFFORT garde sa raison d'être maintenant que la mesure
 d'accélération est juste (EFFORT, ticket 01). Le second — ce qu'un curseur global
 fait d'un réglage trouvé à la main — est tranché : **on écrase, avec un retour**
 (MODE-SIMPLE, spec).
+
+**REMONTEE reprend deux tickets de DEPOSER** — déposer un profil, et le dépôt en
+attente qui part au retour du réseau. Ils y sont marqués abandonnés, avec le
+renvoi : ce ne sont plus des travaux séparés mais deux tranches d'un même
+mécanisme, décidé le 6 septembre 2026 quand le périmètre est passé des relevés de
+mesure à tout ce que la voiture produit.
 
 ## Ce qui n'est pas dans le backlog
 
