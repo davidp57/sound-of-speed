@@ -22,6 +22,20 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **`npm run banque` relève une banque entière.** Régler une banque nouvelle
+  demandait de lancer l'analyse couche par couche, puis de trouver les gains à
+  l'oreille — les deux écarts de la banque livrée, 9,6 et 6,5 dB, ont été
+  relevés à la main. Le script imprime, prise par prise : durée et format,
+  niveau, écart avec la prise de référence et gain qui en découle, six ancrages
+  candidats, raccord de boucle ; puis un récapitulatif à recopier.
+
+  Il mesure, il ne décide pas : l'ambiguïté d'octave reste à trancher à
+  l'oreille. Mesuré sur les 33 prises des deux banques produites par
+  `generate-bank`, dont le régime est connu par construction, le bon régime
+  arrive en tête 23 fois et figure parmi les six candidats 32 fois. Sur la
+  banque livrée, les gains proposés retombent sur ceux du profil — 3,03 contre
+  3, et 2,11 contre 2,1.
+
 - **L'application découvre les banques d'échantillons déposées sur le
   serveur.** Un profil désigne sa banque par un nom de dossier, qu'il fallait
   jusqu'ici taper en aveugle : rien ne disait quelles banques existaient, ni ce
