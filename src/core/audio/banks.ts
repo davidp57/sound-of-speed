@@ -86,6 +86,18 @@ export function missingFiles(bank: Bank | undefined, declared: string[]): string
   return declared.filter((file) => file !== '' && !present.has(file))
 }
 
+/**
+ * Banques qu'au moins un profil utilise.
+ *
+ * Sert à libérer le cache : les échantillons y restent indéfiniment, par
+ * construction — ils ne dépendent pas de la version du code, et c'est ce qui
+ * évite de retélécharger plusieurs mégaoctets à chaque mise à jour. Essayer
+ * trois banques en laisse donc trois dans le cache d'un téléphone.
+ */
+export function usedBanks(profiles: { sampleDir: string }[]): string[] {
+  return [...new Set(profiles.map((profile) => profile.sampleDir).filter((name) => name !== ''))]
+}
+
 /** Banques présentes sur le serveur, triées par nom. */
 export async function fetchBanks(fetchImpl: typeof fetch = fetch): Promise<Bank[]> {
   const directories = names(await listDirectory(AUDIO_PATH, fetchImpl), true)

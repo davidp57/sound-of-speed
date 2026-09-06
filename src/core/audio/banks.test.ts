@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { fetchBanks, missingFiles } from './banks'
+import { fetchBanks, missingFiles, usedBanks } from './banks'
 
 /**
  * Tests de la découverte des banques.
@@ -149,5 +149,21 @@ describe('les fichiers qu’une banque n’a pas', () => {
 
   it('ignore une couche sans fichier déclaré', () => {
     expect(missingFiles(banque, ['a.wav', ''])).toEqual([])
+  })
+})
+
+describe('les banques qu’un profil utilise', () => {
+  it('les rend sans doublon', () => {
+    expect(
+      usedBanks([{ sampleDir: 'procar' }, { sampleDir: 'v8' }, { sampleDir: 'procar' }]),
+    ).toEqual(['procar', 'v8'])
+  })
+
+  it('ignore un profil sans banque', () => {
+    expect(usedBanks([{ sampleDir: '' }, { sampleDir: 'procar' }])).toEqual(['procar'])
+  })
+
+  it('rend une liste vide sans profil', () => {
+    expect(usedBanks([])).toEqual([])
   })
 })
