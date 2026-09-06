@@ -1163,6 +1163,18 @@ qu'on remarque surtout par leur absence. Chacun s'active séparément.
 
 ### Couches
 
+**La banque se choisit dans une liste** — les dossiers présents sur le serveur,
+avec le nombre de fichiers de chacun. Le nom se tape aussi à la main, pour une
+banque que le serveur ne sait pas lister : c'était la seule façon de faire
+jusqu'ici, et une faute de frappe se découvrait à l'activation du son, sous la
+forme d'un silence.
+
+Quand la banque choisie est listée, **les fichiers que le profil déclare en vain
+sont nommés**, tout de suite. C'est le cas le plus courant en changeant de
+banque : une banque nouvelle a rarement les mêmes noms de fichiers que
+l'ancienne. Sur une banque tapée à la main, rien n'est signalé — ne rien savoir
+n'est pas savoir qu'il manque quelque chose.
+
 Une ligne par échantillon. Le bouton **Analyser** mesure le fichier et propose
 des ancrages.
 
@@ -1230,7 +1242,9 @@ choix, et le résultat reste entièrement modifiable.
 Un menu **Réinitialiser** ramène une section — ou le profil entier — à son état
 d'usine, en deux temps pour éviter la fausse manœuvre. Sept portées : tout le
 profil, le moteur, la transmission, le signal de vitesse, le mixage, le
-caractère, les couches. Une valeur mal saisie dans la transmission ne coûte donc
+caractère, les couches et la banque. Cette dernière portée les prend ensemble à
+dessein : des noms de fichiers d'usine dans une autre banque ne joueraient rien.
+Une valeur mal saisie dans la transmission ne coûte donc
 plus ce qui a été trouvé ailleurs, et l'identifiant comme le nom sont conservés
 dans tous les cas — le profil est remis à neuf, pas remplacé.
 

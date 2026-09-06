@@ -290,6 +290,10 @@ function factoryOrigin(profile: Profile): ProfileOrigin {
 export function resetProfileSection(profile: Profile, section: ProfileSection | 'all'): Profile {
   const origin = factoryOrigin(profile)
   if (section === 'all') return applyOrigin(profile, origin)
+  // La banque part avec les couches : les noms de fichiers d'usine ne veulent
+  // rien dire dans un autre dossier, et remettre les uns sans l'autre laisserait
+  // un profil qui ne joue plus rien.
+  if (section === 'layers') return { ...profile, layers: origin.layers, sampleDir: origin.sampleDir }
   return { ...profile, [section]: origin[section] }
 }
 
