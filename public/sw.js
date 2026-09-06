@@ -49,6 +49,11 @@ self.addEventListener('install', (event) => {
           // c'est-à-dire dans la voiture, là où il sert. Les autres réponses se
           // chargent à la demande : on ne les choisit qu'au bureau.
           '/impulse/smooth_39.wav',
+          // Le cœur d'engine-sim, pour la même raison : sans lui le mode
+          // synthèse ne démarre pas du tout hors réseau. Cent cinquante-six
+          // kilo-octets, à côté des mégaoctets d'une banque d'échantillons.
+          '/sonde/probe.mjs',
+          '/sonde/probe.wasm',
         ]),
       )
       // Un fichier manquant ne doit pas empêcher l'installation.
