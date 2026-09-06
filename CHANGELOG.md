@@ -8,13 +8,39 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **La crête visée par le niveleur se corrige toute seule.** David, après avoir
+  essayé plusieurs moteurs : « avec d'autres moteurs, d'autres échappements, le
+  réglage nécessaire est différent [...] ça serait bien d'avoir un truc plus
+  dynamique, qui calcule et se modifie en temps réel ». Un réglage fixe faisait
+  un compromis entre deux régimes qui n'en demandent pas — la saturation ajoute
+  du caractère en charge et gâche le ralenti.
+
+  Le curseur devient un **plafond** — la saturation qu'on autorise en pleine
+  charge. Un **plancher** descend tout seul quand la crête mesurée reste
+  écrêtée à faible effort, et ne remonte que lentement, vingt fois plus
+  doucement qu'il ne descend : redescendre vite évite l'écrêtage dès qu'il
+  paraît, remonter lentement évite le pompage. La cible envoyée interpole entre
+  les deux selon l'effort, si bien qu'un coup de gaz ne déclenche pas une
+  correction destinée au ralenti.
+
+  Coupé par défaut, case « Cible automatique » dans l'onglet Synthèse, avec le
+  plancher courant affiché. Le calcul vit dans `core/synth/leveler.ts`, en
+  fonctions pures, et se vérifie sans navigateur.
+
+  **Au passage, la crête visée ne coupe plus le son pour changer** : elle est
+  relue à chaque échantillon par engine-sim, donc `synth_set_leveler_target`
+  l'écrit à chaud. La régler à la main n'impose plus la seconde de rebâtissage —
+  et c'est ce qui rend la correction automatique possible, à quatre pas par
+  seconde.
+
 - **La crête que vise le niveleur, réglable.** David a mesuré ce que l'écran
   appelait « niveau crête » : à 1,000 en rouge sur le GM LS en convolution
   déportée, le son écrasé n'était pas plus fort, il était **écrêté**. engine-sim
   vise 30 000 sur 32 767 — 0,8 dB de marge avant le plafond dur d'`INT16_MAX` —
-  et son niveleur monte instantanément mais ne redescend qu'en 0,23 ms : le
-  front d'une bouffée passe toujours au gain d'avant, et plus il est raide,
-  plus il écrête. C'est ce qui expliquait ses trois observations à la fois :
+  et le gain qu'applique son niveleur se lisse en environ 0,2 ms : le front
+  d'une bouffée soudaine ne reçoit encore que 10 % du bon gain quand il
+  arrive, et plus il est raide, plus il écrête. C'est ce qui expliquait ses
+  trois observations à la fois :
   la GM sature, l'EJ25 reste sous le plafond et sonne mieux, la convolution
   interne — en atténuant les fronts — élimine l'écrêtage en même temps que le
   mordant.

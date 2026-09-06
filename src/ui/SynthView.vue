@@ -506,7 +506,9 @@ const gauge = computed(() => {
         <span class="numeric">{{ synthSettings.levelerGain.toFixed(2) }}</span>
       </div>
       <div class="field">
-        <label for="levt">Crête visée par le niveleur</label>
+        <label for="levt">
+          {{ synthSettings.levelerAuto ? 'Crête visée en pleine charge (plafond)' : 'Crête visée par le niveleur' }}
+        </label>
         <input
           id="levt"
           type="range"
@@ -521,6 +523,20 @@ const gauge = computed(() => {
           <em v-if="synthSettings.levelerTarget > 20000" class="gap">écrête</em>
         </span>
       </div>
+      <div class="field">
+        <label for="levauto">Cible automatique</label>
+        <input
+          id="levauto"
+          type="checkbox"
+          :checked="synthSettings.levelerAuto"
+          @change="onFlag('levelerAuto', $event)"
+        />
+        <span class="numeric">{{ synthSettings.levelerAuto ? 'actif' : 'coupé' }}</span>
+      </div>
+      <div v-if="synthSettings.levelerAuto" class="field">
+        <label>Plancher courant</label>
+        <span class="numeric">{{ (synthStatus.levelerFloor / 32768).toFixed(2) }}</span>
+      </div>
       <p class="note">
         La convolution interne n'est pas qu'un choix de coût : c'est une
         deuxième réponse impulsionnelle, en bruit blanc, empilée sur celle du
@@ -531,11 +547,22 @@ const gauge = computed(() => {
       <p class="note">
         La crête visée est le remède direct à ce plafond. engine-sim vise
         30 000 sur 32 767 et coupe au couteau ce qui dépasse : un « niveau
-        crête » à 1,000 n'est pas un son fort, c'est un son écrêté. Le niveleur
-        monte instantanément mais ne redescend qu'en 0,23 ms, donc le front
-        d'une bouffée passe au gain d'avant — plus le front est raide, plus il
-        écrête. Le volume perdu se rattrape en aval, en flottant, où rien ne
-        plafonne.
+        crête » à 1,000 n'est pas un son fort, c'est un son écrêté. Le gain
+        appliqué se lisse en environ 0,2 ms, donc le front d'une bouffée
+        soudaine ne reçoit encore que 10 % du bon gain quand il arrive — plus
+        le front est raide, plus il écrête. Le volume perdu se rattrape en
+        aval, en flottant, où rien ne plafonne.
+      </p>
+      <p class="note">
+        La cible automatique répond à ce que David a constaté en changeant de
+        moteur : le réglage qui évite l'écrêtage au ralenti d'un moteur écrête
+        sur un autre, et inversement. Cochée, elle garde ce curseur comme
+        <strong>plafond</strong> — la saturation qu'on autorise en pleine
+        charge — et fait descendre tout seul un plancher dès que la crête
+        mesurée reste écrêtée, à condition que l'effort soit faible : sous
+        charge, un peu de saturation est voulue, pas une erreur. Le plancher
+        ne remonte que lentement, pour ne pas repartir aussitôt vers le
+        plafond et y écrêter de nouveau.
       </p>
       <p class="note">
         Le niveleur vise une crête constante quel que soit le moteur — et efface

@@ -65,10 +65,10 @@ describe('needsRebuild', () => {
     expect(needsRebuild(DEFAULT_SYNTH, next)).toBe(false)
   })
 
-  it('reconstruit quand la crête visée change', () => {
-    // Relue à chaque échantillon côté C++, mais sans point d'entrée qui
-    // l'écrive seule : elle passe donc par la construction, comme les deux
-    // bornes de gain du niveleur.
-    expect(needsRebuild(DEFAULT_SYNTH, { ...DEFAULT_SYNTH, levelerTarget: 8000 })).toBe(true)
+  it('ne reconstruit pas pour la crête du niveleur, elle est hot', () => {
+    // `synth_set_leveler_target` l'écrit à chaque échantillon sans rebâtir —
+    // c'est ce qui permet à la correction automatique de la changer quatre
+    // fois par seconde.
+    expect(needsRebuild(DEFAULT_SYNTH, { ...DEFAULT_SYNTH, levelerTarget: 8000 })).toBe(false)
   })
 })

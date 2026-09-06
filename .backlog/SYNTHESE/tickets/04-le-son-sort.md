@@ -564,3 +564,23 @@ Reste à décider : la forme de la courbe effort → cible, et si le curseur
 actuel devient la cible **au ralenti** pendant qu'un second réglage donne le
 plancher en pleine charge, ou si un seul curseur règle l'amplitude de la
 bascule.
+
+### Fait, le 5 septembre 2026
+
+David a précisé la demande après avoir testé plusieurs moteurs : « avec
+d'autres moteurs, d'autres échappements, le réglage nécessaire est différent
+[...] ça serait bien d'avoir un truc plus dynamique, qui calcule et se
+modifie en temps réel ». Réponse apportée dans
+`core/synth/leveler.ts` : le curseur devient un **plafond**, et un
+**plancher** — tenu dans `Synth`, recalculé quatre fois par seconde à partir
+de la crête mesurée et de l'effort — descend tout seul dès que ça écrête à
+faible effort, et ne remonte que lentement. La cible envoyée interpole entre
+les deux selon l'effort. `synth_set_leveler_target` rend `levelerTarget` hot
+côté C++, sur le modèle de `synth_set_noise`.
+
+Case à cocher « Cible automatique », coupée par défaut. Dix tests unitaires
+sur la logique pure (`leveler.test.ts`) ; la boucle elle-même n'est pas
+testable hors navigateur (elle vit dans la classe `Synth`, qui parle au
+worker), vérifiée à la main : le curseur manuel ne rebâtit plus (plus de
+coupure d'une seconde à chaque cran), et la case affiche le plancher courant
+en direct.

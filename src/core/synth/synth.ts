@@ -6,6 +6,12 @@ import {
 } from '../preset/engine-definition'
 import type { EngineDefinition } from '../preset/schema'
 import { exhaustImpulse } from './impulse'
+import {
+  DEFAULT_LEVELER_AUTO_PARAMS,
+  levelerTargetFor,
+  nextLevelerFloor,
+  type LevelerAutoState,
+} from './leveler'
 import { PLAYER_PROCESSOR, PLAYER_SOURCE } from './player-source'
 import { RENDERER_SOURCE } from './renderer-source'
 import { realtimeFactor } from './reserve'
@@ -79,6 +85,12 @@ export interface SynthStatus {
    * monte, c'est un coup de volume déguisé.
    */
   brightness: number
+  /**
+   * Le plancher courant de la correction automatique, sur l'échelle des
+   * entiers 16 bits — identique au plafond quand la correction est coupée ou
+   * qu'elle n'a encore rien eu à corriger.
+   */
+  levelerFloor: number
 }
 
 const IDLE_STATUS: SynthStatus = {
@@ -99,6 +111,7 @@ const IDLE_STATUS: SynthStatus = {
   peak: 0,
   rms: 0,
   brightness: 0,
+  levelerFloor: DEFAULT_SYNTH.levelerTarget,
 }
 
 /**
@@ -156,6 +169,17 @@ export class SynthEngine {
   private definition: EngineDefinition = { ...GM_LS_V8 }
   /** La définition avec laquelle le moteur en service a été bâti. */
   private builtDefinition: EngineDefinition | null = null
+  /**
+   * L'état de la correction automatique du niveleur.
+   *
+   * Réinitialisé au plafond à chaque démarrage : mieux vaut partir du réglage
+   * choisi à la main et ne descendre que si la mesure le demande, plutôt que
+   * de repartir d'un plancher hérité d'un moteur précédent qui n'a plus rien à
+   * voir.
+   */
+  private levelerAutoState: LevelerAutoState = { floor: DEFAULT_SYNTH.levelerTarget }
+  /** Horodatage du dernier pas de correction, pour calculer le pas de temps réel. */
+  private levelerAutoAt = 0
 
   /** Appelé à chaque compte rendu du calculateur, quatre fois par seconde. */
   onStatus: ((status: SynthStatus) => void) | null = null
@@ -206,6 +230,10 @@ export class SynthEngine {
     try {
       await this.stop()
       this.publish({ ...IDLE_STATUS, phase: 'loading' })
+      // Reparti du plafond a chaque construction : un plancher herite d'un
+      // moteur precedent n'a plus rien a voir avec celui qu'on batit.
+      this.levelerAutoState = { floor: this.settings.levelerTarget }
+      this.levelerAutoAt = 0
 
       const context = new AudioContext()
       this.context = context
@@ -353,6 +381,13 @@ export class SynthEngine {
     const next = clampSynthSettings(settings)
     const rebuild = needsRebuild(this.settings, next) || this.redlineChanged()
     this.settings = next
+    if (!next.levelerAuto) {
+      // Réglage à la main : la cible part directement, et le plancher se
+      // recale dessus pour que ré-activer la correction plus tard reparte
+      // d'ici plutôt que d'un plancher hérité d'un moteur précédent.
+      this.levelerAutoState = { floor: next.levelerTarget }
+      this.worker?.postMessage({ type: 'leveler', target: next.levelerTarget })
+    }
     if (this.state.phase !== 'ready' && this.state.phase !== 'loading') return
     if (rebuild) {
       await this.start(next)
@@ -539,10 +574,13 @@ export class SynthEngine {
     const cpu = Number(message['cpuSeconds'] ?? 0)
     const audio = Number(message['audioSeconds'] ?? 0)
     const underrunFrames = Number(message['underrunFrames'] ?? 0)
+    const effort = Number(message['effort'] ?? 0)
+    const peak = Number(message['peak'] ?? 0)
+    this.stepLevelerAuto(peak, effort)
     this.publish({
       ...this.state,
       targetRpm: Number(message['targetRpm'] ?? 0),
-      effort: Number(message['effort'] ?? 0),
+      effort: effort,
       engineRpm: Number(message['engineRpm'] ?? 0),
       realtime: realtimeFactor(cpu, audio),
       cpuLoad: audio > 0 ? cpu / audio : 0,
@@ -551,10 +589,35 @@ export class SynthEngine {
       underruns: Number(message['underruns'] ?? 0),
       underrunMs: (underrunFrames / rate) * 1000,
       shortfall: Number(message['shortfall'] ?? 0),
-      peak: Number(message['peak'] ?? 0),
+      peak: peak,
       rms: Number(message['rms'] ?? 0),
       brightness: Number(message['brightness'] ?? 0),
+      levelerFloor: this.levelerAutoState.floor,
     })
+  }
+
+  /**
+   * Un pas de la correction automatique, à chaque compte rendu — quatre fois
+   * par seconde.
+   *
+   * Le pas de temps est mesuré, pas supposé à 250 ms fixes : un onglet mis en
+   * arrière-plan ou une pause du fil ralentit les rapports, et un pas de temps
+   * trop grand ferait chuter le plancher d'un coup au réveil.
+   */
+  private stepLevelerAuto(peak: number, effort: number): void {
+    if (!this.settings.levelerAuto) return
+    const now = performance.now()
+    const dtSeconds = this.levelerAutoAt === 0 ? 0.25 : (now - this.levelerAutoAt) / 1000
+    this.levelerAutoAt = now
+    this.levelerAutoState = nextLevelerFloor(
+      this.levelerAutoState,
+      peak,
+      effort,
+      Math.min(dtSeconds, 1),
+      { ...DEFAULT_LEVELER_AUTO_PARAMS, ceiling: this.settings.levelerTarget },
+    )
+    const target = levelerTargetFor(this.levelerAutoState.floor, this.settings.levelerTarget, effort)
+    this.worker?.postMessage({ type: 'leveler', target })
   }
 
   private publish(status: SynthStatus): void {

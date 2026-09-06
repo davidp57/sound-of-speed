@@ -30,6 +30,7 @@ let setThrottleRange = null
 let setVolume = null
 let setDyno = null
 let setNoise = null
+let setLevelerTarget = null
 let readRpm = null
 let readLatency = null
 let buffer = 0
@@ -143,6 +144,7 @@ async function boot(message) {
   setVolume = core.cwrap('synth_set_volume', null, ['number'])
   setDyno = core.cwrap('synth_set_dyno', null, ['number'])
   setNoise = core.cwrap('synth_set_noise', null, ['number', 'number'])
+  setLevelerTarget = core.cwrap('synth_set_leveler_target', null, ['number'])
   readRpm = core.cwrap('synth_rpm', 'number', [])
   readLatency = core.cwrap('synth_latency', 'number', [])
 
@@ -238,6 +240,11 @@ self.onmessage = (event) => {
     // Les deux bruits du moteur, seuls parametres de la definition qui
     // s'ecrivent sans rebatir.
     if (setNoise !== null) setNoise(message.airNoise, message.inputSampleNoise)
+  } else if (message.type === 'leveler') {
+    // La cible du niveleur, poussee soit par un reglage a la main soit par la
+    // correction automatique — les deux passent par le meme message, le fil
+    // principal decide laquelle envoyer.
+    if (setLevelerTarget !== null) setLevelerTarget(message.target)
   } else if (message.type === 'stop') {
     stopped = true
     clearInterval(pump)
