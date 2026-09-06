@@ -1100,9 +1100,28 @@ de profil mais une **préférence de l'appareil**, rangée à côté du profil c
 Il dépend de l'autoradio, de la position du téléphone, du bruit de roulement, et
 il n'a donc aucune raison de sauter quand on change de voix, ni de voyager vers
 qui reçoit un profil partagé. Il se règle sur l'écran de conduite, seul endroit
-où l'on touche un réglage en roulant, et il peut dépasser 1 — le limiteur de
-sortie empêche la saturation, ce qui laisse de la marge quand le relief est
-fort.
+où l'on touche un réglage en roulant, et il peut dépasser 1 — au prix d'un
+écrêtage, décrit juste en dessous.
+
+#### Ce que la chaîne de sortie fait au niveau
+
+Le son passe par un coupe-bas, un saturateur, un limiteur, puis un gain de
+rattrapage fixe de 1,8. Mesuré sur le profil Route, cinq couches, par le banc
+`banc/sortie.html` :
+
+- **Le relief survit à la chaîne.** L'écart entre croisière et accélération
+  franche vaut 6,58 dB en entrée et 6,49 en sortie, au volume livré de 0,70.
+  L'ensemble coûte 0,09 dB.
+- **Le limiteur ne limite presque rien** : 0,2 dB d'atténuation au maximum. Le
+  niveau efficace du son reste bien sous son seuil ; seules des crêtes brèves le
+  touchent. Il n'empêche donc pas la saturation, contrairement à ce que son nom
+  laisse croire.
+- **C'est l'écrêtage qui écrase**, et il vient du rattrapage placé après le
+  limiteur. Au volume livré, 1 % des échantillons sont rognés en accélération
+  franche ; à volume 1,0, 8 %, et le relief entendu tombe alors à 6,0 dB.
+
+Monter le volume général au-delà de 0,7 gagne donc du niveau et perd de la
+dynamique. En dessous de 0,5, plus rien n'est rogné.
 
 | Réglage | Ce qu'il fait |
 |---|---|
@@ -1116,7 +1135,7 @@ fort.
 | **Lissage de la charge** | Évite que le fondu papillonne sur le bruit d'accélération |
 | **Effacement du ralenti** | Régime au-dessus duquel la couche de ralenti disparaît |
 | **Gain pied levé** | Curseur de goût sur toute la famille « pied levé ». La compensation des prises plus douces vit dans le gain de chaque couche, où le déficit se mesure — 9,6 dB pour la basse, 6,5 pour la haute : à laisser à 1 sauf pour forcer le trait |
-| **Coupe-bas**, **Saturation**, **Seuil du limiteur** | Chaîne de sortie |
+| **Coupe-bas**, **Saturation**, **Seuil du limiteur** | Chaîne de sortie, décrite plus haut. Le seuil du limiteur n'a presque pas d'effet au niveau où le son sort : il ne travaille que sur des crêtes brèves |
 
 ### Caractère
 

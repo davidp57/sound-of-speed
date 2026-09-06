@@ -1,6 +1,7 @@
 import type { LayerPreset, Profile } from '../preset/schema'
 import type { EngineState } from '../engine/engine'
 import { computeMix } from './mix'
+import { buildOutputChain, saturationCurve } from './output-chain'
 
 /**
  * Moteur audio à échantillons.
@@ -139,7 +140,6 @@ export class AudioEngine {
   /** Volume général, retenu ici pour survivre à la reconstruction du bus. */
   private masterVolume = 1
   private limiter: DynamicsCompressorNode | null = null
-  private makeup: GainNode | null = null
   private watchdog: ReturnType<typeof setInterval> | null = null
   private analyser: AnalyserNode | null = null
   private scope: Float32Array<ArrayBuffer> | null = null
@@ -227,37 +227,24 @@ export class AudioEngine {
     }
   }
 
-  /** Chaîne de sortie, commune à toutes les couches. */
+  /**
+   * Chaîne de sortie, commune à toutes les couches.
+   *
+   * Les nœuds et leurs réglages vivent dans `output-chain.ts`, pour que le banc
+   * de mesure hors ligne puisse construire la même chaîne plutôt qu'une copie.
+   */
   private buildBus(context: AudioContext): void {
-    this.bus = context.createGain()
-    this.bus.gain.value = this.masterVolume
-    this.highpass = context.createBiquadFilter()
-    this.shaper = context.createWaveShaper()
-    this.limiter = context.createDynamicsCompressor()
+    const chain = buildOutputChain(context, { volume: this.masterVolume })
+    this.bus = chain.input
+    this.highpass = chain.highpass
+    this.shaper = chain.shaper
+    this.limiter = chain.limiter
+
     this.analyser = context.createAnalyser()
     this.analyser.fftSize = 1024
     this.scope = new Float32Array(this.analyser.fftSize)
 
-    this.highpass.type = 'highpass'
-    this.highpass.Q.value = 0.7
-    this.shaper.oversample = '4x'
-
-    // Rapport élevé et attaque courte : ce n'est pas un compresseur d'effet, il
-    // est là pour empêcher la somme des couches de saturer en sortie.
-    this.limiter.knee.value = 3
-    this.limiter.ratio.value = 12
-    this.limiter.attack.value = 0.002
-    this.limiter.release.value = 0.12
-
-    this.bus.connect(this.highpass)
-    this.highpass.connect(this.shaper)
-    this.shaper.connect(this.limiter)
-    this.makeup = context.createGain()
-    // Le limiteur ramène les crêtes bien en dessous du plafond ; ce gain rend le
-    // niveau perdu, sans risque d'écrêtage puisqu'il vient après lui.
-    this.makeup.gain.value = 1.8
-    this.limiter.connect(this.makeup)
-    this.makeup.connect(this.analyser)
+    chain.output.connect(this.analyser)
     this.analyser.connect(context.destination)
   }
 
@@ -827,19 +814,6 @@ function makeNoise(context: AudioContext): AudioBuffer {
   const data = buffer.getChannelData(0)
   for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1
   return buffer
-}
-
-/** Courbe de saturation douce. À 0, la courbe est droite et n'altère rien. */
-function saturationCurve(drive: number): Float32Array {
-  const amount = Math.max(0, Math.min(1, drive)) * 4
-  const size = 1024
-  const curve = new Float32Array(size)
-  const norm = amount > 0 ? Math.tanh(amount) : 1
-  for (let i = 0; i < size; i += 1) {
-    const x = (i / (size - 1)) * 2 - 1
-    curve[i] = amount > 0 ? Math.tanh(x * amount) / norm : x
-  }
-  return curve
 }
 
 /**
