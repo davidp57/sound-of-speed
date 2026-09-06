@@ -432,7 +432,7 @@ Trois dossiers, sous `/volume1/docker/speed/` :
 
 | Dossier | Contenu | Accès |
 |---|---|---|
-| `audio/procar/` | les échantillons du moteur | lecture |
+| `audio/procar/` | les échantillons du moteur — un dossier par banque, et l'application les découvre toute seule | lecture |
 | `profiles/` | les profils partagés entre appareils, et ceux qui remontent de la voiture. **Peut rester vide** | lecture-écriture |
 | `traces/` | les trajets enregistrés en roulant. **Peut rester vide** | lecture-écriture |
 | `journal/` | le journal de bord, déposé tout seul en roulant. **Peut rester vide** | lecture-écriture |

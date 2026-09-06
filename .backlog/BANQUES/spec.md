@@ -1,6 +1,6 @@
 # BANQUES — plusieurs banques de son, sans y passer la soirée
 
-**Statut :** ⬜ prêt
+**Statut :** 🔄 en cours
 **Branche :** `feature/banques`
 **Version visée :** 0.3
 
