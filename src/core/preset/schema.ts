@@ -64,6 +64,18 @@ export function needsSimulatedEngine(source: SoundSource): boolean {
 }
 
 /**
+ * Cette origine décrit-elle un moteur simulé, qu'il tourne maintenant ou non ?
+ *
+ * Généré à l'avance rejoue une banque que la simulation a produite au bureau :
+ * le moteur décrit dans le profil est celui dont cette banque est sortie, et le
+ * choisir garde un sens même si le son joué ne change pas avant le prochain
+ * rendu. Enregistré, lui, ne doit rien à un moteur simulé.
+ */
+export function describesSimulatedEngine(source: SoundSource): boolean {
+  return source === 'live' || source === 'prerendered'
+}
+
+/**
  * Le moteur simulé, décrit en nombres.
  *
  * Les moteurs d'engine-sim étaient écrits en dur dans le C++ : changer un volume

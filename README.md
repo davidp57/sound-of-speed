@@ -306,6 +306,11 @@ demande donc de confirmer une fois.
 > ordinaire — mais **pas** une adresse de réseau local. En `http://192.168.x.x`,
 > la page s'affiche normalement et le GPS refuse de démarrer, sans message.
 
+Le simulateur et le rejeu ne sont proposés **qu'en développement** : ce sont des
+outils d'atelier, et en voiture on est toujours au GPS. La rangée de boutons
+disparaît alors entièrement — un seul bouton qu'on ne peut pas désactiver n'est
+pas un choix — et seul le statut de la source reste affiché.
+
 Au clavier, source « Simulateur » :
 
 | Touche | Effet |
@@ -913,6 +918,11 @@ ordinateur.
 | **Moteur** | Le moteur simulé, avec son rupteur **et son réglage de son**. Seul le GM LS est réglé à ce jour ; les autres sonnent avec le réglage par défaut, ce qui s'entend |
 | **Échappement** | Combien de résonance passe par-dessus le son direct. *Direct* ne garde que le son cru du moteur, où le grain s'entend le plus ; *enveloppé* ne laisse que le son réverbéré, qui étale les fronts |
 | **On écoute** | Le silencieux : refermé bas, la voiture s'entend à travers la tôle et les vitres ; ouvert en grand, on l'entend de dehors |
+
+**Le moteur se change aussi depuis l'écran de conduite**, sur un rang de boutons
+sous celui des profils — un par moteur, avec son nom court. Il n'apparaît que si
+le profil décrit un moteur simulé. C'est ce qui permet d'essayer plusieurs
+moteurs en roulant sans passer par la configuration.
 
 Chaque liste garde une entrée pour la valeur qui ne tombe sur aucun palier :
 un réglage fin fait au banc ne se fait pas écraser en ouvrant l'écran. Pour le
