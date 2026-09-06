@@ -23,14 +23,12 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 
 | Lot | Statut |
 |-----|--------|
-| [TEST-CORE](TEST-CORE/spec.md) — mettre le cœur sous test : Vitest, ESLint, 211 tests, 94,6 % de `core/` | ✅ |
 | [FIX-CORE](FIX-CORE/spec.md) — les quatre défauts que la mise sous test a trouvés | 🧑 |
 | [BG-AUDIO](BG-AUDIO/spec.md) — tenir le son quand le navigateur passe en arrière-plan | ✅ |
 | [BOITE-VIVANTE](BOITE-VIVANTE/spec.md) — une boîte qui regarde la vitesse, pas seulement le régime | 🧑 |
 | [FIX-BOITE](FIX-BOITE/spec.md) — ralentir n'est pas croiser : trois défauts de la boîte, relevés en roulant | 🧑 |
 | [MOTEURS-EN-VOITURE](MOTEURS-EN-VOITURE/spec.md) — choisir moteur, échappement et point d'écoute au volant | 🧑 |
 | [RELIEF](RELIEF/spec.md) — faire entendre l'effort : relief de charge, de régime, et niveau au ralenti | 🧑 |
-| [ORIGINE](ORIGINE/spec.md) — réinitialiser un profil à ce qu'il était, et non aux réglages de Sport | ✅ |
 | [UI-DEFILEMENT](UI-DEFILEMENT/spec.md) — faire défiler l'écran de configuration sans dérégler un curseur | 🧑 |
 | [VOLUME-GLOBAL](VOLUME-GLOBAL/spec.md) — le volume est une préférence d'appareil, pas un caractère de profil | ✅ |
 | [MODE-SIMPLE](MODE-SIMPLE/spec.md) — quelques curseurs globaux qui commandent la cinquantaine d'autres | 🧑 |
@@ -96,6 +94,15 @@ attente qui part au retour du réseau. Ils y sont marqués abandonnés, avec le
 renvoi : ce ne sont plus des travaux séparés mais deux tranches d'un même
 mécanisme, décidé le 6 septembre 2026 quand le périmètre est passé des relevés de
 mesure à tout ce que la voiture produit.
+
+## Lots archivés
+
+Clos depuis plus de trois jours, compactés dans `.backlog/archive/` :
+
+| Lot | Clos le |
+|-----|---------|
+| [TEST-CORE](archive/TEST-CORE.md) — mettre le cœur sous test : Vitest, ESLint, 211 tests, 94,6 % de `core/` | 2026-09-02 |
+| [ORIGINE](archive/ORIGINE.md) — réinitialiser un profil à ce qu'il était, et non aux réglages de Sport | 2026-09-02 |
 
 ## Ce qui n'est pas dans le backlog
 
