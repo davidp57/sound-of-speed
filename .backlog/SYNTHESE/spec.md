@@ -1,6 +1,6 @@
 # SYNTHESE — produire le son au lieu de le rejouer
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 **Branche :** `feature/synthese-sonde` puis suivantes
 **Version visée :** 0.3
 

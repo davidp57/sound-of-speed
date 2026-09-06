@@ -22,6 +22,21 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **L'application découvre les banques d'échantillons déposées sur le
+  serveur.** Un profil désigne sa banque par un nom de dossier, qu'il fallait
+  jusqu'ici taper en aveugle : rien ne disait quelles banques existaient, ni ce
+  qu'elles contenaient. Le serveur rend maintenant le contenu de `/audio/` en
+  JSON — le mécanisme de la bibliothèque de profils, pris à l'envers, puisqu'on
+  y garde les dossiers au lieu de les écarter.
+
+  Ce listage n'est pas protégé, à la différence des quatre dossiers de dépôt :
+  les échantillons se chargent sans compte, sinon aucun son ne sortirait. Un
+  serveur qui ne sait pas lister rend une liste vide plutôt qu'une erreur, et
+  l'application s'en tient alors au nom déclaré par le profil.
+
+  Le serveur de développement liste lui aussi `public/audio/`, sans quoi la
+  découverte ne se vérifierait qu'après un déploiement.
+
 - **La boucle ne se répète plus à l'identique.** Chaque couche est un
   enregistrement de trois à cinq secondes lu en boucle : à la vitesse de lecture
   réelle il se referme toutes les quatre à vingt secondes, et l'oreille apprend
