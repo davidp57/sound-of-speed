@@ -18,7 +18,13 @@ import type { EngineState } from '../core/engine/engine'
 import { computeMix } from '../core/audio/mix'
 import { buildOutputChain, saturationCurve } from '../core/audio/output-chain'
 
-/** Fréquence d'échantillonnage du rendu, en Hz. Celle des échantillons livrés. */
+/**
+ * Fréquence d'échantillonnage du rendu, en Hz.
+ *
+ * Celle du contexte audio, pas celle des fichiers : les échantillons livrés sont
+ * à 44 100 Hz et le navigateur les rééchantillonne à la lecture, la sortie de
+ * l'appareil tournant couramment à 48 000. Le banc reproduit donc ce chemin-là.
+ */
 export const BENCH_SAMPLE_RATE = 48000
 /** Durée rendue, en secondes. */
 export const BENCH_DURATION_S = 2
