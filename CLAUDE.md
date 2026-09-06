@@ -67,6 +67,7 @@ npm test             # vitest, une passe
 npm run test:watch   # vitest en continu, pendant qu'on écrit
 npm run coverage     # couverture de core/
 npm run build        # typecheck + build de production
+npm run banque       # relevé d'une banque : ancrages et gains proposés
 npm run transcode    # compression des échantillons en FLAC
 npm run deploy       # recopie du build vers le NAS
 npm run icons        # génération des icônes de l'application

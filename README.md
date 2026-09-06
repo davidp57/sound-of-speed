@@ -397,6 +397,7 @@ npm run lint         # style et fautes courantes
 npm test             # les tests du cœur, une passe
 npm run test:watch   # les tests en continu, pendant qu'on écrit
 npm run coverage     # couverture de src/core/
+npm run banque       # relève une banque entière : ancrages et gains
 npm run transcode    # compresse les échantillons en FLAC
 npm run deploy       # recopie le build vers le NAS
 npm run icons        # régénère les icônes de l'application
@@ -1533,6 +1534,40 @@ l'export en JSON reste le filet.
 D'où la liste classée : comme le son tourne pendant l'édition, en essayer un se
 juge à l'oreille immédiatement. L'indication **timbre** aide à recouper — d'un
 même moteur, la prise haut régime a forcément le centroïde le plus aigu.
+
+### Relever une banque entière
+
+Le bouton **Analyser** traite une couche à la fois, dans l'application. Pour une
+banque nouvelle, où il faut aussi comparer les prises entre elles, un script
+fait le tour du dossier :
+
+```bash
+npm run banque -- <dossier> [--cylindres N] [--reference fichier.wav]
+```
+
+Il imprime, prise par prise : durée et format, niveau efficace, écart en
+décibels avec la prise de référence et le **gain** qui en découle, les **six
+ancrages candidats** classés, les régimes qui s'en déduisent par un rapport
+simple, et le raccord de boucle. Il finit par un récapitulatif à recopier,
+couche par couche.
+
+Aucun échantillon n'entre dans le dépôt : le dossier se passe en argument, et
+le script n'écrit rien.
+
+**Il mesure, il ne décide pas.** Les ancrages sont ceux de la même analyse que
+le bouton, avec la même ambiguïté d'octave — c'est l'oreille qui tranche.
+Mesuré sur les 33 prises des deux banques produites par `generate-bank`, dont
+le régime est connu par construction : le bon régime arrive en tête 23 fois, il
+est parmi les six candidats 32 fois. D'où six candidats affichés et non trois.
+
+Le **gain** est le rapport de niveau avec la prise de référence, la plus forte
+par défaut. `--reference` la déplace, et c'est souvent utile : dans la banque
+livrée, la plus forte est le rupteur, une prise à part. Rapportées à la prise
+en charge de leur registre, les deux prises « pied levé » retombent sur 3,03 et
+2,11 — les gains 3 et 2,1 du profil, relevés à la main en son temps.
+
+**Le nombre de cylindres commande les régimes** : le passer faux les décale
+tous, sans que rien ne le signale. Huit par défaut, celui de la banque livrée.
 
 ### Compression
 
