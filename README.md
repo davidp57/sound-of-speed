@@ -1819,7 +1819,7 @@ chaque essai.
 | 28 | L'effort du moteur tient compte de la vitesse : la croisière n'est plus plate | fait, reste à écouter |
 | 29 | Une banque produite ici par engine-sim, une prise par demi-octave, rejouée telle quelle dans la voiture | fait, reste à écouter |
 | 30 | engine-sim en WebAssembly : le son sort en direct et suit le régime | fait, reste à écouter |
-| 31 | Tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils | fait, reste deux gestes sur le NAS et un essai en roulant |
+| 31 | Tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils | fait, NAS en place, reste un essai en roulant |
 | — | Plusieurs banques de son, choisies par profil | prévu |
 | — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | à remesurer |
 

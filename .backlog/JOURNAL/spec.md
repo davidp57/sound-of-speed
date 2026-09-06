@@ -180,14 +180,11 @@ n'était pas vérifiable là où tout le reste l'est.
 
 ## Ce qui reste
 
-**Deux gestes sur le NAS**, et ils sont à David :
+**Les deux gestes sur le NAS sont faits** le 6 septembre 2026 — dossier
+`/volume1/docker/speed/journal/` créé, image redéployée et non seulement
+l'application, le bloc `location` du serveur étant dans l'image.
 
-- créer le dossier `/volume1/docker/speed/journal/` avec File Station, avant de
-  redéployer : Docker sous DSM refuse de démarrer sur un point de montage absent ;
-- **redéployer l'image**, et non seulement l'application : le bloc `location` du
-  serveur est dans l'image.
-
-Puis un trajet, journal accepté, pour lire ce qu'il dit. Le format d'une ligne et
+Reste un trajet, journal accepté, pour lire ce qu'il dit. Le format d'une ligne et
 la valeur du plafond de tranche restent à confirmer sur des tranches réelles
 plutôt que sur l'estimation de 25 Ko.
 

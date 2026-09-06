@@ -1,6 +1,6 @@
 # REMONTEE — tout ce qui naît dans la voiture remonte tout seul
 
-**Statut :** 🧑 attend David — le code est livré, les deux gestes sur le NAS et l'essai en roulant ne le sont pas
+**Statut :** 🧑 attend David — le code est livré, les deux gestes sur le NAS sont faits le 6 septembre 2026, reste l'essai en roulant
 **Branche :** `feature/remontee`
 **Version visée :** 0.4
 
@@ -136,10 +136,12 @@ Ordres de grandeur, pour un trajet d'une demi-heure :
 - [SYNTHESE](../SYNTHESE/tickets/01-la-sonde.md) — le relevé de la sonde, qui
   attend d'être fait dans la Tesla et n'en sortirait pas.
 
-## Deux gestes sur le NAS, et ils sont à David
+## Deux gestes sur le NAS — faits le 6 septembre 2026
 
-1. Créer le dossier `mesures/` à côté des autres, avec File Station.
-2. Repasser `profiles/` en lecture-écriture dans la pile, puis redéployer.
+1. ~~Créer le dossier `mesures/` à côté des autres, avec File Station.~~
+2. ~~Repasser `profiles/` en lecture-écriture dans la pile, puis redéployer.~~
 
-Rien de tout cela n'empêche d'écrire ni de vérifier le code : le dépôt échoue
-proprement et le dit tant que les deux gestes ne sont pas faits.
+Reste l'essai en roulant, prévu le 7 septembre 2026. Le premier essai du
+6 septembre n'a pas abouti : c'est ce qui a mené aux deux correctifs du serveur
+livrés le jour même — `probe.mjs` servi comme un module (PR #63) et la lecture
+des dossiers fermée (PR #64).
