@@ -1,7 +1,7 @@
 # 04 — l'effort s'entend en sortie, pas seulement dans le mixage
 
-**Statut :** 🧑 attend David — la mesure est faite, elle écarte la cause supposée
-et en désigne une autre ; la correction se décide
+**Statut :** ✅ fait — mesuré et écouté : la chaîne de sortie est hors de cause,
+aucun correctif n'est justifié
 
 **Bloqué par :** 01 — la charge doit être stable avant qu'on mesure le niveau ;
 et l'essai de l'ancrage du ticket 05, qui déplace le spectre entrant dans la
@@ -30,11 +30,13 @@ remonte le tout sans rendre la dynamique.
 
 - [x] Le banc de mesure existe, ne fait sortir aucun son, et son protocole est
       écrit — signal employé, valeurs relevées et leur provenance.
-- [ ] L'écart conservé en sortie est chiffré avant et après correction.
+- [x] L'écart conservé en sortie est chiffré, et chiffré aussi pour les deux
+      corrections envisagées — aucune n'est retenue.
 - [x] La part du saturateur et celle du limiteur sont mesurées séparément.
-- [ ] Après correction, l'écart entre croisière et accélération franche
-      s'entend, et le niveau de sortie ne sature pas.
-- [ ] Le README dit ce que la chaîne de sortie fait au niveau.
+- [x] Sans objet : la mesure montre que l'écart traverse déjà la chaîne, et
+      l'écoute que ce qu'elle abîme ne s'entend pas.
+- [x] Le README dit ce que la chaîne de sortie fait au niveau, et que son
+      écrêtage ne s'entend pas.
 
 ## Le banc
 
@@ -158,3 +160,35 @@ quatre telle que la chaîne sort aujourd'hui, quatre corrigée, **mises au même
 niveau efficace**, chacune rognée avant la mise à niveau comme le ferait le
 convertisseur. Sans cette égalisation, la plus forte des deux paraîtrait toujours
 la meilleure.
+
+## Le verdict — 6 septembre 2026
+
+Extrait écouté par David, les deux versions au même niveau : **« quasiment aucune
+différence à l'écoute du banc ».**
+
+La distorsion mesurée à −31 dB ne s'entend donc pas sur ce son. C'est le second
+constat de ce genre sur ce projet — l'écrêtage du moteur synthétisé avait déjà
+été essayé deux fois sans qu'aucune différence s'entende
+(`core/preset/defaults.ts`). Un son de moteur est riche, rugueux et modulé ; il
+masque sa propre distorsion bien mieux qu'un son tenu.
+
+**Rien n'est corrigé.** Ramener le gain de rattrapage coûterait 3,1 dB de niveau
+pour un gain inaudible, et remettre le limiteur en dernier mangerait 0,4 dB de
+relief. Les deux pistes sont mesurées et écartées, non abandonnées faute de
+temps : le banc les reproduit en une ligne de configuration si la question
+revient.
+
+## Ce que ce ticket a établi, et ce qu'il n'explique pas
+
+La chaîne de sortie est **hors de cause** dans le relief qu'on n'entend pas :
+elle en conserve 6,49 dB sur 6,58, et ce qu'elle abîme est inaudible.
+
+Le ticket est donc clos sans correctif, et le symptôme qui l'avait fait naître —
+l'effort qui ne s'entend pas en roulant — reste à expliquer ailleurs. Deux
+endroits n'ont pas été regardés, et aucun des deux ne se mesure depuis le dépôt :
+
+- **en amont du mixage**, l'effort lui-même, dont le calcul a changé depuis
+  (lot 28, la traînée entre dans la charge) ;
+- **la restitution de la voiture**, dont on ne sait rien : un autoradio qui
+  égalise ou comprime le son ramènerait 6,5 dB de relief à beaucoup moins, et
+  aucun banc ici ne le verrait.

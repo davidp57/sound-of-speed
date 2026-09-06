@@ -1123,6 +1123,13 @@ rattrapage fixe de 1,8. Mesuré sur le profil Route, cinq couches, par le banc
 Monter le volume général au-delà de 0,7 gagne donc du niveau et perd de la
 dynamique. En dessous de 0,5, plus rien n'est rogné.
 
+**Cet écrêtage ne s'entend pas**, et c'est pourquoi il n'est pas corrigé. Les
+deux versions — telle qu'elle sort, et une chaîne réglée pour ne rien rogner —
+ont été comparées au même niveau sur un extrait de huit secondes : « quasiment
+aucune différence ». Le supprimer coûterait 3,1 dB de niveau pour un gain
+inaudible. C'est le même constat qu'au banc du moteur synthétisé, où l'écrêtage
+avait déjà été essayé deux fois sans qu'aucune différence s'entende.
+
 | Réglage | Ce qu'il fait |
 |---|---|
 | **Relief de charge** | Autant en moins sans effort, autant en plus à pleine charge, rien à mi-effort. **C'est le réglage qui fait entendre l'effort** : sans lui, les fondus étant à puissance constante, ralenti, croisière et pleine charge tenaient dans 1,3 dB — le son changeait de couleur et jamais de volume. À 4, il y a 8 dB entre lever le pied et écraser |
@@ -1821,7 +1828,7 @@ chaque essai.
 | 11 | Les quatre défauts que la mise sous test a trouvés | corrigé, reste à écouter |
 | 12 | Son maintenu quand le navigateur passe en arrière-plan | fait, vérifié en roulant |
 | 13 | Boîte qui regarde la vitesse : montée en croisière, descente au freinage, rétrogradage sur la demande | à écouter |
-| 14 | Relief du volume : l'effort, le régime et le ralenti s'entendent | à écouter |
+| 14 | Relief du volume : l'effort, le régime et le ralenti s'entendent | à écouter en roulant ; la chaîne de sortie est mesurée hors de cause |
 | 15 | Trois défauts de la boîte relevés en roulant : ralentir n'est plus croiser | à écouter |
 | 16 | Pente : la cadence réelle du GPS faussait la mesure d'accélération | corrigé, reste à écouter |
 | 17 | Défilement de l'écran de configuration sans dérégler un curseur | corrigé, reste à essayer |

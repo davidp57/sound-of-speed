@@ -32,11 +32,12 @@ Toutes les évolutions notables du projet. Format
   le limiteur n'atténue jamais plus de 0,2 dB. Ce qui écrase le relief est
   l'écrêtage en sortie, dû au gain de rattrapage placé après le limiteur — 1 %
   des échantillons rognés au volume livré, 8 % au volume maximal, soit une
-  distorsion à −31 dB du son, qui s'entend.
+  distorsion mesurée à −31 dB du son.
 
-  Le banc mesure aussi ce que chaque correction coûterait, et produit un extrait
-  de huit secondes — avant, puis après, au même niveau — pour juger à l'oreille
-  ce qu'aucun décibel ne tranche.
+  Le banc produit aussi un extrait de huit secondes — avant, puis après
+  correction, au même niveau — pour juger à l'oreille ce qu'aucun décibel ne
+  tranche. **Écouté : « quasiment aucune différence ».** Rien n'est donc corrigé,
+  et la chaîne de sortie est écartée des causes du relief qu'on n'entend pas.
 
 - **Tout ce qui naît dans la voiture remonte tout seul.** David : « l'objectif
   est de déposer régulièrement, en automatique sur le NAS, avec une option en

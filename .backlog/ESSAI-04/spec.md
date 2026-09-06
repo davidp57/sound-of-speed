@@ -1,6 +1,6 @@
 # ESSAI-04 — six défauts relevés en roulant le 4 septembre
 
-**Statut :** 🔄 en cours
+**Statut :** ✅ fait — huit tickets sur huit
 **Branche :** `fix/essai-04`
 **Version visée :** 0.2 — avant tout le reste
 
@@ -55,11 +55,13 @@ borne basse de sa bande. Le critère se décidait donc au tirage au sort, la
 descente au régime restait suspendue en ralentissant, et sous 26 km/h en
 quatrième le régime se plaquait au ralenti.
 
-**Le relief ne franchit pas la chaîne de sortie.** Le mixage produit 9,4 dB en
-croisière et 13,3 dB en accélération franche, soit 3,9 dB d'écart. Le limiteur
-travaille à un seuil de −1,5 dB avec un rapport de 12 pour 1, très au-dessus
-duquel les deux niveaux se situent. L'écart conservé en sortie est estimé à
-0,3 dB — estimation analytique, la mesure du graphe réel est en cours.
+**Le relief franchit la chaîne de sortie**, contrairement à ce que ce paragraphe
+annonçait. L'estimation analytique — 3,9 dB en entrée, 0,3 dB conservés —
+supposait un limiteur qui écrase en permanence. Mesuré sur le graphe réel, il
+n'atténue jamais plus de 0,2 dB, et la chaîne entière coûte 0,09 dB sur 6,58. Ce
+qu'elle abîme est un écrêtage en sortie, dû au gain de rattrapage placé après le
+limiteur, et cet écrêtage ne s'entend pas : comparé au même niveau, « quasiment
+aucune différence » (ticket 04).
 
 **Le son est joué sous sa hauteur.** La prise bas régime est ancrée à
 3128 tr/min, la haute à 8150, et le profil Route fait vivre le moteur entre 800
