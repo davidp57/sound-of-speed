@@ -1,4 +1,4 @@
-import { hasCredentials, putFile, slug, stamp, type DepositCredentials } from '../upload/put'
+import { authHeader, hasCredentials, putFile, slug, stamp, type DepositCredentials } from '../upload/put'
 import { tracesToFile } from '../preset/store'
 import type { Trace } from '../speed/replay'
 
@@ -97,7 +97,7 @@ export async function deposit(
   //
   // La liste du dossier, elle, est du JSON : si la réponse n'en est pas, on ne
   // sait pas, et l'on tente le dépôt plutôt que de refuser à tort.
-  if (await alreadyThere(name, fetchImpl)) {
+  if (await alreadyThere(name, credentials, fetchImpl)) {
     return { ok: false, reason: 'exists', detail: `« ${name} » est déjà déposée.` }
   }
 
@@ -113,9 +113,19 @@ export async function deposit(
  * une réponse qui n'est pas du JSON ne doivent pas empêcher un dépôt. Le pire
  * qui puisse alors arriver est le refus du serveur, qui sera dit.
  */
-export async function alreadyThere(name: string, fetchImpl: typeof fetch): Promise<boolean> {
+export async function alreadyThere(
+  name: string,
+  credentials: DepositCredentials,
+  fetchImpl: typeof fetch,
+): Promise<boolean> {
   try {
-    const response = await fetchImpl(TRACE_FOLDER, { method: 'GET' })
+    // La liste demande le compte depuis que la lecture du dossier est fermée.
+    // Sans lui la réponse serait un 401, traité comme un doute : on tenterait le
+    // dépôt, et c'est le serveur qui dirait non.
+    const response = await fetchImpl(TRACE_FOLDER, {
+      method: 'GET',
+      headers: { Authorization: authHeader(credentials) },
+    })
     if (!response.ok) return false
     const listing: unknown = await response.json()
     if (!Array.isArray(listing)) return false

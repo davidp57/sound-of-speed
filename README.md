@@ -451,10 +451,20 @@ c'est ce dossier que la bibliothèque lit. Une pile déjà en service garde son
 montage en lecture tant qu'elle n'est pas redéployée, et le dépôt d'un profil
 échoue alors en disant que le serveur n'a pas le droit d'écrire.
 
-Les quatre dossiers en écriture exigent **toujours** de s'authentifier, même
-quand l'authentification générale reste désactivée : un dossier ouvert en
-écriture sur une adresse joignable de l'extérieur est une invitation. Il faut
-donc le fichier de mots de passe pour déposer, voir plus bas.
+Les quatre dossiers exigent **toujours** de s'authentifier — en lecture comme
+en écriture —, même quand l'authentification générale reste désactivée. Il faut
+donc le fichier de mots de passe, voir plus bas.
+
+L'écriture l'a toujours exigé : un dossier ouvert en écriture sur une adresse
+joignable de l'extérieur est une invitation. **La lecture ne l'exigeait pas**, et
+c'était un trou : l'adresse est publique — la voiture n'est pas sur le réseau
+local —, si bien que qui la connaissait pouvait lister les trajets et les
+télécharger, positions comprises dès le cran étendu du journal. Fermé le
+6 septembre 2026.
+
+Conséquence à connaître : **la bibliothèque de profils est vide sur un appareil
+où le compte de dépôt n'est pas saisi.** Le partage par lien, lui, ne passe pas
+par le serveur et fonctionne toujours.
 
 Aucun n'accepte la suppression : l'application ne peut pas effacer ce qu'elle a
 déposé. C'est voulu pour le journal — un témoin qui peut effacer ses notes est un

@@ -219,3 +219,16 @@ describe('deposit', () => {
     expect((issue as { detail: string }).detail).toContain('405')
   })
 })
+
+describe('la lecture du dossier s’annonce', () => {
+  it('joint le compte à la liste, que le serveur ne rend plus librement', async () => {
+    // Le dossier des traces était lisible sans mot de passe : l'adresse du site
+    // est publique, et qui la connaissait pouvait télécharger les trajets.
+    const { impl, appels } = reseau({})
+
+    await deposit(trace('essai'), IDENTIFIANTS, impl)
+
+    const liste = appels.find((appel) => appel.method === 'GET')
+    expect(liste?.headers).toMatchObject({ Authorization: expect.stringMatching(/^Basic /) })
+  })
+})

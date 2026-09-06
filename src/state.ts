@@ -1654,7 +1654,7 @@ export const libraryLoading = ref(false)
 export async function refreshLibrary(): Promise<void> {
   libraryLoading.value = true
   try {
-    library.value = await fetchLibrary()
+    library.value = await fetchLibrary(depositCredentials.value)
   } finally {
     libraryLoading.value = false
   }
