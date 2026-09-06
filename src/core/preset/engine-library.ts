@@ -1,4 +1,5 @@
-import { GM_LS_V8, SUBARU_EJ25 } from './defaults'
+import { DEFAULT_RENDERING, type SynthRendering } from '../synth/rendering'
+import { GM_LS_RENDERING, GM_LS_V8, SUBARU_EJ25 } from './defaults'
 import type { EngineDefinition } from './schema'
 
 /**
@@ -35,6 +36,20 @@ export interface LibraryEngine {
   /** Le rupteur du moteur d'origine, en tours par minute. */
   redlineRpm: number
   definition: EngineDefinition
+  /**
+   * Comment ce moteur se rend : échappement, volume, crête visée, papillon.
+   *
+   * Il voyage avec la définition parce qu'essayer plusieurs moteurs au volant
+   * n'a de sens que si chacun arrive avec son réglage — sinon on écoute un
+   * moteur à travers l'échappement du précédent, et l'on ne sait plus lequel
+   * des deux on entend.
+   *
+   * **Un seul est réglé à ce jour** : le GM LS, aux valeurs relevées par David
+   * le 6 septembre 2026. Les autres portent le rendu par défaut, c'est-à-dire
+   * qu'ils ne sont pas réglés — c'est écrit plutôt que masqué, pour qu'on sache
+   * ce qu'on écoute.
+   */
+  rendering: SynthRendering
 }
 
 /**
@@ -314,6 +329,8 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-2/07_gm_ls.mr',
     redlineRpm: 6500,
     definition: GM_LS_V8,
+    // Le seul moteur réglé à ce jour, aux valeurs relevées par David.
+    rendering: GM_LS_RENDERING,
   },
   {
     id: 'subaru-ej25',
@@ -322,6 +339,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-1/06_subaru_ej25.mr',
     redlineRpm: 6500,
     definition: SUBARU_EJ25,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'chevrolet-454',
@@ -330,6 +348,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/chevrolet/chev_truck_454.mr',
     redlineRpm: 5500,
     definition: CHEVROLET_454,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'chevrolet-454-comp-cams',
@@ -338,6 +357,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/chevrolet/engine_03_for_e1.mr',
     redlineRpm: 5500,
     definition: CHEVROLET_454_COMP_CAMS,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'honda-b18c5',
@@ -346,6 +366,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-1/05_honda_vtec.mr',
     redlineRpm: 8400,
     definition: HONDA_B18C5,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'suzuki-hayabusa',
@@ -354,6 +375,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-1/04_hayabusa.mr',
     redlineRpm: 11000,
     definition: SUZUKI_HAYABUSA,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'subaru-ej25-equal-header',
@@ -362,6 +384,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-2/01_subaru_ej25_eh.mr',
     redlineRpm: 6500,
     definition: SUBARU_EJ25_EQUAL_HEADER,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'subaru-ej25-unequal-header',
@@ -370,6 +393,7 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     source: 'assets/engines/atg-video-2/02_subaru_ej25_uh.mr',
     redlineRpm: 6500,
     definition: SUBARU_EJ25_UNEQUAL_HEADER,
+    rendering: DEFAULT_RENDERING,
   },
 ]
 

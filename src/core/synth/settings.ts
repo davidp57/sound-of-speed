@@ -12,9 +12,10 @@
  * donc une coupure d'une seconde environ.
  */
 
-import { clampSynthRendering, type SynthRendering } from './rendering'
+import { DEFAULT_RENDERING, clampSynthRendering, type SynthRendering } from './rendering'
 
 export {
+  DEFAULT_RENDERING,
   EXHAUST_RESPONSES,
   MUFFLER_INSIDE_HZ,
   MUFFLER_OUTSIDE_HZ,
@@ -72,23 +73,11 @@ export interface SynthSettings extends SynthRendering {
 }
 
 export const DEFAULT_SYNTH: SynthSettings = {
+  ...DEFAULT_RENDERING,
   simulationHz: 10000,
   // Convolution déportée par défaut : c'est le seul réglage qui a fait passer
   // le V8 au-dessus du temps réel sur le poste de bureau.
   impulseSamples: 0,
-  throttleIdle: 0.06,
-  throttleFull: 1,
-  /**
-   * Zéro vingt-cinq, et c'est mesuré.
-   *
-   * Le niveleur d'engine-sim vise une crête de 30 000 sur 32 767, soit 0,92 —
-   * mais son suiveur de crête décroît en vingt millisecondes, l'intervalle
-   * entre deux allumages d'un V8 à 800 tr/min. Le gain remonte donc entre deux
-   * bouffées et la suivante déborde. Relevé, régime tenu à 800 : la crête reste
-   * collée à 1,000 jusqu'à un volume de 0,35, et tombe à 0,890 à 0,25. Le
-   * facteur de crête vaut 28 — un moteur, c'est des impulsions.
-   */
-  volume: 0.25,
   blockFrames: 1024,
   // Cent vingt millisecondes, et non deux cent cinquante. La réserve absorbe les
   // pointes de calcul, mais elle se paie en retard entre le geste et le son :
@@ -96,33 +85,6 @@ export const DEFAULT_SYNTH: SynthSettings = {
   // Avec la réserve interne d'engine-sim par-dessus, on était à plus de trois
   // dixièmes de seconde.
   reserveMs: 120,
-  convolver: true,
-  // Cinquante millisecondes : la valeur trouvée à l'oreille. Deux cent vingt
-  // étaient une salle, pas un échappement — à 800 tr/min un V8 explose toutes
-  // les 19 ms, et douze explosions se superposaient dans la queue.
-  convolverMs: 50,
-  convolverMix: 1,
-  // 3 500 Hz était mon estimation, calée sur le spectre moyen d'une prise réelle.
-  // À l'écoute, David l'a descendu à 500 : le spectre moyen ne disait donc pas
-  // tout, et c'est l'oreille qui tranche. On part de ce qu'elle a trouvé.
-  // Coupé. Il avait été mis à 1 kHz pour masquer un parasite dont on a depuis
-  // trouvé la cause : les deux bruits d'engine-sim. Une fois ceux-ci réglés, le
-  // spectre décroît tout seul — mesuré à 47 dB entre 50 Hz et 4 kHz sur le quatre
-  // cylindres, là où une prise réelle en montre 39. Filtrer davantage
-  // n'enlèverait plus que du moteur.
-  mufflerHz: 22000,
-  // La réponse du V8 Chevrolet 454, telle qu'engine-sim la livre. Une captation
-  // réelle plutôt qu'un modèle : c'est la différence entre un échappement et
-  // l'idée qu'on s'en fait.
-  exhaustResponse: 'smooth_39',
-  // Trois mètres de tube, en gros. Ne sert qu'à la réponse fabriquée.
-  exhaustHz: 57,
-  leveler: true,
-  levelerGain: 1,
-  // Nettement sous les 30 000 d'engine-sim : c'est la marge qui manquait.
-  // Douze mille : la valeur mesurée propre sur un V8, 0,4 % d'échantillons
-  // écrêtés contre 17,5 % à la cible d'origine d'engine-sim.
-  levelerTarget: 12000,
   sweep: false,
   sweepSeconds: 12,
   forceEffort: false,

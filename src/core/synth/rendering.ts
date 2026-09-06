@@ -141,3 +141,48 @@ export function renderingOf(settings: SynthRendering): SynthRendering {
     mufflerHz: settings.mufflerHz,
   })
 }
+
+/**
+ * Le rendu par défaut : ce qu'un moteur sonne tant que personne ne l'a réglé.
+ *
+ * Ce sont les valeurs que le banc portait avant que le rendu devienne un
+ * réglage de moteur, commentaires d'origine compris — elles ne sont pas un
+ * choix neuf, elles sont ce qui existait.
+ */
+export const DEFAULT_RENDERING: SynthRendering = {
+  throttleIdle: 0.06,
+  throttleFull: 1,
+  /**
+   * Zéro vingt-cinq, et c'est mesuré.
+   *
+   * Le niveleur d'engine-sim vise une crête de 30 000 sur 32 767, soit 0,92 —
+   * mais son suiveur de crête décroît en vingt millisecondes, l'intervalle
+   * entre deux allumages d'un V8 à 800 tr/min. Le gain remonte donc entre deux
+   * bouffées et la suivante déborde. Relevé, régime tenu à 800 : la crête reste
+   * collée à 1,000 jusqu'à un volume de 0,35, et tombe à 0,890 à 0,25. Le
+   * facteur de crête vaut 28 — un moteur, c'est des impulsions.
+   */
+  volume: 0.25,
+  leveler: true,
+  levelerGain: 1,
+  // Nettement sous les 30 000 d'engine-sim : c'est la marge qui manquait.
+  // Douze mille : la valeur mesurée propre sur un V8, 0,4 % d'échantillons
+  // écrêtés contre 17,5 % à la cible d'origine d'engine-sim.
+  levelerTarget: 12000,
+  convolver: true,
+  // Cinquante millisecondes : la valeur trouvée à l'oreille. Deux cent vingt
+  // étaient une salle, pas un échappement — à 800 tr/min un V8 explose toutes
+  // les 19 ms, et douze explosions se superposaient dans la queue.
+  convolverMs: 50,
+  convolverMix: 1,
+  // La réponse du V8 Chevrolet 454, telle qu'engine-sim la livre. Une captation
+  // réelle plutôt qu'un modèle : c'est la différence entre un échappement et
+  // l'idée qu'on s'en fait.
+  exhaustResponse: 'smooth_39',
+  // Trois mètres de tube, en gros. Ne sert qu'à la réponse fabriquée.
+  exhaustHz: 57,
+  // Coupé, c'est-à-dire dehors. Il avait été mis à 1 kHz pour masquer un
+  // parasite dont on a depuis trouvé la cause : les deux bruits d'engine-sim.
+  // Une fois ceux-ci réglés, le spectre décroît tout seul.
+  mufflerHz: MUFFLER_OUTSIDE_HZ,
+}

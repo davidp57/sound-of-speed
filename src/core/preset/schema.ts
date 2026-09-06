@@ -6,6 +6,8 @@
  * donc sauvegardable, exportable et rechargeable tel quel.
  */
 
+import type { SynthRendering } from '../synth/rendering'
+
 /** Rôle d'une couche dans le mixage. */
 export type LayerRole = 'idle' | 'on' | 'off' | 'limiter'
 
@@ -692,6 +694,22 @@ export interface Profile {
    * pas — la reprise du stockage lui rend celle de son profil d'usine.
    */
   engineDefinition?: EngineDefinition
+  /**
+   * Comment le moteur simulé se rend : échappement, volume, crête visée.
+   *
+   * Le pendant sonore de `engineDefinition`. Elle dit quel moteur tourne, celle
+   * -ci dit à quoi il ressemble une fois sorti du haut-parleur — et les deux
+   * vont ensemble, parce qu'essayer plusieurs moteurs au volant n'a de sens que
+   * si chacun arrive avec son réglage.
+   *
+   * Le profil en garde une copie modifiable, posée par la bibliothèque au
+   * chargement du moteur : c'est ce qui permet d'affiner au banc sans toucher
+   * aux valeurs d'usine.
+   *
+   * Facultative dans le schéma parce qu'un profil enregistré avant la version 6
+   * n'en a pas — la reprise du stockage lui rend celle de son profil d'usine.
+   */
+  rendering?: SynthRendering
   /** Dossier d'échantillons, relatif à la racine des assets. */
   sampleDir: string
   engine: EnginePreset
@@ -734,13 +752,20 @@ export type ProfileOrigin = Pick<
 >
 
 /**
+ * Version 6 : le son du moteur simulé voyage avec le profil.
+ *
+ * Échappement, volume, crête visée et papillon vivaient dans les réglages du
+ * banc, en mémoire, perdus à chaque rechargement de page. Un moteur réglé à
+ * l'atelier n'emportait donc rien de son réglage. Un profil qui n'en porte pas
+ * reçoit celui de son profil d'usine.
+ *
  * Version 5 : la définition de moteur a une forme.
  *
  * Elle traversait le stockage sans être lue depuis la version 4 ; elle porte
  * maintenant les vingt-sept nombres du contrat, et un profil qui n'en avait pas
  * reçoit celle de son profil d'usine.
  */
-export const PROFILE_FORMAT_VERSION = 5
+export const PROFILE_FORMAT_VERSION = 6
 
 export interface ProfileFile {
   version: number
