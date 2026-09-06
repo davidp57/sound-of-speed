@@ -1,3 +1,4 @@
+import type { UploadConsent } from '../upload/consent'
 import type { Journal } from './journal'
 
 /**
@@ -23,10 +24,12 @@ import type { Journal } from './journal'
 /**
  * Ce que l'utilisateur a accepté d'envoyer.
  *
- * `none` est la valeur par défaut, et rien ne part alors — pas même un journal
- * gardé en local, puisqu'il n'y aurait aucune raison de l'écrire.
+ * Le type vit maintenant dans `core/upload/consent.ts` : le même accord gouverne
+ * le journal, les traces, les relevés de mesure et les profils, et une promesse
+ * faite à l'utilisateur ne peut pas être écrite à quatre endroits sans finir par
+ * diverger. L'alias reste pour que le journal se lise sans détour.
  */
-export type JournalConsent = 'none' | 'minimal' | 'extended'
+export type JournalConsent = UploadConsent
 
 /** Un instantané de ce que l'application sait d'elle-même. */
 export interface JournalSnapshot {
@@ -53,6 +56,31 @@ export interface JournalSnapshot {
   /** Position, quand elle est connue. N'est inscrite qu'au cran étendu. */
   latitude?: number | null
   longitude?: number | null
+  /**
+   * Ce que le son a coûté, quand il est synthétisé.
+   *
+   * Absent quand le profil joue des échantillons : un champ vide vaut mieux
+   * qu'un zéro qu'on prendrait pour une mesure. C'est la seule façon de savoir
+   * après coup si la synthèse a tenu dans la voiture — le seuil du lot est un
+   * facteur temps réel de trois, et personne ne l'y a mesuré.
+   */
+  sound?: SoundCost | null
+}
+
+/** Ce que le son a coûté sur la dernière fenêtre de mesure. */
+export interface SoundCost {
+  /** Secondes de son produites par seconde de processeur. */
+  realtime: number
+  /** Part du processeur, de 0 à 1. */
+  cpuLoad: number
+  /** Fois où le lecteur n'avait plus rien à jouer, cumulées. */
+  underruns: number
+  /** Durée totale de ces creux, en millisecondes. */
+  underrunMs: number
+  /** Niveau crête de la sortie, de 0 à 1. */
+  peak: number
+  /** Part des échantillons qui butent sur le plafond, de 0 à 1. */
+  clipping: number
 }
 
 /** Intervalle entre deux relevés périodiques, en millisecondes. */
@@ -165,6 +193,7 @@ export class JournalCollector {
       gear: snapshot.gear,
       load: round(snapshot.load, 2),
       accuracyM: snapshot.accuracyM,
+      ...soundFields(snapshot.sound),
     })
   }
 
@@ -199,4 +228,24 @@ function round(value: number, digits: number): number {
   if (!Number.isFinite(value)) return 0
   const factor = 10 ** digits
   return Math.round(value * factor) / factor
+}
+
+/**
+ * Ce que le son coûte, mis en clés courtes pour le relevé.
+ *
+ * Rend un objet vide quand le profil ne synthétise pas : inscrire des zéros
+ * ferait croire à un son parfait là où il n'y a pas de son du tout.
+ */
+function soundFields(
+  sound: SoundCost | null | undefined,
+): Record<string, number> {
+  if (!sound) return {}
+  return {
+    realtime: round(sound.realtime, 2),
+    cpu: round(sound.cpuLoad, 2),
+    underruns: Math.round(sound.underruns),
+    underrunMs: Math.round(sound.underrunMs),
+    peak: round(sound.peak, 3),
+    clipping: round(sound.clipping, 4),
+  }
 }

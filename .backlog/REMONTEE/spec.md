@@ -1,6 +1,6 @@
 # REMONTEE — tout ce qui naît dans la voiture remonte tout seul
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — le code est livré, les deux gestes sur le NAS et l'essai en roulant ne le sont pas
 **Branche :** `feature/remontee`
 **Version visée :** 0.4
 

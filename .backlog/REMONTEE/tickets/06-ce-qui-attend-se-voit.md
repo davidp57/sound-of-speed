@@ -1,6 +1,6 @@
 # 06 — Ce qui attend se voit, et la file ne mange pas le stockage
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 03 — Un profil réglé en voiture se retrouve sur les autres
 appareils
@@ -22,10 +22,21 @@ qui grossit sans fin rendrait l'échec d'écriture plus fréquent, pas moins.
 
 ## Critères d'acceptation
 
-- [ ] Ce qui attend est visible, avec son nombre et sa nature
-- [ ] La dernière raison d'échec est lisible, en clair
-- [ ] Un échec répété espace les tentatives au lieu de les répéter
-- [ ] Une relance manuelle est possible
-- [ ] La file est bornée, et l'éviction du plus ancien se dit
-- [ ] L'échec d'écriture du stockage local reste signalé comme aujourd'hui
-- [ ] La file survit au rechargement de la page
+- [x] Ce qui attend est visible, avec son nombre et sa nature
+- [x] La dernière raison d'échec est lisible, en clair
+- [x] Un échec répété espace les tentatives au lieu de les répéter
+- [x] Une relance manuelle est possible
+- [x] La file est bornée, et l'éviction du plus ancien se dit
+- [x] L'échec d'écriture du stockage local reste signalé comme aujourd'hui
+- [x] La file survit au rechargement de la page
+
+## Fait, le 6 septembre 2026
+
+Vérifié dans le navigateur : « En attente de dépôt : 1 profil » s'affiche avec sa
+raison en clair — « Aucun compte de dépôt », puis « Le serveur a répondu 404 »
+une fois le compte saisi —, et le bouton de relance repart tout de suite.
+
+Le reste est vérifié par les tests : l'espacement des tentatives, l'absence de
+boucle sur un refus, l'éviction du plus ancien quand la file déborde, et le fait
+qu'un dépôt plus gros que la borne à lui seul est gardé plutôt que sacrifié pour
+rien.

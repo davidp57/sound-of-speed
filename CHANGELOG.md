@@ -8,6 +8,35 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Tout ce qui naît dans la voiture remonte tout seul.** David : « l'objectif
+  est de déposer régulièrement, en automatique sur le NAS, avec une option en
+  opt-in, les traces, les logs, les relevés de mesure, les profils, tout ce qui
+  peut servir à la fois de mémoire pour l'utilisateur et de source de données
+  pour le debugging ».
+
+  L'accord qui gouvernait le seul journal gouverne maintenant les quatre
+  natures, et il garde ses trois positions. Le troisième cran s'appelle
+  désormais « et la conduite » : il ajoute la position **et** les traces
+  enregistrées, qui portent la conduite à la cadence du GPS. Les profils
+  rejoignent la bibliothèque partagée sous un nom stable — une synchronisation,
+  pas un archivage.
+
+  Ce qui n'a pas pu partir attend et repart au retour du réseau. La file est
+  gardée d'une session à l'autre, bornée, et l'écran de configuration dit ce
+  qu'elle contient.
+
+- **La sonde dépose son relevé.** La page de mesure `/sonde/` affichait un
+  chiffre qu'il fallait recopier à la main, dans une voiture où le
+  presse-papiers ne mène nulle part. Un bouton le dépose sur le serveur, avec
+  son contexte — navigateur, matériel, date, verdict —, en réutilisant le compte
+  déjà saisi dans l'application.
+
+- **Le journal dit ce que le son a coûté.** Facteur temps réel, creux du
+  lecteur, écrêtage et charge du calcul entrent dans le relevé périodique quand
+  le son est synthétisé. Le seuil du lot de synthèse est un facteur trois *dans
+  la voiture*, et personne ne l'y avait mesuré. Un profil qui joue des
+  échantillons n'inscrit rien : un zéro se lirait comme une mesure.
+
 - **Changer de moteur simulé depuis l'écran de conduite.** David : « on doit
   pouvoir changer facilement la source du son du profil — exemple : Sport pour
   régler la transmission et le comportement, son d'origine GM modifié — en

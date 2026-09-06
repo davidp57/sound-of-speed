@@ -1,6 +1,6 @@
 # 01 — Un seul accord, qui dit tout ce qui part
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -31,12 +31,19 @@ autorisé d'avance.
 
 ## Critères d'acceptation
 
-- [ ] Les trois positions et ce qu'elles envoient sont écrites à l'écran, avant
+- [x] Les trois positions et ce qu'elles envoient sont écrites à l'écran, avant
       le choix
-- [ ] Passer à une position qui envoie demande une confirmation ; couper est
+- [x] Passer à une position qui envoie demande une confirmation ; couper est
       immédiat
-- [ ] Le troisième cran ne se déduit jamais du second
-- [ ] L'accord est une préférence de l'appareil : il ne voyage ni par fichier, ni
+- [x] Le troisième cran ne se déduit jamais du second
+- [x] L'accord est une préférence de l'appareil : il ne voyage ni par fichier, ni
       par lien, ni avec un profil
-- [ ] Le dépôt manuel d'une trace fonctionne à « rien n'est envoyé »
-- [ ] Le README dit ce que chaque position envoie, à jour de la table ci-dessus
+- [x] Le dépôt manuel d'une trace fonctionne à « rien n'est envoyé »
+- [x] Le README dit ce que chaque position envoie, à jour de la table ci-dessus
+
+## Fait, le 6 septembre 2026
+
+Vérifié dans le navigateur : les trois positions s'affichent, la confirmation
+dit ce que chacune envoie, et couper reste immédiat. La clé de rangement de
+l'accord n'a pas changé — la renommer aurait remis à « rien n'est envoyé » un
+accord déjà donné, et fait croire à une panne.

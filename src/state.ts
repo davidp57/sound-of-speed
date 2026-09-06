@@ -32,7 +32,12 @@ import {
 import { SynthEngine, type SynthStatus } from './core/synth/synth'
 import { DEFAULT_RENDERING, DEFAULT_SYNTH, renderingOf, type SynthSettings } from './core/synth/settings'
 import { Journal, newSessionId } from './core/journal/journal'
-import { JournalCollector, type JournalConsent } from './core/journal/collect'
+import { JournalCollector, type SoundCost } from './core/journal/collect'
+import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
+import { UploadQueue, type QueuedUpload } from './core/upload/queue'
+import { loadQueue, saveQueue } from './core/upload/store'
+import { putFile } from './core/upload/put'
+import { PROFILE_FOLDER, profileBody, profileFileName, profileUploadId } from './core/upload/profile'
 import { depositSlice } from './core/journal/deposit'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
@@ -43,7 +48,13 @@ import {
   withCalibration,
 } from './core/calibration/onboard'
 import type { CalibrationStepId } from './core/calibration/protocol'
-import { deposit, type DepositOutcome } from './core/deposit/deposit'
+import {
+  TRACE_FOLDER,
+  deposit,
+  depositName,
+  traceBody,
+  type DepositOutcome,
+} from './core/deposit/deposit'
 import { loadCalibration, saveCalibration, type CalibrationSession } from './core/calibration/store'
 import {
   applyOrigin,
@@ -567,20 +578,28 @@ export function setDriveFace(face: DriveFace): void {
  *
  * Une préférence de **cet appareil**, comme le volume : elle ne voyage ni par
  * lien ni par fichier, et un profil partagé ne l'emporte pas. Rien n'est envoyé
- * par défaut, et le cran étendu — qui ajoute la position — se choisit
- * séparément du minimum : il ne s'en déduit jamais.
+ * par défaut, et le cran étendu — qui ajoute la position et les traces — se
+ * choisit séparément du minimum : il ne s'en déduit jamais.
+ *
+ * L'accord gouvernait le seul journal ; il gouverne maintenant tout ce qui
+ * remonte. La clé de rangement ne change pas pour autant : la renommer aurait
+ * remis à « rien n'est envoyé » un accord déjà donné, et fait croire à une
+ * panne.
  */
-export const journalConsent = ref<JournalConsent>(readConsent())
+export const uploadConsent = ref<UploadConsent>(readConsent())
 
-function readConsent(): JournalConsent {
+function readConsent(): UploadConsent {
   const stored = readPreference(JOURNAL_KEY)
   return stored === 'minimal' || stored === 'extended' ? stored : 'none'
 }
 
-export function setJournalConsent(consent: JournalConsent): void {
-  journalConsent.value = consent
+export function setUploadConsent(consent: UploadConsent): void {
+  uploadConsent.value = consent
   writePreference(JOURNAL_KEY, consent)
   collector.setConsent(consent)
+  // Un accord qui s'ouvre fait partir ce qui attendait, sans attendre le
+  // prochain passage de la boucle : c'est le geste qui vient d'être fait.
+  if (consent !== 'none') void flushUploads(Date.now(), true)
 }
 
 /**
@@ -620,7 +639,7 @@ let journalBusy = false
  * personne ne garantit.
  */
 function depositJournalIfDue(nowMs: number): void {
-  if (journalBusy || journalConsent.value === 'none') return
+  if (journalBusy || !sendsAutomatically(uploadConsent.value, 'journal')) return
   if (!journal.shouldSlice(nowMs)) return
 
   const slice = journal.takeSlice(nowMs)
@@ -642,6 +661,43 @@ function depositJournalIfDue(nowMs: number): void {
     .finally(() => {
       journalBusy = false
     })
+}
+
+/**
+ * Ce que le son a coûté, pour le journal.
+ *
+ * Rendu `null` quand le profil joue des échantillons : le lecteur de synthèse ne
+ * tourne pas, et ses compteurs diraient zéro — ce qui se lirait comme un son
+ * parfait plutôt que comme une absence de mesure.
+ */
+function soundCost(): SoundCost | null {
+  const status = synthStatus.value
+  if (status.phase !== 'ready') return null
+  return {
+    realtime: status.realtime,
+    cpuLoad: status.cpuLoad,
+    underruns: status.underruns,
+    underrunMs: status.underrunMs,
+    peak: status.peak,
+    clipping: status.clipped,
+  }
+}
+
+/**
+ * Cadence de la file, en millisecondes d'horloge murale.
+ *
+ * La boucle tourne soixante fois par seconde ; interroger la file à cette
+ * cadence ne servirait qu'à brûler du temps. Une seconde suffit : c'est la file
+ * elle-même qui décide ensuite d'attendre après un échec.
+ */
+const FLUSH_EVERY_MS = 1000
+let lastFlushAt = 0
+
+function flushUploadsIfDue(): void {
+  const now = Date.now()
+  if (now - lastFlushAt < FLUSH_EVERY_MS) return
+  lastFlushAt = now
+  void flushUploads(now)
 }
 
 /**
@@ -674,6 +730,127 @@ export async function depositTrace(trace: Trace): Promise<DepositOutcome> {
   } finally {
     depositing.value = ''
   }
+}
+
+// --- La remontée automatique ---------------------------------------------
+
+/**
+ * Ce qui attend de partir sur le serveur.
+ *
+ * Une voiture traverse des zones sans réseau, et c'est le cas normal sur une
+ * route. Sans file, chaque nature de fichier aurait traité le hors-réseau à sa
+ * façon : on pose ici ce qui doit partir, la file l'envoie quand elle peut, et
+ * ce qui est parti la quitte.
+ *
+ * Le journal, lui, garde son mécanisme de tranches, qui fait mieux : ce qui
+ * n'est pas parti se joint à la tranche suivante au lieu de faire un fichier de
+ * plus.
+ */
+const uploads = new UploadQueue()
+uploads.restore(loadQueue())
+
+/** Ce qui attend, pour que l'écran le dise plutôt que de le laisser deviner. */
+export const uploadPending = ref<QueuedUpload[]>([...uploads.list()])
+/** Dernier échec de remontée, à afficher tel quel. */
+export const uploadError = ref('')
+/** Échec d'écriture de la file elle-même, comme pour les traces. */
+export const uploadStorageError = ref('')
+
+function rememberQueue(): void {
+  uploadPending.value = [...uploads.list()]
+  uploadError.value = uploads.lastError
+  uploadStorageError.value = saveQueue(uploads.list())
+    ? ''
+    : "La file d'attente n'a pas pu être enregistrée : espace de stockage insuffisant."
+}
+
+/** Vrai pendant un envoi : deux passes en parallèle enverraient deux fois. */
+let flushing = false
+
+/**
+ * Envoie ce qui attend, si l'heure est venue.
+ *
+ * Sans `await` du côté de la boucle : un dépôt prend le temps du réseau, et la
+ * cadence du son ne se règle pas sur celle d'une requête.
+ */
+export async function flushUploads(nowMs: number, force = false): Promise<void> {
+  if (flushing || uploadConsent.value === 'none') return
+  if (force) uploads.retryNow()
+  if (!uploads.ready(nowMs)) return
+
+  flushing = true
+  try {
+    await uploads.flush(nowMs, (item) =>
+      putFile(item.folder, item.name, item.body, depositCredentials.value),
+    )
+  } finally {
+    flushing = false
+    rememberQueue()
+  }
+}
+
+/** Relance demandée à la main, quand on ne veut pas attendre. */
+export function retryUploads(): void {
+  void flushUploads(Date.now(), true)
+}
+
+function enqueue(item: QueuedUpload): void {
+  uploads.add(item)
+  rememberQueue()
+  void flushUploads(Date.now())
+}
+
+// Le retour du réseau est le moment exact où ce qui attend peut partir :
+// l'attendre coûte moins qu'un essai toutes les trente secondes dans un tunnel.
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => void flushUploads(Date.now(), true))
+}
+
+/**
+ * Une trace enregistrée part toute seule, au cran de la conduite.
+ *
+ * Le nom du fichier est celui du dépôt manuel : les deux voies produisent le
+ * même fichier au même endroit, et l'identifiant de file porte le début de
+ * l'enregistrement, ce qui empêche de déposer deux fois la même trace.
+ */
+function queueTrace(trace: Trace): void {
+  if (!sendsAutomatically(uploadConsent.value, 'trace')) return
+  enqueue({
+    id: `trace:${trace.startedAt}`,
+    kind: 'trace',
+    folder: TRACE_FOLDER,
+    name: depositName(trace),
+    body: traceBody(trace),
+    queuedAt: Date.now(),
+  })
+}
+
+/**
+ * Un profil modifié remonte dans la bibliothèque.
+ *
+ * Pas à la frappe : un curseur qu'on déplace produit des dizaines de valeurs
+ * intermédiaires, et aucune ne mérite un fichier. Le profil part quand la main
+ * s'arrête.
+ */
+const PROFILE_SETTLE_MS = 3000
+let profileTimer: ReturnType<typeof setTimeout> | null = null
+
+function queueProfilesSoon(): void {
+  if (!sendsAutomatically(uploadConsent.value, 'profile')) return
+  if (profileTimer !== null) clearTimeout(profileTimer)
+  profileTimer = setTimeout(() => {
+    profileTimer = null
+    const profile = profiles.value.find((entry) => entry.id === selectedId.value)
+    if (!profile) return
+    enqueue({
+      id: profileUploadId(profile),
+      kind: 'profile',
+      folder: PROFILE_FOLDER,
+      name: profileFileName(profile),
+      body: profileBody(profile),
+      queuedAt: Date.now(),
+    })
+  }, PROFILE_SETTLE_MS)
 }
 
 export const offlineStatus = ref<OfflineStatus>({ ...offline.status })
@@ -940,8 +1117,10 @@ function step(dt: number): void {
     accuracyM: geolocation.stats.lastAccuracyM,
     latitude: geolocation.lastPosition?.latitude ?? null,
     longitude: geolocation.lastPosition?.longitude ?? null,
+    sound: soundCost(),
   })
   depositJournalIfDue(journalElapsedMs)
+  flushUploadsIfDue()
 
   if (sourceKind.value === 'replay') replayProgress.value = replay.progress
 
@@ -1066,7 +1245,14 @@ watch(synthIsOrigin, (direct) => {
   if (!direct && synth.isRunning) void setSynthEnabled(false)
 })
 
-watch(profiles, (list) => saveProfiles(list), { deep: true })
+watch(
+  profiles,
+  (list) => {
+    saveProfiles(list)
+    queueProfilesSoon()
+  },
+  { deep: true },
+)
 watch(selectedId, (id) => {
   saveSelectedId(id)
   gearbox.settleFor((gear) => rpmInGear(gear, telemetry.value.speed.kmh))
@@ -1429,6 +1615,7 @@ export function stopRecording(name: string): Trace | null {
   calibrationStep.value = null
   if (trace.samples.length === 0) return null
   traces.value = [...traces.value, trace]
+  queueTrace(trace)
   return trace
 }
 

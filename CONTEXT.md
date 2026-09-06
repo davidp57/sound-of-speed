@@ -331,6 +331,42 @@ l'unique exception à la règle « aucune animation », levée sciemment le
 _Éviter_ : fond, décor animé, arrière-plan (qui désigne l'état de la page quand
 le navigateur la masque).
 
+## La remontée au serveur
+
+**Remontée** (_upload_) :
+Ce que l'application dépose d'elle-même sur le serveur : le journal, les traces,
+les relevés de mesure et les profils. Elle ne part que sur un **accord**, et rien
+n'est envoyé par défaut.
+_Éviter_ : synchronisation (rien ne redescend), sauvegarde (rien n'est restauré),
+envoi.
+
+**Accord** (_consent_, `UploadConsent`) :
+Ce que l'utilisateur a autorisé à partir, en trois positions — rien, le minimum,
+et la conduite. Le troisième cran ajoute la position et les traces, et il ne se
+déduit jamais du second. Une préférence de l'appareil : il ne voyage ni par lien,
+ni par fichier, ni avec un profil.
+_Éviter_ : consentement (le mot du droit, pas celui de l'écran), option.
+
+**Dépôt** (_deposit_, `putFile`) :
+L'écriture d'un fichier sur le serveur, toujours authentifiée. Un dossier par
+nature : `journal/`, `traces/`, `mesures/`, `profiles/`.
+_Attention_ : le dépôt **manuel** d'une trace, depuis l'écran de télémétrie, ne
+dépend pas de l'accord — ce qu'on fait soi-même n'a pas à être autorisé d'avance.
+
+**File** (_queue_, `UploadQueue`) :
+Ce qui attend de partir. Une voiture traverse des zones sans réseau : ce qui n'a
+pas pu partir y reste et repart au retour. Elle est bornée, et le plus ancien
+cède la place — une file sans fin rendrait l'échec d'écriture du stockage local
+plus fréquent, pas moins.
+_Éviter_ : tampon, cache.
+
+**Relevé de mesure** (_measurement_) :
+Un instantané chiffré de ce que l'application coûte ou produit, avec son
+contexte — navigateur, matériel, date. Celui de la **sonde** tranche le portage
+d'engine-sim ; celui du journal dit ce que le son a coûté en roulant. Un chiffre
+sans son contexte ne se relit pas trois semaines plus tard.
+_Éviter_ : mesure (qui désigne une mesure de vitesse), statistique.
+
 ## Profil effectif
 
 Ce que le moteur, la boîte, le conditionnement et le mixage emploient réellement :

@@ -1,6 +1,6 @@
 # 03 — Un profil réglé en voiture se retrouve sur les autres appareils
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 
 **Bloqué par :** 02 — Une trace part toute seule, et repart au retour du réseau
 
@@ -28,15 +28,29 @@ serveur. Tant qu'il ne l'est pas, le dépôt échoue proprement et le dit.
 
 ## Critères d'acceptation
 
-- [ ] Un profil modifié remonte tout seul quand l'accord est au moins au minimum
-- [ ] Une rafale de modifications ne produit qu'un dépôt
+- [x] Un profil modifié remonte tout seul quand l'accord est au moins au minimum
+- [x] Une rafale de modifications ne produit qu'un dépôt
 - [ ] Le profil déposé apparaît dans la bibliothèque sur un autre appareil
 - [ ] Un profil déposé puis récupéré est identique à l'original, valeurs
       d'origine comprises
-- [ ] Le statut de favori et le volume général ne voyagent pas
-- [ ] Redéposer le même profil remplace son fichier, sans en créer un second
-- [ ] Le nom du fichier dit de quel profil il s'agit
+- [x] Le statut de favori et le volume général ne voyagent pas
+- [x] Redéposer le même profil remplace son fichier, sans en créer un second
+- [x] Le nom du fichier dit de quel profil il s'agit
 - [ ] Le serveur accepte l'écriture dans le dossier des profils, authentifiée
       comme celle des traces
-- [ ] Le README dit comment ouvrir ce dossier en écriture, au même endroit que
+- [x] Le README dit comment ouvrir ce dossier en écriture, au même endroit que
       pour les traces
+
+## Fait, le 6 septembre 2026
+
+Vérifié dans le navigateur : modifier un profil met un dépôt en attente trois
+secondes plus tard, une rafale n'en met qu'un, et le fichier visé porte un nom
+stable. Le dépôt réel a été tenté ; le serveur de développement a répondu 404, ce
+qui est exact — il n'a pas ce dossier.
+
+**Un geste sur le NAS reste à faire** : remonter `profiles/` en lecture-écriture
+dans la pile, puis redéployer. Tant qu'il ne l'est pas, le dépôt échoue en disant
+que le serveur n'a pas le droit d'écrire.
+
+Un détail trouvé à l'usage : les profils d'usine portent un identifiant qui est
+déjà leur nom, et leur fichier s'appelait « route-route.json ».

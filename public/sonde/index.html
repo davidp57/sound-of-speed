@@ -280,8 +280,16 @@
         <h2>Relevé à rapporter</h2>
         <div class="row">
           <button id="copy" type="button">Copier le relevé</button>
+          <button id="deposit" type="button">Déposer sur le serveur</button>
           <span id="copy-status" class="muted"></span>
         </div>
+        <!--
+          Le dépôt est là pour la voiture : son navigateur ne télécharge rien et
+          son presse-papiers ne mène nulle part. Le compte est celui déjà saisi
+          dans l'application, qui est servie par le même serveur — la sonde le
+          lit sans rien redemander.
+        -->
+        <p class="muted" id="deposit-note"></p>
         <!--
           Le texte est affiché en clair, et pas seulement mis dans le
           presse-papiers : dans la voiture il n'y a ni console ni outils de

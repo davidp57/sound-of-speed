@@ -1,6 +1,6 @@
 # 04 — Le relevé de la sonde arrive sur le NAS
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -30,11 +30,20 @@ Le bouton de copie reste : sur un poste, il est plus court.
 ## Critères d'acceptation
 
 - [ ] La sonde dépose son relevé d'un bouton, sans quitter la page
-- [ ] Le fichier déposé porte les mesures, l'environnement, la date et le verdict
-- [ ] Le nom du fichier dit quand et où le relevé a été pris
-- [ ] Le compte de dépôt est celui déjà saisi dans l'application, sans nouvelle
+- [x] Le fichier déposé porte les mesures, l'environnement, la date et le verdict
+- [x] Le nom du fichier dit quand et où le relevé a été pris
+- [x] Le compte de dépôt est celui déjà saisi dans l'application, sans nouvelle
       saisie
-- [ ] Un compte absent, un refus et un réseau injoignable donnent trois messages
+- [x] Un compte absent, un refus et un réseau injoignable donnent trois messages
       distincts
-- [ ] Un relevé pris avec le bouchon est marqué comme tel dans le fichier
-- [ ] Le bouton de copie fonctionne comme avant
+- [x] Un relevé pris avec le bouchon est marqué comme tel dans le fichier
+- [x] Le bouton de copie fonctionne comme avant
+
+## Fait, le 6 septembre 2026
+
+Vérifié dans le navigateur : le bouton lit le compte rangé par l'application — la
+sonde est servie par le même serveur —, compose son en-tête et envoie réellement
+le relevé ; le serveur de développement répond 404, il n'a pas ce dossier.
+
+**Un geste sur le NAS reste à faire** : créer le dossier `mesures/` avec File
+Station et le monter dans la pile.

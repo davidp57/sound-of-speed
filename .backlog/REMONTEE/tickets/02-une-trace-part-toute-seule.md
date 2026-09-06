@@ -1,6 +1,6 @@
 # 02 — Une trace part toute seule, et repart au retour du réseau
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 
 **Bloqué par :** 01 — Un seul accord, qui dit tout ce qui part
 
@@ -27,12 +27,22 @@ effacée du stockage local au motif qu'elle est partie.
 ## Critères d'acceptation
 
 - [ ] Une trace enregistrée avec l'accord au troisième cran part sans geste
-- [ ] Une trace enregistrée sans réseau est mise en attente, pas perdue
-- [ ] Le retour du réseau déclenche le dépôt sans intervention
-- [ ] Ce qui est parti quitte la file ; ce qui a échoué pour cause de réseau y
+- [x] Une trace enregistrée sans réseau est mise en attente, pas perdue
+- [x] Le retour du réseau déclenche le dépôt sans intervention
+- [x] Ce qui est parti quitte la file ; ce qui a échoué pour cause de réseau y
       reste
-- [ ] Un compte absent ou refusé ne fait pas boucler la file, et se dit
-- [ ] Une trace déjà déposée n'est pas redéposée
-- [ ] La trace reste dans le stockage local après son dépôt
-- [ ] Rien ne part quand l'accord est en dessous du troisième cran
-- [ ] La file se vérifie sans réseau ni serveur, dans les tests de `core/`
+- [x] Un compte absent ou refusé ne fait pas boucler la file, et se dit
+- [x] Une trace déjà déposée n'est pas redéposée
+- [x] La trace reste dans le stockage local après son dépôt
+- [x] Rien ne part quand l'accord est en dessous du troisième cran
+- [x] La file se vérifie sans réseau ni serveur, dans les tests de `core/`
+
+## Fait, le 6 septembre 2026
+
+La file est écrite, vérifiée par onze tests sans réseau ni serveur, et gardée
+d'une session à l'autre. Vérifié dans le navigateur : un dépôt sans compte
+n'appelle pas le réseau et le dit, un dépôt avec un compte part réellement, et le
+serveur de développement répond 404 — il n'a pas ce dossier.
+
+**Reste à voir en roulant** qu'une trace enregistrée part d'elle-même : cela
+demande le NAS et la voiture.

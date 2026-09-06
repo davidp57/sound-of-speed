@@ -1,6 +1,6 @@
 # 05 — Ce que le son a coûté en roulant est dans le journal
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David
 
 **Bloqué par :** 01 — Un seul accord, qui dit tout ce qui part
 
@@ -32,7 +32,18 @@ champ vide vaut mieux qu'un zéro qu'on prendrait pour une mesure.
 
 - [ ] Le relevé périodique du journal porte le facteur temps réel, les creux,
       l'écrêtage et la charge
-- [ ] La cadence est celle du relevé périodique, pas celle de la boucle
-- [ ] Un profil dont le son ne vient pas de la synthèse n'inscrit pas de mesure
-- [ ] Rien de tout cela ne part quand l'accord est à « rien n'est envoyé »
-- [ ] Le README dit ce que le journal contient, à jour
+- [x] La cadence est celle du relevé périodique, pas celle de la boucle
+- [x] Un profil dont le son ne vient pas de la synthèse n'inscrit pas de mesure
+- [x] Rien de tout cela ne part quand l'accord est à « rien n'est envoyé »
+- [x] Le README dit ce que le journal contient, à jour
+
+## Fait, le 6 septembre 2026
+
+Les quatre mesures entrent dans le relevé périodique, et deux tests les
+vérifient : les valeurs y sont, arrondies, et un profil qui joue des échantillons
+n'inscrit rien plutôt qu'un zéro.
+
+**Reste le chiffre lui-même**, qui ne se relève qu'en roulant : c'est la question
+ouverte de MOTEURS-EN-VOITURE — le taux d'écrêtage réel de la configuration
+retenue — et le seuil de SYNTHESE, un facteur temps réel de trois dans la
+voiture.

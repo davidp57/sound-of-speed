@@ -51,7 +51,7 @@
  * navigateur. On lui nomme donc les objets globaux utilisés, plutôt que
  * d'exclure le fichier de la vérification — elle a déjà servi ici.
  */
-/* global document, window, navigator, performance, setTimeout */
+/* global document, window, navigator, performance, setTimeout, localStorage, fetch, btoa, TextEncoder */
 
 /** Seuil de décision du lot, fixé avant la mesure. */
 const THRESHOLD = 3
@@ -130,6 +130,8 @@ const elements = {
   verdictDetail: document.getElementById('verdict-detail'),
   environment: document.getElementById('environment'),
   copy: document.getElementById('copy'),
+  deposit: document.getElementById('deposit'),
+  depositNote: document.getElementById('deposit-note'),
   copyStatus: document.getElementById('copy-status'),
   report: document.getElementById('report'),
 }
@@ -480,10 +482,124 @@ async function copyReport() {
     : 'Copie refusée : le texte est sélectionné, copiez-le à la main.'
 }
 
+// --- Dépôt sur le serveur ---------------------------------------------------
+
+/*
+ * Le relevé se prend dans la voiture, et c'est là qu'il ne sort pas : le
+ * navigateur de bord ne télécharge rien, et son presse-papiers ne mène nulle
+ * part. Le dépôt est donc la seule voie réelle — le bouton de copie reste, il
+ * est plus court sur un poste.
+ *
+ * La sonde est servie par le même serveur que l'application : le compte de
+ * dépôt saisi là-bas est lisible ici, et il n'y a rien à redemander. C'est la
+ * seule chose que cette page emprunte à l'application, et elle reste autonome.
+ */
+
+/** Dossier servi en écriture pour les relevés. Voir `docker/nginx.conf`. */
+const DEPOSIT_FOLDER = '/mesures/'
+
+/** Là où l'application range le compte de dépôt. Voir `core/preset/store.ts`. */
+const CREDENTIALS_KEY = 'speed.deposit.v1'
+
+function credentials() {
+  try {
+    const raw = localStorage.getItem(CREDENTIALS_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    const user = typeof parsed?.user === 'string' ? parsed.user : ''
+    const password = typeof parsed?.password === 'string' ? parsed.password : ''
+    return user.trim() && password ? { user, password } : null
+  } catch {
+    return null
+  }
+}
+
+/** Base 64 d'une chaîne qui peut contenir des accents : `btoa` ne prend que des octets. */
+function base64(text) {
+  const bytes = new TextEncoder().encode(text)
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary)
+}
+
+/**
+ * Le relevé en JSON, qui se relit par une machine.
+ *
+ * Le texte affiché part aussi, tel quel : c'est lui qu'on recopie dans un
+ * ticket, et le regénérer ailleurs le ferait diverger de ce qu'on a lu à
+ * l'écran.
+ */
+function reportPayload() {
+  return {
+    tool: 'sonde engine-sim',
+    at: new Date().toISOString(),
+    stub: usingStub,
+    threshold: THRESHOLD,
+    verdict: verdictText().headline,
+    environment: Object.fromEntries(environment()),
+    measurements: MEASUREMENTS.map((measurement) => {
+      const result = results.find((r) => r.id === measurement.id)
+      return {
+        id: measurement.id,
+        label: measurement.label,
+        audioSeconds: result ? result.audioSeconds : null,
+        computeMs: result ? result.computeMs : null,
+        factor: result ? result.factor : null,
+      }
+    }),
+    text: reportText(),
+  }
+}
+
+/** Nom du fichier : quand, et sur quoi. Un relevé sans son contexte ne se relit pas. */
+function depositName() {
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
+  const mobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'poste'
+  return `${stamp}_sonde_${usingStub ? 'bouchon' : mobile}.json`
+}
+
+async function depositReport() {
+  const account = credentials()
+  if (!account) {
+    elements.depositNote.textContent =
+      "Aucun compte de dépôt : il se règle à l'écran de configuration de l'application, sur ce même serveur."
+    return
+  }
+
+  const name = depositName()
+  elements.deposit.disabled = true
+  elements.depositNote.textContent = 'Dépôt en cours…'
+  try {
+    const response = await fetch(DEPOSIT_FOLDER + encodeURIComponent(name), {
+      method: 'PUT',
+      headers: { Authorization: `Basic ${base64(`${account.user}:${account.password}`)}` },
+      body: JSON.stringify(reportPayload(), null, 2),
+    })
+    if (response.ok) {
+      elements.depositNote.textContent = `Déposé : ${name}`
+    } else if (response.status === 401 || response.status === 403) {
+      elements.depositNote.textContent =
+        response.status === 401
+          ? 'Refusé : le nom ou le mot de passe ne correspond pas au fichier du serveur.'
+          : "Le serveur s'est laissé convaincre mais n'a pas le droit d'écrire dans le dossier."
+    } else {
+      elements.depositNote.textContent = `Le serveur a répondu ${response.status}.`
+    }
+  } catch (error) {
+    elements.depositNote.textContent =
+      error && error.message
+        ? `Dépôt impossible : ${error.message}`
+        : 'Dépôt impossible : le serveur est injoignable.'
+  } finally {
+    elements.deposit.disabled = false
+  }
+}
+
 // --- Démarrage --------------------------------------------------------------
 
 elements.start.addEventListener('click', () => void runAll())
 elements.copy.addEventListener('click', () => void copyReport())
+elements.deposit.addEventListener('click', () => void depositReport())
 
 // Pas d'`await` au premier niveau : il demande un navigateur plus récent que ce
 // que la voiture peut embarquer, et il ferait échouer le module entier.
