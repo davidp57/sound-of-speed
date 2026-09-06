@@ -1,6 +1,6 @@
 # 07 — Fermer la lecture des dossiers, pas seulement l'écriture
 
-**Statut :** 🧑 attend David — le code est livré, il faut redéployer pour le voir
+**Statut :** ✅ fait — vérifié sur le NAS le 6 septembre 2026
 
 **Bloqué par :** aucun
 
@@ -46,5 +46,5 @@ prix est de s'annoncer sur chaque appareil, la voiture comprise.
 - [x] Elle s'annonce pour vérifier qu'une trace n'est pas déjà déposée
 - [x] Sans compte saisi, la bibliothèque est vide et n'interroge pas le serveur
 - [x] Le README dit que la lecture est fermée, et ce que cela coûte
-- [ ] 🧑 Vérifié sur le NAS : `/traces/` demande le mot de passe, et la
-      bibliothèque fonctionne toujours avec le compte saisi
+- [x] Vérifié sur le NAS le 6 septembre 2026 : `/traces/` demande le mot de
+      passe, et la bibliothèque fonctionne toujours avec le compte saisi
