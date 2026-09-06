@@ -1,4 +1,4 @@
-import { authHeader, type DepositCredentials } from '../deposit/deposit'
+import { authHeader, hasCredentials, type DepositCredentials } from '../upload/put'
 import type { JournalSlice } from './journal'
 
 /**
@@ -10,9 +10,14 @@ import type { JournalSlice } from './journal'
  * lister les traces du serveur : y verser une tranche par cinq minutes de
  * conduite alourdirait cette liste à chaque sortie.
  *
- * L'authentification est reprise du dépôt de traces, et ce n'est pas une
- * économie de lignes : un second encodage aurait pu diverger du premier, et le
- * refus qui s'ensuivrait ressemblerait à un mot de passe faux.
+ * L'authentification est celle de `core/upload/put.ts`, commune à toutes les
+ * natures déposées, et ce n'est pas une économie de lignes : un second encodage
+ * aurait pu diverger du premier, et le refus qui s'ensuivrait ressemblerait à un
+ * mot de passe faux.
+ *
+ * L'envoi, lui, reste écrit ici : une tranche s'annonce en `x-ndjson`, et une
+ * tranche trop grosse ne vaut pas d'être réessayée à l'identique. Deux détails
+ * que la fonction commune n'a pas à connaître.
  *
  * `fetch` est injecté pour que tout ceci se vérifie sans réseau ni serveur.
  */
@@ -52,7 +57,7 @@ export async function depositSlice(
   credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<SliceOutcome> {
-  if (!credentials.user.trim() || !credentials.password) {
+  if (!hasCredentials(credentials)) {
     return {
       ok: false,
       reason: 'no-credentials',

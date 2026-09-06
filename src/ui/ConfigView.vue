@@ -72,10 +72,14 @@ import {
   calibrationOverrides,
   calibrationMissing,
   depositCredentials,
-  journalConsent,
+  uploadConsent,
+  uploadError,
+  uploadPending,
+  uploadStorageError,
   journalDeposits,
   journalError,
-  setJournalConsent,
+  retryUploads,
+  setUploadConsent,
   setDepositCredentials,
   synthSupported,
 } from '../state'
@@ -199,28 +203,46 @@ function onPlace(event: Event): void {
 /**
  * Cran en attente de confirmation.
  *
- * Couper le journal est immédiat — on n'a pas à confirmer qu'on ne veut plus
+ * Couper la remontée est immédiat — on n'a pas à confirmer qu'on ne veut plus
  * rien envoyer. C'est l'inverse qui demande un temps d'arrêt : le reste de cet
  * écran s'applique à la frappe, et un envoi de données ne doit pas partir du
  * même geste distrait qu'un curseur qu'on déplace.
  */
-const journalPending = ref<'minimal' | 'extended' | null>(null)
+const consentPending = ref<'minimal' | 'extended' | null>(null)
 
-function onJournal(consent: 'none' | 'minimal' | 'extended'): void {
+function onConsent(consent: 'none' | 'minimal' | 'extended'): void {
   if (consent === 'none') {
-    journalPending.value = null
-    setJournalConsent('none')
+    consentPending.value = null
+    setUploadConsent('none')
     return
   }
-  if (journalConsent.value === consent) return
-  journalPending.value = consent
+  if (uploadConsent.value === consent) return
+  consentPending.value = consent
 }
 
-function onJournalConfirm(): void {
-  if (journalPending.value === null) return
-  setJournalConsent(journalPending.value)
-  journalPending.value = null
+function onConsentConfirm(): void {
+  if (consentPending.value === null) return
+  setUploadConsent(consentPending.value)
+  consentPending.value = null
 }
+
+/** Ce qui attend de partir, rangé par nature pour être dit en une phrase. */
+const enAttente = computed(() => {
+  const noms: Record<string, string> = {
+    trace: 'trace',
+    profile: 'profil',
+    journal: 'journal',
+    measurement: 'relevé',
+  }
+  const compte = new Map<string, number>()
+  for (const item of uploadPending.value) {
+    compte.set(item.kind, (compte.get(item.kind) ?? 0) + 1)
+  }
+  return [...compte.entries()].map(([kind, n]) => {
+    const nom = noms[kind] ?? kind
+    return `${n} ${nom}${n > 1 ? 's' : ''}`
+  })
+})
 
 function onDeposit(user: string, password: string): void {
   setDepositCredentials(user, password)
@@ -857,8 +879,10 @@ function impliedCylinders(index: number): number | null {
             {{ libraryLoading ? 'Recherche…' : 'Profils du serveur' }}
           </button>
           <span class="note">
-            Déposez vos fichiers dans <code>profiles/</code> sur le NAS : ils
-            apparaîtront sur tous vos appareils.
+            Vos profils y remontent tout seuls dès que la remontée est
+            acceptée, et vous pouvez aussi déposer des fichiers dans
+            <code>profiles/</code> sur le NAS : ils apparaîtront sur tous vos
+            appareils.
           </span>
         </div>
         <ul v-if="library.length" class="library-list">
@@ -918,8 +942,9 @@ function impliedCylinders(index: number): number | null {
         <span class="note">{{ compteEtat }}</span>
       </div>
       <p class="note">
-        Sert à envoyer une trace sur le serveur depuis la voiture, dont le
-        navigateur refuse les téléchargements. C’est un nom et un mot de passe du
+        Sert à tout ce qui remonte sur le serveur depuis la voiture, dont le
+        navigateur refuse les téléchargements : traces, journal, relevés de
+        mesure et profils. C’est un nom et un mot de passe du
         fichier <code>htpasswd</code> du serveur, et il reste en clair dans ce
         navigateur — d’où l’intérêt d’un compte <strong>dédié</strong> au dépôt
         plutôt que du vôtre : il se révoque seul, et il ne donnerait pas accès au
@@ -928,64 +953,75 @@ function impliedCylinders(index: number): number | null {
       </p>
 
       <!--
-        Le journal de bord. Deux crans, et le second est un choix distinct : la
-        position est une donnée de déplacement, et cela se dit avant l'envoi,
-        pas après. La confirmation est un temps d'arrêt volontaire — le réglage
-        s'applique sinon à la frappe partout ailleurs dans cet écran.
+        La remontée au serveur. Trois positions, et la troisième est un choix
+        distinct : la position et la trace sont des données de déplacement, et
+        cela se dit avant l'envoi, pas après. La confirmation est un temps
+        d'arrêt volontaire — le réglage s'applique sinon à la frappe partout
+        ailleurs dans cet écran.
       -->
       <div class="journal">
-        <span class="note">Journal de bord</span>
+        <span class="note">Remontée au serveur</span>
         <button
-          :class="{ 'is-active': journalConsent === 'none' }"
-          @click="onJournal('none')"
+          :class="{ 'is-active': uploadConsent === 'none' }"
+          @click="onConsent('none')"
         >
           Rien n’est envoyé
         </button>
         <button
-          :class="{ 'is-active': journalConsent === 'minimal' }"
-          @click="onJournal('minimal')"
+          :class="{ 'is-active': uploadConsent === 'minimal' }"
+          @click="onConsent('minimal')"
         >
           Le minimum
         </button>
         <button
-          :class="{ 'is-active': journalConsent === 'extended' }"
-          @click="onJournal('extended')"
+          :class="{ 'is-active': uploadConsent === 'extended' }"
+          @click="onConsent('extended')"
         >
-          Et la position
+          Et la conduite
         </button>
       </div>
 
-      <p v-if="journalPending" class="confirm">
-        <strong>{{ journalPending === 'minimal' ? 'Le minimum' : 'Le minimum et la position' }}</strong>
-        sera déposé sur votre serveur, tout seul, toutes les cinq minutes.
-        <span v-if="journalPending === 'minimal'">
-          Ce qui part : ce que fait l’application — source de vitesse, vitesses,
+      <p v-if="consentPending" class="confirm">
+        <strong>{{ consentPending === 'minimal' ? 'Le minimum' : 'Le minimum et la conduite' }}</strong>
+        sera déposé sur votre serveur, tout seul.
+        <span v-if="consentPending === 'minimal'">
+          Ce qui part : le journal de bord — source de vitesse, vitesses,
           accélérations, régimes, rapports, relances du suivi, mesures rejetées,
-          état du son, et les erreurs. Aucune coordonnée.
+          ce que le son a coûté, et les erreurs —, les relevés de mesure, et vos
+          profils, qui rejoignent la bibliothèque partagée. Aucune coordonnée.
         </span>
         <span v-else>
           Ce qui part : tout ce que contient « le minimum », <strong>plus votre
-          position</strong> — un point par seconde, soit un trajet reconstituable.
-          C’est ce qui permet de comprendre un défaut lié à un endroit précis.
+          position</strong> — un point par seconde — et <strong>les traces que
+          vous enregistrez</strong>, qui portent toute la conduite. C’est ce qui
+          permet de rejouer un trajet au poste de travail et de comprendre un
+          défaut lié à un endroit précis.
         </span>
-        Les fichiers arrivent dans le dossier <code>journal/</code> de votre
-        serveur, et rien ne sort d’ici : l’application ne sait pas les effacer,
-        c’est à vous de faire le ménage.
+        Les fichiers arrivent dans les dossiers <code>journal/</code>,
+        <code>traces/</code>, <code>mesures/</code> et <code>profiles/</code> de
+        votre serveur, et rien ne sort d’ici : l’application ne sait pas les
+        effacer, c’est à vous de faire le ménage.
         <span class="confirm-actions">
-          <button class="is-active" @click="onJournalConfirm()">J’accepte</button>
-          <button @click="journalPending = null">Annuler</button>
+          <button class="is-active" @click="onConsentConfirm()">J’accepte</button>
+          <button @click="consentPending = null">Annuler</button>
         </span>
       </p>
       <p class="note">
-        Sert à comprendre après coup ce que l’application a vécu en roulant : le
-        navigateur de la voiture n’a pas de console, et rien ne s’y consulte au
-        volant. Le dépôt emploie le même compte que celui des traces, ci-dessus.
+        Sert à retrouver ailleurs ce qui naît dans la voiture, dont le navigateur
+        refuse les téléchargements, et à comprendre après coup ce que
+        l’application a vécu en roulant. Le dépôt emploie le compte ci-dessus.
         <span v-if="journalDeposits.length > 0">
-          Déposé jusqu’ici : <strong>{{ journalDeposits.length }}</strong>
+          Journal déposé jusqu’ici : <strong>{{ journalDeposits.length }}</strong>
           fichier{{ journalDeposits.length > 1 ? 's' : '' }},
           {{ Math.round(journalDeposits.reduce((total, entry) => total + entry.bytes, 0) / 1024) }} Ko.
         </span>
       </p>
+      <p v-if="enAttente.length > 0" class="note">
+        En attente de dépôt : <strong>{{ enAttente.join(', ') }}</strong>.
+        <button @click="retryUploads()">Réessayer</button>
+      </p>
+      <p v-if="uploadError" class="note warn">{{ uploadError }}</p>
+      <p v-if="uploadStorageError" class="note warn">{{ uploadStorageError }}</p>
       <p v-if="journalError" class="note warn">{{ journalError }}</p>
 
       <div class="reset">

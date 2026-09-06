@@ -433,25 +433,32 @@ Trois dossiers, sous `/volume1/docker/speed/` :
 | Dossier | Contenu | Accès |
 |---|---|---|
 | `audio/procar/` | les échantillons du moteur | lecture |
-| `profiles/` | les profils partagés entre appareils. **Peut rester vide** | lecture |
-| `traces/` | les trajets enregistrés en roulant, déposés depuis la voiture. **Peut rester vide** | lecture-écriture |
+| `profiles/` | les profils partagés entre appareils, et ceux qui remontent de la voiture. **Peut rester vide** | lecture-écriture |
+| `traces/` | les trajets enregistrés en roulant. **Peut rester vide** | lecture-écriture |
 | `journal/` | le journal de bord, déposé tout seul en roulant. **Peut rester vide** | lecture-écriture |
+| `mesures/` | les relevés de mesure, dont ceux de la sonde. **Peut rester vide** | lecture-écriture |
 
-Les quatre doivent **exister avant** de déployer la pile : Docker sous DSM ne
+Les cinq doivent **exister avant** de déployer la pile : Docker sous DSM ne
 crée pas un point de montage absent, il refuse de démarrer le conteneur avec un
-`Bind mount failed`. Des dossiers `profiles/`, `traces/` et `journal/` vides
-suffisent — et à défaut, il faut commenter leur ligne dans la pile, au prix de
-la bibliothèque de profils, du dépôt de traces et du journal.
+`Bind mount failed`. Des dossiers `profiles/`, `traces/`, `journal/` et
+`mesures/` vides suffisent — et à défaut, il faut commenter leur ligne dans la
+pile, au prix de la bibliothèque de profils, du dépôt de traces, du journal et
+des relevés.
 
-`traces/` et `journal/` sont les seuls montés en écriture, et le dépôt y est
-**toujours** authentifié, même quand l'authentification générale reste
-désactivée : un dossier ouvert en écriture sur une adresse joignable de
-l'extérieur est une invitation. Il faut donc le fichier de mots de passe pour
-déposer, voir plus bas.
+**`profiles/` était en lecture seule** jusqu'à la remontée automatique. Il passe
+en écriture parce que c'est là qu'un profil réglé dans la voiture doit atterrir :
+c'est ce dossier que la bibliothèque lit. Une pile déjà en service garde son
+montage en lecture tant qu'elle n'est pas redéployée, et le dépôt d'un profil
+échoue alors en disant que le serveur n'a pas le droit d'écrire.
 
-Ni l'un ni l'autre n'accepte la suppression : l'application ne peut pas effacer
-ce qu'elle a déposé. C'est voulu pour le journal — un témoin qui peut effacer
-ses notes est un mauvais témoin — et le ménage se fait avec File Station.
+Les quatre dossiers en écriture exigent **toujours** de s'authentifier, même
+quand l'authentification générale reste désactivée : un dossier ouvert en
+écriture sur une adresse joignable de l'extérieur est une invitation. Il faut
+donc le fichier de mots de passe pour déposer, voir plus bas.
+
+Aucun n'accepte la suppression : l'application ne peut pas effacer ce qu'elle a
+déposé. C'est voulu pour le journal — un témoin qui peut effacer ses notes est un
+mauvais témoin — et le ménage se fait avec File Station.
 
 Les échantillons restent hors de l'image : ils ne sont ni dans le dépôt ni dans
 le registre, et changer de banque sonore consistera à remplacer ces fichiers,
@@ -551,11 +558,12 @@ se dépose dans `/volume1/docker/speed/` avec File Station. Il reste à
 décommenter les deux lignes `auth_basic` de `docker/nginx.conf` et le volume
 correspondant dans la pile.
 
-### Déposer une trace : le fichier de mots de passe
+### Déposer : le fichier de mots de passe
 
-Le dépôt d'une trace exige lui aussi ce fichier, **indépendamment de
-l'authentification générale** : `traces/` est le seul endroit du serveur qui
-accepte d'écrire, et il ne l'accepte que de quelqu'un qui s'annonce.
+Tout ce qui remonte de la voiture exige ce fichier, **indépendamment de
+l'authentification générale** : `traces/`, `journal/`, `mesures/` et
+`profiles/` sont les seuls endroits du serveur qui acceptent d'écrire, et ils ne
+l'acceptent que de quelqu'un qui s'annonce.
 
 En quatre gestes, une fois pour toutes :
 
@@ -579,7 +587,16 @@ npm run htpasswd
 
 ```yaml
       - /volume1/docker/speed/traces:/usr/share/nginx/html/traces
+      - /volume1/docker/speed/journal:/usr/share/nginx/html/journal
+      - /volume1/docker/speed/mesures:/usr/share/nginx/html/mesures
       - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
+```
+
+Et **retirer le `:ro`** de la ligne des profils, qui devient elle aussi un
+dossier où l'on écrit :
+
+```yaml
+      - /volume1/docker/speed/profiles:/usr/share/nginx/html/profiles
 ```
 
 > **Ajouter, et non décommenter.** Une pile Portainer contient le texte qu'on y
@@ -656,7 +673,7 @@ tirets valent mieux qu'une suite aléatoire.
 `npm run htpasswd`, avec `depot` comme nom d'utilisateur. Le script **ajoute**
 une entrée sans écraser les autres.
 
-### Déposer une trace depuis la voiture
+### Déposer depuis la voiture
 
 Une fois le compte créé et le fichier déposé sur le NAS :
 
@@ -666,7 +683,10 @@ Une fois le compte créé et le fichier déposé sur le NAS :
    confirme. C'est rangé hors du profil : cela ne voyage donc pas avec un profil
    partagé, et il n'y aurait aucun sens à envoyer à quelqu'un un son accompagné
    du droit d'écrire sur son NAS ;
-2. écran **Télémétrie**, à côté de chaque trace : le bouton **Déposer**.
+2. écran **Télémétrie**, à côté de chaque trace : le bouton **Déposer**. Le
+   même compte sert à tout ce qui remonte tout seul — journal, relevés de
+   mesure, profils — dès que la remontée est acceptée, et à la page de mesure
+   `/sonde/`, qui dépose son relevé du même bouton.
 
 Le fichier prend un nom qui dit la date, le nom de l'enregistrement et sa
 durée — `2026-09-03-21-16-48_retour-du-boulot-90s.json` — de sorte qu'on le
@@ -1361,26 +1381,56 @@ Dans tous les cas, **les échantillons ne voyagent pas** — seuls leurs noms
 suivent, l'autre appareil devant disposer de la même banque. Et l'identifiant est
 renouvelé à l'import : un profil reçu n'écrase jamais l'un des siens.
 
-## Le journal de bord
+## La remontée au serveur
 
-Le navigateur de la voiture n'a pas de console, et rien ne s'y consulte au
-volant : comprendre après coup ce que l'application a vécu demandait de deviner.
-Elle peut désormais tenir un journal et le **déposer toute seule** sur le
-serveur.
+Le navigateur de la voiture n'a pas de console, ne télécharge rien, et rien ne
+s'y consulte au volant : ce qui naît en roulant y restait, et comprendre après
+coup ce que l'application a vécu demandait de deviner. Elle peut désormais
+**déposer toute seule** sur le serveur ce qu'elle produit.
 
 **Rien n'est envoyé par défaut.** Le réglage est dans l'écran de configuration,
 en mode avancé, et il a trois positions :
 
 | Position | Ce qui part |
 |---|---|
-| **Rien n'est envoyé** | rien, et rien n'est même retenu |
-| **Le minimum** | ce que fait l'application : source de vitesse et son état, bascule de l'origine de la vitesse, relances du suivi, mesures rejetées par motif, suspensions du son, erreurs, et un relevé de conduite toutes les dix secondes |
-| **Et la position** | tout ce qui précède, **plus votre position**, un point par seconde — soit un trajet reconstituable |
+| **Rien n'est envoyé** | rien, et le journal n'est même pas tenu |
+| **Le minimum** | le journal de bord, les relevés de mesure, et vos profils, qui rejoignent la bibliothèque partagée |
+| **Et la conduite** | tout ce qui précède, **plus votre position** — un point par seconde — et **les traces que vous enregistrez**, qui portent toute la conduite |
 
 Passer à l'une des deux dernières demande une confirmation, qui dit ce qui sera
 envoyé avant que cela ne parte. Le troisième cran ne se déduit jamais du second :
-une position est une donnée de déplacement, et cela se dit avant. Couper, en
-revanche, est immédiat — on n'a pas à confirmer qu'on ne veut plus rien envoyer.
+une position est une donnée de déplacement, et une trace porte la conduite à la
+cadence du GPS là où le journal n'en garde qu'un relevé toutes les dix secondes.
+Cela se dit avant. Couper, en revanche, est immédiat — on n'a pas à confirmer
+qu'on ne veut plus rien envoyer.
+
+Chaque nature va dans son dossier : `journal/`, `traces/`, `mesures/` et
+`profiles/`. Le dépôt manuel d'une trace, lui, ne dépend pas de ce réglage : ce
+qu'on fait soi-même n'a pas à être autorisé d'avance.
+
+### Ce qui n'a pas pu partir
+
+Une voiture traverse des tunnels et des parkings couverts, et c'est le cas
+normal, pas l'exception. Ce qui n'a pas pu partir **attend** et repart de
+lui-même au retour du réseau. L'écran de configuration dit ce qui attend, et
+permet de relancer sans attendre.
+
+La file est bornée : au-delà, le plus ancien cède la place, et cela se dit. Une
+file qui grossirait sans fin rendrait l'échec d'écriture du stockage local plus
+fréquent, pas moins.
+
+Un profil ne part pas à la frappe : il attend que la main s'arrête, et son
+fichier porte un nom stable — le redéposer remplace sa version précédente au lieu
+d'accumuler des copies. Le statut de favori ne voyage pas.
+
+## Le journal de bord
+
+Ce que l'application a vécu pendant le trajet, en événements horodatés.
+
+Le journal porte aussi **ce que le son a coûté** quand il est synthétisé :
+facteur temps réel, creux du lecteur, écrêtage et charge du calcul. C'est ce qui
+permet de savoir après coup si la synthèse a tenu dans la voiture. Un profil qui
+joue des échantillons n'inscrit rien : un zéro se lirait comme une mesure.
 
 Le dépôt se fait par tranches, toutes les cinq minutes ou dès qu'une tranche
 atteint sa taille, avec le même compte que celui des traces. Ce qui n'a pas pu
@@ -1397,8 +1447,10 @@ mois.
 
 Les positions ne circulent pas dans le flux des mesures de vitesse, et ce n'est
 pas un détail : ce flux est recopié tel quel par l'enregistreur de traces, et
-une trace s'exporte en fichier et se dépose sans accord particulier. Y faire
-entrer des coordonnées les aurait fait sortir par une porte déjà ouverte.
+une trace s'exporte en fichier et se dépose d'un geste. Y faire entrer des
+coordonnées les aurait fait sortir par une porte déjà ouverte. C'est aussi
+pourquoi la remontée automatique d'une trace demande le troisième cran, celui-là
+même qui autorise la position.
 
 ## Les échantillons
 
@@ -1757,7 +1809,7 @@ chaque essai.
 | 28 | L'effort du moteur tient compte de la vitesse : la croisière n'est plus plate | fait, reste à écouter |
 | 29 | Une banque produite ici par engine-sim, une prise par demi-octave, rejouée telle quelle dans la voiture | fait, reste à écouter |
 | 30 | engine-sim en WebAssembly : le son sort en direct et suit le régime | fait, reste à écouter |
-| — | Déposer une trace et un profil depuis l'application | prévu |
+| 31 | Tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils | fait, reste deux gestes sur le NAS et un essai en roulant |
 | — | Plusieurs banques de son, choisies par profil | prévu |
 | — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | à remesurer |
 

@@ -1,6 +1,6 @@
 # 04 — Un dépôt en attente part au retour du réseau
 
-**Statut :** ⬜ prêt
+**Statut :** 🚫 abandonné — repris par [REMONTEE](../../REMONTEE/spec.md)
 
 **Bloqué par :** 02 — Déposer une trace enregistrée en roulant
 
@@ -29,3 +29,10 @@ ce qui est déposé quitte la file.
 - [ ] Une trace déposée quitte la file d'attente
 - [ ] Un échec répété ne boucle pas indéfiniment et se signale
 - [ ] L'échec d'écriture du stockage local reste signalé comme aujourd'hui
+
+## Repris ailleurs, le 6 septembre 2026
+
+Ce ticket devient [REMONTEE 02 — Une trace part toute seule, et repart au retour
+du réseau](../../REMONTEE/tickets/02-une-trace-part-toute-seule.md). La file
+d'attente y naît, et elle sert à toutes les natures déposées, pas aux seules
+traces.

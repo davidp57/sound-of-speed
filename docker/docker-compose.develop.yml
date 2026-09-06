@@ -48,7 +48,10 @@ services:
       #
       # Le même dossier que la production : c'est ce qui permet de comparer les
       # deux piles sur les mêmes réglages.
-      - /volume1/docker/speed/profiles:/usr/share/nginx/html/profiles:ro
+      #
+      # **En lecture-écriture** depuis le lot REMONTEE : un profil réglé dans la
+      # voiture y remonte tout seul, et c'est ce dossier que la bibliothèque lit.
+      - /volume1/docker/speed/profiles:/usr/share/nginx/html/profiles
       # Dépôt des traces enregistrées en roulant. **En lecture-écriture** : le
       # navigateur de la voiture refuse tout téléchargement, c'est par là que les
       # traces en sortent. Le dossier doit exister, comme celui des profils, et
@@ -61,12 +64,17 @@ services:
       # à chaque sortie. Rien n'y est déposé tant que le journal n'a pas été
       # accepté dans l'écran de configuration.
       - /volume1/docker/speed/journal:/usr/share/nginx/html/journal
+      # Relevés de mesure, déposés par la sonde et par l'application. **En
+      # lecture-écriture**, dans un dossier à part : ces fichiers se lisent un par
+      # un, à la main, et se noieraient parmi les tranches de journal.
+      - /volume1/docker/speed/mesures:/usr/share/nginx/html/mesures
       # Fichier de mots de passe. À décommenter dans **deux** cas, qui sont
       # indépendants :
       #
-      #  - pour déposer une trace depuis la voiture. L'emplacement /traces/ de
-      #    docker/nginx.conf exige toujours de s'annoncer, et il n'y a rien
-      #    d'autre à décommenter que cette ligne ;
+      #  - pour tout ce qui remonte depuis la voiture — traces, journal, relevés
+      #    de mesure, profils. Les quatre emplacements de docker/nginx.conf
+      #    exigent toujours de s'annoncer en écriture, et il n'y a rien d'autre à
+      #    décommenter que cette ligne ;
       #  - pour protéger le site entier, si l'adresse est exposée hors du réseau
       #    local. Il faut alors aussi décommenter les deux lignes auth_basic de
       #    docker/nginx.conf.

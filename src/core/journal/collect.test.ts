@@ -199,3 +199,42 @@ describe('le cran d’accord décide de ce qui peut être inscrit', () => {
     expect(positions).toHaveLength(2)
   })
 })
+
+describe('ce que le son a coûté', () => {
+  it('entre dans le relevé périodique quand le son est synthétisé', () => {
+    const { collector, events } = setup()
+    collector.observe(
+      snapshot({
+        sound: {
+          realtime: 3.246,
+          cpuLoad: 0.31,
+          underruns: 2,
+          underrunMs: 41.6,
+          peak: 0.9994,
+          clipping: 0.0123,
+        },
+      }),
+    )
+
+    const releve = events().find((e) => e.kind === 'sample')
+    expect(releve?.data).toMatchObject({
+      realtime: 3.25,
+      cpu: 0.31,
+      underruns: 2,
+      underrunMs: 42,
+      peak: 0.999,
+      clipping: 0.0123,
+    })
+  })
+
+  it('n’inscrit rien quand le profil joue des échantillons', () => {
+    // Un zéro se lirait comme une mesure : « le son n'a rien coûté » au lieu de
+    // « il n'y avait pas de synthèse ».
+    const { collector, events } = setup()
+    collector.observe(snapshot())
+
+    const releve = events().find((e) => e.kind === 'sample')
+    expect(releve?.data).not.toHaveProperty('realtime')
+    expect(releve?.data).not.toHaveProperty('clipping')
+  })
+})
