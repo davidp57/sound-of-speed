@@ -50,6 +50,15 @@ export interface OutputChainOptions {
   bypassLimiter?: boolean
   /** Gain de rattrapage. Séparé pour pouvoir le mesurer neutre. */
   makeup?: number
+  /**
+   * Place le limiteur **après** le gain de rattrapage.
+   *
+   * Dans l'ordre livré, le rattrapage est le dernier étage : rien ne rattrape ce
+   * qu'il fait dépasser, et le limiteur, placé avant lui, ne peut pas empêcher
+   * l'écrêtage qu'il est censé empêcher. Cette option sert à mesurer l'autre
+   * ordre avant de décider s'il devient celui du projet.
+   */
+  limiterLast?: boolean
 }
 
 /**
@@ -89,14 +98,22 @@ export function buildOutputChain(
   // Un court-circuit laisse le nœud dans le graphe et le contourne : le retirer
   // changerait le nombre d'étages, donc la latence, donc ce qu'on compare.
   input.connect(highpass)
-  if (options.bypassShaper) {
-    highpass.connect(options.bypassLimiter ? makeup : limiter)
-  } else {
-    highpass.connect(shaper)
-    shaper.connect(options.bypassLimiter ? makeup : limiter)
-  }
-  if (!options.bypassLimiter) limiter.connect(makeup)
+  const afterFilter = options.bypassShaper ? highpass : shaper
+  if (!options.bypassShaper) highpass.connect(shaper)
 
+  if (options.bypassLimiter) {
+    afterFilter.connect(makeup)
+    return { input, highpass, shaper, limiter, makeup, output: makeup }
+  }
+
+  if (options.limiterLast) {
+    afterFilter.connect(makeup)
+    makeup.connect(limiter)
+    return { input, highpass, shaper, limiter, makeup, output: limiter }
+  }
+
+  afterFilter.connect(limiter)
+  limiter.connect(makeup)
   return { input, highpass, shaper, limiter, makeup, output: makeup }
 }
 

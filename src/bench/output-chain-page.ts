@@ -7,15 +7,19 @@
  */
 
 import type { EngineState } from '../core/engine/engine'
+import type { Profile } from '../core/preset/schema'
 import { createRoadProfile } from '../core/preset/defaults'
 import {
+  BENCH_SAMPLE_RATE,
   loadLayers,
+  renderBuffer,
   renderPoint,
   type BenchConfig,
   type BenchLayer,
   type BenchPoint,
   type BenchState,
 } from './output-chain-bench'
+import { clip, concat, normalize, rmsOf, toWav } from './wav'
 
 /**
  * Deux états, même régime, seul l'effort change.
@@ -71,6 +75,50 @@ const CONFIGS: BenchConfig[] = [
   { label: 'volume 1,0', bypassShaper: false, bypassLimiter: false, volume: 1 },
   { label: 'volume 0,5', bypassShaper: false, bypassLimiter: false, volume: 0.5 },
   { label: 'volume 0,25', bypassShaper: false, bypassLimiter: false, volume: 0.25 },
+  // L'ordre proposé en correction : le limiteur en dernier, donc après le gain
+  // qui fait dépasser la pleine échelle. C'est la seule ligne qui dit ce que la
+  // correction changerait, et à quel prix sur le niveau.
+  {
+    label: 'limiteur en dernier',
+    bypassShaper: false,
+    bypassLimiter: false,
+    volume: DEFAULT_VOLUME,
+    limiterLast: true,
+  },
+  // Troisième voie : au lieu de rattraper l'écrêtage, ne pas le produire. Le
+  // rattrapage descend de 1,8 à 1,25 — juste ce qu'il faut pour que la crête
+  // repasse sous la pleine échelle en accélération franche — et le limiteur en
+  // dernier ne sert plus que de filet quand le volume monte.
+  {
+    label: 'rattrapage 1,25',
+    bypassShaper: false,
+    bypassLimiter: false,
+    volume: DEFAULT_VOLUME,
+    makeup: 1.25,
+  },
+  {
+    label: 'rattrapage 1,25 + limiteur en dernier',
+    bypassShaper: false,
+    bypassLimiter: false,
+    volume: DEFAULT_VOLUME,
+    makeup: 1.25,
+    limiterLast: true,
+  },
+  {
+    label: 'rattrapage 1,25 + limiteur en dernier, volume 1,0',
+    bypassShaper: false,
+    bypassLimiter: false,
+    volume: 1,
+    makeup: 1.25,
+    limiterLast: true,
+  },
+  {
+    label: 'limiteur en dernier, volume 1,0',
+    bypassShaper: false,
+    bypassLimiter: false,
+    volume: 1,
+    limiterLast: true,
+  },
   // Très en dessous du seuil, un limiteur ne doit rien faire du tout : ces deux
   // lignes doivent donc donner le même niveau. Si elles diffèrent, c'est que le
   // nœud applique un gain qui n'a pas été demandé, et le reste du tableau se lit
@@ -114,7 +162,10 @@ function render(points: BenchPoint[]): void {
       const trimmed = point.clippedRatio > 0 ? `, ${point.clippedRatio.toFixed(2)} % rogné` : ''
       const reduction =
         point.limiterReductionDb < -0.05 ? `, limiteur ${point.limiterReductionDb.toFixed(1)}` : ''
-      return `${point.clippedRmsDb.toFixed(1)} dB (crête ${point.peakDb.toFixed(1)}${trimmed}${reduction})`
+      const distortion = Number.isFinite(point.clipErrorDb)
+        ? `, distorsion ${point.clipErrorDb.toFixed(0)}`
+        : ''
+      return `${point.clippedRmsDb.toFixed(1)} dB (crête ${point.peakDb.toFixed(1)}${trimmed}${distortion}${reduction})`
     })
     const cruise = points.find((p) => p.config === config.label && p.state === STATES[0]?.label)
     const full = points.find((p) => p.config === config.label && p.state === STATES[1]?.label)
@@ -146,6 +197,65 @@ function render(points: BenchPoint[]): void {
   output.replaceChildren(table)
 }
 
+
+/** Durée de chaque moitié de l'extrait comparatif, en secondes. */
+const EXTRAIT_S = 4
+
+/**
+ * Produit l'extrait qui répond à « est-ce que ça s'entend ? ».
+ *
+ * Les deux versions s'enchaînent dans un même fichier, **mises au même niveau
+ * efficace** : sans cela on comparerait le plus fort au plus faible, et le plus
+ * fort paraîtrait toujours meilleur. Le niveau se juge sur le tableau, la
+ * distorsion s'entend ici.
+ *
+ * Chaque moitié est rognée à la pleine échelle avant d'être mise à niveau —
+ * c'est ce que fait le convertisseur, et c'est là que naît la distorsion qu'on
+ * veut faire entendre.
+ */
+async function buildExtract(profile: Profile, layers: BenchLayer[]): Promise<Blob> {
+  const state = STATES[1] as BenchState
+  const current = await renderBuffer(
+    profile,
+    layers,
+    state,
+    { label: 'actuel', bypassShaper: false, bypassLimiter: false, volume: DEFAULT_VOLUME },
+    EXTRAIT_S,
+  )
+  const fixed = await renderBuffer(
+    profile,
+    layers,
+    state,
+    {
+      label: 'corrigé',
+      bypassShaper: false,
+      bypassLimiter: false,
+      volume: DEFAULT_VOLUME,
+      makeup: 1.25,
+      limiterLast: true,
+    },
+    EXTRAIT_S,
+  )
+
+  const a = clip(current.buffer)
+  const b = clip(fixed.buffer)
+  const target = Math.min(rmsOf(a), rmsOf(b))
+  normalize(a, target)
+  normalize(b, target)
+  return toWav(concat([a, b], 0.4, BENCH_SAMPLE_RATE), BENCH_SAMPLE_RATE)
+}
+
+/** Range l'extrait dans un lien de téléchargement, sans jamais le faire jouer. */
+function offerExtract(blob: Blob): void {
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = 'chaine-de-sortie-avant-apres.wav'
+  link.textContent =
+    'Télécharger l’extrait : 4 s telle qu’elle sort aujourd’hui, puis 4 s corrigée, au même niveau'
+  const holder = document.querySelector('#extrait')
+  holder?.replaceChildren(link)
+}
+
 async function run(): Promise<void> {
   const profile = createRoadProfile()
   line(`Profil « ${profile.name} », banque ${profile.sampleDir} : chargement des couches…`)
@@ -171,6 +281,9 @@ async function run(): Promise<void> {
       render(points)
     }
   }
+
+  line(`${total} rendus faits — production de l’extrait à écouter…`)
+  offerExtract(await buildExtract(profile, layers))
 
   line(
     `${total} rendus, ${layers.length} couches, seuil du limiteur ${profile.mix.limiterThresholdDb} dB, ` +
