@@ -398,7 +398,7 @@ const gauge = computed(() => {
         :value="synthStatus.peak.toFixed(3)"
         :bar="synthStatus.peak"
         :warn="synthStatus.peak >= 0.999"
-        hint="À 1,000 la sortie du synthétiseur bute sur son plafond : baisser le volume."
+        hint="À 1,000 la sortie du synthétiseur bute sur son plafond — voulu en charge, pas au ralenti."
       />
       <ValueRow label="Niveau efficace" :value="synthStatus.rms.toFixed(3)" :bar="synthStatus.rms" />
       <ValueRow
@@ -506,9 +506,7 @@ const gauge = computed(() => {
         <span class="numeric">{{ synthSettings.levelerGain.toFixed(2) }}</span>
       </div>
       <div class="field">
-        <label for="levt">
-          {{ synthSettings.levelerAuto ? 'Crête visée en pleine charge (plafond)' : 'Crête visée par le niveleur' }}
-        </label>
+        <label for="levt">Crête visée par le niveleur</label>
         <input
           id="levt"
           type="range"
@@ -520,22 +518,10 @@ const gauge = computed(() => {
         />
         <span class="numeric">
           {{ (synthSettings.levelerTarget / 32768).toFixed(2) }}
-          <em v-if="synthSettings.levelerTarget > 20000" class="gap">écrête</em>
+          <em v-if="synthStatus.clipped > 0" class="gap">
+            écrête {{ (synthStatus.clipped * 100).toFixed(1) }} %
+          </em>
         </span>
-      </div>
-      <div class="field">
-        <label for="levauto">Cible automatique</label>
-        <input
-          id="levauto"
-          type="checkbox"
-          :checked="synthSettings.levelerAuto"
-          @change="onFlag('levelerAuto', $event)"
-        />
-        <span class="numeric">{{ synthSettings.levelerAuto ? 'actif' : 'coupé' }}</span>
-      </div>
-      <div v-if="synthSettings.levelerAuto" class="field">
-        <label>Plancher courant</label>
-        <span class="numeric">{{ (synthStatus.levelerFloor / 32768).toFixed(2) }}</span>
       </div>
       <p class="note">
         La convolution interne n'est pas qu'un choix de coût : c'est une
@@ -551,18 +537,17 @@ const gauge = computed(() => {
         appliqué se lisse en environ 0,2 ms, donc le front d'une bouffée
         soudaine ne reçoit encore que 10 % du bon gain quand il arrive — plus
         le front est raide, plus il écrête. Le volume perdu se rattrape en
-        aval, en flottant, où rien ne plafonne.
+        aval, en flottant, où rien ne plafonne. « Écrête » compte les
+        échantillons réellement butés sur ce plafond, pas la position d'un
+        curseur.
       </p>
       <p class="note">
-        La cible automatique répond à ce que David a constaté en changeant de
-        moteur : le réglage qui évite l'écrêtage au ralenti d'un moteur écrête
-        sur un autre, et inversement. Cochée, elle garde ce curseur comme
-        <strong>plafond</strong> — la saturation qu'on autorise en pleine
-        charge — et fait descendre tout seul un plancher dès que la crête
-        mesurée reste écrêtée, à condition que l'effort soit faible : sous
-        charge, un peu de saturation est voulue, pas une erreur. Le plancher
-        ne remonte que lentement, pour ne pas repartir aussitôt vers le
-        plafond et y écrêter de nouveau.
+        Ce réglage change le <strong>niveau</strong>, pas le timbre. Essayé sur
+        le banc à pleine charge tenue, de « n'écrête pas du tout » à « écrête
+        sec » : aucune différence audible, une fois avec le son entièrement
+        réverbéré, une fois avec la résonance à 0,45. Le mordant se règle avec
+        la <em>résonance d'échappement</em> plus bas — la convolution étale les
+        fronts, et à 1,00 plus rien du son direct n'arrive à la sortie.
       </p>
       <p class="note">
         Le niveleur vise une crête constante quel que soit le moteur — et efface

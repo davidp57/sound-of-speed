@@ -39,6 +39,11 @@ class SynthPlayer extends AudioWorkletProcessor {
     // cents millisecondes, ce qui masquerait ceux qui comptent.
     this.started = false
     this.peak = 0
+    // Compte des echantillons butes sur le plafond des entiers 16 bits.
+    // renderAudio coupe au couteau a INT16_MAX ; une fois divise par 32768,
+    // un echantillon coupe vaut 32767/32768. C'est la seule mesure directe de
+    // l'ecretage : la crete, elle, dit seulement qu'on s'en approche.
+    this.clipped = 0
     this.ticks = 0
     // Mesure de brillance : energie au-dessus d'un kilohertz sur energie
     // totale. Le ticket demande que l'effort change le **timbre** et pas
@@ -112,6 +117,7 @@ class SynthPlayer extends AudioWorkletProcessor {
       const sample = out[i]
       const level = Math.abs(sample)
       if (level > this.peak) this.peak = level
+      if (level >= 0.9999) this.clipped += 1
       this.hpState = this.hpCoef * (this.hpState + sample - this.hpPrev)
       this.hpPrev = sample
       this.sumHigh += this.hpState * this.hpState
@@ -131,10 +137,12 @@ class SynthPlayer extends AudioWorkletProcessor {
         underruns: this.underruns,
         underrunFrames: this.underrunFrames,
         peak: this.peak,
+        clipped: this.clipped / (this.reportEvery * out.length),
         rms: Math.sqrt(this.sumAll / (this.reportEvery * out.length)),
         brightness: this.sumAll > 0 ? Math.sqrt(this.sumHigh / this.sumAll) : 0,
       }
       this.peak = 0
+      this.clipped = 0
       this.sumHigh = 0
       this.sumAll = 0
       if (this.link !== null) this.link.postMessage(report)

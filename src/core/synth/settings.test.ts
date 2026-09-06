@@ -66,9 +66,8 @@ describe('needsRebuild', () => {
   })
 
   it('ne reconstruit pas pour la crête du niveleur, elle est hot', () => {
-    // `synth_set_leveler_target` l'écrit à chaque échantillon sans rebâtir —
-    // c'est ce qui permet à la correction automatique de la changer quatre
-    // fois par seconde.
+    // `synth_set_leveler_target` l'écrit à chaud, contrairement aux deux bornes
+    // de gain : la régler ne coupe plus le son une seconde.
     expect(needsRebuild(DEFAULT_SYNTH, { ...DEFAULT_SYNTH, levelerTarget: 8000 })).toBe(false)
   })
 })

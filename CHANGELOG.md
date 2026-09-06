@@ -8,30 +8,10 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
-- **La crête visée par le niveleur se corrige toute seule.** David, après avoir
-  essayé plusieurs moteurs : « avec d'autres moteurs, d'autres échappements, le
-  réglage nécessaire est différent [...] ça serait bien d'avoir un truc plus
-  dynamique, qui calcule et se modifie en temps réel ». Un réglage fixe faisait
-  un compromis entre deux régimes qui n'en demandent pas — la saturation ajoute
-  du caractère en charge et gâche le ralenti.
-
-  Le curseur devient un **plafond** — la saturation qu'on autorise en pleine
-  charge. Un **plancher** descend tout seul quand la crête mesurée reste
-  écrêtée à faible effort, et ne remonte que lentement, vingt fois plus
-  doucement qu'il ne descend : redescendre vite évite l'écrêtage dès qu'il
-  paraît, remonter lentement évite le pompage. La cible envoyée interpole entre
-  les deux selon l'effort, si bien qu'un coup de gaz ne déclenche pas une
-  correction destinée au ralenti.
-
-  Coupé par défaut, case « Cible automatique » dans l'onglet Synthèse, avec le
-  plancher courant affiché. Le calcul vit dans `core/synth/leveler.ts`, en
-  fonctions pures, et se vérifie sans navigateur.
-
-  **Au passage, la crête visée ne coupe plus le son pour changer** : elle est
+- **La crête visée par le niveleur ne coupe plus le son pour changer.** Elle est
   relue à chaque échantillon par engine-sim, donc `synth_set_leveler_target`
-  l'écrit à chaud. La régler à la main n'impose plus la seconde de rebâtissage —
-  et c'est ce qui rend la correction automatique possible, à quatre pas par
-  seconde.
+  l'écrit à chaud, sur le modèle de `synth_set_noise`. La régler n'impose plus la
+  seconde de rebâtissage à chaque cran du curseur.
 
 - **La crête que vise le niveleur, réglable.** David a mesuré ce que l'écran
   appelait « niveau crête » : à 1,000 en rouge sur le GM LS en convolution
@@ -45,8 +25,8 @@ Toutes les évolutions notables du projet. Format
   interne — en atténuant les fronts — élimine l'écrêtage en même temps que le
   mordant.
 
-  Un curseur neuf règle cette cible, avec un repère « écrête » au-delà de
-  20 000. Le défaut passe à 12 000 : simulé sur un V8 au ralenti, un signal qui
+  Un curseur neuf règle cette cible, avec le compte d'échantillons écrêtés à
+  côté. Le défaut passe à 12 000 : simulé sur un V8 au ralenti, un signal qui
   écrêtait à 17,5 % avec la cible d'origine tombe à 0,4 %. Le volume perdu se
   rattrape en aval, dans Web Audio, où rien ne plafonne.
 
@@ -132,6 +112,29 @@ Toutes les évolutions notables du projet. Format
   reçoit celle de son profil d'usine.
 
 ### Corrigé
+
+- **Le mordant se règle avec la résonance d'échappement, pas avec le niveleur.**
+  David cherchait depuis plusieurs séances à retrouver « quelque chose
+  d'organique, de réel » en charge, et la piste suivie était la saturation du
+  niveleur. Elle était fausse : à pleine charge tenue, passer le réglage de
+  « n'écrête pas du tout » à « écrête sec » ne s'entend pas — deux fois, avec le
+  son entièrement réverbéré puis avec la résonance à 0,45. Ce qui l'enlevait,
+  c'est le **mélange de résonance d'échappement**, à 1,00 par défaut : plus rien
+  du son direct n'arrivait à la sortie, et la convolution étale les fronts. À
+  0,00 le rauque revient franchement.
+
+  Une tentative de correction automatique de la crête visée a été écrite puis
+  retirée dans la foulée : outre qu'elle visait la mauvaise grandeur, elle
+  mangeait en charge la saturation qu'on voulait garder et laissait un demi-quart
+  de seconde de son sale au relâchement. L'écran dit maintenant ce que le réglage
+  fait réellement — le niveau, pas le timbre.
+
+- **Le témoin « écrête » du banc mesure enfin l'écrêtage.** Il comparait la
+  position du curseur à un nombre en dur : il s'allumait sur un réglage haut
+  même quand la sortie ne touchait pas son plafond, et restait éteint sur un
+  moteur qui saturait à un réglage plus bas. Il compte maintenant les
+  échantillons réellement butés sur le plafond des entiers 16 bits, relevés dans
+  le lecteur, et affiche leur part.
 
 - **L'embrayage se ferme progressivement, au lieu de sauter à un palier.** David,
   après l'arrivée du régime de décollage : « on passe de 800 rpm à 1 300, sans

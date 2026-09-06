@@ -127,39 +127,22 @@ export interface SynthSettings {
    * 19 à 38 ms — assez proche de ces 23 ms pour que le gain n'ait pas le temps
    * de remonter entre deux coups.
    *
-   * David l'a vu avant qu'on le mesure : « en déportée la GM a le niveau crête
-   * maximisé (rouge) à 1.000 », et le son qu'il préférait était chaque fois
-   * celui qui n'y touchait pas. Simulé sur un V8 au ralenti, un signal de
-   * 50 000 de crête ressort écrêté à 17,5 % avec la cible d'origine, contre
-   * 0,4 % à 12 000.
-   *
    * Le volume perdu se rattrape dans Web Audio, en flottant, où il n'y a pas de
    * plafond dur.
    *
    * Relue à chaque échantillon par `Synthesizer::renderAudio`, donc écrite à
-   * chaud (`synth_set_leveler_target`) et non figée à la construction — c'est
-   * ce qui rend possible la correction automatique ci-dessous : la changer
-   * quatre fois par seconde ne coûte pas une reconstruction.
+   * chaud (`synth_set_leveler_target`) : la changer ne coupe plus le son une
+   * seconde le temps de rebâtir.
    *
-   * Quand `levelerAuto` est actif, ce nombre devient un **plafond** — la
-   * saturation qu'on autorise en pleine charge — et non plus la cible
-   * envoyée telle quelle.
+   * **Ce réglage change le niveau, pas le timbre.** Essayé sur le banc le
+   * 6 septembre 2026, à pleine charge tenue, de « n'écrête pas du tout » à
+   * « écrête sec » : aucune différence audible, deux fois — une fois avec le
+   * son entièrement réverbéré, une fois avec la résonance à 0,45. Le mordant
+   * que David cherchait vient du **mélange de résonance d'échappement**
+   * (`convolverMix`), pas d'ici : la convolution étale les fronts, et à 1,00
+   * plus rien du son direct n'arrive à la sortie.
    */
   levelerTarget: number
-  /**
-   * Corriger la cible du niveleur toute seule, au lieu d'un seul nombre fixe.
-   *
-   * David : « avec d'autres moteurs, d'autres échappements, le réglage
-   * nécessaire est différent [...] il faut un réglage qui laisse un peu de
-   * saturation en charge mais permet d'avoir un son plus pur au ralenti ».
-   * `levelerTarget` reste le plafond ; un plancher, tenu dans
-   * `core/synth/leveler.ts`, descend tout seul quand la crête mesurée reste
-   * écrêtée à faible effort, et ne remonte que lentement.
-   *
-   * Coupé par défaut : sans lui, rien ne change pour qui préfère régler à la
-   * main.
-   */
-  levelerAuto: boolean
   /** Imposer l'effort plutôt que de suivre celui du moteur. */
   forceEffort: boolean
   /** L'effort imposé, de 0 à 1. */
@@ -228,8 +211,9 @@ export const DEFAULT_SYNTH: SynthSettings = {
   leveler: true,
   levelerGain: 1,
   // Nettement sous les 30 000 d'engine-sim : c'est la marge qui manquait.
+  // Douze mille : la valeur mesurée propre sur un V8, 0,4 % d'échantillons
+  // écrêtés contre 17,5 % à la cible d'origine d'engine-sim.
   levelerTarget: 12000,
-  levelerAuto: false,
   sweep: false,
   sweepSeconds: 12,
   forceEffort: false,
@@ -271,7 +255,6 @@ export function clampSynthSettings(settings: SynthSettings): SynthSettings {
     leveler: settings.leveler,
     levelerGain: clamp(settings.levelerGain, 0.01, 4),
     levelerTarget: Math.round(clamp(settings.levelerTarget, 1000, 32000)),
-    levelerAuto: settings.levelerAuto === true,
     sweep: settings.sweep,
     sweepSeconds: clamp(settings.sweepSeconds, 2, 120),
     forceEffort: settings.forceEffort,
@@ -300,8 +283,7 @@ export function needsRebuild(previous: SynthSettings, next: SynthSettings): bool
     previous.leveler !== next.leveler ||
     previous.levelerGain !== next.levelerGain
     // La cible du niveleur n'est volontairement pas ici : elle est relue à
-    // chaque échantillon par `renderAudio`, elle s'écrit à chaud
-    // (`synth_set_leveler_target`), et c'est ce qui permet à la correction
-    // automatique de la changer quatre fois par seconde sans reconstruire.
+    // chaque échantillon par `renderAudio` et s'écrit à chaud
+    // (`synth_set_leveler_target`), donc la régler ne coupe plus le son.
   )
 }
