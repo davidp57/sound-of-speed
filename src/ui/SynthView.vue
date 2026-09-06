@@ -239,10 +239,11 @@ function onEngine(key: string, event: Event): void {
  * un moteur est un ensemble où les valeurs s'accordent, pas vingt-huit chiffres
  * indépendants. On part donc d'un moteur relevé, puis on retouche.
  *
- * Le rupteur part avec la définition : les deux décrivent le même moteur.
+ * Le rupteur et le rendu partent avec la définition : les trois décrivent le
+ * même moteur.
  */
 function loadEngine(entry: LibraryEngine): void {
-  void applyLibraryEngine({ ...entry.definition }, entry.redlineRpm)
+  void applyLibraryEngine(entry)
 }
 
 /**

@@ -20,6 +20,7 @@ import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source
 import { soundSourceOf } from './core/preset/schema'
 import type { EngineDefinition, Profile, ProfileOrigin } from './core/preset/schema'
 import { clampEngineDefinition } from './core/preset/engine-definition'
+import type { LibraryEngine } from './core/preset/engine-library'
 import {
   applyResponsiveness,
   applySportiness,
@@ -29,7 +30,7 @@ import {
   sportinessOf,
 } from './core/preset/character'
 import { SynthEngine, type SynthStatus } from './core/synth/synth'
-import { DEFAULT_SYNTH, type SynthSettings } from './core/synth/settings'
+import { DEFAULT_RENDERING, DEFAULT_SYNTH, renderingOf, type SynthSettings } from './core/synth/settings'
 import { Journal, newSessionId } from './core/journal/journal'
 import { JournalCollector, type JournalConsent } from './core/journal/collect'
 import { depositSlice } from './core/journal/deposit'
@@ -353,7 +354,26 @@ export const synthSupported =
 export const soundOrigin = computed(() => soundSourceOf(activeProfile.value))
 /** Le profil actif fait-il sonner le moteur simulé plutôt que la banque ? */
 export const synthIsOrigin = computed(() => soundOrigin.value === 'live')
-export const synthSettings = ref<SynthSettings>({ ...DEFAULT_SYNTH })
+/**
+ * Ce qui décrit la machine qui calcule : fréquence de simulation, taille de
+ * bloc, réserve, et les outils du banc. Ces valeurs ne suivent pas un profil
+ * d'un appareil à l'autre — un téléphone n'a pas la marge d'un poste de bureau.
+ */
+const synthDevice = ref<SynthSettings>({ ...DEFAULT_SYNTH })
+
+/**
+ * Les réglages complets du synthétiseur : l'appareil, recouvert par le rendu du
+ * profil actif.
+ *
+ * Le rendu — échappement, volume, crête visée, papillon — vient du profil et
+ * non d'ici, parce qu'il décrit le moteur et doit le suivre. Changer de profil
+ * change donc le son sans qu'on ait rien à recopier, et essayer un autre moteur
+ * l'amène avec son réglage.
+ */
+export const synthSettings = computed<SynthSettings>(() => ({
+  ...synthDevice.value,
+  ...(activeProfile.value.rendering ?? DEFAULT_RENDERING),
+}))
 /**
  * Faire tourner la synthèse sans qu'elle sorte du haut-parleur.
  *
@@ -390,23 +410,27 @@ export async function applyEngineDefinition(definition: EngineDefinition): Promi
 }
 
 /**
- * Charge un moteur entier : sa définition **et** son rupteur, en une fois.
+ * Charge un moteur entier : sa définition, son rupteur **et** son rendu.
  *
- * Les deux vont ensemble. Un GM LS chargé sous le rupteur d'un quatre
+ * Les trois vont ensemble. Un GM LS chargé sous le rupteur d'un quatre
  * cylindres ne serait plus un GM LS, et l'écran n'aurait plus rien de fiable à
  * dire sur ce qui est chargé. C'est aussi pour cela que le rupteur reste en
  * gris dans le banc de synthèse : il se règle dans la section moteur du profil,
  * ou il arrive avec le moteur.
  */
-export async function applyLibraryEngine(
-  definition: EngineDefinition,
-  redlineRpm: number,
-): Promise<void> {
-  activeProfile.value.engine.redlineRpm = redlineRpm
+export async function applyLibraryEngine(engine: LibraryEngine): Promise<void> {
+  activeProfile.value.engine.redlineRpm = engine.redlineRpm
+  // Le rendu part avec le moteur, sinon on l'écouterait à travers l'échappement
+  // du précédent — et l'on ne saurait plus lequel des deux on entend.
+  activeProfile.value.rendering = { ...engine.rendering }
   // Le balayage du banc doit suivre le rupteur qui vient d'arriver, sinon il
   // continue de monter jusqu'à l'ancien.
   synth.setRpmRange(runtimeProfile.value.engine.idleRpm, runtimeProfile.value.engine.redlineRpm)
-  await applyEngineDefinition(definition)
+  await applyEngineDefinition({ ...engine.definition })
+  // La définition ne rebâtit que le moteur ; le rendu s'applique par le même
+  // chemin que les réglages du banc, sans quoi il resterait dans le profil sans
+  // atteindre le graphe audio.
+  await synth.apply(synthSettings.value)
 }
 
 /** Allume ou coupe le son synthétisé. À appeler depuis un geste de l'écran. */
@@ -431,9 +455,12 @@ export function setSynthSilent(silent: boolean): void {
 
 /** Applique les réglages du banc. Certains coupent le son le temps de rebâtir. */
 export async function applySynthSettings(settings: SynthSettings): Promise<void> {
-  synthSettings.value = settings
+  // Le lot arrive entier ; il repart en deux, chacun là où il vit. Le profil
+  // est enregistré tout seul, par le veilleur qui suit la liste des profils.
+  synthDevice.value = settings
+  activeProfile.value.rendering = renderingOf(settings)
   synth.setRpmRange(runtimeProfile.value.engine.idleRpm, runtimeProfile.value.engine.redlineRpm)
-  await synth.apply(settings)
+  await synth.apply(synthSettings.value)
 }
 export const screenLockSupported = screenLock.supported
 export const screenLockHeld = ref(false)
