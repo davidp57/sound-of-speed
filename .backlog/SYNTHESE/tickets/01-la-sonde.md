@@ -2,6 +2,12 @@
 
 **Statut :** 🧑 attend David — la sonde tourne et a servi, reste le relevé dans la Tesla
 
+> **Un relevé pris dans la voiture avant le 6 septembre 2026 ne vaut rien.** Le
+> serveur annonçait `probe.mjs` en `application/octet-stream`, le navigateur
+> refusait le module, et la page retombait sur son bouchon sans le dire : le
+> chiffre affiché ne mesurait pas engine-sim. Corrigé dans `docker/nginx.conf` ;
+> la bannière « bouchon » de la page dit maintenant la vérité.
+
 **Bloqué par :** aucun
 
 ## Ce qu'il faut obtenir

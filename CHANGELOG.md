@@ -207,6 +207,23 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le son synthétisé démarre dans la voiture.** Il s'arrêtait sur une erreur
+  juste après « construction du moteur », et seulement sur le serveur : au
+  bureau, où Vite sert les fichiers, il n'y avait rien à voir. La table des
+  types de nginx ne connaît pas l'extension `.mjs` ; `probe.mjs`, le module
+  d'engine-sim, partait donc en `application/octet-stream` — mesuré sur la
+  configuration du projet —, et un navigateur refuse d'exécuter un module servi
+  sous ce type-là. Il est maintenant annoncé comme son voisin `engine.js`.
+
+  Même cause pour la page de mesure `/sonde/` : son import échouait de la même
+  façon et elle retombait sans le dire sur son bouchon, c'est-à-dire qu'elle
+  affichait un chiffre qui ne mesurait rien. Les relevés pris dans la voiture
+  avant cette correction sont donc à refaire.
+
+  Le cœur d'engine-sim entre aussi dans le cache hors réseau, comme la réponse
+  d'échappement par défaut : sans lui le mode synthèse ne démarre pas du tout
+  sans connexion.
+
 - **Le mordant se règle avec la résonance d'échappement, pas avec le niveleur.**
   David cherchait depuis plusieurs séances à retrouver « quelque chose
   d'organique, de réel » en charge, et la piste suivie était la saturation du
