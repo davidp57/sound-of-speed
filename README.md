@@ -889,6 +889,16 @@ Dans l'écran **Configuration**, section *Hors réseau* :
   avant de partir, plutôt que de découvrir sur la route qu'une couche manque.
 - **Installer sur l'écran d'accueil** propose l'installation quand le navigateur
   l'autorise. L'application s'ouvre alors en plein écran, sans barre d'adresse.
+- **Libérer les banques inutilisées** vide du cache les échantillons dont plus
+  aucun profil ne se sert, et dit combien de place il a rendue. Les échantillons
+  y restent indéfiniment par construction — leur cache ne dépend pas de la
+  version du code, ce qui évite de retélécharger plusieurs mégaoctets à chaque
+  mise à jour — si bien qu'essayer trois banques en laissait trois sur le
+  téléphone. Ce qui est libéré se retéléchargera si un profil y revient.
+
+Le compte affiché **suit le profil** : changer de banque, changer de profil ou
+éteindre une couche met à jour ce qui est surveillé, donc ce que *Préparer hors
+réseau* ira chercher.
 
 Une bannière signale une version plus récente prête à être chargée, ou la perte
 du réseau.
@@ -898,6 +908,13 @@ du réseau.
 Le scénario a été déroulé en conditions réelles sur le build de production :
 première visite, préparation, **arrêt du serveur**, rechargement. L'application
 démarre, les cinq couches se chargent et le son sort — serveur éteint.
+
+Le listage des banques, lui, n'est pas servi depuis le cache : c'est une adresse
+qui se termine par une barre, elle change dès qu'on dépose un dossier, et la
+garder d'abord figerait la découverte. Le serveur la déclare `no-store`, ce que
+la règle du cache ne regardait même pas — relevé en lisant le contenu réel du
+cache après une mise en cache, où les listages s'étaient glissés à côté des
+échantillons. Le réseau passe donc devant, la copie ne servant que hors réseau.
 
 Ce test a révélé un défaut qui serait resté invisible autrement. Les serveurs
 répondent volontiers `Vary: Origin` sur les fichiers statiques ; une réponse

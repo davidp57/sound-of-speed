@@ -1,6 +1,6 @@
 # BANQUES — plusieurs banques de son, sans y passer la soirée
 
-**Statut :** 🔄 en cours
+**Statut :** 🧑 attend David — les quatre tickets sont livrés, reste l'essai hors réseau
 **Branche :** `feature/banques`
 **Version visée :** 0.3
 

@@ -22,6 +22,20 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le cache hors réseau suit la banque.** Ce qui est surveillé n'était déclaré
+  qu'au démarrage : changer de banque — ou de profil, ou éteindre une couche —
+  laissait l'écran compter les fichiers de l'ancienne, et *Préparer hors réseau*
+  mettait en cache ceux dont on venait de se détourner. Le défaut se voyait peu
+  tant que la banque se tapait à la main.
+
+  **Libérer les banques inutilisées** vide du cache les échantillons dont plus
+  aucun profil ne se sert, et dit la place rendue. Ils y restaient indéfiniment
+  par construction : essayer trois banques en laissait trois sur le téléphone.
+
+  Le listage des banques n'est plus servi depuis le cache. Il s'y glissait à
+  côté des échantillons, et une banque déposée sur le serveur ne serait jamais
+  apparue.
+
 - **La banque d'un profil se choisit dans une liste.** C'était une saisie de
   texte libre : on tapait un nom de dossier en aveugle, et une faute de frappe
   se découvrait à l'activation du son, sous la forme d'un silence. La liste

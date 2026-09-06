@@ -39,7 +39,7 @@ import { loadQueue, saveQueue } from './core/upload/store'
 import { putFile } from './core/upload/put'
 import { PROFILE_FOLDER, profileBody, profileFileName, profileUploadId } from './core/upload/profile'
 import { depositSlice } from './core/journal/deposit'
-import { fetchBanks, missingFiles, type Bank } from './core/audio/banks'
+import { fetchBanks, missingFiles, usedBanks, type Bank } from './core/audio/banks'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
 import { readProfileFromUrl } from './core/preset/share'
 import {
@@ -1302,9 +1302,25 @@ export async function initOffline(): Promise<void> {
   offline.watch(sampleUrls.value)
 }
 
+/**
+ * La liste surveillée suit le profil.
+ *
+ * Elle n'était déclarée qu'au démarrage : changer de banque — ou de profil, ou
+ * éteindre une couche — laissait l'écran compter les fichiers de l'ancienne, et
+ * « Préparer hors réseau » mettait en cache ceux dont on venait de se
+ * détourner. Le défaut se voyait peu tant que la banque se tapait à la main ;
+ * il se voit tout de suite depuis qu'elle se choisit dans une liste.
+ */
+watch(sampleUrls, (urls) => offline.watch(urls))
+
 /** Met en cache tous les échantillons du profil, sans attendre d'en avoir besoin. */
 export function prepareOffline(): void {
   offline.prepare()
+}
+
+/** Libère du cache les échantillons des banques dont plus aucun profil ne se sert. */
+export function forgetUnusedBanks(): void {
+  offline.forget(usedBanks(profiles.value))
 }
 
 export async function promptInstall(): Promise<void> {

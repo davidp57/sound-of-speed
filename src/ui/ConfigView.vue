@@ -72,6 +72,7 @@ import {
   banks,
   refreshBanks,
   missingBankFiles,
+  forgetUnusedBanks,
   calibrationOverrides,
   calibrationMissing,
   depositCredentials,
@@ -1188,8 +1189,25 @@ function impliedCylinders(index: number): number | null {
           <button v-if="offlineStatus.installable" @click="promptInstall()">
             Installer sur l'écran d'accueil
           </button>
+          <button :disabled="!offlineStatus.active" @click="forgetUnusedBanks()">
+            Libérer les banques inutilisées
+          </button>
         </div>
       </div>
+
+      <p v-if="offlineStatus.freed" class="note">
+        <template v-if="offlineStatus.freed.files > 0">
+          {{ offlineStatus.freed.files }} fichier{{ offlineStatus.freed.files > 1 ? 's' : '' }}
+          libéré{{ offlineStatus.freed.files > 1 ? 's' : '' }}
+          <template v-if="offlineStatus.freed.bytes > 0">
+            · {{ megabytes(offlineStatus.freed.bytes) }}
+          </template>
+          — ils se retéléchargeront si un profil y revient.
+        </template>
+        <template v-else>
+          Rien à libérer : le cache ne garde que des banques utilisées.
+        </template>
+      </p>
 
       <p v-if="offlineStatus.error" class="error">{{ offlineStatus.error }}</p>
       <p v-else-if="!offlineStatus.supported" class="note">

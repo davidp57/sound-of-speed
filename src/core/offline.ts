@@ -26,6 +26,8 @@ export interface OfflineStatus {
   cachedBytes: number
   /** Mise en cache en cours. */
   caching: boolean
+  /** Dernière libération de banques inutilisées, pour pouvoir la dire. */
+  freed: { files: number; bytes: number } | null
   error: string
 }
 
@@ -54,6 +56,7 @@ export class Offline {
     totalFiles: 0,
     cachedBytes: 0,
     caching: false,
+    freed: null,
     error: '',
   }
 
@@ -165,6 +168,17 @@ export class Offline {
   }
 
   /**
+   * Libère les échantillons des banques dont plus aucun profil ne se sert.
+   *
+   * Le message porte les banques à **garder**, pas celle à effacer : on ne peut
+   * pas se tromper de sens, et une banque oubliée se retéléchargerait au pire.
+   */
+  forget(keep: string[]): void {
+    this.status.freed = null
+    this.send({ type: 'FORGET_AUDIO', keep })
+  }
+
+  /**
    * Ressources de l'application déjà chargées par cette page.
    *
    * Au tout premier chargement, le service worker s'installe après que le
@@ -196,6 +210,7 @@ export class Offline {
       | { type: 'STATUS_RESULT'; cached: number; total: number; bytes: number }
       | { type: 'PRECACHE_PROGRESS'; done: number; failed: number; total: number }
       | { type: 'PRECACHE_DONE'; done: number; failed: number; total: number }
+      | { type: 'FORGET_DONE'; removed: number; bytes: number }
       | undefined
     if (!data) return
 
@@ -216,6 +231,13 @@ export class Offline {
         this.status.error = `${data.failed} fichier${data.failed > 1 ? 's' : ''} n'a pas pu être mis en cache.`
       }
       // Relit les tailles réelles maintenant que tout est écrit.
+      this.send({ type: 'STATUS', urls: this.watchedUrls })
+    }
+
+    if (data.type === 'FORGET_DONE') {
+      this.status.freed = { files: data.removed, bytes: data.bytes }
+      // Le compte affiché porte sur la banque active, qui vient peut-être de
+      // perdre des voisines : on le relit plutôt que de le supposer intact.
       this.send({ type: 'STATUS', urls: this.watchedUrls })
     }
 
