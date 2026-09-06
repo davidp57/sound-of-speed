@@ -6,6 +6,20 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Sécurité
+
+- **Les quatre dossiers du serveur ne se lisent plus sans mot de passe.**
+  L'écriture était protégée depuis le début, la lecture ne l'était pas : qui
+  connaissait l'adresse du site — publique, puisque la voiture n'est pas sur le
+  réseau local — pouvait lister les trajets et les télécharger, positions
+  comprises dès le cran étendu du journal. David : « c'est accessible de
+  l'extérieur, bien sûr ; ferme tout en utilisant le mot de passe du dépôt ».
+
+  L'application s'annonce désormais pour lire la bibliothèque de profils et pour
+  vérifier qu'une trace n'est pas déjà déposée. **Sur un appareil sans compte de
+  dépôt, la bibliothèque est vide** ; le partage par lien ne passe pas par le
+  serveur et fonctionne toujours.
+
 ### Ajouté
 
 - **Tout ce qui naît dans la voiture remonte tout seul.** David : « l'objectif
