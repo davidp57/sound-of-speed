@@ -38,7 +38,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [BANQUES](BANQUES/spec.md) — accueillir plusieurs banques de son : découverte, mesure outillée, choix par profil | ⬜ |
 | [PENTE](PENTE/spec.md) — le GPS de la Tesla livre trente fois par seconde, et le conditionneur en attend une | 🧑 |
 | [EFFORT](EFFORT/spec.md) — la charge doit connaître la vitesse : tenir 50 km/h et tenir 130 ne sonnent pas pareil | 🧑 |
-| [IMPERFECTIONS](IMPERFECTIONS/spec.md) — un moteur ne tourne pas juste : tremblement de régime, couches désaccordées | 🔄 |
+| [IMPERFECTIONS](IMPERFECTIONS/spec.md) — un moteur ne tourne pas juste : tremblement de régime, couches désaccordées, boucle qui ne se répète plus | ✅ |
 | [ESSAI-04](ESSAI-04/spec.md) — six défauts relevés en roulant le 4 septembre : GPS muet, accélération bruitée, étalonnage bloqué, relief écrasé, sortie du plein écran, décor retiré | ✅ |
 | [JOURNAL](JOURNAL/spec.md) — savoir ce que la voiture a vécu, sans avoir à le demander : journal déposé tout seul, en deux crans d'accord | 🧑 |
 | [NAVIGATEUR-VOITURE](NAVIGATEUR-VOITURE/spec.md) — ce que l'appareil réel impose : filtrer sur la précision, mesurer la largeur utile | 🧑 |
@@ -63,13 +63,15 @@ EFFORT et IMPERFECTIONS attendaient cette mesure juste. **Les chiffres d'EFFORT
 ont été refaits** le 4 septembre 2026, après PENTE et ESSAI-04 : le lot continue
 inchangé, et il est livré. Il ne lui reste qu'une écoute en roulant.
 
-**IMPERFECTIONS est à moitié livré** : tremblement de régime et couches
-désaccordées sont faits et mesurés, il reste la vérification en roulant. Son
-troisième ticket — la boucle qui ne se répète plus — était réputé bloqué par une
-mesure impossible depuis le dépôt. Il ne l'est plus : la banque livrée est bien
-présente en local, et ses boucles ont été mesurées le 6 septembre 2026 —
-**3,14 s à 5,37 s**. Le ticket prévoyait de s'abandonner si elles étaient
-longues ; elles ne le sont pas.
+**IMPERFECTIONS est livré**, trois tickets sur trois ; il reste l'écoute en
+roulant. Le troisième — la boucle qui ne se répète plus — était réputé bloqué par
+une mesure impossible depuis le dépôt. Il ne l'était pas : la banque livrée est
+présente en local, ses boucles font 3,14 s à 5,37 s, et le ticket prévoyait de
+s'abandonner si elles étaient longues. La lecture reprend maintenant ailleurs
+dans l'enregistrement toutes les six secondes en moyenne, par un fondu croisé à
+puissance constante de vingt millisecondes. Deux parades prévues au ticket ont
+été essayées et écartées sur mesure : les deux instances permanentes en fondu
+croisé lent, et l'alignement de la nouvelle position sur le cycle moteur.
 
 **Tous les lots sont découpés en tickets**, sauf PENTE dont le travail est
 livré. Les huit lots nés de l'essai sur route du 3 septembre 2026 l'ont été le

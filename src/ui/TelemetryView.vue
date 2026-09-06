@@ -394,6 +394,16 @@ function onRateChange(event: Event): void {
       <ValueRow label="Couches chargées" :value="`${audioStatus.loaded} / ${audioStatus.total}`" />
       <ValueRow label="Pétarades" :value="audioStatus.backfires" hint="Salves déclenchées depuis l'activation du son." />
       <ValueRow
+        label="Sources en lecture"
+        :value="audioStatus.activeSources"
+        hint="Une par couche, brièvement deux pendant un renouvellement de position. Durablement au-dessus du nombre de couches, c'est qu'un fondu ne s'est pas refermé."
+      />
+      <ValueRow
+        label="Renouvellements"
+        :value="audioStatus.layerRefreshes"
+        hint="Sauts de position de lecture depuis l'activation du son. À zéro alors que le réglage n'est pas nul, le renouvellement ne tourne pas."
+      />
+      <ValueRow
         label="Niveau de sortie"
         :value="audioStatus.outputLevel.toFixed(4)"
         :bar="audioStatus.outputLevel * 4"

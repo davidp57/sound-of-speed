@@ -22,6 +22,24 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **La boucle ne se répète plus à l'identique.** Chaque couche est un
+  enregistrement de trois à cinq secondes lu en boucle : à la vitesse de lecture
+  réelle il se referme toutes les quatre à vingt secondes, et l'oreille apprend
+  le motif — c'est la première cause de l'impression de synthèse. La lecture
+  reprend maintenant ailleurs dans l'enregistrement toutes les six secondes en
+  moyenne, par un fondu croisé de vingt millisecondes.
+
+  Le fondu est à **puissance constante**, parce que deux positions d'un même
+  enregistrement sont décorrélées : un fondu linéaire creuserait de 1,8 dB à
+  chaque passage. Mesuré ainsi, le raccord reste sous la respiration naturelle du
+  son — 1,2 à 3,3 dB d'écart de niveau pendant le fondu, contre 2,3 à 2,8 dB pour
+  le son qui ne saute pas.
+
+  Un réglage, **Renouvellement de position**, donne l'intervalle moyen ; à zéro
+  le comportement est exactement celui d'avant. L'écran de télémétrie compte les
+  sources en lecture et les renouvellements : durablement plus de sources que de
+  couches, c'est qu'un fondu ne s'est pas refermé.
+
 - **Un banc mesure ce que la chaîne de sortie fait au niveau.** Ouvert sur
   `/banc/sortie.html` au serveur de développement — il n'entre pas dans
   l'image —, il rejoue le mixage réel dans un contexte hors ligne et relève ce

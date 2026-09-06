@@ -1,6 +1,7 @@
 import type { LayerPreset, Profile } from '../preset/schema'
 import type { EngineState } from '../engine/engine'
 import { computeMix } from './mix'
+import { REFRESH_FADE_S, equalPowerCurves, nextRefreshDelayS } from './refresh'
 import { buildOutputChain, saturationCurve } from './output-chain'
 
 /**
@@ -96,12 +97,42 @@ export interface AudioStatus {
   contextResumes: number
   /** Nombre de salves de pétarade déclenchées depuis l'activation. */
   backfires: number
+  /**
+   * Nombre de sources d'échantillon en cours de lecture.
+   *
+   * Une par couche, brièvement deux pendant un renouvellement de position. Ce
+   * compte est la seule façon de voir qu'un fondu ne s'est pas refermé.
+   */
+  activeSources: number
+  /** Nombre de renouvellements de position depuis l'activation. */
+  layerRefreshes: number
+}
+
+/**
+ * Une source en cours de lecture, avec le gain qui la fait entrer ou sortir.
+ *
+ * Ce gain de fondu est distinct du gain de la couche : le mixage continue de
+ * poser le sien sans rien savoir du renouvellement de position.
+ */
+interface LayerVoice {
+  source: AudioBufferSourceNode
+  fade: GainNode
 }
 
 interface LoadedLayer {
   key: string
-  source: AudioBufferSourceNode
+  buffer: AudioBuffer
+  /** La voix qui joue, ou celle qui monte pendant un fondu. */
+  current: LayerVoice
+  /** La voix qui s'efface, le temps du fondu. Nulle le reste du temps. */
+  outgoing: LayerVoice | null
+  /** Instant, sur l'horloge audio, où la voix sortante peut être démontée. */
+  outgoingUntil: number
   gain: GainNode
+  /** Instant du prochain renouvellement de position. */
+  nextRefreshAt: number
+  /** Dernière vitesse de lecture posée : une voix neuve démarre avec elle. */
+  rate: number
 }
 
 /**
@@ -169,6 +200,8 @@ export class AudioEngine {
     keepAliveError: '',
     contextResumes: 0,
     backfires: 0,
+    activeSources: 0,
+    layerRefreshes: 0,
   }
 
   /** Appelé à chaque battement de l'horloge audio, quand elle est en place. */
@@ -461,20 +494,27 @@ export class AudioEngine {
 
     this.disposeLayers()
 
+    const now = context.currentTime
     for (const { layer, buffer, repaired } of decoded) {
-      const source = context.createBufferSource()
       const gain = context.createGain()
-      source.buffer = buffer
-      source.loop = true
       gain.gain.value = 0
-      source.connect(gain)
       if (this.bus) gain.connect(this.bus)
       // Départ à une position aléatoire : sans cela, deux couches issues du même
       // enregistrement restent en phase et se renforcent en peigne.
-      source.start(0, Math.random() * buffer.duration)
-      this.layers.push({ key: layer.key, source, gain })
+      const current = this.startVoice(buffer, Math.random() * buffer.duration, 1, 1, gain)
+      this.layers.push({
+        key: layer.key,
+        buffer,
+        current,
+        outgoing: null,
+        outgoingUntil: 0,
+        gain,
+        nextRefreshAt: now + nextRefreshDelayS(profile.mix.layerRefreshS, Math.random()),
+        rate: 1,
+      })
       if (repaired) this.status.repaired.push(layer.key)
     }
+    this.status.activeSources = this.layers.length
 
     this.status.phase = 'ready'
     this.status.contextState = context.state
@@ -496,8 +536,14 @@ export class AudioEngine {
       const node = this.layers.find((layer) => layer.key === entry.key)
       if (!node) continue
       node.gain.gain.setTargetAtTime(entry.gain, now, GAIN_GLIDE_S)
-      node.source.playbackRate.setTargetAtTime(entry.rate, now, RATE_GLIDE_S)
+      node.rate = entry.rate
+      node.current.source.playbackRate.setTargetAtTime(entry.rate, now, RATE_GLIDE_S)
+      // La voix qui s'efface suit la même vitesse : un fondu entre deux hauteurs
+      // s'entendrait comme un glissando.
+      node.outgoing?.source.playbackRate.setTargetAtTime(entry.rate, now, RATE_GLIDE_S)
     }
+
+    this.refreshLayers(profile.mix.layerRefreshS, now)
 
     if (this.highpass) this.highpass.frequency.setTargetAtTime(profile.mix.highpassHz, now, 0.1)
     if (this.limiter) {
@@ -645,17 +691,99 @@ export class AudioEngine {
     this.status.contextState = 'none'
   }
 
+  /** Monte une source sur le gain d'une couche et la lance à la position voulue. */
+  private startVoice(
+    buffer: AudioBuffer,
+    offset: number,
+    rate: number,
+    fadeValue: number,
+    gain: GainNode,
+  ): LayerVoice {
+    const context = this.context
+    if (!context) throw new Error('Contexte absent')
+    const source = context.createBufferSource()
+    const fade = context.createGain()
+    source.buffer = buffer
+    source.loop = true
+    source.playbackRate.value = rate
+    fade.gain.value = fadeValue
+    source.connect(fade)
+    fade.connect(gain)
+    source.start(0, offset)
+    return { source, fade }
+  }
+
+  /**
+   * Reprend la lecture ailleurs dans l'enregistrement, quand l'heure est venue.
+   *
+   * Sans cela chaque couche repasse indéfiniment par la même tranche : la boucle
+   * la plus courte se referme toutes les quatre secondes à vitesse de lecture
+   * réelle, et l'oreille apprend le motif en quelques tours.
+   *
+   * Le fondu est à puissance constante parce que les deux positions sont
+   * décorrélées : leurs énergies s'ajoutent, pas leurs amplitudes. Un fondu
+   * linéaire creuserait de 1,8 dB au passage. Voir `refresh.ts` pour les
+   * mesures.
+   */
+  private refreshLayers(intervalS: number, now: number): void {
+    for (const layer of this.layers) {
+      if (layer.outgoing && now >= layer.outgoingUntil) {
+        this.disposeVoice(layer.outgoing)
+        layer.outgoing = null
+      }
+
+      if (!(intervalS > 0)) {
+        // Réglage remis à zéro en cours de route : on laisse la voix courante
+        // jouer, et on repartira d'une échéance neuve si le réglage revient.
+        layer.nextRefreshAt = now
+        continue
+      }
+      if (now < layer.nextRefreshAt) continue
+      layer.nextRefreshAt = now + nextRefreshDelayS(intervalS, Math.random())
+      // Un fondu encore ouvert veut dire que l'intervalle est descendu sous sa
+      // durée. On saute ce tour plutôt que d'empiler trois sources sur une couche.
+      if (layer.outgoing) continue
+
+      const curves = equalPowerCurves()
+      const incoming = this.startVoice(
+        layer.buffer,
+        Math.random() * layer.buffer.duration,
+        layer.rate,
+        0,
+        layer.gain,
+      )
+      layer.current.fade.gain.setValueCurveAtTime(curves.outgoing, now, REFRESH_FADE_S)
+      incoming.fade.gain.setValueCurveAtTime(curves.incoming, now, REFRESH_FADE_S)
+      layer.current.source.stop(now + REFRESH_FADE_S)
+      layer.outgoing = layer.current
+      layer.outgoingUntil = now + REFRESH_FADE_S
+      layer.current = incoming
+      this.status.layerRefreshes += 1
+    }
+    this.status.activeSources = this.layers.reduce(
+      (count, layer) => count + (layer.outgoing ? 2 : 1),
+      0,
+    )
+  }
+
+  private disposeVoice(voice: LayerVoice): void {
+    try {
+      voice.source.stop()
+    } catch {
+      // Déjà arrêtée : sans conséquence.
+    }
+    voice.source.disconnect()
+    voice.fade.disconnect()
+  }
+
   private disposeLayers(): void {
     for (const layer of this.layers) {
-      try {
-        layer.source.stop()
-      } catch {
-        // Déjà arrêtée : sans conséquence.
-      }
-      layer.source.disconnect()
+      this.disposeVoice(layer.current)
+      if (layer.outgoing) this.disposeVoice(layer.outgoing)
       layer.gain.disconnect()
     }
     this.layers = []
+    this.status.activeSources = 0
   }
 
   private fail(message: string): void {

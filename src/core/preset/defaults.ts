@@ -263,6 +263,10 @@ export function createRoadProfile(): Profile {
       // Plus mesuré aussi sur le désaccord : huit centièmes de demi-ton, soit un
       // battement à 1,2 Hz au milieu de la bascule (3900 tr/min).
       layerDetuneCents: 8,
+      // La boucle la plus courte, étirée par la vitesse de lecture, se referme
+      // en quatre secondes. Six secondes de moyenne la laissent se répéter une
+      // à deux fois, jamais le même nombre de fois : le motif ne s'installe pas.
+      layerRefreshS: 6,
     },
   }
 }
@@ -377,6 +381,7 @@ export function createDefaultProfile(): Profile {
       // Mesuré : un battement à 2,4 Hz au milieu de la bascule (5100 tr/min),
       // 1,5 Hz au début (3200).
       layerDetuneCents: 12,
+      layerRefreshS: 6,
     },
     feel: {
       kickdown: {
