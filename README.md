@@ -987,8 +987,14 @@ téléphone.
 
 **Les trois sont gréées.** C'est le même bouton « Activer le son » qui les
 démarre : un profil *généré en direct* allume le moteur simulé là où les deux
-autres chargent une banque. Changer de profil en cours de route bascule d'une
-origine à l'autre, les deux ne jouant jamais ensemble.
+autres chargent une banque.
+
+**Changer d'origine pendant que le son joue prend effet aussitôt**, sans qu'on
+ait à réactiver quoi que ce soit : entrer dans *généré en direct* démonte la
+banque et allume le moteur simulé, en sortir fait l'inverse. Les deux ne jouent
+jamais ensemble — la bascule se fait au changement, et non image par image, pour
+qu'une boucle d'affichage arrêtée ne laisse pas les deux sons se superposer. Si
+le son n'avait pas été activé, changer d'origine ne l'allume pas.
 
 *Généré à l'avance* ne demande rien de plus qu'*enregistré* — c'est un dossier
 d'échantillons comme un autre, produit par

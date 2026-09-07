@@ -1241,11 +1241,54 @@ watch(
   },
 )
 
-// Passer d'un profil à l'autre peut changer d'origine de son. Sans cela, la
-// synthèse continuerait de tourner sous un profil à échantillons, qui resterait
-// muet : la boucle coupe la banque tant que le moteur simulé tourne.
+/**
+ * Le son a-t-il été demandé ?
+ *
+ * Ni l'un ni l'autre des deux moteurs ne peut porter cette mémoire : changer
+ * d'origine remet justement l'un des deux à zéro. Sans elle, passer sur un
+ * profil à synthèse allumerait un son que personne n'a demandé, et en revenir
+ * laisserait muet un son qui jouait.
+ */
+let soundWanted = false
+
+/**
+ * Passe d'une origine de son à l'autre : la banque, ou le moteur simulé.
+ *
+ * **L'invariant « une seule origine à la fois » se tient ici, à la transition.**
+ * La boucle continue de faire taire la banque tant que le moteur simulé tourne,
+ * mais elle ne peut pas en être la garantie : le jour où elle s'arrête, plus
+ * rien ne coupe la banque et les deux sons se superposent. C'est ce qui est
+ * arrivé le 7 septembre 2026 — le bouton annonçait « Son actif », donc le moteur
+ * simulé était bien en service, et le ralenti de la banque s'entendait dessous.
+ *
+ * Le son suit son origine sans qu'on ait à le redemander : il était actif avant
+ * le changement, il l'est après. Aucun geste nouveau n'est nécessaire, le
+ * contexte audio ayant déjà été déverrouillé par le premier.
+ */
+async function applySoundOrigin(direct: boolean): Promise<void> {
+  if (direct) {
+    // La banque part pour de bon, lectures comprises : la laisser tourner à
+    // gain nul, c'est garder cinq lectures vivantes sous un son qu'elles ne
+    // produisent plus.
+    audio.unload()
+    refreshAudioStatus()
+    if (soundWanted) await setSynthEnabled(true)
+    return
+  }
+
+  await synth.stop()
+  if (!soundWanted) return
+  await audio.activate(activeProfile.value)
+  audio.setKeepAlive(backgroundAudio.value)
+  refreshAudioStatus()
+}
+
+// Les changements s'enchaînent au lieu de se croiser : deux allers-retours
+// rapides entre les deux origines lanceraient sinon un démarrage et un arrêt en
+// même temps, et l'ordre d'arrivée déciderait de ce qui sort.
+let originSwitch: Promise<void> = Promise.resolve()
 watch(synthIsOrigin, (direct) => {
-  if (!direct && synth.isRunning) void setSynthEnabled(false)
+  originSwitch = originSwitch.then(() => applySoundOrigin(direct)).catch(() => {})
 })
 
 watch(
@@ -1343,6 +1386,7 @@ function refreshAudioStatus(): void {
  * refusent d'ouvrir un contexte audio autrement, et l'échec est silencieux.
  */
 export async function activateAudio(): Promise<void> {
+  soundWanted = true
   // Un profil « généré en direct » n'a pas de banque à charger : c'est le moteur
   // simulé qu'on allume. « Généré à l'avance », lui, passe par ici comme
   // « enregistré » — sa banque est un dossier d'échantillons comme un autre.

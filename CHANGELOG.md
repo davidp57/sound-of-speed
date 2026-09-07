@@ -313,6 +313,24 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Changer l'origine du son d'un profil prend effet tout de suite.** Passer un
+  profil de « enregistré » à « généré en direct » pendant que le son jouait ne
+  changeait rien : la banque continuait. Un clic sur le bouton du son démarrait
+  alors le moteur simulé **par-dessus** le ralenti de la banque, qui ne s'est
+  jamais tu — relevé par David le 7 septembre 2026, le bouton affichant bien
+  « Son actif ».
+
+  Le veilleur qui surveille l'origine ne traitait qu'un sens : il arrêtait la
+  synthèse quand on la quittait, et ne faisait rien quand on y entrait. Et la
+  règle « une seule origine à la fois » était tenue par la boucle d'images, qui
+  faisait taire la banque à chaque tour tant que le moteur simulé tournait —
+  donc plus rien dès que la boucle s'arrête.
+
+  La règle se pose maintenant **au changement d'origine** : entrer dans « généré
+  en direct » démonte la banque, lectures comprises, et allume le moteur simulé ;
+  en sortir fait l'inverse. Le son suit son origine sans qu'on ait à le
+  redemander, et il reste éteint si personne ne l'avait demandé.
+
 - **Le son synthétisé démarre dans la voiture.** Il s'arrêtait sur une erreur
   juste après « construction du moteur », et seulement sur le serveur : au
   bureau, où Vite sert les fichiers, il n'y avait rien à voir. La table des
