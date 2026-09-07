@@ -88,16 +88,27 @@ tableau ci-dessus.
 - [ ] 🧑 Vérifié dans la voiture : plus de superposition, et le son suit
       l'origine
 
-## Ce qui reste ouvert
+## La boucle n'était pas en cause — mesuré
 
-**Pourquoi la boucle d'images s'était-elle arrêtée ?** Le correctif rend la
-question sans effet sur le son, mais pas sans intérêt : une boucle arrêtée, ce
-sont aussi la vitesse et le rapport qui cessent d'être suivis. Le suspect est le
-second contexte audio — le moteur simulé en ouvre un à lui, distinct de celui de
-la banque, et c'est dans celui de la banque que bat l'`AudioWorklet` qui cadence
-tout.
+Il avait été supposé, en lisant le code, que la boucle d'images s'était arrêtée :
+c'était la seule façon d'expliquer que la banque continue alors que le bouton
+annonçait « Son actif ». **C'est faux.** Relevé par David le 7 septembre 2026 en
+0.1.63, sur PC, au ralenti, après bascule vers « généré en direct » :
 
-L'observable est déjà à l'écran de télémétrie : **l'horloge** et la **durée
-d'image**. À regarder la prochaine fois que les deux origines sont basculées
-dans la voiture. Si l'horloge s'arrête au démarrage du moteur simulé, c'est un
-ticket à part.
+| | valeur |
+|---|---|
+| Horloge audio | `fil audio` |
+| Durée d'image | 6,1 ms |
+
+La cadence nominale est de 6,06 ms — la boucle tourne, et sur le fil audio. Le
+second contexte audio du moteur simulé ne la perturbe pas.
+
+**La cause exacte de la superposition d'origine reste donc inexpliquée**, et elle
+le restera : le chemin qui y menait n'existe plus. La banque n'est plus laissée
+chargée derrière un mute posé image par image, elle est démontée à la bascule.
+C'est un correctif qui supprime la dépendance fautive au lieu d'attendre de la
+comprendre, et c'est assumé comme tel.
+
+Ce qui reste vrai et vérifié : le veilleur ne traitait qu'un sens, et le son ne
+suivait pas son origine. C'est corrigé, et c'est ce qui produisait le symptôme
+principal.
