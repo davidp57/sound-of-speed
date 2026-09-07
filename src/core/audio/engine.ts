@@ -673,6 +673,32 @@ export class AudioEngine {
     this.measureOutput()
   }
 
+  /**
+   * Démonte les couches, en gardant le contexte ouvert.
+   *
+   * Sert quand le profil passe à une origine de son qui ne joue pas la banque :
+   * les lectures s'arrêtent pour de bon, au lieu de tourner à gain nul.
+   *
+   * Le contexte, lui, reste ouvert. Le fermer obligerait à en rouvrir un au
+   * retour, or un contexte neuf naît suspendu et son réveil demande un geste de
+   * l'utilisateur — geste qui n'existe pas quand on revient d'un écran de
+   * réglage. Ce qui coûte, ce sont les lectures et les tampons décodés, et c'est
+   * précisément ce qui est libéré ici.
+   */
+  unload(): void {
+    // Un chargement peut être en vol : sans ce jeton, ses couches se
+    // brancheraient après coup sur une banque qu'on vient d'abandonner.
+    this.loadToken += 1
+    this.disposeLayers()
+    this.status.phase = 'idle'
+    this.status.loaded = 0
+    this.status.total = 0
+    this.status.error = ''
+    this.status.repaired = []
+    this.status.outputLevel = 0
+    this.status.outputPeak = 0
+  }
+
   async dispose(): Promise<void> {
     if (this.watchdog !== null) {
       clearInterval(this.watchdog)
