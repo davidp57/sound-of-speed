@@ -231,12 +231,21 @@ const cruiseActive = computed(() => cruiseOn.value && getSimulatedCruise() !== n
  * il affichait « Son actif » et rappelait l'activation à chaque clic. Un bouton
  * qui montre un état allumé doit pouvoir l'éteindre, sans quoi il ment.
  */
+/**
+ * L'état du son, quelle que soit son origine.
+ *
+ * Un profil « généré en direct » ne charge pas de banque : c'est l'état du
+ * moteur simulé que le bouton doit montrer. Une seule lecture pour tout ce que
+ * le bouton dit de lui-même — son texte, sa couleur, son geste — sinon les trois
+ * se désaccordent : le libellé tenait compte de l'origine, la couleur non, et le
+ * bouton annonçait « Son actif » en gris pendant que le moteur simulé jouait.
+ */
+const audioPhase = computed(() =>
+  synthIsOrigin.value ? synthStatus.value.phase : audioStatus.value.phase,
+)
+
 const audioLabel = computed(() => {
-  // Un profil « généré en direct » ne charge pas de banque : c'est l'état du
-  // moteur simulé que le bouton doit montrer, sans quoi il dirait « Activer le
-  // son » pendant que le son sort.
-  const phase = synthIsOrigin.value ? synthStatus.value.phase : audioStatus.value.phase
-  switch (phase) {
+  switch (audioPhase.value) {
     case 'loading':
       return synthIsOrigin.value
         ? 'Moteur en construction'
@@ -250,9 +259,11 @@ const audioLabel = computed(() => {
   }
 })
 
+/** Le bouton est allumé quand du son sort vraiment, et de n'importe quelle origine. */
+const audioOn = computed(() => audioPhase.value === 'ready' && !isMuted.value)
+
 function toggleAudio(): void {
-  const phase = synthIsOrigin.value ? synthStatus.value.phase : audioStatus.value.phase
-  if (phase === 'ready') setMuted(!isMuted.value)
+  if (audioPhase.value === 'ready') setMuted(!isMuted.value)
   else void activateAudio()
 }
 
@@ -409,8 +420,8 @@ const SPEED_STEP_KMH = 20
         <span class="sr-only">Quitter le plein écran</span>
       </button>
       <div class="immersive-group">
-        <button :class="{ 'is-active': !isMuted }" @click="toggleAudio()">
-          {{ isMuted ? 'Son coupé' : 'Son actif' }}
+        <button :class="{ 'is-active': audioOn }" @click="toggleAudio()">
+          {{ audioLabel }}
         </button>
         <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
           {{ manual ? 'Manuelle' : 'Auto' }}
@@ -425,13 +436,13 @@ const SPEED_STEP_KMH = 20
       <div class="group">
         <span class="label">Son</span>
         <button
-          :class="{ 'is-active': audioStatus.phase === 'ready' && !isMuted }"
-          :disabled="audioStatus.phase === 'loading'"
+          :class="{ 'is-active': audioOn }"
+          :disabled="audioPhase === 'loading'"
           @click="toggleAudio()"
         >
           {{ audioLabel }}
         </button>
-        <label v-if="audioStatus.phase === 'ready'" class="volume">
+        <label v-if="audioPhase === 'ready'" class="volume">
           Volume
           <input
             type="range"
@@ -462,7 +473,9 @@ const SPEED_STEP_KMH = 20
       </div>
       </div>
 
-      <p v-if="audioStatus.phase === 'error'" class="hint warn">{{ audioStatus.error }}</p>
+      <p v-if="audioPhase === 'error'" class="hint warn">
+        {{ synthIsOrigin ? synthStatus.error : audioStatus.error }}
+      </p>
 
       <template v-if="sourceKind === 'simulator'">
         <div class="group column">

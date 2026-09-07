@@ -313,6 +313,15 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le bouton du son s'allume quand du son sort, quelle que soit son origine.**
+  Sous un profil « généré en direct », il annonçait « Son actif » en gris pendant
+  que le moteur simulé jouait : son texte tenait compte de l'origine, sa couleur
+  non — elle ne regardait que la banque, restée vide. Il est jaune comme les
+  autres commandes en service. Le curseur de volume et le message d'erreur, qui
+  ne regardaient eux aussi que la banque, suivent la même lecture : le volume
+  reste réglable en synthèse, et une erreur du moteur simulé s'affiche au lieu de
+  laisser « Son en erreur » sans explication.
+
 - **Changer l'origine du son d'un profil prend effet tout de suite.** Passer un
   profil de « enregistré » à « généré en direct » pendant que le son jouait ne
   changeait rien : la banque continuait. Un clic sur le bouton du son démarrait
