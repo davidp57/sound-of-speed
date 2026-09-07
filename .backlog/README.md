@@ -42,7 +42,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [ESSAI-04](ESSAI-04/spec.md) — six défauts relevés en roulant le 4 septembre : GPS muet, accélération bruitée, étalonnage bloqué, relief écrasé, sortie du plein écran, décor retiré | ✅ |
 | [JOURNAL](JOURNAL/spec.md) — savoir ce que la voiture a vécu, sans avoir à le demander : journal déposé tout seul, en deux crans d'accord | 🧑 |
 | [NAVIGATEUR-VOITURE](NAVIGATEUR-VOITURE/spec.md) — ce que l'appareil réel impose : filtrer sur la précision, mesurer la largeur utile | 🧑 |
-| [DECOR-PERSPECTIVE](DECOR-PERSPECTIVE/spec.md) — un décor vu de la place du conducteur, et non de côté | ⬜ |
+| [DECOR-PERSPECTIVE](DECOR-PERSPECTIVE/spec.md) — un décor vu de la place du conducteur, et non de côté | 🚫 |
 | [BANC-GPS](BANC-GPS/spec.md) — éprouver toute la chaîne sans rouler : trois modes de simulation, dont un qui traverse la vraie source GPS | ✅ |
 | [SYNTHESE](SYNTHESE/spec.md) — produire le son au lieu de le rejouer : trois origines au choix par profil — enregistré, généré en direct, généré à l'avance | 🧑 |
 | [REMONTEE](REMONTEE/spec.md) — tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils, sur un accord unique | 🧑 |
@@ -74,13 +74,15 @@ puissance constante de vingt millisecondes. Deux parades prévues au ticket ont
 croisé lent, et l'alignement de la nouvelle position sur le cycle moteur.
 
 **Tous les lots sont découpés en tickets**, sauf PENTE dont le travail est
-livré. Les huit lots nés de l'essai sur route du 3 septembre 2026 l'ont été le
-jour même, après deux décisions de conception prises par David :
+livré, et DECOR-PERSPECTIVE qui a été abandonné au moment même de le découper.
+Les huit lots nés de l'essai sur route du 3 septembre 2026 l'ont été le jour
+même, après deux décisions de conception prises par David :
 
-- **La règle « aucune animation » est levée pour le paysage qui défile**, et pour
-  lui seul. L'exception est écrite dans [`CLAUDE.md`](../CLAUDE.md), avec sa
-  raison et ses limites. Le cadran à aiguille, lui, n'en relevait pas : son
-  mouvement est la valeur.
+- **La règle « aucune animation » avait été levée pour le paysage qui défile**,
+  et pour lui seul. Le paysage a été retiré le 4 septembre, le lot qui devait le
+  redessiner est abandonné depuis le 7, et **l'exception est retirée** de
+  [`CLAUDE.md`](../CLAUDE.md) avec lui : la règle n'a plus d'exception. Le cadran
+  à aiguille n'en relevait pas de toute façon — son mouvement est la valeur.
 - **L'étalonnage s'analyse dans la voiture**, sur place. ETALONNAGE ne dépend
   donc pas de DEPOSER, dont le préalable technique — la présence du module
   d'écriture dans l'image du serveur — n'est pas encore établi.

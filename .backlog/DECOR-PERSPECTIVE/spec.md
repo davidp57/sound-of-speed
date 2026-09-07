@@ -1,8 +1,47 @@
 # DECOR-PERSPECTIVE — un décor vu de la place du conducteur
 
-**Statut :** ⬜ prêt
-**Branche :** `feature/decor-perspective`
-**Version visée :** après 0.2 — c'est de l'agrément, il attend
+**Statut :** 🚫 abandonné le 7 septembre 2026
+**Branche :** aucune, le lot n'a jamais été ouvert
+**Version visée :** —
+
+## Pourquoi c'est abandonné
+
+Décidé le 7 septembre 2026, au moment de découper le lot en tickets. Quatre
+raisons, dans l'ordre où elles pèsent.
+
+**Le son passe avant, et le décor le menace.** Un rendu en perspective demande
+plus de calcul par image qu'un décor latéral, qui n'était que des translations.
+Le produit, c'est le son ; rien ne justifie de faire courir un risque à la
+régularité de la cadence pour un dessin dont rien ne se lit.
+
+**La preuve à fournir coûte plus cher que le lot.** L'autorisation demandait de
+remesurer, et le harnais de la mesure de septembre n'a pas été conservé — il n'y
+a pas de commande de mesure dans `scripts/`. Il faudrait le reconstruire, et
+plus complet que la fois précédente : la mesure d'alors n'avait jamais activé le
+son, donc elle établissait la cadence de l'affichage et non celle du fil audio,
+qui est justement ce qu'on veut protéger. Et elle serait à refaire sur le
+navigateur de la voiture, pas au poste.
+
+**Le décor a déjà été raté une fois.** Le rendu latéral était livré, mesuré,
+jugé acceptable au poste — et « complètement raté » à la première conduite. Le
+seul juge est l'essai en voiture, qui est aussi la ressource la plus rare du
+projet. Elle est mieux employée aux lots qui attendent une écoute du son.
+
+**C'est de l'agrément pur.** Le lot lui-même l'écrivait : rien ne s'y lit. Il
+n'a jamais eu de version visée autre que « après 0.2 ».
+
+Conséquence : **l'exception à la règle « aucune animation » est retirée** de
+`CLAUDE.md`. La règle n'a plus d'exception. La nuance sur l'aiguille de cadran
+n'est pas concernée — une aiguille n'a jamais relevé de cette règle, son
+mouvement *est* la valeur.
+
+Le ticket [TABLEAU-DE-BORD/04](../TABLEAU-DE-BORD/tickets/04-le-paysage-qui-defile.md)
+est abandonné du même mouvement : il attendait une mesure pour un composant qui
+n'existe plus.
+
+Ce qui suit est la spécification d'origine, conservée telle quelle. Elle dit ce
+qu'on voulait et ce qu'on ignorait ; c'est ce qu'il faut relire avant de
+reproposer un décor.
 
 ## Ce qui a déclenché
 
@@ -28,6 +67,9 @@ David le 3 septembre pour ce seul décor, et sa raison n'a pas changé : c'est d
 l'agrément assumé, rien ne s'y lit, et il se coupe. Elle n'autorise toujours ni
 transition, ni valeur qui glisse vers sa nouvelle position, ni effet
 d'apparition — la note de `CLAUDE.md` en fixe les limites.
+
+> Écrit avant l'abandon. L'exception a été retirée de `CLAUDE.md` le
+> 7 septembre 2026, en même temps que le lot.
 
 **La condition de mesure tient aussi**, et elle est plus exigeante ici. Le décor
 latéral coûtait 0,2 ms d'écart de durée d'image, moins que l'écart de passe à

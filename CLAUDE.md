@@ -169,17 +169,13 @@ Un réglage nouveau, c'est cinq choses et pas une :
 - **Aucune animation.** Les valeurs changent, rien ne bouge pour le plaisir.
   C'est une règle d'ergonomie, pas un goût : l'écran se lit en conduisant.
 
-  **Une exception, levée par David le 3 septembre 2026** : le décor qui défile
-  derrière les cadrans de l'écran de conduite. C'est de l'agrément assumé — rien
-  ne s'y lit —, il se coupe, et il ne se fera que si la mesure montre qu'un
-  rendu continu ne dégrade pas la régularité du son. L'exception porte sur ce
-  seul décor : elle n'autorise ni transition, ni valeur qui glisse vers sa
-  nouvelle position, ni effet d'apparition.
-
-  **Le décor est retiré depuis le 4 septembre 2026** — il défilait de côté, là
-  où l'écran se voit de la place du conducteur. L'exception tient, le lot est
-  reporté : voir [DECOR-PERSPECTIVE](.backlog/DECOR-PERSPECTIVE/spec.md). Et sa
-  mesure sera à refaire, un rendu en perspective coûtant davantage.
+  **La règle n'a pas d'exception.** Elle en a eu une, levée par David le
+  3 septembre 2026 pour le décor qui défilait derrière les cadrans ; le décor
+  s'est révélé raté, il a été retiré le 4 septembre, et le lot qui devait le
+  redessiner est abandonné depuis le 7 septembre 2026 — l'exception est retirée
+  avec lui. L'arbitrage est rendu : voir
+  [DECOR-PERSPECTIVE](.backlog/DECOR-PERSPECTIVE/spec.md) avant de reproposer un
+  décor.
 
   Une **aiguille de cadran** n'a jamais relevé de cette règle : son mouvement
   **est** la valeur, et un cadran se lit d'un coup d'œil là où un nombre se lit

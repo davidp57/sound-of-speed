@@ -1,8 +1,18 @@
 # 04 — Un paysage qui défile
 
-**Statut :** 🧑 attend David
+**Statut :** 🚫 abandonné le 7 septembre 2026
 
 **Bloqué par :** 02 — La vitesse et le rapport, en tableau de bord
+
+Le paysage a été livré, puis jugé « complètement raté » en roulant le
+4 septembre : il défilait de côté, là où l'écran se voit de la place du
+conducteur. Le composant a été supprimé (ESSAI-04, ticket 07) et sa refonte en
+perspective, [DECOR-PERSPECTIVE](../../DECOR-PERSPECTIVE/spec.md), est abandonnée
+à son tour — les raisons y sont écrites.
+
+Ses deux critères non cochés ne le seront donc jamais : ils attendaient une
+mesure pour un composant qui n'existe plus. Le tableau de chiffres plus bas
+reste, c'est le seul relevé de cadence d'affichage du projet.
 
 ## Ce qu'il faut obtenir
 

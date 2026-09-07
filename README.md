@@ -48,11 +48,11 @@ Cet écran a **deux visages**, et deux boutons pour passer de l'un à l'autre :
 Le choix du visage est une préférence de **l'appareil** : il survit au
 rechargement et ne fait pas partie du profil.
 
-Un décor défilait un temps derrière les cadrans. Il est **retiré** : il défilait
-de côté, comme un jeu de plateforme, là où l'écran est vu de la place du
-conducteur — un décor y défile en perspective, d'avant en arrière. Ce n'était pas
-un réglage à corriger mais un autre dessin, et il se refera
-([DECOR-PERSPECTIVE](.backlog/DECOR-PERSPECTIVE/spec.md)).
+Un décor défilait un temps derrière les cadrans. Il est **retiré**, et il ne
+reviendra pas : il défilait de côté, comme un jeu de plateforme, là où l'écran
+est vu de la place du conducteur. Le redessiner en perspective demandait de
+remesurer ce qu'un rendu continu coûte à la régularité du son, pour un décor dont
+rien ne se lit. Le son passe avant.
 
 **Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
 lissage, pente, accélération, qualité du signal GPS, régime, régime entendu,
@@ -271,12 +271,12 @@ monter la résonance baissait fortement le volume, et l'on ne pouvait juger ni
 l'un ni l'autre.
 
 Aucune animation nulle part : les valeurs changent, rien ne bouge pour le
-plaisir. Deux réserves, et deux seulement. Un **décor** défilant reste une
-exception assumée, levée sciemment — il est retiré pour l'instant, le temps
-d'être redessiné en perspective. Et l'**aiguille** d'un cadran n'a jamais relevé
-de cette règle : son mouvement est la valeur, elle n'a aucune inertie propre, et
-un cadran se lit d'un coup d'œil là où un nombre se lit en le lisant — c'est le
-même argument d'ergonomie qui fonde la règle.
+plaisir. La règle n'a pas d'exception. Elle en a eu une, levée sciemment en
+septembre 2026 pour un décor défilant ; le décor était raté, il a été retiré,
+puis abandonné — l'exception est retirée avec lui. L'**aiguille** d'un cadran,
+elle, n'a jamais relevé de cette règle : son mouvement est la valeur, elle n'a
+aucune inertie propre, et un cadran se lit d'un coup d'œil là où un nombre se lit
+en le lisant — c'est le même argument d'ergonomie qui fonde la règle.
 
 ---
 
@@ -1920,7 +1920,7 @@ chaque essai.
 | 17 | Défilement de l'écran de configuration sans dérégler un curseur | corrigé, reste à essayer |
 | 18 | Le volume général sort du profil : c'est une préférence d'appareil | fait |
 | 19 | Mode simplifié : deux curseurs globaux, le détail derrière un mode avancé | fait, reste à écouter |
-| 20 | Tableau de bord à cadrans | fait, reste à essayer ; le décor défilant est retiré, à redessiner en perspective |
+| 20 | Tableau de bord à cadrans | fait, reste à essayer ; le décor défilant est retiré, et ne sera pas refait |
 | 21 | Imperfections : tremblement de régime, couches désaccordées, boucle qui ne se répète plus | fait, reste à écouter |
 | 22 | Étalonnage : mesurer la vraie voiture pour régler les virtuelles | fait, reste à rouler |
 | 23 | Le serveur accepte le dépôt d'une trace | fait, éprouvé sur le NAS |
@@ -1932,7 +1932,7 @@ chaque essai.
 | 29 | Une banque produite ici par engine-sim, une prise par demi-octave, rejouée telle quelle dans la voiture | fait, reste à écouter |
 | 30 | engine-sim en WebAssembly : le son sort en direct et suit le régime | fait, reste à écouter |
 | 31 | Tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils | fait, NAS en place, reste un essai en roulant |
-| — | Plusieurs banques de son, choisies par profil | prévu |
+| 32 | Plusieurs banques de son : découvertes sur le serveur, mesurées par un outil, choisies par profil | fait, reste à essayer hors réseau |
 | — | La charge tient compte de la vitesse : tenir 50 et tenir 130 diffèrent | à remesurer |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et

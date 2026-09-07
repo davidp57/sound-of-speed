@@ -4,6 +4,12 @@
 
 **Bloqué par :** aucun
 
+> **Suite, le 7 septembre 2026.** Le décor ne reviendra pas : le lot
+> [DECOR-PERSPECTIVE](../../DECOR-PERSPECTIVE/spec.md) est abandonné, et
+> l'exception à la règle « aucune animation » est retirée de `CLAUDE.md`. Ce qui
+> suit reste écrit tel qu'il l'était le 4 septembre, quand la refonte était
+> encore prévue.
+
 ## Ce qu'il faut obtenir
 
 Le décor derrière les cadrans ne s'affiche plus, et son bouton non plus. Il
