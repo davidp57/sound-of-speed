@@ -85,8 +85,10 @@ tableau ci-dessus.
 - [x] Les deux origines ne s'entendent jamais ensemble
 - [x] Changer d'origine sans avoir activé le son n'allume rien
 - [x] Des bascules rapides finissent dans l'état demandé par la dernière
-- [ ] 🧑 Vérifié dans la voiture : plus de superposition, et le son suit
-      l'origine
+- [x] Vérifié par David en 0.1.63 : plus de superposition. Le critère parlait
+      d'un essai « dans la voiture », à tort — le défaut se produisait dans un
+      navigateur, sans rien devoir au GPS ni à la conduite. Il se vérifie donc là
+      où il se produisait.
 
 ## La boucle n'était pas en cause — mesuré
 
