@@ -1818,14 +1818,20 @@ elle donne l'écart réel — le clac arrivait **24 à 40 dB sous le moteur** pa
 où l'oreille écoute. Sa rampe d'extinction descendait si vite que toute son
 énergie tenait dans la première milliseconde.
 
-Il s'éteint maintenant à constante de temps, sur trois à neuf centièmes de
-seconde selon la composante, avec des gains trois fois plus élevés. Mesuré au
-réglage livré, en écart au moteur : −8 dB à 500 Hz, +2 à 1 kHz, +10 à 2 kHz,
-+14 à 4 kHz, +23 à 8 kHz. Il perce dans l'aigu, là où l'oreille reconnaît le
-métal et où le moteur n'a plus grand-chose, sans le masquer dans le grave.
+Il s'éteint maintenant à constante de temps, sur cinq à douze centièmes de
+seconde selon la composante.
 
-Trois composantes : un passe-haut qui porte le corps, une bande haute qui donne
-le métal, un coup mat sous deux cents hertz qui donne la masse. Un bouton
+**Et il est grave, pas aigu.** Une première version corrigée plaçait son énergie
+vers trois kilohertz et au-delà : audible enfin, mais « trop sèche, aiguë et
+courte », et si perçante qu'au vingtième du réglage elle dominait encore. Elle
+culminait à −4 dB du moteur à huit kilohertz et à +13 dB à seize. La version
+livrée fait l'inverse — mesurée en écart au moteur : **−5,7 dB à 125 Hz**,
+−10,7 à 250, et seize décibels en dessous partout au-dessus de deux kilohertz.
+Un choc dans un carter n'est pas un claquement de fouet.
+
+Trois composantes : la masse sous deux cents hertz, le corps du carter vers
+quatre cent cinquante, et juste assez de médium vers douze cents pour qu'on
+entende une pièce et non un coup sourd. Un bouton
 **« Écouter le clac »**, dans la configuration, le joue seul — un événement d'un
 centième de seconde ne se règle pas en attendant le prochain passage de rapport.
 Et le compteur « Clacs de boîte », en télémétrie, dit s'il est tiré : il monte

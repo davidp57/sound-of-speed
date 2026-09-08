@@ -70,6 +70,16 @@ Toutes les évolutions notables du projet. Format
   réglage livré : −8 dB à 500 Hz, +2 à 1 kHz, +10 à 2 kHz, +14 à 4 kHz, +23 à
   8 kHz.
 
+  **Puis il a fallu le rendre sourd.** Audible enfin, il était « trop sec, aigu
+  et court ; dans la vidéo c'est un son un peu plus long et surtout plus
+  sourd » — et si perçant qu'au vingtième du réglage il dominait encore. Il
+  culminait à −4 dB du moteur à huit kilohertz et à +13 dB à seize. La version
+  livrée place son énergie dans le grave : −5,7 dB à 125 Hz, −10,7 à 250, et
+  seize décibels sous le moteur partout au-dessus de deux kilohertz. Trois
+  composantes — la masse, le corps du carter, un soupçon de médium — et des
+  extinctions de cinq à douze centièmes de seconde. Un choc dans un carter n'est
+  pas un claquement de fouet.
+
   Un bouton **« Écouter le clac »** apparaît dans la configuration : un
   événement d'un centième de seconde ne se règle pas en attendant le prochain
   passage de rapport. Son curseur monte maintenant à 3.

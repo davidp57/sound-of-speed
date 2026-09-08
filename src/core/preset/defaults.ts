@@ -441,7 +441,7 @@ export function createDefaultProfile(): Profile {
         cutDepth: 0.8,
         dipRpm: 450,
         blipRpm: 550,
-        clack: 0.6,
+        clack: 0.5,
         crackle: 0.35,
       },
     },

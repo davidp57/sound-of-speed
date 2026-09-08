@@ -167,16 +167,21 @@ registerProcessor('speed-clock', ClockProcessor)
 /**
  * Les trois composantes du clac : filtre, fréquence, résonance, gain, extinction.
  *
- * Trois et non une, parce qu'un seul filtre ne fait pas un choc. Le passe-haut
- * porte le corps du bruit et l'essentiel du niveau ; la bande haute donne le
- * métal ; le coup mat sous deux cents hertz donne la masse, sans laquelle on
- * entend un déclic de souris. Les extinctions sont volontairement inégales : la
- * masse traîne un peu quand le métal est déjà éteint, et c'est ce décalage qui
- * fait entendre une pièce lourde plutôt qu'une impulsion.
+ * Trois et non une, parce qu'un seul filtre ne fait pas un choc. La masse sous
+ * deux cents hertz, le corps du carter vers quatre cent cinquante, et juste
+ * assez de médium vers douze cents pour qu'on entende une pièce et non un coup
+ * sourd. Les extinctions sont inégales et volontairement longues : la masse
+ * traîne quand le médium est déjà éteint, et c'est ce décalage qui fait entendre
+ * une pièce lourde plutôt qu'une impulsion.
  *
- * Ces valeurs sont mesurées, pas choisies : avec elles, la crête du clac passe
- * 2,4 dB **au-dessus** de celles du moteur au réglage livré, contre 15,6 dB en
- * dessous auparavant.
+ * **Une version aiguë et courte a été essayée d'abord, et jetée.** Elle plaçait
+ * son énergie vers trois kilohertz et au-delà : mesurée par bandes d'octave, au
+ * réglage où David la jugeait déjà trop forte, elle culminait à −4 dB du moteur
+ * à huit kilohertz et à +13 dB à seize. « C'est le son qui est surtout trop sec,
+ * aigu et court ; dans la vidéo c'est un son un peu plus long et surtout plus
+ * sourd. » Celle-ci a son maximum dans le grave — mesuré en écart au moteur :
+ * −5,7 dB à 125 Hz, −10,7 à 250, et 16 dB en dessous partout au-dessus de deux
+ * kilohertz.
  */
 const CLACK_PARTS: {
   type: BiquadFilterType
@@ -186,9 +191,9 @@ const CLACK_PARTS: {
   /** Constante de temps de l'extinction, en secondes. */
   decay: number
 }[] = [
-  { type: 'highpass', hz: 900, q: 0.7, gain: 9.6, decay: 0.036 },
-  { type: 'bandpass', hz: 3200, q: 0.8, gain: 7.2, decay: 0.024 },
-  { type: 'lowpass', hz: 220, q: 0.9, gain: 7.8, decay: 0.09 },
+  { type: 'lowpass', hz: 200, q: 0.9, gain: 2.2, decay: 0.12 },
+  { type: 'bandpass', hz: 450, q: 1.2, gain: 2.0, decay: 0.09 },
+  { type: 'bandpass', hz: 1200, q: 1.0, gain: 0.75, decay: 0.05 },
 ]
 
 export class AudioEngine {

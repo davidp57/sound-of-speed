@@ -220,3 +220,26 @@ Remplacée par une extinction à constante de temps, gains triplés.
 
 **Non écouté.** La crête du clac monte à 7,8 avant la chaîne ; le moniteur de
 sortie dira s'il écrête.
+
+## Septième écoute, 8 septembre 2026
+
+David : « je l'entends (trop fort même) ; à 0,05 c'est encore un peu trop fort.
+Je pense que c'est le son qui est surtout trop sec, aigu et court ; dans la
+vidéo c'est un son un peu plus long et surtout plus sourd. »
+
+La correction de niveau avait surcompensé, et surtout placé l'énergie au mauvais
+endroit. Mesuré au réglage 0,05 — celui qu'il jugeait déjà trop fort — l'ancien
+clac culminait à −4 dB du moteur à 8 kHz et +13 dB à 16 kHz : tout son niveau
+était dans l'aigu, d'où le « sec ».
+
+Nouvelles composantes, en écart au moteur au réglage livré (0,5) :
+
+| | 125 Hz | 250 | 500 | 1 k | 2 k | 8 k |
+|---|---|---|---|---|---|---|
+| aigu (jeté) | +5,6 | +2,1 | −11,4 | −5,1 | +4,7 | +17,8 |
+| sourd (livré) | −5,7 | −10,7 | −15,3 | −17,5 | −16,4 | −16,2 |
+
+Le maximum passe de l'aigu au grave, et les extinctions de 24-90 ms à 50-120 ms.
+La crête tombe de 7,9 à 0,31 : plus de risque d'écrêtage.
+
+**Non écouté.**

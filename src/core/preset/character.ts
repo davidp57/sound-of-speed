@@ -354,7 +354,7 @@ export function applySportiness(profile: Profile, sportiness: number): Profile {
         crackle: round3(0.25 + 0.5 * s),
         dipRpm: Math.round(250 + 400 * s),
         blipRpm: Math.round(300 + 500 * s),
-        clack: round3(0.4 + 0.4 * s),
+        clack: round3(0.35 + 0.35 * s),
       },
     },
   }
