@@ -1333,17 +1333,38 @@ export async function captureSynthSound(): Promise<string> {
   if (extrait === null) return 'Rien à capturer : la synthèse ne tourne pas.'
 
   const nom = `son-${slug(activeProfile.value.name)}-${stamp(Date.now())}.wav`
-  const issue = await putFile(
-    '/mesures/',
-    nom,
-    toWav([extrait.samples], extrait.sampleRate),
-    depositCredentials.value,
-  )
-  if (issue.ok) {
-    const secondes = (extrait.samples.length / extrait.sampleRate).toFixed(0)
-    return `${secondes} s déposées dans mesures/${nom}.`
+  const fichier = toWav([extrait.samples], extrait.sampleRate)
+  const secondes = (extrait.samples.length / extrait.sampleRate).toFixed(0)
+
+  const issue = await putFile('/mesures/', nom, fichier, depositCredentials.value)
+  if (issue.ok) return `${secondes} s déposées dans mesures/${nom}.`
+
+  // Le dépôt n'existe que sur le serveur : au poste de travail, sous le serveur
+  // de développement, il n'y a pas de WebDAV et la réponse est un 404. Le
+  // téléchargement prend alors le relais — et c'est l'inverse dans la voiture,
+  // où le navigateur ne télécharge rien mais où le dépôt marche.
+  if (telecharger(fichier, nom)) {
+    return `${secondes} s téléchargées (${nom}) — le dépôt a répondu : ${issue.detail}`
   }
   return issue.detail
+}
+
+/** Propose un fichier au téléchargement. Faux si le navigateur s'y refuse. */
+function telecharger(contenu: Blob, nom: string): boolean {
+  try {
+    const url = URL.createObjectURL(contenu)
+    const lien = document.createElement('a')
+    lien.href = url
+    lien.download = nom
+    document.body.appendChild(lien)
+    lien.click()
+    lien.remove()
+    // Laisser au navigateur le temps de lire l'adresse avant de la révoquer.
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    return true
+  } catch {
+    return false
+  }
 }
 
 export function start(): void {
