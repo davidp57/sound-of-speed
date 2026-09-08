@@ -140,11 +140,15 @@ hertz — n'y apparaîtrait que comme du bruit d'échantillonnage. Deux relevés
 successifs donnent le même chiffre au tour près, ce qui rend une telle
 oscillation très improbable, mais ne l'exclut pas formellement.
 
-**Reste les deux bruits d'engine-sim**, réglables à chaud, et que le projet a
-uniformisés pour toute la bibliothèque à 0,15 et 0,05 — là où les fichiers
-d'origine déclaraient jusqu'à 0,195 de bruit et 0,5 de gigue. C'est le seul
-levier qui reste, et son réglage est un jugement d'oreille : un chiffre ne dira
-pas lequel sonne juste.
+**La gigue d'engine-sim n'est pas un levier non plus.** Elle restait le dernier
+candidat ; David l'a essayée le jour même : « ça ajoute juste un bruit blanc
+désagréable, une friture sur la ligne, mais ça ne change pas les RPM ». Le code
+lui donne raison — `JitterFilter` est une ligne à retard dont la position de
+lecture est tirée au sort puis filtrée, elle floute le signal audio en sortie et
+le moteur tourne exactement pareil.
+
+La suite de ce défaut a son lot : [DELISSER](../DELISSER/spec.md), qui porte la
+cause établie, les trois leviers écartés et les deux voies qui restent.
 
 **L'interface.** Tranché par David le 8 septembre : c'est un **lot neuf**,
 [MENAGE-UI](../MENAGE-UI/spec.md), et non l'élargissement de MODE-SIMPLE — « faut

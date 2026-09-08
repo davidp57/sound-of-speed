@@ -22,6 +22,15 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un GM LS à collecteur long, réglé à l'oreille.** Quatre valeurs d'échappement
+  s'écartent de la définition d'engine-sim : le collecteur du premier cylindre
+  passe de 6,8 à 30 pouces, le débit du primaire double, le tube primaire gagne
+  un pouce et le débit de sortie double. C'est le collecteur qui s'entend le
+  plus — David : « quand on l'augmente, fait mieux entendre le bruit des
+  explosions, surtout au ralenti ». L'accélération y gagne ; la décélération
+  laisse passer une fréquence parasite, « comme une pièce métallique qui vibre
+  vite ». Le moteur d'origine reste dans la liste, à sa valeur de référence.
+
 - **Le cache hors réseau suit la banque.** Ce qui est surveillé n'était déclaré
   qu'au démarrage : changer de banque — ou de profil, ou éteindre une couche —
   laissait l'écran compter les fichiers de l'ancienne, et *Préparer hors réseau*
