@@ -51,6 +51,21 @@ export interface SynthStatus {
   targetRpm: number
   /** Le régime que le moteur simulé tient vraiment. */
   engineRpm: number
+  /**
+   * Ondulation du régime sur la dernière fenêtre, en tours par minute.
+   *
+   * L'écart entre le plus haut et le plus bas régime relevés à **chaque pas de
+   * simulation** — la seule cadence où l'ondulation du vilebrequin est visible.
+   * Le régime lu par ailleurs est échantillonné quatre fois par seconde, là où
+   * l'ondulation vaut cent à deux cents hertz : il ne montre rien.
+   *
+   * Zéro veut dire que le vilebrequin tourne à vitesse rigoureusement
+   * constante, ce qu'aucun moteur thermique ne fait — et c'est ce qui fait
+   * entendre « une fréquence trop pure, on dirait un oscilloscope ».
+   */
+  rpmRipple: number
+  /** Régime moyen sur la même fenêtre, pour rapporter l'ondulation à sa base. */
+  rpmMean: number
   /** L'effort transmis, de 0 à 1. */
   effort: number
   /** Coefficient temps réel du calcul, mesuré sur la dernière fenêtre. */
@@ -97,6 +112,8 @@ const IDLE_STATUS: SynthStatus = {
   buildMs: 0,
   targetRpm: 0,
   engineRpm: 0,
+  rpmRipple: 0,
+  rpmMean: 0,
   effort: 0,
   realtime: 0,
   cpuLoad: 0,
@@ -373,6 +390,10 @@ export class SynthEngine {
       throttleFull: next.throttleFull,
       volume: next.volume,
       dynoTorque: next.dynoTorque,
+      // Le bruit qui délisse le régime : sans lui le vilebrequin tourne à
+      // vitesse rigoureusement constante, ce qu'aucun moteur ne fait.
+      rippleRpm: next.rippleRpm,
+      rippleHz: next.rippleHz,
       // Les bruits appartiennent au moteur, pas au banc : ils viennent de la
       // définition du profil, et repassent ici parce qu'ils s'écrivent à chaud.
       airNoise: this.definition.airNoise,
@@ -558,6 +579,8 @@ export class SynthEngine {
       targetRpm: Number(message['targetRpm'] ?? 0),
       effort: effort,
       engineRpm: Number(message['engineRpm'] ?? 0),
+      rpmRipple: Number(message['rpmRipple'] ?? 0),
+      rpmMean: Number(message['rpmMean'] ?? 0),
       realtime: realtimeFactor(cpu, audio),
       cpuLoad: audio > 0 ? cpu / audio : 0,
       reserveMs: (Number(message['queuedFrames'] ?? 0) / rate) * 1000,

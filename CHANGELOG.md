@@ -22,6 +22,31 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le régime du moteur simulé se délisse.** Le dynamomètre tient la vitesse par
+  une contrainte du solveur : mesurée à chaque pas de simulation, l'ondulation du
+  vilebrequin était **exactement nulle**, à tous les régimes. Un régime
+  rigoureusement constant donne une fréquence pure, et c'est ce que David
+  entendait — « on dirait un oscilloscope », sur l'EJ25 à 1 820 tr/min.
+
+  Un bruit filtré module désormais le régime, réglable en amplitude et en
+  vitesse de dérive, applicable sans couper le son. Mesuré à 1 820 tr/min sur
+  quatre cylindres, part de l'énergie tenue par les cinquante plus grandes
+  raies : 46,3 % sans lui, 39,1 % à vingt tours, 35,1 % à quarante. La valeur
+  livrée — quinze tours, quinze hertz — est une estimation, à juger à l'oreille ;
+  zéro rend le comportement d'avant.
+
+  **Une ondulation régulière avait été essayée d'abord, et elle ne servait à
+  rien** : calée sur la fréquence d'allumage, elle place ses bandes latérales
+  exactement sur les harmoniques voisines, si bien que l'énergie reste sur la
+  même grille — 46,3 % contre 45,4 % à quarante tours. Ce qui manquait à ce son
+  n'était pas une ondulation, c'était de l'irrégularité.
+
+- **L'écran de synthèse affiche l'ondulation du régime.** Relevée à chaque pas de
+  simulation dans le WebAssembly, la seule cadence où elle est visible : le
+  régime rapporté par ailleurs est échantillonné quatre fois par seconde, là où
+  l'ondulation vaut cent à deux cents hertz. En alerte sous un tour par minute,
+  parce que zéro est le défaut qu'on vient de corriger.
+
 - **Un GM LS à collecteur long, réglé à l'oreille.** Quatre valeurs d'échappement
   s'écartent de la définition d'engine-sim : le collecteur du premier cylindre
   passe de 6,8 à 30 pouces, le débit du primaire double, le tube primaire gagne

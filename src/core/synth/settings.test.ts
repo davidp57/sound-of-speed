@@ -71,3 +71,27 @@ describe('needsRebuild', () => {
     expect(needsRebuild(DEFAULT_SYNTH, { ...DEFAULT_SYNTH, levelerTarget: 8000 })).toBe(false)
   })
 })
+
+describe('le bruit qui délisse le régime', () => {
+  it('accepte de le couper, et borne son amplitude', () => {
+    // Zéro est un réglage à part entière : c'est le comportement d'avant, un
+    // vilebrequin qui tourne à vitesse rigoureusement constante.
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, rippleRpm: 0 }).rippleRpm).toBe(0)
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, rippleRpm: -5 }).rippleRpm).toBe(0)
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, rippleRpm: 500 }).rippleRpm).toBe(120)
+  })
+
+  it('ne laisse pas la dérive tomber à zéro hertz', () => {
+    // À zéro le filtre ne laisserait plus rien passer, et le réglage
+    // d'amplitude annoncerait des tours qu'il ne produit pas.
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, rippleHz: 0 }).rippleHz).toBe(0.5)
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, rippleHz: 9000 }).rippleHz).toBe(200)
+  })
+
+  it('s’écrit à chaud, sans rebâtir le moteur', () => {
+    // Le moteur se rebâtit en une seconde de silence : un réglage qu'on cherche
+    // à l'oreille ne peut pas le payer à chaque mouvement du curseur.
+    expect(needsRebuild(DEFAULT_SYNTH, { ...DEFAULT_SYNTH, rippleRpm: 40 })).toBe(false)
+    expect(needsRebuild(DEFAULT_SYNTH, { ...DEFAULT_SYNTH, rippleHz: 40 })).toBe(false)
+  })
+})

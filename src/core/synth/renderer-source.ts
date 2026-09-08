@@ -33,6 +33,10 @@ let setNoise = null
 let setLevelerTarget = null
 let readRpm = null
 let readLatency = null
+let readRipple = null
+let setRipple = null
+let readRpmMean = null
+let resetRpmWindow = null
 let buffer = 0
 let link = null
 
@@ -107,6 +111,11 @@ function publish() {
     targetRpm: liveRpm,
     effort: forceEffort ? forcedEffort : chainEffort,
     engineRpm: readRpm(),
+    // L'ondulation du vilebrequin, relevee a chaque pas de simulation dans le
+    // WebAssembly : c'est la seule cadence ou elle est visible. Zero veut dire
+    // que le regime est rigoureusement constant, ce qu'aucun moteur ne fait.
+    rpmRipple: readRipple(),
+    rpmMean: readRpmMean(),
     innerLatency: readLatency(),
     queuedFrames: framesSent - framesConsumed,
     cpuSeconds: windowCpu,
@@ -123,6 +132,9 @@ function publish() {
   windowFrames = 0
   peak = 0
   clipped = 0
+  // Fenetre de mesure neuve : l'ondulation qu'on vient de rapporter est celle
+  // de la fenetre ecoulee, pas celle du debut des temps.
+  resetRpmWindow()
 }
 
 async function boot(message) {
@@ -149,6 +161,10 @@ async function boot(message) {
   setNoise = core.cwrap('synth_set_noise', null, ['number', 'number'])
   setLevelerTarget = core.cwrap('synth_set_leveler_target', null, ['number'])
   readRpm = core.cwrap('synth_rpm', 'number', [])
+  setRipple = core.cwrap('synth_set_ripple', null, ['number', 'number'])
+  readRipple = core.cwrap('synth_rpm_ripple', 'number', [])
+  readRpmMean = core.cwrap('synth_rpm_mean', 'number', [])
+  resetRpmWindow = core.cwrap('synth_rpm_window_reset', null, [])
   readLatency = core.cwrap('synth_latency', 'number', [])
 
   const settings = message.settings
@@ -189,6 +205,7 @@ async function boot(message) {
   setThrottleRange(settings.throttleIdle, settings.throttleFull)
   setVolume(settings.volume)
   setDyno(settings.dynoTorque)
+  setRipple(settings.rippleRpm, settings.rippleHz)
   sweep = settings.sweep
   sweepSeconds = settings.sweepSeconds
   sweepLow = message.sweepLow
@@ -234,6 +251,7 @@ self.onmessage = (event) => {
     if (setThrottleRange !== null) setThrottleRange(message.throttleIdle, message.throttleFull)
     if (setVolume !== null) setVolume(message.volume)
     if (setDyno !== null) setDyno(message.dynoTorque)
+    if (setRipple !== null) setRipple(message.rippleRpm, message.rippleHz)
     if (setNoise !== null) setNoise(message.airNoise, message.inputSampleNoise)
     reserveFrames = Math.round((message.reserveMs / 1000) * sampleRate)
     sweep = message.sweep

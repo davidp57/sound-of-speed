@@ -372,6 +372,13 @@ const gauge = computed(() => {
         :warn="Math.abs(gauge.gap) > 50"
         hint="Le dynamomètre tient l'arbre ; au-delà de quelques dizaines de tours, c'est qu'il sature."
       />
+      <ValueRow
+        label="Ondulation du régime"
+        :value="synthStatus.rpmRipple.toFixed(1)"
+        unit="tr/min"
+        :warn="synthStatus.rpmRipple < 1"
+        hint="L'écart entre le plus haut et le plus bas régime du vilebrequin, relevé à chaque pas de simulation. Un moteur réel accélère à chaque explosion et ralentit entre deux ; à zéro, il tourne à vitesse rigoureusement constante et le son est une fréquence pure."
+      />
       <ValueRow label="Effort transmis" :value="synthStatus.effort.toFixed(2)" :bar="synthStatus.effort" />
       <ValueRow
         label="Niveau crête"
@@ -676,6 +683,44 @@ const gauge = computed(() => {
         La réserve absorbe les pointes de calcul. Elle se paie en retard entre
         le cadran et le son : l'allonger fait disparaître les creux et éloigne
         le son de ce qu'on voit.
+      </p>
+      <div class="field">
+        <label for="ripple">Régime délissé</label>
+        <input
+          id="ripple"
+          type="range"
+          min="0"
+          max="120"
+          step="1"
+          :value="synthSettings.rippleRpm"
+          @input="onNumber('rippleRpm', $event)"
+        />
+        <span class="numeric">{{ synthSettings.rippleRpm }} tr/min</span>
+      </div>
+      <div class="field">
+        <label for="ripplehz">Vitesse de la dérive</label>
+        <input
+          id="ripplehz"
+          type="range"
+          min="0.5"
+          max="200"
+          step="0.5"
+          :value="synthSettings.rippleHz"
+          @input="onNumber('rippleHz', $event)"
+        />
+        <span class="numeric">{{ synthSettings.rippleHz }} Hz</span>
+      </div>
+      <p class="note">
+        Le dynamomètre tient le régime au tour près : mesurée à chaque pas de
+        simulation, l'ondulation du vilebrequin est <b>exactement nulle</b>, et
+        un régime rigoureusement constant donne une fréquence pure. Ce réglage
+        lui rend une irrégularité, par un bruit filtré — et non par une
+        ondulation régulière, essayée d'abord et sans effet : calée sur les
+        explosions, elle place ses bandes latérales sur les harmoniques voisines
+        et l'énergie reste sur la même grille. Mesuré à 1 820 tr/min sur quatre
+        cylindres, part de l'énergie tenue par les cinquante plus grandes raies :
+        46,3 % à zéro, 39,1 % à vingt tours, 35,1 % à quarante. La valeur livrée
+        est une estimation, à juger à l'oreille.
       </p>
     </section>
     <section class="panel">
