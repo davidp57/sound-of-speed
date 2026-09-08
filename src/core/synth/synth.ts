@@ -6,6 +6,7 @@ import {
 } from '../preset/engine-definition'
 import type { EngineDefinition } from '../preset/schema'
 import { exhaustImpulse } from './impulse'
+import { MONITOR_PROCESSOR, MONITOR_SOURCE } from './monitor-source'
 import { PLAYER_PROCESSOR, PLAYER_SOURCE } from './player-source'
 import { RENDERER_SOURCE } from './renderer-source'
 import { realtimeFactor } from './reserve'
@@ -95,6 +96,16 @@ export interface SynthStatus {
    */
   brightness: number
   /**
+   * Niveau crête **en fin de graphe**, de 0 à 1 et au-delà.
+   *
+   * Celui du lecteur est relevé avant le silencieux et la résonance : il ne voit
+   * pas déborder ce que la résonance fait déborder. Mesuré sur le Chevrolet 454
+   * au ralenti, 1,000 au lecteur pour 1,194 ici.
+   */
+  outputPeak: number
+  /** Part d'échantillons rognés par la sortie, de 0 à 1. */
+  outputClipped: number
+  /**
    * La part d'échantillons butés sur le plafond des entiers 16 bits depuis le
    * dernier compte rendu, de 0 à 1.
    *
@@ -126,6 +137,8 @@ const IDLE_STATUS: SynthStatus = {
   rms: 0,
   brightness: 0,
   clipped: 0,
+  outputPeak: 0,
+  outputClipped: 0,
 }
 
 /**
@@ -149,6 +162,21 @@ const MODULE_PATH = '/sonde/probe.mjs'
  */
 const RESPONSE_DIR = '/impulse'
 
+/**
+ * Marge gardée sous le plafond, en gain linéaire.
+ *
+ * Deux décibels. La résonance d'échappement ajoute une quinzaine de décibels à
+ * la bande de 500 Hz, et le signal lui arrive déjà collé au plafond : mesuré sur
+ * le Chevrolet 454 au ralenti, la crête en fin de graphe atteignait 1,194, que
+ * le contexte audio rognait. Deux décibels ramènent ce cas à 0,95.
+ *
+ * Elle se paie en niveau, et c'est assumé : le volume de l'appareil, lui, est en
+ * flottant et ne plafonne pas. Elle n'est pas un réglage — un curseur de plus
+ * dans un écran qu'on vient de décider d'alléger, pour une valeur qu'on ne
+ * touche jamais qu'une fois.
+ */
+const OUTPUT_HEADROOM = 0.794
+
 function blobUrl(source: string): string {
   return URL.createObjectURL(new Blob([source], { type: 'text/javascript' }))
 }
@@ -162,6 +190,8 @@ export class SynthEngine {
   private output: GainNode | null = null
   private convolver: ConvolverNode | null = null
   private muffler: BiquadFilterNode | null = null
+  /** Le moniteur de fin de graphe : il ne change rien, il compte. */
+  private monitor: AudioWorkletNode | null = null
   /** Les réponses déjà chargées, par nom de fichier. */
   private responses = new Map<string, AudioBuffer>()
   /** La réponse enregistrée en service, ou `null` quand on fabrique un tube. */
@@ -240,6 +270,9 @@ export class SynthEngine {
       const playerUrl = blobUrl(PLAYER_SOURCE)
       this.urls.push(playerUrl)
       await context.audioWorklet.addModule(playerUrl)
+      const monitorUrl = blobUrl(MONITOR_SOURCE)
+      this.urls.push(monitorUrl)
+      await context.audioWorklet.addModule(monitorUrl)
 
       const node = new AudioWorkletNode(context, PLAYER_PROCESSOR, {
         numberOfInputs: 0,
@@ -300,11 +333,14 @@ export class SynthEngine {
       this.node.disconnect()
       this.node = null
     }
-    for (const node of [this.dry, this.wet, this.output, this.convolver]) node?.disconnect()
+    for (const node of [this.dry, this.wet, this.output, this.convolver, this.monitor]) {
+      node?.disconnect()
+    }
     this.dry = null
     this.wet = null
     this.output = null
     this.convolver = null
+    this.monitor = null
     if (this.context !== null) {
       const context = this.context
       this.context = null
@@ -471,10 +507,34 @@ export class SynthEngine {
     this.output?.disconnect()
     this.convolver?.disconnect()
     this.muffler?.disconnect()
+    this.monitor?.disconnect()
 
     const output = context.createGain()
-    output.gain.value = this.muted ? 0 : this.masterVolume
-    output.connect(context.destination)
+    output.gain.value = this.outputGain()
+
+    // Le moniteur s'intercale entre la sortie et les haut-parleurs : c'est le
+    // seul endroit d'où l'on voit ce qui sort vraiment.
+    const monitor = new AudioWorkletNode(context, MONITOR_PROCESSOR, {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+      // Quatre-vingt-seize tours, soit un quart de seconde : la cadence des
+      // comptes rendus du calculateur. Plus souvent ferait rendre Vue à la
+      // cadence du fil audio, pour un chiffre qu'on lit à l'œil.
+      processorOptions: { reportEvery: 96 },
+    })
+    monitor.port.onmessage = (event: MessageEvent) => {
+      const message = event.data as { type?: string; peak?: number; clipped?: number }
+      if (message.type !== 'sortie') return
+      this.publish({
+        ...this.state,
+        outputPeak: Number(message.peak ?? 0),
+        outputClipped: Number(message.clipped ?? 0),
+      })
+    }
+    this.monitor?.disconnect()
+    this.monitor = monitor
+    output.connect(monitor).connect(context.destination)
     this.output = output
 
     // Le silencieux, avant la séparation : il doit agir sur le son sec comme
@@ -549,7 +609,12 @@ export class SynthEngine {
   }
 
   private applyOutputGain(): void {
-    if (this.output !== null) this.output.gain.value = this.muted ? 0 : this.masterVolume
+    if (this.output !== null) this.output.gain.value = this.outputGain()
+  }
+
+  /** Le gain de sortie : le volume de l'appareil, moins la marge. */
+  private outputGain(): number {
+    return this.muted ? 0 : this.masterVolume * OUTPUT_HEADROOM
   }
 
   private onWorkerMessage(message: Record<string, number | string>): void {

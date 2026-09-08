@@ -207,8 +207,13 @@ Cela explique aussi le rapprochement que David avait fait avec la brillance : un
 écrêtage engendre des harmoniques hautes, donc la part d'énergie au-dessus d'un
 kilohertz monte avec lui. La brillance ne causait rien, elle signalait.
 
-Ce qui n'est pas tranché : mesurer l'écrêtage réel en fin de graphe pour qu'il
-cesse d'être invisible, garder une marge sous le plafond, ou les deux.
+**Les deux, tranché par David le 8 septembre 2026, et livrés.** Un moniteur
+placé tout au bout de la chaîne relève la crête et l'écrêtage réels — deux
+lignes de plus à l'écran, *Crête en sortie* et *Écrête en sortie*. Et la sortie
+garde deux décibels de marge sous le plafond : à 1,194 de crête mesurée, cela
+ramène le cas à 0,95. Vérifié dans le navigateur, une fois branché : crête au
+lecteur 0,916, crête en sortie 0,838, écrêtage nul, temps réel ×1,70 et aucun
+creux — le moniteur ne coûte rien.
 
 ## Ce qui reste
 
