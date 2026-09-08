@@ -294,6 +294,13 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Les écrans de banc sont dans l'image d'intégration.** Le simulateur de
+  vitesse et l'écran de réglage de la synthèse n'existaient qu'en développement,
+  sur le poste. Ils sont désormais aussi dans l'image `:develop` — celle qu'on
+  essaie dans la voiture —, et toujours absents de la production. C'est garé
+  qu'un timbre se règle, et le simulateur reste le test qui distingue un défaut
+  de son d'un défaut de signal.
+
 - **L'écran de synthèse n'est plus troué.** Sa grille alignait ses lignes sur la
   plus haute section : « Le calcul » faisait mille pixels de haut, ses deux
   voisines deux cent soixante-dix, et sept cents pixels de vide s'ouvraient sous
@@ -312,6 +319,23 @@ Toutes les évolutions notables du projet. Format
   source, lui, reste affiché.
 
 ### Corrigé
+
+- **Le suivi GPS repart quand il n'a jamais démarré.** Au départ d'un parking
+  souterrain, aucune position n'était acquise et rien ne repartait une fois
+  dehors : il fallait lancer l'ancienne version, obtenir un signal avec elle,
+  puis revenir. Le chien de garde se déclenche sur le silence de la source, et
+  ce silence valait zéro tant qu'aucune mesure n'était **jamais** arrivée — il
+  couvrait la perte du signal en route, pas le signal jamais acquis. L'attente
+  court désormais depuis la mise en marche. Mesuré sur une source muette : le
+  compteur passe de 0 ms figé à 250 s, et le suivi est relancé toutes les cinq
+  secondes au lieu de jamais.
+
+- **L'écran dit ce qu'il attend quand le GPS ne donne rien.** La vitesse restait
+  à zéro sans un mot, et le chien de garde relançait en silence : rien ne disait
+  s'il fallait patienter, ressortir, ou donner une autorisation. L'écran de
+  conduite annonce maintenant le silence en secondes, le nombre de relances, et
+  distingue une source dont aucune position n'est jamais arrivée d'une source
+  qui s'est tue en route.
 
 - **Le bouton du son s'allume quand du son sort, quelle que soit son origine.**
   Sous un profil « généré en direct », il annonçait « Son actif » en gris pendant

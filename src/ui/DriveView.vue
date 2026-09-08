@@ -43,6 +43,8 @@ import {
   shiftDown,
   shiftUp,
   benchOptions,
+  fixRestarts,
+  fixStats,
   padConnected,
   padLabel,
   padMapping,
@@ -202,6 +204,36 @@ const REJECTION_LABELS: Record<string, string> = {
 const rejectionMessage = computed(() =>
   rejectionCause.value === null ? '' : (REJECTION_LABELS[rejectionCause.value] ?? ''),
 )
+/**
+ * Ce que l'écran dit quand le GPS ne donne rien.
+ *
+ * Une source muette n'affichait aucun message : la vitesse restait à zéro sans
+ * un mot, et le chien de garde relançait le suivi en silence. Relevé en roulant
+ * le 8 septembre 2026, au départ d'un parking souterrain — rien à l'écran ne
+ * disait s'il fallait attendre, ressortir, ou donner une autorisation.
+ *
+ * Le compte des positions reçues sépare les deux cas, et ils n'appellent pas la
+ * même chose de la part du conducteur.
+ */
+const SILENT_AFTER_MS = 5000
+const silentSourceMessage = computed(() => {
+  if (sourceKind.value !== 'geolocation' || !isRunning.value) return ''
+  if (sourceStatus.value === 'denied') return ''
+  const silence = telemetry.value.speed.sinceLastSampleMs
+  if (silence < SILENT_AFTER_MS) return ''
+
+  const seconds = Math.round(silence / 1000)
+  const relances = fixRestarts.value > 0 ? ` Suivi relancé ${fixRestarts.value} fois.` : ''
+  if (fixStats.value.received === 0) {
+    return (
+      `Aucune position reçue depuis ${seconds} s. Le GPS n'accroche pas sous un ` +
+      `bâtiment, et l'autorisation de localisation se donne par adresse : celle-ci ` +
+      `peut ne pas l'avoir encore.${relances}`
+    )
+  }
+  return `Plus aucune position depuis ${seconds} s.${relances}`
+})
+
 const sliderSpeed = ref(0)
 const cruiseOn = ref(false)
 
@@ -622,6 +654,8 @@ const SPEED_STEP_KMH = 20
         La localisation a été refusée. Autorisez-la dans les réglages du site pour
         mesurer votre vitesse.
       </p>
+
+      <p v-else-if="silentSourceMessage" class="hint warn">{{ silentSourceMessage }}</p>
     </section>
 
     <p v-if="!isRunning" class="hint">La boucle est arrêtée. Rien n'est mis à jour.</p>

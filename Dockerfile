@@ -19,7 +19,13 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build
+
+# Les écrans de banc — simulateur de vitesse et réglage de la synthèse — ne sont
+# dans l'image que si on le demande. Le workflow ne le demande que pour
+# l'étiquette `develop` : c'est la pile d'essai qui sert à régler dans la
+# voiture, pas celle qui roule au quotidien.
+ARG BENCH=""
+RUN BENCH=$BENCH npm run build
 
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html

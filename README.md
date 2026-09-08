@@ -306,10 +306,14 @@ demande donc de confirmer une fois.
 > ordinaire — mais **pas** une adresse de réseau local. En `http://192.168.x.x`,
 > la page s'affiche normalement et le GPS refuse de démarrer, sans message.
 
-Le simulateur et le rejeu ne sont proposés **qu'en développement** : ce sont des
-outils d'atelier, et en voiture on est toujours au GPS. La rangée de boutons
-disparaît alors entièrement — un seul bouton qu'on ne peut pas désactiver n'est
-pas un choix — et seul le statut de la source reste affiché.
+Le simulateur et le rejeu ne sont proposés **qu'en développement et dans
+l'image `:develop`** : ce sont des outils d'atelier, et dans la voiture qui sert
+au quotidien on est toujours au GPS. Ils sont revenus dans la pile d'essai le
+8 septembre 2026, parce que c'est là, garé, qu'un timbre se règle et qu'on
+distingue un défaut de son d'un défaut de signal. Dans la construction de
+production, la rangée de boutons disparaît entièrement — un seul bouton qu'on ne
+peut pas désactiver n'est pas un choix — et seul le statut de la source reste
+affiché.
 
 Au clavier, source « Simulateur » :
 
@@ -382,10 +386,15 @@ Mesuré au banc, en croisière tenue à 110 km/h :
 Un quart de la charge pleine du profil Route en pointe, sur une vitesse qui ne
 bouge pas : voilà ce que le premier mode cache.
 
-**Le simulateur n'existe qu'en développement.** Dans une voiture il n'a aucun
-sens, et il n'y serait qu'un moyen de se tromper sur ce qu'on entend. La
-construction de production ne le propose pas, et la source au démarrage y est
-donc le GPS.
+**Le simulateur n'existe pas en production.** Dans la voiture qui sert au
+quotidien il n'a aucun sens, et il n'y serait qu'un moyen de se tromper sur ce
+qu'on entend. La construction de production ne le propose pas, et la source au
+démarrage y est donc le GPS.
+
+L'image `:develop`, elle, le porte — avec l'écran de réglage de la synthèse. La
+construction n'y met ces écrans que si `BENCH=1` est posé, ce que fait le
+workflow pour cette étiquette et pour elle seule. C'est ce qui permet de régler
+un son garé, sur l'appareil qui le rendra faux en roulant.
 
 Autres commandes :
 

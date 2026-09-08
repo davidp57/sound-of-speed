@@ -105,6 +105,16 @@ export class SpeedConditioner {
    * deux mesures, jamais pour dater une mesure.
    */
   private lastSampleReceivedAt = 0
+  /**
+   * Heure à laquelle on a commencé à attendre une mesure.
+   *
+   * Sans elle, le silence de la source valait zéro tant qu'aucune mesure
+   * n'était **jamais** arrivée, et le chien de garde, qui se déclenche sur ce
+   * silence, ne relançait donc jamais un suivi qui n'avait pas démarré. Relevé
+   * en roulant le 8 septembre 2026 : départ d'un parking souterrain, aucun
+   * point acquis, et le suivi ne repartait plus une fois dehors.
+   */
+  private waitingSince = 0
   private carry = 0
 
   constructor(private preset: SpeedPreset) {}
@@ -113,7 +123,14 @@ export class SpeedConditioner {
     this.preset = preset
   }
 
+  /**
+   * Remet le conditionnement à zéro, et rouvre l'attente d'une mesure.
+   *
+   * L'attente repart d'ici, et non de la première mesure : c'est ce qui permet
+   * au chien de garde de voir un suivi qui n'a jamais démarré.
+   */
   reset(): void {
+    this.waitingSince = Date.now()
     this.history = []
     this.gaps = []
     this.rawKmh = 0
@@ -262,8 +279,11 @@ export class SpeedConditioner {
   tick(dt: number): ConditionedSpeed {
     const step = clamp(dt, 0, MAX_FRAME_S)
     const now = Date.now()
-    const sinceLastSampleMs =
-      this.lastSampleReceivedAt > 0 ? now - this.lastSampleReceivedAt : 0
+    // Le silence court depuis la dernière mesure, ou depuis l'ouverture de
+    // l'attente quand il n'y en a jamais eu. Zéro dirait « on vient d'en
+    // recevoir une », ce qui est faux et fait taire tout ce qui surveille.
+    const waitingFrom = this.lastSampleReceivedAt > 0 ? this.lastSampleReceivedAt : this.waitingSince
+    const sinceLastSampleMs = waitingFrom > 0 ? now - waitingFrom : 0
 
     // Extrapolation : entre deux mesures, la cible suit la pente estimée. Sans
     // cela la vitesse reste plate une seconde puis saute d'un coup.

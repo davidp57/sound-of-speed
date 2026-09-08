@@ -198,18 +198,21 @@ const mediaSession = new MediaSession()
 const offline = new Offline()
 
 /**
- * Le simulateur n'existe qu'en développement.
+ * Les écrans de banc — simulateur de vitesse, réglage de la synthèse.
  *
- * Un simulateur de vitesse n'a aucun sens dans une voiture : il n'y est qu'un
- * moyen de se tromper sur ce qu'on entend. Décidé par David le 4 septembre 2026.
+ * Ils sont là en développement, et dans l'image `:develop`, jamais en
+ * production. C'est l'arbitrage du 8 septembre 2026, qui reprend celui du
+ * 4 septembre en lui laissant une porte : un banc n'a rien à faire dans la
+ * voiture qui sert au quotidien, mais la pile d'essai **est** dans la voiture,
+ * et c'est là, garé, qu'un timbre se règle et qu'un défaut de son se cerne.
  *
- * Ce qu'on y perd mérite d'être écrit : le simulateur avait servi de **test
- * discriminant en roulant** — « le simulateur fonctionne encore, repasser au GPS
- * rebloque aussitôt » est la phrase qui a orienté le diagnostic du GPS muet. Le
- * journal de bord et les comptes de rejet, désormais lisibles à l'écran, le
- * remplacent en partie.
+ * Ce qu'on y gagne s'est déjà vu : « le simulateur fonctionne encore, repasser
+ * au GPS rebloque aussitôt » est la phrase qui a orienté le diagnostic du GPS
+ * muet du 4 septembre.
  */
-export const simulatorAvailable = import.meta.env.DEV
+const benchAvailable = import.meta.env.DEV || __BENCH__
+
+export const simulatorAvailable = benchAvailable
 
 /**
  * Ce que le banc fabrique, quand le simulateur est la source.
@@ -348,11 +351,13 @@ export const isMuted = ref(false)
  * Les deux origines ne cohabitent pas : allumer la synthèse coupe les
  * échantillons, et l'éteindre les rend.
  *
- * Ce qui est réservé au développement, c'est le **banc de réglage** — on ne
- * règle pas un timbre en conduisant —, pas la synthèse elle-même : tout
- * l'enjeu du lot est justement de savoir ce qu'elle coûte dans la voiture.
+ * Ce qui est réservé au banc, c'est l'**écran de réglage** — on ne règle pas un
+ * timbre en conduisant —, pas la synthèse elle-même : tout l'enjeu du lot est
+ * justement de savoir ce qu'elle coûte dans la voiture. L'image `:develop` le
+ * porte depuis le 8 septembre 2026, pour régler garé ce qui sonnait faux en
+ * roulant.
  */
-export const synthAvailable = import.meta.env.DEV
+export const synthAvailable = benchAvailable
 /**
  * Ce navigateur sait-il faire tourner le moteur simulé ?
  *
@@ -1305,6 +1310,9 @@ watch(selectedId, (id) => {
 })
 
 export function start(): void {
+  // L'attente d'une première mesure s'ouvre ici : c'est ce qui permet au chien
+  // de garde de relancer un suivi qui n'a jamais rien reçu.
+  conditioner.reset()
   fixWatchdog.reset()
   fixRestarts.value = 0
   rejectionWatch.reset()
