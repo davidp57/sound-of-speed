@@ -321,6 +321,35 @@ export const SUBARU_EJ25_UNEQUAL_HEADER: EngineDefinition = {
   headerLength: 10,
 }
 
+/**
+ * Le GM LS avec l'échappement que David a trouvé à l'oreille.
+ *
+ * Quatre valeurs s'écartent de la définition d'engine-sim, toutes dans
+ * l'échappement, relevées sur son écran le 8 septembre 2026 :
+ *
+ * - **le collecteur du premier cylindre passe de 6,8 à 30 pouces.** C'est celle
+ *   qui s'entend le plus : « quand on l'augmente, fait mieux entendre le bruit
+ *   des explosions (poutoum poutoum) — surtout au ralenti ». Le compromis qu'elle
+ *   arbitre était déjà connu, mais du mauvais côté : on l'avait noté comme des
+ *   parasites au ralenti, David les entend en **décélération** — « une fréquence
+ *   parasite en plus du bruit du moteur, comme une pièce métallique qui vibre
+ *   vite ». L'accélération, elle, est bonne ;
+ * - **le débit du primaire double**, de 500 à 1 000 ;
+ * - le tube primaire passe de 29 à 30 pouces, et le débit de sortie de 1 000 à
+ *   2 000. Ces deux-là accompagnaient les précédentes sur son écran sans qu'il
+ *   les nomme : elles sont reprises telles quelles, et se retirent d'un mot.
+ *
+ * Le moteur d'origine reste dans la liste, à sa valeur de référence : s'en
+ * écarter est un choix, et l'on doit pouvoir y retourner.
+ */
+export const GM_LS_V8_LONG_HEADER: EngineDefinition = {
+  ...GM_LS_V8,
+  primaryTubeLength: 30,
+  primaryFlowRate: 1000,
+  outletFlowRate: 2000,
+  headerLength: 30,
+}
+
 export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
   {
     id: 'gm-ls',
@@ -330,6 +359,20 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     redlineRpm: 6500,
     definition: GM_LS_V8,
     // Le seul moteur réglé à ce jour, aux valeurs relevées par David.
+    rendering: GM_LS_RENDERING,
+  },
+  {
+    id: 'gm-ls-long-header',
+    label: 'GM LS — V8 5,7 L, collecteur long',
+    short: 'GM long',
+    // Le fichier d'origine : c'est de là que vient la définition, et l'écart
+    // qu'on lui fait subir est décrit sur `GM_LS_V8_LONG_HEADER`.
+    source: 'assets/engines/atg-video-2/07_gm_ls.mr',
+    redlineRpm: 6500,
+    definition: GM_LS_V8_LONG_HEADER,
+    // Le même rendu que le GM LS : c'est le même moteur, avec un échappement
+    // plus long. Changer les deux à la fois empêcherait de savoir ce qu'on
+    // entend.
     rendering: GM_LS_RENDERING,
   },
   {
