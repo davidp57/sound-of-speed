@@ -5,6 +5,7 @@ import {
   needsEngineRebuild,
 } from '../preset/engine-definition'
 import type { EngineDefinition } from '../preset/schema'
+import { makeEventNoise, type EventTarget } from '../audio/events'
 import { exhaustImpulse } from './impulse'
 import { MONITOR_PROCESSOR, MONITOR_SOURCE } from './monitor-source'
 import { PLAYER_PROCESSOR, PLAYER_SOURCE } from './player-source'
@@ -202,6 +203,8 @@ export class SynthEngine {
   private dry: GainNode | null = null
   private wet: GainNode | null = null
   private output: GainNode | null = null
+  /** Bruit partagé des événements, fabriqué à la première demande. */
+  private eventNoise: AudioBuffer | null = null
   private convolver: ConvolverNode | null = null
   private muffler: BiquadFilterNode | null = null
   /** Le dernier effort reçu : c'est lui qui débouche le son. */
@@ -247,6 +250,32 @@ export class SynthEngine {
 
   get isRunning(): boolean {
     return this.state.phase === 'ready'
+  }
+
+  /**
+   * Où brancher un bruit bref, ou `null` tant que le graphe n'est pas monté.
+   *
+   * Le clac de la boîte et la pétarade ne sont pas produits par le moteur
+   * simulé : ce sont des bruits de transmission et d'échappement, synthétisés à
+   * part et communs aux deux origines de son. Ils vivaient dans le moteur à
+   * échantillons, qui exigeait une banque chargée pour les jouer — un profil en
+   * synthèse n'en charge pas, et ils étaient donc muets. David, après un essai
+   * sur le NAS : « ça ne marche pas pour les moteurs en synthèse, juste ceux qui
+   * sont enregistrés ».
+   *
+   * Ils entrent sur le gain de sortie, donc après le silencieux et la résonance
+   * d'échappement : un choc de carter ne traverse pas la ligne d'échappement, et
+   * l'y faire passer le noierait sous quinze décibels de résonance à 500 Hz.
+   */
+  eventTarget(): EventTarget | null {
+    const context = this.context
+    const destination = this.output
+    if (!context || !destination) return null
+    return {
+      context,
+      destination,
+      noise: this.eventNoise ?? (this.eventNoise = makeEventNoise(context)),
+    }
   }
 
   getSettings(): SynthSettings {

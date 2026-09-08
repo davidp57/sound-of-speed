@@ -3,6 +3,7 @@ import type { EngineState } from '../engine/engine'
 import { computeMix } from './mix'
 import { REFRESH_FADE_S, equalPowerCurves, nextRefreshDelayS } from './refresh'
 import { buildOutputChain, saturationCurve } from './output-chain'
+import { type EventTarget } from './events'
 
 /**
  * Moteur audio à échantillons.
@@ -163,38 +164,6 @@ class ClockProcessor extends AudioWorkletProcessor {
 }
 registerProcessor('speed-clock', ClockProcessor)
 `
-
-/**
- * Les trois composantes du clac : filtre, fréquence, résonance, gain, extinction.
- *
- * Trois et non une, parce qu'un seul filtre ne fait pas un choc. La masse sous
- * deux cents hertz, le corps du carter vers quatre cent cinquante, et juste
- * assez de médium vers douze cents pour qu'on entende une pièce et non un coup
- * sourd. Les extinctions sont inégales et volontairement longues : la masse
- * traîne quand le médium est déjà éteint, et c'est ce décalage qui fait entendre
- * une pièce lourde plutôt qu'une impulsion.
- *
- * **Une version aiguë et courte a été essayée d'abord, et jetée.** Elle plaçait
- * son énergie vers trois kilohertz et au-delà : mesurée par bandes d'octave, au
- * réglage où David la jugeait déjà trop forte, elle culminait à −4 dB du moteur
- * à huit kilohertz et à +13 dB à seize. « C'est le son qui est surtout trop sec,
- * aigu et court ; dans la vidéo c'est un son un peu plus long et surtout plus
- * sourd. » Celle-ci a son maximum dans le grave — mesuré en écart au moteur :
- * −5,7 dB à 125 Hz, −10,7 à 250, et 16 dB en dessous partout au-dessus de deux
- * kilohertz.
- */
-const CLACK_PARTS: {
-  type: BiquadFilterType
-  hz: number
-  q: number
-  gain: number
-  /** Constante de temps de l'extinction, en secondes. */
-  decay: number
-}[] = [
-  { type: 'lowpass', hz: 200, q: 0.9, gain: 2.2, decay: 0.12 },
-  { type: 'bandpass', hz: 450, q: 1.2, gain: 2.0, decay: 0.09 },
-  { type: 'bandpass', hz: 1200, q: 1.0, gain: 0.75, decay: 0.05 },
-]
 
 export class AudioEngine {
   private context: AudioContext | null = null
@@ -678,64 +647,18 @@ export class AudioEngine {
    * choc, qui étale au lieu de crêter. Le clac ne manquait pas d'être
    * déclenché : il était inaudible.
    */
-  clack(intensity: number): void {
-    const context = this.context
-    if (!context || this.status.phase !== 'ready' || !this.bus) return
-    if (intensity <= 0) return
-
-    this.status.clacks += 1
-    const at = context.currentTime + 0.001
-    const level = Math.min(1.5, intensity)
-
-    // **Après le saturateur et après le limiteur, et c'est tout l'enjeu.**
-    //
-    // Deux étages écrasaient ce clac, et il a fallu les écarter l'un après
-    // l'autre. Le saturateur d'abord : sa courbe est indexée sur [-1, 1] et le
-    // moteur y sature déjà, si bien que tout ce qui entrait au-dessus de lui en
-    // sortait au même niveau — mesuré, un clac dix fois trop fort ressortait à
-    // 0,00 dB d'écart du moteur.
-    //
-    // Le limiteur ensuite, et c'est le plus retors : il ne coupe pas un
-    // transitoire, il applique au signal entier la réduction que le moteur lui
-    // impose. Tant que la voiture est à l'arrêt il ne comprime rien et le clac
-    // s'entend ; dès qu'on roule, il comprime le moteur et le clac subit la
-    // même réduction. « J'entends le clac en cliquant sur le bouton, mais pas
-    // en passant les vitesses » : le bouton se presse à l'arrêt.
-    //
-    // Le gain de rattrapage est donc le point d'entrée. Il vient après les deux,
-    // et il multiplie l'événement comme il multiplie le moteur : le rapport
-    // mesuré entre les deux est conservé, cette fois jusqu'à la sortie.
-    const destination = this.makeup ?? this.limiter ?? this.bus
-
-    for (const part of CLACK_PARTS) {
-      const source = context.createBufferSource()
-      source.buffer = this.noise ?? (this.noise = makeNoise(context))
-      source.playbackRate.value = 0.9 + Math.random() * 0.25
-      source.loop = true
-
-      const filter = context.createBiquadFilter()
-      filter.type = part.type
-      filter.frequency.value = part.hz * (0.92 + Math.random() * 0.16)
-      filter.Q.value = part.q
-
-      const gain = context.createGain()
-      const peak = Math.max(0.0002, level * part.gain)
-      // L'attaque fait le choc : une milliseconde, pas quatre comme la pétarade.
-      gain.gain.setValueAtTime(0.0001, at)
-      gain.gain.exponentialRampToValueAtTime(peak, at + 0.001)
-      // Une extinction à constante de temps, et non une rampe vers un
-      // millième : la rampe descendait si vite que toute l'énergie du clac
-      // tenait dans sa crête. Mesuré par bandes d'octave, il arrivait alors
-      // 24 à 40 dB sous le moteur partout où l'oreille écoute, pour une crête
-      // pourtant supérieure à la sienne. Une crête n'est pas un niveau.
-      gain.gain.setTargetAtTime(0, at + 0.001, part.decay)
-
-      source.connect(filter)
-      filter.connect(gain)
-      gain.connect(destination)
-      source.start(at)
-      source.stop(at + part.decay * 4 + 0.02)
-    }
+  /**
+   * Compte un bruit d'événement, quel que soit le graphe qui l'a joué.
+   *
+   * Les deux origines de son ont leur propre contexte, mais un seul compteur :
+   * il est lu par l'écran de télémétrie, où il sert à distinguer un défaut de
+   * déclenchement d'un défaut de niveau. C'est ce compteur qui a tranché la
+   * question du clac inaudible, et il doit continuer à monter même quand le son
+   * sort du moteur simulé.
+   */
+  noteEvent(kind: 'clack' | 'backfire'): void {
+    if (kind === 'clack') this.status.clacks += 1
+    else this.status.backfires += 1
   }
 
   /**
@@ -747,43 +670,24 @@ export class AudioEngine {
    * suffisent, et cela évite de dépendre d'un enregistrement que la banque
    * sonore ne contient pas.
    */
-  backfire(intensity: number, count: number): void {
+
+  /**
+   * Où brancher un bruit bref, ou `null` si le contexte n'est pas ouvert.
+   *
+   * Sur le gain de rattrapage, dernier étage de la chaîne : le saturateur
+   * aplatit tout ce qui dépasse sa courbe, et le limiteur, déjà en train de
+   * comprimer le moteur, applique la même réduction à ce qui arrive en plus.
+   *
+   * **La banque n'a pas à être chargée.** Ces bruits ne dépendent que du
+   * contexte, et l'exiger les rendait muets sur les profils en synthèse.
+   */
+  eventTarget(): EventTarget | null {
     const context = this.context
-    if (!context || this.status.phase !== 'ready' || !this.bus) return
-
-    this.status.backfires += 1
-    const now = context.currentTime
-    for (let i = 0; i < count; i += 1) {
-      // Les claquements ne sont jamais réguliers : c'est ce qui les distingue
-      // d'un crépitement mécanique.
-      const at = now + Math.random() * 0.28 + i * 0.045
-      const duration = 0.05 + Math.random() * 0.07
-
-      const source = context.createBufferSource()
-      source.buffer = this.noise ?? (this.noise = makeNoise(context))
-      source.playbackRate.value = 0.7 + Math.random() * 0.6
-      source.loop = true
-
-      const band = context.createBiquadFilter()
-      band.type = 'bandpass'
-      band.frequency.value = 260 + Math.random() * 420
-      band.Q.value = 1.4
-
-      const gain = context.createGain()
-      const peak = intensity * (0.5 + Math.random() * 0.5)
-      gain.gain.setValueAtTime(0.0001, at)
-      gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), at + 0.004)
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + duration)
-
-      source.connect(band)
-      band.connect(gain)
-      // Après le saturateur et le limiteur, pour la même raison que le clac :
-      // les deux écrasent un événement bref dès que le moteur est fort.
-      gain.connect(this.makeup ?? this.bus)
-      source.start(at)
-      source.stop(at + duration + 0.02)
-    }
+    const destination = this.makeup ?? this.limiter ?? this.bus
+    if (!context || !destination) return null
+    return { context, destination, noise: this.noise ?? (this.noise = makeNoise(context)) }
   }
+
 
   /**
    * Coupe le son sans démonter le contexte : les couches restent chargées.

@@ -482,6 +482,32 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le passage de rapport s'entend aussi sur les moteurs en synthèse.** David,
+  après un essai sur le NAS : « ça ne marche pas pour les moteurs en synthèse,
+  juste ceux qui sont enregistrés — je parle de tout le toutim, du claquement au
+  passage en particulier ».
+
+  Trois pièces sur quatre étaient logées du mauvais côté. Le clac de la boîte et
+  la pétarade étaient joués par le moteur à échantillons, dont la garde exige une
+  banque chargée : un profil en synthèse n'en charge pas, et ouvre de surcroît
+  son propre contexte audio. La coupure de couple, elle, vit dans le mixage des
+  couches, qui n'est jamais appelé quand le synthé tourne — l'effort transmis au
+  moteur simulé restait donc entier pendant tout le passage. Seul le mouvement de
+  régime — plongée, coup de gaz, engagement — passait, parce qu'il est calculé
+  dans le moteur et transmis tel quel.
+
+  Les deux bruits deviennent des pièces autonomes, jouées sur le graphe qui sonne,
+  quel qu'il soit : c'est le même son des deux côtés, pas deux sons qui se
+  ressemblent. Sur le graphe du synthé ils entrent après le silencieux et la
+  résonance d'échappement — un choc de carter ne traverse pas la ligne
+  d'échappement, et l'y faire passer le noierait sous quinze décibels de
+  résonance à 500 Hz. La coupure de couple s'applique désormais à l'effort
+  transmis au moteur simulé, avec la même forme que pour les couches.
+
+  Le compteur « Clacs de boîte » de la télémétrie reste unique et monte quelle
+  que soit l'origine : c'est un compte, pas un son, et c'est lui qui permet de
+  distinguer un défaut de déclenchement d'un défaut de niveau.
+
 - **Le coup de gaz ne se produit plus quand on a levé le pied.** David : « je
   crois que le rapport passe automatiquement au moment du coup de gaz, même si
   j'ai commencé à ralentir juste avant. »

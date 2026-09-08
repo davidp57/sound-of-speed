@@ -1846,6 +1846,17 @@ Quatre choses s'y produisent, et une cinquième les rend possibles :
 - **L'échappement claque à la reprise**, une seule détonation quand le couple
   revient : la pétarade du lever de pied, tirée en un coup au lieu d'une salve.
 
+**Tout cela vaut pour les deux origines de son**, échantillons comme synthèse.
+Ce n'était pas le cas au départ : le clac et la pétarade vivaient dans le moteur
+à échantillons, qui exige une banque chargée pour jouer quoi que ce soit, et la
+coupure de couple vivait dans le mixage, qui n'est appelé que pour cette banque.
+Un profil en synthèse n'entendait donc que le mouvement de régime — celui-ci
+étant calculé dans le moteur et transmis tel quel. Les deux bruits sont
+maintenant des pièces à part, jouées sur le graphe qui sonne, et la coupure
+s'applique aussi à ce qu'on transmet au moteur simulé. Sur ce graphe-là ils
+entrent après le silencieux et la résonance : un choc de carter ne traverse pas
+la ligne d'échappement.
+
 **Et le passage dure assez pour que tout cela s'entende.** C'était le point
 bloquant : à 120 millisecondes, les quatre temps se chevauchaient et l'on ne
 percevait qu'un trou. Le temps de passage est monté à **600 ms** sur le profil

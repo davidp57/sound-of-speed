@@ -84,7 +84,7 @@ function fromDb(db: number): number {
  * que de se décaler. Vaut un hors passage, et à la fin exacte du passage : le
  * couple est alors revenu, et le timbre de pleine charge avec lui.
  */
-function shiftCut(profile: Profile, shift?: { isShifting: boolean; progress: number }): number {
+export function shiftCut(profile: Profile, shift?: { isShifting: boolean; progress: number }): number {
   const jolt = profile.feel.shiftJolt
   if (!jolt.enabled || !shift?.isShifting) return 1
   const depth = clamp(jolt.cutDepth, 0, 1)
