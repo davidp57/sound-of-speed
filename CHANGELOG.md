@@ -57,6 +57,14 @@ Toutes les évolutions notables du projet. Format
   ne causait rien, elle signalait. Un écrêtage engendre des harmoniques hautes,
   donc la part d'énergie au-dessus d'un kilohertz monte avec lui.
 
+- **Le banc écrit le son qu'il produit.** `--wav` en fait un fichier, chaîne de
+  sortie comprise. C'est ce qui a fermé la boucle entre la mesure et l'écoute :
+  six analyses n'avaient rien vu du cliquetis, et il a suffi de le rendre
+  audible, puis de le découper en quatre bandes, pour que l'oreille le localise
+  en une écoute. Le banc sait aussi couper le niveleur, forcer un gain, une
+  crête visée, la gigue ou le bruit d'air, pour isoler un suspect sans toucher
+  au dépôt.
+
 - **Un banc qui mesure le son tel qu'il sort.** `npm run analyse-son` fait tourner
   le moteur simulé hors du navigateur, puis lui applique la **chaîne de sortie** —
   silencieux, puis mélange du son sec et de la résonance d'échappement. Toute
@@ -380,6 +388,19 @@ Toutes les évolutions notables du projet. Format
   reçoit celle de son profil d'usine.
 
 ### Modifié
+
+- **La gigue d'échantillonnage est coupée sur tous les moteurs.** C'était elle,
+  le cliquetis que David traquait — « des frt frt frt à plus haute fréquence que
+  le moteur ». `inputSampleNoise` n'est pas un tremblement de moteur mais une
+  ligne à retard dont la position de lecture est tirée au sort à chaque
+  échantillon : elle crépite. Mesuré sur le GM LS au ralenti, ce que la valeur
+  portée par le projet ajoutait à elle seule : **8,7 dB à 5 600 Hz et 25,5 dB à
+  8 000 Hz**. Elle avait été posée à 0,05 « jugée à l'oreille » sans qu'on
+  mesure ce qu'elle faisait à l'aigu. Verdict de David sur les deux sons
+  égalisés : « c'est bon, le claquement est supprimé ».
+
+  Le curseur reste — la gigue est un caractère de moteur, et les fichiers
+  d'engine-sim en déclarent jusqu'à 0,5 — mais elle ne s'allume plus toute seule.
 
 - **La crête visée des moteurs non réglés descend de 12 000 à 9 000.** Douze
   mille suffisait au son sec, pas à ce qui sort : mesuré sur le Chevrolet 454 au
