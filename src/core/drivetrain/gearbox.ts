@@ -118,6 +118,26 @@ const CRUISE_AFTER_DOWNSHIFT_S = 4
  * la bande et **y reste**.
  */
 const CRUISE_BAND_GRACE_S = 0.4
+
+/**
+ * Décélération à partir de laquelle on considère que la voiture ralentit
+ * vraiment, en m/s², et durée qu'il faut la tenir pour interdire une montée.
+ *
+ * La bande de croisière regarde la **dérive** de la vitesse sur trois secondes,
+ * ce qui la rend robuste au bruit mais lente : quand on lève le pied après une
+ * longue croisière, la stabilité est déjà acquise et la dérive met plus d'une
+ * seconde à voir le ralentissement. La boîte a le temps de monter un rapport de
+ * plus — mesuré : un passage du quatrième au cinquième une seconde après le
+ * lever de pied, sur une perte de 0,5 km/h par seconde.
+ *
+ * L'accélération instantanée, elle, le sait tout de suite, mais elle est bruitée
+ * à un dixième de m/s². On la cumule donc : le compteur monte pendant qu'on
+ * ralentit et redescend deux fois plus vite sinon, si bien qu'une croisière qui
+ * tremble autour de zéro ne l'atteint jamais et qu'un vrai ralentissement le
+ * franchit en moins d'une seconde.
+ */
+const CRUISE_SLOWING_MS2 = 0.05
+const CRUISE_SLOWING_HOLD_S = 0.6
 /** Durée de décélération soutenue avant de descendre, en secondes. */
 const BRAKE_HOLD_S = 1
 /**
@@ -213,6 +233,13 @@ export class Gearbox {
   private sinceKickdownS = Number.POSITIVE_INFINITY
   /** Durée pendant laquelle la vitesse est restée stable, en secondes. */
   private steadyForS = 0
+  /**
+   * Temps cumulé passé à ralentir, en secondes, moins ce qui a été rendu.
+   *
+   * Ce n'est pas une durée continue : elle décroît deux fois plus vite qu'elle
+   * ne monte, pour qu'une croisière bruitée ne la fasse jamais franchir le seuil.
+   */
+  private slowingForS = 0
   /** Durée pendant laquelle la décélération est restée soutenue, en secondes. */
   private brakingForS = 0
   /** Temps depuis la dernière descente, en secondes. */
@@ -265,6 +292,7 @@ export class Gearbox {
     this.elapsedS = 0
     this.sinceKickdownS = Number.POSITIVE_INFINITY
     this.steadyForS = 0
+    this.slowingForS = 0
     this.brakingForS = 0
     this.sinceDownshiftS = Number.POSITIVE_INFINITY
     this.outOfBandForS = 0
@@ -458,6 +486,10 @@ export class Gearbox {
     this.steadyForS = held ? this.steadyForS + dt : 0
     this.brakingForS =
       accelMs2 <= this.drivetrain.brakeDownshiftAccelMs2 ? this.brakingForS + dt : 0
+    this.slowingForS =
+      accelMs2 < -CRUISE_SLOWING_MS2
+        ? this.slowingForS + dt
+        : Math.max(0, this.slowingForS - dt * 2)
 
     // Deux notions distinctes, et les confondre suffit à faire le yoyo.
     //
@@ -472,9 +504,14 @@ export class Gearbox {
     // seconde — le rapport atteint tournant précisément sous ce seuil — et la
     // boîte oscillait indéfiniment.
     const steadyNow = held
+    // Ralentir n'est pas croiser, et cela se sait avant que la dérive ne
+    // l'ait vu : sans cette condition, lever le pied après une longue
+    // croisière laissait passer un rapport de plus.
+    const slowing = this.slowingForS >= CRUISE_SLOWING_HOLD_S
     const steadyLongEnough =
       this.steadyForS >= this.drivetrain.cruiseUpshiftAfterS &&
-      this.sinceDownshiftS >= CRUISE_AFTER_DOWNSHIFT_S
+      this.sinceDownshiftS >= CRUISE_AFTER_DOWNSHIFT_S &&
+      !slowing
     const braking = this.brakingForS >= BRAKE_HOLD_S
 
     let ready = false

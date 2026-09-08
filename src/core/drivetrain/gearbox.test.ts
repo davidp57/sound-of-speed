@@ -1144,3 +1144,41 @@ describe('Gearbox — on ne monte pas en freinant', () => {
     }
   })
 })
+
+/**
+ * Ralentir n'est pas croiser, même très doucement.
+ *
+ * David, en laissant la voiture décélérer : « parfois le simu passe une vitesse
+ * supérieure au lieu de laisser ralentir et de finalement rétrograder ». La
+ * bande de croisière est pourtant serrée du côté du ralentissement — un dixième
+ * de m/s². Mais une décélération de roue libre s'y tient tout juste, et la
+ * dérive mesurée oscille autour de la limite : chaque retour dans la bande
+ * remet à zéro le compte de sortie, la tolérance de quatre dixièmes de seconde
+ * absorbe le reste, et la vitesse tenue n'est jamais démentie alors qu'on perd
+ * un kilomètre à l'heure toutes les deux secondes.
+ */
+describe('Gearbox — ralentir doucement ne fait pas monter un rapport', () => {
+  it('ne monte pas en roue libre, même sur une décélération très douce', () => {
+    const p = profile()
+    // 90 km/h, puis une perte de 0,4 km/h par seconde : 0,11 m/s², à peine
+    // au-delà de la limite de la bande, et bien en deçà d'un freinage.
+    // On croise d'abord assez longtemps pour que la boîte ait acquis sa
+    // stabilité et fini de monter : c'est l'état réel quand on lève le pied.
+    const CROISIERE = 12
+    const { shifts } = drive(
+      p,
+      (t) => (t < CROISIERE ? 90 : 90 - 0.5 * (t - CROISIERE)),
+      CROISIERE + 20,
+    )
+
+    const montees = shifts.filter((s) => s.to > s.from && s.t > CROISIERE)
+    expect(montees).toEqual([])
+  })
+
+  it('monte toujours quand la vitesse est vraiment tenue', () => {
+    const p = profile()
+    const { shifts } = drive(p, () => 90, 25)
+
+    expect(shifts.filter((s) => s.to > s.from).length).toBeGreaterThan(0)
+  })
+})

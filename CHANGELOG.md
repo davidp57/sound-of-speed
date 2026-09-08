@@ -479,6 +479,27 @@ Toutes les évolutions notables du projet. Format
   Le format de profil passe en version 5 : un profil enregistré sans définition
   reçoit celle de son profil d'usine.
 
+
+### Corrigé
+
+- **La boîte ne monte plus un rapport pendant qu'on ralentit.** David, en
+  laissant décélérer : « parfois le simu passe une vitesse supérieure au lieu de
+  laisser ralentir et de finalement rétrograder ; et comme le son du moteur est
+  faible en décélération, on entend le claquement fort ».
+
+  La bande de croisière juge sur la dérive de la vitesse mesurée sur trois
+  secondes — robuste au bruit, mais lente. Quand on lève le pied après une
+  longue croisière, la stabilité est déjà acquise et la dérive met plus d'une
+  seconde à voir le ralentissement : assez pour laisser passer un rapport de
+  plus. Reproduit au banc — un passage du quatrième au cinquième une seconde
+  après le lever de pied, sur une perte de 0,5 km/h par seconde.
+
+  L'accélération instantanée le sait tout de suite mais elle est bruitée à un
+  dixième de m/s². Elle est donc cumulée dans un compteur qui monte pendant
+  qu'on ralentit et redescend deux fois plus vite sinon : une croisière qui
+  tremble autour de zéro ne l'atteint jamais, un vrai ralentissement le
+  franchit en moins d'une seconde.
+
 ### Modifié
 
 - **Le point d'écoute « Dehors » referme le silencieux à 4 kHz.** Il laissait
@@ -607,8 +628,6 @@ Toutes les évolutions notables du projet. Format
   développement, et la rangée entière s'efface quand il ne reste que le GPS — un
   seul bouton qu'on ne peut pas désactiver n'est pas un choix. Le statut de la
   source, lui, reste affiché.
-
-### Corrigé
 
 - **Le suivi GPS repart quand il n'a jamais démarré.** Au départ d'un parking
   souterrain, aucune position n'était acquise et rien ne repartait une fois
@@ -1687,6 +1706,7 @@ Toutes les évolutions notables du projet. Format
   vitesse à laquelle la boîte rétrograde en décélération, contrairement à ce
   qu'annonçait le README. C'est « Descente sous » qui le fait — mesuré, et
   désormais tenu par un test.
+
 
 ## [0.1.0] — 2026-08-29
 

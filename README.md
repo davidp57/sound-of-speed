@@ -1737,6 +1737,17 @@ et chacune répond à une question différente :
   montée au régime défaisait la descente aussitôt et l'on entendait un
   aller-retour tous les trois km/h.
 
+Et **on ne monte pas non plus pendant qu'on ralentit**, ce qui n'est pas la même
+chose que pendant qu'on freine. La bande de croisière juge sur la dérive de la
+vitesse mesurée sur trois secondes : robuste au bruit, mais lente. Quand on lève
+le pied après une longue croisière, la stabilité est déjà acquise et la dérive
+met plus d'une seconde à voir le ralentissement — assez pour laisser passer un
+rapport de plus. Mesuré : un passage du quatrième au cinquième une seconde après
+le lever de pied, sur une perte de 0,5 km/h par seconde. L'accélération
+instantanée le sait tout de suite mais elle est bruitée ; on la cumule donc dans
+un compteur qui monte en ralentissant et redescend deux fois plus vite sinon, si
+bien qu'une croisière qui tremble autour de zéro ne l'atteint jamais.
+
 Le rétrogradage forcé, lui, répond à une **montée** de charge et non à son
 niveau. Faute de pédale dans une voiture électrique, la charge est déduite de
 l'accélération : son niveau ne dit pas « on demande fort » mais « on accélère ».

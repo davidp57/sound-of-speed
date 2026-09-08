@@ -259,3 +259,24 @@ descend, livrée à 0,55. Un réglage plutôt qu'une pondération automatique su
 l'effort : le bon dosage dépend de la banque.
 
 **Non écouté.**
+
+## Neuvième écoute, 8 septembre 2026
+
+David : « à 0,5 les deux sonnent bien. Un seul souci : quand je laisse ralentir,
+parfois le simu passe une vitesse supérieure au lieu de laisser ralentir et de
+finalement rétrograder ; et comme le son du moteur est faible en décélération, on
+entend le claquement fort. »
+
+Le clac n'était que le révélateur : le défaut est dans la boîte, et il
+préexistait au lot. Reproduit au banc — croisière à 90 km/h pendant douze
+secondes, puis perte de 0,5 km/h par seconde : un passage du quatrième au
+cinquième une seconde après le lever de pied.
+
+La bande de croisière juge sur la dérive mesurée sur trois secondes : robuste au
+bruit, mais lente. La stabilité étant déjà acquise, la dérive met plus d'une
+seconde à voir le ralentissement. L'accélération instantanée le sait tout de
+suite mais elle est bruitée : elle est cumulée dans un compteur qui monte en
+ralentissant et redescend deux fois plus vite sinon.
+
+Deux tests ajoutés : pas de montée après un lever de pied, et montée conservée
+quand la vitesse est vraiment tenue.
