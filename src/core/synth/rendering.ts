@@ -52,7 +52,27 @@ export function exhaustResponseFile(id: ExhaustResponse): string | null {
  * les pose aussi, sans montrer de curseur.
  */
 export const MUFFLER_INSIDE_HZ = 1000
-export const MUFFLER_OUTSIDE_HZ = 22000
+/**
+ * Quatre kilohertz, et non vingt-deux.
+ *
+ * « Dehors » laissait tout passer, y compris ce que le moteur simulé produit
+ * au-dessus de quatre kilohertz — et ce qu'il y produit n'est pas du moteur.
+ * David y entendait un cliquetis, traqué toute la journée du 8 septembre 2026 :
+ * « des frt frt frt à plus haute fréquence que le moteur ». La gigue
+ * d'échantillonnage en portait la plus grosse part, coupée depuis ; il restait
+ * des bouffées d'aigu, quatre à cinq par seconde, +6,4 dB à 8 kHz pendant la
+ * bouffée alors que le grave ne bouge pas.
+ *
+ * Elles viennent du moteur simulé lui-même — le banc hors navigateur en produit
+ * quatre par seconde, la capture prise dans la voiture quatre et demie. Faute de
+ * savoir les supprimer à la source, on cesse de les laisser sortir.
+ *
+ * Le prix est nul, mesuré sur cette capture : couper à quatre kilohertz retire
+ * 13 dB à 8 kHz et **ne déplace aucune bande utile** — 250, 500, 1 000 et
+ * 2 000 Hz ne bougent pas d'un dixième de décibel. Le moteur y est déjà à
+ * −40 dB. Le compte des ruptures fortes tombe de 126 à 86.
+ */
+export const MUFFLER_OUTSIDE_HZ = 4000
 
 export interface SynthRendering {
   /** Ouverture du papillon à effort nul, de 0 à 1. */
