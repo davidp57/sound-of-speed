@@ -294,6 +294,23 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Le simulateur a sa propre page.** Ses commandes — les deux pédales, le
+  curseur d'allure maintenue, les réglages de cadence, de bruit et de précision
+  — vivaient sous les cadrans de l'écran de conduite, qui est déjà le plus
+  chargé de l'application. Elles sont sur un écran **Banc**, qui rappelle la
+  vitesse, le régime et le rapport pour se suffire à lui-même : on s'en sert
+  garé, sans regarder les cadrans. La hauteur de l'écran de conduite en
+  simulateur tombe de six cents pixels environ à quatre cents.
+
+- **Une position déjà connue du système est acceptée, jusqu'à dix secondes.**
+  Elle était refusée — `maximumAge: 0` —, ce qui faisait attendre un point neuf
+  à chaque démarrage : plusieurs minutes sous un bâtiment, alors que le
+  récepteur en avait un sous la main. C'est ce qui rendait le contournement du
+  8 septembre efficace, une version obtenant le signal dont l'autre ne voulait
+  pas. Dix secondes, parce qu'une position de dix secondes annonce une vitesse
+  de dix secondes : prise garé elle dit zéro, prise en roulant elle est proche
+  de l'allure du moment, et le lissage la rattrape en une seconde.
+
 - **Les écrans de banc sont dans l'image d'intégration.** Le simulateur de
   vitesse et l'écran de réglage de la synthèse n'existaient qu'en développement,
   sur le poste. Ils sont désormais aussi dans l'image `:develop` — celle qu'on

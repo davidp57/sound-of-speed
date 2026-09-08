@@ -7,9 +7,11 @@ import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
 import CalibrationPanel from './ui/CalibrationPanel.vue'
 import SynthView from './ui/SynthView.vue'
+import BenchView from './ui/BenchView.vue'
 import {
   applyUpdate,
   offlineStatus,
+  simulatorAvailable,
   synthAvailable,
   setBrake,
   importFromUrl,
@@ -22,7 +24,7 @@ import {
   isRunning,
 } from './state'
 
-type Tab = 'drive' | 'telemetry' | 'config' | 'calibration' | 'synth'
+type Tab = 'drive' | 'telemetry' | 'config' | 'calibration' | 'synth' | 'bench'
 
 const tab = ref<Tab>('drive')
 
@@ -86,9 +88,11 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'telemetry', label: 'Télémétrie' },
   { id: 'config', label: 'Configuration' },
   { id: 'calibration', label: 'Étalonnage' },
-  // Le banc de synthèse ne suit pas dans la voiture, comme le simulateur : on
-  // ne règle pas un timbre en conduisant.
+  // Les deux écrans de banc, absents de la production. Ils ont leur propre page
+  // depuis le 8 septembre 2026 : leurs commandes vivaient sous les cadrans de
+  // l'écran de conduite, où elles prenaient la place de ce qu'on lit en roulant.
   ...(synthAvailable ? [{ id: 'synth' as Tab, label: 'Synthèse' }] : []),
+  ...(simulatorAvailable ? [{ id: 'bench' as Tab, label: 'Banc' }] : []),
 ]
 
 /**
@@ -214,6 +218,7 @@ onBeforeUnmount(() => {
       <TelemetryView v-else-if="tab === 'telemetry'" />
       <CalibrationPanel v-else-if="tab === 'calibration'" />
       <SynthView v-else-if="tab === 'synth' && synthAvailable" />
+      <BenchView v-else-if="tab === 'bench' && simulatorAvailable" />
       <ConfigView v-else />
     </main>
 
