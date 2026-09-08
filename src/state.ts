@@ -6,7 +6,7 @@ import { writeSetting, type SettingPath } from './core/calibration/settings'
 import { analyzeSample, type SampleAnalysis } from './core/audio/analyze'
 import { MediaSession, ScreenLock } from './core/session'
 import { Offline, type OfflineStatus } from './core/offline'
-import { Engine, type EngineState } from './core/engine/engine'
+import { Engine, SHIFT_CLACK_AT, type EngineState } from './core/engine/engine'
 import { Gearbox, type GearboxState, type ShiftMode } from './core/drivetrain/gearbox'
 import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditioner'
 import { GeolocationSource } from './core/speed/geolocation'
@@ -979,6 +979,8 @@ let loadWasHigh = false
  * reprise du couple qui rallume l'imbrûlé, et c'est là qu'on l'entend.
  */
 let wasShifting = false
+/** Le clac de ce passage-ci a déjà été tiré : il n'en faut qu'un. */
+let clackDone = false
 /**
  * Régime au moment où l'on était encore en charge.
  *
@@ -1021,6 +1023,7 @@ function step(dt: number): void {
     isShifting: gearboxState.isShifting,
     shiftProgress: gearboxState.shiftProgress,
     shiftDipRpm: profile.feel.shiftJolt.enabled ? profile.feel.shiftJolt.dipRpm : 0,
+    shiftBlipRpm: profile.feel.shiftJolt.enabled ? profile.feel.shiftJolt.blipRpm : 0,
     // La pédale n'est connue qu'en « vitesse exacte ». Dès que le banc imite un
     // GPS, elle ne l'est plus — c'est tout le sujet : une voiture ne dit pas ce
     // que fait le pied, et la charge doit se déduire de l'accélération mesurée.
@@ -1043,16 +1046,22 @@ function step(dt: number): void {
     }
   }
 
-  // Claquement de reprise, au moment précis où le couple revient. Un seul coup,
-  // pas une salve : une salve est ce qu'on entend en roue libre, quand
-  // l'échappement se remplit pendant des secondes ; ici il n'y a qu'un dixième
-  // de seconde d'imbrûlé.
+  // Les deux bruits d'un passage, et ils ne tombent pas au même instant.
+  //
+  // Le clac de la boîte arrive quand le rapport s'engage, au sommet du coup de
+  // gaz — pas à la fin du passage : ce qui reste après lui, c'est l'embrayage
+  // qui se lâche, et cela ne claque pas. Le claquement d'échappement, lui,
+  // suit la reprise du couple, donc la fin.
   const jolt = profile.feel.shiftJolt
-  if (wasShifting && !gearboxState.isShifting) {
-    if (jolt.enabled && jolt.crackle > 0 && !isMuted.value) {
-      audio.backfire(jolt.crackle, 1)
-    }
+  const sonore = jolt.enabled && !isMuted.value
+  if (sonore && gearboxState.isShifting && !clackDone && gearboxState.shiftProgress >= SHIFT_CLACK_AT) {
+    audio.clack(jolt.clack)
+    clackDone = true
   }
+  if (wasShifting && !gearboxState.isShifting) {
+    if (sonore && jolt.crackle > 0) audio.backfire(jolt.crackle, 1)
+  }
+  if (!gearboxState.isShifting) clackDone = false
   wasShifting = gearboxState.isShifting
 
   // Une seule origine de son à la fois. Le régime transmis est le régime

@@ -1221,7 +1221,9 @@ qu'on remarque surtout par leur absence. Chacun s'active séparément.
 | **À-coup de passage** | Le creux du couple coupé, puis la reprise. Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est |
 | **Profondeur** | Combien le **niveau** baisse pendant la coupure. Mesuré sur le profil Route : 3,8 dB au creux à 0,35 |
 | **Coupure de couple** | Combien le moteur passe en roue libre le temps du passage. C'est ce qui fait entrer les couches pied levé, donc changer le **timbre** et pas seulement le niveau. Mesuré sur le profil Route : la part d'énergie tenue par les couches en charge passait de 0,926 à 0,926 — elle ne bougeait pas — et tombe à 0,223 au creux. Zéro garde le son de pleine charge d'un bout à l'autre |
-| **Plongée du régime** | De combien le moteur tombe **sous** le régime du nouveau rapport pendant la coupure, avant que l'embrayage ne l'y ramène : il diminue, puis remonte. Mesuré à 300 tr/min sur le profil Route, passage de première en seconde : 4 776 tr/min, creux à 2 516, retour à 2 799. Une valeur **négative** donne l'inverse, un coup de gaz au débrayage |
+| **Plongée du régime** | De combien le moteur tombe **sous** le régime du nouveau rapport quand la boîte passe au neutre. Mesuré à 450 tr/min sur le profil Route, première en seconde : 4 692 tr/min, fond de la chute à 2 337 |
+| **Coup de gaz** | De combien le moteur remonte au-dessus du rapport visé, entre la chute au neutre et l'engagement. C'est le mouvement qui s'entend le mieux dans un passage : une montée de régime, l'oreille la suit. Mesuré à 550 tr/min sur Route : creux à 2 337, sommet à 3 364. Zéro laisse une séquence en trois temps |
+| **Clac de la boîte** | Le choc mécanique quand le rapport s'engage, au sommet du coup de gaz. Sec et métallique — attaque en une milliseconde, extinction en trente — doublé d'un coup mat sous deux cents hertz qui lui donne sa masse. Rien à voir avec le claquement d'échappement, qui est grave et traînant |
 | **Claquement de reprise** | Une détonation à l'échappement au moment où le couple revient. C'est la pétarade du lever de pied, tirée en un seul coup. Zéro n'en produit aucune |
 
 ### Couches
@@ -1742,54 +1744,57 @@ cela.
 
 ### Ce qu'on entend d'un passage de rapport
 
-Un passage était, jusqu'à ce lot, une baisse de niveau et rien d'autre. Relevé
-sur le profil Route, passage de première en seconde à 45 km/h, un point tous les
+Un passage se déroule en cinq temps, et c'est la description que David en a
+donnée en écoutant une vraie boîte : « accélération, montée de régime ; passage
+au neutre, descente rapide ; coup de gaz, montée rapide très courte ; passage du
+rapport, clac ; lâcher de l'embrayage, reprise du couple, descente rapide au
+régime des roues puis réaccélération. »
+
+Relevé sur le profil Route, première en seconde à 45 km/h, un point tous les
 seize millisecondes :
 
-| | avant | maintenant |
-|---|---|---|
-| Régime à la fin du passage | 4 289 tr/min, pour 2 803 aux roues | 2 799, pour 2 827 aux roues |
-| Où tombe la chute de régime | 24 % pendant le passage, 76 % dans les 170 ms d'après | entièrement dans les 133 ms du passage |
-| Trajectoire du régime | descente molle, puis rattrapage | 4 776 → creux à **2 516** → remonte à 2 799 |
-| Part d'énergie tenue par les couches en charge | 0,926 avant, 0,926 pendant | 0,926 avant, 0,223 au creux, 0,926 après |
-| Niveau au creux | −3,8 dB | −1,9 dB |
+| t (s) | avancement | régime | roues | part en charge | |
+|---|---|---|---|---|---|
+| 5,633 | — | 4 692 | 4 725 | 0,93 | en accélération |
+| 5,783 | 0,34 | **2 337** | 2 787 | 0,30 | fond de la chute au neutre |
+| 5,850 | 0,51 | **3 364** | 2 819 | 0,21 | sommet du coup de gaz |
+| 5,867 | 0,56 | 3 377 | 2 827 | 0,22 | **clac**, le rapport s'engage |
+| 6,033 | 0,98 | 2 910 | 2 907 | 0,90 | le couple est repris |
+| 6,050 | — | 2 912 | 2 915 | 0,93 | claquement d'échappement, puis réaccélération |
 
-Trois choses se produisent maintenant, et elles étaient absentes :
+Quatre choses s'y produisent, et une cinquième les rend possibles :
 
-- **Le couple se coupe.** L'effort vu par le mixage tombe le temps du passage, ce
-  qui fait entrer les couches pied levé : le timbre change vraiment, au lieu que
-  le même son baisse. Il fallait le faire à la main, car l'effort se déduit de
-  l'accélération et **la voiture, elle, ne coupe rien** — elle est électrique et
-  continue d'avancer pendant que la boîte imaginaire change de rapport. Rien ne
-  disait donc au son que le couple était coupé. Le régime, la boîte et la
-  télémétrie continuent de voir l'effort vrai : seule l'oreille est concernée.
-- **L'embrayage se referme dans le temps du passage.** Le moteur décroche des
-  roues au début, comme avant, mais l'engagement le ramène au régime du nouveau
-  rapport avant la fin. Sans cela le régime traînait au frein moteur puis
-  rattrapait d'un coup, une fois le creux de niveau remonté : on entendait un son
-  qui glisse, pas une rupture.
-- **Le moteur plonge sous le rapport visé, puis y remonte.** Embrayage ouvert,
-  il ne sait pas où il va : il tombe plus bas que le régime du nouveau rapport,
-  et c'est le réengagement qui l'y ramène. C'est le « diminue, remonte, repart »
-  d'une vraie boîte. Le phénomène existe sans réglage, mais seulement là où la
-  chute libre dépasse l'écart entre deux rapports — en haut de boîte, où les
-  rapports sont proches ; le réglage le donne partout. Une valeur négative donne
-  l'autre geste, le coup de gaz au débrayage.
-- **Un claquement à la reprise**, une seule détonation au moment où le couple
-  revient — la pétarade déjà synthétisée pour le lever de pied, tirée en un coup
-  au lieu d'une salve.
+- **Le couple se coupe.** L'effort vu par le mixage tombe le temps du passage,
+  ce qui fait entrer les couches pied levé : le timbre change vraiment, au lieu
+  que le même son baisse. Il fallait le faire à la main, car l'effort se déduit
+  de l'accélération et **la voiture, elle, ne coupe rien** — elle est électrique
+  et continue d'avancer pendant que la boîte imaginaire change de rapport.
+  Le régime, la boîte et la télémétrie continuent de voir l'effort vrai.
+- **Le régime plonge, puis remonte.** Embrayage ouvert, le moteur tombe sous le
+  régime du rapport visé ; le coup de gaz le relance au-dessus ; l'engagement le
+  ramène. Les deux amplitudes se règlent, et zéro supprime le mouvement
+  correspondant.
+- **La boîte claque** au moment où le rapport s'engage, au sommet du coup de gaz
+  et non à la fin du passage : ce qui reste après lui, c'est l'embrayage qui se
+  lâche, et cela ne claque pas. C'est un **choc mécanique** et non un bruit
+  d'échappement — attaque en une milliseconde, extinction en trente, un
+  claquement clair vers deux kilohertz doublé d'un coup mat sous deux cents
+  hertz. Sans le second on entend un déclic ; sans le premier, une porte.
+- **L'échappement claque à la reprise**, une seule détonation quand le couple
+  revient : la pétarade du lever de pied, tirée en un coup au lieu d'une salve.
 
-**Et le creux de niveau a été divisé par trois** (0,55 à 0,15 sur le profil par
-défaut, 0,35 à 0,10 sur Route). Il masquait ce qu'il devait souligner :
-l'instant où le timbre bascule vers le pied levé est aussi celui où le son est
-le plus faible. Mesuré : le creux passe de −4,2 dB à −1,9 dB, et la bascule de
-timbre s'entend au lieu de disparaître sous la baisse. VNS, dont le passage
-s'entend bien, n'a aucun équivalent de ce creux.
+**Et le passage dure assez pour que tout cela s'entende.** C'était le point
+bloquant : à 120 millisecondes, les quatre temps se chevauchaient et l'on ne
+percevait qu'un trou. Le temps de passage est monté à 390 ms sur le profil Route
+et 300 sur Sport — l'ordre de grandeur d'une boîte manuelle avec double
+débrayage, là où une boîte à double embrayage moderne tient en cinquante
+millisecondes. C'est un réglage de la transmission, et il commande toute la
+séquence : la raccourcir la comprime, l'allonger l'étale.
 
-La coupure de couple et le claquement se règlent séparément et se coupent à
-zéro. L'engagement de l'embrayage, lui, n'a pas d'interrupteur : ce n'est pas un
-effet mais la correction d'un défaut de synchronisation, et le régime continuera
-donc de tomber dans le temps du passage même les deux autres à zéro.
+La coupure de couple, la plongée, le coup de gaz, le clac et le claquement se
+règlent séparément et se coupent à zéro. La synchronisation du régime sur la
+durée du passage, elle, n'a pas d'interrupteur : c'est la correction d'un
+défaut, non un effet.
 
 ### Deux grandeurs, et non une : la charge et l'effort
 

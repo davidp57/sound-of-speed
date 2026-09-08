@@ -710,6 +710,26 @@ export interface FeelPreset {
      */
     dipRpm: number
     /**
+     * Hauteur du coup de gaz, en tours par minute au-dessus du rapport visé.
+     *
+     * Le troisième temps de la séquence : le moteur est tombé au neutre, on
+     * relance avant d'engager. C'est le geste du double débrayage, et c'est ce
+     * qui s'entend le plus dans un passage — bien plus que le creux, parce
+     * qu'une montée de régime est un mouvement que l'oreille suit.
+     *
+     * Zéro supprime la remontée et laisse une séquence en trois temps.
+     */
+    blipRpm: number
+    /**
+     * Clac de la boîte quand le rapport s'engage, de 0 à 1.
+     *
+     * Un choc mécanique, pas un bruit d'échappement : attaque en une
+     * milliseconde, extinction en trente, un claquement clair vers deux
+     * kilohertz doublé d'un coup mat sous deux cents hertz. C'est ce
+     * doublement qui fait entendre du métal plutôt qu'un déclic.
+     */
+    clack: number
+    /**
      * Claquement d'échappement à la reprise, de 0 à 1. Zéro n'en produit aucun.
      *
      * C'est la pétarade déjà synthétisée pour le lever de pied, tirée en un

@@ -1314,7 +1314,7 @@ function impliedCylinders(index: number): number | null {
         hint="Rayon d'une roue, en mètres. Entre dans le calcul du régime : une roue plus grande fait moins de tours pour la même vitesse. Environ 0,33 m pour une berline."
       />
       <NumberField v-model="profile.drivetrain.shiftTimeMs" label="Temps de passage" :min="0" :max="500" :step="5" unit="ms"
-        hint="Durée pendant laquelle le couple est coupé. Court sur une boîte moderne, plus long sur une ancienne — c'est ce qu'on entend comme un creux entre deux rapports."
+        hint="Durée pendant laquelle le couple est coupé, et durée de toute la séquence : chute au neutre, coup de gaz, clac, reprise. C'est elle qui décide si le passage s'entend — sous deux cents millisecondes, les quatre temps se chevauchent et l'on ne perçoit qu'un trou. Court sur une boîte moderne, plus long sur une ancienne."
       />
       <p class="note">
         Régime auquel chaque rapport cède la place au suivant, à charge moyenne.
@@ -1566,6 +1566,23 @@ function impliedCylinders(index: number): number | null {
           :step="50"
           unit="tr/min"
           hint="De combien le moteur tombe sous le régime du nouveau rapport pendant la coupure, avant que l'embrayage ne l'y ramène : il diminue, puis remonte. Une valeur négative donne l'inverse, un coup de gaz au débrayage."
+        />
+        <NumberField
+          v-model="profile.feel.shiftJolt.blipRpm"
+          label="Coup de gaz"
+          :min="0"
+          :max="2000"
+          :step="50"
+          unit="tr/min"
+          hint="De combien le moteur remonte au-dessus du rapport visé, entre la chute au neutre et l'engagement. C'est le geste du double débrayage, et le mouvement qui s'entend le mieux dans un passage. Zéro laisse la séquence en trois temps."
+        />
+        <NumberField
+          v-model="profile.feel.shiftJolt.clack"
+          label="Clac de la boîte"
+          :min="0"
+          :max="1.5"
+          :step="0.05"
+          hint="Le choc mécanique quand le rapport s'engage : sec, métallique, doublé d'un coup mat. Rien à voir avec le claquement d'échappement, qui est grave et traînant."
         />
         <NumberField
           v-model="profile.feel.shiftJolt.crackle"

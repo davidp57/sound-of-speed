@@ -97,6 +97,8 @@ export interface AudioStatus {
   contextResumes: number
   /** Nombre de salves de pétarade déclenchées depuis l'activation. */
   backfires: number
+  /** Nombre de clacs de boîte joués. Diagnostic, comme les pétarades. */
+  clacks: number
   /**
    * Nombre de sources d'échantillon en cours de lecture.
    *
@@ -200,6 +202,7 @@ export class AudioEngine {
     keepAliveError: '',
     contextResumes: 0,
     backfires: 0,
+    clacks: 0,
     activeSources: 0,
     layerRefreshes: 0,
   }
@@ -612,6 +615,58 @@ export class AudioEngine {
     const state = readState()
     this.status.contextState = state
     return state === 'running'
+  }
+
+  /**
+   * Le clac de la boîte quand le rapport s'engage.
+   *
+   * Rien à voir avec la pétarade, et c'est tout l'objet : celle-ci est un
+   * souffle grave de 260 à 680 Hz avec une queue de cinquante à cent vingt
+   * millisecondes — un bruit d'échappement. Le clac est un **choc mécanique**,
+   * donc l'inverse : une attaque en une milliseconde, une extinction en trente,
+   * et de l'énergie haute, là où l'oreille reconnaît le métal.
+   *
+   * Deux composantes, parce qu'un seul filtre ne fait pas un choc : un claquement
+   * clair vers deux kilohertz, qui donne le caractère mécanique, et un coup mat
+   * en dessous de deux cents hertz, qui donne la masse. Sans le second on entend
+   * un déclic de souris ; sans le premier, une porte qui ferme.
+   */
+  clack(intensity: number): void {
+    const context = this.context
+    if (!context || this.status.phase !== 'ready' || !this.bus) return
+    if (intensity <= 0) return
+
+    this.status.clacks += 1
+    const at = context.currentTime + 0.001
+    const level = Math.min(1.5, intensity)
+
+    for (const part of [
+      { type: 'bandpass' as const, hz: 1800 + Math.random() * 900, q: 1.1, gain: 1, tail: 0.03 },
+      { type: 'lowpass' as const, hz: 180 + Math.random() * 60, q: 0.9, gain: 0.8, tail: 0.055 },
+    ]) {
+      const source = context.createBufferSource()
+      source.buffer = this.noise ?? (this.noise = makeNoise(context))
+      source.playbackRate.value = 0.9 + Math.random() * 0.25
+      source.loop = true
+
+      const filter = context.createBiquadFilter()
+      filter.type = part.type
+      filter.frequency.value = part.hz
+      filter.Q.value = part.q
+
+      const gain = context.createGain()
+      const peak = Math.max(0.0002, level * part.gain)
+      // L'attaque fait le choc : une milliseconde, pas quatre comme la pétarade.
+      gain.gain.setValueAtTime(0.0001, at)
+      gain.gain.exponentialRampToValueAtTime(peak, at + 0.001)
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + part.tail)
+
+      source.connect(filter)
+      filter.connect(gain)
+      gain.connect(this.bus)
+      source.start(at)
+      source.stop(at + part.tail + 0.02)
+    }
   }
 
   /**

@@ -30,12 +30,21 @@ const FRAME_S = 1 / 60
  */
 const accelMs2 = 0
 
-/** Profil de test : dispersion nulle, pour que les passages soient déterministes. */
+/**
+ * Profil de test : dispersion nulle, pour que les passages soient déterministes,
+ * et passage court.
+ *
+ * Ces tests portent sur les seuils et les temporisations de la boîte, pas sur la
+ * durée d'une coupure. Le profil livré est passé à 380 ms pour laisser au son la
+ * place de sa séquence — chute, coup de gaz, clac, reprise — et une boîte qui
+ * reste occupée un tiers de seconde décale tout ce que ces tests comptent. Ils
+ * déclarent donc la durée qu'ils supposent, au lieu de la subir.
+ */
 function profile(over: Partial<DrivetrainPreset> = {}, feel: Partial<FeelPreset> = {}): Profile {
   const base = createDefaultProfile()
   return {
     ...base,
-    drivetrain: { ...base.drivetrain, upshiftJitterRpm: 0, ...over },
+    drivetrain: { ...base.drivetrain, upshiftJitterRpm: 0, shiftTimeMs: 120, ...over },
     feel: { ...base.feel, ...feel },
   }
 }

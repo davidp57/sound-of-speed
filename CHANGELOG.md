@@ -22,43 +22,45 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
-- **Un passage de rapport s'entend enfin comme un passage.** Il ne faisait qu'une
-  chose : baisser le niveau de 3,8 dB pendant un dixième de seconde, sur un
-  timbre inchangé. Mesuré sur le profil Route, passage de première en seconde à
-  45 km/h, la part d'énergie tenue par les couches en charge valait 0,926 avant,
-  pendant et après — le fondu vers le pied levé ne basculait jamais. Et le
-  régime ne perdait que 444 des 1 815 tours qu'il devait perdre pendant les
-  133 ms du passage : les 1 371 restants tombaient **après**, une fois le creux
-  de niveau déjà remonté, si bien qu'on entendait un son qui glisse au lieu
-  d'une rupture.
+- **Un passage de rapport se déroule en cinq temps.** Il n'en avait qu'un :
+  baisser le niveau de 3,8 dB pendant un dixième de seconde, sur un timbre
+  inchangé. Trois versions ont suivi sans que David entende de différence — « on
+  entend un tout petit claquement, c'est tout ; pour le couple, j'ai pas
+  l'impression que ça ait changé quoi que ce soit ». La quatrième suit la
+  description qu'il a donnée d'une vraie boîte : « passage au neutre, descente
+  rapide ; coup de gaz, montée rapide très courte ; passage du rapport, clac ;
+  lâcher de l'embrayage, descente rapide au régime des roues puis
+  réaccélération ».
 
-  Quatre choses maintenant. Trois réglages : la **coupure de couple**, qui fait
-  entrer les couches pied levé le temps du passage — la part en charge tombe à
-  0,223 au creux ; la **plongée du régime**, qui fait tomber le moteur sous le
-  rapport visé avant que l'embrayage ne l'y ramène — 4 776 tr/min, creux à
-  2 516, retour à 2 799 ; et un **claquement de reprise**, une détonation au
-  moment où le couple revient. Plus une correction sans interrupteur,
-  l'**embrayage qui se referme dans le temps du passage**.
+  **Ce qui manquait d'abord, c'était le temps.** Un passage durait 120 ms, et
+  rien de tout cela n'est audible en un dixième de seconde : les quatre temps se
+  chevauchaient et il ne restait qu'un trou. Le temps de passage est monté à
+  390 ms sur Route et 300 sur Sport, l'ordre de grandeur d'une boîte manuelle
+  avec double débrayage. C'est ce réglage-là qui commande toute la séquence.
 
-  La plongée est ce que David décrit en écoutant une vraie boîte : « le moteur
-  diminue, remonte, et repart de là où il était quand il a diminué ». Embrayage
-  ouvert, le moteur ne sait pas où il va — il tombe, et le réengagement le
-  rattrape. Le phénomène existait déjà sans réglage, mais seulement en haut de
-  boîte, là où l'écart entre deux rapports est plus petit que la chute libre.
-  Une valeur négative donne l'autre geste possible, le coup de gaz au
-  débrayage.
+  Relevé sur Route, première en seconde : 4 692 tr/min, fond de la chute à
+  **2 337** au tiers du passage, sommet du coup de gaz à **3 364**, clac à
+  l'engagement, retour à 2 910 pour 2 907 aux roues, puis réaccélération. La
+  part d'énergie tenue par les couches en charge suit — 0,93, puis 0,21 au
+  creux, puis 0,93.
 
-  **Le creux de niveau a été divisé par trois** (0,55 à 0,15 ; 0,35 à 0,10 sur
-  Route) : il masquait ce qu'il devait souligner, l'instant où le timbre
-  bascule étant aussi celui où le son est le plus faible. Le creux passe de
-  −4,2 à −1,9 dB. La loi du curseur calme-sportif suit le même facteur, si bien
-  que le caractère relu d'un profil livré ne bouge pas.
+  **Le clac est un choc mécanique et non un bruit d'échappement** : attaque en
+  une milliseconde là où la pétarade en prend quatre, extinction en trente
+  millisecondes au lieu de cent vingt, et deux composantes — un claquement clair
+  vers deux kilohertz qui donne le métal, un coup mat sous deux cents hertz qui
+  donne la masse. Sans le second on entend un déclic, sans le premier une porte
+  qui ferme. Il tombe au sommet du coup de gaz, quand le rapport s'engage, et
+  non à la fin du passage : ce qui reste après lui, c'est l'embrayage qui se
+  lâche, et cela ne claque pas.
 
-  L'effort vrai n'est pas touché : le régime, la boîte et la télémétrie
-  continuent de le voir entier. Seul le mixage entend la coupure — la voiture,
-  elle, ne coupe rien, elle est électrique et continue d'avancer.
+  Cinq réglages, tous neutralisables à zéro : coupure de couple, plongée du
+  régime, coup de gaz, clac de la boîte, claquement d'échappement. Les lois du
+  curseur calme-sportif suivent les nouvelles plages, si bien que le caractère
+  relu d'un profil livré ne bouge pas.
 
-  Les trois valeurs livrées sont des estimations, à juger à l'oreille.
+  **Les profils déjà enregistrés gardent leurs anciennes valeurs**, temps de
+  passage compris : sans une remise aux valeurs d'usine de la transmission et du
+  caractère, la séquence n'a pas la place de s'entendre.
 
 - **Le son se débouche en accélérant.** David voulait retrouver sous charge ce
   qu'il entend en levant le pied : « le son est plus clair, moins sourd, comme si

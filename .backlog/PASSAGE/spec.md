@@ -108,3 +108,28 @@ celui où le son est le plus faible. Le creux est passé de 0,55 à 0,15, soit d
 **Rien de tout cela n'a été écouté.** Les mesures établissent que le timbre
 bascule, que le régime atterrit juste et que le niveau creuse. Pas que cela sonne
 mieux. C'est à David de trancher, en roulant ou au simulateur.
+
+## Troisième écoute, 8 septembre 2026
+
+David : « non c'est toujours pas ça. Mieux mais vraiment pas au niveau attendu.
+Je suis déçu. » Et la liste de ce qui manquait : un claquement mécanique fort,
+un coup de gaz franc, du caractère mécanique. Avec la séquence complète : « accél,
+montée de régime ; passage au neutre, descente rapide ; coup de gaz, montée
+rapide très courte ; passage du rapport, clac ; lâché de l'embrayage, reprise du
+couple, descente rapide au rpm des roues puis réaccél. »
+
+**La cause de fond était la durée.** Un passage durait 120 ms. Aucune séquence en
+cinq temps ne tient dans un dixième de seconde : les phases se chevauchaient, et
+tout ce qu'on ajoutait restait inaudible. `shiftTimeMs` est passé à 390 ms sur
+Route et 300 sur Sport.
+
+Ce qui a été ajouté ensuite : la trajectoire en cinq temps dans `engine.ts`, le
+coup de gaz (`blipRpm`), et un **clac mécanique** distinct de la pétarade
+(`clack`), synthétisé dans `audio/engine.ts` avec une attaque de une milliseconde
+et deux composantes, claire et mate.
+
+Relevé sur Route, première en seconde : 4 692 → 2 337 (fond) → 3 364 (sommet) →
+clac → 2 910 pour 2 907 aux roues → réaccélération. Durée totale 390 ms.
+
+**Non écouté.** Et les profils déjà enregistrés gardent leurs anciennes valeurs,
+temps de passage compris.
