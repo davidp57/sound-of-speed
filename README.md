@@ -150,9 +150,25 @@ l'effort ouvre son papillon. Le choix compte : laisser le moteur trouver son
 régime serait plus fidèle, mais le régime entendu ne serait plus celui du
 cadran, et c'est le cadran qu'on croirait faux.
 
+Il se paie, et le prix est un son trop pur. Le dynamomètre tient la vitesse par
+une contrainte du solveur : mesurée à chaque pas de simulation, l'ondulation du
+vilebrequin est **exactement nulle**, à tous les régimes, alors qu'un moteur réel
+accélère à chaque explosion et ralentit entre deux. Un régime rigoureusement
+constant donne une fréquence pure — « on dirait un oscilloscope ». Le réglage
+**Régime délissé** lui rend une irrégularité, par un bruit filtré dont on règle
+l'amplitude en tours et la vitesse de dérive en hertz. À zéro, on retrouve le
+régime parfaitement lisse.
+
+Une ondulation régulière, calée sur les explosions, a été essayée d'abord : elle
+ne change rien, ses bandes latérales retombant exactement sur les harmoniques
+voisines. Ce qui manque à ce son n'est pas une ondulation, c'est de
+l'irrégularité.
+
 L'écran règle et **mesure** à la fois. Il donne le régime demandé et le régime
-tenu, le coefficient temps réel du calcul, la charge, le nombre et la durée des
-creux, la réserve du lecteur, le niveau crête, le niveau efficace et la
+tenu, l'**ondulation du régime** — relevée à chaque pas de simulation, la seule
+cadence où elle est visible —, le coefficient temps réel du calcul, la charge, le
+nombre et la durée des creux, la réserve du lecteur, le niveau crête, le niveau
+efficace et la
 **brillance** — la part de l'énergie au-dessus d'un kilohertz, qui dit si
 l'effort change le timbre ou seulement le volume. Un **balayage de régime** va
 du ralenti au rupteur et revient, à cadence fixe, pour écouter la montée sans

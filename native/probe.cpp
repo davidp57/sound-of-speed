@@ -1240,6 +1240,58 @@ struct Live {
     double throttleIdle = 0.06;
     double throttleFull = 1.0;
     std::vector<int16_t> scratch;
+    /**
+     * L'ondulation du regime, relevee a chaque pas de simulation.
+     *
+     * Un vilebrequin reel accelere a chaque explosion et ralentit entre deux :
+     * c'est cette ondulation qui empeche le son d'etre une frequence pure. Le
+     * regime lu depuis le fil principal ne la montre pas — il est echantillonne
+     * quatre fois par seconde, la ou l'ondulation vaut cent a deux cents hertz.
+     * Elle ne s'observe donc qu'ici, entre les pas.
+     *
+     * David, le 8 septembre 2026, sur l'EJ25 a 1 820 tr/min : « la frequence est
+     * vraiment tres stable et trop pure, on dirait un oscilloscope ».
+     */
+    double rpmMin = 0.0;
+    double rpmMax = 0.0;
+    double rpmSum = 0.0;
+    long long rpmCount = 0;
+    /**
+     * Amplitude de l'ondulation imposee au vilebrequin, en tours par minute.
+     *
+     * Le dynamometre tient la vitesse par une contrainte du solveur : mesuree a
+     * chaque pas, l'ondulation du vilebrequin est **exactement nulle**, a tous
+     * les regimes. Un moteur reel accelere a chaque explosion et ralentit entre
+     * deux ; sans cette ondulation le son est une frequence pure, et David l'a
+     * entendu du premier coup — « on dirait un oscilloscope ».
+     *
+     * On ne peut pas la laisser naitre de la physique : quand on desserre le
+     * dynamometre assez pour cela, il ne tient plus le regime, et ce qui apparait
+     * ne depasse pas un quart de pour cent. On l'impose donc a la consigne, ici,
+     * a chaque pas de simulation — la seule cadence qui permette de suivre la
+     * frequence d'allumage, cent vingt et un hertz sur un V8 a 1 820 tr/min.
+     *
+     * En tours par minute et non en pourcentage : l'energie d'une explosion et
+     * l'inertie du volant ne dependent pas du regime, si bien qu'une amplitude
+     * constante en tours donne d'elle-meme une part qui decroit quand le moteur
+     * monte — 2,5 % au ralenti pour 0,7 % a trois mille.
+     *
+     * **C'est un bruit filtre, et non une sinusoide calee sur les explosions.**
+     * La sinusoide a ete essayee d'abord, et mesuree : elle ne change rien au
+     * spectre — 46,3 % de l'energie dans les cinquante plus grandes raies sans
+     * elle, 45,4 % avec quarante tours d'amplitude. La raison est arithmetique :
+     * moduler a la frequence d'allumage place les bandes laterales exactement
+     * sur les harmoniques voisines, donc l'energie reste sur la meme grille. Ce
+     * qui manque a ce son n'est pas une ondulation reguliere, c'est de
+     * l'irregularite — un vrai moteur ne fait pas deux explosions identiques.
+     */
+    double rippleRpm = 0.0;
+    /** Frequence de coupure du bruit qui module le regime, en hertz. */
+    double rippleHz = 15.0;
+    /** Etat du filtre passe-bas, entre -1 et 1 environ. */
+    double rippleState = 0.0;
+    /** Generateur congruentiel : reproductible, et sans dependance. */
+    unsigned int rippleSeed = 22695477u;
 };
 
 Live *g_live = nullptr;
@@ -1622,8 +1674,40 @@ int synth_render(float *dest, int frames) {
     g_live->engine->setSpeedControl(
         g_live->throttleIdle + (g_live->throttleFull - g_live->throttleIdle) * g_live->effort);
 
+    // Le bruit qui module le regime : un passe-bas d'ordre un sur du bruit
+    // blanc, dont la coupure decide de la vitesse a laquelle le regime derive.
+    const double simHz = (double)g_rigSettings.simFrequency;
+    const double alpha = simHz > 0.0
+        ? 1.0 - std::exp(-2.0 * 3.14159265358979323846 * g_live->rippleHz / simHz)
+        : 0.0;
+    // Un passe-bas d'ordre un ne laisse passer qu'une fraction de l'ecart-type
+    // du bruit blanc : la racine de alpha sur deux moins alpha. On la compense
+    // pour que le reglage dise ce qu'il produit.
+    const double rippleGain = alpha > 0.0 ? std::sqrt((2.0 - alpha) / alpha) : 0.0;
+
     g_live->simulator->startFrame(blockSeconds);
-    while (g_live->simulator->simulateStep()) { /* void */ }
+    while (g_live->simulator->simulateStep()) {
+        // L'ondulation s'impose ici, entre deux pas, et non une fois par bloc :
+        // un bloc dure vingt et une millisecondes, on ne pourrait pas depasser
+        // quarante-cinq hertz, quand il en faut cent vingt et un.
+        if (g_live->rippleRpm > 0.0) {
+            g_live->rippleSeed = g_live->rippleSeed * 1103515245u + 12345u;
+            const double blanc =
+                ((double)((g_live->rippleSeed >> 16) & 0x7fff) / 16383.5) - 1.0;
+            g_live->rippleState += alpha * (blanc - g_live->rippleState);
+            // Le passe-bas divise l'amplitude : on la rend, sans quoi le reglage
+            // annoncerait des tours qu'il ne produit pas.
+            const double wobble = g_live->rippleRpm * g_live->rippleState * rippleGain;
+            g_live->simulator->m_dyno.m_rotationSpeed = units::rpm(g_live->heldRpm + wobble);
+        }
+        // Un releve par pas : c'est la seule cadence a laquelle l'ondulation du
+        // vilebrequin est visible. Le cout est un acces memoire par pas.
+        const double r = g_live->engine->getRpm();
+        if (g_live->rpmCount == 0 || r < g_live->rpmMin) g_live->rpmMin = r;
+        if (g_live->rpmCount == 0 || r > g_live->rpmMax) g_live->rpmMax = r;
+        g_live->rpmSum += r;
+        ++g_live->rpmCount;
+    }
     g_live->simulator->endFrame();
 
     int produced = 0;
@@ -1645,6 +1729,50 @@ int synth_render(float *dest, int frames) {
 
 /** Le regime que le moteur simule tient vraiment, pour verifier qu'il suit. */
 double synth_rpm() { return g_live == nullptr ? 0.0 : g_live->engine->getRpm(); }
+
+/**
+ * L'amplitude de l'ondulation imposee au vilebrequin, en tours par minute.
+ *
+ * Zero rend le regime rigoureusement constant, c'est-a-dire le defaut qu'on
+ * cherche a corriger. Elle s'ecrit a chaud : le moteur n'est pas rebati.
+ */
+void synth_set_ripple(double rpmAmplitude, double hz) {
+    if (g_live == nullptr) return;
+    g_live->rippleRpm = rpmAmplitude < 0.0 ? 0.0 : rpmAmplitude;
+    g_live->rippleHz = hz < 0.1 ? 0.1 : (hz > 500.0 ? 500.0 : hz);
+}
+
+/**
+ * L'ondulation du regime depuis le dernier appel, en tours par minute.
+ *
+ * L'ecart entre le plus haut et le plus bas releve a chaque pas de simulation.
+ * Zero veut dire que le vilebrequin tourne a vitesse rigoureusement constante,
+ * ce qu'aucun moteur thermique ne fait — et ce qui s'entend comme un son de
+ * synthese. La lecture remet le compte a zero.
+ */
+double synth_rpm_ripple() {
+    if (g_live == nullptr || g_live->rpmCount == 0) return 0.0;
+    return g_live->rpmMax - g_live->rpmMin;
+}
+
+/** Le regime moyen sur la meme fenetre, pour rapporter l'ondulation a sa base. */
+double synth_rpm_mean() {
+    if (g_live == nullptr || g_live->rpmCount == 0) return 0.0;
+    return g_live->rpmSum / (double)g_live->rpmCount;
+}
+
+/**
+ * Ouvre une fenetre de mesure neuve.
+ *
+ * Les deux lectures ci-dessus ne remettent rien a zero, sans quoi la premiere
+ * appelee viderait ce que la seconde doit lire — et l'ordre des appels
+ * deviendrait un piege.
+ */
+void synth_rpm_window_reset() {
+    if (g_live == nullptr) return;
+    g_live->rpmCount = 0;
+    g_live->rpmSum = 0.0;
+}
 
 /** Reserve interne du synthetiseur, en secondes. Diagnostic. */
 double synth_latency() {

@@ -79,6 +79,31 @@ export interface SynthSettings extends SynthRendering {
    * `inputSampleNoise`.
    */
   dynoTorque: number
+  /**
+   * Amplitude du bruit qui module le régime, en tours par minute.
+   *
+   * Le dynamomètre tient la vitesse par une contrainte du solveur : mesurée à
+   * chaque pas, l'ondulation du vilebrequin est **exactement nulle**, à tous les
+   * régimes. Sans elle le son est une fréquence pure — David, sur l'EJ25 à
+   * 1 820 tr/min : « on dirait un oscilloscope ».
+   *
+   * C'est un **bruit** filtré, et non une ondulation régulière : la sinusoïde
+   * calée sur les explosions a été essayée d'abord et ne change rien au spectre,
+   * ses bandes latérales retombant sur les harmoniques voisines. Mesuré à
+   * 1 820 tr/min sur quatre cylindres, part de l'énergie tenue par les cinquante
+   * plus grandes raies : 46,3 % sans bruit, 42,8 % à dix tours, 39,1 % à vingt,
+   * 35,1 % à quarante.
+   *
+   * En tours par minute, donc la part décroît d'elle-même quand le moteur monte.
+   */
+  rippleRpm: number
+  /**
+   * Fréquence de coupure de ce bruit, en hertz.
+   *
+   * Elle décide de la vitesse à laquelle le régime dérive. Trop bas, on entend
+   * un pleurage ; trop haut, une friture.
+   */
+  rippleHz: number
 }
 
 export const DEFAULT_SYNTH: SynthSettings = {
@@ -99,6 +124,10 @@ export const DEFAULT_SYNTH: SynthSettings = {
   forceEffort: false,
   forcedEffort: 0.5,
   dynoTorque: 10000,
+  // Quinze tours et quinze hertz : une estimation, à juger à l'oreille. À
+  // 1 820 tr/min cela fait huit dixièmes de pour cent de variation de hauteur.
+  rippleRpm: 15,
+  rippleHz: 15,
 }
 
 function clamp(value: number, low: number, high: number): number {
@@ -121,6 +150,8 @@ export function clampSynthSettings(settings: SynthSettings): SynthSettings {
     blockFrames: Math.round(clamp(settings.blockFrames, 128, 8192)),
     reserveMs: Math.round(clamp(settings.reserveMs, 40, 1000)),
     dynoTorque: Math.round(clamp(settings.dynoTorque, 20, 10000)),
+    rippleRpm: clamp(settings.rippleRpm, 0, 120),
+    rippleHz: clamp(settings.rippleHz, 0.5, 200),
     sweep: settings.sweep,
     sweepSeconds: clamp(settings.sweepSeconds, 2, 120),
     forceEffort: settings.forceEffort,

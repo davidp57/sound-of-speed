@@ -1,8 +1,8 @@
 # DELISSER — un régime qui ne soit pas une fréquence pure
 
-**Statut :** ⬜ prêt — cause établie, deux voies à trancher
-**Branche :** à ouvrir
-**Version visée :** à décider
+**Statut :** 🧑 attend David — livré, reste l'écoute en roulant
+**Branche :** `feature/delisser-le-regime`
+**Version visée :** 0.1.69
 
 ## Ce qui a déclenché
 
@@ -49,7 +49,44 @@ tremblement, est désormais transmis au moteur simulé. C'est le seul délissage
 place, et il est trop faible — le tremblement décroît fortement avec le régime,
 justement là où le défaut s'entend.
 
-## Les deux voies
+## Ce qui a été livré
+
+**La sonde d'abord**, parce que rien ne mesurait ce dont on parlait. L'ondulation
+du vilebrequin est relevée à chaque pas de simulation dans le WebAssembly, et
+remontée à l'écran de synthèse. Elle a immédiatement tranché : **exactement zéro**
+à tous les régimes tant que le dynamomètre tient, et 6 à 16 tr/min seulement —
+0,13 à 0,25 % — quand on le desserre assez pour qu'il lâche le régime. Le
+dynamomètre visqueux ne valait donc pas le travail : même libre, engine-sim
+n'ondule presque pas.
+
+**Puis le mécanisme**, et il a fallu s'y reprendre. Une ondulation régulière calée
+sur la fréquence d'allumage a été écrite, mesurée, et jetée : elle ne change rien
+au spectre — 46,3 % de l'énergie dans les cinquante plus grandes raies sans elle,
+45,4 % avec quarante tours d'amplitude. La raison est arithmétique : moduler à la
+fréquence d'allumage place les bandes latérales exactement sur les harmoniques
+voisines, donc l'énergie reste sur la même grille.
+
+Ce qui manquait n'était pas une ondulation mais de l'**irrégularité**. Un bruit
+blanc filtré passe-bas module le régime, à chaque pas de simulation. Mesuré à
+1 820 tr/min sur quatre cylindres :
+
+| amplitude | 50 raies | centroïde |
+|---|---|---|
+| 0 | 46,3 % | 1 793 Hz |
+| 10 | 42,8 % | 1 672 Hz |
+| 20 | 39,1 % | 1 585 Hz |
+| 40 | 35,1 % | 1 385 Hz |
+
+Deux réglages dans l'écran de synthèse, applicables sans couper le son :
+l'amplitude en tours par minute et la vitesse de dérive en hertz. Livrés à
+quinze et quinze, une estimation à juger à l'oreille. Zéro rend le comportement
+d'avant.
+
+L'amplitude est en tours et non en pourcentage : l'énergie d'une explosion et
+l'inertie du volant ne dépendent pas du régime, si bien qu'une amplitude
+constante donne d'elle-même une part qui décroît quand le moteur monte.
+
+## Les deux voies, telles qu'elles avaient été posées
 
 **a) Moduler la consigne, plus fort et plus vite.** Le tremblement existe déjà
 (`core/engine/engine.ts`, trois sinusoïdes dont deux à rapport irrationnel) ;
@@ -71,10 +108,14 @@ physiquement juste, et la seule qui produise la vraie ondulation. Elle demande d
 toucher `native/probe.cpp`, de vérifier ce que le solveur d'engine-sim permet, et
 de republier le WebAssembly.
 
-## Ce qui n'est pas tranché
+## Ce qui reste
 
-1. **a) d'abord, b) si a) ne suffit pas** — ou directement b) ;
-2. si le délissage a ses propres réglages dans l'écran de synthèse, ou s'il suit
-   ceux du tremblement déjà présents dans la configuration ;
-3. si le bloc rendu descend à 256 par défaut sous la synthèse, ce qui double le
-   plafond de modulation contre du temps de calcul.
+1. **l'écoute en roulant** : les deux réglages sont une estimation, et un chiffre
+   ne dira pas lequel sonne juste ;
+2. si l'amplitude doit s'atténuer sous charge, comme le fait le tremblement des
+   échantillons — un moteur en charge tremble moins qu'à vide ;
+3. la voie a) telle qu'elle avait été posée — la modulation lente côté
+   JavaScript — n'a pas eu à être élargie : le régime **entendu**, qui porte le
+   tremblement, est transmis au moteur simulé depuis le 8 septembre, et le
+   délissage travaille maintenant par-dessus, à une cadence que le JavaScript ne
+   pouvait pas atteindre.
