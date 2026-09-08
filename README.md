@@ -25,7 +25,8 @@ sauvegarde, exporte et recharge.
 
 **Conduite** — la vitesse, le rapport, le régime. Le choix de la source
 (simulateur, GPS, rejeu), l'activation du son, le volume, la boîte automatique ou
-manuelle, et le verrou d'écran. Un bouton **Plein écran** masque la barre du haut : l'affichage
+manuelle, et le verrou d'écran. Les commandes du simulateur, elles, sont sur
+l'écran **Banc**. Un bouton **Plein écran** masque la barre du haut : l'affichage
 occupe toute la hauteur et les commandes deviennent de grandes touches. On en sort
 par la **flèche de retour**, à gauche de la rangée, à l'écart des autres et d'une
 autre couleur — l'écart est ce qui empêche de la presser en visant sa voisine.
@@ -131,10 +132,18 @@ au-delà, chaque mesure était rejetée comme aberrante et la vitesse se figeait
 Les propositions, elles, restent affichées étape par étape et se recopient à la
 main.
 
-**Synthèse** — un cinquième écran, qui **n'existe qu'en développement**, comme
-le simulateur de vitesse. Il fait jouer engine-sim en direct au lieu de la
-banque d'échantillons, et sert à trouver un timbre au bureau : on ne règle pas
-un timbre en conduisant, et l'écran embarqué reste sobre.
+**Banc** — conduire une vitesse à la main, sans rouler : les deux pédales, le
+curseur d'allure maintenue, et les réglages de ce que la source fabrique
+(cadence, bruit de mesure, précision annoncée). Il rappelle la vitesse, le
+régime et le rapport, de façon à se suffire sans regarder les cadrans. Ces
+commandes vivaient sous les cadrans de l'écran de conduite ; elles y prenaient
+la place de ce qu'on lit en roulant.
+
+**Synthèse** — il fait jouer engine-sim en direct au lieu de la banque
+d'échantillons, et sert à trouver un timbre. Comme le Banc, il **n'existe pas en
+production** : on ne règle pas un timbre en conduisant, et l'écran embarqué
+reste sobre. Les deux sont dans l'image `:develop`, parce qu'un son se règle
+garé, sur l'appareil qui le rendra.
 
 Le régime affiché au cadran est **imposé** au dynamomètre du moteur simulé, et
 l'effort ouvre son papillon. Le choix compte : laisser le moteur trouver son

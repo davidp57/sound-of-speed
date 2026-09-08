@@ -28,6 +28,22 @@ const MIN_DELTA_S = 0.15
  * ordre de grandeur d'un coup d'œil en roulant.
  */
 const RECENT_ACCURACY = 12
+/**
+ * Âge maximal d'une position déjà connue du système, en millisecondes.
+ *
+ * Zéro l'interdisait : la source refusait la position que le récepteur venait
+ * d'acquérir pour une autre application, et un démarrage à froid attendait un
+ * point neuf — plusieurs minutes sous un bâtiment. C'est ce qu'a montré l'essai
+ * du 8 septembre 2026 : la version de production obtenait un signal, celle
+ * d'intégration lancée juste après ne le voyait pas.
+ *
+ * Dix secondes, parce que le risque est du même ordre : une position de dix
+ * secondes annonce une vitesse de dix secondes. Prise garé, elle dit zéro et
+ * c'est vrai ; prise en roulant, elle est proche de l'allure du moment, et le
+ * lissage la rattrape en une seconde. Une minute, en revanche, ferait démarrer
+ * à une vitesse qui n'a plus rien à voir.
+ */
+const MAX_CACHED_AGE_MS = 10_000
 
 export interface GeolocationSourceOptions {
   /** Au-delà, la mesure est considérée comme aberrante et rejetée. */
@@ -169,7 +185,7 @@ export class GeolocationSource extends SpeedSource {
     this.watchId = provider.watchPosition(
       (position) => this.handlePosition(position),
       (error) => this.handleError(error),
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
+      { enableHighAccuracy: true, maximumAge: MAX_CACHED_AGE_MS, timeout: 15_000 },
     )
   }
 
