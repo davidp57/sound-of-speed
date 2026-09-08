@@ -59,8 +59,9 @@ Deux défauts distincts, tous deux mesurés :
   front descendant du passage, avec la pétarade déjà synthétisée pour le lever de
   pied.
 
-Les trois valeurs livrées — 0,8, 0,25 et la forme de l'engagement — sont des
-estimations. Chacune se coupe à zéro et rend le son d'avant.
+Les deux valeurs livrées — 0,8 et 0,25 — sont des estimations, et se coupent à
+zéro. L'engagement de l'embrayage n'a pas d'interrupteur : ce n'est pas un effet
+mais la correction d'un défaut de synchronisation.
 
 ## Ce qui n'est pas fait
 

@@ -32,12 +32,12 @@ Toutes les évolutions notables du projet. Format
   de niveau déjà remonté, si bien qu'on entendait un son qui glisse au lieu
   d'une rupture.
 
-  Trois choses maintenant, réglables séparément et neutralisables à zéro : la
-  **coupure de couple**, qui fait entrer les couches pied levé le temps du
-  passage — la part en charge tombe à 0,223 au creux ; l'**embrayage qui se
-  referme dans le temps du passage** — le régime finit à 2 tr/min des roues, au
-  lieu de 1 486 ; et un **claquement de reprise**, une détonation au moment où
-  le couple revient.
+  Trois choses maintenant. Deux réglages, qui se coupent à zéro : la **coupure
+  de couple**, qui fait entrer les couches pied levé le temps du passage — la
+  part en charge tombe à 0,223 au creux — et un **claquement de reprise**, une
+  détonation au moment où le couple revient. Et une correction sans
+  interrupteur, l'**embrayage qui se referme dans le temps du passage** : le
+  régime finit à 2 tr/min des roues, au lieu de 1 486.
 
   L'effort vrai n'est pas touché : le régime, la boîte et la télémétrie
   continuent de le voir entier. Seul le mixage entend la coupure — la voiture,

@@ -1770,7 +1770,10 @@ Trois choses se produisent maintenant, et elles étaient absentes :
   revient — la pétarade déjà synthétisée pour le lever de pied, tirée en un coup
   au lieu d'une salve.
 
-Les trois se règlent séparément et se coupent à zéro, ce qui rend le son d'avant.
+La coupure de couple et le claquement se règlent séparément et se coupent à
+zéro. L'engagement de l'embrayage, lui, n'a pas d'interrupteur : ce n'est pas un
+effet mais la correction d'un défaut de synchronisation, et le régime continuera
+donc de tomber dans le temps du passage même les deux autres à zéro.
 
 ### Deux grandeurs, et non une : la charge et l'effort
 
