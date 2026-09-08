@@ -298,3 +298,23 @@ conducteur, et l'on rétrograde précisément pied levé ; le lier à l'effort l
 supprimé exactement quand il doit s'entendre.
 
 **Non écouté.**
+
+## Onzième écoute, 8 septembre 2026
+
+David : « c'est pareil ; si j'arrête d'accél juste avant que la boîte ne monte un
+rapport, elle le monte quand même. »
+
+Le correctif précédent ne portait que sur la montée **en croisière**. Celle **au
+régime** est une autre règle : le franchissement du seuil lance un compte à
+rebours de quelques dixièmes de seconde, et plus rien ne l'annulait. Lever le
+pied ne franchit pas le seuil de freinage, donc l'inhibition existante ne
+s'appliquait pas.
+
+Reproduit au banc : montée jusqu'à 1 % au-dessus du seuil du premier rapport,
+puis perte de 0,6 km/h par seconde — le passage se produit quand même. Un premier
+scénario, où le seuil n'était pas tout à fait atteint, ne reproduisait rien : il
+faut que le compte à rebours soit lancé.
+
+La condition de ralentissement s'applique désormais aux deux règles. Le compteur
+retombe à zéro dans la branche `else`, donc l'intention est abandonnée et non
+suspendue.

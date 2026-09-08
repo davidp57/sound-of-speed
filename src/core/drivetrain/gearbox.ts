@@ -610,7 +610,17 @@ export class Gearbox {
       // elle descend dans un rapport dont le régime dépasse son propre seuil de
       // montée — et la boîte faisait le va-et-vient tous les trois km/h. Une
       // vraie boîte tient son rapport tant que le pied est sur le frein.
-      if (!braking && rpm >= upThreshold && this.gear < this.gearCount - 1) {
+      //
+      // **Ni pendant qu'on ralentit**, ce qui n'est pas la même chose : lever le
+      // pied ne fait pas franchir le seuil de freinage, et le franchissement du
+      // seuil de régime lance un compte à rebours que plus rien n'annulait.
+      // David : « si j'arrête d'accélérer juste avant que la boîte ne monte un
+      // rapport, elle le monte quand même ». Reproduit au banc — le seuil
+      // franchi, puis le pied levé, et le passage se produit une demi-seconde
+      // plus tard alors que la voiture ralentit déjà. Le compteur retombe à zéro
+      // dans la branche `else`, donc l'intention est bien abandonnée et non
+      // suspendue : reprendre les gaz repart d'un compte neuf.
+      if (!braking && !slowing && rpm >= upThreshold && this.gear < this.gearCount - 1) {
         if (this.readyForS === 0) {
           // Nouvelle intention de passer : on tire l'écart de ce passage-ci.
           this.pendingJitter = (Math.random() * 2 - 1) * this.drivetrain.upshiftJitterRpm

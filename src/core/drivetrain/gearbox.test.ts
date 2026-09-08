@@ -1175,6 +1175,27 @@ describe('Gearbox — ralentir doucement ne fait pas monter un rapport', () => {
     expect(montees).toEqual([])
   })
 
+  it("n'achève pas une montée au régime si on lève le pied avant", () => {
+    const p = profile()
+    // On accélère jusqu'à frôler le seuil du premier rapport, puis on lâche :
+    // le compte à rebours du passage est lancé, la vitesse commence à baisser.
+    // Le seuil est franchi, donc le compte à rebours du passage est lancé ;
+    // on lève le pied dans la foulée, avant qu'il n'expire.
+    const seuil = kmhForRpm(p, 1, p.drivetrain.upshiftRpm[1]!)
+    const monteeS = 6
+    const { shifts } = drive(
+      p,
+      (t) =>
+        t < monteeS
+          ? (seuil * 1.01 * t) / monteeS
+          : Math.max(0, seuil * 1.01 - 0.6 * (t - monteeS)),
+      monteeS + 12,
+    )
+
+    const tardives = shifts.filter((s) => s.to > s.from && s.t >= monteeS)
+    expect(tardives).toEqual([])
+  })
+
   it('monte toujours quand la vitesse est vraiment tenue', () => {
     const p = profile()
     const { shifts } = drive(p, () => 90, 25)

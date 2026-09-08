@@ -1738,7 +1738,14 @@ et chacune répond à une question différente :
   aller-retour tous les trois km/h.
 
 Et **on ne monte pas non plus pendant qu'on ralentit**, ce qui n'est pas la même
-chose que pendant qu'on freine. La bande de croisière juge sur la dérive de la
+chose que pendant qu'on freine — lever le pied ne franchit pas le seuil de
+freinage. Cela vaut pour les deux façons de monter, et il a fallu les traiter
+l'une après l'autre : la montée en croisière, puis la montée au régime. Cette
+dernière lance un compte à rebours dès que le seuil est franchi, et plus rien ne
+l'annulait : le seuil atteint, un lever de pied dans la foulée, et le passage se
+produisait une demi-seconde plus tard alors que la voiture ralentissait déjà. Le
+compte à rebours est maintenant abandonné, pas suspendu — reprendre les gaz
+repart d'un compte neuf. La bande de croisière juge sur la dérive de la
 vitesse mesurée sur trois secondes : robuste au bruit, mais lente. Quand on lève
 le pied après une longue croisière, la stabilité est déjà acquise et la dérive
 met plus d'une seconde à voir le ralentissement — assez pour laisser passer un

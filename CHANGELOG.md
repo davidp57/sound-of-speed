@@ -510,7 +510,15 @@ Toutes les évolutions notables du projet. Format
   dixième de m/s². Elle est donc cumulée dans un compteur qui monte pendant
   qu'on ralentit et redescend deux fois plus vite sinon : une croisière qui
   tremble autour de zéro ne l'atteint jamais, un vrai ralentissement le
-  franchit en moins d'une seconde.
+  franchit en un tiers de seconde.
+
+  **Cela vaut aussi pour la montée au régime**, et c'était le gros du reproche.
+  « Si j'arrête d'accélérer juste avant que la boîte ne monte un rapport, elle le
+  monte quand même. » Le franchissement du seuil de régime lance un compte à
+  rebours de quelques dixièmes de seconde, que plus rien n'annulait : reproduit
+  au banc — le seuil franchi, le pied levé dans la foulée, et le passage se
+  produit une demi-seconde plus tard. Le compte est désormais abandonné et non
+  suspendu, donc reprendre les gaz repart d'un compte neuf.
 
 ### Modifié
 
