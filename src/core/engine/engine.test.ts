@@ -717,3 +717,47 @@ describe('passage de rapport', () => {
     expect(shifting.rpm).toBeLessThan(shifting.kinematicRpm)
   })
 })
+
+/**
+ * Le coup de gaz suppose qu'on remet les gaz.
+ *
+ * David : « je crois que le rapport passe automatiquement au moment du coup de
+ * gaz, même si j'ai commencé à ralentir juste avant ». Un passage décidé
+ * légitimement dure six dixièmes de seconde, si bien que son coup de gaz tombe
+ * après un lever de pied survenu entre-temps. En montée, c'est incohérent : on
+ * ne relance pas un moteur qu'on vient d'abandonner. Au rétrogradage, c'est
+ * l'inverse — le coup de gaz *est* le geste.
+ */
+describe('coup de gaz et effort', () => {
+  const rolling = { kmh: 80, atStandstill: false, throttle: null }
+
+  function sommet(over: Partial<EngineInput>) {
+    const engine = makeEngine()
+    settle(engine, 2, rolling)
+    const frames = Math.round(0.6 / FRAME_S)
+    let haut = 0
+    for (let f = 0; f <= frames; f += 1) {
+      const s = engine.tick(
+        FRAME_S,
+        input({ ...rolling, isShifting: true, shiftProgress: f / frames, ...over }),
+      )
+      haut = Math.max(haut, s.rpm)
+    }
+    return haut
+  }
+
+  it('remonte le régime quand le coup de gaz est demandé', () => {
+    const avec = sommet({ shiftDipRpm: 450, shiftBlipRpm: 550 })
+    const sans = sommet({ shiftDipRpm: 450, shiftBlipRpm: 0 })
+
+    expect(avec).toBeGreaterThan(sans + 300)
+  })
+
+  it('ne remonte pas au-dessus du rapport visé sans coup de gaz', () => {
+    const engine = makeEngine()
+    const engaged = settle(engine, 2, rolling)
+    const haut = sommet({ shiftDipRpm: 450, shiftBlipRpm: 0 })
+
+    expect(haut).toBeLessThanOrEqual(engaged.rpm + 1)
+  })
+})

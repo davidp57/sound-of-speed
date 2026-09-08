@@ -1786,6 +1786,15 @@ Quatre choses s'y produisent, et une cinquième les rend possibles :
   régime du rapport visé ; le coup de gaz le relance au-dessus ; l'engagement le
   ramène. Les deux amplitudes se règlent, et zéro supprime le mouvement
   correspondant.
+
+  **En montée, le coup de gaz suit l'effort du moment.** Un passage dure six
+  dixièmes de seconde : décidé légitimement, il s'engage quand même si l'on
+  lève le pied entre-temps, et son coup de gaz tombe alors que la voiture
+  ralentit déjà — on entendait le moteur se relancer juste après l'avoir
+  abandonné. Pied levé, il n'y a donc plus de coup de gaz, seulement la chute.
+  **Au rétrogradage il reste entier** : c'est là qu'il est le geste du
+  conducteur, et l'on rétrograde précisément pied levé — le lier à l'effort le
+  supprimerait exactement quand il doit s'entendre.
 - **La boîte claque** au moment où le rapport s'engage, au sommet du coup de gaz
   et non à la fin du passage : ce qui reste après lui, c'est l'embrayage qui se
   lâche, et cela ne claque pas. C'est un **choc mécanique** et non un bruit

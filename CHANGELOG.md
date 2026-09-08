@@ -482,6 +482,18 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le coup de gaz ne se produit plus quand on a levé le pied.** David : « je
+  crois que le rapport passe automatiquement au moment du coup de gaz, même si
+  j'ai commencé à ralentir juste avant. »
+
+  Deux effets se cumulaient. Le blocage des montées demandait six dixièmes de
+  seconde de ralentissement avéré pour agir ; il en demande un tiers. Et surtout,
+  un passage décidé légitimement dure lui-même six dixièmes de seconde : il
+  s'engage quand même, et son coup de gaz tombe alors que la voiture ralentit
+  déjà. En montée, celui-ci suit donc l'effort du moment — pied levé, il ne
+  reste que la chute. Au rétrogradage il reste entier : c'est là qu'il est le
+  geste du conducteur, et l'on rétrograde précisément pied levé.
+
 - **La boîte ne monte plus un rapport pendant qu'on ralentit.** David, en
   laissant décélérer : « parfois le simu passe une vitesse supérieure au lieu de
   laisser ralentir et de finalement rétrograder ; et comme le son du moteur est

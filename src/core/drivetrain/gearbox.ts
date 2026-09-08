@@ -134,10 +134,16 @@ const CRUISE_BAND_GRACE_S = 0.4
  * à un dixième de m/s². On la cumule donc : le compteur monte pendant qu'on
  * ralentit et redescend deux fois plus vite sinon, si bien qu'une croisière qui
  * tremble autour de zéro ne l'atteint jamais et qu'un vrai ralentissement le
- * franchit en moins d'une seconde.
+ * franchit en un tiers de seconde.
+ *
+ * Ce délai s'ajoute à la durée du passage lui-même : une montée décidée juste
+ * avant un lever de pied s'engage quand même, et son coup de gaz tombe six
+ * dixièmes de seconde plus tard, alors que la voiture ralentit déjà. C'est
+ * pourquoi le seuil est court — et pourquoi, en montée, le coup de gaz suit
+ * l'effort du moment plutôt que le réglage seul.
  */
 const CRUISE_SLOWING_MS2 = 0.05
-const CRUISE_SLOWING_HOLD_S = 0.6
+const CRUISE_SLOWING_HOLD_S = 0.35
 /** Durée de décélération soutenue avant de descendre, en secondes. */
 const BRAKE_HOLD_S = 1
 /**

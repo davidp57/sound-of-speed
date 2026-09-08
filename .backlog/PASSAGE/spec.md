@@ -280,3 +280,21 @@ ralentissant et redescend deux fois plus vite sinon.
 
 Deux tests ajoutés : pas de montée après un lever de pied, et montée conservée
 quand la vitesse est vraiment tenue.
+
+## Dixième écoute, 8 septembre 2026
+
+David : « je crois que le rapport passe automatiquement au moment du coup de gaz,
+même si j'ai commencé à ralentir juste avant. »
+
+Deux effets se cumulaient, et le second est propre à ce lot. Le blocage des
+montées demandait 0,6 s de ralentissement avéré ; réduit à 0,35 s. Mais surtout,
+un passage dure maintenant 600 ms : décidé légitimement une fraction de seconde
+avant le lever de pied, il s'engage quand même, et son coup de gaz tombe alors
+que la voiture ralentit déjà.
+
+Le coup de gaz suit donc l'effort **en montée** — pied levé, il ne reste que la
+chute. **Au rétrogradage il reste entier** : c'est là qu'il est le geste du
+conducteur, et l'on rétrograde précisément pied levé ; le lier à l'effort l'aurait
+supprimé exactement quand il doit s'entendre.
+
+**Non écouté.**

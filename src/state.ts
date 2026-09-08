@@ -990,6 +990,37 @@ let loadWasHigh = false
  * Le claquement se tire quand il se termine, pas quand il commence : c'est la
  * reprise du couple qui rallume l'imbrûlé, et c'est là qu'on l'entend.
  */
+/**
+ * Effort du tour précédent, pour le coup de gaz.
+ *
+ * Le moteur est calculé après la boîte, donc l'effort de ce tour-ci n'existe pas
+ * encore quand il faut décider de la hauteur du coup de gaz. Un tour de retard,
+ * soit seize millisecondes, ne se voit pas ici — et c'est plus simple que de
+ * couper le calcul en deux.
+ */
+let lastEffort = 0
+
+/**
+ * Hauteur du coup de gaz, selon le sens du passage et ce que fait le pied.
+ *
+ * **En montée, le coup de gaz suit l'effort.** David : « je crois que le rapport
+ * passe automatiquement au moment du coup de gaz, même si j'ai commencé à
+ * ralentir juste avant ». Un passage décidé légitimement dure six dixièmes de
+ * seconde : son coup de gaz tombe donc après un lever de pied survenu
+ * entre-temps, et l'on entend le moteur se relancer alors qu'on vient de
+ * l'abandonner.
+ *
+ * **Au rétrogradage, il reste entier.** C'est là qu'il est le geste du
+ * conducteur, et on rétrograde précisément pied levé ou en freinant : le lier à
+ * l'effort le supprimerait exactement quand il doit s'entendre.
+ */
+function blipRpmFor(profile: Profile, direction: 'up' | 'down' | null): number {
+  const jolt = profile.feel.shiftJolt
+  if (!jolt.enabled) return 0
+  if (direction === 'down') return jolt.blipRpm
+  return jolt.blipRpm * Math.max(0, Math.min(1, lastEffort))
+}
+
 let wasShifting = false
 /** Le clac de ce passage-ci a déjà été tiré : il n'en faut qu'un. */
 let clackDone = false
@@ -1035,7 +1066,7 @@ function step(dt: number): void {
     isShifting: gearboxState.isShifting,
     shiftProgress: gearboxState.shiftProgress,
     shiftDipRpm: profile.feel.shiftJolt.enabled ? profile.feel.shiftJolt.dipRpm : 0,
-    shiftBlipRpm: profile.feel.shiftJolt.enabled ? profile.feel.shiftJolt.blipRpm : 0,
+    shiftBlipRpm: blipRpmFor(profile, gearboxState.shiftDirection),
     // La pédale n'est connue qu'en « vitesse exacte ». Dès que le banc imite un
     // GPS, elle ne l'est plus — c'est tout le sujet : une voiture ne dit pas ce
     // que fait le pied, et la charge doit se déduire de l'accélération mesurée.
@@ -1080,6 +1111,7 @@ function step(dt: number): void {
   }
   if (!gearboxState.isShifting) clackDone = false
   wasShifting = gearboxState.isShifting
+  lastEffort = engineState.effort
 
   // Une seule origine de son à la fois. Le régime transmis est le régime
   // **entendu**, celui qui porte le tremblement, comme pour les échantillons.
