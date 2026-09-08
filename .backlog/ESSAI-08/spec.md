@@ -112,11 +112,33 @@ ne s'enrichit pas — le centroïde monte de 1 833 à 2 018 Hz mais l'énergie s
 concentre davantage, pas moins. Et le calcul tombe à ×0,99 du temps réel, avec
 neuf creux et 35 ms de silence : inexploitable de toute façon.
 
-**Le dynamomètre, mesuré ensuite, n'est pas le levier espéré.** Son couple
-décide de la raideur avec laquelle le régime est tenu, et il n'était exposé
-nulle part. Exposé puis balayé, à 2 950 tr/min : le régime tenu est exactement
-le régime demandé de 10 000 jusqu'à 40 N·m, puis à 20 le moteur décroche d'un
-coup de cinq cents tours. C'est un interrupteur, pas un réglage de souplesse.
+**Le dynamomètre ne fait pas respirer le moteur.** Le code annonçait que
+baisser son couple « laisse le régime respirer entre les explosions ». Balayé à
+2 950 tr/min, en livres-pied :
+
+| couple | demandé | entendu | écart |
+|---|---|---|---|
+| 10 000 | 2 955 | 2 955 | 0 |
+| 40 | 2 944 | 2 944 | 0 |
+| 30 | 2 959 | 2 728 | −231, figé |
+| 25 | 2 963 | 2 576 | −387, figé |
+| 20 | 2 941 | 2 435 | −506, figé |
+
+Le moteur n'oscille à aucun réglage : il tient exactement la consigne, ou il
+s'établit plus bas et tout aussi figé. Le baisser ne fait pas respirer le
+régime, il le fausse.
+
+Le curseur avait d'abord été exposé, à la demande de David ; il a été retiré le
+jour même, celui-ci ayant relevé qu'« ça ne sert à rien en l'état ». C'était
+juste : au-dessus de quarante il ne change rien, en dessous il fausse le régime.
+La mesure est écrite sur `dynoTorque` dans `core/synth/settings.ts`, là où
+quelqu'un serait tenté de recommencer.
+
+Une réserve sur cette mesure : le régime tenu est publié quatre fois par
+seconde, et une oscillation à la fréquence des explosions — une centaine de
+hertz — n'y apparaîtrait que comme du bruit d'échantillonnage. Deux relevés
+successifs donnent le même chiffre au tour près, ce qui rend une telle
+oscillation très improbable, mais ne l'exclut pas formellement.
 
 **Reste les deux bruits d'engine-sim**, réglables à chaud, et que le projet a
 uniformisés pour toute la bibliothèque à 0,15 et 0,05 — là où les fichiers
@@ -135,7 +157,6 @@ découpage.
    après la mesure du dynamomètre — la gigue est à 0,05 pour toute la
    bibliothèque, contre 0,195 et 0,5 dans les fichiers d'origine.
 
-Tout le reste est tranché et livré : le couple du dynamomètre est exposé dans
-l'écran de synthèse — il documente son propre défaut —, et le régime transmis au
-moteur simulé est désormais le régime **entendu**, celui qui porte le
-tremblement.
+Tout le reste est tranché : le régime transmis au moteur simulé est désormais le
+régime **entendu**, celui qui porte le tremblement, et le couple du dynamomètre
+n'est exposé nulle part — la mesure a montré qu'il n'a aucun emploi utile.

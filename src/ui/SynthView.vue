@@ -677,28 +677,6 @@ const gauge = computed(() => {
         le cadran et le son : l'allonger fait disparaître les creux et éloigne
         le son de ce qu'on voit.
       </p>
-      <div class="field">
-        <label for="dyno">Raideur du dynamomètre</label>
-        <input
-          id="dyno"
-          type="range"
-          min="20"
-          max="10000"
-          step="20"
-          :value="synthSettings.dynoTorque"
-          @input="onNumber('dynoTorque', $event)"
-        />
-        <span class="numeric">{{ synthSettings.dynoTorque }} N·m</span>
-      </div>
-      <p class="note">
-        Le couple avec lequel le banc tient le régime du cadran. Il ne donne pas
-        la souplesse qu'on pourrait en attendre : mesuré le 8 septembre 2026 à
-        2 950 tr/min, le régime tenu est <b>exactement</b> le régime demandé de
-        10 000 jusqu'à 40, puis à 20 le moteur décroche d'un coup de cinq cents
-        tours. C'est un interrupteur, pas un réglage de souplesse — le laisser
-        haut est le seul emploi raisonnable, et la respiration d'un moteur est à
-        chercher ailleurs, du côté des deux bruits de la section « Le moteur ».
-      </p>
     </section>
     <section class="panel">
       <h2>Le banc — écouter sans conduire</h2>
