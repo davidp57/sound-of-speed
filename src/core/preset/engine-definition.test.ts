@@ -64,7 +64,9 @@ describe('engineDefinitionValues', () => {
     expect(values[4]).toBe(90)
     expect(values[19]).toBe(29)
     expect(values[25]).toBe(0.2)
-    expect(values[27]).toBe(0.05)
+    // La gigue est coupée depuis le 8 septembre 2026 : c'était le cliquetis que
+    // David entendait, 25 dB ajoutés à 8 kHz par la valeur d'avant.
+    expect(values[27]).toBe(0)
   })
 
   it('prend le rupteur du profil, pas de la définition', () => {
