@@ -1,6 +1,6 @@
 # PASSAGE — un passage de rapport doit s'entendre comme un passage
 
-**Statut :** 🧑 attend David — livré, reste à écouter
+**Statut :** 🧑 attend David — livré et mergé, écouté au simulateur, reste à rouler
 **Branche :** `feature/passage-de-rapport`
 **Version visée :** 0.3
 
@@ -393,3 +393,23 @@ en une demi-seconde : le seuil descend de 3851 à 2358 en trois secondes au lieu
 de s'effondrer, et **aucun passage ne se produit**.
 
 **Non écouté.**
+
+## Clôture, 8 septembre 2026
+
+David, après la quatorzième écoute : « comme ça c'est pas mal en tout cas avant
+de tester sur route ». PR #87 mergée dans `develop` — quinze commits, contrôle
+qualité vert.
+
+Ce qui reste, et qui ne se voit qu'en roulant : le rendu de la séquence sur un
+vrai trajet, avec la vraie source GPS et sa cadence, et le comportement de la
+boîte en côte — c'est le cas où la charge déduite de l'accélération diverge le
+plus de l'intention, et il n'a pas pu être éprouvé au simulateur.
+
+Points laissés ouverts, sans urgence :
+
+1. Les trois secondes de retombée de la demande sont une estimation.
+2. Deux des gardes posées avant la correction de fond — pas de dépassement
+   immédiat en décélérant, blocage au ralentissement avéré — sont peut-être
+   redondantes depuis. Elles n'ont pas été remesurées.
+3. Le claquement d'échappement au rétrogradage n'a pas de dosage séparé, alors
+   que le clac de boîte en a un et pour la même raison.
