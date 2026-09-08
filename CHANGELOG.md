@@ -328,6 +328,12 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **La résonance d'échappement passe à 45 % pour tous les moteurs**, et la
+  réserve du lecteur à 60 ms. Ce sont les valeurs que David tient au volant ; la
+  première n'était réglée que sur le GM LS, les autres moteurs passaient tout
+  leur son par la réponse d'échappement — celle d'un V8 Chevrolet, y compris
+  sous un quatre cylindres.
+
 - **Le volume de la synthèse ne voyage plus avec le moteur.** Il faisait partie
   du rendu, donc essayer plusieurs moteurs le remettait à chaque chargement —
   David : « c'est chiant que ça change à chaque fois ». On comparait deux timbres

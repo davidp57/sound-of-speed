@@ -164,7 +164,11 @@ export const DEFAULT_RENDERING: SynthRendering = {
   // étaient une salle, pas un échappement — à 800 tr/min un V8 explose toutes
   // les 19 ms, et douze explosions se superposaient dans la queue.
   convolverMs: 50,
-  convolverMix: 1,
+  // Quarante-cinq pour cent, et pour tous les moteurs : la valeur que David
+  // tenait sur le GM LS depuis le 6 septembre 2026, étendue à la bibliothèque le
+  // 8 à sa demande. À cent pour cent, tout le son passait par la réponse
+  // d'échappement — celle d'un V8 Chevrolet, y compris sous un quatre cylindres.
+  convolverMix: 0.45,
   // La réponse du V8 Chevrolet 454, telle qu'engine-sim la livre. Une captation
   // réelle plutôt qu'un modèle : c'est la différence entre un échappement et
   // l'idée qu'on s'en fait.

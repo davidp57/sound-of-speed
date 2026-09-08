@@ -18,7 +18,6 @@ import type { EngineDefinition, Profile } from './schema'
  */
 export const GM_LS_RENDERING: SynthRendering = {
   ...DEFAULT_RENDERING,
-  convolverMix: 0.45,
   /**
    * Seize mille, et non trente-deux mille.
    *
