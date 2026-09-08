@@ -59,9 +59,41 @@ Deux défauts distincts, tous deux mesurés :
   front descendant du passage, avec la pétarade déjà synthétisée pour le lever de
   pied.
 
-Les deux valeurs livrées — 0,8 et 0,25 — sont des estimations, et se coupent à
-zéro. L'engagement de l'embrayage n'a pas d'interrupteur : ce n'est pas un effet
-mais la correction d'un défaut de synchronisation.
+- **Plongée du régime** (`feel.shiftJolt.dipRpm`) — le moteur tombe sous le
+  rapport visé pendant la coupure, et le réengagement l'y ramène. Négatif, il
+  donne un coup de gaz au lieu d'un creux.
+
+Les trois valeurs livrées — 0,8, 300 tr/min et 0,5 — sont des estimations, et se
+coupent à zéro. L'engagement de l'embrayage n'a pas d'interrupteur : ce n'est pas
+un effet mais la correction d'un défaut de synchronisation.
+
+## Deuxième écoute, 8 septembre 2026
+
+David : « on entend un tout petit claquement, c'est tout. Pour le couple, j'ai
+pas l'impression que ça ait changé quoi que ce soit. » Et, en réécoutant la
+vidéo de VNS : « au passage, on entend le moteur diminuer, remonter et ensuite
+repartir de là où il était quand il a diminué — si j'étais pilote je dirais que
+c'est un double embrayage. »
+
+Deux mesures ont suivi, et elles ont réorienté le lot.
+
+**VNS ne produit pas ce mouvement.** Son `OnGearShift()` ne déclenche que le clip
+d'échappement ; `shiftPitchOsc`, la seule chose qui pourrait faire bouger la
+hauteur, vaut zéro par défaut et rien dans VNS ne l'anime ; `autoBlip` ne touche
+pas au régime, il force le mélange quand il **détecte** un saut. Ce que David
+entend vient donc du modèle de transmission du jeu, pas de l'outil audio : c'est
+un comportement de régime à produire dans `engine.ts`, et il n'y a plus rien à
+chercher dans VNS.
+
+**La banque n'est pas en cause.** Spectre des quatre couches de `procar`, par
+bandes d'octave, normalisé au maximum de chacune : l'écart quadratique entre
+en charge et pied levé vaut 6,0 dB en bas et 4,4 dB en haut — jusqu'à 13,4 dB
+sur la bande de 63 Hz. Les deux familles sonnent vraiment différemment, la
+bascule devait donc s'entendre.
+
+**Ce qui l'annulait : le creux de niveau.** L'instant où le timbre bascule est
+celui où le son est le plus faible. Le creux est passé de 0,55 à 0,15, soit de
+−4,2 à −1,9 dB.
 
 ## Ce qui n'est pas fait
 

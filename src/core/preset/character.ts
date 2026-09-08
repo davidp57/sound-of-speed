@@ -209,7 +209,7 @@ const SPORTINESS_READINGS: {
   { value: (p) => p.drivetrain.cruiseUpshiftAfterS, law: (_p, s) => 2 + 1.6 * s },
   { value: (p) => p.drivetrain.brakeDownshiftAccelMs2, law: (_p, s) => -1.1 + 0.5 * s },
   { value: (p) => p.feel.kickdown.targetRpmFraction, law: (_p, s) => 0.5 + 0.15 * s },
-  { value: (p) => p.feel.shiftJolt.depth, law: (_p, s) => 0.25 + 0.4 * s },
+  { value: (p) => p.feel.shiftJolt.depth, law: (_p, s) => 0.05 + 0.2 * s },
 ]
 
 /**
@@ -337,12 +337,17 @@ export function applySportiness(profile: Profile, sportiness: number): Profile {
       },
       shiftJolt: {
         ...profile.feel.shiftJolt,
-        depth: round3(0.25 + 0.4 * s),
+        // La loi va de 0,05 à 0,25 et non plus de 0,25 à 0,65 : le creux de
+        // niveau masquait la bascule de timbre qu'il devait souligner. Les
+        // deux bornes ont été divisées par le même facteur, si bien que le
+        // caractère relu d'un profil livré ne bouge pas.
+        depth: round3(0.05 + 0.2 * s),
         // Une boîte de caractère coupe plus franchement et claque plus fort.
         // Sans cela, le curseur creuserait le niveau sans changer le timbre, et
         // le passage deviendrait un trou au lieu d'un événement.
         cutDepth: round3(0.6 + 0.35 * s),
-        crackle: round3(0.1 + 0.35 * s),
+        crackle: round3(0.25 + 0.5 * s),
+        dipRpm: Math.round(150 + 350 * s),
       },
     },
   }

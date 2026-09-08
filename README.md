@@ -1221,6 +1221,7 @@ qu'on remarque surtout par leur absence. Chacun s'active séparément.
 | **À-coup de passage** | Le creux du couple coupé, puis la reprise. Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est |
 | **Profondeur** | Combien le **niveau** baisse pendant la coupure. Mesuré sur le profil Route : 3,8 dB au creux à 0,35 |
 | **Coupure de couple** | Combien le moteur passe en roue libre le temps du passage. C'est ce qui fait entrer les couches pied levé, donc changer le **timbre** et pas seulement le niveau. Mesuré sur le profil Route : la part d'énergie tenue par les couches en charge passait de 0,926 à 0,926 — elle ne bougeait pas — et tombe à 0,223 au creux. Zéro garde le son de pleine charge d'un bout à l'autre |
+| **Plongée du régime** | De combien le moteur tombe **sous** le régime du nouveau rapport pendant la coupure, avant que l'embrayage ne l'y ramène : il diminue, puis remonte. Mesuré à 300 tr/min sur le profil Route, passage de première en seconde : 4 776 tr/min, creux à 2 516, retour à 2 799. Une valeur **négative** donne l'inverse, un coup de gaz au débrayage |
 | **Claquement de reprise** | Une détonation à l'échappement au moment où le couple revient. C'est la pétarade du lever de pied, tirée en un seul coup. Zéro n'en produit aucune |
 
 ### Couches
@@ -1747,10 +1748,11 @@ seize millisecondes :
 
 | | avant | maintenant |
 |---|---|---|
-| Régime à la fin du passage | 4 289 tr/min, pour 2 803 aux roues | 2 781, pour 2 779 aux roues |
+| Régime à la fin du passage | 4 289 tr/min, pour 2 803 aux roues | 2 799, pour 2 827 aux roues |
 | Où tombe la chute de régime | 24 % pendant le passage, 76 % dans les 170 ms d'après | entièrement dans les 133 ms du passage |
+| Trajectoire du régime | descente molle, puis rattrapage | 4 776 → creux à **2 516** → remonte à 2 799 |
 | Part d'énergie tenue par les couches en charge | 0,926 avant, 0,926 pendant | 0,926 avant, 0,223 au creux, 0,926 après |
-| Niveau au creux | −3,8 dB | −4,2 dB |
+| Niveau au creux | −3,8 dB | −1,9 dB |
 
 Trois choses se produisent maintenant, et elles étaient absentes :
 
@@ -1766,9 +1768,23 @@ Trois choses se produisent maintenant, et elles étaient absentes :
   rapport avant la fin. Sans cela le régime traînait au frein moteur puis
   rattrapait d'un coup, une fois le creux de niveau remonté : on entendait un son
   qui glisse, pas une rupture.
+- **Le moteur plonge sous le rapport visé, puis y remonte.** Embrayage ouvert,
+  il ne sait pas où il va : il tombe plus bas que le régime du nouveau rapport,
+  et c'est le réengagement qui l'y ramène. C'est le « diminue, remonte, repart »
+  d'une vraie boîte. Le phénomène existe sans réglage, mais seulement là où la
+  chute libre dépasse l'écart entre deux rapports — en haut de boîte, où les
+  rapports sont proches ; le réglage le donne partout. Une valeur négative donne
+  l'autre geste, le coup de gaz au débrayage.
 - **Un claquement à la reprise**, une seule détonation au moment où le couple
   revient — la pétarade déjà synthétisée pour le lever de pied, tirée en un coup
   au lieu d'une salve.
+
+**Et le creux de niveau a été divisé par trois** (0,55 à 0,15 sur le profil par
+défaut, 0,35 à 0,10 sur Route). Il masquait ce qu'il devait souligner :
+l'instant où le timbre bascule vers le pied levé est aussi celui où le son est
+le plus faible. Mesuré : le creux passe de −4,2 dB à −1,9 dB, et la bascule de
+timbre s'entend au lieu de disparaître sous la baisse. VNS, dont le passage
+s'entend bien, n'a aucun équivalent de ce creux.
 
 La coupure de couple et le claquement se règlent séparément et se coupent à
 zéro. L'engagement de l'embrayage, lui, n'a pas d'interrupteur : ce n'est pas un

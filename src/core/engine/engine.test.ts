@@ -657,6 +657,34 @@ describe('passage de rapport', () => {
     return state
   }
 
+  it('plonge sous le rapport visé, puis y remonte', () => {
+    const engine = makeEngine()
+    settle(engine, 2, rolling)
+
+    const frames = Math.round(0.12 / FRAME_S)
+    const trace: number[] = []
+    for (let f = 0; f <= frames; f += 1) {
+      const s = engine.tick(
+        FRAME_S,
+        input({ ...rolling, isShifting: true, shiftProgress: f / frames, shiftDipRpm: 300 }),
+      )
+      trace.push(s.rpm)
+    }
+
+    const bas = Math.min(...trace)
+    const fin = trace[trace.length - 1]!
+    const cible = Engine.kinematicRpm(
+      80,
+      profile.drivetrain.gearRatios[3]! * profile.drivetrain.finalDrive,
+      profile.drivetrain.wheelRadiusM,
+    )
+
+    // Il descend sous la cible, puis remonte : c'est le « diminue, remonte ».
+    expect(bas).toBeLessThan(cible - 200)
+    expect(fin).toBeGreaterThan(bas + 150)
+    expect(Math.abs(fin - cible)).toBeLessThan(60)
+  })
+
   it('a rejoint le régime des roues quand le passage se termine', () => {
     const engine = makeEngine()
     settle(engine, 2, rolling)

@@ -32,12 +32,27 @@ Toutes les évolutions notables du projet. Format
   de niveau déjà remonté, si bien qu'on entendait un son qui glisse au lieu
   d'une rupture.
 
-  Trois choses maintenant. Deux réglages, qui se coupent à zéro : la **coupure
-  de couple**, qui fait entrer les couches pied levé le temps du passage — la
-  part en charge tombe à 0,223 au creux — et un **claquement de reprise**, une
-  détonation au moment où le couple revient. Et une correction sans
-  interrupteur, l'**embrayage qui se referme dans le temps du passage** : le
-  régime finit à 2 tr/min des roues, au lieu de 1 486.
+  Quatre choses maintenant. Trois réglages : la **coupure de couple**, qui fait
+  entrer les couches pied levé le temps du passage — la part en charge tombe à
+  0,223 au creux ; la **plongée du régime**, qui fait tomber le moteur sous le
+  rapport visé avant que l'embrayage ne l'y ramène — 4 776 tr/min, creux à
+  2 516, retour à 2 799 ; et un **claquement de reprise**, une détonation au
+  moment où le couple revient. Plus une correction sans interrupteur,
+  l'**embrayage qui se referme dans le temps du passage**.
+
+  La plongée est ce que David décrit en écoutant une vraie boîte : « le moteur
+  diminue, remonte, et repart de là où il était quand il a diminué ». Embrayage
+  ouvert, le moteur ne sait pas où il va — il tombe, et le réengagement le
+  rattrape. Le phénomène existait déjà sans réglage, mais seulement en haut de
+  boîte, là où l'écart entre deux rapports est plus petit que la chute libre.
+  Une valeur négative donne l'autre geste possible, le coup de gaz au
+  débrayage.
+
+  **Le creux de niveau a été divisé par trois** (0,55 à 0,15 ; 0,35 à 0,10 sur
+  Route) : il masquait ce qu'il devait souligner, l'instant où le timbre
+  bascule étant aussi celui où le son est le plus faible. Le creux passe de
+  −4,2 à −1,9 dB. La loi du curseur calme-sportif suit le même facteur, si bien
+  que le caractère relu d'un profil livré ne bouge pas.
 
   L'effort vrai n'est pas touché : le régime, la boîte et la télémétrie
   continuent de le voir entier. Seul le mixage entend la coupure — la voiture,

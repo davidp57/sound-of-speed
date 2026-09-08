@@ -1559,6 +1559,15 @@ function impliedCylinders(index: number): number | null {
           hint="Combien le moteur passe en roue libre le temps du passage. C'est ce qui fait entrer le son pied levé, donc changer le timbre et pas seulement le niveau. Zéro garde le son de pleine charge d'un bout à l'autre."
         />
         <NumberField
+          v-model="profile.feel.shiftJolt.dipRpm"
+          label="Plongée du régime"
+          :min="-800"
+          :max="1500"
+          :step="50"
+          unit="tr/min"
+          hint="De combien le moteur tombe sous le régime du nouveau rapport pendant la coupure, avant que l'embrayage ne l'y ramène : il diminue, puis remonte. Une valeur négative donne l'inverse, un coup de gaz au débrayage."
+        />
+        <NumberField
           v-model="profile.feel.shiftJolt.crackle"
           label="Claquement de reprise"
           :min="0"

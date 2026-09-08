@@ -116,6 +116,16 @@ export interface EngineInput {
    */
   shiftProgress?: number
   /**
+   * Plongée du régime sous le rapport visé, en tours par minute, le temps du
+   * passage. Négatif donne un coup de gaz au lieu d'un creux.
+   *
+   * C'est un réglage de ressenti et non une donnée de la boîte, mais il arrive
+   * par l'entrée comme la progression : le moteur ne connaît que le régime et
+   * les rapports, et c'est l'assemblage qui lui dit ce que le profil veut
+   * entendre.
+   */
+  shiftDipRpm?: number
+  /**
    * Position de l'accélérateur, de 0 à 1, quand la source la connaît (simulateur).
    * En conduite réelle il n'y en a pas : passer `null` et la charge sera
    * entièrement déduite de l'accélération.
@@ -272,17 +282,32 @@ export class Engine {
           : Math.max(target, this.rpm - delta)
     }
 
-    // L'embrayage qui se referme sur le nouveau rapport.
+    // Le débrayage, puis l'embrayage qui se referme sur le nouveau rapport.
     //
-    // Sans lui, le régime descend au frein moteur toute la durée du passage,
+    // Sans cela, le régime descend au frein moteur toute la durée du passage,
     // puis rattrape d'un coup une fois le passage fini : mesuré sur le profil
     // Route, 444 tours perdus pendant les 133 ms du passage, et les 1 371
     // restants dans les 170 ms d'après. Le creux de niveau était alors remonté
     // depuis longtemps, et l'on entendait un son qui glisse au lieu d'une
-    // rupture. L'engagement ramène cette chute **dans** le passage.
+    // rupture.
+    //
+    // La plongée est ce que David décrit en écoutant une vraie boîte : « le
+    // moteur diminue, remonte et repart de là où il était quand il a diminué ».
+    // Embrayage ouvert, le moteur ne sait pas où il va : il tombe **sous** le
+    // régime du rapport visé, et c'est le réengagement qui l'y ramène. Le
+    // phénomène existe déjà sans réglage, mais seulement là où la chute libre
+    // dépasse l'écart entre deux rapports — en haut de boîte. Le rendre
+    // réglable le donne partout, et une valeur négative donne l'autre lecture
+    // possible, celle du coup de gaz au débrayage.
     if (input.isShifting) {
-      const engaging = clamp(input.shiftProgress ?? 0, 0, 1) ** 2
-      this.rpm += (kinematic - this.rpm) * engaging
+      const progress = clamp(input.shiftProgress ?? 0, 0, 1)
+      const floor = Math.max(this.preset.idleRpm, kinematic - (input.shiftDipRpm ?? 0))
+      // Deux temps : la chute jusqu'au point bas, puis le réengagement. Le
+      // partage à 0,7 laisse à l'oreille le temps d'entendre le creux avant
+      // que l'embrayage ne le referme.
+      const engaging = progress < 0.7 ? (progress / 0.7) ** 2 : 1
+      const target = progress < 0.7 ? floor : floor + (kinematic - floor) * ((progress - 0.7) / 0.3)
+      this.rpm += (target - this.rpm) * engaging
     }
 
     this.rpm = clamp(this.rpm, 0, this.preset.redlineRpm)

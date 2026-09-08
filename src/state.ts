@@ -1020,6 +1020,7 @@ function step(dt: number): void {
     atStandstill: speed.atStandstill,
     isShifting: gearboxState.isShifting,
     shiftProgress: gearboxState.shiftProgress,
+    shiftDipRpm: profile.feel.shiftJolt.enabled ? profile.feel.shiftJolt.dipRpm : 0,
     // La pédale n'est connue qu'en « vitesse exacte ». Dès que le banc imite un
     // GPS, elle ne l'est plus — c'est tout le sujet : une voiture ne dit pas ce
     // que fait le pied, et la charge doit se déduire de l'accélération mesurée.

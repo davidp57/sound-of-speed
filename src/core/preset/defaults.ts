@@ -270,7 +270,7 @@ export function createRoadProfile(): Profile {
       kickdown: { ...base.feel.kickdown, targetRpmFraction: 0.55, maxGears: 2 },
       // Une voiture de série pétarade peu, et pas à n'importe quel régime.
       backfire: { ...base.feel.backfire, minRpm: 3200, intensity: 0.25, count: 3 },
-      shiftJolt: { ...base.feel.shiftJolt, depth: 0.35 },
+      shiftJolt: { ...base.feel.shiftJolt, depth: 0.1 },
     },
     mix: {
       ...base.mix,
@@ -433,9 +433,14 @@ export function createDefaultProfile(): Profile {
       },
       shiftJolt: {
         enabled: true,
-        depth: 0.55,
+        // Le creux de niveau était à 0,55, et il masquait ce qu'il devait
+        // souligner : l'instant où le timbre bascule vers le pied levé est
+        // aussi celui où le son est le plus faible. VNS, dont le passage
+        // s'entend bien, n'a aucun équivalent de ce creux.
+        depth: 0.15,
         cutDepth: 0.8,
-        crackle: 0.25,
+        dipRpm: 300,
+        crackle: 0.5,
       },
     },
     layers: [

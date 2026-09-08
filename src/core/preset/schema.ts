@@ -696,6 +696,20 @@ export interface FeelPreset {
      */
     cutDepth: number
     /**
+     * Plongée du régime sous le rapport visé, en tours par minute, le temps du
+     * passage.
+     *
+     * Embrayage ouvert, le moteur ne sait pas où il va : il tombe sous le
+     * régime du nouveau rapport, et le réengagement l'y ramène. C'est le
+     * « diminue, remonte, repart » d'une vraie boîte. Le phénomène existe sans
+     * réglage, mais seulement là où la chute libre dépasse l'écart entre deux
+     * rapports, c'est-à-dire en haut de boîte ; ce réglage le donne partout.
+     *
+     * **Une valeur négative donne un coup de gaz** au lieu d'un creux — le
+     * geste du double débrayage, où l'on monte le régime avant d'engager.
+     */
+    dipRpm: number
+    /**
      * Claquement d'échappement à la reprise, de 0 à 1. Zéro n'en produit aucun.
      *
      * C'est la pétarade déjà synthétisée pour le lever de pied, tirée en un
