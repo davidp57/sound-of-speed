@@ -18,9 +18,31 @@ import type { EngineDefinition, Profile } from './schema'
  */
 export const GM_LS_RENDERING: SynthRendering = {
   ...DEFAULT_RENDERING,
-  volume: 0.7,
   convolverMix: 0.45,
-  levelerTarget: 32000,
+  /**
+   * Seize mille, et non trente-deux mille.
+   *
+   * La crête visée était réglée tout contre le plafond des entiers 16 bits, et
+   * cela s'entendait : David, le 8 septembre 2026, « de petits moments où tout
+   * d'un coup le bruit part en écrêtage, 2-3 %, mais c'est très audible ».
+   *
+   * Mesuré au ralenti, V8 à 780 tr/min, part d'échantillons butés sur le
+   * plafond — moyenne, puis pointe sur une fenêtre de vingt millisecondes :
+   *
+   * | volume | cible  | moyenne | pointe |
+   * |--------|--------|---------|--------|
+   * | 0,7    | 32 000 | 0,51 %  | 1,17 % |
+   * | 1      | 32 000 | 1,26 %  | 2,73 % |
+   * | 1      | 24 000 | 0,92 %  | 1,95 % |
+   * | 1      | 16 000 | 0,02 %  | 0,39 % |
+   * | 1      | 12 000 | 0,00 %  | 0,00 % |
+   *
+   * Le volume de la synthèse valant désormais un pour tout le monde, trente-deux
+   * mille donnait la ligne du milieu — les 2-3 % entendus. Seize mille les
+   * ramène à deux centièmes de pour cent. Le niveau perdu se rattrape avec le
+   * volume de l'appareil, en flottant, où rien ne plafonne.
+   */
+  levelerTarget: 16000,
 }
 
 /**

@@ -108,10 +108,23 @@ physiquement juste, et la seule qui produise la vraie ondulation. Elle demande d
 toucher `native/probe.cpp`, de vérifier ce que le solveur d'engine-sim permet, et
 de republier le WebAssembly.
 
+## Ce que l'oreille a réglé
+
+David, le 8 septembre 2026, après essai : « délissage à 60 rpm, 1,5 Hz : c'est
+mieux ». Ce sont donc les valeurs livrées — dix fois plus lent et quatre fois
+plus large que l'estimation de la veille. Le chiffre ne pouvait pas les trouver.
+
+Son verdict sur ce qui reste est net, et déplace le sujet : « la fréquence reste
+trop pure, c'est plus une question de **son** que de moteur (pour l'EJ25) ».
+Ce n'est donc plus le régime qu'il faut travailler, mais le rendu — et l'EJ25
+est justement l'un des moteurs qui n'en a pas de réglé : il porte le rendu par
+défaut, c'est-à-dire l'échappement d'un V8 Chevrolet 454 à cent pour cent de son
+réverbéré. Piste ouverte, non instruite.
+
 ## Ce qui reste
 
-1. **l'écoute en roulant** : les deux réglages sont une estimation, et un chiffre
-   ne dira pas lequel sonne juste ;
+1. **le rendu de l'EJ25**, et de tous les moteurs qui portent encore le rendu par
+   défaut — un quatre cylindres à plat joué à travers la réponse d'un gros V8 ;
 2. si l'amplitude doit s'atténuer sous charge, comme le fait le tremblement des
    échantillons — un moteur en charge tremble moins qu'à vide ;
 3. la voie a) telle qu'elle avait été posée — la modulation lente côté

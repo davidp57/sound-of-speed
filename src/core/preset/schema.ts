@@ -789,8 +789,16 @@ export type ProfileOrigin = Pick<
  * Elle traversait le stockage sans être lue depuis la version 4 ; elle porte
  * maintenant les vingt-sept nombres du contrat, et un profil qui n'en avait pas
  * reçoit celle de son profil d'usine.
+ *
+ * Version 7 : le volume de la synthèse quitte le rendu.
+ *
+ * Il voyageait avec le moteur, si bien qu'essayer plusieurs moteurs remettait le
+ * volume à chaque chargement — on comparait deux timbres à deux niveaux. C'est
+ * désormais un réglage du banc, qui ne suit pas le profil. Celui qu'un profil
+ * enregistré porte encore est ignoré à la relecture, et disparaît du stockage au
+ * premier enregistrement.
  */
-export const PROFILE_FORMAT_VERSION = 6
+export const PROFILE_FORMAT_VERSION = 7
 
 export interface ProfileFile {
   version: number

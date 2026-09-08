@@ -59,8 +59,6 @@ export interface SynthRendering {
   throttleIdle: number
   /** Ouverture du papillon à plein effort, de 0 à 1. */
   throttleFull: number
-  /** Volume appliqué dans le synthétiseur, de 0 à 6. */
-  volume: number
   /** Le niveleur d'engine-sim, qui vise une crête constante. */
   leveler: boolean
   /** Gain fixe appliqué quand le niveleur est coupé. */
@@ -85,7 +83,6 @@ export interface SynthRendering {
 export const SYNTH_RENDERING_KEYS = [
   'throttleIdle',
   'throttleFull',
-  'volume',
   'leveler',
   'levelerGain',
   'levelerTarget',
@@ -115,7 +112,6 @@ export function clampSynthRendering(rendering: SynthRendering): SynthRendering {
   return {
     throttleIdle: idle,
     throttleFull: clamp(rendering.throttleFull, idle, 1),
-    volume: clamp(rendering.volume, 0, 6),
     leveler: rendering.leveler,
     levelerGain: clamp(rendering.levelerGain, 0.01, 4),
     levelerTarget: Math.round(clamp(rendering.levelerTarget, 1000, 32000)),
@@ -135,7 +131,6 @@ export function renderingOf(settings: SynthRendering): SynthRendering {
   return clampSynthRendering({
     throttleIdle: settings.throttleIdle,
     throttleFull: settings.throttleFull,
-    volume: settings.volume,
     leveler: settings.leveler,
     levelerGain: settings.levelerGain,
     levelerTarget: settings.levelerTarget,
@@ -158,17 +153,6 @@ export function renderingOf(settings: SynthRendering): SynthRendering {
 export const DEFAULT_RENDERING: SynthRendering = {
   throttleIdle: 0.06,
   throttleFull: 1,
-  /**
-   * Zéro vingt-cinq, et c'est mesuré.
-   *
-   * Le niveleur d'engine-sim vise une crête de 30 000 sur 32 767, soit 0,92 —
-   * mais son suiveur de crête décroît en vingt millisecondes, l'intervalle
-   * entre deux allumages d'un V8 à 800 tr/min. Le gain remonte donc entre deux
-   * bouffées et la suivante déborde. Relevé, régime tenu à 800 : la crête reste
-   * collée à 1,000 jusqu'à un volume de 0,35, et tombe à 0,890 à 0,25. Le
-   * facteur de crête vaut 28 — un moteur, c'est des impulsions.
-   */
-  volume: 0.25,
   leveler: true,
   levelerGain: 1,
   // Nettement sous les 30 000 d'engine-sim : c'est la marge qui manquait.

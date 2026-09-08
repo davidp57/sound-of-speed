@@ -28,6 +28,19 @@ export {
 } from './rendering'
 
 export interface SynthSettings extends SynthRendering {
+  /**
+   * Volume appliqué dans le synthétiseur, de 0 à 6.
+   *
+   * Il **ne voyage pas avec le moteur**. Il l'a fait, et David l'a demandé le
+   * 8 septembre 2026 : « sors le volume de la synthèse du profil moteur, c'est
+   * chiant que ça change à chaque fois ». Essayer plusieurs moteurs remettait le
+   * volume à chaque chargement, et l'on comparait deux timbres à deux niveaux.
+   *
+   * Un dans les deux sens : c'est le niveau que le synthétiseur produit avant le
+   * niveleur, pas le volume de l'appareil — celui-là est ailleurs, dans les
+   * préférences, depuis le lot VOLUME-GLOBAL.
+   */
+  volume: number
   /** Fréquence de la simulation physique, en hertz. */
   simulationHz: number
   /**
@@ -108,6 +121,7 @@ export interface SynthSettings extends SynthRendering {
 
 export const DEFAULT_SYNTH: SynthSettings = {
   ...DEFAULT_RENDERING,
+  volume: 1,
   simulationHz: 10000,
   // Convolution déportée par défaut : c'est le seul réglage qui a fait passer
   // le V8 au-dessus du temps réel sur le poste de bureau.
@@ -124,10 +138,12 @@ export const DEFAULT_SYNTH: SynthSettings = {
   forceEffort: false,
   forcedEffort: 0.5,
   dynoTorque: 10000,
-  // Quinze tours et quinze hertz : une estimation, à juger à l'oreille. À
-  // 1 820 tr/min cela fait huit dixièmes de pour cent de variation de hauteur.
-  rippleRpm: 15,
-  rippleHz: 15,
+  // Soixante tours et un hertz et demi : les valeurs que David a trouvées à
+  // l'oreille le 8 septembre 2026, « c'est mieux ». La dérive est dix fois plus
+  // lente que ce qui avait été livré au jugé, et l'amplitude quatre fois plus
+  // large.
+  rippleRpm: 60,
+  rippleHz: 1.5,
 }
 
 function clamp(value: number, low: number, high: number): number {
@@ -145,6 +161,7 @@ function clamp(value: number, low: number, high: number): number {
 export function clampSynthSettings(settings: SynthSettings): SynthSettings {
   return {
     ...clampSynthRendering(settings),
+    volume: clamp(settings.volume, 0, 6),
     simulationHz: Math.round(clamp(settings.simulationHz, 4000, 24000)),
     impulseSamples: Math.round(clamp(settings.impulseSamples, 0, 10000)),
     blockFrames: Math.round(clamp(settings.blockFrames, 128, 8192)),

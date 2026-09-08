@@ -128,7 +128,9 @@ describe('loadProfiles', () => {
     saveProfiles([bricole as unknown as Profile])
 
     const relu = loadProfiles()[0]
-    expect(relu?.rendering?.volume).toBe(6)
+    // Le volume a quitté le rendu : celui qu'un profil ancien porte encore est
+    // ignoré, et ne ressort pas.
+    expect(relu?.rendering).not.toHaveProperty('volume')
     expect(relu?.rendering?.convolverMix).toBe(0)
     // Une valeur qui n'est pas un nombre retombe sur la borne basse plutôt que
     // de propager un NaN jusque dans le graphe audio, où il fait taire la
