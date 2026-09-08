@@ -60,7 +60,14 @@ export function authHeader(credentials: DepositCredentials): string {
 export async function putFile(
   folder: string,
   name: string,
-  body: string,
+  /**
+   * Le corps, texte ou binaire.
+   *
+   * Un `Blob` est passé tel quel : une capture de son fait un mégaoctet et demi
+   * d'échantillons, et la faire transiter par une chaîne la doublerait en
+   * mémoire pour rien.
+   */
+  body: string | Blob,
   credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<PutOutcome> {
@@ -133,8 +140,8 @@ export function stamp(at: number): string {
 }
 
 /** Taille du corps en octets, et non en caractères — un accent en vaut deux. */
-export function byteLength(body: string): number {
-  return new TextEncoder().encode(body).length
+export function byteLength(body: string | Blob): number {
+  return typeof body === 'string' ? new TextEncoder().encode(body).length : body.size
 }
 
 /**
