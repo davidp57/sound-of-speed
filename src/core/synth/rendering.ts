@@ -75,6 +75,25 @@ export interface SynthRendering {
   exhaustResponse: ExhaustResponse
   /** Accord du tube fabriqué, en hertz. Sans effet sur une captation réelle. */
   exhaustHz: number
+  /**
+   * Éclaircissement du son en charge, en décibels.
+   *
+   * Un plateau haut dont le gain suit l'effort : nul pied levé, entier à plein
+   * effort. David, le 8 septembre 2026 : « je trouve que le son est meilleur
+   * quand la brillance augmente, plus clair, moins sourd ; c'est le cas quand on
+   * décélère, et c'est l'inverse quand on accélère. On pourrait avoir plus de
+   * brillance à l'accélération, sans toucher à celle de la décel ou du
+   * ralenti ? »
+   *
+   * La mesure lui donnait raison sur le constat : la part d'énergie au-dessus
+   * d'un kilohertz vaut 0,504 au ralenti pied levé et tombe à 0,388 à trois
+   * mille sous charge. Papillon ouvert, la combustion revient et le grave avec
+   * — le son gagne du corps et perd de l'éclat. Ce réglage rend l'éclat sans
+   * reprendre le corps, et ne touche à rien tant que l'effort est nul.
+   *
+   * Zéro laisse le son exactement comme avant.
+   */
+  loadBrightnessDb: number
   /** Coupure du silencieux, en hertz. C'est aussi le point d'écoute. */
   mufflerHz: number
 }
@@ -91,6 +110,7 @@ export const SYNTH_RENDERING_KEYS = [
   'convolverMix',
   'exhaustResponse',
   'exhaustHz',
+  'loadBrightnessDb',
   'mufflerHz',
 ] as const satisfies readonly (keyof SynthRendering)[]
 
@@ -122,6 +142,7 @@ export function clampSynthRendering(rendering: SynthRendering): SynthRendering {
       ? rendering.exhaustResponse
       : 'smooth_39',
     exhaustHz: Math.round(clamp(rendering.exhaustHz, 20, 400)),
+    loadBrightnessDb: clamp(rendering.loadBrightnessDb, 0, 18),
     mufflerHz: Math.round(clamp(rendering.mufflerHz, 120, 22000)),
   }
 }
@@ -139,6 +160,7 @@ export function renderingOf(settings: SynthRendering): SynthRendering {
     convolverMix: settings.convolverMix,
     exhaustResponse: settings.exhaustResponse,
     exhaustHz: settings.exhaustHz,
+    loadBrightnessDb: settings.loadBrightnessDb,
     mufflerHz: settings.mufflerHz,
   })
 }
@@ -155,10 +177,12 @@ export const DEFAULT_RENDERING: SynthRendering = {
   throttleFull: 1,
   leveler: true,
   levelerGain: 1,
-  // Nettement sous les 30 000 d'engine-sim : c'est la marge qui manquait.
-  // Douze mille : la valeur mesurée propre sur un V8, 0,4 % d'échantillons
-  // écrêtés contre 17,5 % à la cible d'origine d'engine-sim.
-  levelerTarget: 12000,
+  // Neuf mille, et non douze. Douze suffisait au son sec, pas à ce qui sort :
+  // mesuré sur le Chevrolet 454 au ralenti, la crête en fin de chaîne montait à
+  // 1,19, que les deux décibels de marge ne rattrapaient pas tout à fait — David
+  // entendait encore le parasite sur ce moteur-là quand il avait disparu du
+  // GM LS. À neuf mille elle tombe à 1,01 avant marge, donc 0,80 après.
+  levelerTarget: 9000,
   convolver: true,
   // Cinquante millisecondes : la valeur trouvée à l'oreille. Deux cent vingt
   // étaient une salle, pas un échappement — à 800 tr/min un V8 explose toutes
@@ -175,6 +199,9 @@ export const DEFAULT_RENDERING: SynthRendering = {
   exhaustResponse: 'smooth_39',
   // Trois mètres de tube, en gros. Ne sert qu'à la réponse fabriquée.
   exhaustHz: 57,
+  // Six décibels d'éclat à plein effort, une estimation à juger à l'oreille.
+  // Zéro rendrait le son d'avant, où accélérer l'assourdissait.
+  loadBrightnessDb: 6,
   // Coupé, c'est-à-dire dehors. Il avait été mis à 1 kHz pour masquer un
   // parasite dont on a depuis trouvé la cause : les deux bruits d'engine-sim.
   // Une fois ceux-ci réglés, le spectre décroît tout seul.

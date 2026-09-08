@@ -603,6 +603,28 @@ const gauge = computed(() => {
         </div>
       </div>
       <div class="field">
+        <label for="eclat">Éclat en charge</label>
+        <input
+          id="eclat"
+          type="range"
+          min="0"
+          max="18"
+          step="0.5"
+          :value="synthSettings.loadBrightnessDb"
+          @input="onNumber('loadBrightnessDb', $event)"
+        />
+        <span class="numeric">{{ synthSettings.loadBrightnessDb }} dB</span>
+      </div>
+      <p class="note">
+        Un plateau haut à partir de 1 500 Hz, dont le gain suit l'effort : nul
+        pied levé, entier à plein effort. Accélérer assourdissait le son —
+        mesuré, la part d'énergie au-dessus d'un kilohertz vaut 0,50 au ralenti
+        pied levé et tombe à 0,39 à trois mille sous charge, parce que le
+        papillon ouvert ramène la combustion et son grave. Ce réglage rend
+        l'éclat sans reprendre le corps, et ne touche à rien au ralenti ni en
+        décélération. Zéro laisse le son d'avant.
+      </p>
+      <div class="field">
         <label>Où l'on écoute</label>
         <div class="choices">
           <button
