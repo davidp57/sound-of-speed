@@ -231,6 +231,7 @@ async function main() {
     const effort = Number(argument('effort', 0))
     const secondes = Number(argument('secondes', 2))
     const delissage = argument('delissage', null)
+    const crete = argument('crete', null)
     const derive = argument('derive', null)
 
     let moteur
@@ -260,6 +261,7 @@ async function main() {
 
     const rendu = moteur.rendering
     const reglages = { ...module.DEFAULT_SYNTH, ...rendu }
+    if (crete !== null) reglages.levelerTarget = Number(crete)
     if (delissage !== null) reglages.rippleRpm = Number(delissage)
     if (derive !== null) reglages.rippleHz = Number(derive)
     const valeurs = module.engineDefinitionValues(moteur.definition, moteur.redlineRpm)
@@ -279,12 +281,14 @@ async function main() {
       convolverMix: rendu.convolver ? rendu.convolverMix : 0,
       reponse,
       tauxHz: TAUX,
+      loadBrightnessDb: rendu.loadBrightnessDb ?? 0,
+      effort,
     })
 
     console.log(`\n${moteur.label} — ${rpm} tr/min, effort ${effort}`)
     console.log(
       `Échappement « ${rendu.exhaustResponse} », résonance ${rendu.convolverMix}, ` +
-        `silencieux ${rendu.mufflerHz} Hz, crête visée ${rendu.levelerTarget}`,
+        `silencieux ${rendu.mufflerHz} Hz, crête visée ${reglages.levelerTarget}`,
     )
     // Le niveau en sortie, et non celui du son sec : la résonance ajoute une
     // quinzaine de décibels à la bande de 500 Hz, et c'est après elle que le

@@ -22,6 +22,19 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le son s'éclaircit en charge.** Accélérer l'assourdissait : mesuré, la part
+  d'énergie au-dessus d'un kilohertz vaut 0,50 au ralenti pied levé et tombe à
+  0,39 à trois mille sous charge, parce que le papillon ouvert ramène la
+  combustion et son grave. David : « le son est meilleur quand la brillance
+  augmente, plus clair, moins sourd ; on pourrait en avoir plus à
+  l'accélération, sans toucher à celle de la décel ou du ralenti ? »
+
+  Un plateau haut à partir de 1 500 Hz, dont le gain suit l'effort — nul pied
+  levé, entier à plein effort. Livré à six décibels, une estimation à juger à
+  l'oreille ; zéro rend le son d'avant. Mesuré à effort 0,6 sur le Chevrolet
+  454 : les bandes au-dessus de 2 kHz passent de −2,6 dB à +1,0 dB par rapport
+  au son sec, soit les 3,6 décibels attendus.
+
 - **L'écran montre ce que les haut-parleurs reçoivent.** Le niveau crête et le
   taux d'écrêtage étaient relevés dans le lecteur, donc **avant** le silencieux
   et la résonance d'échappement — celle-ci ajoutant une quinzaine de décibels à
@@ -359,6 +372,13 @@ Toutes les évolutions notables du projet. Format
   reçoit celle de son profil d'usine.
 
 ### Modifié
+
+- **La crête visée des moteurs non réglés descend de 12 000 à 9 000.** Douze
+  mille suffisait au son sec, pas à ce qui sort : mesuré sur le Chevrolet 454 au
+  ralenti, la crête en fin de chaîne montait à 1,19, que les deux décibels de
+  marge ne rattrapaient pas tout à fait — David entendait encore le parasite sur
+  ce moteur quand il avait disparu du GM LS, lequel vise 16 000 et sort à 0,96.
+  À neuf mille, le 454 tombe à 1,01 avant marge, donc 0,80 après.
 
 - **La sortie garde deux décibels de marge sous le plafond.** C'est le remède au
   débordement ci-dessus : à 1,194 de crête mesurée, deux décibels ramènent le cas
