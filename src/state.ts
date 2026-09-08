@@ -1067,7 +1067,12 @@ function step(dt: number): void {
   const jolt = profile.feel.shiftJolt
   const sonore = jolt.enabled && !isMuted.value
   if (sonore && gearboxState.isShifting && !clackDone && gearboxState.shiftProgress >= SHIFT_CLACK_AT) {
-    audio.clack(jolt.clack)
+    // Plus discret en descendant : on rétrograde pied levé ou en freinant, donc
+    // avec un moteur bien plus doux, et le même clac y paraît deux fois plus
+    // fort. C'est un réglage et non un calcul : le bon dosage dépend de la
+    // banque.
+    const descend = gearboxState.shiftDirection === 'down'
+    audio.clack(jolt.clack * (descend ? jolt.clackDownshift : 1))
     clackDone = true
   }
   if (wasShifting && !gearboxState.isShifting) {

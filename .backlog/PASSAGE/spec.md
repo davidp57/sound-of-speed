@@ -243,3 +243,19 @@ Le maximum passe de l'aigu au grave, et les extinctions de 24-90 ms à 50-120 ms
 La crête tombe de 7,9 à 0,31 : plus de risque d'écrêtage.
 
 **Non écouté.**
+
+## Huitième écoute, 8 septembre 2026
+
+David : « beaucoup mieux ; clac boîte à 0,5 c'est très bien. Par contre au
+rétrogradage il est trop fort, et je ne trouve pas où le configurer. »
+
+Il n'y avait rien à trouver : le clac était tiré à la même intensité dans les
+deux sens. Ce qui change n'est pas le son mais ce qu'il y a autour — on
+rétrograde pied levé ou en freinant, donc avec un moteur plus doux, et le même
+clac y ressort davantage.
+
+Ajout de `feel.shiftJolt.clackDownshift`, part du clac gardée quand la boîte
+descend, livrée à 0,55. Un réglage plutôt qu'une pondération automatique sur
+l'effort : le bon dosage dépend de la banque.
+
+**Non écouté.**

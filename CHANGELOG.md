@@ -80,6 +80,12 @@ Toutes les évolutions notables du projet. Format
   extinctions de cinq à douze centièmes de seconde. Un choc dans un carter n'est
   pas un claquement de fouet.
 
+  **Le clac se dose séparément au rétrogradage.** Le son est le même dans les
+  deux sens ; ce qui change, c'est ce qu'il y a autour. On rétrograde pied levé
+  ou en freinant, donc avec un moteur bien plus doux, et le même clac y ressort
+  nettement plus. Un réglage plutôt qu'une pondération automatique : le bon
+  dosage dépend de la banque et se juge à l'oreille. Livré à 0,55.
+
   Un bouton **« Écouter le clac »** apparaît dans la configuration : un
   événement d'un centième de seconde ne se règle pas en attendant le prochain
   passage de rapport. Son curseur monte maintenant à 3.

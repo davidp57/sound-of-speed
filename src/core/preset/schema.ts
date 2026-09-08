@@ -730,6 +730,16 @@ export interface FeelPreset {
      */
     clack: number
     /**
+     * Clac au rétrogradage, en proportion de celui de la montée.
+     *
+     * Le son est le même dans les deux sens ; ce qui change, c'est ce qu'il y a
+     * autour. On rétrograde pied levé ou en freinant, donc avec un moteur bien
+     * plus doux : à intensité égale, le clac y ressort nettement plus. Un
+     * réglage séparé plutôt qu'une pondération automatique, parce que le bon
+     * dosage dépend de la banque et se juge à l'oreille.
+     */
+    clackDownshift: number
+    /**
      * Claquement d'échappement à la reprise, de 0 à 1. Zéro n'en produit aucun.
      *
      * C'est la pétarade déjà synthétisée pour le lever de pied, tirée en un

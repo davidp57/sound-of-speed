@@ -442,6 +442,7 @@ export function createDefaultProfile(): Profile {
         dipRpm: 450,
         blipRpm: 550,
         clack: 0.5,
+        clackDownshift: 0.55,
         crackle: 0.35,
       },
     },

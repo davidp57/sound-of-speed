@@ -1585,6 +1585,14 @@ function impliedCylinders(index: number): number | null {
           :step="0.05"
           hint="Le choc mécanique quand le rapport s'engage : sec, métallique, doublé d'un coup mat. Rien à voir avec le claquement d'échappement, qui est grave et traînant."
         />
+        <NumberField
+          v-model="profile.feel.shiftJolt.clackDownshift"
+          label="Clac au rétrogradage"
+          :min="0"
+          :max="1.5"
+          :step="0.05"
+          hint="Part du clac gardée quand la boîte descend un rapport. On rétrograde pied levé ou en freinant, donc avec un moteur bien plus doux : à intensité égale le clac y ressort deux fois plus. Un pour le même niveau qu'en montant."
+        />
         <div class="toggle">
           <button @click="tryClack()">Écouter le clac</button>
           <span class="note">

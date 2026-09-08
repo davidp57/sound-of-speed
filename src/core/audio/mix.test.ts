@@ -505,7 +505,7 @@ describe('computeMix — à-coup de passage', () => {
   it('ne creuse rien quand l’à-coup est désactivé', () => {
     const p: Profile = {
       ...profile,
-      feel: { ...profile.feel, shiftJolt: { enabled: false, depth: 0.55, cutDepth: 0.8, dipRpm: 450, blipRpm: 550, clack: 0.6, crackle: 0.35 } },
+      feel: { ...profile.feel, shiftJolt: { enabled: false, depth: 0.55, cutDepth: 0.8, dipRpm: 450, blipRpm: 550, clack: 0.6, clackDownshift: 0.55, crackle: 0.35 } },
     }
 
     const milieu = computeMix(p, state(), { isShifting: true, progress: 0.5 })
