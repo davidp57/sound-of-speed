@@ -34,9 +34,10 @@ import { DEFAULT_RENDERING, DEFAULT_SYNTH, renderingOf, type SynthSettings } fro
 import { Journal, newSessionId } from './core/journal/journal'
 import { JournalCollector, type SoundCost } from './core/journal/collect'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
+import { toWav } from './bench/wav'
 import { UploadQueue, type QueuedUpload } from './core/upload/queue'
 import { loadQueue, saveQueue } from './core/upload/store'
-import { putFile } from './core/upload/put'
+import { putFile, slug, stamp } from './core/upload/put'
 import { PROFILE_FOLDER, profileBody, profileFileName, profileUploadId } from './core/upload/profile'
 import { depositSlice } from './core/journal/deposit'
 import { fetchBanks, missingFiles, usedBanks, type Bank } from './core/audio/banks'
@@ -1314,6 +1315,36 @@ watch(selectedId, (id) => {
   saveSelectedId(id)
   gearbox.settleFor((gear) => rpmInGear(gear, telemetry.value.speed.kmh))
 })
+
+/**
+ * Dépose les dernières secondes du son de la synthèse sur le serveur.
+ *
+ * Le banc hors navigateur refait la chaîne, mais il ne reproduit ni le lecteur,
+ * ni la convolution du navigateur, ni la carte son. Le 8 septembre 2026, un
+ * cliquetis entendu dans la voiture était absent du son que ce banc fabriquait
+ * avec exactement les mêmes réglages : sans capture, la question restait
+ * indécidable.
+ *
+ * Le fichier part dans `mesures/`, comme les relevés de la sonde, parce que le
+ * navigateur de la voiture ne télécharge rien.
+ */
+export async function captureSynthSound(): Promise<string> {
+  const extrait = await synth.captureOutput()
+  if (extrait === null) return 'Rien à capturer : la synthèse ne tourne pas.'
+
+  const nom = `son-${slug(activeProfile.value.name)}-${stamp(Date.now())}.wav`
+  const issue = await putFile(
+    '/mesures/',
+    nom,
+    toWav([extrait.samples], extrait.sampleRate),
+    depositCredentials.value,
+  )
+  if (issue.ok) {
+    const secondes = (extrait.samples.length / extrait.sampleRate).toFixed(0)
+    return `${secondes} s déposées dans mesures/${nom}.`
+  }
+  return issue.detail
+}
 
 export function start(): void {
   // L'attente d'une première mesure s'ouvre ici : c'est ce qui permet au chien

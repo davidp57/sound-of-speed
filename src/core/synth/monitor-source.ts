@@ -27,6 +27,16 @@ class SynthMonitor extends AudioWorkletProcessor {
     this.clipped = 0
     this.frames = 0
     this.ticks = 0
+    // Les dernières secondes de ce qui sort, gardées en anneau. C'est le seul
+    // endroit d'où l'on peut rendre le son que l'appareil produit vraiment :
+    // un banc qui refait la chaîne hors du navigateur ne reproduit ni le
+    // lecteur, ni la convolution du navigateur, ni la carte son — et le
+    // 8 septembre 2026, un cliquetis s'est logé précisément là.
+    this.anneau = new Float32Array(sampleRate * 8)
+    this.ecrit = 0
+    this.port.onmessage = (event) => {
+      if (event.data && event.data.type === 'capture') this.rendreLAnneau()
+    }
     // Un compte rendu tous les huit tours, soit environ 21 ms : la même cadence
     // que le lecteur, pour que les deux chiffres se comparent.
     this.reportEvery = (options && options.processorOptions && options.processorOptions.reportEvery) || 8
@@ -43,6 +53,8 @@ class SynthMonitor extends AudioWorkletProcessor {
     }
 
     for (let i = 0; i < source.length; i += 1) {
+      this.anneau[this.ecrit] = source[i]
+      this.ecrit = (this.ecrit + 1) % this.anneau.length
       const niveau = Math.abs(source[i])
       if (niveau > this.peak) this.peak = niveau
       // Un échantillon à un ou au-delà est un échantillon que la sortie a
@@ -65,6 +77,24 @@ class SynthMonitor extends AudioWorkletProcessor {
     }
 
     return true
+  }
+
+  /**
+   * Rend l'anneau remis à l'endroit, du plus ancien au plus récent.
+   *
+   * La copie est transférée plutôt que clonée : huit secondes font un mégaoctet
+   * et demi, et le fil audio n'a pas de temps à perdre.
+   */
+  rendreLAnneau() {
+    const taille = this.anneau.length
+    const sortie = new Float32Array(taille)
+    for (let i = 0; i < taille; i += 1) {
+      sortie[i] = this.anneau[(this.ecrit + i) % taille]
+    }
+    this.port.postMessage(
+      { type: 'capture', samples: sortie.buffer, sampleRate },
+      [sortie.buffer],
+    )
   }
 }
 

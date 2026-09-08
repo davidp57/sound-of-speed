@@ -212,6 +212,10 @@ export class SynthEngine {
   private loadLift: BiquadFilterNode | null = null
   /** Le moniteur de fin de graphe : il ne change rien, il compte. */
   private monitor: AudioWorkletNode | null = null
+  /** Qui attend la capture en cours, s'il y en a une. */
+  private captureEnAttente:
+    | ((extrait: { samples: Float32Array; sampleRate: number }) => void)
+    | null = null
   /** Les réponses déjà chargées, par nom de fichier. */
   private responses = new Map<string, AudioBuffer>()
   /** La réponse enregistrée en service, ou `null` quand on fabrique un tube. */
@@ -568,7 +572,22 @@ export class SynthEngine {
       processorOptions: { reportEvery: 96 },
     })
     monitor.port.onmessage = (event: MessageEvent) => {
-      const message = event.data as { type?: string; peak?: number; clipped?: number }
+      const message = event.data as {
+        type?: string
+        peak?: number
+        clipped?: number
+        samples?: ArrayBuffer
+        sampleRate?: number
+      }
+      if (message.type === 'capture') {
+        const attente = this.captureEnAttente
+        this.captureEnAttente = null
+        attente?.({
+          samples: new Float32Array(message.samples ?? new ArrayBuffer(0)),
+          sampleRate: Number(message.sampleRate ?? 48000),
+        })
+        return
+      }
       if (message.type !== 'sortie') return
       this.publish({
         ...this.state,
@@ -649,6 +668,34 @@ export class SynthEngine {
     lift.connect(convolver).connect(wet).connect(output)
     this.convolver = convolver
     this.wet = wet
+  }
+
+  /**
+   * Les huit dernières secondes de ce qui sort, telles que le graphe les rend.
+   *
+   * C'est la seule façon d'analyser le son que l'appareil produit vraiment. Le
+   * banc hors navigateur refait la chaîne, mais il ne reproduit ni le lecteur,
+   * ni la convolution du navigateur, ni la carte son — et le 8 septembre 2026,
+   * un cliquetis entendu dans la voiture était absent du son que le banc
+   * fabriquait avec exactement les mêmes réglages.
+   *
+   * Rend `null` quand rien ne tourne, ou si le fil audio ne répond pas dans la
+   * seconde : mieux vaut le dire que laisser une promesse en suspens.
+   */
+  async captureOutput(): Promise<{ samples: Float32Array; sampleRate: number } | null> {
+    const monitor = this.monitor
+    if (monitor === null) return null
+    return new Promise((resolve) => {
+      const minuteur = setTimeout(() => {
+        this.captureEnAttente = null
+        resolve(null)
+      }, 1000)
+      this.captureEnAttente = (extrait) => {
+        clearTimeout(minuteur)
+        resolve(extrait)
+      }
+      monitor.port.postMessage({ type: 'capture' })
+    })
   }
 
   /**

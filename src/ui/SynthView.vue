@@ -28,6 +28,7 @@ import {
   activeProfile,
   applyEngineDefinition,
   applyLibraryEngine,
+  captureSynthSound,
   applySynthSettings,
   engineDefinition,
   setSynthEnabled,
@@ -280,6 +281,25 @@ const loadedText = computed(() => {
   return `Chargé : ${near.engine.label}, modifié — ${near.gaps} valeur${s} changée${s}`
 })
 
+/**
+ * Dépose les dernières secondes de ce qui sort, pour qu'on puisse l'écouter et
+ * le mesurer ailleurs.
+ *
+ * Le banc hors navigateur ne reproduit ni le lecteur, ni la convolution du
+ * navigateur, ni la carte son : quand ce qu'on entend et ce qu'il mesure
+ * divergent, c'est la capture qui tranche.
+ */
+const capture = ref('')
+async function capturer(): Promise<void> {
+  capture.value = 'Capture…'
+  try {
+    capture.value = await captureSynthSound()
+  } catch (error) {
+    capture.value = error instanceof Error ? error.message : 'Capture impossible.'
+  }
+  setTimeout(() => { capture.value = '' }, 8000)
+}
+
 function onFlag(key: keyof SynthSettings, event: Event): void {
   const target = event.target as HTMLInputElement
   void applySynthSettings({ ...synthSettings.value, [key]: target.checked })
@@ -338,6 +358,9 @@ const gauge = computed(() => {
           {{ running ? 'Couper la synthèse' : 'Activer la synthèse' }}
         </button>
         <button :disabled="busy" @click="reset()">Réglages d'origine</button>
+        <button :disabled="busy || !running" @click="capturer()">
+          {{ capture || 'Capturer le son' }}
+        </button>
         <label class="silent">
           <input
             type="checkbox"
