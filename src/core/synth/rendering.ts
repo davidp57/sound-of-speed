@@ -76,24 +76,29 @@ export interface SynthRendering {
   /** Accord du tube fabriqué, en hertz. Sans effet sur une captation réelle. */
   exhaustHz: number
   /**
-   * Éclaircissement du son en charge, en décibels.
+   * Part de résonance d'échappement retirée à plein effort, de 0 à 1.
    *
-   * Un plateau haut dont le gain suit l'effort : nul pied levé, entier à plein
-   * effort. David, le 8 septembre 2026 : « je trouve que le son est meilleur
-   * quand la brillance augmente, plus clair, moins sourd ; c'est le cas quand on
-   * décélère, et c'est l'inverse quand on accélère. On pourrait avoir plus de
-   * brillance à l'accélération, sans toucher à celle de la décel ou du
-   * ralenti ? »
+   * David, le 8 septembre 2026 : « en décel, le son est plus clair, moins
+   * sourd — comme si on enlevait un bouchon de l'échappement ou de mes
+   * oreilles ». Il voulait la même chose en accélérant.
    *
-   * La mesure lui donnait raison sur le constat : la part d'énergie au-dessus
-   * d'un kilohertz vaut 0,504 au ralenti pied levé et tombe à 0,388 à trois
-   * mille sous charge. Papillon ouvert, la combustion revient et le grave avec
-   * — le son gagne du corps et perd de l'éclat. Ce réglage rend l'éclat sans
-   * reprendre le corps, et ne touche à rien tant que l'effort est nul.
+   * Un plateau haut avait été essayé d'abord, et il a été jeté : « ton éclat en
+   * charge ajoute justement une nouvelle fréquence parasite, c'est pas du tout
+   * pareil ». Il avait raison, et la mesure dit pourquoi. La résonance
+   * d'échappement n'éclaircit ni n'assombrit uniformément : elle empile **quinze
+   * décibels sur la seule bande de 500 Hz**, et rien au-dessus de deux
+   * kilohertz. C'est un bouchon, au sens propre. Ajouter de l'aigu par-dessus ne
+   * l'enlève pas, cela pose une couleur de plus.
    *
-   * Zéro laisse le son exactement comme avant.
+   * Retirer de la résonance quand l'effort monte fait exactement ce qu'il
+   * décrit. Mesuré à 2 500 tr/min, effort 0,6, en passant de 0,45 à 0,15 de
+   * résonance : la bande de 500 Hz tombe de 67,2 à 62,5 dB, celle de 2 800
+   * monte de 36,1 à 36,5 et celle de 4 000 de 25,7 à 27,3. Le grave recule,
+   * l'aigu ressort, et aucune fréquence n'est ajoutée.
+   *
+   * Zéro laisse la résonance constante, comme avant.
    */
-  loadBrightnessDb: number
+  loadOpeningRatio: number
   /** Coupure du silencieux, en hertz. C'est aussi le point d'écoute. */
   mufflerHz: number
 }
@@ -110,7 +115,7 @@ export const SYNTH_RENDERING_KEYS = [
   'convolverMix',
   'exhaustResponse',
   'exhaustHz',
-  'loadBrightnessDb',
+  'loadOpeningRatio',
   'mufflerHz',
 ] as const satisfies readonly (keyof SynthRendering)[]
 
@@ -142,7 +147,7 @@ export function clampSynthRendering(rendering: SynthRendering): SynthRendering {
       ? rendering.exhaustResponse
       : 'smooth_39',
     exhaustHz: Math.round(clamp(rendering.exhaustHz, 20, 400)),
-    loadBrightnessDb: clamp(rendering.loadBrightnessDb, 0, 18),
+    loadOpeningRatio: clamp(rendering.loadOpeningRatio, 0, 1),
     mufflerHz: Math.round(clamp(rendering.mufflerHz, 120, 22000)),
   }
 }
@@ -160,7 +165,7 @@ export function renderingOf(settings: SynthRendering): SynthRendering {
     convolverMix: settings.convolverMix,
     exhaustResponse: settings.exhaustResponse,
     exhaustHz: settings.exhaustHz,
-    loadBrightnessDb: settings.loadBrightnessDb,
+    loadOpeningRatio: settings.loadOpeningRatio,
     mufflerHz: settings.mufflerHz,
   })
 }
@@ -199,9 +204,10 @@ export const DEFAULT_RENDERING: SynthRendering = {
   exhaustResponse: 'smooth_39',
   // Trois mètres de tube, en gros. Ne sert qu'à la réponse fabriquée.
   exhaustHz: 57,
-  // Six décibels d'éclat à plein effort, une estimation à juger à l'oreille.
-  // Zéro rendrait le son d'avant, où accélérer l'assourdissait.
-  loadBrightnessDb: 6,
+  // Six dixièmes de la résonance retirés à plein effort : de 0,45 à 0,18, ce
+  // qui vaut cinq décibels de moins sur la bande de 500 Hz. Une estimation, à
+  // juger à l'oreille ; zéro laisse la résonance constante.
+  loadOpeningRatio: 0.6,
   // Coupé, c'est-à-dire dehors. Il avait été mis à 1 kHz pour masquer un
   // parasite dont on a depuis trouvé la cause : les deux bruits d'engine-sim.
   // Une fois ceux-ci réglés, le spectre décroît tout seul.

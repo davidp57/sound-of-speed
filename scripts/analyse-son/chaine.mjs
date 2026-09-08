@@ -144,55 +144,19 @@ export function normaliserEnergie(reponse) {
 }
 
 /**
- * Le plateau haut qui rend de l'éclat en charge.
- *
- * Les coefficients du `BiquadFilterNode` en type `highshelf`, tels que la
- * spécification Web Audio les écrit. Son gain suit l'effort : nul pied levé.
- */
-export function plateauHaut(signal, gainDb, frequenceHz, tauxHz) {
-  if (gainDb === 0) return signal
-  const a = Math.pow(10, gainDb / 40)
-  const w = (2 * Math.PI * frequenceHz) / tauxHz
-  const cosw = Math.cos(w)
-  const alpha = (Math.sin(w) / 2) * Math.sqrt((a + 1 / a) * (1 / 0.707 - 1) + 2)
-  const deuxRacineAlpha = 2 * Math.sqrt(a) * alpha
-
-  const b0 = a * (a + 1 + (a - 1) * cosw + deuxRacineAlpha)
-  const b1 = -2 * a * (a - 1 + (a + 1) * cosw)
-  const b2 = a * (a + 1 + (a - 1) * cosw - deuxRacineAlpha)
-  const a0 = a + 1 - (a - 1) * cosw + deuxRacineAlpha
-  const a1 = 2 * (a - 1 - (a + 1) * cosw)
-  const a2 = a + 1 - (a - 1) * cosw - deuxRacineAlpha
-
-  const sortie = new Float32Array(signal.length)
-  let x1 = 0, x2 = 0, y1 = 0, y2 = 0
-  for (let i = 0; i < signal.length; i += 1) {
-    const x0 = signal[i]
-    const y0 = (b0 / a0) * x0 + (b1 / a0) * x1 + (b2 / a0) * x2 - (a1 / a0) * y1 - (a2 / a0) * y2
-    sortie[i] = y0
-    x2 = x1; x1 = x0; y2 = y1; y1 = y0
-  }
-  return sortie
-}
-
-/**
- * Le graphe complet : silencieux, éclat en charge, puis mélange du sec et du
- * réverbéré.
+ * Le graphe complet : silencieux, puis mélange du sec et du réverbéré, dont la
+ * part suit l'effort.
  *
  * Les deux gains sont des racines, comme dans `buildGraph` : les deux signaux
  * sont décorrélés, donc ce sont leurs énergies qui s'ajoutent. En gains
  * linéaires, le milieu du curseur perdrait trois décibels.
  */
 export function chaineDeSortie(sec, {
-  mufflerHz, convolverMix, reponse, tauxHz, loadBrightnessDb = 0, effort = 0,
+  mufflerHz, convolverMix, reponse, tauxHz, loadOpeningRatio = 0, effort = 0,
 }) {
-  const filtre = plateauHaut(
-    silencieux(sec, mufflerHz, tauxHz),
-    loadBrightnessDb * effort,
-    1500,
-    tauxHz,
-  )
-  const mix = reponse === null ? 0 : convolverMix
+  const filtre = silencieux(sec, mufflerHz, tauxHz)
+  // L'effort ouvre l'échappement : il retire une part de la résonance.
+  const mix = reponse === null ? 0 : convolverMix * (1 - loadOpeningRatio * effort)
   if (mix <= 0) {
     const sortie = new Float32Array(filtre.length)
     for (let i = 0; i < filtre.length; i += 1) sortie[i] = filtre[i]
