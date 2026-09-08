@@ -1305,6 +1305,9 @@ watch(selectedId, (id) => {
 })
 
 export function start(): void {
+  // L'attente d'une première mesure s'ouvre ici : c'est ce qui permet au chien
+  // de garde de relancer un suivi qui n'a jamais rien reçu.
+  conditioner.reset()
   fixWatchdog.reset()
   fixRestarts.value = 0
   rejectionWatch.reset()

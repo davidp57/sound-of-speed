@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { SpeedConditioner } from './conditioner'
 import { createDefaultProfile } from '../preset/defaults'
@@ -525,5 +525,58 @@ describe('SpeedConditioner', () => {
       expect(state.accelMs2).toBeLessThanOrEqual(1)
       expect(state.accelMs2).toBeGreaterThanOrEqual(-1)
     })
+  })
+})
+
+describe('le silence de la source', () => {
+  // Ce que le chien de garde lit pour décider s'il relance le suivi. Tant qu'il
+  // valait zéro avant la première mesure, un suivi qui n'avait jamais démarré
+  // n'était jamais relancé — le défaut du 8 septembre 2026, départ en parking
+  // souterrain.
+
+  it('court dès l’ouverture de l’attente, avant toute mesure', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1_000_000)
+      const conditioner = new SpeedConditioner(preset())
+      conditioner.reset()
+
+      vi.setSystemTime(1_030_000)
+      expect(conditioner.tick(FRAME_S).sinceLastSampleMs).toBe(30_000)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('repart de la dernière mesure une fois qu’il en est arrivé une', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1_000_000)
+      const conditioner = new SpeedConditioner(preset())
+      conditioner.reset()
+
+      vi.setSystemTime(1_010_000)
+      conditioner.push(mesure(50, 1_010_000))
+
+      vi.setSystemTime(1_012_000)
+      expect(conditioner.tick(FRAME_S).sinceLastSampleMs).toBe(2_000)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reste à zéro tant que l’attente n’est pas ouverte', () => {
+    // Un conditionnement construit et laissé de côté ne doit pas faire croire à
+    // une source muette : rien ne l'attend encore.
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1_000_000)
+      const conditioner = new SpeedConditioner(preset())
+
+      vi.setSystemTime(1_030_000)
+      expect(conditioner.tick(FRAME_S).sinceLastSampleMs).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
