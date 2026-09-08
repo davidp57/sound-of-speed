@@ -797,8 +797,14 @@ export type ProfileOrigin = Pick<
  * désormais un réglage du banc, qui ne suit pas le profil. Celui qu'un profil
  * enregistré porte encore est ignoré à la relecture, et disparaît du stockage au
  * premier enregistrement.
+ *
+ * Version 8 : l'échappement s'ouvre avec l'effort.
+ *
+ * Un éclaircissement en décibels avait été essayé le même jour et jeté aussitôt
+ * — il posait une couleur de plus là où il fallait en retirer une. Le rendu
+ * porte à sa place la part de résonance que l'effort retire.
  */
-export const PROFILE_FORMAT_VERSION = 7
+export const PROFILE_FORMAT_VERSION = 8
 
 export interface ProfileFile {
   version: number

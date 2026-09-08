@@ -281,7 +281,7 @@ async function main() {
       convolverMix: rendu.convolver ? rendu.convolverMix : 0,
       reponse,
       tauxHz: TAUX,
-      loadBrightnessDb: rendu.loadBrightnessDb ?? 0,
+      loadOpeningRatio: rendu.loadOpeningRatio ?? 0,
       effort,
     })
 

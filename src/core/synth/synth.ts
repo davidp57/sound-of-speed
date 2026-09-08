@@ -190,9 +190,7 @@ export class SynthEngine {
   private output: GainNode | null = null
   private convolver: ConvolverNode | null = null
   private muffler: BiquadFilterNode | null = null
-  /** Le plateau haut qui rend de l'éclat en charge. Son gain suit l'effort. */
-  private brightness: BiquadFilterNode | null = null
-  /** Le dernier effort reçu, pour retrouver le gain après un rebâtissage. */
+  /** Le dernier effort reçu : c'est lui qui ouvre l'échappement. */
   private lastEffort = 0
   /** Le moniteur de fin de graphe : il ne change rien, il compte. */
   private monitor: AudioWorkletNode | null = null
@@ -338,7 +336,7 @@ export class SynthEngine {
       this.node = null
     }
     for (const node of [
-      this.dry, this.wet, this.output, this.convolver, this.monitor, this.brightness,
+      this.dry, this.wet, this.output, this.convolver, this.monitor,
     ]) {
       node?.disconnect()
     }
@@ -347,7 +345,6 @@ export class SynthEngine {
     this.output = null
     this.convolver = null
     this.monitor = null
-    this.brightness = null
     if (this.context !== null) {
       const context = this.context
       this.context = null
@@ -364,20 +361,32 @@ export class SynthEngine {
   setTarget(rpm: number, effort: number): void {
     this.worker?.postMessage({ type: 'target', rpm, effort })
     this.lastEffort = Number.isFinite(effort) ? Math.min(1, Math.max(0, effort)) : 0
-    this.applyBrightness()
+    this.applyOpening()
   }
 
   /**
-   * L'éclat en charge, proportionnel à l'effort.
+   * L'ouverture de l'échappement, qui suit l'effort.
    *
-   * Appelé à chaque tour de la boucle, soit soixante fois par seconde : le gain
-   * se pose donc en douceur, sans quoi l'oreille entendrait l'escalier plutôt
-   * que la montée.
+   * La résonance empile une quinzaine de décibels sur la bande de 500 Hz : en
+   * retirer sous charge fait ce que David décrit — « comme si on enlevait un
+   * bouchon » — sans poser la moindre fréquence nouvelle.
+   *
+   * Appelé à chaque tour de la boucle, soixante fois par seconde : les gains se
+   * posent donc en douceur, sans quoi l'oreille entendrait l'escalier.
    */
-  private applyBrightness(): void {
-    if (this.brightness === null || this.context === null) return
-    const vise = this.settings.loadBrightnessDb * this.lastEffort
-    this.brightness.gain.setTargetAtTime(vise, this.context.currentTime, 0.08)
+  private applyOpening(): void {
+    if (this.dry === null || this.context === null) return
+    const mix = this.effectiveMix()
+    const now = this.context.currentTime
+    this.dry.gain.setTargetAtTime(Math.sqrt(1 - mix), now, 0.08)
+    this.wet?.gain.setTargetAtTime(Math.sqrt(mix), now, 0.08)
+  }
+
+  /** La part de son réverbéré à cet instant, une fois l'effort pris en compte. */
+  private effectiveMix(): number {
+    if (!this.settings.convolver) return 0
+    const retire = this.settings.loadOpeningRatio * this.lastEffort
+    return Math.max(0, Math.min(1, this.settings.convolverMix * (1 - retire)))
   }
 
   /** Le ralenti et le rupteur du profil actif, bornes du balayage du banc. */
@@ -529,7 +538,6 @@ export class SynthEngine {
     this.output?.disconnect()
     this.convolver?.disconnect()
     this.muffler?.disconnect()
-    this.brightness?.disconnect()
     this.monitor?.disconnect()
 
     const output = context.createGain()
@@ -571,27 +579,21 @@ export class SynthEngine {
     node.connect(muffler)
     this.muffler = muffler
 
-    // L'éclat en charge, entre le silencieux et la séparation : il vient du
-    // moteur, pas de l'échappement, donc la résonance doit le porter comme elle
-    // porte le reste. Mille cinq cents hertz, la bande que la brillance compte.
-    const brightness = context.createBiquadFilter()
-    brightness.type = 'highshelf'
-    brightness.frequency.value = 1500
-    brightness.gain.value = this.settings.loadBrightnessDb * this.lastEffort
-    muffler.connect(brightness)
-    this.brightness = brightness
-
-    const mix = this.settings.convolver ? this.settings.convolverMix : 0
+    // Le mélange **du moment** : l'effort en retire une part, et les deux gains
+    // suivent ensuite à chaque tour de la boucle. Le graphe, lui, reste le même
+    // — sans quoi lever le pied le rebâtirait soixante fois par seconde.
+    const mix = this.effectiveMix()
+    const plafond = this.settings.convolver ? this.settings.convolverMix : 0
     const dry = context.createGain()
     // Racine, et non proportion directe : le son sec et le son réverbéré sont
     // décorrélés, donc ce sont leurs énergies qui s'ajoutent. En gains linéaires
     // le milieu du curseur perdait trois décibels, et l'on croyait régler une
     // couleur alors qu'on baissait le volume.
     dry.gain.value = Math.sqrt(1 - mix)
-    brightness.connect(dry).connect(output)
+    muffler.connect(dry).connect(output)
     this.dry = dry
 
-    if (mix <= 0) {
+    if (plafond <= 0) {
       this.wet = null
       this.convolver = null
       return
@@ -618,7 +620,7 @@ export class SynthEngine {
     convolver.buffer = buffer
     const wet = context.createGain()
     wet.gain.value = Math.sqrt(mix)
-    brightness.connect(convolver).connect(wet).connect(output)
+    muffler.connect(convolver).connect(wet).connect(output)
     this.convolver = convolver
     this.wet = wet
   }

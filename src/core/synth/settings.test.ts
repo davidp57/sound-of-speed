@@ -96,16 +96,16 @@ describe('le bruit qui délisse le régime', () => {
   })
 })
 
-describe('l’éclat en charge', () => {
-  it('se coupe à zéro et se borne à dix-huit décibels', () => {
-    // Zéro rend le son d'avant, où accélérer assourdissait : c'est un réglage à
-    // part entière, pas une valeur dégradée.
-    expect(clampSynthSettings({ ...DEFAULT_SYNTH, loadBrightnessDb: 0 }).loadBrightnessDb).toBe(0)
-    expect(clampSynthSettings({ ...DEFAULT_SYNTH, loadBrightnessDb: -3 }).loadBrightnessDb).toBe(0)
-    expect(clampSynthSettings({ ...DEFAULT_SYNTH, loadBrightnessDb: 40 }).loadBrightnessDb).toBe(18)
+describe('l’ouverture en charge', () => {
+  it('se coupe à zéro et ne retire pas plus que tout', () => {
+    // Zéro laisse la résonance constante, comme avant : c'est un réglage à part
+    // entière, pas une valeur dégradée.
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, loadOpeningRatio: 0 }).loadOpeningRatio).toBe(0)
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, loadOpeningRatio: -1 }).loadOpeningRatio).toBe(0)
+    expect(clampSynthSettings({ ...DEFAULT_SYNTH, loadOpeningRatio: 3 }).loadOpeningRatio).toBe(1)
   })
 
   it('s’écrit à chaud, comme le reste du timbre', () => {
-    expect(needsRebuild(DEFAULT_SYNTH, { ...DEFAULT_SYNTH, loadBrightnessDb: 9 })).toBe(false)
+    expect(needsRebuild(DEFAULT_SYNTH, { ...DEFAULT_SYNTH, loadOpeningRatio: 0.3 })).toBe(false)
   })
 })

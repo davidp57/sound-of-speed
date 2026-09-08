@@ -22,18 +22,23 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
-- **Le son s'éclaircit en charge.** Accélérer l'assourdissait : mesuré, la part
-  d'énergie au-dessus d'un kilohertz vaut 0,50 au ralenti pied levé et tombe à
-  0,39 à trois mille sous charge, parce que le papillon ouvert ramène la
-  combustion et son grave. David : « le son est meilleur quand la brillance
-  augmente, plus clair, moins sourd ; on pourrait en avoir plus à
-  l'accélération, sans toucher à celle de la décel ou du ralenti ? »
+- **L'échappement s'ouvre en accélérant.** David voulait retrouver sous charge
+  ce qu'il entend en levant le pied : « le son est plus clair, moins sourd,
+  comme si on enlevait un bouchon de l'échappement ou de mes oreilles ».
 
-  Un plateau haut à partir de 1 500 Hz, dont le gain suit l'effort — nul pied
-  levé, entier à plein effort. Livré à six décibels, une estimation à juger à
-  l'oreille ; zéro rend le son d'avant. Mesuré à effort 0,6 sur le Chevrolet
-  454 : les bandes au-dessus de 2 kHz passent de −2,6 dB à +1,0 dB par rapport
-  au son sec, soit les 3,6 décibels attendus.
+  Un éclaircissement en décibels avait été livré d'abord, et jeté le jour même :
+  « ton éclat en charge ajoute justement une nouvelle fréquence parasite, c'est
+  pas du tout pareil ». Il avait raison, et la mesure dit pourquoi. La résonance
+  d'échappement n'assombrit pas uniformément : elle empile **quinze décibels sur
+  la seule bande de 500 Hz** et rien au-dessus de deux kilohertz. C'est un
+  bouchon au sens propre, et ajouter de l'aigu par-dessus ne l'enlève pas — cela
+  pose une couleur de plus.
+
+  L'effort retire donc une part de la résonance. Mesuré à son sec constant, en
+  passant de 0,45 à 0,15 : la bande de 500 Hz tombe de 67,2 à 62,5 dB, celle de
+  4 000 monte de 25,7 à 27,3. Le grave recule, l'aigu ressort, aucune fréquence
+  n'est ajoutée. Livré à six dixièmes retirés à plein effort ; zéro laisse la
+  résonance constante.
 
 - **L'écran montre ce que les haut-parleurs reçoivent.** Le niveau crête et le
   taux d'écrêtage étaient relevés dans le lecteur, donc **avant** le silencieux

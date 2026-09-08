@@ -603,26 +603,27 @@ const gauge = computed(() => {
         </div>
       </div>
       <div class="field">
-        <label for="eclat">Éclat en charge</label>
+        <label for="ouverture">Ouverture en charge</label>
         <input
-          id="eclat"
+          id="ouverture"
           type="range"
           min="0"
-          max="18"
-          step="0.5"
-          :value="synthSettings.loadBrightnessDb"
-          @input="onNumber('loadBrightnessDb', $event)"
+          max="1"
+          step="0.05"
+          :value="synthSettings.loadOpeningRatio"
+          @input="onNumber('loadOpeningRatio', $event)"
         />
-        <span class="numeric">{{ synthSettings.loadBrightnessDb }} dB</span>
+        <span class="numeric">{{ synthSettings.loadOpeningRatio.toFixed(2) }}</span>
       </div>
       <p class="note">
-        Un plateau haut à partir de 1 500 Hz, dont le gain suit l'effort : nul
-        pied levé, entier à plein effort. Accélérer assourdissait le son —
-        mesuré, la part d'énergie au-dessus d'un kilohertz vaut 0,50 au ralenti
-        pied levé et tombe à 0,39 à trois mille sous charge, parce que le
-        papillon ouvert ramène la combustion et son grave. Ce réglage rend
-        l'éclat sans reprendre le corps, et ne touche à rien au ralenti ni en
-        décélération. Zéro laisse le son d'avant.
+        Part de résonance retirée à plein effort, comme si l'échappement
+        s'ouvrait en accélérant. La résonance n'assombrit pas uniformément : elle
+        empile une quinzaine de décibels sur la seule bande de 500 Hz, et rien
+        au-dessus de deux kilohertz — c'est un bouchon, au sens propre. En
+        retirer sous charge fait reculer ce grave-là sans poser aucune fréquence
+        nouvelle. Mesuré à 2 500 tr/min, effort 0,6, de 0,45 à 0,15 de
+        résonance : la bande de 500 Hz tombe de 67,2 à 62,5 dB, celle de 4 000
+        monte de 25,7 à 27,3. Zéro laisse la résonance constante.
       </p>
       <div class="field">
         <label>Où l'on écoute</label>
