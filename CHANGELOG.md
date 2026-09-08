@@ -40,16 +40,29 @@ Toutes les évolutions notables du projet. Format
   chute, 108 de coup de gaz, 48 d'engagement et 240 de reprise. Le curseur, qui
   s'arrêtait à 500 ms, va maintenant jusqu'à 1 500.
 
-  **Et le clac était inaudible, pas mal déclenché.** « J'ai beau mettre au max,
-  je n'entends aucun claquement de boîte. » Mesuré en reproduisant les filtres
-  de Web Audio : sa crête arrivait **15,6 dB sous** celles du moteur au réglage
-  livré, et encore 8 dB sous au maximum du curseur. Un passe-bande étroit jetait
-  l'essentiel de l'énergie, le gain s'appliquait après cette perte, et une queue
-  de trente millisecondes étalait au lieu de crêter. Trois composantes le
-  remplacent — corps, métal, masse — et sa crête passe **4,2 dB au-dessus** de
-  celles du moteur. Un compteur « Clacs de boîte » apparaît en télémétrie : s'il
-  monte sans qu'on entende rien, c'est le niveau qui est en cause et non le
-  déclenchement.
+  **Et le clac était avalé par le saturateur.** « J'ai beau mettre au max, je
+  n'entends aucun claquement de boîte » — puis, le compteur de télémétrie une
+  fois posé : « toujours pas de claquement, mais le compteur monte ». Le
+  déclenchement était donc hors de cause, et c'est la chaîne de sortie qui
+  l'était.
+
+  La courbe du saturateur est indexée sur [-1, 1] : au-delà, Web Audio prend la
+  valeur du bord. Or le moteur crête à 1,74 sur le bus, donc il sature déjà en
+  permanence — et **tout ce qui entre au-dessus de lui en sort au même niveau**.
+  Mesuré sur la courbe du profil Route : un clac 4,2 dB plus fort, un clac au
+  maximum du curseur et un clac dix fois trop fort sortent tous les trois à
+  0,00 dB d'écart du moteur. Aucune valeur ne pouvait le rendre audible, ce qui
+  explique aussi pourquoi la pétarade s'entendait « toute petite ».
+
+  Les deux événements brefs sont désormais injectés **après le saturateur**,
+  directement sur le limiteur : la sortie reste protégée, et l'attaque de deux
+  millisecondes du limiteur laisse passer le transitoire. Le clac a par ailleurs
+  été refait en trois composantes — corps, métal, masse — après une première
+  mesure qui le trouvait 15,6 dB sous le moteur.
+
+  Un bouton **« Écouter le clac »** apparaît dans la configuration : un
+  événement d'un centième de seconde ne se règle pas en attendant le prochain
+  passage de rapport. Son curseur monte maintenant à 3.
 
   Relevé sur Route, première en seconde : 4 692 tr/min, fond de la chute à
   **2 337** au tiers du passage, sommet du coup de gaz à **3 364**, clac à

@@ -1792,16 +1792,32 @@ avec double débrayage, là où une boîte à double embrayage moderne tient en
 cinquante millisecondes. Le réglage monte jusqu'à 1 500 ms : il commande toute
 la séquence, la raccourcir la comprime, l'allonger l'étale.
 
-**Le clac doit percer un son gras, donc passer au-dessus de lui.** Sa première
-version ne le faisait pas : mesurée en reproduisant les filtres de Web Audio, sa
-crête arrivait 15,6 dB **sous** celles du moteur au réglage livré, et encore
-8 dB sous au maximum du curseur — un passe-bande étroit jetait l'essentiel de
-l'énergie, le gain s'appliquait après cette perte, et une queue de trente
-millisecondes étalait au lieu de crêter. Il n'était pas mal déclenché, il était
-inaudible. Trois composantes le remplacent — un passe-haut qui porte le corps,
-une bande haute qui donne le métal, un coup mat sous deux cents hertz qui donne
-la masse — et sa crête passe **4,2 dB au-dessus** de celles du moteur. Le
-compteur « Clacs de boîte », sur l'écran de télémétrie, dit s'il est tiré.
+**Le clac ne passe pas par le saturateur, et c'est la seule façon qu'il
+s'entende.** Deux versions ont échoué avant celle-ci. La première était trop
+faible — 15,6 dB sous les crêtes du moteur, un passe-bande étroit jetant
+l'essentiel de l'énergie. La seconde, portée 4,2 dB **au-dessus** du moteur,
+était tout aussi inaudible, et le compteur de télémétrie montait pendant ce
+temps : ce n'était donc pas le déclenchement.
+
+La cause est la courbe du saturateur, indexée sur [-1, 1] — au-delà, Web Audio
+prend la valeur du bord. Le moteur crête déjà à 1,74 sur le bus, donc il sature
+en permanence, et **tout ce qui entre au-dessus de lui en sort au même niveau**.
+Mesuré à la courbe du profil Route : un clac 4,2 dB plus fort, un clac au
+maximum du curseur, et un clac dix fois trop fort sortent tous les trois à
+0,00 dB d'écart du moteur. Aucun réglage ne pouvait le rendre audible.
+
+Les événements brefs — le clac comme la pétarade — sont donc injectés **après le
+saturateur**, directement sur le limiteur. La sortie reste protégée, et l'attaque
+de deux millisecondes du limiteur laisse passer le début du transitoire, qui est
+exactement ce qui fait le claquement.
+
+Le clac lui-même a trois composantes : un passe-haut qui porte le corps, une
+bande haute qui donne le métal, un coup mat sous deux cents hertz qui donne la
+masse. Un bouton **« Écouter le clac »**, dans la configuration, le joue seul —
+un événement d'un centième de seconde ne se règle pas en attendant le prochain
+passage de rapport. Et le compteur « Clacs de boîte », en télémétrie, dit s'il
+est tiré : il monte alors même qu'on n'entend rien quand le défaut est dans la
+chaîne.
 
 La coupure de couple, la plongée, le coup de gaz, le clac et le claquement se
 règlent séparément et se coupent à zéro. La synchronisation du régime sur la

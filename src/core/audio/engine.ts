@@ -670,6 +670,20 @@ export class AudioEngine {
     const at = context.currentTime + 0.001
     const level = Math.min(1.5, intensity)
 
+    // **Après le saturateur, et c'est tout l'enjeu.**
+    //
+    // La courbe du saturateur est indexée sur [-1, 1] : ce qui dépasse en sort
+    // au même niveau que le reste. Un clac porté quatre décibels au-dessus des
+    // crêtes du moteur y était donc ramené exactement au niveau du moteur —
+    // mesuré 4,2 dB au-dessus sur le bus, rigoureusement rien à l'oreille. Le
+    // compteur de télémétrie montait pendant ce temps, ce qui a écarté le
+    // déclenchement et désigné la chaîne.
+    //
+    // Le limiteur, lui, reste en aval : la sortie est toujours protégée, et son
+    // attaque de deux millisecondes laisse passer le début du transitoire —
+    // c'est précisément la milliseconde d'attaque du clac qui fait le claquement.
+    const destination = this.limiter ?? this.bus
+
     for (const part of CLACK_PARTS) {
       const source = context.createBufferSource()
       source.buffer = this.noise ?? (this.noise = makeNoise(context))
@@ -690,7 +704,7 @@ export class AudioEngine {
 
       source.connect(filter)
       filter.connect(gain)
-      gain.connect(this.bus)
+      gain.connect(destination)
       source.start(at)
       source.stop(at + part.tail + 0.02)
     }
@@ -735,7 +749,9 @@ export class AudioEngine {
 
       source.connect(band)
       band.connect(gain)
-      gain.connect(this.bus)
+      // Après le saturateur, pour la même raison que le clac : un événement
+      // bref envoyé dans la courbe en sort au niveau du moteur, donc inaudible.
+      gain.connect(this.limiter ?? this.bus)
       source.start(at)
       source.stop(at + duration + 0.02)
     }

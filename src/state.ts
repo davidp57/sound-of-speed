@@ -339,6 +339,18 @@ export const traces = ref<Trace[]>(loadTraces())
 export const traceStorageError = ref('')
 export const replayProgress = ref(0)
 export const audioStatus = ref<AudioStatus>({ ...audio.status })
+
+/**
+ * Joue le clac de la boîte seul, pour le régler à l'oreille.
+ *
+ * Un événement bref se juge mal quand le moteur tourne par-dessus, et il n'a
+ * lieu qu'au passage d'un rapport : sans ce bouton, l'essayer demandait
+ * d'accélérer jusqu'au seuil suivant à chaque changement de valeur. Le son doit
+ * être activé, comme pour tout le reste.
+ */
+export function tryClack(): void {
+  audio.clack(activeProfile.value.feel.shiftJolt.clack)
+}
 export const isMuted = ref(false)
 
 /**

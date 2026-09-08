@@ -36,6 +36,7 @@ import {
 } from '../core/synth/settings'
 import {
   activeProfile,
+  tryClack,
   addProfile,
   advancedMode,
   analyzeLayerFile,
@@ -1580,10 +1581,16 @@ function impliedCylinders(index: number): number | null {
           v-model="profile.feel.shiftJolt.clack"
           label="Clac de la boîte"
           :min="0"
-          :max="1.5"
+          :max="3"
           :step="0.05"
           hint="Le choc mécanique quand le rapport s'engage : sec, métallique, doublé d'un coup mat. Rien à voir avec le claquement d'échappement, qui est grave et traînant."
         />
+        <div class="toggle">
+          <button @click="tryClack()">Écouter le clac</button>
+          <span class="note">
+            Le joue seul, sans attendre un passage. Le son doit être activé.
+          </span>
+        </div>
         <NumberField
           v-model="profile.feel.shiftJolt.crackle"
           label="Claquement de reprise"

@@ -165,3 +165,32 @@ Un compteur « Clacs de boîte » est ajouté en télémétrie pour distinguer, 
 avoir à ouvrir la console, un défaut de déclenchement d'un défaut de niveau.
 
 **Non écouté.**
+
+## Cinquième écoute, 8 septembre 2026
+
+David : « toujours pas de claquement, mais le compteur monte — c'est un souci de
+son. En réglant à 600 ms j'ai le temps de tout entendre, sauf le claquement. »
+
+Le compteur posé au tour précédent a fait son travail : il a écarté le
+déclenchement en un mot, là où trois échanges n'y avaient pas suffi.
+
+**La cause est le saturateur.** Sa courbe est indexée sur [-1, 1] et Web Audio
+prend la valeur du bord au-delà. Le moteur crête à 1,74 sur le bus : il sature
+donc en permanence, et tout ce qui entre au-dessus de lui en sort au même
+niveau. Mesuré sur la courbe du profil Route (`drive` 0,12) :
+
+| Entrée sur le bus | Sortie du saturateur | Écart au moteur |
+|---|---|---|
+| moteur, crête 1,74 | 1,0000 | 0,00 dB |
+| clac à 0,6 (4,2 dB au-dessus) | 1,0000 | 0,00 dB |
+| clac à 1,5, le maximum | 1,0000 | 0,00 dB |
+| clac dix fois trop fort | 1,0000 | 0,00 dB |
+
+Aucun réglage ne pouvait le rendre audible. Cela explique aussi pourquoi la
+pétarade s'entendait « toute petite » depuis le début.
+
+Les deux événements brefs sont injectés après le saturateur, sur le limiteur.
+Ajout d'un bouton « Écouter le clac » dans la configuration, puisqu'un événement
+d'un centième de seconde ne se règle pas en attendant un passage de rapport.
+
+**Non écouté.**
