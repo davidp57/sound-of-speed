@@ -121,6 +121,45 @@ est justement l'un des moteurs qui n'en a pas de réglé : il porte le rendu par
 défaut, c'est-à-dire l'échappement d'un V8 Chevrolet 454 à cent pour cent de son
 réverbéré. Piste ouverte, non instruite.
 
+## Le son pied levé, mesuré le 8 septembre 2026
+
+David a relié ce qu'il entend à un chiffre de l'écran : « la fréquence que je
+n'aime pas arrive plus ou moins quand la brillance monte au-dessus de 0,45-0,50,
+au ralenti et en décélération ». Le rapprochement est juste, et la mesure le
+suit — la brillance est la racine du rapport entre l'énergie au-dessus d'un
+kilohertz et l'énergie totale, relevée sur le son sec, avant l'échappement.
+
+| régime | effort | brillance |
+|---|---|---|
+| 780 | 0 | **0,504** |
+| 780 | 0,1 | 0,470 |
+| 2 000 | 0 | 0,425 |
+| 2 000 | 0,3 | 0,470 |
+| 3 000 | 0 | 0,444 |
+| 3 000 | 0,5 | 0,388 |
+
+**Ce n'est pas une raie parasite qui s'ajoute, c'est le grave qui s'en va.**
+Part de l'énergie par bande, V8 à 780 tr/min :
+
+| | 125 | 250 | 500 | 1 000 | 1 400 | 2 000 |
+|---|---|---|---|---|---|---|
+| pied levé | 12,5 | 18,7 | 13,2 | **21,6** | **22,6** | 9,3 |
+| un peu de gaz | 1,9 | 24,9 | 21,6 | 24,0 | 18,5 | 7,0 |
+
+Papillon fermé, il n'y a presque pas de combustion : il reste le pompage d'air,
+qui n'a pas de corps. Les deux bandes de 1 et 1,4 kHz portent alors 44 % de
+l'énergie.
+
+**Le papillon au repos déplace cela, un peu.** Porté de 0,06 à 0,35 au ralenti :
+la bande de 1,4 kHz passe de 22,6 à 18,9 %, celle de 250 Hz de 18,7 à 24,8 %.
+Mais en décélération à 2 000 tr/min il agit **à l'envers** : le 125 Hz tombe de
+60,6 à 35,7 % quand on l'ouvre à 0,20, parce qu'ouvrir les gaz pied levé n'est
+plus une décélération.
+
+Trois leviers, tous à chaud, aucun n'ayant encore été jugé à l'oreille : le
+papillon au repos, le silencieux — « Où l'on écoute : Dedans » coupe à un
+kilohertz, donc exactement ce que la brillance compte —, et le bruit d'air.
+
 ## Ce qui reste
 
 1. **le rendu de l'EJ25**, et de tous les moteurs qui portent encore le rendu par
