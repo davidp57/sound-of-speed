@@ -60,6 +60,16 @@ Toutes les évolutions notables du projet. Format
   été refait en trois composantes — corps, métal, masse — après une première
   mesure qui le trouvait 15,6 dB sous le moteur.
 
+  **Restait une seconde cause, et une mesure fausse de ma part.** Sorti du
+  saturateur, le clac s'entendait au bouton mais toujours pas en roulant. Sa
+  crête dépassait pourtant celle du moteur — mais une crête n'est pas un niveau.
+  Repris par bandes d'octave, l'écart réel était de **24 à 40 dB sous le
+  moteur** partout où l'oreille écoute : sa rampe d'extinction descendait si
+  vite que toute son énergie tenait dans la première milliseconde. Il s'éteint
+  maintenant à constante de temps, avec des gains triplés. En écart au moteur au
+  réglage livré : −8 dB à 500 Hz, +2 à 1 kHz, +10 à 2 kHz, +14 à 4 kHz, +23 à
+  8 kHz.
+
   Un bouton **« Écouter le clac »** apparaît dans la configuration : un
   événement d'un centième de seconde ne se règle pas en attendant le prochain
   passage de rapport. Son curseur monte maintenant à 3.

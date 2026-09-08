@@ -194,3 +194,29 @@ Ajout d'un bouton « Écouter le clac » dans la configuration, puisqu'un évén
 d'un centième de seconde ne se règle pas en attendant un passage de rapport.
 
 **Non écouté.**
+
+## Sixième écoute, 8 septembre 2026
+
+David : « j'entends le clac en cliquant sur le bouton, mais pas en passant les
+vitesses ». Le bouton se presse à l'arrêt, moteur au ralenti ; le passage a lieu
+moteur fort. Deux causes se sont ajoutées à celle du saturateur.
+
+**Le limiteur.** Il n'écrête pas un transitoire, il applique au signal entier la
+réduction que le moteur lui impose. Les événements sont donc injectés sur le
+gain de rattrapage, après lui.
+
+**Et une mesure fausse de ma part.** J'avais conclu que le clac passait 4,2 dB
+au-dessus du moteur en comparant des **crêtes**. Une crête n'est pas un niveau :
+repris par bandes d'octave, l'écart réel était de 24 à 40 dB en dessous.
+
+| | 500 Hz | 1 k | 2 k | 4 k | 8 k | crête |
+|---|---|---|---|---|---|---|
+| avant | −42,7 | −37,7 | −28,6 | −23,4 | −15,2 | 2,1 |
+| après | −8,4 | +2,0 | +10,5 | +14,3 | +22,9 | 7,8 |
+
+La cause était l'enveloppe : une rampe exponentielle vers un millième descend en
+quelques millisecondes, si bien que toute l'énergie tient dans la crête.
+Remplacée par une extinction à constante de temps, gains triplés.
+
+**Non écouté.** La crête du clac monte à 7,8 avant la chaîne ; le moniteur de
+sortie dira s'il écrête.

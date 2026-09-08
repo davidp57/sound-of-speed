@@ -1811,13 +1811,25 @@ saturateur**, directement sur le limiteur. La sortie reste protégée, et l'atta
 de deux millisecondes du limiteur laisse passer le début du transitoire, qui est
 exactement ce qui fait le claquement.
 
-Le clac lui-même a trois composantes : un passe-haut qui porte le corps, une
-bande haute qui donne le métal, un coup mat sous deux cents hertz qui donne la
-masse. Un bouton **« Écouter le clac »**, dans la configuration, le joue seul —
-un événement d'un centième de seconde ne se règle pas en attendant le prochain
-passage de rapport. Et le compteur « Clacs de boîte », en télémétrie, dit s'il
-est tiré : il monte alors même qu'on n'entend rien quand le défaut est dans la
-chaîne.
+**Et une crête n'est pas un niveau.** Une fois sorti du saturateur, le clac
+s'entendait au bouton mais pas en roulant. Sa crête dépassait pourtant celle du
+moteur : c'est cette mesure-là qui était trompeuse. Reprise par bandes d'octave,
+elle donne l'écart réel — le clac arrivait **24 à 40 dB sous le moteur** partout
+où l'oreille écoute. Sa rampe d'extinction descendait si vite que toute son
+énergie tenait dans la première milliseconde.
+
+Il s'éteint maintenant à constante de temps, sur trois à neuf centièmes de
+seconde selon la composante, avec des gains trois fois plus élevés. Mesuré au
+réglage livré, en écart au moteur : −8 dB à 500 Hz, +2 à 1 kHz, +10 à 2 kHz,
++14 à 4 kHz, +23 à 8 kHz. Il perce dans l'aigu, là où l'oreille reconnaît le
+métal et où le moteur n'a plus grand-chose, sans le masquer dans le grave.
+
+Trois composantes : un passe-haut qui porte le corps, une bande haute qui donne
+le métal, un coup mat sous deux cents hertz qui donne la masse. Un bouton
+**« Écouter le clac »**, dans la configuration, le joue seul — un événement d'un
+centième de seconde ne se règle pas en attendant le prochain passage de rapport.
+Et le compteur « Clacs de boîte », en télémétrie, dit s'il est tiré : il monte
+alors même qu'on n'entend rien quand le défaut est dans la chaîne.
 
 La coupure de couple, la plongée, le coup de gaz, le clac et le claquement se
 règlent séparément et se coupent à zéro. La synchronisation du régime sur la

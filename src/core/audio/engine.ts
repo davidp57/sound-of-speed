@@ -183,11 +183,12 @@ const CLACK_PARTS: {
   hz: number
   q: number
   gain: number
-  tail: number
+  /** Constante de temps de l'extinction, en secondes. */
+  decay: number
 }[] = [
-  { type: 'highpass', hz: 900, q: 0.7, gain: 3.2, tail: 0.018 },
-  { type: 'bandpass', hz: 3200, q: 0.8, gain: 2.4, tail: 0.012 },
-  { type: 'lowpass', hz: 220, q: 0.9, gain: 2.6, tail: 0.045 },
+  { type: 'highpass', hz: 900, q: 0.7, gain: 9.6, decay: 0.036 },
+  { type: 'bandpass', hz: 3200, q: 0.8, gain: 7.2, decay: 0.024 },
+  { type: 'lowpass', hz: 220, q: 0.9, gain: 7.8, decay: 0.09 },
 ]
 
 export class AudioEngine {
@@ -199,6 +200,16 @@ export class AudioEngine {
   /** Volume général, retenu ici pour survivre à la reconstruction du bus. */
   private masterVolume = 1
   private limiter: DynamicsCompressorNode | null = null
+  /**
+   * Gain de rattrapage, dernier étage de la chaîne — et **le seul point où un
+   * son bref peut entrer sans être écrasé.**
+   *
+   * Le saturateur aplatit tout ce qui dépasse sa courbe, et le limiteur, déjà en
+   * train de comprimer le moteur, applique la même réduction à ce qui arrive en
+   * plus. Un événement injecté avant eux disparaît donc exactement quand le
+   * moteur est fort, c'est-à-dire au moment où l'on en a besoin.
+   */
+  private makeup: GainNode | null = null
   private watchdog: ReturnType<typeof setInterval> | null = null
   private analyser: AnalyserNode | null = null
   private scope: Float32Array<ArrayBuffer> | null = null
@@ -301,6 +312,7 @@ export class AudioEngine {
     this.highpass = chain.highpass
     this.shaper = chain.shaper
     this.limiter = chain.limiter
+    this.makeup = chain.makeup
 
     this.analyser = context.createAnalyser()
     this.analyser.fftSize = 1024
@@ -670,19 +682,25 @@ export class AudioEngine {
     const at = context.currentTime + 0.001
     const level = Math.min(1.5, intensity)
 
-    // **Après le saturateur, et c'est tout l'enjeu.**
+    // **Après le saturateur et après le limiteur, et c'est tout l'enjeu.**
     //
-    // La courbe du saturateur est indexée sur [-1, 1] : ce qui dépasse en sort
-    // au même niveau que le reste. Un clac porté quatre décibels au-dessus des
-    // crêtes du moteur y était donc ramené exactement au niveau du moteur —
-    // mesuré 4,2 dB au-dessus sur le bus, rigoureusement rien à l'oreille. Le
-    // compteur de télémétrie montait pendant ce temps, ce qui a écarté le
-    // déclenchement et désigné la chaîne.
+    // Deux étages écrasaient ce clac, et il a fallu les écarter l'un après
+    // l'autre. Le saturateur d'abord : sa courbe est indexée sur [-1, 1] et le
+    // moteur y sature déjà, si bien que tout ce qui entrait au-dessus de lui en
+    // sortait au même niveau — mesuré, un clac dix fois trop fort ressortait à
+    // 0,00 dB d'écart du moteur.
     //
-    // Le limiteur, lui, reste en aval : la sortie est toujours protégée, et son
-    // attaque de deux millisecondes laisse passer le début du transitoire —
-    // c'est précisément la milliseconde d'attaque du clac qui fait le claquement.
-    const destination = this.limiter ?? this.bus
+    // Le limiteur ensuite, et c'est le plus retors : il ne coupe pas un
+    // transitoire, il applique au signal entier la réduction que le moteur lui
+    // impose. Tant que la voiture est à l'arrêt il ne comprime rien et le clac
+    // s'entend ; dès qu'on roule, il comprime le moteur et le clac subit la
+    // même réduction. « J'entends le clac en cliquant sur le bouton, mais pas
+    // en passant les vitesses » : le bouton se presse à l'arrêt.
+    //
+    // Le gain de rattrapage est donc le point d'entrée. Il vient après les deux,
+    // et il multiplie l'événement comme il multiplie le moteur : le rapport
+    // mesuré entre les deux est conservé, cette fois jusqu'à la sortie.
+    const destination = this.makeup ?? this.limiter ?? this.bus
 
     for (const part of CLACK_PARTS) {
       const source = context.createBufferSource()
@@ -700,13 +718,18 @@ export class AudioEngine {
       // L'attaque fait le choc : une milliseconde, pas quatre comme la pétarade.
       gain.gain.setValueAtTime(0.0001, at)
       gain.gain.exponentialRampToValueAtTime(peak, at + 0.001)
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + part.tail)
+      // Une extinction à constante de temps, et non une rampe vers un
+      // millième : la rampe descendait si vite que toute l'énergie du clac
+      // tenait dans sa crête. Mesuré par bandes d'octave, il arrivait alors
+      // 24 à 40 dB sous le moteur partout où l'oreille écoute, pour une crête
+      // pourtant supérieure à la sienne. Une crête n'est pas un niveau.
+      gain.gain.setTargetAtTime(0, at + 0.001, part.decay)
 
       source.connect(filter)
       filter.connect(gain)
       gain.connect(destination)
       source.start(at)
-      source.stop(at + part.tail + 0.02)
+      source.stop(at + part.decay * 4 + 0.02)
     }
   }
 
@@ -749,9 +772,9 @@ export class AudioEngine {
 
       source.connect(band)
       band.connect(gain)
-      // Après le saturateur, pour la même raison que le clac : un événement
-      // bref envoyé dans la courbe en sort au niveau du moteur, donc inaudible.
-      gain.connect(this.limiter ?? this.bus)
+      // Après le saturateur et le limiteur, pour la même raison que le clac :
+      // les deux écrasent un événement bref dès que le moteur est fort.
+      gain.connect(this.makeup ?? this.bus)
       source.start(at)
       source.stop(at + duration + 0.02)
     }
