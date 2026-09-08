@@ -177,6 +177,20 @@ const RESPONSE_DIR = '/impulse'
  */
 const OUTPUT_HEADROOM = 0.794
 
+/**
+ * Le correcteur de charge, calibré sur la mesure du 8 septembre 2026.
+ *
+ * En accélérant, le son du moteur simulé est écrasé par sa bosse de 500 Hz ; au
+ * relâché, celle-ci recule et tout le reste remonte de quatre à six décibels.
+ * Ces deux valeurs sont celles qui rapprochent le plus la première couleur de la
+ * seconde : l'écart moyen sur neuf bandes tombe de 7,13 à 3,53 décibels.
+ */
+const LOAD_DIP_HZ = 500
+const LOAD_DIP_Q = 1.2
+const LOAD_DIP_DB = -8
+const LOAD_LIFT_HZ = 1000
+const LOAD_LIFT_DB = 8
+
 function blobUrl(source: string): string {
   return URL.createObjectURL(new Blob([source], { type: 'text/javascript' }))
 }
@@ -190,8 +204,12 @@ export class SynthEngine {
   private output: GainNode | null = null
   private convolver: ConvolverNode | null = null
   private muffler: BiquadFilterNode | null = null
-  /** Le dernier effort reçu : c'est lui qui ouvre l'échappement. */
+  /** Le dernier effort reçu : c'est lui qui débouche le son. */
   private lastEffort = 0
+  /** La cloche qui creuse la bosse de 500 Hz sous charge. */
+  private loadDip: BiquadFilterNode | null = null
+  /** Le plateau qui relève tout ce qui est au-dessus du kilohertz. */
+  private loadLift: BiquadFilterNode | null = null
   /** Le moniteur de fin de graphe : il ne change rien, il compte. */
   private monitor: AudioWorkletNode | null = null
   /** Les réponses déjà chargées, par nom de fichier. */
@@ -337,6 +355,7 @@ export class SynthEngine {
     }
     for (const node of [
       this.dry, this.wet, this.output, this.convolver, this.monitor,
+      this.loadDip, this.loadLift,
     ]) {
       node?.disconnect()
     }
@@ -345,6 +364,8 @@ export class SynthEngine {
     this.output = null
     this.convolver = null
     this.monitor = null
+    this.loadDip = null
+    this.loadLift = null
     if (this.context !== null) {
       const context = this.context
       this.context = null
@@ -365,28 +386,18 @@ export class SynthEngine {
   }
 
   /**
-   * L'ouverture de l'échappement, qui suit l'effort.
-   *
-   * La résonance empile une quinzaine de décibels sur la bande de 500 Hz : en
-   * retirer sous charge fait ce que David décrit — « comme si on enlevait un
-   * bouchon » — sans poser la moindre fréquence nouvelle.
+   * Le débouchage en charge, qui suit l'effort.
    *
    * Appelé à chaque tour de la boucle, soixante fois par seconde : les gains se
-   * posent donc en douceur, sans quoi l'oreille entendrait l'escalier.
+   * posent donc en douceur, sans quoi l'oreille entendrait l'escalier plutôt que
+   * la montée.
    */
   private applyOpening(): void {
-    if (this.dry === null || this.context === null) return
-    const mix = this.effectiveMix()
+    if (this.context === null) return
+    const force = this.settings.loadOpeningRatio * this.lastEffort
     const now = this.context.currentTime
-    this.dry.gain.setTargetAtTime(Math.sqrt(1 - mix), now, 0.08)
-    this.wet?.gain.setTargetAtTime(Math.sqrt(mix), now, 0.08)
-  }
-
-  /** La part de son réverbéré à cet instant, une fois l'effort pris en compte. */
-  private effectiveMix(): number {
-    if (!this.settings.convolver) return 0
-    const retire = this.settings.loadOpeningRatio * this.lastEffort
-    return Math.max(0, Math.min(1, this.settings.convolverMix * (1 - retire)))
+    this.loadDip?.gain.setTargetAtTime(LOAD_DIP_DB * force, now, 0.08)
+    this.loadLift?.gain.setTargetAtTime(LOAD_LIFT_DB * force, now, 0.08)
   }
 
   /** Le ralenti et le rupteur du profil actif, bornes du balayage du banc. */
@@ -538,6 +549,8 @@ export class SynthEngine {
     this.output?.disconnect()
     this.convolver?.disconnect()
     this.muffler?.disconnect()
+    this.loadDip?.disconnect()
+    this.loadLift?.disconnect()
     this.monitor?.disconnect()
 
     const output = context.createGain()
@@ -579,21 +592,34 @@ export class SynthEngine {
     node.connect(muffler)
     this.muffler = muffler
 
-    // Le mélange **du moment** : l'effort en retire une part, et les deux gains
-    // suivent ensuite à chaque tour de la boucle. Le graphe, lui, reste le même
-    // — sans quoi lever le pied le rebâtirait soixante fois par seconde.
-    const mix = this.effectiveMix()
-    const plafond = this.settings.convolver ? this.settings.convolverMix : 0
+    // Le correcteur de charge, avant la séparation : il décrit ce que le moteur
+    // fait, pas ce que l'échappement en renvoie, donc la résonance doit le
+    // porter comme elle porte le reste.
+    const force = this.settings.loadOpeningRatio * this.lastEffort
+    const dip = context.createBiquadFilter()
+    dip.type = 'peaking'
+    dip.frequency.value = LOAD_DIP_HZ
+    dip.Q.value = LOAD_DIP_Q
+    dip.gain.value = LOAD_DIP_DB * force
+    const lift = context.createBiquadFilter()
+    lift.type = 'highshelf'
+    lift.frequency.value = LOAD_LIFT_HZ
+    lift.gain.value = LOAD_LIFT_DB * force
+    muffler.connect(dip).connect(lift)
+    this.loadDip = dip
+    this.loadLift = lift
+
+    const mix = this.settings.convolver ? this.settings.convolverMix : 0
     const dry = context.createGain()
     // Racine, et non proportion directe : le son sec et le son réverbéré sont
     // décorrélés, donc ce sont leurs énergies qui s'ajoutent. En gains linéaires
     // le milieu du curseur perdait trois décibels, et l'on croyait régler une
     // couleur alors qu'on baissait le volume.
     dry.gain.value = Math.sqrt(1 - mix)
-    muffler.connect(dry).connect(output)
+    lift.connect(dry).connect(output)
     this.dry = dry
 
-    if (plafond <= 0) {
+    if (mix <= 0) {
       this.wet = null
       this.convolver = null
       return
@@ -620,7 +646,7 @@ export class SynthEngine {
     convolver.buffer = buffer
     const wet = context.createGain()
     wet.gain.value = Math.sqrt(mix)
-    muffler.connect(convolver).connect(wet).connect(output)
+    lift.connect(convolver).connect(wet).connect(output)
     this.convolver = convolver
     this.wet = wet
   }

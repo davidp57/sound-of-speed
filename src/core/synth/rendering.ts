@@ -76,27 +76,30 @@ export interface SynthRendering {
   /** Accord du tube fabriqué, en hertz. Sans effet sur une captation réelle. */
   exhaustHz: number
   /**
-   * Part de résonance d'échappement retirée à plein effort, de 0 à 1.
+   * Force du débouchage en charge, de 0 à 1.
    *
-   * David, le 8 septembre 2026 : « en décel, le son est plus clair, moins
-   * sourd — comme si on enlevait un bouchon de l'échappement ou de mes
-   * oreilles ». Il voulait la même chose en accélérant.
+   * David voulait retrouver en accélérant ce qu'il entend en levant le pied :
+   * « le son est plus clair, moins sourd, comme si on enlevait un bouchon ».
    *
-   * Un plateau haut avait été essayé d'abord, et il a été jeté : « ton éclat en
-   * charge ajoute justement une nouvelle fréquence parasite, c'est pas du tout
-   * pareil ». Il avait raison, et la mesure dit pourquoi. La résonance
-   * d'échappement n'éclaircit ni n'assombrit uniformément : elle empile **quinze
-   * décibels sur la seule bande de 500 Hz**, et rien au-dessus de deux
-   * kilohertz. C'est un bouchon, au sens propre. Ajouter de l'aigu par-dessus ne
-   * l'enlève pas, cela pose une couleur de plus.
+   * **Deux mécanismes ont été essayés avant celui-ci, et tous deux ratés.** Un
+   * plateau haut à 1 500 Hz : « ça ajoute justement une nouvelle fréquence
+   * parasite ». Puis retirer de la résonance d'échappement, sur l'idée qu'elle
+   * était le bouchon : mesuré, même poussée à fond elle ne déplace la bande de
+   * 500 Hz que de 0,1 dB. La différence ne venait pas de la chaîne mais du son
+   * que le moteur simulé produit sous charge.
    *
-   * Retirer de la résonance quand l'effort monte fait exactement ce qu'il
-   * décrit. Mesuré à 2 500 tr/min, effort 0,6, en passant de 0,45 à 0,15 de
-   * résonance : la bande de 500 Hz tombe de 67,2 à 62,5 dB, celle de 2 800
-   * monte de 36,1 à 36,5 et celle de 4 000 de 25,7 à 27,3. Le grave recule,
-   * l'aigu ressort, et aucune fréquence n'est ajoutée.
+   * Le protocole que David a donné l'a montrée — accélérer, mesurer, relâcher,
+   * remesurer. À niveau égal, GM à 2 500 tr/min, le relâché contre la charge :
+   * −5,6 dB à 125 Hz, +5,7 à 250, −1,4 à 500, puis +4 à +6 sur tout ce qui est
+   * au-dessus du kilohertz. En charge, le son est écrasé par sa bosse de 500 Hz.
    *
-   * Zéro laisse la résonance constante, comme avant.
+   * D'où ce correcteur, calibré sur cette courbe : une cloche qui creuse le
+   * 500 Hz et un plateau qui relève le reste, tous deux proportionnels à
+   * l'effort. Il ramène l'écart de 7,13 à 3,53 décibels. C'est une égalisation
+   * assumée, pas un modèle physique — mais elle vise une courbe mesurée, et non
+   * une idée du son qu'on devrait entendre.
+   *
+   * Zéro laisse le son en charge tel quel.
    */
   loadOpeningRatio: number
   /** Coupure du silencieux, en hertz. C'est aussi le point d'écoute. */
@@ -204,10 +207,10 @@ export const DEFAULT_RENDERING: SynthRendering = {
   exhaustResponse: 'smooth_39',
   // Trois mètres de tube, en gros. Ne sert qu'à la réponse fabriquée.
   exhaustHz: 57,
-  // Six dixièmes de la résonance retirés à plein effort : de 0,45 à 0,18, ce
-  // qui vaut cinq décibels de moins sur la bande de 500 Hz. Une estimation, à
-  // juger à l'oreille ; zéro laisse la résonance constante.
-  loadOpeningRatio: 0.6,
+  // Un, c'est-à-dire la correction entière que la mesure a trouvée. Elle reste
+  // à juger à l'oreille : la courbe visée est celle du relâché, et rien ne dit
+  // que la rejoindre exactement soit ce qui plaît.
+  loadOpeningRatio: 1,
   // Coupé, c'est-à-dire dehors. Il avait été mis à 1 kHz pour masquer un
   // parasite dont on a depuis trouvé la cause : les deux bruits d'engine-sim.
   // Une fois ceux-ci réglés, le spectre décroît tout seul.
