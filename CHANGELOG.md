@@ -389,6 +389,18 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Le point d'écoute « Dehors » referme le silencieux à 4 kHz.** Il laissait
+  tout passer, y compris ce que le moteur simulé produit au-dessus, et ce qu'il
+  y produit n'est pas du moteur : des bouffées d'aigu, quatre à cinq par
+  seconde, +6,4 dB à 8 kHz pendant la bouffée alors que le grave ne bouge pas.
+  Elles viennent du moteur lui-même — le banc en produit quatre par seconde, la
+  capture prise dans la voiture quatre et demie.
+
+  Le prix est nul, mesuré sur cette capture : 13 dB retirés à 8 kHz, et **aucune
+  bande utile déplacée** — 250, 500, 1 000 et 2 000 Hz ne bougent pas d'un
+  dixième de décibel, le moteur y étant déjà à −40 dB. Les ruptures fortes
+  tombent de 126 à 86. David : « c'est mieux, même si c'est pas encore parfait ».
+
 - **La gigue d'échantillonnage est coupée sur tous les moteurs.** C'était elle,
   le cliquetis que David traquait — « des frt frt frt à plus haute fréquence que
   le moteur ». `inputSampleNoise` n'est pas un tremblement de moteur mais une

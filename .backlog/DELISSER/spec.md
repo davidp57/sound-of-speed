@@ -247,6 +247,29 @@ donc précisément la différence à faire entendre. « Ils sont identiques », 
 répondu David, et il avait raison. Le son complet, égalisé en niveau global, a
 tranché du premier coup.
 
+## Ce que la capture a permis, et ce qui reste du cliquetis
+
+Le bouton de capture, livré le soir même, a tranché ce que six analyses n'avaient
+pas su trancher : le son que l'application produit est **très proche** de celui
+du banc — 31 ruptures fortes contre 26, spectres superposables. Le cliquetis
+n'est donc pas un artefact du navigateur, du lecteur ou de la carte son. Sans cet
+outil, la traque continuait à l'aveugle.
+
+Restaient, après la gigue : des bouffées d'aigu, 4,5 par seconde dans la capture
+réelle et 4,0 au banc, +6,4 dB à 8 kHz pendant la bouffée alors que le grave ne
+bouge pas. Écartés par la mesure, chacun testé dans les conditions du jour :
+le délissage (4,0 sans, 4,9 avec), le correcteur de charge (l'effort était nul),
+les trames du worklet, les blocs du WASM, le niveleur.
+
+Elles viennent du moteur simulé. Faute de savoir les supprimer à la source, le
+point d'écoute « Dehors » cesse de les laisser sortir : le silencieux y referme à
+4 kHz au lieu de 22 000. Treize décibels de moins à 8 kHz, aucune bande utile
+déplacée, ruptures de 126 à 86. David : « c'est mieux, même si c'est pas encore
+parfait ».
+
+**Ce qui n'est donc pas résolu** : la source de ces bouffées, dans engine-sim au
+ralenti. Le remède actuel les masque.
+
 ## Ce qui reste
 
 1. **le rendu de l'EJ25**, et de tous les moteurs qui portent encore le rendu par
