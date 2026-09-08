@@ -603,7 +603,7 @@ const gauge = computed(() => {
         </div>
       </div>
       <div class="field">
-        <label for="ouverture">Ouverture en charge</label>
+        <label for="ouverture">Déboucher en charge</label>
         <input
           id="ouverture"
           type="range"
@@ -616,14 +616,14 @@ const gauge = computed(() => {
         <span class="numeric">{{ synthSettings.loadOpeningRatio.toFixed(2) }}</span>
       </div>
       <p class="note">
-        Part de résonance retirée à plein effort, comme si l'échappement
-        s'ouvrait en accélérant. La résonance n'assombrit pas uniformément : elle
-        empile une quinzaine de décibels sur la seule bande de 500 Hz, et rien
-        au-dessus de deux kilohertz — c'est un bouchon, au sens propre. En
-        retirer sous charge fait reculer ce grave-là sans poser aucune fréquence
-        nouvelle. Mesuré à 2 500 tr/min, effort 0,6, de 0,45 à 0,15 de
-        résonance : la bande de 500 Hz tombe de 67,2 à 62,5 dB, celle de 4 000
-        monte de 25,7 à 27,3. Zéro laisse la résonance constante.
+        Retrouver en accélérant ce qu'on entend en levant le pied. Le protocole
+        est de David : accélérer, mesurer, relâcher, remesurer. À niveau égal, le
+        relâché a 5,7 dB de plus à 250 Hz, 1,4 de moins à 500, et de 4 à 6 de
+        plus sur tout ce qui dépasse le kilohertz — en charge, le son est écrasé
+        par sa bosse de 500 Hz. Ce réglage creuse cette bosse et relève le reste,
+        proportionnellement à l'effort : l'écart moyen avec la couleur du relâché
+        tombe de 7,13 à 3,53 décibels. C'est une égalisation assumée, mais elle
+        vise une courbe mesurée. Zéro laisse le son en charge tel quel.
       </p>
       <div class="field">
         <label>Où l'on écoute</label>

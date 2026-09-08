@@ -22,23 +22,26 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
-- **L'échappement s'ouvre en accélérant.** David voulait retrouver sous charge
-  ce qu'il entend en levant le pied : « le son est plus clair, moins sourd,
-  comme si on enlevait un bouchon de l'échappement ou de mes oreilles ».
+- **Le son se débouche en accélérant.** David voulait retrouver sous charge ce
+  qu'il entend en levant le pied : « le son est plus clair, moins sourd, comme si
+  on enlevait un bouchon ». Deux mécanismes ont été essayés et jetés le même
+  jour — un plateau haut, qui « ajoute justement une nouvelle fréquence
+  parasite », puis le retrait de la résonance d'échappement, dont la mesure a
+  montré qu'elle ne déplace la bande de 500 Hz que d'un dixième de décibel même
+  poussée à fond.
 
-  Un éclaircissement en décibels avait été livré d'abord, et jeté le jour même :
-  « ton éclat en charge ajoute justement une nouvelle fréquence parasite, c'est
-  pas du tout pareil ». Il avait raison, et la mesure dit pourquoi. La résonance
-  d'échappement n'assombrit pas uniformément : elle empile **quinze décibels sur
-  la seule bande de 500 Hz** et rien au-dessus de deux kilohertz. C'est un
-  bouchon au sens propre, et ajouter de l'aigu par-dessus ne l'enlève pas — cela
-  pose une couleur de plus.
+  C'est le protocole que David a donné qui a tranché : accélérer, mesurer,
+  relâcher, remesurer. À niveau égal, GM à 2 500 tr/min, le relâché contre la
+  charge — 5,7 dB de plus à 250 Hz, 1,4 de moins à 500, et de 4 à 6 de plus sur
+  tout ce qui dépasse le kilohertz. En charge, le son est écrasé par sa bosse de
+  500 Hz, et cela ne venait pas de la chaîne mais du son que le moteur simulé
+  produit.
 
-  L'effort retire donc une part de la résonance. Mesuré à son sec constant, en
-  passant de 0,45 à 0,15 : la bande de 500 Hz tombe de 67,2 à 62,5 dB, celle de
-  4 000 monte de 25,7 à 27,3. Le grave recule, l'aigu ressort, aucune fréquence
-  n'est ajoutée. Livré à six dixièmes retirés à plein effort ; zéro laisse la
-  résonance constante.
+  Le correcteur creuse donc cette bosse et relève le reste, proportionnellement à
+  l'effort. Mesuré, écart moyen sur neuf bandes avec la couleur du relâché :
+  4,39 dB sans lui contre 2,66 à 1 500 tr/min, 7,18 contre 3,54 à 2 500. C'est
+  une égalisation assumée et non un modèle physique, mais elle vise une courbe
+  mesurée plutôt qu'une idée du son qu'on devrait entendre.
 
 - **L'écran montre ce que les haut-parleurs reçoivent.** Le niveau crête et le
   taux d'écrêtage étaient relevés dans le lecteur, donc **avant** le silencieux

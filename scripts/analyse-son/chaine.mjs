@@ -144,6 +144,54 @@ export function normaliserEnergie(reponse) {
 }
 
 /**
+ * Un plateau haut, aux coefficients du `BiquadFilterNode` en type `highshelf`.
+ */
+export function plateauHaut(signal, gainDb, frequenceHz, tauxHz) {
+  if (gainDb === 0) return signal
+  const a = Math.pow(10, gainDb / 40)
+  const w = (2 * Math.PI * frequenceHz) / tauxHz
+  const cosw = Math.cos(w)
+  const alpha = (Math.sin(w) / 2) * Math.sqrt((a + 1 / a) * (1 / 0.707 - 1) + 2)
+  const deux = 2 * Math.sqrt(a) * alpha
+  return biquad(signal, [
+    a * (a + 1 + (a - 1) * cosw + deux),
+    -2 * a * (a - 1 + (a + 1) * cosw),
+    a * (a + 1 + (a - 1) * cosw - deux),
+    a + 1 - (a - 1) * cosw + deux,
+    2 * (a - 1 - (a + 1) * cosw),
+    a + 1 - (a - 1) * cosw - deux,
+  ])
+}
+
+/** Une cloche, aux coefficients du `BiquadFilterNode` en type `peaking`. */
+export function cloche(signal, gainDb, frequenceHz, q, tauxHz) {
+  if (gainDb === 0) return signal
+  const a = Math.pow(10, gainDb / 40)
+  const w = (2 * Math.PI * frequenceHz) / tauxHz
+  const alpha = Math.sin(w) / (2 * q)
+  return biquad(signal, [
+    1 + alpha * a,
+    -2 * Math.cos(w),
+    1 - alpha * a,
+    1 + alpha / a,
+    -2 * Math.cos(w),
+    1 - alpha / a,
+  ])
+}
+
+function biquad(signal, [b0, b1, b2, a0, a1, a2]) {
+  const sortie = new Float32Array(signal.length)
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0
+  for (let i = 0; i < signal.length; i += 1) {
+    const x0 = signal[i]
+    const y0 = (b0 / a0) * x0 + (b1 / a0) * x1 + (b2 / a0) * x2 - (a1 / a0) * y1 - (a2 / a0) * y2
+    sortie[i] = y0
+    x2 = x1; x1 = x0; y2 = y1; y1 = y0
+  }
+  return sortie
+}
+
+/**
  * Le graphe complet : silencieux, puis mélange du sec et du réverbéré, dont la
  * part suit l'effort.
  *
@@ -154,9 +202,16 @@ export function normaliserEnergie(reponse) {
 export function chaineDeSortie(sec, {
   mufflerHz, convolverMix, reponse, tauxHz, loadOpeningRatio = 0, effort = 0,
 }) {
-  const filtre = silencieux(sec, mufflerHz, tauxHz)
-  // L'effort ouvre l'échappement : il retire une part de la résonance.
-  const mix = reponse === null ? 0 : convolverMix * (1 - loadOpeningRatio * effort)
+  // Le correcteur de charge, calibré sur la couleur du relâché : une cloche qui
+  // creuse la bosse de 500 Hz, un plateau qui relève le reste.
+  const force = loadOpeningRatio * effort
+  const filtre = plateauHaut(
+    cloche(silencieux(sec, mufflerHz, tauxHz), -8 * force, 500, 1.2, tauxHz),
+    8 * force,
+    1000,
+    tauxHz,
+  )
+  const mix = reponse === null ? 0 : convolverMix
   if (mix <= 0) {
     const sortie = new Float32Array(filtre.length)
     for (let i = 0; i < filtre.length; i += 1) sortie[i] = filtre[i]
