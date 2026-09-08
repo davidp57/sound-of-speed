@@ -195,7 +195,7 @@ const SPORTINESS_READINGS: {
     value: (p) => p.engine.freeRevRate / p.engine.redlineRpm,
     law: (_p, s) => 0.9 + 0.5 * s,
   },
-  { value: (p) => p.drivetrain.shiftTimeMs, law: (_p, s) => 140 - 60 * s },
+  { value: (p) => p.drivetrain.shiftTimeMs, law: (_p, s) => 680 - 240 * s },
   {
     // Comparé à la rampe qu'aurait une table de **même longueur** : la table
     // enregistrée peut être plus courte que la boîte, et c'est justement le
@@ -209,7 +209,7 @@ const SPORTINESS_READINGS: {
   { value: (p) => p.drivetrain.cruiseUpshiftAfterS, law: (_p, s) => 2 + 1.6 * s },
   { value: (p) => p.drivetrain.brakeDownshiftAccelMs2, law: (_p, s) => -1.1 + 0.5 * s },
   { value: (p) => p.feel.kickdown.targetRpmFraction, law: (_p, s) => 0.5 + 0.15 * s },
-  { value: (p) => p.feel.shiftJolt.depth, law: (_p, s) => 0.25 + 0.4 * s },
+  { value: (p) => p.feel.shiftJolt.depth, law: (_p, s) => 0.05 + 0.2 * s },
 ]
 
 /**
@@ -311,7 +311,12 @@ export function applySportiness(profile: Profile, sportiness: number): Profile {
     },
     drivetrain: {
       ...profile.drivetrain,
-      shiftTimeMs: Math.round(140 - 60 * s),
+      // La loi va de 680 à 440 ms et non plus de 140 à 80 : un passage doit
+      // durer assez pour que sa séquence — chute, coup de gaz, clac, reprise —
+      // s'entende, et David la mesure à « au moins 500 ms, voire plus » sur la
+      // vidéo qui sert de référence. Les bornes bougent du même rapport, si
+      // bien que le caractère relu d'un profil livré ne change pas.
+      shiftTimeMs: Math.round(680 - 240 * s),
       upshiftRpm: upshiftTableFor(count, redlineRpm, s),
       upshiftLoadSpreadRpm: Math.round(redlineRpm * between(0.2, 0.28, 0.34, s)),
       // Le plancher garde une marge au-dessus du ralenti : sur un diesel, la
@@ -337,7 +342,20 @@ export function applySportiness(profile: Profile, sportiness: number): Profile {
       },
       shiftJolt: {
         ...profile.feel.shiftJolt,
-        depth: round3(0.25 + 0.4 * s),
+        // La loi va de 0,05 à 0,25 et non plus de 0,25 à 0,65 : le creux de
+        // niveau masquait la bascule de timbre qu'il devait souligner. Les
+        // deux bornes ont été divisées par le même facteur, si bien que le
+        // caractère relu d'un profil livré ne bouge pas.
+        depth: round3(0.05 + 0.2 * s),
+        // Une boîte de caractère coupe plus franchement et claque plus fort.
+        // Sans cela, le curseur creuserait le niveau sans changer le timbre, et
+        // le passage deviendrait un trou au lieu d'un événement.
+        cutDepth: round3(0.6 + 0.35 * s),
+        crackle: round3(0.25 + 0.5 * s),
+        dipRpm: Math.round(250 + 400 * s),
+        blipRpm: Math.round(300 + 500 * s),
+        clack: round3(0.35 + 0.35 * s),
+        clackDownshift: round3(0.5 + 0.15 * s),
       },
     },
   }

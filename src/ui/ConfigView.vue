@@ -36,6 +36,7 @@ import {
 } from '../core/synth/settings'
 import {
   activeProfile,
+  tryClack,
   addProfile,
   advancedMode,
   analyzeLayerFile,
@@ -1313,8 +1314,8 @@ function impliedCylinders(index: number): number | null {
       <NumberField v-model="profile.drivetrain.wheelRadiusM" label="Rayon de roue" :min="0.15" :max="0.6" :step="0.005" unit="m"
         hint="Rayon d'une roue, en mètres. Entre dans le calcul du régime : une roue plus grande fait moins de tours pour la même vitesse. Environ 0,33 m pour une berline."
       />
-      <NumberField v-model="profile.drivetrain.shiftTimeMs" label="Temps de passage" :min="0" :max="500" :step="5" unit="ms"
-        hint="Durée pendant laquelle le couple est coupé. Court sur une boîte moderne, plus long sur une ancienne — c'est ce qu'on entend comme un creux entre deux rapports."
+      <NumberField v-model="profile.drivetrain.shiftTimeMs" label="Temps de passage" :min="0" :max="1500" :step="10" unit="ms"
+        hint="Durée pendant laquelle le couple est coupé, et durée de toute la séquence : chute au neutre, coup de gaz, clac, reprise. C'est elle qui décide si le passage s'entend — sous deux cents millisecondes, les quatre temps se chevauchent et l'on ne perçoit qu'un trou. Court sur une boîte moderne, plus long sur une ancienne."
       />
       <p class="note">
         Régime auquel chaque rapport cède la place au suivant, à charge moyenne.
@@ -1541,15 +1542,72 @@ function impliedCylinders(index: number): number | null {
         </button>
         <span class="note">Le petit trou pendant le changement de rapport.</span>
       </div>
-      <NumberField
-        v-if="profile.feel.shiftJolt.enabled"
-        v-model="profile.feel.shiftJolt.depth"
-        label="Profondeur"
-        :min="0"
-        :max="1"
-        :step="0.05"
-        hint="Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est."
-      />
+      <template v-if="profile.feel.shiftJolt.enabled">
+        <NumberField
+          v-model="profile.feel.shiftJolt.depth"
+          label="Profondeur"
+          :min="0"
+          :max="1"
+          :step="0.05"
+          hint="Combien le niveau baisse pendant la coupure. Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est."
+        />
+        <NumberField
+          v-model="profile.feel.shiftJolt.cutDepth"
+          label="Coupure de couple"
+          :min="0"
+          :max="1"
+          :step="0.05"
+          hint="Combien le moteur passe en roue libre le temps du passage. C'est ce qui fait entrer le son pied levé, donc changer le timbre et pas seulement le niveau. Zéro garde le son de pleine charge d'un bout à l'autre."
+        />
+        <NumberField
+          v-model="profile.feel.shiftJolt.dipRpm"
+          label="Plongée du régime"
+          :min="-800"
+          :max="1500"
+          :step="50"
+          unit="tr/min"
+          hint="De combien le moteur tombe sous le régime du nouveau rapport pendant la coupure, avant que l'embrayage ne l'y ramène : il diminue, puis remonte. Une valeur négative donne l'inverse, un coup de gaz au débrayage."
+        />
+        <NumberField
+          v-model="profile.feel.shiftJolt.blipRpm"
+          label="Coup de gaz"
+          :min="0"
+          :max="2000"
+          :step="50"
+          unit="tr/min"
+          hint="De combien le moteur remonte au-dessus du rapport visé, entre la chute au neutre et l'engagement. C'est le geste du double débrayage, et le mouvement qui s'entend le mieux dans un passage. Zéro laisse la séquence en trois temps."
+        />
+        <NumberField
+          v-model="profile.feel.shiftJolt.clack"
+          label="Clac de la boîte"
+          :min="0"
+          :max="3"
+          :step="0.05"
+          hint="Le choc mécanique quand le rapport s'engage : sec, métallique, doublé d'un coup mat. Rien à voir avec le claquement d'échappement, qui est grave et traînant."
+        />
+        <NumberField
+          v-model="profile.feel.shiftJolt.clackDownshift"
+          label="Clac au rétrogradage"
+          :min="0"
+          :max="1.5"
+          :step="0.05"
+          hint="Part du clac gardée quand la boîte descend un rapport. On rétrograde pied levé ou en freinant, donc avec un moteur bien plus doux : à intensité égale le clac y ressort deux fois plus. Un pour le même niveau qu'en montant."
+        />
+        <div class="toggle">
+          <button @click="tryClack()">Écouter le clac</button>
+          <span class="note">
+            Le joue seul, sans attendre un passage. Le son doit être activé.
+          </span>
+        </div>
+        <NumberField
+          v-model="profile.feel.shiftJolt.crackle"
+          label="Claquement de reprise"
+          :min="0"
+          :max="1"
+          :step="0.05"
+          hint="Une détonation à l'échappement au moment où le couple revient. Zéro n'en produit aucune."
+        />
+      </template>
     </section>
 
     <section v-if="advancedMode" class="panel">

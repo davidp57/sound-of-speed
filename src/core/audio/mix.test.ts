@@ -505,7 +505,7 @@ describe('computeMix — à-coup de passage', () => {
   it('ne creuse rien quand l’à-coup est désactivé', () => {
     const p: Profile = {
       ...profile,
-      feel: { ...profile.feel, shiftJolt: { enabled: false, depth: 0.55 } },
+      feel: { ...profile.feel, shiftJolt: { enabled: false, depth: 0.55, cutDepth: 0.8, dipRpm: 450, blipRpm: 550, clack: 0.6, clackDownshift: 0.55, crackle: 0.35 } },
     }
 
     const milieu = computeMix(p, state(), { isShifting: true, progress: 0.5 })
@@ -643,5 +643,63 @@ describe('computeMix — relief', () => {
       const off = p.layers.filter((l) => l.role === 'off')
       expect(off.every((l) => l.gain > 1.5)).toBe(true)
     }
+  })
+})
+
+/**
+ * La coupure de couple d'un passage de rapport.
+ *
+ * Le creux de niveau ne suffisait pas : mesuré sur le profil Route, un passage
+ * baissait le son de 3,7 dB sans rien changer d'autre. L'effort, lui, restait à
+ * 1,000 du début à la fin, parce qu'il se déduit de l'accélération et que la
+ * voiture, elle, ne coupe rien — elle est électrique et continue d'avancer
+ * pendant que la boîte imaginaire change de rapport. Le fondu vers les couches
+ * pied levé ne basculait donc jamais, et le passage gardait le timbre de la
+ * pleine charge.
+ */
+describe('computeMix — coupure de couple au passage', () => {
+  it('fait basculer le timbre vers pied levé pendant le passage', () => {
+    const chargé = state({ effort: 1, load: 1 })
+
+    const repos = computeMix(profile, chargé)
+    const milieu = computeMix(profile, chargé, { isShifting: true, progress: 0.5 })
+
+    expect(milieu.offWeight).toBeGreaterThan(repos.offWeight * 2)
+    expect(milieu.onWeight).toBeLessThan(repos.onWeight)
+  })
+
+  it('rend le timbre de pleine charge dès la fin du passage', () => {
+    const chargé = state({ effort: 1, load: 1 })
+
+    const repos = computeMix(profile, chargé)
+    const fin = computeMix(profile, chargé, { isShifting: true, progress: 1 })
+
+    expect(fin.onWeight).toBeCloseTo(repos.onWeight, 6)
+  })
+
+  it('ne coupe rien quand la profondeur est nulle', () => {
+    const p: Profile = {
+      ...profile,
+      feel: { ...profile.feel, shiftJolt: { ...profile.feel.shiftJolt, cutDepth: 0 } },
+    }
+    const chargé = state({ effort: 1, load: 1 })
+
+    const repos = computeMix(p, chargé)
+    const milieu = computeMix(p, chargé, { isShifting: true, progress: 0.5 })
+
+    expect(milieu.onWeight).toBeCloseTo(repos.onWeight, 6)
+  })
+
+  it("ne coupe rien quand l'à-coup est désactivé", () => {
+    const p: Profile = {
+      ...profile,
+      feel: { ...profile.feel, shiftJolt: { ...profile.feel.shiftJolt, enabled: false } },
+    }
+    const chargé = state({ effort: 1, load: 1 })
+
+    const repos = computeMix(p, chargé)
+    const milieu = computeMix(p, chargé, { isShifting: true, progress: 0.5 })
+
+    expect(milieu.onWeight).toBeCloseTo(repos.onWeight, 6)
   })
 })

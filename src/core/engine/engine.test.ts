@@ -627,3 +627,137 @@ describe('Engine — réinitialisation', () => {
     expect(state.limiterActive).toBe(false)
   })
 })
+
+/**
+ * Un passage de rapport, tel qu'on l'entend.
+ *
+ * Mesuré avant ce lot sur le profil Route, passage de première en seconde à
+ * 45 km/h : pendant les 133 ms du passage, le régime ne perdait que 444 des
+ * 1 815 tours qu'il devait perdre, et les 1 371 restants tombaient **après**,
+ * une fois `isShifting` retombé — donc après que le creux de niveau soit
+ * remonté. Le passage s'entendait alors comme un son qui faiblit puis qui
+ * glisse, et non comme une rupture.
+ *
+ * L'embrayage qui se referme fait le gros du travail, et il le fait **dans** la
+ * durée du passage : c'est ce que la progression apporte.
+ */
+describe('passage de rapport', () => {
+  const rolling = { kmh: 80, atStandstill: false, throttle: null }
+
+  /** Déroule un passage de la durée donnée, progression comprise. */
+  function shift(engine: Engine, seconds: number, over: Partial<EngineInput> = {}) {
+    const frames = Math.max(1, Math.round(seconds / FRAME_S))
+    let state = engine.tick(FRAME_S, input({ ...over, isShifting: true, shiftProgress: 0 }))
+    for (let f = 1; f <= frames; f += 1) {
+      state = engine.tick(
+        FRAME_S,
+        input({ ...over, isShifting: true, shiftProgress: f / frames }),
+      )
+    }
+    return state
+  }
+
+  it('plonge sous le rapport visé, puis y remonte', () => {
+    const engine = makeEngine()
+    settle(engine, 2, rolling)
+
+    const frames = Math.round(0.12 / FRAME_S)
+    const trace: number[] = []
+    for (let f = 0; f <= frames; f += 1) {
+      const s = engine.tick(
+        FRAME_S,
+        input({ ...rolling, isShifting: true, shiftProgress: f / frames, shiftDipRpm: 300 }),
+      )
+      trace.push(s.rpm)
+    }
+
+    const bas = Math.min(...trace)
+    const fin = trace[trace.length - 1]!
+    const cible = Engine.kinematicRpm(
+      80,
+      profile.drivetrain.gearRatios[3]! * profile.drivetrain.finalDrive,
+      profile.drivetrain.wheelRadiusM,
+    )
+
+    // Il descend sous la cible, puis remonte : c'est le « diminue, remonte ».
+    expect(bas).toBeLessThan(cible - 200)
+    expect(fin).toBeGreaterThan(bas + 150)
+    expect(Math.abs(fin - cible)).toBeLessThan(60)
+  })
+
+  it('a rejoint le régime des roues quand le passage se termine', () => {
+    const engine = makeEngine()
+    settle(engine, 2, rolling)
+
+    const state = shift(engine, 0.12, rolling)
+
+    expect(Math.abs(state.rpm - state.kinematicRpm)).toBeLessThan(60)
+  })
+
+  it('décroche encore des roues au début du passage', () => {
+    const engine = makeEngine()
+    const engaged = settle(engine, 2, rolling)
+
+    // Un tiers de passage : l'embrayage est ouvert, le moteur descend seul.
+    const early = engine.tick(
+      FRAME_S,
+      input({ ...rolling, isShifting: true, shiftProgress: 0.2 }),
+    )
+
+    expect(early.rpm).toBeLessThan(engaged.rpm)
+    expect(early.rpm).toBeGreaterThan(profile.engine.idleRpm)
+  })
+
+  it("sans progression, garde le comportement d'avant", () => {
+    const engine = makeEngine()
+    const engaged = settle(engine, 2, rolling)
+    const shifting = settle(engine, 0.5, { ...rolling, isShifting: true })
+
+    expect(shifting.rpm).toBeLessThan(engaged.rpm * 0.85)
+    expect(shifting.rpm).toBeLessThan(shifting.kinematicRpm)
+  })
+})
+
+/**
+ * Le coup de gaz suppose qu'on remet les gaz.
+ *
+ * David : « je crois que le rapport passe automatiquement au moment du coup de
+ * gaz, même si j'ai commencé à ralentir juste avant ». Un passage décidé
+ * légitimement dure six dixièmes de seconde, si bien que son coup de gaz tombe
+ * après un lever de pied survenu entre-temps. En montée, c'est incohérent : on
+ * ne relance pas un moteur qu'on vient d'abandonner. Au rétrogradage, c'est
+ * l'inverse — le coup de gaz *est* le geste.
+ */
+describe('coup de gaz et effort', () => {
+  const rolling = { kmh: 80, atStandstill: false, throttle: null }
+
+  function sommet(over: Partial<EngineInput>) {
+    const engine = makeEngine()
+    settle(engine, 2, rolling)
+    const frames = Math.round(0.6 / FRAME_S)
+    let haut = 0
+    for (let f = 0; f <= frames; f += 1) {
+      const s = engine.tick(
+        FRAME_S,
+        input({ ...rolling, isShifting: true, shiftProgress: f / frames, ...over }),
+      )
+      haut = Math.max(haut, s.rpm)
+    }
+    return haut
+  }
+
+  it('remonte le régime quand le coup de gaz est demandé', () => {
+    const avec = sommet({ shiftDipRpm: 450, shiftBlipRpm: 550 })
+    const sans = sommet({ shiftDipRpm: 450, shiftBlipRpm: 0 })
+
+    expect(avec).toBeGreaterThan(sans + 300)
+  })
+
+  it('ne remonte pas au-dessus du rapport visé sans coup de gaz', () => {
+    const engine = makeEngine()
+    const engaged = settle(engine, 2, rolling)
+    const haut = sommet({ shiftDipRpm: 450, shiftBlipRpm: 0 })
+
+    expect(haut).toBeLessThanOrEqual(engaged.rpm + 1)
+  })
+})

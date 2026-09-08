@@ -1219,6 +1219,13 @@ qu'on remarque surtout par leur absence. Chacun s'active séparément.
 | **Pétarade** | Claquements à l'échappement au lever de pied. Synthétisés, la banque sonore n'en contenant pas |
 | **À partir de** | Régime en deçà duquel rien ne se produit : il ne reste pas assez à brûler. C'est le régime **au moment où l'on coupe**, non celui constaté une demi-seconde plus tard |
 | **À-coup de passage** | Le creux du couple coupé, puis la reprise. Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est |
+| **Profondeur** | Combien le **niveau** baisse pendant la coupure. Mesuré sur le profil Route : 3,8 dB au creux à 0,35 |
+| **Coupure de couple** | Combien le moteur passe en roue libre le temps du passage. C'est ce qui fait entrer les couches pied levé, donc changer le **timbre** et pas seulement le niveau. Mesuré sur le profil Route : la part d'énergie tenue par les couches en charge passait de 0,926 à 0,926 — elle ne bougeait pas — et tombe à 0,223 au creux. Zéro garde le son de pleine charge d'un bout à l'autre |
+| **Plongée du régime** | De combien le moteur tombe **sous** le régime du nouveau rapport quand la boîte passe au neutre. Mesuré à 450 tr/min sur le profil Route, première en seconde : 4 692 tr/min, fond de la chute à 2 337 |
+| **Coup de gaz** | De combien le moteur remonte au-dessus du rapport visé, entre la chute au neutre et l'engagement. C'est le mouvement qui s'entend le mieux dans un passage : une montée de régime, l'oreille la suit. Mesuré à 550 tr/min sur Route : creux à 2 337, sommet à 3 364. Zéro laisse une séquence en trois temps |
+| **Clac de la boîte** | Le choc mécanique quand le rapport s'engage, au sommet du coup de gaz. Attaque en une milliseconde, trois composantes — la masse sous deux cents hertz, le corps du carter vers quatre cent cinquante, un soupçon de médium vers douze cents. Mesuré au réglage livré, en écart au moteur : −5,7 dB à 125 Hz, et seize décibels en dessous au-delà de deux kilohertz. Rien à voir avec le claquement d'échappement, qui est grave et traînant |
+| **Clac au rétrogradage** | Part du clac gardée quand la boîte descend un rapport. Le son est le même dans les deux sens ; ce qui change, c'est ce qu'il y a autour — on rétrograde pied levé ou en freinant, donc avec un moteur bien plus doux, et le même clac y ressort deux fois plus. Un pour le même niveau qu'en montant |
+| **Claquement de reprise** | Une détonation à l'échappement au moment où le couple revient. C'est la pétarade du lever de pied, tirée en un seul coup. Zéro n'en produit aucune |
 
 ### Couches
 
@@ -1730,11 +1737,173 @@ et chacune répond à une question différente :
   montée au régime défaisait la descente aussitôt et l'on entendait un
   aller-retour tous les trois km/h.
 
+Et **on ne monte pas non plus pendant qu'on ralentit**, ce qui n'est pas la même
+chose que pendant qu'on freine — lever le pied ne franchit pas le seuil de
+freinage. Cela vaut pour les deux façons de monter, et il a fallu les traiter
+l'une après l'autre : la montée en croisière, puis la montée au régime. Cette
+dernière lance un compte à rebours dès que le seuil est franchi, et plus rien ne
+l'annulait : le seuil atteint, un lever de pied dans la foulée, et le passage se
+produisait une demi-seconde plus tard alors que la voiture ralentissait déjà. Le
+compte à rebours est maintenant abandonné, pas suspendu — reprendre les gaz
+repart d'un compte neuf. La bande de croisière juge sur la dérive de la
+vitesse mesurée sur trois secondes : robuste au bruit, mais lente. Quand on lève
+le pied après une longue croisière, la stabilité est déjà acquise et la dérive
+met plus d'une seconde à voir le ralentissement — assez pour laisser passer un
+rapport de plus. Mesuré : un passage du quatrième au cinquième une seconde après
+le lever de pied, sur une perte de 0,5 km/h par seconde. L'accélération
+instantanée le sait tout de suite mais elle est bruitée ; on la cumule donc dans
+un compteur qui monte en ralentissant et redescend deux fois plus vite sinon, si
+bien qu'une croisière qui tremble autour de zéro ne l'atteint jamais.
+
+Et surtout, **le seuil de montée suit la demande et non la charge de l'instant**.
+
+Il se décale de seize cents tours selon l'effort, pour distinguer une conduite
+tranquille — qui monte tôt sur un rapport long — d'une accélération franche qui
+étire chaque rapport. Ce qu'il attend est l'**intention** du conducteur ; sur une
+vraie automatique, c'est la position de la pédale. Faute de pédale, la charge se
+déduit de l'accélération, c'est-à-dire du **résultat**, et les deux ne sont pas la
+même chose. David l'a relevé des deux côtés à la fois : « les rapports montent
+plus tôt quand on accélère moins, et plus tard après un kickdown ». En côte, pied
+au plancher, l'accélération est faible : la charge tombe, le seuil descend de huit
+cents tours et la boîte monte tôt — l'inverse de ce qu'il faudrait. Et au lever de
+pied, la charge s'effondre en une demi-seconde, donc le seuil passe sous le régime
+sans que le moteur ait bougé.
+
+La **demande** monte instantanément avec la charge — garder un rapport quand on
+remet les gaz doit être immédiat — et n'en redescend qu'en trois secondes. Une
+accélération franche garde donc ses rapports longs quelques secondes après qu'on
+a relâché, comme une boîte qui a compris qu'on conduisait vite ; et le seuil ne
+peut plus tomber que d'environ cinq cent trente tours par seconde sur le profil
+Route. Quatre gardes avaient été posées en aval avant d'en arriver là : trois
+dépendaient du moment où l'accélération mesurée devient franchement négative — or
+elle est lissée quand la charge ne l'est presque pas, si bien qu'elles arrivaient
+après.
+
+Enfin, **le passage immédiat ne vaut qu'en accélérant**. La temporisation de
+confirmation est court-circuitée dès que le régime dépasse le seuil de plus de
+quatre cents tours, pour qu'une forte accélération ne fasse pas filer le régime
+bien au-delà du réglage. Mais le seuil, lui, se décale de seize cents tours avec
+la charge : pied au plancher il est haut, et il s'effondre en une demi-seconde
+dès qu'on relâche, bien plus vite que le régime ne descend. Le dépassement se
+trouvait alors franchi non parce que le moteur montait, mais parce que la barre
+était tombée — et deux rapports passaient d'affilée, chacun voyant son propre
+seuil effondré. Mesuré : quatre mille huit cents tours en quatrième, lever de
+pied, cinquième puis sixième.
+
 Le rétrogradage forcé, lui, répond à une **montée** de charge et non à son
 niveau. Faute de pédale dans une voiture électrique, la charge est déduite de
 l'accélération : son niveau ne dit pas « on demande fort » mais « on accélère ».
 Le seuil se franchissait dès 3,6 km/h par seconde, et la boîte descendait pour
 cela.
+
+### Ce qu'on entend d'un passage de rapport
+
+Un passage se déroule en cinq temps, et c'est la description que David en a
+donnée en écoutant une vraie boîte : « accélération, montée de régime ; passage
+au neutre, descente rapide ; coup de gaz, montée rapide très courte ; passage du
+rapport, clac ; lâcher de l'embrayage, reprise du couple, descente rapide au
+régime des roues puis réaccélération. »
+
+Relevé sur le profil Route, première en seconde à 45 km/h, un point tous les
+seize millisecondes :
+
+| t (s) | avancement | régime | roues | part en charge | |
+|---|---|---|---|---|---|
+| 5,633 | — | 4 692 | 4 725 | 0,93 | en accélération |
+| 5,783 | 0,34 | **2 337** | 2 787 | 0,30 | fond de la chute au neutre |
+| 5,850 | 0,51 | **3 364** | 2 819 | 0,21 | sommet du coup de gaz |
+| 5,867 | 0,56 | 3 377 | 2 827 | 0,22 | **clac**, le rapport s'engage |
+| 6,033 | 0,98 | 2 910 | 2 907 | 0,90 | le couple est repris |
+| 6,050 | — | 2 912 | 2 915 | 0,93 | claquement d'échappement, puis réaccélération |
+
+Quatre choses s'y produisent, et une cinquième les rend possibles :
+
+- **Le couple se coupe.** L'effort vu par le mixage tombe le temps du passage,
+  ce qui fait entrer les couches pied levé : le timbre change vraiment, au lieu
+  que le même son baisse. Il fallait le faire à la main, car l'effort se déduit
+  de l'accélération et **la voiture, elle, ne coupe rien** — elle est électrique
+  et continue d'avancer pendant que la boîte imaginaire change de rapport.
+  Le régime, la boîte et la télémétrie continuent de voir l'effort vrai.
+- **Le régime plonge, puis remonte.** Embrayage ouvert, le moteur tombe sous le
+  régime du rapport visé ; le coup de gaz le relance au-dessus ; l'engagement le
+  ramène. Les deux amplitudes se règlent, et zéro supprime le mouvement
+  correspondant.
+
+  **En montée, le coup de gaz suit l'effort du moment.** Un passage dure six
+  dixièmes de seconde : décidé légitimement, il s'engage quand même si l'on
+  lève le pied entre-temps, et son coup de gaz tombe alors que la voiture
+  ralentit déjà — on entendait le moteur se relancer juste après l'avoir
+  abandonné. Pied levé, il n'y a donc plus de coup de gaz, seulement la chute.
+  **Au rétrogradage il reste entier** : c'est là qu'il est le geste du
+  conducteur, et l'on rétrograde précisément pied levé — le lier à l'effort le
+  supprimerait exactement quand il doit s'entendre.
+- **La boîte claque** au moment où le rapport s'engage, au sommet du coup de gaz
+  et non à la fin du passage : ce qui reste après lui, c'est l'embrayage qui se
+  lâche, et cela ne claque pas. C'est un **choc mécanique** et non un bruit
+  d'échappement — attaque en une milliseconde, extinction en trente, un
+  claquement clair vers deux kilohertz doublé d'un coup mat sous deux cents
+  hertz. Sans le second on entend un déclic ; sans le premier, une porte.
+- **L'échappement claque à la reprise**, une seule détonation quand le couple
+  revient : la pétarade du lever de pied, tirée en un coup au lieu d'une salve.
+
+**Et le passage dure assez pour que tout cela s'entende.** C'était le point
+bloquant : à 120 millisecondes, les quatre temps se chevauchaient et l'on ne
+percevait qu'un trou. Le temps de passage est monté à **600 ms** sur le profil
+Route et 480 sur Sport, ce qui donne 204 ms de chute, 108 de coup de gaz, 48
+d'engagement et 240 de reprise. C'est l'ordre de grandeur d'une boîte manuelle
+avec double débrayage, là où une boîte à double embrayage moderne tient en
+cinquante millisecondes. Le réglage monte jusqu'à 1 500 ms : il commande toute
+la séquence, la raccourcir la comprime, l'allonger l'étale.
+
+**Le clac ne passe pas par le saturateur, et c'est la seule façon qu'il
+s'entende.** Deux versions ont échoué avant celle-ci. La première était trop
+faible — 15,6 dB sous les crêtes du moteur, un passe-bande étroit jetant
+l'essentiel de l'énergie. La seconde, portée 4,2 dB **au-dessus** du moteur,
+était tout aussi inaudible, et le compteur de télémétrie montait pendant ce
+temps : ce n'était donc pas le déclenchement.
+
+La cause est la courbe du saturateur, indexée sur [-1, 1] — au-delà, Web Audio
+prend la valeur du bord. Le moteur crête déjà à 1,74 sur le bus, donc il sature
+en permanence, et **tout ce qui entre au-dessus de lui en sort au même niveau**.
+Mesuré à la courbe du profil Route : un clac 4,2 dB plus fort, un clac au
+maximum du curseur, et un clac dix fois trop fort sortent tous les trois à
+0,00 dB d'écart du moteur. Aucun réglage ne pouvait le rendre audible.
+
+Les événements brefs — le clac comme la pétarade — sont donc injectés **après le
+saturateur**, directement sur le limiteur. La sortie reste protégée, et l'attaque
+de deux millisecondes du limiteur laisse passer le début du transitoire, qui est
+exactement ce qui fait le claquement.
+
+**Et une crête n'est pas un niveau.** Une fois sorti du saturateur, le clac
+s'entendait au bouton mais pas en roulant. Sa crête dépassait pourtant celle du
+moteur : c'est cette mesure-là qui était trompeuse. Reprise par bandes d'octave,
+elle donne l'écart réel — le clac arrivait **24 à 40 dB sous le moteur** partout
+où l'oreille écoute. Sa rampe d'extinction descendait si vite que toute son
+énergie tenait dans la première milliseconde.
+
+Il s'éteint maintenant à constante de temps, sur cinq à douze centièmes de
+seconde selon la composante.
+
+**Et il est grave, pas aigu.** Une première version corrigée plaçait son énergie
+vers trois kilohertz et au-delà : audible enfin, mais « trop sèche, aiguë et
+courte », et si perçante qu'au vingtième du réglage elle dominait encore. Elle
+culminait à −4 dB du moteur à huit kilohertz et à +13 dB à seize. La version
+livrée fait l'inverse — mesurée en écart au moteur : **−5,7 dB à 125 Hz**,
+−10,7 à 250, et seize décibels en dessous partout au-dessus de deux kilohertz.
+Un choc dans un carter n'est pas un claquement de fouet.
+
+Trois composantes : la masse sous deux cents hertz, le corps du carter vers
+quatre cent cinquante, et juste assez de médium vers douze cents pour qu'on
+entende une pièce et non un coup sourd. Un bouton
+**« Écouter le clac »**, dans la configuration, le joue seul — un événement d'un
+centième de seconde ne se règle pas en attendant le prochain passage de rapport.
+Et le compteur « Clacs de boîte », en télémétrie, dit s'il est tiré : il monte
+alors même qu'on n'entend rien quand le défaut est dans la chaîne.
+
+La coupure de couple, la plongée, le coup de gaz, le clac et le claquement se
+règlent séparément et se coupent à zéro. La synchronisation du régime sur la
+durée du passage, elle, n'a pas d'interrupteur : c'est la correction d'un
+défaut, non un effet.
 
 ### Deux grandeurs, et non une : la charge et l'effort
 
@@ -1975,6 +2144,7 @@ chaque essai.
 | 30 | engine-sim en WebAssembly : le son sort en direct et suit le régime | fait, reste à écouter |
 | 31 | Tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils | fait, NAS en place, reste un essai en roulant |
 | 32 | Plusieurs banques de son : découvertes sur le serveur, mesurées par un outil, choisies par profil | fait, reste à essayer hors réseau |
+| 33 | Le passage de rapport s'entend : couple coupé, embrayage qui se referme, claquement de reprise | fait, reste à écouter |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

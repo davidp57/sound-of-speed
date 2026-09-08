@@ -680,6 +680,72 @@ export interface FeelPreset {
     enabled: boolean
     /** Profondeur du creux de niveau pendant la coupure, de 0 à 1. */
     depth: number
+    /**
+     * Profondeur de la coupure d'effort pendant le passage, de 0 à 1.
+     *
+     * Le creux de niveau seul ne faisait qu'une chose : baisser le son de
+     * 3,7 dB sans en changer le timbre. Mesuré sur le profil Route, l'effort
+     * restait à 1,000 du début à la fin d'un passage — il se déduit de
+     * l'accélération, et la voiture, elle, ne coupe rien : elle continue
+     * d'avancer pendant que la boîte imaginaire change de rapport. Rien ne
+     * disait donc au son que le couple était coupé.
+     *
+     * Cette profondeur abaisse l'effort **vu par le mixage** le temps du
+     * passage, ce qui fait entrer les couches pied levé et change vraiment le
+     * timbre. Zéro rend le comportement d'avant.
+     */
+    cutDepth: number
+    /**
+     * Plongée du régime sous le rapport visé, en tours par minute, le temps du
+     * passage.
+     *
+     * Embrayage ouvert, le moteur ne sait pas où il va : il tombe sous le
+     * régime du nouveau rapport, et le réengagement l'y ramène. C'est le
+     * « diminue, remonte, repart » d'une vraie boîte. Le phénomène existe sans
+     * réglage, mais seulement là où la chute libre dépasse l'écart entre deux
+     * rapports, c'est-à-dire en haut de boîte ; ce réglage le donne partout.
+     *
+     * **Une valeur négative donne un coup de gaz** au lieu d'un creux — le
+     * geste du double débrayage, où l'on monte le régime avant d'engager.
+     */
+    dipRpm: number
+    /**
+     * Hauteur du coup de gaz, en tours par minute au-dessus du rapport visé.
+     *
+     * Le troisième temps de la séquence : le moteur est tombé au neutre, on
+     * relance avant d'engager. C'est le geste du double débrayage, et c'est ce
+     * qui s'entend le plus dans un passage — bien plus que le creux, parce
+     * qu'une montée de régime est un mouvement que l'oreille suit.
+     *
+     * Zéro supprime la remontée et laisse une séquence en trois temps.
+     */
+    blipRpm: number
+    /**
+     * Clac de la boîte quand le rapport s'engage, de 0 à 1.
+     *
+     * Un choc mécanique, pas un bruit d'échappement : attaque en une
+     * milliseconde, extinction en trente, un claquement clair vers deux
+     * kilohertz doublé d'un coup mat sous deux cents hertz. C'est ce
+     * doublement qui fait entendre du métal plutôt qu'un déclic.
+     */
+    clack: number
+    /**
+     * Clac au rétrogradage, en proportion de celui de la montée.
+     *
+     * Le son est le même dans les deux sens ; ce qui change, c'est ce qu'il y a
+     * autour. On rétrograde pied levé ou en freinant, donc avec un moteur bien
+     * plus doux : à intensité égale, le clac y ressort nettement plus. Un
+     * réglage séparé plutôt qu'une pondération automatique, parce que le bon
+     * dosage dépend de la banque et se juge à l'oreille.
+     */
+    clackDownshift: number
+    /**
+     * Claquement d'échappement à la reprise, de 0 à 1. Zéro n'en produit aucun.
+     *
+     * C'est la pétarade déjà synthétisée pour le lever de pied, tirée en un
+     * seul coup au moment où le couple revient.
+     */
+    crackle: number
   }
 }
 

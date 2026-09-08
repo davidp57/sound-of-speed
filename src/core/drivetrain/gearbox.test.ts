@@ -30,12 +30,21 @@ const FRAME_S = 1 / 60
  */
 const accelMs2 = 0
 
-/** Profil de test : dispersion nulle, pour que les passages soient déterministes. */
+/**
+ * Profil de test : dispersion nulle, pour que les passages soient déterministes,
+ * et passage court.
+ *
+ * Ces tests portent sur les seuils et les temporisations de la boîte, pas sur la
+ * durée d'une coupure. Le profil livré est passé à 380 ms pour laisser au son la
+ * place de sa séquence — chute, coup de gaz, clac, reprise — et une boîte qui
+ * reste occupée un tiers de seconde décale tout ce que ces tests comptent. Ils
+ * déclarent donc la durée qu'ils supposent, au lieu de la subir.
+ */
 function profile(over: Partial<DrivetrainPreset> = {}, feel: Partial<FeelPreset> = {}): Profile {
   const base = createDefaultProfile()
   return {
     ...base,
-    drivetrain: { ...base.drivetrain, upshiftJitterRpm: 0, ...over },
+    drivetrain: { ...base.drivetrain, upshiftJitterRpm: 0, shiftTimeMs: 120, ...over },
     feel: { ...base.feel, ...feel },
   }
 }
@@ -1133,5 +1142,186 @@ describe('Gearbox — on ne monte pas en freinant', () => {
       // À la dispersion de charge près : le seuil se décale avec l'effort.
       expect(regime).toBeLessThanOrEqual(seuil + p.drivetrain.upshiftLoadSpreadRpm)
     }
+  })
+})
+
+/**
+ * Ralentir n'est pas croiser, même très doucement.
+ *
+ * David, en laissant la voiture décélérer : « parfois le simu passe une vitesse
+ * supérieure au lieu de laisser ralentir et de finalement rétrograder ». La
+ * bande de croisière est pourtant serrée du côté du ralentissement — un dixième
+ * de m/s². Mais une décélération de roue libre s'y tient tout juste, et la
+ * dérive mesurée oscille autour de la limite : chaque retour dans la bande
+ * remet à zéro le compte de sortie, la tolérance de quatre dixièmes de seconde
+ * absorbe le reste, et la vitesse tenue n'est jamais démentie alors qu'on perd
+ * un kilomètre à l'heure toutes les deux secondes.
+ */
+describe('Gearbox — ralentir doucement ne fait pas monter un rapport', () => {
+  it('ne monte pas en roue libre, même sur une décélération très douce', () => {
+    const p = profile()
+    // 90 km/h, puis une perte de 0,4 km/h par seconde : 0,11 m/s², à peine
+    // au-delà de la limite de la bande, et bien en deçà d'un freinage.
+    // On croise d'abord assez longtemps pour que la boîte ait acquis sa
+    // stabilité et fini de monter : c'est l'état réel quand on lève le pied.
+    const CROISIERE = 12
+    const { shifts } = drive(
+      p,
+      (t) => (t < CROISIERE ? 90 : 90 - 0.5 * (t - CROISIERE)),
+      CROISIERE + 20,
+    )
+
+    const montees = shifts.filter((s) => s.to > s.from && s.t > CROISIERE)
+    expect(montees).toEqual([])
+  })
+
+  it("n'achève pas une montée au régime si on lève le pied avant", () => {
+    const p = profile()
+    // On accélère jusqu'à frôler le seuil du premier rapport, puis on lâche :
+    // le compte à rebours du passage est lancé, la vitesse commence à baisser.
+    // Le seuil est franchi, donc le compte à rebours du passage est lancé ;
+    // on lève le pied dans la foulée, avant qu'il n'expire.
+    const seuil = kmhForRpm(p, 1, p.drivetrain.upshiftRpm[1]!)
+    const monteeS = 6
+    const { shifts } = drive(
+      p,
+      (t) =>
+        t < monteeS
+          ? (seuil * 1.01 * t) / monteeS
+          : Math.max(0, seuil * 1.01 - 0.6 * (t - monteeS)),
+      monteeS + 12,
+    )
+
+    const tardives = shifts.filter((s) => s.to > s.from && s.t >= monteeS)
+    expect(tardives).toEqual([])
+  })
+
+  it('monte toujours quand la vitesse est vraiment tenue', () => {
+    const p = profile()
+    const { shifts } = drive(p, () => 90, 25)
+
+    expect(shifts.filter((s) => s.to > s.from).length).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * Lever le pied ne doit pas faire tomber le seuil sous le régime.
+ *
+ * David : « accélération jusqu'à 4800 tr/min en 4e, arrêt de l'accélération, le
+ * simu passe la 5 et la 6 ». Le seuil de montée se décale de 1600 tr/min avec la
+ * charge : pied au plancher il est haut, et il s'effondre en une demi-seconde
+ * quand on relâche. Le régime, lui, met bien plus longtemps à descendre. Le
+ * seuil passe donc sous lui d'un coup, de bien plus que la marge de dépassement,
+ * et le passage se fait sans attendre — deux fois de suite, puisque le rapport
+ * suivant voit son seuil effondré de la même façon.
+ */
+describe('Gearbox — lever le pied ne déclenche pas de cascade', () => {
+  it('ne monte pas quand la charge chute alors que le régime est haut', () => {
+    const p = profile()
+    const gearbox = makeGearbox(p)
+    const gear4 = 3
+
+    // On place la boîte en 4e, à un régime franchement sous le seuil chargé.
+    const kmhDepart = kmhForRpm(p, gear4, 4800)
+    let kmh = kmhDepart
+    let load = 1
+    let last = gearbox.tick(FRAME_S, {
+      rpmInGear: rpmInGearAt(p, kmh),
+      atStandstill: false,
+      load,
+      kmh,
+      accelMs2: 2,
+    })
+    // Deux secondes pied au plancher : la boîte s'installe en 4e.
+    for (let f = 0; f * FRAME_S < 2; f += 1) {
+      last = gearbox.tick(FRAME_S, {
+        rpmInGear: rpmInGearAt(p, kmh),
+        atStandstill: false,
+        load,
+        kmh,
+        accelMs2: 0.2,
+      })
+    }
+    const avant = last.gear
+
+    // Lever de pied. La charge s'effondre en une demi-seconde et la vitesse
+    // décroît de cinq km/h par seconde, comme la traînée du simulateur. Mais
+    // l'accélération que voit la boîte est **lissée** par le conditionneur :
+    // elle met le même temps à passer du positif au négatif, et c'est dans
+    // cette fenêtre que le seuil tombe sous le régime.
+    for (let f = 0; f * FRAME_S < 4; f += 1) {
+      const t = f * FRAME_S
+      load = Math.max(0, 1 - t / 0.5)
+      kmh = Math.max(0, kmhDepart - 5 * t)
+      const accelMs2 = 0.2 + (-1.39 - 0.2) * Math.min(1, t / 0.5)
+      last = gearbox.tick(FRAME_S, {
+        rpmInGear: rpmInGearAt(p, kmh),
+        atStandstill: false,
+        load,
+        kmh,
+        accelMs2,
+      })
+    }
+
+    expect(last.gear).toBeLessThanOrEqual(avant)
+  })
+})
+
+/**
+ * Le seuil de montée suit la **demande**, pas la charge de l'instant.
+ *
+ * La demande monte avec la charge et n'en redescend qu'en trois secondes. Sur le
+ * profil Route, dont l'écart vaut seize cents tours, le seuil ne peut donc
+ * descendre que d'environ cinq cent trente tours par seconde — là où la charge,
+ * elle, s'effondre en une demi-seconde au lever de pied.
+ *
+ * David : « les rapports montent plus tôt quand on accélère moins, et plus tard
+ * après un kickdown ». Les deux viennent du même décalage, et il attend
+ * l'intention du conducteur quand la charge ne donne que le résultat.
+ */
+describe('Gearbox — le seuil de montée suit la demande', () => {
+  it('ne suit pas la charge quand elle s’effondre', () => {
+    const p = profile()
+    const gearbox = makeGearbox(p)
+    const kmh = kmhForRpm(p, 1, p.drivetrain.upshiftRpm[1]! - 900)
+    const entree = { rpmInGear: rpmInGearAt(p, kmh), atStandstill: false, kmh, accelMs2: 0.5 }
+
+    let haut = gearbox.tick(FRAME_S, { ...entree, load: 1 })
+    for (let f = 0; f * FRAME_S < 1; f += 1) {
+      haut = gearbox.tick(FRAME_S, { ...entree, load: 1 })
+    }
+
+    // La charge tombe d'un coup : le seuil ne doit pas la suivre.
+    const apres = gearbox.tick(FRAME_S, { ...entree, load: 0 })
+    expect(haut.upshiftThresholdRpm - apres.upshiftThresholdRpm).toBeLessThan(20)
+
+    // Une seconde plus tard, il a perdu le tiers des seize cents tours, pas tout.
+    let fin = apres
+    for (let f = 0; f * FRAME_S < 1; f += 1) {
+      fin = gearbox.tick(FRAME_S, { ...entree, load: 0 })
+    }
+    const chute = haut.upshiftThresholdRpm - fin.upshiftThresholdRpm
+    expect(chute).toBeGreaterThan(400)
+    expect(chute).toBeLessThan(700)
+
+    // Trois secondes après, il est arrivé au bout de sa course.
+    for (let f = 0; f * FRAME_S < 3; f += 1) {
+      fin = gearbox.tick(FRAME_S, { ...entree, load: 0 })
+    }
+    const totale = haut.upshiftThresholdRpm - fin.upshiftThresholdRpm
+    expect(totale).toBeGreaterThan(p.drivetrain.upshiftLoadSpreadRpm * 0.9)
+  })
+
+  it('remonte aussitôt quand on remet les gaz', () => {
+    const p = profile()
+    const gearbox = makeGearbox(p)
+    const kmh = kmhForRpm(p, 1, p.drivetrain.upshiftRpm[1]! - 900)
+    const entree = { rpmInGear: rpmInGearAt(p, kmh), atStandstill: false, kmh, accelMs2: 0.5 }
+
+    let bas = gearbox.tick(FRAME_S, { ...entree, load: 0 })
+    for (let f = 0; f * FRAME_S < 3; f += 1) bas = gearbox.tick(FRAME_S, { ...entree, load: 0 })
+    const remis = gearbox.tick(FRAME_S, { ...entree, load: 1 })
+
+    expect(remis.upshiftThresholdRpm - bas.upshiftThresholdRpm).toBeGreaterThan(1000)
   })
 })

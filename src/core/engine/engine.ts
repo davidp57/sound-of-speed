@@ -101,6 +101,24 @@ export interface EngineState {
  */
 const CLUTCH_KMH = 25
 
+/**
+ * Découpage d'un passage de rapport, en fractions de sa durée.
+ *
+ * Quatre phases : la chute au neutre, le coup de gaz, le temps mort où le
+ * rapport s'engage — c'est là que tombe le clac —, puis la reprise du couple.
+ * Le coup de gaz est le plus court des quatre : c'est un geste sec.
+ */
+const SHIFT_PHASES = { dropEnd: 0.34, blipEnd: 0.52, clackEnd: 0.6 } as const
+
+/** Fraction du passage à laquelle le rapport s'engage, et où le clac tombe. */
+export const SHIFT_CLACK_AT = SHIFT_PHASES.blipEnd
+
+/** Interpolation adoucie aux deux bouts : un régime ne casse pas de pente. */
+function ease(from: number, to: number, t: number): number {
+  const x = clamp(t, 0, 1)
+  return from + (to - from) * x * x * (3 - 2 * x)
+}
+
 export interface EngineInput {
   kmh: number
   accelMs2: number
@@ -109,6 +127,27 @@ export interface EngineInput {
   wheelRadiusM: number
   atStandstill: boolean
   isShifting: boolean
+  /**
+   * Avancement du passage en cours, de 0 à 1. Sans elle, le moteur reste
+   * découplé toute la durée du passage et ne rejoint les roues qu'après —
+   * ce qui décale la chute de régime derrière le creux de niveau.
+   */
+  shiftProgress?: number
+  /**
+   * Plongée du régime sous le rapport visé, en tours par minute, le temps du
+   * passage. Négatif donne un coup de gaz au lieu d'un creux.
+   *
+   * C'est un réglage de ressenti et non une donnée de la boîte, mais il arrive
+   * par l'entrée comme la progression : le moteur ne connaît que le régime et
+   * les rapports, et c'est l'assemblage qui lui dit ce que le profil veut
+   * entendre.
+   */
+  shiftDipRpm?: number
+  /**
+   * Hauteur du coup de gaz au-dessus du régime du rapport visé, en tours par
+   * minute. Zéro supprime la remontée et laisse la séquence en trois temps.
+   */
+  shiftBlipRpm?: number
   /**
    * Position de l'accélérateur, de 0 à 1, quand la source la connaît (simulateur).
    * En conduite réelle il n'y en a pas : passer `null` et la charge sera
@@ -129,6 +168,14 @@ export class Engine {
    * suite de pas donne donc la même suite de régimes entendus.
    */
   private flutterTimeS = 0
+  /**
+   * Régime au moment où le passage a commencé, ou `null` hors passage.
+   *
+   * La séquence part de là : sans ce point de départ mémorisé, la descente
+   * repartirait du régime courant à chaque tour et la trajectoire dépendrait
+   * de la cadence d'appel.
+   */
+  private shiftStartRpm: number | null = null
 
   constructor(
     private preset: EnginePreset,
@@ -149,6 +196,7 @@ export class Engine {
     this.limiterCutRemainingS = 0
     this.limiterActive = false
     this.flutterTimeS = 0
+    this.shiftStartRpm = null
   }
 
   /** Régime qu'imposerait la vitesse dans un rapport total donné. */
@@ -163,7 +211,7 @@ export class Engine {
     const kinematic = Engine.kinematicRpm(input.kmh, input.totalRatio, input.wheelRadiusM)
     const target = this.resolveTarget(kinematic, input)
 
-    this.advanceRpm(step, target, input)
+    this.advanceRpm(step, target, kinematic, input)
     this.advanceLoad(step, input)
     this.applyLimiter(step)
 
@@ -240,11 +288,56 @@ export class Engine {
   }
 
   /**
+   * La trajectoire du régime pendant un passage, en cinq temps.
+   *
+   * Les quatre bornes découpent la durée du passage. Elles sont en dur : ce
+   * sont des proportions du geste, pas des goûts — c'est `shiftTimeMs` qui
+   * décide de la durée réelle de chacune, et donc de ce qui s'entend.
+   *
+   * ```
+   *  départ ──┐                    ┌── sommet du coup de gaz
+   *           │      ╱╲           ╱
+   *           └─────╱  ╲─────────╱ clac
+   *            creux     ╲______╱
+   *                       régime des roues, puis réaccélération
+   * ```
+   */
+  private shiftRpm(progress: number, kinematic: number, input: EngineInput): number {
+    if (this.shiftStartRpm === null) this.shiftStartRpm = this.rpm
+    const start = this.shiftStartRpm
+    const idle = this.preset.idleRpm
+
+    const floor = Math.max(idle, kinematic - Math.max(0, input.shiftDipRpm ?? 0))
+    const peak = Math.max(floor, kinematic + Math.max(0, input.shiftBlipRpm ?? 0))
+
+    // Le neutre : le couple lâche, le moteur tombe. Rapide, mais pas
+    // instantané — un volant moteur a de l'inertie.
+    if (progress < SHIFT_PHASES.dropEnd) {
+      return ease(start, floor, progress / SHIFT_PHASES.dropEnd)
+    }
+    // Le coup de gaz : court et franc, c'est lui qu'on entend le mieux.
+    if (progress < SHIFT_PHASES.blipEnd) {
+      const t = (progress - SHIFT_PHASES.dropEnd) / (SHIFT_PHASES.blipEnd - SHIFT_PHASES.dropEnd)
+      return ease(floor, peak, t)
+    }
+    // Le rapport s'engage : c'est là que tombe le clac, déclenché ailleurs.
+    if (progress < SHIFT_PHASES.clackEnd) return peak
+    // L'embrayage se lâche : le régime est repris par les roues.
+    const t = (progress - SHIFT_PHASES.clackEnd) / (1 - SHIFT_PHASES.clackEnd)
+    return ease(peak, kinematic, t)
+  }
+
+  /**
    * Le régime ne saute pas à sa cible : le volant moteur a de l'inertie. Deux
    * constantes distinctes, parce qu'un moteur monte plus vite qu'il ne redescend
    * quand il est libre — et l'inverse quand la roue l'entraîne.
    */
-  private advanceRpm(dt: number, target: number, input: EngineInput): void {
+  private advanceRpm(
+    dt: number,
+    target: number,
+    kinematic: number,
+    input: EngineInput,
+  ): void {
     const coupled = !input.atStandstill && !input.isShifting
     const rate = target > this.rpm ? this.preset.freeRevRate : this.preset.engineBraking
     const inertia = Math.max(0.05, this.preset.inertia)
@@ -259,6 +352,31 @@ export class Engine {
         target > this.rpm
           ? Math.min(target, this.rpm + delta)
           : Math.max(target, this.rpm - delta)
+    }
+
+    // Le passage de rapport, en cinq temps.
+    //
+    // C'est la séquence que David décrit en écoutant une vraie boîte :
+    // « accélération, montée de régime ; passage au neutre, descente rapide ;
+    // coup de gaz, montée rapide très courte ; passage du rapport, clac ;
+    // lâcher de l'embrayage, reprise du couple, descente rapide au régime des
+    // roues puis réaccélération ».
+    //
+    // Trois versions ont précédé celle-ci et aucune ne s'entendait. La
+    // première laissait le régime descendre au frein moteur pendant tout le
+    // passage puis rattraper après ; la deuxième le ramenait dans le temps du
+    // passage, mais en ligne droite ; la troisième lui faisait creuser un
+    // trou sous le rapport visé. Ce qui manquait à toutes : **la remontée**,
+    // et surtout du temps. Un passage durait 120 ms, et rien de tout cela
+    // n'est audible en un dixième de seconde — c'est `shiftTimeMs`, dans la
+    // transmission, qui décide si la séquence a la place d'exister.
+    // Sans progression fournie, on ne sait pas où en est le passage : le moteur
+    // reste simplement découplé, comme avant que la séquence existe. C'est le
+    // cas des bancs qui tiennent `isShifting` sans dérouler le temps.
+    if (input.isShifting && input.shiftProgress !== undefined) {
+      this.rpm = this.shiftRpm(clamp(input.shiftProgress, 0, 1), kinematic, input)
+    } else if (!input.isShifting) {
+      this.shiftStartRpm = null
     }
 
     this.rpm = clamp(this.rpm, 0, this.preset.redlineRpm)

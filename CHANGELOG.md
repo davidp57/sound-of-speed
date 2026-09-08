@@ -22,6 +22,98 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un passage de rapport se déroule en cinq temps.** Il n'en avait qu'un :
+  baisser le niveau de 3,8 dB pendant un dixième de seconde, sur un timbre
+  inchangé. Trois versions ont suivi sans que David entende de différence — « on
+  entend un tout petit claquement, c'est tout ; pour le couple, j'ai pas
+  l'impression que ça ait changé quoi que ce soit ». La quatrième suit la
+  description qu'il a donnée d'une vraie boîte : « passage au neutre, descente
+  rapide ; coup de gaz, montée rapide très courte ; passage du rapport, clac ;
+  lâcher de l'embrayage, descente rapide au régime des roues puis
+  réaccélération ».
+
+  **Ce qui manquait d'abord, c'était le temps.** Un passage durait 120 ms, et
+  rien de tout cela n'est audible en un dixième de seconde : les quatre temps se
+  chevauchaient et il ne restait qu'un trou. Le temps de passage est monté à
+  **600 ms** sur Route et 480 sur Sport — « dans la vidéo ça dure au moins
+  500 ms, voire plus : on a bien le temps de tout entendre » — soit 204 ms de
+  chute, 108 de coup de gaz, 48 d'engagement et 240 de reprise. Le curseur, qui
+  s'arrêtait à 500 ms, va maintenant jusqu'à 1 500.
+
+  **Et le clac était avalé par le saturateur.** « J'ai beau mettre au max, je
+  n'entends aucun claquement de boîte » — puis, le compteur de télémétrie une
+  fois posé : « toujours pas de claquement, mais le compteur monte ». Le
+  déclenchement était donc hors de cause, et c'est la chaîne de sortie qui
+  l'était.
+
+  La courbe du saturateur est indexée sur [-1, 1] : au-delà, Web Audio prend la
+  valeur du bord. Or le moteur crête à 1,74 sur le bus, donc il sature déjà en
+  permanence — et **tout ce qui entre au-dessus de lui en sort au même niveau**.
+  Mesuré sur la courbe du profil Route : un clac 4,2 dB plus fort, un clac au
+  maximum du curseur et un clac dix fois trop fort sortent tous les trois à
+  0,00 dB d'écart du moteur. Aucune valeur ne pouvait le rendre audible, ce qui
+  explique aussi pourquoi la pétarade s'entendait « toute petite ».
+
+  Les deux événements brefs sont désormais injectés **après le saturateur**,
+  directement sur le limiteur : la sortie reste protégée, et l'attaque de deux
+  millisecondes du limiteur laisse passer le transitoire. Le clac a par ailleurs
+  été refait en trois composantes — corps, métal, masse — après une première
+  mesure qui le trouvait 15,6 dB sous le moteur.
+
+  **Restait une seconde cause, et une mesure fausse de ma part.** Sorti du
+  saturateur, le clac s'entendait au bouton mais toujours pas en roulant. Sa
+  crête dépassait pourtant celle du moteur — mais une crête n'est pas un niveau.
+  Repris par bandes d'octave, l'écart réel était de **24 à 40 dB sous le
+  moteur** partout où l'oreille écoute : sa rampe d'extinction descendait si
+  vite que toute son énergie tenait dans la première milliseconde. Il s'éteint
+  maintenant à constante de temps, avec des gains triplés. En écart au moteur au
+  réglage livré : −8 dB à 500 Hz, +2 à 1 kHz, +10 à 2 kHz, +14 à 4 kHz, +23 à
+  8 kHz.
+
+  **Puis il a fallu le rendre sourd.** Audible enfin, il était « trop sec, aigu
+  et court ; dans la vidéo c'est un son un peu plus long et surtout plus
+  sourd » — et si perçant qu'au vingtième du réglage il dominait encore. Il
+  culminait à −4 dB du moteur à huit kilohertz et à +13 dB à seize. La version
+  livrée place son énergie dans le grave : −5,7 dB à 125 Hz, −10,7 à 250, et
+  seize décibels sous le moteur partout au-dessus de deux kilohertz. Trois
+  composantes — la masse, le corps du carter, un soupçon de médium — et des
+  extinctions de cinq à douze centièmes de seconde. Un choc dans un carter n'est
+  pas un claquement de fouet.
+
+  **Le clac se dose séparément au rétrogradage.** Le son est le même dans les
+  deux sens ; ce qui change, c'est ce qu'il y a autour. On rétrograde pied levé
+  ou en freinant, donc avec un moteur bien plus doux, et le même clac y ressort
+  nettement plus. Un réglage plutôt qu'une pondération automatique : le bon
+  dosage dépend de la banque et se juge à l'oreille. Livré à 0,55.
+
+  Un bouton **« Écouter le clac »** apparaît dans la configuration : un
+  événement d'un centième de seconde ne se règle pas en attendant le prochain
+  passage de rapport. Son curseur monte maintenant à 3.
+
+  Relevé sur Route, première en seconde : 4 692 tr/min, fond de la chute à
+  **2 337** au tiers du passage, sommet du coup de gaz à **3 364**, clac à
+  l'engagement, retour à 2 910 pour 2 907 aux roues, puis réaccélération. La
+  part d'énergie tenue par les couches en charge suit — 0,93, puis 0,21 au
+  creux, puis 0,93.
+
+  **Le clac est un choc mécanique et non un bruit d'échappement** : attaque en
+  une milliseconde là où la pétarade en prend quatre, extinction en trente
+  millisecondes au lieu de cent vingt, et deux composantes — un claquement clair
+  vers deux kilohertz qui donne le métal, un coup mat sous deux cents hertz qui
+  donne la masse. Sans le second on entend un déclic, sans le premier une porte
+  qui ferme. Il tombe au sommet du coup de gaz, quand le rapport s'engage, et
+  non à la fin du passage : ce qui reste après lui, c'est l'embrayage qui se
+  lâche, et cela ne claque pas.
+
+  Cinq réglages, tous neutralisables à zéro : coupure de couple, plongée du
+  régime, coup de gaz, clac de la boîte, claquement d'échappement. Les lois du
+  curseur calme-sportif suivent les nouvelles plages, si bien que le caractère
+  relu d'un profil livré ne bouge pas.
+
+  **Les profils déjà enregistrés gardent leurs anciennes valeurs**, temps de
+  passage compris : sans une remise aux valeurs d'usine de la transmission et du
+  caractère, la séquence n'a pas la place de s'entendre.
+
 - **Le son se débouche en accélérant.** David voulait retrouver sous charge ce
   qu'il entend en levant le pied : « le son est plus clair, moins sourd, comme si
   on enlevait un bouchon ». Deux mécanismes ont été essayés et jetés le même
@@ -387,6 +479,84 @@ Toutes les évolutions notables du projet. Format
   Le format de profil passe en version 5 : un profil enregistré sans définition
   reçoit celle de son profil d'usine.
 
+
+### Corrigé
+
+- **Le coup de gaz ne se produit plus quand on a levé le pied.** David : « je
+  crois que le rapport passe automatiquement au moment du coup de gaz, même si
+  j'ai commencé à ralentir juste avant. »
+
+  Deux effets se cumulaient. Le blocage des montées demandait six dixièmes de
+  seconde de ralentissement avéré pour agir ; il en demande un tiers. Et surtout,
+  un passage décidé légitimement dure lui-même six dixièmes de seconde : il
+  s'engage quand même, et son coup de gaz tombe alors que la voiture ralentit
+  déjà. En montée, celui-ci suit donc l'effort du moment — pied levé, il ne
+  reste que la chute. Au rétrogradage il reste entier : c'est là qu'il est le
+  geste du conducteur, et l'on rétrograde précisément pied levé.
+
+- **La boîte ne monte plus un rapport pendant qu'on ralentit.** David, en
+  laissant décélérer : « parfois le simu passe une vitesse supérieure au lieu de
+  laisser ralentir et de finalement rétrograder ; et comme le son du moteur est
+  faible en décélération, on entend le claquement fort ».
+
+  La bande de croisière juge sur la dérive de la vitesse mesurée sur trois
+  secondes — robuste au bruit, mais lente. Quand on lève le pied après une
+  longue croisière, la stabilité est déjà acquise et la dérive met plus d'une
+  seconde à voir le ralentissement : assez pour laisser passer un rapport de
+  plus. Reproduit au banc — un passage du quatrième au cinquième une seconde
+  après le lever de pied, sur une perte de 0,5 km/h par seconde.
+
+  L'accélération instantanée le sait tout de suite mais elle est bruitée à un
+  dixième de m/s². Elle est donc cumulée dans un compteur qui monte pendant
+  qu'on ralentit et redescend deux fois plus vite sinon : une croisière qui
+  tremble autour de zéro ne l'atteint jamais, un vrai ralentissement le
+  franchit en un tiers de seconde.
+
+  **Et surtout, le seuil de montée suit la demande et non la charge.** C'est
+  David qui a vu la cause : « les rapports montent plus tôt quand on accélère
+  moins, et plus tard après un kickdown ; je pense que ça a un lien ». Les deux
+  viennent du même décalage de seize cents tours.
+
+  Ce décalage attend l'**intention** du conducteur — sur une vraie automatique,
+  la position de la pédale. Faute de pédale, la charge se déduit de
+  l'accélération, donc du **résultat**. En côte, pied au plancher, l'accélération
+  est faible : la charge tombe, le seuil descend de huit cents tours et la boîte
+  monte tôt, l'inverse de ce qu'il faudrait. Et au lever de pied, la charge
+  s'effondre en une demi-seconde, si bien que le seuil passe sous le régime sans
+  que le moteur ait bougé.
+
+  La demande monte instantanément avec la charge et n'en redescend qu'en trois
+  secondes : une accélération franche garde ses rapports longs quelques secondes
+  après qu'on a relâché, et le seuil ne peut plus tomber que d'environ cinq cent
+  trente tours par seconde. Relevé sur le profil Route, quatrième à 4000 tr/min
+  puis lever de pied : plus aucun passage dans les trois secondes qui suivent.
+
+  Quatre gardes avaient été posées en aval avant d'en arriver là ; trois
+  dépendaient du moment où l'accélération mesurée devient franchement négative,
+  or elle est lissée quand la charge ne l'est presque pas. La quatrième freinait
+  la descente du seuil : la demande la remplace, en disant pourquoi il ne doit
+  pas descendre.
+
+  **Et le passage immédiat ne vaut plus qu'en accélérant.** « Accélération
+  jusqu'à 4800 tr/min en 4e, arrêt de l'accélération, le simu passe la 5 et la
+  6. » Le seuil de montée se décale de seize cents tours avec la charge : pied
+  au plancher il est haut, et il s'effondre en une demi-seconde quand on
+  relâche, bien plus vite que le régime ne descend. La marge de dépassement — qui
+  court-circuite la temporisation — se trouvait franchie non parce que le moteur
+  montait, mais parce que la barre était tombée. Deux rapports passaient
+  d'affilée, chacun voyant son propre seuil effondré, et sans laisser aux gardes
+  précédentes le temps d'agir. S'y ajoute un blocage immédiat au-delà d'un demi
+  m/s² de décélération, où le cumul n'apporte plus aucune certitude : la traînée
+  du simulateur en donne déjà 1,4 à cent kilomètres à l'heure.
+
+  **Cela vaut aussi pour la montée au régime**, et c'était le gros du reproche.
+  « Si j'arrête d'accélérer juste avant que la boîte ne monte un rapport, elle le
+  monte quand même. » Le franchissement du seuil de régime lance un compte à
+  rebours de quelques dixièmes de seconde, que plus rien n'annulait : reproduit
+  au banc — le seuil franchi, le pied levé dans la foulée, et le passage se
+  produit une demi-seconde plus tard. Le compte est désormais abandonné et non
+  suspendu, donc reprendre les gaz repart d'un compte neuf.
+
 ### Modifié
 
 - **Le point d'écoute « Dehors » referme le silencieux à 4 kHz.** Il laissait
@@ -515,8 +685,6 @@ Toutes les évolutions notables du projet. Format
   développement, et la rangée entière s'efface quand il ne reste que le GPS — un
   seul bouton qu'on ne peut pas désactiver n'est pas un choix. Le statut de la
   source, lui, reste affiché.
-
-### Corrigé
 
 - **Le suivi GPS repart quand il n'a jamais démarré.** Au départ d'un parking
   souterrain, aucune position n'était acquise et rien ne repartait une fois
@@ -1595,6 +1763,7 @@ Toutes les évolutions notables du projet. Format
   vitesse à laquelle la boîte rétrograde en décélération, contrairement à ce
   qu'annonçait le README. C'est « Descente sous » qui le fait — mesuré, et
   désormais tenu par un test.
+
 
 ## [0.1.0] — 2026-08-29
 

@@ -243,7 +243,7 @@ export function createRoadProfile(): Profile {
       // Pont allongé : la sixième tourne à 2780 tr/min à 130 km/h, une croisière
       // tenable, au lieu de 3390.
       finalDrive: 3.7,
-      shiftTimeMs: 120,
+      shiftTimeMs: 600,
       // Passages placés en vitesse plutôt qu'en régime : 35, 55, 75, 96 et
       // 115 km/h à charge moyenne.
       upshiftRpm: [3700, 3350, 3050, 2950, 2950],
@@ -270,7 +270,7 @@ export function createRoadProfile(): Profile {
       kickdown: { ...base.feel.kickdown, targetRpmFraction: 0.55, maxGears: 2 },
       // Une voiture de série pétarade peu, et pas à n'importe quel régime.
       backfire: { ...base.feel.backfire, minRpm: 3200, intensity: 0.25, count: 3 },
-      shiftJolt: { ...base.feel.shiftJolt, depth: 0.35 },
+      shiftJolt: { ...base.feel.shiftJolt, depth: 0.1 },
     },
     mix: {
       ...base.mix,
@@ -348,7 +348,7 @@ export function createDefaultProfile(): Profile {
       gearRatios: [3.55, 2.04, 1.36, 1.03, 0.86, 0.72],
       finalDrive: 4.5,
       wheelRadiusM: 0.33,
-      shiftTimeMs: 90,
+      shiftTimeMs: 480,
       // Croissants : les rapports courts passent tôt, les longs étirent
       // davantage. C'est l'inverse qu'un seuil unique produisait.
       upshiftRpm: [5200, 5600, 5900, 6200, 6500],
@@ -433,7 +433,17 @@ export function createDefaultProfile(): Profile {
       },
       shiftJolt: {
         enabled: true,
-        depth: 0.55,
+        // Le creux de niveau était à 0,55, et il masquait ce qu'il devait
+        // souligner : l'instant où le timbre bascule vers le pied levé est
+        // aussi celui où le son est le plus faible. VNS, dont le passage
+        // s'entend bien, n'a aucun équivalent de ce creux.
+        depth: 0.15,
+        cutDepth: 0.8,
+        dipRpm: 450,
+        blipRpm: 550,
+        clack: 0.5,
+        clackDownshift: 0.55,
+        crackle: 0.35,
       },
     },
     layers: [

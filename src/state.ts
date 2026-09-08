@@ -6,7 +6,7 @@ import { writeSetting, type SettingPath } from './core/calibration/settings'
 import { analyzeSample, type SampleAnalysis } from './core/audio/analyze'
 import { MediaSession, ScreenLock } from './core/session'
 import { Offline, type OfflineStatus } from './core/offline'
-import { Engine, type EngineState } from './core/engine/engine'
+import { Engine, SHIFT_CLACK_AT, type EngineState } from './core/engine/engine'
 import { Gearbox, type GearboxState, type ShiftMode } from './core/drivetrain/gearbox'
 import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditioner'
 import { GeolocationSource } from './core/speed/geolocation'
@@ -339,6 +339,18 @@ export const traces = ref<Trace[]>(loadTraces())
 export const traceStorageError = ref('')
 export const replayProgress = ref(0)
 export const audioStatus = ref<AudioStatus>({ ...audio.status })
+
+/**
+ * Joue le clac de la boîte seul, pour le régler à l'oreille.
+ *
+ * Un événement bref se juge mal quand le moteur tourne par-dessus, et il n'a
+ * lieu qu'au passage d'un rapport : sans ce bouton, l'essayer demandait
+ * d'accélérer jusqu'au seuil suivant à chaque changement de valeur. Le son doit
+ * être activé, comme pour tout le reste.
+ */
+export function tryClack(): void {
+  audio.clack(activeProfile.value.feel.shiftJolt.clack)
+}
 export const isMuted = ref(false)
 
 /**
@@ -973,6 +985,46 @@ function rpmInGear(gear: number, kmh: number): number {
  */
 let loadWasHigh = false
 /**
+ * Passage de rapport en cours au tour précédent.
+ *
+ * Le claquement se tire quand il se termine, pas quand il commence : c'est la
+ * reprise du couple qui rallume l'imbrûlé, et c'est là qu'on l'entend.
+ */
+/**
+ * Effort du tour précédent, pour le coup de gaz.
+ *
+ * Le moteur est calculé après la boîte, donc l'effort de ce tour-ci n'existe pas
+ * encore quand il faut décider de la hauteur du coup de gaz. Un tour de retard,
+ * soit seize millisecondes, ne se voit pas ici — et c'est plus simple que de
+ * couper le calcul en deux.
+ */
+let lastEffort = 0
+
+/**
+ * Hauteur du coup de gaz, selon le sens du passage et ce que fait le pied.
+ *
+ * **En montée, le coup de gaz suit l'effort.** David : « je crois que le rapport
+ * passe automatiquement au moment du coup de gaz, même si j'ai commencé à
+ * ralentir juste avant ». Un passage décidé légitimement dure six dixièmes de
+ * seconde : son coup de gaz tombe donc après un lever de pied survenu
+ * entre-temps, et l'on entend le moteur se relancer alors qu'on vient de
+ * l'abandonner.
+ *
+ * **Au rétrogradage, il reste entier.** C'est là qu'il est le geste du
+ * conducteur, et on rétrograde précisément pied levé ou en freinant : le lier à
+ * l'effort le supprimerait exactement quand il doit s'entendre.
+ */
+function blipRpmFor(profile: Profile, direction: 'up' | 'down' | null): number {
+  const jolt = profile.feel.shiftJolt
+  if (!jolt.enabled) return 0
+  if (direction === 'down') return jolt.blipRpm
+  return jolt.blipRpm * Math.max(0, Math.min(1, lastEffort))
+}
+
+let wasShifting = false
+/** Le clac de ce passage-ci a déjà été tiré : il n'en faut qu'un. */
+let clackDone = false
+/**
  * Régime au moment où l'on était encore en charge.
  *
  * C'est lui qui décide s'il reste de quoi brûler, et non le régime constaté une
@@ -1012,6 +1064,9 @@ function step(dt: number): void {
     wheelRadiusM: profile.drivetrain.wheelRadiusM,
     atStandstill: speed.atStandstill,
     isShifting: gearboxState.isShifting,
+    shiftProgress: gearboxState.shiftProgress,
+    shiftDipRpm: profile.feel.shiftJolt.enabled ? profile.feel.shiftJolt.dipRpm : 0,
+    shiftBlipRpm: blipRpmFor(profile, gearboxState.shiftDirection),
     // La pédale n'est connue qu'en « vitesse exacte ». Dès que le banc imite un
     // GPS, elle ne l'est plus — c'est tout le sujet : une voiture ne dit pas ce
     // que fait le pied, et la charge doit se déduire de l'accélération mesurée.
@@ -1033,6 +1088,30 @@ function step(dt: number): void {
       audio.backfire(backfire.intensity, backfire.count)
     }
   }
+
+  // Les deux bruits d'un passage, et ils ne tombent pas au même instant.
+  //
+  // Le clac de la boîte arrive quand le rapport s'engage, au sommet du coup de
+  // gaz — pas à la fin du passage : ce qui reste après lui, c'est l'embrayage
+  // qui se lâche, et cela ne claque pas. Le claquement d'échappement, lui,
+  // suit la reprise du couple, donc la fin.
+  const jolt = profile.feel.shiftJolt
+  const sonore = jolt.enabled && !isMuted.value
+  if (sonore && gearboxState.isShifting && !clackDone && gearboxState.shiftProgress >= SHIFT_CLACK_AT) {
+    // Plus discret en descendant : on rétrograde pied levé ou en freinant, donc
+    // avec un moteur bien plus doux, et le même clac y paraît deux fois plus
+    // fort. C'est un réglage et non un calcul : le bon dosage dépend de la
+    // banque.
+    const descend = gearboxState.shiftDirection === 'down'
+    audio.clack(jolt.clack * (descend ? jolt.clackDownshift : 1))
+    clackDone = true
+  }
+  if (wasShifting && !gearboxState.isShifting) {
+    if (sonore && jolt.crackle > 0) audio.backfire(jolt.crackle, 1)
+  }
+  if (!gearboxState.isShifting) clackDone = false
+  wasShifting = gearboxState.isShifting
+  lastEffort = engineState.effort
 
   // Une seule origine de son à la fois. Le régime transmis est le régime
   // **entendu**, celui qui porte le tremblement, comme pour les échantillons.
@@ -1066,6 +1145,7 @@ function step(dt: number): void {
       outputLatencyMs: audio.status.outputLatencyMs,
       baseLatencyMs: audio.status.baseLatencyMs,
       backfires: audio.status.backfires,
+      clacks: audio.status.clacks,
       activeSources: audio.status.activeSources,
       layerRefreshes: audio.status.layerRefreshes,
       // Le maintien de session et l'état du contexte doivent se voir en direct :
