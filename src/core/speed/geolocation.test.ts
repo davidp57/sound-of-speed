@@ -34,6 +34,8 @@ interface FakeWatch {
 interface FakeGeolocation {
   watches: FakeWatch[]
   cleared: number[]
+  /** Les options du dernier appel, telles que le navigateur les recevrait. */
+  options: PositionOptions | undefined
 }
 
 const original = Reflect.getOwnPropertyDescriptor(globalThis, 'navigator')
@@ -43,13 +45,15 @@ afterEach(() => {
 })
 
 function installFakeGeolocation(): FakeGeolocation {
-  const fake: FakeGeolocation = { watches: [], cleared: [] }
+  const fake: FakeGeolocation = { watches: [], cleared: [], options: undefined }
   const geolocation = {
     watchPosition(
       onPosition: (position: GeolocationPosition) => void,
       onError: (error: GeolocationPositionError) => void,
+      options?: PositionOptions,
     ): number {
       fake.watches.push({ onPosition, onError })
+      fake.options = options
       return fake.watches.length
     },
     clearWatch(id: number): void {
@@ -433,5 +437,20 @@ describe('GeolocationSource — la dernière position', () => {
 
     source.stop()
     expect(source.lastPosition).toBeNull()
+  })
+})
+
+describe('ce que la source demande au navigateur', () => {
+  it('accepte une position déjà connue du système, jusqu’à dix secondes', () => {
+    // Interdire le cache — `maximumAge: 0` — faisait attendre un point neuf à
+    // chaque démarrage, plusieurs minutes sous un bâtiment, alors que le
+    // récepteur en avait un sous la main.
+    const fake = installFakeGeolocation()
+    const source = new GeolocationSource({ maxPlausibleKmh: 260, maxAccuracyM: 300 })
+
+    source.start()
+
+    expect(fake.options?.maximumAge).toBe(10_000)
+    expect(fake.options?.enableHighAccuracy).toBe(true)
   })
 })
