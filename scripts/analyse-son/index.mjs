@@ -4,6 +4,7 @@
  *
  *   npm run analyse-son -- --moteur chevrolet-454 --rpm 800
  *   npm run analyse-son -- --profil ~/mon-profil.json --rpm 800
+ *   npm run analyse-son -- --moteur gm-ls --delissage 0 --derive 1.5
  *
  * `--profil` prend un profil **exporté depuis l'application**, et c'est le seul
  * moyen de mesurer ce qu'un utilisateur entend vraiment : un moteur de la
@@ -229,6 +230,8 @@ async function main() {
     const rpm = Number(argument('rpm', 800))
     const effort = Number(argument('effort', 0))
     const secondes = Number(argument('secondes', 2))
+    const delissage = argument('delissage', null)
+    const derive = argument('derive', null)
 
     let moteur
     if (chemin) {
@@ -257,6 +260,8 @@ async function main() {
 
     const rendu = moteur.rendering
     const reglages = { ...module.DEFAULT_SYNTH, ...rendu }
+    if (delissage !== null) reglages.rippleRpm = Number(delissage)
+    if (derive !== null) reglages.rippleHz = Number(derive)
     const valeurs = module.engineDefinitionValues(moteur.definition, moteur.redlineRpm)
 
     const { sec, ecretes, ondulation } = await rendre(module, {
@@ -281,9 +286,23 @@ async function main() {
       `Échappement « ${rendu.exhaustResponse} », résonance ${rendu.convolverMix}, ` +
         `silencieux ${rendu.mufflerHz} Hz, crête visée ${rendu.levelerTarget}`,
     )
+    // Le niveau en sortie, et non celui du son sec : la résonance ajoute une
+    // quinzaine de décibels à la bande de 500 Hz, et c'est après elle que le
+    // plafond se rencontre.
+    let creteSortie = 0
+    let butes = 0
+    for (let i = 0; i < sortie.length; i += 1) {
+      const a = Math.abs(sortie[i])
+      if (a > creteSortie) creteSortie = a
+      if (a >= 1) butes += 1
+    }
     console.log(
       `Ondulation du régime ${ondulation.toFixed(1)} tr/min, ` +
-        `écrêtage ${ecretes.toFixed(2)} % sur le son sec\n`,
+        `écrêtage ${ecretes.toFixed(2)} % sur le son sec`,
+    )
+    console.log(
+      `Crête en sortie de chaîne ${creteSortie.toFixed(3)} — ` +
+        `${((100 * butes) / sortie.length).toFixed(2)} % au-delà du plafond\n`,
     )
 
     const avant = bandes(sec, CENTRES)
@@ -299,7 +318,7 @@ async function main() {
     const allumageHz = (rpm / 60) * (moteur.definition.cylinders / 2)
     console.log(`
 Grain de l'aigu — allumage à ${allumageHz.toFixed(1)} Hz`)
-    for (const bas of [2000, 4000]) {
+    for (const bas of [800, 1200, 2000, 4000]) {
       const g = grainAigu(sortie, bas)
       const verdict = g.creteSurMoyenne > 3 ? 'par salves' : 'régulier'
       console.log(

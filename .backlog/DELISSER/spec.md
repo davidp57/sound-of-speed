@@ -181,6 +181,35 @@ ce que David écoute.** Il rend le son sec, sur le moteur d'usine, sans la
 convolution ni le silencieux qui suivent dans le graphe. Toute mesure de timbre
 qui prétend expliquer une écoute doit d'abord passer par la chaîne complète.
 
+## Le « frt frt frt » : la sortie écrête, et rien ne le dit
+
+David, le 8 septembre 2026 : « les fréquences qui me dérangent sont comme des
+parasites, des frt frt frt à plus haute fréquence que le moteur, et avec ces
+réglages on les entend très bien au ralenti ».
+
+Le banc passé par la chaîne complète donne, Chevrolet 454 au ralenti :
+
+- écrêtage sur le son sec : **0,03 %** ;
+- crête **en sortie de chaîne : 1,194**, et 0,02 % des échantillons au-delà du
+  plafond.
+
+La résonance d'échappement ajoute seize décibels à la bande de 500 Hz : le
+signal, déjà collé au plafond en sortie du lecteur, le dépasse de près de vingt
+pour cent une fois la chaîne traversée. Le contexte audio le borne, et un
+écrêtage bref est riche en aigu — « à plus haute fréquence que le moteur ».
+
+**Rien ne le mesure.** Le niveau crête et le compteur d'écrêtage de l'écran sont
+relevés dans le lecteur (`player-source.ts`), donc **avant** le silencieux et la
+convolution. L'écran annonce 1,000 quand la sortie est à 1,194 : il montre le
+plafond du son sec, pas celui qu'on entend.
+
+Cela explique aussi le rapprochement que David avait fait avec la brillance : un
+écrêtage engendre des harmoniques hautes, donc la part d'énergie au-dessus d'un
+kilohertz monte avec lui. La brillance ne causait rien, elle signalait.
+
+Ce qui n'est pas tranché : mesurer l'écrêtage réel en fin de graphe pour qu'il
+cesse d'être invisible, garder une marge sous le plafond, ou les deux.
+
 ## Ce qui reste
 
 1. **le rendu de l'EJ25**, et de tous les moteurs qui portent encore le rendu par
