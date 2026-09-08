@@ -303,12 +303,14 @@ Toutes les évolutions notables du projet. Format
   signal rigoureusement périodique : c'est une part de ce qui le fait entendre
   comme une machine.
 
-- **La raideur du dynamomètre se règle.** Le couple avec lequel le banc tient le
-  régime du cadran était figé au maximum, sans qu'aucun réglage ne l'expose. Il
-  ne donne pas la souplesse qu'on pourrait en attendre, et l'écran le dit
-  maintenant : mesuré à 2 950 tr/min, le régime tenu reste exactement le régime
-  demandé de 10 000 jusqu'à 40 N·m, puis à 20 le moteur décroche d'un coup de
-  cinq cents tours. C'est un interrupteur, pas un réglage de souplesse.
+- **Le dynamomètre ne fait pas respirer le moteur simulé, et la mesure le
+  tranche.** Le code annonçait depuis le début que baisser son couple
+  « laisse le régime respirer entre les explosions ». Balayé de dix mille à
+  vingt à 2 950 tr/min : jusqu'à quarante le régime tenu vaut exactement le
+  régime demandé, puis il s'établit plus bas — 2 728, 2 576, 2 435 — et chaque
+  fois aussi figé. Le baisser ne fait pas osciller le régime, il le fausse. Le
+  réglage reste donc à son maximum et n'est exposé nulle part ; ce que la mesure
+  a montré est écrit là où quelqu'un serait tenté de recommencer.
 
 - **Le simulateur a sa propre page.** Ses commandes — les deux pédales, le
   curseur d'allure maintenue, les réglages de cadence, de bruit et de précision

@@ -66,8 +66,17 @@ export interface SynthSettings extends SynthRendering {
    * vérifier : ce va-et-vient injecterait du bruit large bande dans la
    * rotation, et la rotation module tout le son.
    *
-   * Le baisser laisse le régime respirer entre les explosions, comme le fait un
-   * volant d'inertie. Trop bas, le régime ne suit plus le cadran.
+   * **Le soupçon a été vérifié le 8 septembre 2026, et il est faux.** Balayé de
+   * dix mille à vingt à 2 950 tr/min, le régime tenu ne respire à aucun moment :
+   * jusqu'à quarante il vaut **exactement** le régime demandé, puis il s'établit
+   * plus bas — 2 728 à trente, 2 576 à vingt-cinq, 2 435 à vingt — et chaque
+   * fois aussi figé qu'avant. Le baisser ne fait pas osciller le régime, il le
+   * fausse.
+   *
+   * Ce réglage n'a donc aucun emploi utile, et rien ne l'expose à l'écran : le
+   * laisser à son maximum est la seule valeur qui tienne. La respiration d'un
+   * moteur est à chercher du côté des deux bruits d'engine-sim, `airNoise` et
+   * `inputSampleNoise`.
    */
   dynoTorque: number
 }
