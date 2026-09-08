@@ -1755,6 +1755,17 @@ instantanée le sait tout de suite mais elle est bruitée ; on la cumule donc da
 un compteur qui monte en ralentissant et redescend deux fois plus vite sinon, si
 bien qu'une croisière qui tremble autour de zéro ne l'atteint jamais.
 
+Et surtout, **le seuil de montée descend lentement**. Il se décale de seize
+cents tours avec la charge, et il la suivait à l'identique : pied au plancher il
+est haut, la charge s'effondre en une demi-seconde quand on relâche, et le seuil
+passait sous le régime sans que le moteur ait bougé. Il monte toujours
+instantanément — garder un rapport quand on remet les gaz doit être immédiat —
+mais il ne peut plus descendre que de quatre cents tours par seconde. Trois
+gardes posées en aval n'avaient pas suffi : elles dépendaient toutes du moment où
+l'accélération mesurée devient franchement négative, et celle-ci est lissée alors
+que la charge tombe tout de suite. Freiner la descente du seuil ne dépend
+d'aucun timing.
+
 Enfin, **le passage immédiat ne vaut qu'en accélérant**. La temporisation de
 confirmation est court-circuitée dès que le régime dépasse le seuil de plus de
 quatre cents tours, pour qu'une forte accélération ne fasse pas filer le régime

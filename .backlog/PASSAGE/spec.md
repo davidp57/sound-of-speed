@@ -345,3 +345,25 @@ Deux corrections :
 
 Test ajouté qui rejoue le scénario : 4e à 4800 tr/min, charge de 1 à 0 en une
 demi-seconde, vitesse en baisse de 5 km/h par seconde.
+
+## Treizième écoute, 8 septembre 2026
+
+David : « ça monte encore un rapport quand je relâche l'accel. »
+
+Deux tentatives de reproduction au banc ont échoué — accélération chutant
+brutalement, puis chutant sur une demi-seconde — sans que le passage se produise.
+Plutôt que de continuer à deviner le timing exact, la cause racine a été traitée
+directement.
+
+Elle était identifiée depuis le tour précédent : `upshiftThreshold` suit la
+charge à l'identique, donc chute de 1600 tr/min en une demi-seconde au lever de
+pied, bien plus vite que le régime. Toutes les gardes posées jusque-là agissaient
+**en aval** et dépendaient du moment où `accelMs2` devient franchement négatif —
+or il est lissé par le conditionneur, quand la charge ne l'est presque pas.
+
+Le seuil appliqué ne peut plus descendre que de 400 tr/min par seconde. Il monte
+toujours instantanément : garder un rapport en remettant les gaz doit être
+immédiat. Remis à zéro à chaque changement de rapport.
+
+Deux tests protègent le comportement : la descente bornée, et la remontée
+immédiate.

@@ -164,6 +164,29 @@ const CRUISE_SLOWING_HOLD_S = 0.35
  * certitude et laisse le temps à un passage de se déclencher.
  */
 const CLEARLY_SLOWING_MS2 = 0.5
+
+/**
+ * Vitesse maximale à laquelle le seuil de montée peut **descendre**, en tours
+ * par minute et par seconde.
+ *
+ * Le seuil se décale de `upshiftLoadSpreadRpm` avec la charge — seize cents
+ * tours sur le profil Route. Pied au plancher il est haut ; la charge s'effondre
+ * en une demi-seconde quand on relâche, et le seuil la suivait à l'identique,
+ * bien plus vite que le régime ne descend. Un franchissement se produisait alors
+ * sans que le moteur ait bougé : c'est la barre qui était passée sous lui.
+ *
+ * Trois gardes ont été posées en aval avant celle-ci — pas de dépassement
+ * immédiat en décélérant, blocage au ralentissement avéré, blocage immédiat
+ * au-delà d'un demi m/s² — et David en trouvait encore le chemin : « ça monte
+ * encore un rapport quand je relâche l'accel ». Elles dépendaient toutes du
+ * moment où l'accélération mesurée devient franchement négative, or elle est
+ * lissée et arrive après la charge. Freiner la descente du seuil, elle, ne
+ * dépend d'aucun timing.
+ *
+ * La montée du seuil reste instantanée : garder un rapport quand on remet les
+ * gaz doit être immédiat.
+ */
+const UPSHIFT_THRESHOLD_FALL_RPM_S = 400
 /** Durée de décélération soutenue avant de descendre, en secondes. */
 const BRAKE_HOLD_S = 1
 /**
@@ -237,6 +260,13 @@ export class Gearbox {
   private shiftRemainingS = 0
   private shiftDirection: ShiftDirection = null
   private readyForS = 0
+  /**
+   * Seuil de montée effectivement appliqué, freiné à la descente.
+   *
+   * `null` tant qu'aucun n'a été calculé, et remis à `null` à chaque changement
+   * de rapport : le seuil du rapport précédent n'a rien à dire du nouveau.
+   */
+  private heldUpshiftRpm: number | null = null
   private lastManualAt = 0
   /**
    * Écart tiré au sort pour le passage en préparation, en tours par minute.
@@ -313,6 +343,7 @@ export class Gearbox {
     this.shiftRemainingS = 0
     this.shiftDirection = null
     this.readyForS = 0
+    this.heldUpshiftRpm = null
     this.loadHistory = []
     this.currentLoad = 0
     this.elapsedS = 0
@@ -430,6 +461,24 @@ export class Gearbox {
   }
 
   /**
+   * Seuil de montée du rapport courant, freiné à la descente.
+   *
+   * Voir `UPSHIFT_THRESHOLD_FALL_RPM_S` : la charge peut faire chuter le seuil
+   * de seize cents tours en une demi-seconde, et un franchissement obtenu ainsi
+   * ne dit rien du moteur. Il monte librement, il descend lentement.
+   */
+  private heldUpshiftThreshold(gear: number, load: number, dt: number): number {
+    const target = this.upshiftThreshold(gear, load)
+    const held = this.heldUpshiftRpm
+    if (held === null || target >= held) {
+      this.heldUpshiftRpm = target
+    } else {
+      this.heldUpshiftRpm = Math.max(target, held - UPSHIFT_THRESHOLD_FALL_RPM_S * dt)
+    }
+    return this.heldUpshiftRpm
+  }
+
+  /**
    * Choisit d'emblée le rapport adapté à une vitesse, sans passer par la
    * séquence de passages. Utilisé au démarrage et après un changement de profil,
    * pour éviter de partir en première à 90 km/h.
@@ -473,6 +522,7 @@ export class Gearbox {
     this.gear = clampInt(this.gear + delta, 0, this.gearCount - 1)
     this.shiftRemainingS = this.drivetrain.shiftTimeMs / 1000
     this.shiftDirection = delta > 0 ? 'up' : 'down'
+    this.heldUpshiftRpm = null
     this.readyForS = 0
   }
 
@@ -543,7 +593,7 @@ export class Gearbox {
 
     let ready = false
     let blocked = false
-    let upThresholdSeen = this.upshiftThreshold(this.gear, load)
+    let upThresholdSeen = this.heldUpshiftThreshold(this.gear, load, dt)
     const downThresholdSeen = this.engine.redlineRpm * this.drivetrain.downshiftAtRedlineRatio
     const auto = this.mode === 'auto' && this.hasGearbox && this.shiftRemainingS === 0
 

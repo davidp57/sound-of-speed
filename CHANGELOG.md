@@ -512,6 +512,17 @@ Toutes les évolutions notables du projet. Format
   tremble autour de zéro ne l'atteint jamais, un vrai ralentissement le
   franchit en un tiers de seconde.
 
+  **Et surtout, le seuil de montée ne s'effondre plus.** « Ça monte encore un
+  rapport quand je relâche l'accel. » Il se décale de seize cents tours avec la
+  charge et la suivait à l'identique : pied au plancher il est haut, la charge
+  s'effondre en une demi-seconde quand on relâche, et le seuil passait sous le
+  régime sans que le moteur ait bougé — c'est la barre qui était descendue. Il
+  monte toujours instantanément, mais ne descend plus que de quatre cents tours
+  par seconde. Les trois gardes posées avant celle-ci dépendaient toutes du
+  moment où l'accélération mesurée devient franchement négative, or elle est
+  lissée quand la charge, elle, tombe tout de suite ; freiner la descente du
+  seuil ne dépend d'aucun timing.
+
   **Et le passage immédiat ne vaut plus qu'en accélérant.** « Accélération
   jusqu'à 4800 tr/min en 4e, arrêt de l'accélération, le simu passe la 5 et la
   6. » Le seuil de montée se décale de seize cents tours avec la charge : pied
