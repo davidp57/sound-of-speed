@@ -1223,7 +1223,7 @@ qu'on remarque surtout par leur absence. Chacun s'active séparément.
 | **Coupure de couple** | Combien le moteur passe en roue libre le temps du passage. C'est ce qui fait entrer les couches pied levé, donc changer le **timbre** et pas seulement le niveau. Mesuré sur le profil Route : la part d'énergie tenue par les couches en charge passait de 0,926 à 0,926 — elle ne bougeait pas — et tombe à 0,223 au creux. Zéro garde le son de pleine charge d'un bout à l'autre |
 | **Plongée du régime** | De combien le moteur tombe **sous** le régime du nouveau rapport quand la boîte passe au neutre. Mesuré à 450 tr/min sur le profil Route, première en seconde : 4 692 tr/min, fond de la chute à 2 337 |
 | **Coup de gaz** | De combien le moteur remonte au-dessus du rapport visé, entre la chute au neutre et l'engagement. C'est le mouvement qui s'entend le mieux dans un passage : une montée de régime, l'oreille la suit. Mesuré à 550 tr/min sur Route : creux à 2 337, sommet à 3 364. Zéro laisse une séquence en trois temps |
-| **Clac de la boîte** | Le choc mécanique quand le rapport s'engage, au sommet du coup de gaz. Sec et métallique — attaque en une milliseconde, extinction en trente — doublé d'un coup mat sous deux cents hertz qui lui donne sa masse. Rien à voir avec le claquement d'échappement, qui est grave et traînant |
+| **Clac de la boîte** | Le choc mécanique quand le rapport s'engage, au sommet du coup de gaz. Attaque en une milliseconde, trois composantes — un corps large, une bande haute pour le métal, un coup mat sous deux cents hertz pour la masse. Mesuré à 0,6 : la crête passe 4,2 dB au-dessus de celles du moteur, là où la première version arrivait 15,6 dB en dessous et restait inaudible. Rien à voir avec le claquement d'échappement, qui est grave et traînant |
 | **Claquement de reprise** | Une détonation à l'échappement au moment où le couple revient. C'est la pétarade du lever de pied, tirée en un seul coup. Zéro n'en produit aucune |
 
 ### Couches
@@ -1785,11 +1785,23 @@ Quatre choses s'y produisent, et une cinquième les rend possibles :
 
 **Et le passage dure assez pour que tout cela s'entende.** C'était le point
 bloquant : à 120 millisecondes, les quatre temps se chevauchaient et l'on ne
-percevait qu'un trou. Le temps de passage est monté à 390 ms sur le profil Route
-et 300 sur Sport — l'ordre de grandeur d'une boîte manuelle avec double
-débrayage, là où une boîte à double embrayage moderne tient en cinquante
-millisecondes. C'est un réglage de la transmission, et il commande toute la
-séquence : la raccourcir la comprime, l'allonger l'étale.
+percevait qu'un trou. Le temps de passage est monté à **600 ms** sur le profil
+Route et 480 sur Sport, ce qui donne 204 ms de chute, 108 de coup de gaz, 48
+d'engagement et 240 de reprise. C'est l'ordre de grandeur d'une boîte manuelle
+avec double débrayage, là où une boîte à double embrayage moderne tient en
+cinquante millisecondes. Le réglage monte jusqu'à 1 500 ms : il commande toute
+la séquence, la raccourcir la comprime, l'allonger l'étale.
+
+**Le clac doit percer un son gras, donc passer au-dessus de lui.** Sa première
+version ne le faisait pas : mesurée en reproduisant les filtres de Web Audio, sa
+crête arrivait 15,6 dB **sous** celles du moteur au réglage livré, et encore
+8 dB sous au maximum du curseur — un passe-bande étroit jetait l'essentiel de
+l'énergie, le gain s'appliquait après cette perte, et une queue de trente
+millisecondes étalait au lieu de crêter. Il n'était pas mal déclenché, il était
+inaudible. Trois composantes le remplacent — un passe-haut qui porte le corps,
+une bande haute qui donne le métal, un coup mat sous deux cents hertz qui donne
+la masse — et sa crête passe **4,2 dB au-dessus** de celles du moteur. Le
+compteur « Clacs de boîte », sur l'écran de télémétrie, dit s'il est tiré.
 
 La coupure de couple, la plongée, le coup de gaz, le clac et le claquement se
 règlent séparément et se coupent à zéro. La synchronisation du régime sur la

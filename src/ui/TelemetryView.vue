@@ -393,6 +393,7 @@ function onRateChange(event: Event): void {
       />
       <ValueRow label="Couches chargées" :value="`${audioStatus.loaded} / ${audioStatus.total}`" />
       <ValueRow label="Pétarades" :value="audioStatus.backfires" hint="Salves déclenchées depuis l'activation du son." />
+      <ValueRow label="Clacs de boîte" :value="audioStatus.clacks" hint="Chocs mécaniques joués depuis l'activation du son. Le compteur monte à chaque passage de rapport : s'il monte sans qu'on entende rien, c'est le niveau qui est en cause, pas le déclenchement." />
       <ValueRow
         label="Sources en lecture"
         :value="audioStatus.activeSources"

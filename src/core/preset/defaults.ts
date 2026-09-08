@@ -243,7 +243,7 @@ export function createRoadProfile(): Profile {
       // Pont allongé : la sixième tourne à 2780 tr/min à 130 km/h, une croisière
       // tenable, au lieu de 3390.
       finalDrive: 3.7,
-      shiftTimeMs: 390,
+      shiftTimeMs: 600,
       // Passages placés en vitesse plutôt qu'en régime : 35, 55, 75, 96 et
       // 115 km/h à charge moyenne.
       upshiftRpm: [3700, 3350, 3050, 2950, 2950],
@@ -348,7 +348,7 @@ export function createDefaultProfile(): Profile {
       gearRatios: [3.55, 2.04, 1.36, 1.03, 0.86, 0.72],
       finalDrive: 4.5,
       wheelRadiusM: 0.33,
-      shiftTimeMs: 300,
+      shiftTimeMs: 480,
       // Croissants : les rapports courts passent tôt, les longs étirent
       // davantage. C'est l'inverse qu'un seuil unique produisait.
       upshiftRpm: [5200, 5600, 5900, 6200, 6500],

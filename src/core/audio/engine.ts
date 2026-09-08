@@ -164,6 +164,32 @@ class ClockProcessor extends AudioWorkletProcessor {
 registerProcessor('speed-clock', ClockProcessor)
 `
 
+/**
+ * Les trois composantes du clac : filtre, fréquence, résonance, gain, extinction.
+ *
+ * Trois et non une, parce qu'un seul filtre ne fait pas un choc. Le passe-haut
+ * porte le corps du bruit et l'essentiel du niveau ; la bande haute donne le
+ * métal ; le coup mat sous deux cents hertz donne la masse, sans laquelle on
+ * entend un déclic de souris. Les extinctions sont volontairement inégales : la
+ * masse traîne un peu quand le métal est déjà éteint, et c'est ce décalage qui
+ * fait entendre une pièce lourde plutôt qu'une impulsion.
+ *
+ * Ces valeurs sont mesurées, pas choisies : avec elles, la crête du clac passe
+ * 2,4 dB **au-dessus** de celles du moteur au réglage livré, contre 15,6 dB en
+ * dessous auparavant.
+ */
+const CLACK_PARTS: {
+  type: BiquadFilterType
+  hz: number
+  q: number
+  gain: number
+  tail: number
+}[] = [
+  { type: 'highpass', hz: 900, q: 0.7, gain: 3.2, tail: 0.018 },
+  { type: 'bandpass', hz: 3200, q: 0.8, gain: 2.4, tail: 0.012 },
+  { type: 'lowpass', hz: 220, q: 0.9, gain: 2.6, tail: 0.045 },
+]
+
 export class AudioEngine {
   private context: AudioContext | null = null
   private layers: LoadedLayer[] = []
@@ -622,14 +648,18 @@ export class AudioEngine {
    *
    * Rien à voir avec la pétarade, et c'est tout l'objet : celle-ci est un
    * souffle grave de 260 à 680 Hz avec une queue de cinquante à cent vingt
-   * millisecondes — un bruit d'échappement. Le clac est un **choc mécanique**,
-   * donc l'inverse : une attaque en une milliseconde, une extinction en trente,
-   * et de l'énergie haute, là où l'oreille reconnaît le métal.
+   * millisecondes — un bruit d'échappement. Le clac est un **choc mécanique** :
+   * attaque en une milliseconde, extinction en quelques dizaines, et de
+   * l'énergie sur toute la hauteur du spectre.
    *
-   * Deux composantes, parce qu'un seul filtre ne fait pas un choc : un claquement
-   * clair vers deux kilohertz, qui donne le caractère mécanique, et un coup mat
-   * en dessous de deux cents hertz, qui donne la masse. Sans le second on entend
-   * un déclic de souris ; sans le premier, une porte qui ferme.
+   * **Il doit percer un son gras, donc passer au-dessus de lui.** La première
+   * version ne le faisait pas : mesurée en reproduisant les filtres de Web
+   * Audio, sa crête arrivait 15,6 dB **sous** celles du moteur au réglage
+   * livré, et encore 8 dB sous au maximum du curseur. Trois causes cumulées —
+   * un passe-bande étroit qui jetait l'essentiel de l'énergie, un gain appliqué
+   * après cette perte, et une queue de trente millisecondes trop longue pour un
+   * choc, qui étale au lieu de crêter. Le clac ne manquait pas d'être
+   * déclenché : il était inaudible.
    */
   clack(intensity: number): void {
     const context = this.context
@@ -640,10 +670,7 @@ export class AudioEngine {
     const at = context.currentTime + 0.001
     const level = Math.min(1.5, intensity)
 
-    for (const part of [
-      { type: 'bandpass' as const, hz: 1800 + Math.random() * 900, q: 1.1, gain: 1, tail: 0.03 },
-      { type: 'lowpass' as const, hz: 180 + Math.random() * 60, q: 0.9, gain: 0.8, tail: 0.055 },
-    ]) {
+    for (const part of CLACK_PARTS) {
       const source = context.createBufferSource()
       source.buffer = this.noise ?? (this.noise = makeNoise(context))
       source.playbackRate.value = 0.9 + Math.random() * 0.25
@@ -651,7 +678,7 @@ export class AudioEngine {
 
       const filter = context.createBiquadFilter()
       filter.type = part.type
-      filter.frequency.value = part.hz
+      filter.frequency.value = part.hz * (0.92 + Math.random() * 0.16)
       filter.Q.value = part.q
 
       const gain = context.createGain()

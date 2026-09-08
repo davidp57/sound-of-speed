@@ -195,7 +195,7 @@ const SPORTINESS_READINGS: {
     value: (p) => p.engine.freeRevRate / p.engine.redlineRpm,
     law: (_p, s) => 0.9 + 0.5 * s,
   },
-  { value: (p) => p.drivetrain.shiftTimeMs, law: (_p, s) => 450 - 180 * s },
+  { value: (p) => p.drivetrain.shiftTimeMs, law: (_p, s) => 680 - 240 * s },
   {
     // Comparé à la rampe qu'aurait une table de **même longueur** : la table
     // enregistrée peut être plus courte que la boîte, et c'est justement le
@@ -311,11 +311,12 @@ export function applySportiness(profile: Profile, sportiness: number): Profile {
     },
     drivetrain: {
       ...profile.drivetrain,
-      // La loi va de 450 à 270 ms et non plus de 140 à 80 : un passage doit
+      // La loi va de 680 à 440 ms et non plus de 140 à 80 : un passage doit
       // durer assez pour que sa séquence — chute, coup de gaz, clac, reprise —
-      // s'entende. Les deux bornes ont bougé du même rapport, si bien que le
-      // caractère relu d'un profil livré ne change pas.
-      shiftTimeMs: Math.round(450 - 180 * s),
+      // s'entende, et David la mesure à « au moins 500 ms, voire plus » sur la
+      // vidéo qui sert de référence. Les bornes bougent du même rapport, si
+      // bien que le caractère relu d'un profil livré ne change pas.
+      shiftTimeMs: Math.round(680 - 240 * s),
       upshiftRpm: upshiftTableFor(count, redlineRpm, s),
       upshiftLoadSpreadRpm: Math.round(redlineRpm * between(0.2, 0.28, 0.34, s)),
       // Le plancher garde une marge au-dessus du ralenti : sur un diesel, la

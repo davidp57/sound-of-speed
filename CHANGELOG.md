@@ -35,8 +35,21 @@ Toutes les évolutions notables du projet. Format
   **Ce qui manquait d'abord, c'était le temps.** Un passage durait 120 ms, et
   rien de tout cela n'est audible en un dixième de seconde : les quatre temps se
   chevauchaient et il ne restait qu'un trou. Le temps de passage est monté à
-  390 ms sur Route et 300 sur Sport, l'ordre de grandeur d'une boîte manuelle
-  avec double débrayage. C'est ce réglage-là qui commande toute la séquence.
+  **600 ms** sur Route et 480 sur Sport — « dans la vidéo ça dure au moins
+  500 ms, voire plus : on a bien le temps de tout entendre » — soit 204 ms de
+  chute, 108 de coup de gaz, 48 d'engagement et 240 de reprise. Le curseur, qui
+  s'arrêtait à 500 ms, va maintenant jusqu'à 1 500.
+
+  **Et le clac était inaudible, pas mal déclenché.** « J'ai beau mettre au max,
+  je n'entends aucun claquement de boîte. » Mesuré en reproduisant les filtres
+  de Web Audio : sa crête arrivait **15,6 dB sous** celles du moteur au réglage
+  livré, et encore 8 dB sous au maximum du curseur. Un passe-bande étroit jetait
+  l'essentiel de l'énergie, le gain s'appliquait après cette perte, et une queue
+  de trente millisecondes étalait au lieu de crêter. Trois composantes le
+  remplacent — corps, métal, masse — et sa crête passe **4,2 dB au-dessus** de
+  celles du moteur. Un compteur « Clacs de boîte » apparaît en télémétrie : s'il
+  monte sans qu'on entende rien, c'est le niveau qui est en cause et non le
+  déclenchement.
 
   Relevé sur Route, première en seconde : 4 692 tr/min, fond de la chute à
   **2 337** au tiers du passage, sommet du coup de gaz à **3 364**, clac à

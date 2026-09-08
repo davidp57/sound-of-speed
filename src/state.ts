@@ -1096,6 +1096,7 @@ function step(dt: number): void {
       outputLatencyMs: audio.status.outputLatencyMs,
       baseLatencyMs: audio.status.baseLatencyMs,
       backfires: audio.status.backfires,
+      clacks: audio.status.clacks,
       activeSources: audio.status.activeSources,
       layerRefreshes: audio.status.layerRefreshes,
       // Le maintien de session et l'état du contexte doivent se voir en direct :

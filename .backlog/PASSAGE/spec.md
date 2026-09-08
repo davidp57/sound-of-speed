@@ -133,3 +133,35 @@ clac → 2 910 pour 2 907 aux roues → réaccélération. Durée totale 390 ms.
 
 **Non écouté.** Et les profils déjà enregistrés gardent leurs anciennes valeurs,
 temps de passage compris.
+
+## Quatrième écoute, 8 septembre 2026
+
+David : « c'est trop court ; dans la vidéo ça dure au moins 500 ms, voire plus.
+Et dans ton code, j'ai beau mettre au max je n'entends aucun claquement de
+boîte. Ça devrait être flagrant, c'est un bruit sec dans un bruit de moteur
+gras. »
+
+Deux causes, toutes deux mesurées.
+
+**La durée.** 390 ms restait court, et le curseur était plafonné à 500 ms — il
+ne pouvait donc pas aller au-delà même en le voulant. Passé à 600 ms sur Route,
+480 sur Sport, plafond du curseur à 1 500.
+
+**Le niveau du clac.** Reproduction des filtres de Web Audio en Node, comparaison
+aux crêtes du moteur au niveau où il arrive sur le bus :
+
+| Réglage | Crête du clac, face au moteur |
+|---|---|
+| 0,60 (livré) | −15,6 dB |
+| 1,50 (maximum) | −8,0 dB |
+
+Le clac n'était donc pas mal déclenché : il était noyé, et le maximum du curseur
+ne rattrapait pas. Trois causes cumulées — passe-bande étroit qui jette
+l'essentiel de l'énergie, gain appliqué après cette perte, queue de 30 ms qui
+étale au lieu de crêter. Trois composantes le remplacent (corps, métal, masse) :
+**+4,2 dB** au-dessus des crêtes du moteur au réglage livré.
+
+Un compteur « Clacs de boîte » est ajouté en télémétrie pour distinguer, sans
+avoir à ouvrir la console, un défaut de déclenchement d'un défaut de niveau.
+
+**Non écouté.**

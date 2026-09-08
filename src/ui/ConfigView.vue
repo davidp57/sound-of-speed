@@ -1313,7 +1313,7 @@ function impliedCylinders(index: number): number | null {
       <NumberField v-model="profile.drivetrain.wheelRadiusM" label="Rayon de roue" :min="0.15" :max="0.6" :step="0.005" unit="m"
         hint="Rayon d'une roue, en mètres. Entre dans le calcul du régime : une roue plus grande fait moins de tours pour la même vitesse. Environ 0,33 m pour une berline."
       />
-      <NumberField v-model="profile.drivetrain.shiftTimeMs" label="Temps de passage" :min="0" :max="500" :step="5" unit="ms"
+      <NumberField v-model="profile.drivetrain.shiftTimeMs" label="Temps de passage" :min="0" :max="1500" :step="10" unit="ms"
         hint="Durée pendant laquelle le couple est coupé, et durée de toute la séquence : chute au neutre, coup de gaz, clac, reprise. C'est elle qui décide si le passage s'entend — sous deux cents millisecondes, les quatre temps se chevauchent et l'on ne perçoit qu'un trou. Court sur une boîte moderne, plus long sur une ancienne."
       />
       <p class="note">
