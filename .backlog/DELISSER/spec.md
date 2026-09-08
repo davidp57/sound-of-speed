@@ -156,9 +156,30 @@ Mais en décélération à 2 000 tr/min il agit **à l'envers** : le 125 Hz tomb
 60,6 à 35,7 % quand on l'ouvre à 0,20, parce qu'ouvrir les gaz pied levé n'est
 plus une décélération.
 
-Trois leviers, tous à chaud, aucun n'ayant encore été jugé à l'oreille : le
-papillon au repos, le silencieux — « Où l'on écoute : Dedans » coupe à un
-kilohertz, donc exactement ce que la brillance compte —, et le bruit d'air.
+Trois leviers ont été proposés, et David les a essayés le jour même. Aucun ne
+tient, et l'un d'eux **contredit la mesure** :
+
+- **le papillon au repos** : « à 0,35 j'ai la fréquence parasite qui augmente
+  considérablement, et ça écrête ». Le banc dit l'inverse — la bande de 1,4 kHz
+  y descend de 54,0 à 51,3 dB en niveau absolu, et l'écrêtage reste sous un
+  dixième de pour cent. C'est le banc qui a tort : il tourne sur la définition
+  d'usine, pas sur le GM LS à collecteur long que David écoute, et il mesure le
+  son **sec**, avant la résonance d'échappement et le silencieux. La chaîne de
+  sortie n'a jamais été mesurée ;
+- **le silencieux** : « effectivement, "dedans" assourdit le son donc on entend
+  moins la fréquence parasite ». Il masque, il ne corrige pas ;
+- **le bruit d'air** : « aucune différence ; il est branché quelque part, ce
+  curseur ? ». Il l'est — `renderAudio` relit `airNoise` à chaque échantillon —
+  mais son effet est mince par construction : à 0,15 le facteur `airNoise * r +
+  (1 - airNoise)` oscille entre 0,70 et 1,00, et le niveleur rattrape ce qui
+  reste. Mesuré au ralenti, de 0 à 1 sur toute la course du curseur : 1,2 dB
+  d'écart sur la bande du kilohertz. « Aucune différence » est une observation
+  juste.
+
+**Ce que cet épisode a montré, et qui vaut pour la suite : le banc ne mesure pas
+ce que David écoute.** Il rend le son sec, sur le moteur d'usine, sans la
+convolution ni le silencieux qui suivent dans le graphe. Toute mesure de timbre
+qui prétend expliquer une écoute doit d'abord passer par la chaîne complète.
 
 ## Ce qui reste
 
