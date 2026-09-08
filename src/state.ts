@@ -1033,14 +1033,20 @@ function step(dt: number): void {
     }
   }
 
-  // Une seule origine de son à la fois. Le régime transmis est celui du
-  // cadran — `rpm` et non `audibleRpm` : le tremblement que le moteur à
-  // échantillons ajoute à la main sort tout seul du modèle physique, et
-  // l'ajouter deux fois le doublerait.
+  // Une seule origine de son à la fois. Le régime transmis est le régime
+  // **entendu**, celui qui porte le tremblement, comme pour les échantillons.
+  //
+  // On transmettait le régime net, au motif que le tremblement « sortait tout
+  // seul du modèle physique ». Mesuré le 8 septembre 2026 : il n'en sort pas.
+  // Le régime tenu par le moteur simulé est exactement le régime demandé — 780
+  // pour 780, 2 952 pour 2 952 — parce que le dynamomètre travaille au couple
+  // maximum du domaine. Le son n'avait donc aucune variation de régime, nulle
+  // part, et un régime rigoureusement constant donne un signal rigoureusement
+  // périodique.
   if (synth.isRunning) {
     audio.mute()
     synth.setMuted(isMuted.value || synthSilent.value)
-    synth.setTarget(engineState.rpm, engineState.effort)
+    synth.setTarget(engineState.audibleRpm, engineState.effort)
   } else if (isMuted.value) audio.mute()
   else {
     audio.update(profile, engineState, {

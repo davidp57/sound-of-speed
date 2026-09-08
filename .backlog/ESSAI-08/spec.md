@@ -1,8 +1,8 @@
 # ESSAI-08 — quatre constats de l'essai du 8 septembre
 
-**Statut :** 🔄 en cours — GPS corrigé, banc livré, son mesuré, interface à cadrer
-**Branche :** `fix/essai-08`
-**Version visée :** 0.1.64
+**Statut :** 🧑 attend David — tout est livré, restent deux écoutes en roulant
+**Branches :** `fix/essai-08`, `feature/banc-et-gps-au-demarrage`, `feature/moteur-qui-respire`
+**Versions :** 0.1.64 à 0.1.66
 
 ## Ce qui a déclenché
 
@@ -68,10 +68,15 @@ source muette, dans le navigateur : le compteur de silence passe de 0 ms figé �
 L'écran de conduite annonce le silence, le nombre de relances, et distingue une
 source qui n'a jamais rien reçu d'une source qui s'est tue en route.
 
-Deux pistes secondaires restent ouvertes, sans changement pour l'instant :
-`maximumAge: 0` interdit d'employer une position déjà connue du système, et
-l'autorisation de localisation se donne par adresse — production et intégration
-en ont chacune une.
+**Une position déjà connue du système est acceptée, jusqu'à dix secondes.**
+`maximumAge: 0` la refusait, ce qui faisait attendre un point neuf à chaque
+démarrage. Dix secondes, parce qu'une position de dix secondes annonce une
+vitesse de dix secondes : prise garé elle dit zéro, prise en roulant elle est
+proche de l'allure du moment.
+
+Reste un fait sans correctif, et il n'en demande pas : l'autorisation de
+localisation se donne par adresse, production et intégration en ont donc chacune
+une.
 
 **Les écrans de banc sont dans l'image `:develop`.** Simulateur de vitesse et
 écran de réglage de la synthèse, absents de la production. Le drapeau `BENCH=1`
@@ -107,30 +112,30 @@ ne s'enrichit pas — le centroïde monte de 1 833 à 2 018 Hz mais l'énergie s
 concentre davantage, pas moins. Et le calcul tombe à ×0,99 du temps réel, avec
 neuf creux et 35 ms de silence : inexploitable de toute façon.
 
-**Trois leviers, dont un inaccessible.** Le couple du dynamomètre décide de la
-raideur avec laquelle le régime est tenu ; il est déjà transmis à chaud au
-calculateur, mais **aucun réglage ne l'expose** dans l'écran de synthèse. Les
-deux bruits d'engine-sim, eux, sont réglables à chaud — et le projet les a
-uniformisés pour toute la bibliothèque, à 0,15 et 0,05, là où les fichiers
-d'origine déclaraient jusqu'à 0,195 et 0,5 de gigue.
+**Le dynamomètre, mesuré ensuite, n'est pas le levier espéré.** Son couple
+décide de la raideur avec laquelle le régime est tenu, et il n'était exposé
+nulle part. Exposé puis balayé, à 2 950 tr/min : le régime tenu est exactement
+le régime demandé de 10 000 jusqu'à 40 N·m, puis à 20 le moteur décroche d'un
+coup de cinq cents tours. C'est un interrupteur, pas un réglage de souplesse.
 
-Ce qui reste à faire est un jugement d'oreille, pas une mesure : ces trois
-leviers changent un timbre, et un chiffre ne dira pas lequel sonne juste.
+**Reste les deux bruits d'engine-sim**, réglables à chaud, et que le projet a
+uniformisés pour toute la bibliothèque à 0,15 et 0,05 — là où les fichiers
+d'origine déclaraient jusqu'à 0,195 de bruit et 0,5 de gigue. C'est le seul
+levier qui reste, et son réglage est un jugement d'oreille : un chiffre ne dira
+pas lequel sonne juste.
 
-**L'interface.** Le besoin est réel et chiffrable : `ConfigView.vue` fait 2 236
-lignes, dix sections et soixante-cinq champs ; `SynthView.vue` en fait 1 030 et
-`DriveView.vue` 1 063. Le périmètre d'une consolidation n'est pas cadré, et il
-recoupe deux lots déjà ouverts — [MODE-SIMPLE](../MODE-SIMPLE/spec.md) et
-[UI-DEFILEMENT](../UI-DEFILEMENT/spec.md). À reprendre par un entretien avant
-tout découpage.
+**L'interface.** Tranché par David le 8 septembre : c'est un **lot neuf**,
+[MENAGE-UI](../MENAGE-UI/spec.md), et non l'élargissement de MODE-SIMPLE — « faut
+faire du ménage ». Le périmètre y est décrit, et attend un entretien avant tout
+découpage.
 
 ## Ce qui n'est pas tranché
 
-1. si l'on expose le couple du dynamomètre dans l'écran de synthèse, pour que le
-   levier soit essayable dans la voiture ;
-2. si le régime transmis au moteur simulé devient le régime **entendu**, celui
-   qui porte le tremblement — le motif écrit pour ne pas le faire est démenti
-   par la mesure, mais le tremblement décroît avec le régime et n'attaquerait
-   donc qu'une part du défaut ;
-3. si la consolidation de l'interface est un lot neuf ou l'élargissement de
-   MODE-SIMPLE.
+1. ce que l'oreille dira des deux bruits d'engine-sim, seul levier qui reste
+   après la mesure du dynamomètre — la gigue est à 0,05 pour toute la
+   bibliothèque, contre 0,195 et 0,5 dans les fichiers d'origine.
+
+Tout le reste est tranché et livré : le couple du dynamomètre est exposé dans
+l'écran de synthèse — il documente son propre défaut —, et le régime transmis au
+moteur simulé est désormais le régime **entendu**, celui qui porte le
+tremblement.

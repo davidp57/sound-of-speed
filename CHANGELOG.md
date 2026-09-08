@@ -294,6 +294,22 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Le moteur simulé reçoit le régime entendu, celui qui tremble.** Il recevait
+  le régime net, au motif que « le tremblement sort tout seul du modèle
+  physique ». Mesuré : il n'en sort pas. Le régime tenu par le moteur simulé est
+  exactement le régime demandé — 780 pour 780, 2 952 pour 2 952 — parce que le
+  dynamomètre travaille au couple maximum de son domaine. Le son n'avait donc
+  aucune variation de régime, et un régime rigoureusement constant donne un
+  signal rigoureusement périodique : c'est une part de ce qui le fait entendre
+  comme une machine.
+
+- **La raideur du dynamomètre se règle.** Le couple avec lequel le banc tient le
+  régime du cadran était figé au maximum, sans qu'aucun réglage ne l'expose. Il
+  ne donne pas la souplesse qu'on pourrait en attendre, et l'écran le dit
+  maintenant : mesuré à 2 950 tr/min, le régime tenu reste exactement le régime
+  demandé de 10 000 jusqu'à 40 N·m, puis à 20 le moteur décroche d'un coup de
+  cinq cents tours. C'est un interrupteur, pas un réglage de souplesse.
+
 - **Le simulateur a sa propre page.** Ses commandes — les deux pédales, le
   curseur d'allure maintenue, les réglages de cadence, de bruit et de précision
   — vivaient sous les cadrans de l'écran de conduite, qui est déjà le plus
