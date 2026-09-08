@@ -512,6 +512,18 @@ Toutes les évolutions notables du projet. Format
   tremble autour de zéro ne l'atteint jamais, un vrai ralentissement le
   franchit en un tiers de seconde.
 
+  **Et le passage immédiat ne vaut plus qu'en accélérant.** « Accélération
+  jusqu'à 4800 tr/min en 4e, arrêt de l'accélération, le simu passe la 5 et la
+  6. » Le seuil de montée se décale de seize cents tours avec la charge : pied
+  au plancher il est haut, et il s'effondre en une demi-seconde quand on
+  relâche, bien plus vite que le régime ne descend. La marge de dépassement — qui
+  court-circuite la temporisation — se trouvait franchie non parce que le moteur
+  montait, mais parce que la barre était tombée. Deux rapports passaient
+  d'affilée, chacun voyant son propre seuil effondré, et sans laisser aux gardes
+  précédentes le temps d'agir. S'y ajoute un blocage immédiat au-delà d'un demi
+  m/s² de décélération, où le cumul n'apporte plus aucune certitude : la traînée
+  du simulateur en donne déjà 1,4 à cent kilomètres à l'heure.
+
   **Cela vaut aussi pour la montée au régime**, et c'était le gros du reproche.
   « Si j'arrête d'accélérer juste avant que la boîte ne monte un rapport, elle le
   monte quand même. » Le franchissement du seuil de régime lance un compte à

@@ -1203,3 +1203,62 @@ describe('Gearbox — ralentir doucement ne fait pas monter un rapport', () => {
     expect(shifts.filter((s) => s.to > s.from).length).toBeGreaterThan(0)
   })
 })
+
+/**
+ * Lever le pied ne doit pas faire tomber le seuil sous le régime.
+ *
+ * David : « accélération jusqu'à 4800 tr/min en 4e, arrêt de l'accélération, le
+ * simu passe la 5 et la 6 ». Le seuil de montée se décale de 1600 tr/min avec la
+ * charge : pied au plancher il est haut, et il s'effondre en une demi-seconde
+ * quand on relâche. Le régime, lui, met bien plus longtemps à descendre. Le
+ * seuil passe donc sous lui d'un coup, de bien plus que la marge de dépassement,
+ * et le passage se fait sans attendre — deux fois de suite, puisque le rapport
+ * suivant voit son seuil effondré de la même façon.
+ */
+describe('Gearbox — lever le pied ne déclenche pas de cascade', () => {
+  it('ne monte pas quand la charge chute alors que le régime est haut', () => {
+    const p = profile()
+    const gearbox = makeGearbox(p)
+    const gear4 = 3
+
+    // On place la boîte en 4e, à un régime franchement sous le seuil chargé.
+    const kmhDepart = kmhForRpm(p, gear4, 4800)
+    let kmh = kmhDepart
+    let load = 1
+    let last = gearbox.tick(FRAME_S, {
+      rpmInGear: rpmInGearAt(p, kmh),
+      atStandstill: false,
+      load,
+      kmh,
+      accelMs2: 2,
+    })
+    // Deux secondes pied au plancher : la boîte s'installe en 4e.
+    for (let f = 0; f * FRAME_S < 2; f += 1) {
+      last = gearbox.tick(FRAME_S, {
+        rpmInGear: rpmInGearAt(p, kmh),
+        atStandstill: false,
+        load,
+        kmh,
+        accelMs2: 0.2,
+      })
+    }
+    const avant = last.gear
+
+    // Lever de pied : la charge s'effondre en une demi-seconde, la vitesse
+    // décroît de cinq km/h par seconde, comme la traînée du simulateur.
+    for (let f = 0; f * FRAME_S < 4; f += 1) {
+      const t = f * FRAME_S
+      load = Math.max(0, 1 - t / 0.5)
+      kmh = Math.max(0, kmhDepart - 5 * t)
+      last = gearbox.tick(FRAME_S, {
+        rpmInGear: rpmInGearAt(p, kmh),
+        atStandstill: false,
+        load,
+        kmh,
+        accelMs2: -1.39,
+      })
+    }
+
+    expect(last.gear).toBeLessThanOrEqual(avant)
+  })
+})

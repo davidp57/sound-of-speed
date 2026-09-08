@@ -1755,6 +1755,17 @@ instantanée le sait tout de suite mais elle est bruitée ; on la cumule donc da
 un compteur qui monte en ralentissant et redescend deux fois plus vite sinon, si
 bien qu'une croisière qui tremble autour de zéro ne l'atteint jamais.
 
+Enfin, **le passage immédiat ne vaut qu'en accélérant**. La temporisation de
+confirmation est court-circuitée dès que le régime dépasse le seuil de plus de
+quatre cents tours, pour qu'une forte accélération ne fasse pas filer le régime
+bien au-delà du réglage. Mais le seuil, lui, se décale de seize cents tours avec
+la charge : pied au plancher il est haut, et il s'effondre en une demi-seconde
+dès qu'on relâche, bien plus vite que le régime ne descend. Le dépassement se
+trouvait alors franchi non parce que le moteur montait, mais parce que la barre
+était tombée — et deux rapports passaient d'affilée, chacun voyant son propre
+seuil effondré. Mesuré : quatre mille huit cents tours en quatrième, lever de
+pied, cinquième puis sixième.
+
 Le rétrogradage forcé, lui, répond à une **montée** de charge et non à son
 niveau. Faute de pédale dans une voiture électrique, la charge est déduite de
 l'accélération : son niveau ne dit pas « on demande fort » mais « on accélère ».

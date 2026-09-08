@@ -27,6 +27,15 @@ const MANUAL_DEBOUNCE_MS = 220
  * de plus de mille cinq cents tours, et le rapport finissait par passer très
  * au-dessus de la valeur réglée — un curseur qui ne tient pas sa promesse.
  * Passé cette marge, on passe sans attendre.
+ *
+ * **Sous accélération seulement, et c'est le sens de la règle.** Le seuil se
+ * décale de seize cents tours avec la charge : pied au plancher il est haut, et
+ * il s'effondre en une demi-seconde quand on relâche, bien plus vite que le
+ * régime ne descend. Le dépassement était alors franchi non parce que le moteur
+ * montait, mais parce que la barre était tombée — et le passage se faisait sans
+ * attendre. David : « accélération jusqu'à 4800 tr/min en 4e, arrêt de
+ * l'accélération, le simu passe la 5 et la 6 ». Deux fois, puisque le rapport
+ * suivant voit son propre seuil effondré de la même façon.
  */
 const UPSHIFT_OVERSHOOT_RPM = 400
 
@@ -144,6 +153,17 @@ const CRUISE_BAND_GRACE_S = 0.4
  */
 const CRUISE_SLOWING_MS2 = 0.05
 const CRUISE_SLOWING_HOLD_S = 0.35
+
+/**
+ * Décélération au-delà de laquelle on ne cumule plus rien : on ralentit, point.
+ *
+ * Le cumul existe pour ne pas confondre le bruit de la mesure avec un
+ * ralentissement, et un dixième de m/s² est bien dans ce bruit. Un demi-m/s²
+ * ne l'est pas — la traînée du simulateur en donne déjà 1,4 à cent kilomètres à
+ * l'heure. Attendre un tiers de seconde de plus n'apporte alors aucune
+ * certitude et laisse le temps à un passage de se déclencher.
+ */
+const CLEARLY_SLOWING_MS2 = 0.5
 /** Durée de décélération soutenue avant de descendre, en secondes. */
 const BRAKE_HOLD_S = 1
 /**
@@ -513,7 +533,8 @@ export class Gearbox {
     // Ralentir n'est pas croiser, et cela se sait avant que la dérive ne
     // l'ait vu : sans cette condition, lever le pied après une longue
     // croisière laissait passer un rapport de plus.
-    const slowing = this.slowingForS >= CRUISE_SLOWING_HOLD_S
+    const slowing =
+      accelMs2 <= -CLEARLY_SLOWING_MS2 || this.slowingForS >= CRUISE_SLOWING_HOLD_S
     const steadyLongEnough =
       this.steadyForS >= this.drivetrain.cruiseUpshiftAfterS &&
       this.sinceDownshiftS >= CRUISE_AFTER_DOWNSHIFT_S &&
@@ -628,7 +649,9 @@ export class Gearbox {
         ready = true
         this.readyForS += dt
         const delay = this.drivetrain.shiftDelaysS[this.gear] ?? 0.8
-        const overshot = rpm >= upThreshold + UPSHIFT_OVERSHOOT_RPM
+        // Le dépassement ne vaut qu'en accélérant : sinon c'est le seuil qui
+        // est descendu sous le régime, pas le régime qui est monté au-dessus.
+        const overshot = accelMs2 >= 0 && rpm >= upThreshold + UPSHIFT_OVERSHOOT_RPM
         if (this.readyForS >= delay || overshot) this.applyShift(1)
       } else if (
         rpm <= downThresholdSeen &&

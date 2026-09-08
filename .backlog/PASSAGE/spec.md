@@ -318,3 +318,30 @@ faut que le compte à rebours soit lancé.
 La condition de ralentissement s'applique désormais aux deux règles. Le compteur
 retombe à zéro dans la branche `else`, donc l'intention est abandonnée et non
 suspendue.
+
+## Douzième écoute, 8 septembre 2026
+
+David, avec le scénario exact : « accél jusqu'à 4800 rpm en 4e ; arrêt de
+l'accel ; le simu passe la 5 et la 6 ».
+
+Les deux gardes posées ne suffisaient pas, et la cause était ailleurs.
+`upshiftThreshold` décale le seuil de `upshiftLoadSpreadRpm` — 1600 tr/min sur
+Route — selon la charge. Pied au plancher, le seuil est 800 tours au-dessus de
+sa base ; la charge s'effondre en une demi-seconde au lever de pied, donc le
+seuil aussi, bien plus vite que le régime ne descend.
+
+La marge de dépassement (`UPSHIFT_OVERSHOOT_RPM`, 400 tr/min), qui court-circuite
+la temporisation, se trouvait alors franchie non parce que le moteur montait mais
+parce que la barre était tombée. Passage instantané, avant que le cumul de
+ralentissement n'ait atteint son seuil. Puis rebelote au rapport suivant : « la 5
+et la 6 ».
+
+Deux corrections :
+
+- le dépassement immédiat exige `accelMs2 >= 0` — il existe pour empêcher le
+  régime de filer sous accélération, ce qui n'a pas de sens en décélérant ;
+- au-delà d'un demi m/s² de décélération, le blocage est immédiat sans attendre
+  le cumul de 0,35 s : à ce niveau le bruit de mesure n'explique plus rien.
+
+Test ajouté qui rejoue le scénario : 4e à 4800 tr/min, charge de 1 à 0 en une
+demi-seconde, vitesse en baisse de 5 km/h par seconde.
