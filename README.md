@@ -2155,7 +2155,7 @@ chaque essai.
 | 30 | engine-sim en WebAssembly : le son sort en direct et suit le régime | fait, reste à écouter |
 | 31 | Tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils | fait, NAS en place, reste un essai en roulant |
 | 32 | Plusieurs banques de son : découvertes sur le serveur, mesurées par un outil, choisies par profil | fait, reste à essayer hors réseau |
-| 33 | Le passage de rapport s'entend : couple coupé, plongée, coup de gaz, clac de boîte, et un seuil de montée qui suit la demande | écouté au simulateur, reste à rouler |
+| 33 | Le passage de rapport s'entend : couple coupé, plongée, coup de gaz, clac de boîte, et un seuil de montée qui suit la demande | écouté au simulateur, échantillons et synthèse, reste à rouler |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

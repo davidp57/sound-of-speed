@@ -1,6 +1,6 @@
 # PASSAGE — un passage de rapport doit s'entendre comme un passage
 
-**Statut :** 🧑 attend David — livré et mergé, écouté au simulateur, reste à rouler
+**Statut :** 🧑 attend David — livré et mergé, écouté au simulateur dans les deux origines de son, reste à rouler
 **Branche :** `feature/passage-de-rapport`
 **Version visée :** 0.3
 
@@ -413,3 +413,22 @@ Points laissés ouverts, sans urgence :
    redondantes depuis. Elles n'ont pas été remesurées.
 3. Le claquement d'échappement au rétrogradage n'a pas de dosage séparé, alors
    que le clac de boîte en a un et pour la même raison.
+
+## Suite, 8 septembre 2026 — les moteurs en synthèse
+
+Essai sur le NAS : « ça ne marche pas pour les moteurs en synthèse, juste ceux
+qui sont enregistrés — je parle de tout le toutim, du claquement au passage en
+particulier ».
+
+Trois pièces sur quatre étaient logées du mauvais côté : le clac et la pétarade
+dans le moteur à échantillons, dont la garde exige une banque chargée, et la
+coupure de couple dans le mixage des couches, jamais appelé quand le synthé
+tourne. Seul le mouvement de régime passait. Les deux graphes ont de surcroît
+leur propre contexte audio.
+
+Les bruits deviennent des pièces autonomes (`core/audio/events.ts`), jouées sur
+le graphe actif ; sur celui du synthé, après le silencieux et la résonance. La
+coupure s'applique à l'effort transmis au moteur simulé. PR #93, mergée.
+
+Écouté par David : « impec ça marche ». Le niveau du clac face au moteur simulé
+n'a pas été mesuré — seulement face à la banque `procar`.
