@@ -18,6 +18,8 @@ import { RejectionWatch, type RejectionCause } from './core/speed/rejection'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
 import { soundSourceOf } from './core/preset/schema'
+import { playBackfire, playClack, type EventTarget } from './core/audio/events'
+import { shiftCut } from './core/audio/mix'
 import type { EngineDefinition, Profile, ProfileOrigin } from './core/preset/schema'
 import { clampEngineDefinition } from './core/preset/engine-definition'
 import type { LibraryEngine } from './core/preset/engine-library'
@@ -349,7 +351,26 @@ export const audioStatus = ref<AudioStatus>({ ...audio.status })
  * être activé, comme pour tout le reste.
  */
 export function tryClack(): void {
-  audio.clack(activeProfile.value.feel.shiftJolt.clack)
+  playEvent('clack', (target) => playClack(target, activeProfile.value.feel.shiftJolt.clack))
+}
+
+/**
+ * Joue un bruit bref sur le graphe qui sonne, quel qu'il soit.
+ *
+ * Les deux origines de son ont leur propre contexte audio : le moteur à
+ * échantillons le sien, le moteur simulé le sien. Un bruit d'événement n'est ni
+ * l'un ni l'autre — c'est la boîte ou l'échappement — et il doit s'entendre dans
+ * les deux cas. On demande donc au graphe actif où se brancher, plutôt que de
+ * loger la recette dans l'un des deux.
+ *
+ * Les compteurs de télémétrie restent tenus par le moteur à échantillons, seul
+ * endroit où ils sont lus : c'est un compte, pas un son.
+ */
+function playEvent(kind: 'clack' | 'backfire', play: (target: EventTarget) => void): void {
+  const target = synth.isRunning ? synth.eventTarget() : audio.eventTarget()
+  if (!target) return
+  audio.noteEvent(kind)
+  play(target)
 }
 export const isMuted = ref(false)
 
@@ -1085,7 +1106,7 @@ function step(dt: number): void {
   } else if (loadWasHigh && engineState.load <= 0.3) {
     loadWasHigh = false
     if (backfire.enabled && !isMuted.value && rpmWhenLoaded >= backfire.minRpm) {
-      audio.backfire(backfire.intensity, backfire.count)
+      playEvent('backfire', (t) => playBackfire(t, backfire.intensity, backfire.count))
     }
   }
 
@@ -1103,11 +1124,11 @@ function step(dt: number): void {
     // fort. C'est un réglage et non un calcul : le bon dosage dépend de la
     // banque.
     const descend = gearboxState.shiftDirection === 'down'
-    audio.clack(jolt.clack * (descend ? jolt.clackDownshift : 1))
+    playEvent('clack', (t) => playClack(t, jolt.clack * (descend ? jolt.clackDownshift : 1)))
     clackDone = true
   }
   if (wasShifting && !gearboxState.isShifting) {
-    if (sonore && jolt.crackle > 0) audio.backfire(jolt.crackle, 1)
+    if (sonore && jolt.crackle > 0) playEvent('backfire', (t) => playBackfire(t, jolt.crackle, 1))
   }
   if (!gearboxState.isShifting) clackDone = false
   wasShifting = gearboxState.isShifting
@@ -1123,16 +1144,22 @@ function step(dt: number): void {
   // maximum du domaine. Le son n'avait donc aucune variation de régime, nulle
   // part, et un régime rigoureusement constant donne un signal rigoureusement
   // périodique.
+  // La coupure de couple d'un passage vaut pour les deux origines de son.
+  //
+  // Elle vivait dans `computeMix`, qui n'est appelé que pour la banque
+  // d'échantillons : un profil en synthèse gardait donc son effort entier
+  // pendant tout le passage, et le moteur simulé continuait de tirer comme si
+  // rien ne se passait. Même règle, même forme, appliquée ici à ce qu'on
+  // transmet au synthé.
+  const shift = { isShifting: gearboxState.isShifting, progress: gearboxState.shiftProgress }
+
   if (synth.isRunning) {
     audio.mute()
     synth.setMuted(isMuted.value || synthSilent.value)
-    synth.setTarget(engineState.audibleRpm, engineState.effort)
+    synth.setTarget(engineState.audibleRpm, engineState.effort * shiftCut(profile, shift))
   } else if (isMuted.value) audio.mute()
   else {
-    audio.update(profile, engineState, {
-      isShifting: gearboxState.isShifting,
-      progress: gearboxState.shiftProgress,
-    })
+    audio.update(profile, engineState, shift)
   }
 
   // Le niveau de sortie change à chaque image ; le reste du statut ne bouge
