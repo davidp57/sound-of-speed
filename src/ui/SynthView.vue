@@ -576,19 +576,6 @@ const gauge = computed(() => {
         <span class="numeric">{{ synthSettings.throttleFull.toFixed(2) }}</span>
       </div>
       <div class="field">
-        <label for="vol">Volume</label>
-        <input
-          id="vol"
-          type="range"
-          min="0"
-          max="6"
-          step="0.05"
-          :value="synthSettings.volume"
-          @input="onNumber('volume', $event)"
-        />
-        <span class="numeric">{{ synthSettings.volume.toFixed(2) }}</span>
-      </div>
-      <div class="field">
         <label>Échappement</label>
         <div class="choices">
           <button
@@ -683,6 +670,26 @@ const gauge = computed(() => {
         La réserve absorbe les pointes de calcul. Elle se paie en retard entre
         le cadran et le son : l'allonger fait disparaître les creux et éloigne
         le son de ce qu'on voit.
+      </p>
+      <div class="field">
+        <label for="vol">Volume de la synthèse</label>
+        <input
+          id="vol"
+          type="range"
+          min="0"
+          max="6"
+          step="0.05"
+          :value="synthSettings.volume"
+          @input="onNumber('volume', $event)"
+        />
+        <span class="numeric">{{ synthSettings.volume.toFixed(2) }}</span>
+      </div>
+      <p class="note">
+        Le niveau que le synthétiseur produit, avant le niveleur — et non le
+        volume de l'appareil, qui est ailleurs. Il était dans le timbre, donc il
+        voyageait avec le moteur : essayer plusieurs moteurs le remettait à
+        chaque chargement, et l'on comparait deux timbres à deux niveaux. Il
+        reste ici, quel que soit le moteur chargé.
       </p>
       <div class="field">
         <label for="ripple">Régime délissé</label>

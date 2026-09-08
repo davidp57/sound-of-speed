@@ -113,13 +113,31 @@ describe('closestLibraryEngine', () => {
 describe('rendu des moteurs', () => {
   it('donne un rendu à chaque moteur', () => {
     for (const entry of ENGINE_LIBRARY) {
-      expect(entry.rendering.volume).toBeGreaterThan(0)
+      expect(entry.rendering.levelerTarget).toBeGreaterThan(0)
+      expect(entry.rendering.convolverMix).toBeGreaterThanOrEqual(0)
     }
   })
 
   it('livre le GM LS avec les valeurs relevées par David', () => {
     const gm = libraryEngine('gm-ls')!
     expect(gm.rendering.convolverMix).toBe(0.45)
-    expect(gm.rendering.volume).toBe(0.7)
+  })
+
+  it('ne fait pas voyager le volume avec le moteur', () => {
+    // Il l'a fait, et changer de moteur remettait le volume à chaque fois : on
+    // comparait alors deux timbres à deux niveaux. Il vit maintenant dans les
+    // réglages du banc.
+    for (const entry of ENGINE_LIBRARY) {
+      expect(entry.rendering).not.toHaveProperty('volume')
+    }
+  })
+
+  it('vise une crête qui laisse de la marge sous le plafond', () => {
+    // Mesuré au ralenti sur le V8, à volume un : 1,26 % d'échantillons écrêtés
+    // en moyenne et 2,73 % en pointe à trente-deux mille, contre 0,02 % et
+    // 0,39 % à seize mille. David l'entendait — « ça part en écrêtage ».
+    for (const entry of ENGINE_LIBRARY) {
+      expect(entry.rendering.levelerTarget).toBeLessThanOrEqual(16000)
+    }
   })
 })

@@ -328,6 +328,29 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Le volume de la synthèse ne voyage plus avec le moteur.** Il faisait partie
+  du rendu, donc essayer plusieurs moteurs le remettait à chaque chargement —
+  David : « c'est chiant que ça change à chaque fois ». On comparait deux timbres
+  à deux niveaux. C'est désormais un réglage du banc, à un par défaut, et il
+  reste où on l'a mis quel que soit le moteur chargé. Les profils enregistrés
+  montent en version 7 : celui qu'ils portaient encore est ignoré, et disparaît
+  du stockage au premier enregistrement.
+
+- **La crête visée du GM LS descend de 32 000 à 16 000, et l'écrêtage avec.**
+  Elle était réglée tout contre le plafond des entiers 16 bits, ce qui
+  s'entendait : « de petits moments où tout d'un coup le bruit part en écrêtage,
+  2-3 %, mais c'est très audible ». Mesuré au ralenti sur le V8, part
+  d'échantillons butés sur le plafond en moyenne puis en pointe : 1,26 % et
+  2,73 % à trente-deux mille au volume désormais livré, contre 0,02 % et 0,39 %
+  à seize mille. Le niveau perdu se rattrape avec le volume de l'appareil, en
+  flottant, où rien ne plafonne. Le délissage n'y était pour rien — mesuré au même
+  endroit, la pointe vaut 1,46 % avec lui comme sans lui, et la moyenne passe
+  seulement de 0,45 à 0,51 %.
+
+- **Le délissage est livré à soixante tours et un hertz et demi**, les valeurs
+  que David a trouvées à l'oreille. La dérive est dix fois plus lente que
+  l'estimation livrée la veille, et l'amplitude quatre fois plus large.
+
 - **Le moteur simulé reçoit le régime entendu, celui qui tremble.** Il recevait
   le régime net, au motif que « le tremblement sort tout seul du modèle
   physique ». Mesuré : il n'en sort pas. Le régime tenu par le moteur simulé est
