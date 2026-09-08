@@ -89,8 +89,19 @@ const audioListing: Plugin = {
  */
 const useHttps = process.env['HTTPS'] === '1'
 
+/**
+ * Les écrans de banc dans une image construite.
+ *
+ * Ils sont toujours là en développement. `BENCH=1` les met aussi dans une image
+ * publiée, et la construction n'active ce drapeau que pour l'étiquette
+ * `develop` — voir `.github/workflows/docker.yml`. La production n'en veut pas :
+ * un simulateur de vitesse dans une voiture n'est qu'un moyen de se tromper sur
+ * ce qu'on entend.
+ */
+const bench = process.env['BENCH'] === '1'
+
 export default defineConfig({
-  define: { __APP_VERSION__: JSON.stringify(version) },
+  define: { __APP_VERSION__: JSON.stringify(version), __BENCH__: JSON.stringify(bench) },
   plugins: [vue(), watchVersion, audioListing, ...(useHttps ? [basicSsl()] : [])],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
