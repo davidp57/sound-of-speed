@@ -1,6 +1,6 @@
 # ESSAI-08 — quatre constats de l'essai du 8 septembre
 
-**Statut :** 🔄 en cours — GPS corrigé, banc livré, son à mesurer, interface à cadrer
+**Statut :** 🔄 en cours — GPS corrigé, banc livré, son mesuré, interface à cadrer
 **Branche :** `fix/essai-08`
 **Version visée :** 0.1.64
 
@@ -77,24 +77,45 @@ en ont chacune une.
 écran de réglage de la synthèse, absents de la production. Le drapeau `BENCH=1`
 est posé par le workflow pour cette étiquette et pour elle seule.
 
-## Ce qui reste à mesurer
+## Ce que la mesure du son a donné
 
-**Le son.** Une réponse de David tranche la première question : le mode
-« procar » — la banque d'échantillons — ne souffre pas du défaut en roulant. La
-chaîne audio de la voiture n'est donc pas en cause, et le défaut est dans la
-synthèse.
+Une réponse de David tranche la première question : le mode « procar » — la
+banque d'échantillons — ne souffre pas du défaut en roulant. La chaîne audio de
+la voiture n'est donc pas en cause, et le défaut est dans la synthèse.
 
-Reste à savoir ce qui s'y passe. Deux variables changeaient ensemble entre le
-ralenti et la conduite : le régime monte, et le bruit de roulement monte. La
-mesure à faire ne demande plus la voiture — faire monter le régime au banc, à
-l'arrêt, et voir si le timbre se dégrade déjà là.
+Mesuré au poste le 8 septembre 2026, dans le navigateur, sur la sortie du moteur
+simulé captée avant les haut-parleurs (analyse par transformée de Fourier sur
+32 768 points, résolution 1,5 Hz) :
 
-Une piste à instruire : le régime transmis au moteur simulé est le régime
-**net**, sans tremblement (`state.ts`), au motif que le modèle physique
-produirait ses propres irrégularités. À régime établi, avec un dynamomètre qui
-tient la consigne, il reste à vérifier que c'est vrai — un régime rigoureusement
-constant donne un signal rigoureusement périodique, ce qui décrit assez bien
-« une fréquence trop simple ».
+**Le moteur simulé ne respire pas.** Le régime tenu est **exactement** le régime
+demandé : 780 pour 780 au ralenti, 2 952 pour 2 952 en roulant. Le dynamomètre
+travaille au couple maximum que le domaine autorise — `dynoTorque: 10000`, la
+borne haute — et écrase toute fluctuation. Un moteur réel, même à régime
+stabilisé, oscille à chaque cycle.
+
+Cela contredit ce que `state.ts` affirme pour justifier de transmettre au moteur
+simulé le régime **net** plutôt que le régime entendu : « le tremblement que le
+moteur à échantillons ajoute à la main sort tout seul du modèle physique ». Il
+n'en sort pas. Le son synthétisé n'a donc aucune variation de régime, nulle
+part, et un régime rigoureusement constant donne un signal rigoureusement
+périodique — ce qui décrit bien « une fréquence trop simple ».
+
+**La fréquence de simulation n'est pas le facteur limitant.** Hypothèse
+essayée : à 10 kHz de simulation, un cycle moteur serait décrit par trop peu de
+points quand le régime monte. Passée à 20 kHz, à régime égal (2 952), le spectre
+ne s'enrichit pas — le centroïde monte de 1 833 à 2 018 Hz mais l'énergie se
+concentre davantage, pas moins. Et le calcul tombe à ×0,99 du temps réel, avec
+neuf creux et 35 ms de silence : inexploitable de toute façon.
+
+**Trois leviers, dont un inaccessible.** Le couple du dynamomètre décide de la
+raideur avec laquelle le régime est tenu ; il est déjà transmis à chaud au
+calculateur, mais **aucun réglage ne l'expose** dans l'écran de synthèse. Les
+deux bruits d'engine-sim, eux, sont réglables à chaud — et le projet les a
+uniformisés pour toute la bibliothèque, à 0,15 et 0,05, là où les fichiers
+d'origine déclaraient jusqu'à 0,195 et 0,5 de gigue.
+
+Ce qui reste à faire est un jugement d'oreille, pas une mesure : ces trois
+leviers changent un timbre, et un chiffre ne dira pas lequel sonne juste.
 
 **L'interface.** Le besoin est réel et chiffrable : `ConfigView.vue` fait 2 236
 lignes, dix sections et soixante-cinq champs ; `SynthView.vue` en fait 1 030 et
@@ -105,8 +126,11 @@ tout découpage.
 
 ## Ce qui n'est pas tranché
 
-1. ce que la mesure du son au banc donnera, et ce qu'on en fait ;
-2. si la consolidation de l'interface est un lot neuf ou l'élargissement de
-   MODE-SIMPLE ;
-3. si `maximumAge: 0` doit être assoupli au démarrage — un changement de
-   comportement du signal, qui demande sa propre mesure.
+1. si l'on expose le couple du dynamomètre dans l'écran de synthèse, pour que le
+   levier soit essayable dans la voiture ;
+2. si le régime transmis au moteur simulé devient le régime **entendu**, celui
+   qui porte le tremblement — le motif écrit pour ne pas le faire est démenti
+   par la mesure, mais le tremblement décroît avec le régime et n'attaquerait
+   donc qu'une part du défaut ;
+3. si la consolidation de l'interface est un lot neuf ou l'élargissement de
+   MODE-SIMPLE.
