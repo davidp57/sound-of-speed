@@ -22,6 +22,24 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un banc qui mesure le son tel qu'il sort.** `npm run analyse-son` fait tourner
+  le moteur simulé hors du navigateur, puis lui applique la **chaîne de sortie** —
+  silencieux, puis mélange du son sec et de la résonance d'échappement. Toute
+  mesure de timbre portait jusqu'ici sur le signal du WebAssembly, trois étages
+  en amont du haut-parleur : une mesure a ainsi conclu qu'ouvrir le papillon
+  faisait baisser la bande de 1,4 kHz pendant que David entendait l'inverse. Le
+  premier relevé montre ce qui manquait — la résonance ajoute **quinze décibels**
+  à la bande de 500 Hz.
+
+  Il prend un moteur de la bibliothèque, ou **un profil exporté depuis
+  l'application** : un moteur d'usine est un point de départ, pas ce qu'on écoute
+  après l'avoir réglé. Les définitions viennent du projet lui-même, sans recopie.
+
+  Deux analyses : les **niveaux par bande**, avant et après la chaîne, et le
+  **grain de l'aigu** — l'énergie haute arrive-t-elle régulièrement ou par
+  salves. C'est cette seconde qui cherche les parasites que David décrit comme
+  des « frt frt frt », lesquels se noient dans un spectre moyen.
+
 - **Le régime du moteur simulé se délisse.** Le dynamomètre tient la vitesse par
   une contrainte du solveur : mesurée à chaque pas de simulation, l'ondulation du
   vilebrequin était **exactement nulle**, à tous les régimes. Un régime
