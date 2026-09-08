@@ -1541,15 +1541,32 @@ function impliedCylinders(index: number): number | null {
         </button>
         <span class="note">Le petit trou pendant le changement de rapport.</span>
       </div>
-      <NumberField
-        v-if="profile.feel.shiftJolt.enabled"
-        v-model="profile.feel.shiftJolt.depth"
-        label="Profondeur"
-        :min="0"
-        :max="1"
-        :step="0.05"
-        hint="Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est."
-      />
+      <template v-if="profile.feel.shiftJolt.enabled">
+        <NumberField
+          v-model="profile.feel.shiftJolt.depth"
+          label="Profondeur"
+          :min="0"
+          :max="1"
+          :step="0.05"
+          hint="Combien le niveau baisse pendant la coupure. Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est."
+        />
+        <NumberField
+          v-model="profile.feel.shiftJolt.cutDepth"
+          label="Coupure de couple"
+          :min="0"
+          :max="1"
+          :step="0.05"
+          hint="Combien le moteur passe en roue libre le temps du passage. C'est ce qui fait entrer le son pied levé, donc changer le timbre et pas seulement le niveau. Zéro garde le son de pleine charge d'un bout à l'autre."
+        />
+        <NumberField
+          v-model="profile.feel.shiftJolt.crackle"
+          label="Claquement de reprise"
+          :min="0"
+          :max="1"
+          :step="0.05"
+          hint="Une détonation à l'échappement au moment où le couple revient. Zéro n'en produit aucune."
+        />
+      </template>
     </section>
 
     <section v-if="advancedMode" class="panel">

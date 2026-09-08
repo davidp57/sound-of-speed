@@ -680,6 +680,28 @@ export interface FeelPreset {
     enabled: boolean
     /** Profondeur du creux de niveau pendant la coupure, de 0 à 1. */
     depth: number
+    /**
+     * Profondeur de la coupure d'effort pendant le passage, de 0 à 1.
+     *
+     * Le creux de niveau seul ne faisait qu'une chose : baisser le son de
+     * 3,7 dB sans en changer le timbre. Mesuré sur le profil Route, l'effort
+     * restait à 1,000 du début à la fin d'un passage — il se déduit de
+     * l'accélération, et la voiture, elle, ne coupe rien : elle continue
+     * d'avancer pendant que la boîte imaginaire change de rapport. Rien ne
+     * disait donc au son que le couple était coupé.
+     *
+     * Cette profondeur abaisse l'effort **vu par le mixage** le temps du
+     * passage, ce qui fait entrer les couches pied levé et change vraiment le
+     * timbre. Zéro rend le comportement d'avant.
+     */
+    cutDepth: number
+    /**
+     * Claquement d'échappement à la reprise, de 0 à 1. Zéro n'en produit aucun.
+     *
+     * C'est la pétarade déjà synthétisée pour le lever de pied, tirée en un
+     * seul coup au moment où le couple revient.
+     */
+    crackle: number
   }
 }
 

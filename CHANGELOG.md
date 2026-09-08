@@ -22,6 +22,29 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un passage de rapport s'entend enfin comme un passage.** Il ne faisait qu'une
+  chose : baisser le niveau de 3,8 dB pendant un dixième de seconde, sur un
+  timbre inchangé. Mesuré sur le profil Route, passage de première en seconde à
+  45 km/h, la part d'énergie tenue par les couches en charge valait 0,926 avant,
+  pendant et après — le fondu vers le pied levé ne basculait jamais. Et le
+  régime ne perdait que 444 des 1 815 tours qu'il devait perdre pendant les
+  133 ms du passage : les 1 371 restants tombaient **après**, une fois le creux
+  de niveau déjà remonté, si bien qu'on entendait un son qui glisse au lieu
+  d'une rupture.
+
+  Trois choses maintenant, réglables séparément et neutralisables à zéro : la
+  **coupure de couple**, qui fait entrer les couches pied levé le temps du
+  passage — la part en charge tombe à 0,223 au creux ; l'**embrayage qui se
+  referme dans le temps du passage** — le régime finit à 2 tr/min des roues, au
+  lieu de 1 486 ; et un **claquement de reprise**, une détonation au moment où
+  le couple revient.
+
+  L'effort vrai n'est pas touché : le régime, la boîte et la télémétrie
+  continuent de le voir entier. Seul le mixage entend la coupure — la voiture,
+  elle, ne coupe rien, elle est électrique et continue d'avancer.
+
+  Les trois valeurs livrées sont des estimations, à juger à l'oreille.
+
 - **Le son se débouche en accélérant.** David voulait retrouver sous charge ce
   qu'il entend en levant le pied : « le son est plus clair, moins sourd, comme si
   on enlevait un bouchon ». Deux mécanismes ont été essayés et jetés le même

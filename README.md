@@ -1219,6 +1219,9 @@ qu'on remarque surtout par leur absence. Chacun s'active séparément.
 | **Pétarade** | Claquements à l'échappement au lever de pied. Synthétisés, la banque sonore n'en contenant pas |
 | **À partir de** | Régime en deçà duquel rien ne se produit : il ne reste pas assez à brûler. C'est le régime **au moment où l'on coupe**, non celui constaté une demi-seconde plus tard |
 | **À-coup de passage** | Le creux du couple coupé, puis la reprise. Zéro donne une boîte parfaitement lisse, ce qu'aucune n'est |
+| **Profondeur** | Combien le **niveau** baisse pendant la coupure. Mesuré sur le profil Route : 3,8 dB au creux à 0,35 |
+| **Coupure de couple** | Combien le moteur passe en roue libre le temps du passage. C'est ce qui fait entrer les couches pied levé, donc changer le **timbre** et pas seulement le niveau. Mesuré sur le profil Route : la part d'énergie tenue par les couches en charge passait de 0,926 à 0,926 — elle ne bougeait pas — et tombe à 0,223 au creux. Zéro garde le son de pleine charge d'un bout à l'autre |
+| **Claquement de reprise** | Une détonation à l'échappement au moment où le couple revient. C'est la pétarade du lever de pied, tirée en un seul coup. Zéro n'en produit aucune |
 
 ### Couches
 
@@ -1736,6 +1739,39 @@ l'accélération : son niveau ne dit pas « on demande fort » mais « on accél
 Le seuil se franchissait dès 3,6 km/h par seconde, et la boîte descendait pour
 cela.
 
+### Ce qu'on entend d'un passage de rapport
+
+Un passage était, jusqu'à ce lot, une baisse de niveau et rien d'autre. Relevé
+sur le profil Route, passage de première en seconde à 45 km/h, un point tous les
+seize millisecondes :
+
+| | avant | maintenant |
+|---|---|---|
+| Régime à la fin du passage | 4 289 tr/min, pour 2 803 aux roues | 2 781, pour 2 779 aux roues |
+| Où tombe la chute de régime | 24 % pendant le passage, 76 % dans les 170 ms d'après | entièrement dans les 133 ms du passage |
+| Part d'énergie tenue par les couches en charge | 0,926 avant, 0,926 pendant | 0,926 avant, 0,223 au creux, 0,926 après |
+| Niveau au creux | −3,8 dB | −4,2 dB |
+
+Trois choses se produisent maintenant, et elles étaient absentes :
+
+- **Le couple se coupe.** L'effort vu par le mixage tombe le temps du passage, ce
+  qui fait entrer les couches pied levé : le timbre change vraiment, au lieu que
+  le même son baisse. Il fallait le faire à la main, car l'effort se déduit de
+  l'accélération et **la voiture, elle, ne coupe rien** — elle est électrique et
+  continue d'avancer pendant que la boîte imaginaire change de rapport. Rien ne
+  disait donc au son que le couple était coupé. Le régime, la boîte et la
+  télémétrie continuent de voir l'effort vrai : seule l'oreille est concernée.
+- **L'embrayage se referme dans le temps du passage.** Le moteur décroche des
+  roues au début, comme avant, mais l'engagement le ramène au régime du nouveau
+  rapport avant la fin. Sans cela le régime traînait au frein moteur puis
+  rattrapait d'un coup, une fois le creux de niveau remonté : on entendait un son
+  qui glisse, pas une rupture.
+- **Un claquement à la reprise**, une seule détonation au moment où le couple
+  revient — la pétarade déjà synthétisée pour le lever de pied, tirée en un coup
+  au lieu d'une salve.
+
+Les trois se règlent séparément et se coupent à zéro, ce qui rend le son d'avant.
+
 ### Deux grandeurs, et non une : la charge et l'effort
 
 Faute de pédale, tout se déduit de l'accélération. Mais la boîte et le son ne
@@ -1975,6 +2011,7 @@ chaque essai.
 | 30 | engine-sim en WebAssembly : le son sort en direct et suit le régime | fait, reste à écouter |
 | 31 | Tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils | fait, NAS en place, reste un essai en roulant |
 | 32 | Plusieurs banques de son : découvertes sur le serveur, mesurées par un outil, choisies par profil | fait, reste à essayer hors réseau |
+| 33 | Le passage de rapport s'entend : couple coupé, embrayage qui se referme, claquement de reprise | fait, reste à écouter |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

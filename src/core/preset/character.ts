@@ -338,6 +338,11 @@ export function applySportiness(profile: Profile, sportiness: number): Profile {
       shiftJolt: {
         ...profile.feel.shiftJolt,
         depth: round3(0.25 + 0.4 * s),
+        // Une boîte de caractère coupe plus franchement et claque plus fort.
+        // Sans cela, le curseur creuserait le niveau sans changer le timbre, et
+        // le passage deviendrait un trou au lieu d'un événement.
+        cutDepth: round3(0.6 + 0.35 * s),
+        crackle: round3(0.1 + 0.35 * s),
       },
     },
   }

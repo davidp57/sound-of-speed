@@ -627,3 +627,65 @@ describe('Engine — réinitialisation', () => {
     expect(state.limiterActive).toBe(false)
   })
 })
+
+/**
+ * Un passage de rapport, tel qu'on l'entend.
+ *
+ * Mesuré avant ce lot sur le profil Route, passage de première en seconde à
+ * 45 km/h : pendant les 133 ms du passage, le régime ne perdait que 444 des
+ * 1 815 tours qu'il devait perdre, et les 1 371 restants tombaient **après**,
+ * une fois `isShifting` retombé — donc après que le creux de niveau soit
+ * remonté. Le passage s'entendait alors comme un son qui faiblit puis qui
+ * glisse, et non comme une rupture.
+ *
+ * L'embrayage qui se referme fait le gros du travail, et il le fait **dans** la
+ * durée du passage : c'est ce que la progression apporte.
+ */
+describe('passage de rapport', () => {
+  const rolling = { kmh: 80, atStandstill: false, throttle: null }
+
+  /** Déroule un passage de la durée donnée, progression comprise. */
+  function shift(engine: Engine, seconds: number, over: Partial<EngineInput> = {}) {
+    const frames = Math.max(1, Math.round(seconds / FRAME_S))
+    let state = engine.tick(FRAME_S, input({ ...over, isShifting: true, shiftProgress: 0 }))
+    for (let f = 1; f <= frames; f += 1) {
+      state = engine.tick(
+        FRAME_S,
+        input({ ...over, isShifting: true, shiftProgress: f / frames }),
+      )
+    }
+    return state
+  }
+
+  it('a rejoint le régime des roues quand le passage se termine', () => {
+    const engine = makeEngine()
+    settle(engine, 2, rolling)
+
+    const state = shift(engine, 0.12, rolling)
+
+    expect(Math.abs(state.rpm - state.kinematicRpm)).toBeLessThan(60)
+  })
+
+  it('décroche encore des roues au début du passage', () => {
+    const engine = makeEngine()
+    const engaged = settle(engine, 2, rolling)
+
+    // Un tiers de passage : l'embrayage est ouvert, le moteur descend seul.
+    const early = engine.tick(
+      FRAME_S,
+      input({ ...rolling, isShifting: true, shiftProgress: 0.2 }),
+    )
+
+    expect(early.rpm).toBeLessThan(engaged.rpm)
+    expect(early.rpm).toBeGreaterThan(profile.engine.idleRpm)
+  })
+
+  it("sans progression, garde le comportement d'avant", () => {
+    const engine = makeEngine()
+    const engaged = settle(engine, 2, rolling)
+    const shifting = settle(engine, 0.5, { ...rolling, isShifting: true })
+
+    expect(shifting.rpm).toBeLessThan(engaged.rpm * 0.85)
+    expect(shifting.rpm).toBeLessThan(shifting.kinematicRpm)
+  })
+})

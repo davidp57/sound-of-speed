@@ -973,6 +973,13 @@ function rpmInGear(gear: number, kmh: number): number {
  */
 let loadWasHigh = false
 /**
+ * Passage de rapport en cours au tour précédent.
+ *
+ * Le claquement se tire quand il se termine, pas quand il commence : c'est la
+ * reprise du couple qui rallume l'imbrûlé, et c'est là qu'on l'entend.
+ */
+let wasShifting = false
+/**
  * Régime au moment où l'on était encore en charge.
  *
  * C'est lui qui décide s'il reste de quoi brûler, et non le régime constaté une
@@ -1012,6 +1019,7 @@ function step(dt: number): void {
     wheelRadiusM: profile.drivetrain.wheelRadiusM,
     atStandstill: speed.atStandstill,
     isShifting: gearboxState.isShifting,
+    shiftProgress: gearboxState.shiftProgress,
     // La pédale n'est connue qu'en « vitesse exacte ». Dès que le banc imite un
     // GPS, elle ne l'est plus — c'est tout le sujet : une voiture ne dit pas ce
     // que fait le pied, et la charge doit se déduire de l'accélération mesurée.
@@ -1033,6 +1041,18 @@ function step(dt: number): void {
       audio.backfire(backfire.intensity, backfire.count)
     }
   }
+
+  // Claquement de reprise, au moment précis où le couple revient. Un seul coup,
+  // pas une salve : une salve est ce qu'on entend en roue libre, quand
+  // l'échappement se remplit pendant des secondes ; ici il n'y a qu'un dixième
+  // de seconde d'imbrûlé.
+  const jolt = profile.feel.shiftJolt
+  if (wasShifting && !gearboxState.isShifting) {
+    if (jolt.enabled && jolt.crackle > 0 && !isMuted.value) {
+      audio.backfire(jolt.crackle, 1)
+    }
+  }
+  wasShifting = gearboxState.isShifting
 
   // Une seule origine de son à la fois. Le régime transmis est le régime
   // **entendu**, celui qui porte le tremblement, comme pour les échantillons.

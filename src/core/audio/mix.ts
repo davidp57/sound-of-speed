@@ -76,6 +76,21 @@ function fromDb(db: number): number {
   return Math.pow(10, db / 20)
 }
 
+/**
+ * Facteur appliqué à l'effort pendant un passage de rapport.
+ *
+ * Même forme que le creux de niveau — un sinus, nul aux deux bouts, maximal au
+ * milieu — pour que la coupure et le creux se produisent au même moment plutôt
+ * que de se décaler. Vaut un hors passage, et à la fin exacte du passage : le
+ * couple est alors revenu, et le timbre de pleine charge avec lui.
+ */
+function shiftCut(profile: Profile, shift?: { isShifting: boolean; progress: number }): number {
+  const jolt = profile.feel.shiftJolt
+  if (!jolt.enabled || !shift?.isShifting) return 1
+  const depth = clamp(jolt.cutDepth, 0, 1)
+  return 1 - depth * Math.sin(clamp(shift.progress, 0, 1) * Math.PI)
+}
+
 export function computeMix(
   profile: Profile,
   state: EngineState,
@@ -94,7 +109,12 @@ export function computeMix(
   // L'effort, et non la charge : c'est le travail du moteur qui décide du
   // timbre, et tenir 130 km/h en demande plus que tenir 30. La charge, elle,
   // reste à la boîte.
-  const load = clamp(0.5 + (clamp(state.effort, 0, 1) - 0.5) * contrast, 0, 1)
+  //
+  // La coupure de couple d'un passage se retire ici, et nulle part ailleurs :
+  // c'est l'effort **entendu**. Le régime, la boîte et la télémétrie continuent
+  // de voir l'effort vrai — la voiture, elle, ne coupe rien.
+  const effort = shiftCut(profile, shift) * clamp(state.effort, 0, 1)
+  const load = clamp(0.5 + (effort - 0.5) * contrast, 0, 1)
   const onWeight = Math.sin((load * Math.PI) / 2)
   const offWeight = Math.cos((load * Math.PI) / 2) * Math.max(0, mix.offLoadGain)
 
@@ -122,6 +142,10 @@ export function computeMix(
   // relief règle le niveau d'ensemble. Les coupler ferait qu'un contraste nul
   // désactiverait le relief en silence, ce qui rendrait les deux curseurs
   // impossibles à régler l'un après l'autre.
+  // L'effort **vrai**, et non celui que la coupure abaisse : sans quoi un
+  // passage cumulerait deux baisses de niveau — le creux de l'à-coup et la
+  // perte de relief — et deviendrait un trou. La coupure change le timbre, le
+  // creux change le niveau ; un réglage pour chacun.
   const loadRelief = fromDb((clamp(state.effort, 0, 1) - 0.5) * 2 * mix.loadReliefDb)
   const span = Math.max(1, profile.engine.redlineRpm - profile.engine.idleRpm)
   const rpmShare = clamp((state.rpm - profile.engine.idleRpm) / span, 0, 1)

@@ -434,6 +434,8 @@ export function createDefaultProfile(): Profile {
       shiftJolt: {
         enabled: true,
         depth: 0.55,
+        cutDepth: 0.8,
+        crackle: 0.25,
       },
     },
     layers: [

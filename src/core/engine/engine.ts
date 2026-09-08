@@ -110,6 +110,12 @@ export interface EngineInput {
   atStandstill: boolean
   isShifting: boolean
   /**
+   * Avancement du passage en cours, de 0 à 1. Sans elle, le moteur reste
+   * découplé toute la durée du passage et ne rejoint les roues qu'après —
+   * ce qui décale la chute de régime derrière le creux de niveau.
+   */
+  shiftProgress?: number
+  /**
    * Position de l'accélérateur, de 0 à 1, quand la source la connaît (simulateur).
    * En conduite réelle il n'y en a pas : passer `null` et la charge sera
    * entièrement déduite de l'accélération.
@@ -163,7 +169,7 @@ export class Engine {
     const kinematic = Engine.kinematicRpm(input.kmh, input.totalRatio, input.wheelRadiusM)
     const target = this.resolveTarget(kinematic, input)
 
-    this.advanceRpm(step, target, input)
+    this.advanceRpm(step, target, kinematic, input)
     this.advanceLoad(step, input)
     this.applyLimiter(step)
 
@@ -244,7 +250,12 @@ export class Engine {
    * constantes distinctes, parce qu'un moteur monte plus vite qu'il ne redescend
    * quand il est libre — et l'inverse quand la roue l'entraîne.
    */
-  private advanceRpm(dt: number, target: number, input: EngineInput): void {
+  private advanceRpm(
+    dt: number,
+    target: number,
+    kinematic: number,
+    input: EngineInput,
+  ): void {
     const coupled = !input.atStandstill && !input.isShifting
     const rate = target > this.rpm ? this.preset.freeRevRate : this.preset.engineBraking
     const inertia = Math.max(0.05, this.preset.inertia)
@@ -259,6 +270,19 @@ export class Engine {
         target > this.rpm
           ? Math.min(target, this.rpm + delta)
           : Math.max(target, this.rpm - delta)
+    }
+
+    // L'embrayage qui se referme sur le nouveau rapport.
+    //
+    // Sans lui, le régime descend au frein moteur toute la durée du passage,
+    // puis rattrape d'un coup une fois le passage fini : mesuré sur le profil
+    // Route, 444 tours perdus pendant les 133 ms du passage, et les 1 371
+    // restants dans les 170 ms d'après. Le creux de niveau était alors remonté
+    // depuis longtemps, et l'on entendait un son qui glisse au lieu d'une
+    // rupture. L'engagement ramène cette chute **dans** le passage.
+    if (input.isShifting) {
+      const engaging = clamp(input.shiftProgress ?? 0, 0, 1) ** 2
+      this.rpm += (kinematic - this.rpm) * engaging
     }
 
     this.rpm = clamp(this.rpm, 0, this.preset.redlineRpm)
