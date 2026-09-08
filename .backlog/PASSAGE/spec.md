@@ -367,3 +367,29 @@ immédiat. Remis à zéro à chaque changement de rapport.
 
 Deux tests protègent le comportement : la descente bornée, et la remontée
 immédiate.
+
+## Quatorzième écoute, 8 septembre 2026 — la cause, trouvée par David
+
+David : « je crois que c'est un problème qui n'est pas dû à nos bricolages sur le
+passage des rapports. On s'en rend juste compte maintenant parce qu'il est
+flagrant. En fait les rapports montent plus tôt quand on accélère moins, et plus
+tard après un kickdown. Je pense que ça a un lien. »
+
+Il avait raison sur les deux points. `upshiftLoadSpreadRpm` — 1600 tr/min sur
+Route — décale le seuil de ±800 selon la charge : ses deux observations en sont
+les deux faces, et le réglage est antérieur au lot.
+
+Le défaut de fond : ce décalage attend l'**intention** du conducteur, quand la
+charge, faute de pédale, donne le **résultat**. En côte à pleine charge
+l'accélération est faible, donc la boîte monte tôt — l'inverse du besoin.
+
+Correction retenue (option 2 sur quatre proposées) : le seuil suit une
+**demande**, qui monte instantanément avec la charge et n'en redescend qu'en
+trois secondes. Elle remplace le garde-fou posé au tour précédent, qui freinait
+la descente du seuil sans dire pourquoi.
+
+Relevé sur Route, quatrième à 4000 tr/min puis lever de pied avec charge tombant
+en une demi-seconde : le seuil descend de 3851 à 2358 en trois secondes au lieu
+de s'effondrer, et **aucun passage ne se produit**.
+
+**Non écouté.**

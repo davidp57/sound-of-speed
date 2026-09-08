@@ -1755,16 +1755,29 @@ instantanée le sait tout de suite mais elle est bruitée ; on la cumule donc da
 un compteur qui monte en ralentissant et redescend deux fois plus vite sinon, si
 bien qu'une croisière qui tremble autour de zéro ne l'atteint jamais.
 
-Et surtout, **le seuil de montée descend lentement**. Il se décale de seize
-cents tours avec la charge, et il la suivait à l'identique : pied au plancher il
-est haut, la charge s'effondre en une demi-seconde quand on relâche, et le seuil
-passait sous le régime sans que le moteur ait bougé. Il monte toujours
-instantanément — garder un rapport quand on remet les gaz doit être immédiat —
-mais il ne peut plus descendre que de quatre cents tours par seconde. Trois
-gardes posées en aval n'avaient pas suffi : elles dépendaient toutes du moment où
-l'accélération mesurée devient franchement négative, et celle-ci est lissée alors
-que la charge tombe tout de suite. Freiner la descente du seuil ne dépend
-d'aucun timing.
+Et surtout, **le seuil de montée suit la demande et non la charge de l'instant**.
+
+Il se décale de seize cents tours selon l'effort, pour distinguer une conduite
+tranquille — qui monte tôt sur un rapport long — d'une accélération franche qui
+étire chaque rapport. Ce qu'il attend est l'**intention** du conducteur ; sur une
+vraie automatique, c'est la position de la pédale. Faute de pédale, la charge se
+déduit de l'accélération, c'est-à-dire du **résultat**, et les deux ne sont pas la
+même chose. David l'a relevé des deux côtés à la fois : « les rapports montent
+plus tôt quand on accélère moins, et plus tard après un kickdown ». En côte, pied
+au plancher, l'accélération est faible : la charge tombe, le seuil descend de huit
+cents tours et la boîte monte tôt — l'inverse de ce qu'il faudrait. Et au lever de
+pied, la charge s'effondre en une demi-seconde, donc le seuil passe sous le régime
+sans que le moteur ait bougé.
+
+La **demande** monte instantanément avec la charge — garder un rapport quand on
+remet les gaz doit être immédiat — et n'en redescend qu'en trois secondes. Une
+accélération franche garde donc ses rapports longs quelques secondes après qu'on
+a relâché, comme une boîte qui a compris qu'on conduisait vite ; et le seuil ne
+peut plus tomber que d'environ cinq cent trente tours par seconde sur le profil
+Route. Quatre gardes avaient été posées en aval avant d'en arriver là : trois
+dépendaient du moment où l'accélération mesurée devient franchement négative — or
+elle est lissée quand la charge ne l'est presque pas, si bien qu'elles arrivaient
+après.
 
 Enfin, **le passage immédiat ne vaut qu'en accélérant**. La temporisation de
 confirmation est court-circuitée dès que le régime dépasse le seuil de plus de

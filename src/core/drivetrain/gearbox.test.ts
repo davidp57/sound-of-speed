@@ -1268,16 +1268,19 @@ describe('Gearbox — lever le pied ne déclenche pas de cascade', () => {
 })
 
 /**
- * Le seuil de montée descend lentement, et monte vite.
+ * Le seuil de montée suit la **demande**, pas la charge de l'instant.
  *
- * Trois gardes en aval n'avaient pas suffi — « ça monte encore un rapport quand
- * je relâche l'accel » — parce qu'elles dépendaient toutes du moment où
- * l'accélération mesurée devient franchement négative, et que celle-ci est
- * lissée alors que la charge, elle, tombe tout de suite. Freiner la descente du
- * seuil ne dépend d'aucun timing.
+ * La demande monte avec la charge et n'en redescend qu'en trois secondes. Sur le
+ * profil Route, dont l'écart vaut seize cents tours, le seuil ne peut donc
+ * descendre que d'environ cinq cent trente tours par seconde — là où la charge,
+ * elle, s'effondre en une demi-seconde au lever de pied.
+ *
+ * David : « les rapports montent plus tôt quand on accélère moins, et plus tard
+ * après un kickdown ». Les deux viennent du même décalage, et il attend
+ * l'intention du conducteur quand la charge ne donne que le résultat.
  */
-describe('Gearbox — le seuil de montée ne s’effondre pas', () => {
-  it('descend au plus de quatre cents tours par seconde quand la charge tombe', () => {
+describe('Gearbox — le seuil de montée suit la demande', () => {
+  it('ne suit pas la charge quand elle s’effondre', () => {
     const p = profile()
     const gearbox = makeGearbox(p)
     const kmh = kmhForRpm(p, 1, p.drivetrain.upshiftRpm[1]! - 900)
@@ -1292,14 +1295,21 @@ describe('Gearbox — le seuil de montée ne s’effondre pas', () => {
     const apres = gearbox.tick(FRAME_S, { ...entree, load: 0 })
     expect(haut.upshiftThresholdRpm - apres.upshiftThresholdRpm).toBeLessThan(20)
 
-    // Une seconde plus tard, il a perdu environ quatre cents tours, pas mille six cents.
+    // Une seconde plus tard, il a perdu le tiers des seize cents tours, pas tout.
     let fin = apres
     for (let f = 0; f * FRAME_S < 1; f += 1) {
       fin = gearbox.tick(FRAME_S, { ...entree, load: 0 })
     }
     const chute = haut.upshiftThresholdRpm - fin.upshiftThresholdRpm
-    expect(chute).toBeGreaterThan(300)
-    expect(chute).toBeLessThan(500)
+    expect(chute).toBeGreaterThan(400)
+    expect(chute).toBeLessThan(700)
+
+    // Trois secondes après, il est arrivé au bout de sa course.
+    for (let f = 0; f * FRAME_S < 3; f += 1) {
+      fin = gearbox.tick(FRAME_S, { ...entree, load: 0 })
+    }
+    const totale = haut.upshiftThresholdRpm - fin.upshiftThresholdRpm
+    expect(totale).toBeGreaterThan(p.drivetrain.upshiftLoadSpreadRpm * 0.9)
   })
 
   it('remonte aussitôt quand on remet les gaz', () => {
