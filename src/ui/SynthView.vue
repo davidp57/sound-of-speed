@@ -385,7 +385,21 @@ const gauge = computed(() => {
         :value="synthStatus.peak.toFixed(3)"
         :bar="synthStatus.peak"
         :warn="synthStatus.peak >= 0.999"
-        hint="À 1,000 la sortie du synthétiseur bute sur son plafond — voulu en charge, pas au ralenti."
+        hint="À 1,000 la sortie du synthétiseur bute sur son plafond — voulu en charge, pas au ralenti. C'est le niveau du son sec, avant le silencieux et la résonance : voir « en sortie » juste dessous."
+      />
+      <ValueRow
+        label="Crête en sortie"
+        :value="synthStatus.outputPeak.toFixed(3)"
+        :bar="synthStatus.outputPeak"
+        :warn="synthStatus.outputPeak >= 0.999"
+        hint="Ce que les haut-parleurs reçoivent, tout au bout du graphe. La résonance d'échappement ajoute une quinzaine de décibels à la bande de 500 Hz : ce chiffre-là dépassait 1,19 quand celui du dessus annonçait 1,000, et le dépassement s'entend en bouffées d'aigu."
+      />
+      <ValueRow
+        label="Écrête en sortie"
+        :value="(synthStatus.outputClipped * 100).toFixed(2)"
+        unit="%"
+        :warn="synthStatus.outputClipped > 0.001"
+        hint="Part des échantillons que la sortie a rognés. C'est le seul écrêtage qu'on entende vraiment."
       />
       <ValueRow label="Niveau efficace" :value="synthStatus.rms.toFixed(3)" :bar="synthStatus.rms" />
       <ValueRow

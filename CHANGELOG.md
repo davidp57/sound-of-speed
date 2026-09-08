@@ -22,6 +22,20 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **L'écran montre ce que les haut-parleurs reçoivent.** Le niveau crête et le
+  taux d'écrêtage étaient relevés dans le lecteur, donc **avant** le silencieux
+  et la résonance d'échappement — celle-ci ajoutant une quinzaine de décibels à
+  la bande de 500 Hz. Mesuré sur le Chevrolet 454 au ralenti : 1,000 au lecteur
+  pour **1,194** en fin de graphe, que le contexte audio rognait sans que rien ne
+  le dise. Un écrêtage bref est riche en aigu, et c'est ce que David entendait —
+  « des frt frt frt à plus haute fréquence que le moteur ». Deux lignes
+  nouvelles, *Crête en sortie* et *Écrête en sortie*, relevées par un moniteur
+  placé tout au bout de la chaîne.
+
+  Cela éclaire aussi le rapprochement qu'il avait fait avec la brillance : elle
+  ne causait rien, elle signalait. Un écrêtage engendre des harmoniques hautes,
+  donc la part d'énergie au-dessus d'un kilohertz monte avec lui.
+
 - **Un banc qui mesure le son tel qu'il sort.** `npm run analyse-son` fait tourner
   le moteur simulé hors du navigateur, puis lui applique la **chaîne de sortie** —
   silencieux, puis mélange du son sec et de la résonance d'échappement. Toute
@@ -345,6 +359,13 @@ Toutes les évolutions notables du projet. Format
   reçoit celle de son profil d'usine.
 
 ### Modifié
+
+- **La sortie garde deux décibels de marge sous le plafond.** C'est le remède au
+  débordement ci-dessus : à 1,194 de crête mesurée, deux décibels ramènent le cas
+  à 0,95. Le niveau perdu se rattrape avec le volume de l'appareil, en flottant,
+  où rien ne plafonne. Ce n'est pas un réglage — un curseur de plus pour une
+  valeur qu'on ne touche qu'une fois n'aurait pas sa place dans un écran qu'on
+  vient de décider d'alléger.
 
 - **La résonance d'échappement passe à 45 % pour tous les moteurs**, et la
   réserve du lecteur à 60 ms. Ce sont les valeurs que David tient au volant ; la

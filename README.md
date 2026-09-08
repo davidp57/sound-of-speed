@@ -167,7 +167,9 @@ l'irrégularité.
 L'écran règle et **mesure** à la fois. Il donne le régime demandé et le régime
 tenu, l'**ondulation du régime** — relevée à chaque pas de simulation, la seule
 cadence où elle est visible —, le coefficient temps réel du calcul, la charge, le
-nombre et la durée des creux, la réserve du lecteur, le niveau crête, le niveau
+nombre et la durée des creux, la réserve du lecteur, le niveau crête, **le niveau
+et l'écrêtage en sortie** — mesurés tout au bout de la chaîne, là où le premier
+niveau crête ne voit pas encore ce que la résonance fait déborder —, le niveau
 efficace et la
 **brillance** — la part de l'énergie au-dessus d'un kilohertz, qui dit si
 l'effort change le timbre ou seulement le volume. Un **balayage de régime** va
