@@ -215,6 +215,38 @@ ramène le cas à 0,95. Vérifié dans le navigateur, une fois branché : crête
 lecteur 0,916, crête en sortie 0,838, écrêtage nul, temps réel ×1,70 et aucun
 creux — le moniteur ne coûte rien.
 
+## Le « frt frt frt » : c'était la gigue d'échantillonnage
+
+**Trouvé le 8 septembre 2026, après sept hypothèses fausses.** `inputSampleNoise`
+n'est pas un tremblement de moteur : c'est une ligne à retard dont la position de
+lecture est tirée au sort à chaque échantillon. Elle ne fait pas vibrer le
+moteur, elle **crépite**.
+
+Mesuré sur le GM LS au ralenti, ce que la valeur portée par le projet — 0,05,
+jugée à l'oreille le 6 septembre sans être mesurée — ajoute à l'aigu :
+
+| bande | 4 000 | 5 600 | 8 000 |
+|---|---|---|---|
+| gigue 0 | 30,8 | **20,2** | **6,5** |
+| gigue 0,05 | 31,7 | **28,9** | **32,0** |
+
+Vingt-cinq décibels à huit kilohertz. Verdict de David sur les deux sons
+égalisés en niveau : « c'est bon, le claquement est supprimé ».
+
+**Ce qui a permis de le trouver, et qui vaut pour la suite.** Six analyses
+successives n'ont rien vu : détecteur de grain, spectre par bandes, cadence des
+salves, autocorrélation, position des ruptures dans les blocs, pompage du
+niveleur. Ce qui a marché est de **rendre le son en fichier** et de le découper
+en quatre bandes pour que David dise dans laquelle il l'entend. Il a répondu
+« l'aigu », et le code désignait alors un seul coupable pour cette bande.
+
+Deux erreurs de méthode ont failli faire manquer la cible, toutes deux du même
+genre : **normaliser efface ce qu'on cherche à montrer**. Les bandes envoyées
+étaient remontées chacune à sa propre crête — ×9,7 avec la gigue, ×28,1 sans —
+donc précisément la différence à faire entendre. « Ils sont identiques », a
+répondu David, et il avait raison. Le son complet, égalisé en niveau global, a
+tranché du premier coup.
+
 ## Ce qui reste
 
 1. **le rendu de l'EJ25**, et de tous les moteurs qui portent encore le rendu par

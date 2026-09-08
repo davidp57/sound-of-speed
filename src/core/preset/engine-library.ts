@@ -113,7 +113,7 @@ export const CHEVROLET_454: EngineDefinition = {
   // ceux que les fichiers déclarent sont des valeurs de démonstration. On garde
   // celles que le projet a retenues à l'oreille, comme les deux références.
   airNoise: 0.15,
-  inputSampleNoise: 0.05,
+  inputSampleNoise: 0,
   headerLength: 20,
 }
 
@@ -199,7 +199,7 @@ export const HONDA_B18C5: EngineDefinition = {
   // d'air multiplie le signal, et le laisser varier d'un moteur à l'autre
   // rendrait les comparaisons illisibles. Écart assumé, comme au contrat.
   airNoise: 0.15,
-  inputSampleNoise: 0.05,
+  inputSampleNoise: 0,
   headerLength: 10,
 }
 
@@ -247,7 +247,7 @@ export const SUZUKI_HAYABUSA: EngineDefinition = {
   // Le fichier déclare `noise: 0.292` et `jitter: 0.062` ; même écart assumé
   // que pour le B18C5.
   airNoise: 0.15,
-  inputSampleNoise: 0.05,
+  inputSampleNoise: 0,
   headerLength: 10,
 }
 
@@ -305,7 +305,7 @@ export const SUBARU_EJ25_EQUAL_HEADER: EngineDefinition = {
   // `noise: 1.0` et `jitter: 0.5` dans le fichier : les valeurs de démonstration
   // que le contrat écarte — à un, le moteur disparaît derrière sa modulation.
   airNoise: 0.15,
-  inputSampleNoise: 0.05,
+  inputSampleNoise: 0,
   headerLength: 10,
 }
 

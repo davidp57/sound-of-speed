@@ -94,7 +94,19 @@ export const GM_LS_V8: EngineDefinition = {
   exhaustAudioVolume: 4,
   limiterDuration: 0.2,
   airNoise: 0.15,
-  inputSampleNoise: 0.05,
+  // Zéro, et c'est mesuré. La gigue d'engine-sim est une ligne à retard dont la
+  // position de lecture est tirée au sort à chaque échantillon : elle ne fait pas
+  // vibrer le moteur, elle crépite. Mesuré sur le GM LS au ralenti, ce qu'elle
+  // ajoute rien qu'à 0,05 — la valeur que le projet portait, jugée à l'oreille
+  // sans être mesurée : 8,7 dB à 5 600 Hz et 25,5 dB à 8 000 Hz. C'est le
+  // cliquetis que David a traqué toute la journée du 8 septembre 2026, décrit
+  // comme « des frt frt frt à plus haute fréquence que le moteur ». À zéro,
+  // « le claquement est supprimé ».
+  //
+  // Le curseur reste : la gigue est un caractère de moteur, et les fichiers
+  // d'engine-sim en déclarent jusqu'à 0,5. Mais elle ne s'allume plus toute
+  // seule.
+  inputSampleNoise: 0,
   headerLength: 6.8,
 }
 
@@ -137,7 +149,7 @@ export const SUBARU_EJ25: EngineDefinition = {
   exhaustAudioVolume: 4,
   limiterDuration: 0.08,
   airNoise: 0.15,
-  inputSampleNoise: 0.05,
+  inputSampleNoise: 0,
   headerLength: 10,
 }
 

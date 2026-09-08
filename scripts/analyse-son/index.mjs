@@ -5,6 +5,11 @@
  *   npm run analyse-son -- --moteur chevrolet-454 --rpm 800
  *   npm run analyse-son -- --profil ~/mon-profil.json --rpm 800
  *   npm run analyse-son -- --moteur gm-ls --delissage 0 --derive 1.5
+ *   npm run analyse-son -- --moteur chevrolet-454 --wav ralenti.wav
+ *
+ * `--wav` écrit le son produit, chaîne comprise. C'est ce qui ferme la boucle
+ * entre ce que le banc mesure et ce qu'on entend : si un défaut entendu dans la
+ * voiture n'est pas dans ce fichier, il naît plus loin que le banc ne voit.
  *
  * `--profil` prend un profil **exporté depuis l'application**, et c'est le seul
  * moyen de mesurer ce qu'un utilisateur entend vraiment : un moteur de la
@@ -39,8 +44,10 @@ import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { fileURLToPath } from 'node:url'
 
+import { writeFileSync } from 'node:fs'
+
 import { chaineDeSortie, fft } from './chaine.mjs'
-import { readWav } from '../generate-bank/wav.mjs'
+import { readWav, writeWav } from '../generate-bank/wav.mjs'
 
 const ICI = dirname(fileURLToPath(import.meta.url))
 const RACINE = resolve(ICI, '..', '..')
@@ -232,6 +239,11 @@ async function main() {
     const secondes = Number(argument('secondes', 2))
     const delissage = argument('delissage', null)
     const crete = argument('crete', null)
+    const wav = argument('wav', null)
+    const niveleur = argument('niveleur', null)
+    const gigue = argument('gigue', null)
+    const bruitAir = argument('bruit-air', null)
+    const gain = argument('gain', null)
     const derive = argument('derive', null)
 
     let moteur
@@ -262,9 +274,14 @@ async function main() {
     const rendu = moteur.rendering
     const reglages = { ...module.DEFAULT_SYNTH, ...rendu }
     if (crete !== null) reglages.levelerTarget = Number(crete)
+    if (niveleur !== null) reglages.leveler = niveleur !== '0'
+    if (gain !== null) reglages.levelerGain = Number(gain)
     if (delissage !== null) reglages.rippleRpm = Number(delissage)
     if (derive !== null) reglages.rippleHz = Number(derive)
-    const valeurs = module.engineDefinitionValues(moteur.definition, moteur.redlineRpm)
+    const definition = { ...moteur.definition }
+    if (gigue !== null) definition.inputSampleNoise = Number(gigue)
+    if (bruitAir !== null) definition.airNoise = Number(bruitAir)
+    const valeurs = module.engineDefinitionValues(definition, moteur.redlineRpm)
 
     const { sec, ecretes, ondulation } = await rendre(module, {
       rendu, reglages, valeurs, rpm, effort, secondes,
@@ -330,6 +347,24 @@ Grain de l'aigu — allumage à ${allumageHz.toFixed(1)} Hz`)
           `${g.creteSurMoyenne.toFixed(1)} (${verdict}), cadence ${g.cadenceHz.toFixed(1)} Hz`,
       )
     }
+    if (wav) {
+      // Le son que le banc a produit, écrit tel quel : c'est le seul moyen de
+      // savoir si ce qu'on entend dans la voiture est déjà là, ou si cela naît
+      // plus loin. Le niveau est ramené sous le plafond, comme la sortie le
+      // fait — sans quoi le fichier écrêterait là où l'application ne le fait
+      // pas.
+      let crete = 0
+      for (let i = 0; i < sortie.length; i += 1) {
+        const a = Math.abs(sortie[i])
+        if (a > crete) crete = a
+      }
+      const gain = crete > 0.95 ? 0.95 / crete : 1
+      const echantillons = new Float32Array(sortie.length)
+      for (let i = 0; i < sortie.length; i += 1) echantillons[i] = sortie[i] * gain
+      writeFileSync(resolve(wav), writeWav(echantillons, TAUX))
+      console.log(`Son écrit dans ${resolve(wav)}${gain < 1 ? ` (ramené de ${crete.toFixed(3)} à 0,95)` : ''}`)
+    }
+
     console.log('')
   } finally {
     nettoyer()
