@@ -31,6 +31,17 @@ import { SliceBuffer, type Slice } from '../upload/slicing'
 export interface CaptureSample {
   /** Millisecondes depuis le début de la session. */
   at: number
+  /**
+   * Horodatage de la source, tel qu'elle le donne.
+   *
+   * Gardé brut, sans conversion : c'est la seule façon de retrouver la cadence
+   * réelle de l'appareil, et l'unité elle-même est une information — le
+   * navigateur de la Tesla compte en microsecondes là où la norme du web dit
+   * millisecondes, et ce détail a coûté une semaine de diagnostic. Plusieurs
+   * échantillons peuvent partager le même `at` quand la boucle ralentit ; leur
+   * `src`, lui, les sépare.
+   */
+  src: number
   /** Vitesse brute, en km/h, telle que la source la rapporte. */
   kmh: number
   /** Précision horizontale en mètres, quand la source la connaît. */

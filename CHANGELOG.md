@@ -33,8 +33,15 @@ Toutes les évolutions notables du projet. Format
   reçoit le même fait, son genre `profile` étant déclaré depuis le premier jour
   sans que rien ne l'émette.
 
+  Chaque relevé garde aussi **l'horodatage brut de la source**, sans conversion :
+  c'est la seule façon de retrouver la cadence réelle de l'appareil, et l'unité
+  elle-même est une information — le navigateur de la Tesla compte en
+  microsecondes, ce qui a coûté une semaine de diagnostic.
+
   Les tranches partent par la file de remontée déjà écrite, toutes les cinq
-  minutes. Rien n'est gardé dans le téléphone : trente-six minutes à dix relevés
+  minutes, et **ce qui reste part quand la capture s'arrête** : la fin d'un
+  trajet est souvent ce qu'on cherche à revoir, et elle n'a plus de tour de
+  boucle pour atteindre ses cinq minutes. Rien n'est gardé dans le téléphone : trente-six minutes à dix relevés
   par seconde font vingt-deux mille lignes, et le stockage local ne les
   absorberait pas trajet après trajet.
 

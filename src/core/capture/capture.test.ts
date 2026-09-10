@@ -13,7 +13,18 @@ function capture(overrides: Partial<CaptureOptions> = {}) {
 }
 
 function releve(at: number, kmh = 82.4): CaptureSample {
-  return { at, kmh, acc: 5, der: false, out: kmh - 0.5, ms2: 0.4, rpm: 2410, gear: 5, load: 0.62 }
+  return {
+    at,
+    src: 1_700_000_000_000 + at,
+    kmh,
+    acc: 5,
+    der: false,
+    out: kmh - 0.5,
+    ms2: 0.4,
+    rpm: 2410,
+    gear: 5,
+    load: 0.62,
+  }
 }
 
 function lignes(body: string): Record<string, unknown>[] {

@@ -885,15 +885,19 @@ let wasCapturing = false
 let captureBusy = false
 
 /**
- * Le dernier échantillon reçu de la source, en attente d'être inscrit.
+ * Les échantillons reçus depuis le dernier tour, en attente d'être inscrits.
  *
- * Il n'est pas écrit à la réception mais au tour de boucle suivant : à la
+ * Ils ne sont pas écrits à la réception mais au tour de boucle suivant : à la
  * réception, la chaîne n'a pas encore tourné, et la sortie qu'on inscrirait
  * serait celle de l'échantillon précédent. Une ligne de capture doit porter une
- * entrée et la sortie **qu'elle a produite**, sinon la comparaison qui détecte
- * les régressions compare deux instants différents.
+ * entrée et la sortie **qu'elle a produite**.
+ *
+ * **Une file, et non un seul.** Le navigateur ralentit la boucle dès que la page
+ * n'est plus au premier plan — ce qui arrive en roulant, écran éteint —, et le
+ * GPS, lui, continue de livrer. Un seul emplacement perdait alors les positions
+ * silencieusement, ce qui est le défaut exact que ce lot corrige.
  */
-let pendingSample: SpeedSample | null = null
+let pendingSamples: SpeedSample[] = []
 
 /**
  * Ce qui décrit la session, réécrit en tête de chaque tranche.
@@ -932,26 +936,33 @@ function observeCapture(nowMs: number, out: CaptureOutput): void {
   if (allowed !== wasCapturing) {
     wasCapturing = allowed
     capture.note(nowMs, 'capture', { running: allowed })
-    if (!allowed) pendingSample = null
+    if (!allowed) {
+      pendingSamples = []
+      // Ce qui reste part maintenant : une capture qui s'arrête n'a plus de
+      // tour de boucle pour atteindre ses cinq minutes, et la fin d'un trajet
+      // est souvent ce qu'on cherche à revoir.
+      depositCaptureIfDue(nowMs, true)
+    }
   }
-  if (!allowed) return
+  if (!allowed || pendingSamples.length === 0) return
 
-  const sample = pendingSample
-  if (sample === null) return
-  pendingSample = null
-
-  capture.add({
-    at: nowMs,
-    kmh: sample.kmh,
-    acc: sample.accuracyM,
-    der: sample.derived,
-    out: out.kmh,
-    ms2: out.accelMs2,
-    rpm: out.rpm,
-    gear: out.gear,
-    load: out.load,
-  })
-  captureCount.value += 1
+  const reçus = pendingSamples
+  pendingSamples = []
+  for (const sample of reçus) {
+    capture.add({
+      at: nowMs,
+      src: sample.at,
+      kmh: sample.kmh,
+      acc: sample.accuracyM,
+      der: sample.derived,
+      out: out.kmh,
+      ms2: out.accelMs2,
+      rpm: out.rpm,
+      gear: out.gear,
+      load: out.load,
+    })
+  }
+  captureCount.value += reçus.length
 }
 
 /** Ce que la chaîne a produit à l'instant d'un échantillon. */
@@ -985,9 +996,9 @@ export const captureStatus = computed(() =>
  * Le même patron que le journal, et pour la même raison : sans l'attendre, un
  * dépôt à la fois, et la tranche revient en attente si elle n'a pas pu partir.
  */
-function depositCaptureIfDue(nowMs: number): void {
+function depositCaptureIfDue(nowMs: number, force = false): void {
   if (captureBusy || !sendsAutomatically(uploadConsent.value, 'trace')) return
-  if (!capture.shouldSlice(nowMs)) return
+  if (!force && !capture.shouldSlice(nowMs)) return
 
   const slice = capture.takeSlice(nowMs)
   if (!slice) return
@@ -1261,7 +1272,7 @@ for (const source of [simulator, geolocation, replay]) {
     conditioner.push(sample)
     // Retenu, pas inscrit : la chaîne n'a pas encore tourné pour cet
     // échantillon, et la sortie qu'on écrirait serait celle du précédent.
-    pendingSample = sample
+    if (capturing.value) pendingSamples.push(sample)
     if (recorder.isRecording) {
       recorder.push(sample)
       recordedCount.value = recorder.count
@@ -2100,7 +2111,9 @@ watch(
       gearbox: gearboxId ?? null,
       driveMode: mode ?? null,
     }
-    journal.add(journalElapsedMs, 'profile', data)
+    // Le cran « rien n'est envoyé » ne tient pas de journal du tout : écrire
+    // ici contournerait le collecteur, qui est le seul à connaître l'accord.
+    if (uploadConsent.value !== 'none') journal.add(journalElapsedMs, 'profile', data)
     if (capturing.value) capture.note(journalElapsedMs, 'profile', data)
   },
 )
