@@ -58,8 +58,9 @@ rien ne se lit. Le son passe avant.
 **Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
 lissage, pente, accélération, qualité du signal GPS, régime, régime entendu,
 charge, état de la transmission, régime que donnerait chaque rapport, gain et
-vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là
-qu'on enregistre et rejoue les traces.
+vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là que
+se lit l'état de la **capture du trajet** : ce qu'elle retient, ce qui est parti,
+et ce qui l'empêche de partir.
 
 La section *Qualité du signal* dit aussi **d'où vient la vitesse** — lue du
 navigateur, ou déduite de la distance entre deux positions —, combien de
@@ -730,29 +731,27 @@ Une fois le compte créé et le fichier déposé sur le NAS :
    confirme. C'est rangé hors du profil : cela ne voyage donc pas avec un profil
    partagé, et il n'y aurait aucun sens à envoyer à quelqu'un un son accompagné
    du droit d'écrire sur son NAS ;
-2. écran **Télémétrie**, à côté de chaque trace : le bouton **Déposer**. Le
-   même compte sert à tout ce qui remonte tout seul — journal, relevés de
-   mesure, profils — dès que la remontée est acceptée, et à la page de mesure
-   `/sonde/`, qui dépose son relevé du même bouton.
+2. c'est tout. Le même compte sert à tout ce qui remonte tout seul — capture du
+   trajet, journal, relevés de mesure, profils — dès que la remontée est
+   acceptée, et à la page de mesure `/sonde/`, qui dépose son relevé du même
+   bouton.
 
-Le fichier prend un nom qui dit la date, le nom de l'enregistrement et sa
-durée — `2026-09-03-21-16-48_retour-du-boulot-90s.json` — de sorte qu'on le
-retrouve sans l'ouvrir. Il se relit par la fonction d'import de cet écran, sur
-n'importe quel appareil.
+Il n'y a plus de bouton pour déposer un trajet : **la capture part d'elle-même**,
+par tranches, pendant qu'on roule. Voir « La capture du trajet » plus bas.
 
-Ce qui peut échouer le dit, et distingue les cas, parce qu'ils ne se corrigent
-pas au même endroit :
+Ce qui peut échouer se lit sur l'écran de télémétrie, et les cas se distinguent
+parce qu'ils ne se corrigent pas au même endroit :
 
 | Message | Ce qu'il faut faire |
 |---|---|
 | Aucun compte de dépôt | le régler à l'écran de configuration |
 | Refusé | le nom ou le mot de passe ne correspond pas au fichier du serveur |
 | Le serveur n'a pas le droit d'écrire | les permissions du dossier, côté DSM |
-| Dépôt impossible | hors couverture : la trace reste enregistrée, réessayer plus tard |
-| Déjà déposée | rien, elle est en sûreté |
+| Pas de réseau | rien : ce qui attend partira à son retour |
 
-Une trace n'est **jamais** perdue au profit d'un dépôt raté : elle reste dans le
-stockage local, et le dépôt se refait.
+Une tranche n'est **jamais** perdue au profit d'un dépôt raté : elle revient en
+attente et se joint à la suivante, ce qui fait qu'un tunnel ne coûte pas un
+trajet.
 
 > **En développement, le dépôt répond 404.** Il vise le serveur qui sert
 > l'application, et celui de Vite n'a pas ce dossier. C'est en production que la
@@ -1379,9 +1378,8 @@ calcul, faute de savoir ce que fait la voiture. `fullLoadAccelMs2` vaut 2 m/s²
 sur le profil Route — une valeur raisonnée, jamais mesurée, sur un véhicule qui
 en fait bien davantage. L'étalonnage remplace ce raisonnement par un relevé.
 
-Il se trouve **en bas de l'écran Télémétrie**, sous les traces, dont il se sert.
-Tout se passe dans la voiture : l'analyse ne demande que du calcul, et le
-résultat se voit tout de suite.
+Il se trouve **en bas de l'écran Télémétrie**. Tout se passe dans la voiture :
+l'analyse ne demande que du calcul, et le résultat se voit tout de suite.
 
 ### La marche à suivre
 
@@ -1397,9 +1395,12 @@ résultat se voit tout de suite.
 
 Chaque étape s'enregistre séparément et vaut séparément : une session
 incomplète reste utile, et ce qui n'a pas été mesuré est dit **non mesuré**,
-jamais estimé. L'enregistrement d'une étape est une trace ordinaire — elle
-apparaît dans la liste des traces, se rejoue, et l'analyse en tire le même
-chiffre à chaque relecture.
+jamais estimé. L'analyse en tire le même chiffre à chaque relecture.
+
+**L'étalonnage garde son propre enregistrement, borné par étape**, là où la
+capture du trajet, elle, tourne toute seule du début à la fin. Ce n'est pas un
+oubli : délimiter une mesure n'est pas capturer une session, et une étape mal
+bornée donne une mesure fausse.
 
 ### Les étapes
 
@@ -1558,7 +1559,7 @@ en mode avancé, et il a trois positions :
 |---|---|
 | **Rien n'est envoyé** | rien, et le journal n'est même pas tenu |
 | **Le minimum** | le journal de bord, les relevés de mesure, et vos profils, qui rejoignent la bibliothèque partagée |
-| **Et la conduite** | tout ce qui précède, **plus votre position** — un point par seconde — et **les traces que vous enregistrez**, qui portent toute la conduite |
+| **Et la conduite** | tout ce qui précède, **plus votre position** — un point par seconde — et **la capture complète de vos trajets**, qui démarre toute seule avec le GPS et porte toute la conduite à la cadence de l'appareil |
 
 Passer à l'une des deux dernières demande une confirmation, qui dit ce qui sera
 envoyé avant que cela ne parte. Le troisième cran ne se déduit jamais du second :
@@ -1568,8 +1569,45 @@ Cela se dit avant. Couper, en revanche, est immédiat — on n'a pas à confirme
 qu'on ne veut plus rien envoyer.
 
 Chaque nature va dans son dossier : `journal/`, `traces/`, `mesures/` et
-`profiles/`. Le dépôt manuel d'une trace, lui, ne dépend pas de ce réglage : ce
-qu'on fait soi-même n'a pas à être autorisé d'avance.
+`profiles/`. Il n'y a plus de dépôt à la demande : tout ce qui part est gouverné
+par ce seul réglage.
+
+**Les tranches partent compressées** — `.jsonl.gz` —, par le compresseur du
+navigateur, sans bibliothèque. Le gain est d'environ 85 % sur du journal réel, et
+il porte d'abord sur la 4G en roulant, pas sur la place du serveur. Là où le
+navigateur ne sait pas compresser, la tranche part en clair. Les profils et les
+relevés de mesure, eux, restent en clair : l'application les retélécharge et les
+lit, et la bibliothèque de profils cesserait de fonctionner.
+
+### La capture du trajet
+
+Elle **démarre au démarrage du GPS**, si la remontée est au dernier cran, et
+s'arrête avec lui. Il n'y a rien à penser avant de partir : le 10 septembre 2026,
+un essai de trente-six minutes n'a laissé aucune trace parce que le bouton
+d'enregistrement n'avait pas été touché.
+
+Elle enregistre, à la cadence de l'appareil, **ce que la source livre** — vitesse
+brute, précision, origine — et **ce que la chaîne en fait** au même instant —
+vitesse conditionnée, accélération, régime, rapport, charge. Chaque tranche
+réécrit un en-tête qui décrit la session : profil, moteur, boîte, version de
+l'application, et le profil assemblé en entier. Un changement de configuration en
+cours de route s'inscrit, daté.
+
+La sortie enregistrée sert à autre chose que le rejeu : comparer ce que la chaîne
+a produit ce jour-là à ce qu'elle produit aujourd'hui montre les régressions, et
+rien d'autre dans ce projet ne les montre.
+
+Un **témoin** sur l'écran de conduite dit si la session sera récupérable. Vert :
+la capture tourne et les tranches partent. Orange : ça se rattrapera tout seul —
+pas de réseau, ou un GPS qui rejette beaucoup. Rouge : c'est perdu — compte
+refusé, GPS mort. Absent si l'envoi est coupé : un rouge permanent pour un choix
+délibéré est une alarme qu'on apprend à ignorer. La frontière entre orange et
+rouge est la récupérabilité, pas la gravité ressentie. Le détail se lit sur
+l'écran de télémétrie.
+
+Rien n'est gardé dans le téléphone : une session de trente-six minutes à dix
+relevés par seconde fait vingt-deux mille lignes, et le stockage local du
+navigateur ne l'absorberait pas trajet après trajet.
 
 ### Ce qui n'a pas pu partir
 

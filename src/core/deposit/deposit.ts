@@ -1,35 +1,22 @@
-import { authHeader, hasCredentials, putFile, slug, stamp, type DepositCredentials } from '../upload/put'
+import { slug, stamp } from '../upload/put'
 import { tracesToFile } from '../preset/store'
 import type { Trace } from '../speed/replay'
 
 /**
- * Dépôt d'une trace sur le serveur, à la demande.
+ * Le fichier que produit une trace : son nom et son corps.
  *
- * Le navigateur de la voiture refuse tout téléchargement : rien ne sort d'une
- * session d'enregistrement, alors que les traces naissent en roulant et ne
- * servent qu'ailleurs — au poste de travail, pour rejouer un trajet et régler
- * sans reprendre la route.
+ * Les traces de l'étalonnage naissent en roulant et ne servent qu'ailleurs, au
+ * poste de travail. Elles partent par la file de `core/upload/`, qui garde ce
+ * qui n'a pas pu partir et le renvoie au retour du réseau ; ce module ne dit
+ * plus que ce qu'un fichier de trace **est**.
  *
- * **Ce module est le geste manuel.** La remontée automatique passe par la file
- * de `core/upload/`, qui garde ce qui n'a pas pu partir et le renvoie au retour
- * du réseau. Le bouton reste parce qu'il sert dans deux cas : quand l'accord de
- * remontée est coupé, et quand on ne veut pas attendre.
- *
- * L'écriture elle-même, l'authentification comprise, est dans
- * `core/upload/put.ts` : elle est commune à toutes les natures déposées.
- *
- * `fetch` est injecté pour que tout ceci se vérifie sans réseau ni serveur.
+ * Le bouton de dépôt à la demande a disparu avec le panneau des traces : la
+ * capture continue remonte toute seule, et un second chemin vers le même
+ * dossier aurait fini par diverger du premier.
  */
 
 /** Dossier servi en écriture. Voir `docker/nginx.conf`. */
 export const TRACE_FOLDER = '/traces/'
-
-export type { DepositCredentials } from '../upload/put'
-export { authHeader } from '../upload/put'
-
-export type DepositOutcome =
-  | { ok: true; name: string }
-  | { ok: false; reason: 'no-credentials' | 'refused' | 'exists' | 'network'; detail: string }
 
 /**
  * Nom du fichier déposé.
@@ -57,82 +44,4 @@ export function durationS(trace: Trace): number {
   const last = trace.samples[trace.samples.length - 1]
   if (!first || !last) return 0
   return Math.max(0, (last.at - first.at) / 1000)
-}
-
-/**
- * Dépose une trace, et dit précisément ce qui a échoué.
- *
- * La distinction entre les motifs n'est pas cosmétique : « compte absent » se
- * corrige à l'écran de configuration, « refusé » veut dire que le mot de passe
- * ne correspond pas à celui du serveur, et « réseau » qu'on est hors couverture —
- * ce qui arrive en roulant, et n'est pas une erreur.
- */
-export async function deposit(
-  trace: Trace,
-  credentials: DepositCredentials,
-  fetchImpl: typeof fetch = fetch,
-): Promise<DepositOutcome> {
-  // Le compte se vérifie **avant** de toucher au réseau : sans lui, rien ne
-  // partira, et interroger le dossier pour l'apprendre serait une requête pour
-  // rien — hors couverture, elle coûterait en plus une attente.
-  if (!hasCredentials(credentials)) {
-    return {
-      ok: false,
-      reason: 'no-credentials',
-      detail: "Aucun compte de dépôt : il se règle à l'écran de configuration.",
-    }
-  }
-
-  const name = depositName(trace)
-
-  // On regarde ensuite si le fichier est là : une trace déjà déposée ne se
-  // réécrit pas en silence, sans quoi un second dépôt effacerait un
-  // enregistrement qu'on croyait en sûreté.
-  //
-  // La question se pose au **dossier**, et non au fichier. Interroger le fichier
-  // paraissait plus direct, et donnait un faux positif : un serveur qui replie
-  // les chemins inconnus sur la page d'accueil — ce que fait le serveur de
-  // développement, et ce que fait notre nginx hors du dossier des traces —
-  // répond « oui » à tout. Le premier dépôt était donc refusé comme déjà fait.
-  //
-  // La liste du dossier, elle, est du JSON : si la réponse n'en est pas, on ne
-  // sait pas, et l'on tente le dépôt plutôt que de refuser à tort.
-  if (await alreadyThere(name, credentials, fetchImpl)) {
-    return { ok: false, reason: 'exists', detail: `« ${name} » est déjà déposée.` }
-  }
-
-  const outcome = await putFile(TRACE_FOLDER, name, traceBody(trace), credentials, fetchImpl)
-  if (outcome.ok) return { ok: true, name }
-  return { ok: false, reason: outcome.reason, detail: outcome.detail }
-}
-
-/**
- * Le fichier est-il déjà dans le dossier ?
- *
- * Rend `false` au moindre doute : une liste illisible, un dossier injoignable ou
- * une réponse qui n'est pas du JSON ne doivent pas empêcher un dépôt. Le pire
- * qui puisse alors arriver est le refus du serveur, qui sera dit.
- */
-export async function alreadyThere(
-  name: string,
-  credentials: DepositCredentials,
-  fetchImpl: typeof fetch,
-): Promise<boolean> {
-  try {
-    // La liste demande le compte depuis que la lecture du dossier est fermée.
-    // Sans lui la réponse serait un 401, traité comme un doute : on tenterait le
-    // dépôt, et c'est le serveur qui dirait non.
-    const response = await fetchImpl(TRACE_FOLDER, {
-      method: 'GET',
-      headers: { Authorization: authHeader(credentials) },
-    })
-    if (!response.ok) return false
-    const listing: unknown = await response.json()
-    if (!Array.isArray(listing)) return false
-    return listing.some(
-      (entry) => typeof entry === 'object' && entry !== null && (entry as { name?: unknown }).name === name,
-    )
-  } catch {
-    return false
-  }
 }

@@ -14,24 +14,14 @@ import {
   screenLockError,
   screenLockHeld,
   screenLockSupported,
-  deleteTrace,
-  exportTraces,
-  importTraces,
-  isRecording,
-  traceStorageError,
-  playTrace,
-  recordedCount,
+  captureCount,
+  captureDeposits,
+  captureError,
+  captureStatus,
   replayProgress,
   setReplayRate,
   sourceKind,
-  startRecording,
-  stopRecording,
   telemetry,
-  traces,
-  depositTrace,
-  depositing,
-  depositMessage,
-  depositCredentials,
 } from '../state'
 
 /**
@@ -49,7 +39,6 @@ const maintien = computed(() => {
 /** La version servie à cette page, injectée à la construction. */
 const appVersion = __APP_VERSION__
 
-const traceName = ref('')
 const replayRate = ref(1)
 
 const mix = computed(() => computeMix(activeProfile.value, telemetry.value.engine))
@@ -145,45 +134,6 @@ const verrou = computed(() => {
 
 function fixed(value: number, digits = 1): string {
   return Number.isFinite(value) ? value.toFixed(digits) : '—'
-}
-
-function onRecordToggle(): void {
-  if (isRecording.value) {
-    stopRecording(traceName.value)
-    traceName.value = ''
-  } else {
-    startRecording()
-  }
-}
-
-const traceFile = ref<HTMLInputElement | null>(null)
-const traceNote = ref('')
-
-/** Exporte les traces pour les rejouer sur un autre appareil. */
-function onExportTraces(): void {
-  const blob = new Blob([exportTraces()], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = 'traces.json'
-  anchor.click()
-  URL.revokeObjectURL(url)
-}
-
-async function onImportTraces(event: Event): Promise<void> {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  try {
-    const added = importTraces(await file.text())
-    traceNote.value =
-      added > 0
-        ? `${added} trace${added > 1 ? 's' : ''} ajoutée${added > 1 ? 's' : ''}.`
-        : 'Ces traces sont déjà présentes.'
-  } catch (error) {
-    traceNote.value = error instanceof Error ? error.message : 'Import impossible.'
-  } finally {
-    if (traceFile.value) traceFile.value.value = ''
-  }
 }
 
 function onRateChange(event: Event): void {
@@ -548,57 +498,24 @@ function onRateChange(event: Event): void {
     </section>
 
     <section class="panel wide">
-      <h2>Traces</h2>
+      <h2>Capture du trajet</h2>
       <p class="note">
-        Enregistrez un trajet une fois, rejouez-le autant que nécessaire sur
-        l'ordinateur. C'est le seul moyen de régler le lissage ou les seuils de
-        passage sans reprendre la route à chaque essai.
-      </p>
-      <div class="trace-controls">
-        <input v-model="traceName" type="text" placeholder="Nom de la trace" />
-        <button :class="{ 'is-active': isRecording }" @click="onRecordToggle">
-          {{ isRecording ? `Arrêter (${recordedCount} mesures)` : 'Enregistrer' }}
-        </button>
-      </div>
-
-      <ul v-if="traces.length" class="trace-list">
-        <li v-for="trace in traces" :key="trace.startedAt">
-          <span>{{ trace.name }}</span>
-          <span class="muted">{{ trace.samples.length }} mesures</span>
-          <button @click="playTrace(trace)">Rejouer</button>
-          <button :disabled="depositing !== ''" @click="depositTrace(trace)">Déposer</button>
-          <button @click="deleteTrace(trace.startedAt)">Supprimer</button>
-        </li>
-      </ul>
-      <p v-else class="note">Aucune trace enregistrée.</p>
-
-      <p v-if="depositMessage" class="note">{{ depositMessage }}</p>
-      <p v-if="!depositCredentials.password" class="note">
-        Le dépôt envoie une trace sur le serveur, d'où on peut la reprendre sur un
-        autre appareil — c'est le seul moyen de la sortir d'une voiture dont le
-        navigateur refuse les téléchargements. Il demande un compte, à régler une
-        fois à l'écran de configuration.
+        La capture démarre toute seule au démarrage du GPS, si la remontée est
+        au dernier cran. Elle enregistre ce que la source livre et ce que la
+        chaîne en fait, et la dépose par tranches pendant qu'on roule : c'est
+        avec elle qu'on rejoue un trajet au bureau.
       </p>
 
-      <div class="trace-controls">
-        <button :disabled="traces.length === 0" @click="onExportTraces()">
-          Exporter les traces
-        </button>
-        <button @click="traceFile?.click()">Importer</button>
-        <input
-          ref="traceFile"
-          type="file"
-          accept="application/json,.json"
-          hidden
-          @change="onImportTraces"
-        />
-      </div>
-      <p v-if="traceStorageError" class="error">{{ traceStorageError }}</p>
-      <p v-else-if="traceNote" class="note">{{ traceNote }}</p>
-      <p class="note">
-        Les traces sont conservées d'une session à l'autre. Les exporter permet de
-        rejouer un trajet sur un autre appareil, au poste de travail par exemple.
-      </p>
+      <p class="capture-state" :class="captureStatus.state">{{ captureStatus.why }}</p>
+
+      <ValueRow label="Relevés retenus" :value="String(captureCount)" />
+      <ValueRow label="Tranches déposées" :value="String(captureDeposits.length)" />
+      <ValueRow
+        v-if="captureDeposits.length"
+        label="Dernière tranche"
+        :value="captureDeposits[captureDeposits.length - 1]?.name ?? ''"
+      />
+      <p v-if="captureError" class="error">{{ captureError }}</p>
 
       <template v-if="sourceKind === 'replay'">
         <ValueRow label="Progression" :value="`${Math.round(replayProgress * 100)} %`" :bar="replayProgress" />
@@ -610,10 +527,10 @@ function onRateChange(event: Event): void {
     </section>
 
     <!--
-      L'étalonnage vit dans cet écran plutôt que dans un onglet à lui : il
-      s'appuie sur les traces, qui sont juste au-dessus, et il n'a pas de raison
-      d'être visible en conduisant. Un onglet dédié serait plus commode le jour
-      où le protocole aura ses six étapes.
+      L'étalonnage vit dans cet écran plutôt que dans un onglet à lui : il n'a
+      pas de raison d'être visible en conduisant. Il garde son propre
+      enregistrement, borné par étape — délimiter une mesure n'est pas capturer
+      une session, et une étape mal bornée donne une mesure fausse.
     -->
   </div>
 </template>
@@ -652,6 +569,29 @@ h2 {
   color: var(--muted);
   font-size: 0.85rem;
   margin: 0 0 0.7rem;
+}
+
+/* La même échelle de couleurs que le témoin de l'écran de conduite. */
+.capture-state {
+  margin: 0 0 0.7rem;
+  font-size: 0.9rem;
+}
+
+.capture-state.ok {
+  color: #2e7d32;
+}
+
+.capture-state.warn {
+  color: #ef6c00;
+}
+
+.capture-state.bad,
+.capture-state.off {
+  color: var(--muted);
+}
+
+.capture-state.bad {
+  color: #c62828;
 }
 
 table {

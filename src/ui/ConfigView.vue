@@ -1116,8 +1116,9 @@ async function rapatrier(): Promise<void> {
         </span>
         <span v-else>
           Ce qui part : tout ce que contient « le minimum », <strong>plus votre
-          position</strong> — un point par seconde — et <strong>les traces que
-          vous enregistrez</strong>, qui portent toute la conduite. C’est ce qui
+          position</strong> — un point par seconde — et <strong>la capture
+          complète de vos trajets</strong>, qui démarre toute seule avec le GPS
+          et porte toute la conduite, à la cadence de l’appareil. C’est ce qui
           permet de rejouer un trajet au poste de travail et de comprendre un
           défaut lié à un endroit précis.
         </span>

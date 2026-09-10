@@ -1,6 +1,6 @@
 # 03 — Un témoin dit si la session sera exploitable
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — la capture démarre toute seule et remonte par tranches
 

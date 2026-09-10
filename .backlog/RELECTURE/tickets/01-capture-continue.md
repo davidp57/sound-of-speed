@@ -1,6 +1,6 @@
 # 01 — La capture démarre toute seule et remonte par tranches
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
