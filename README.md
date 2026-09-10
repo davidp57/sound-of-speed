@@ -2180,6 +2180,7 @@ chaque essai.
 | 32 | Plusieurs banques de son : découvertes sur le serveur, mesurées par un outil, choisies par profil | fait, reste à essayer hors réseau |
 | 33 | Le passage de rapport s'entend : couple coupé, plongée, coup de gaz, clac de boîte, et un seuil de montée qui suit la demande | écouté au simulateur, échantillons et synthèse, reste à rouler |
 | 34 | Le chemin du retour : les quatre dossiers du serveur se récupèrent en un paquet, depuis un téléphone | fait, reste l'essai de David |
+| 35 | Refonte : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en deux, et un compte fait le lien | spécifié, en cours |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

@@ -34,3 +34,6 @@ essai.json
 # fois et fait échouer le contrôle qualité.
 a.out.js
 a.out.wasm
+
+# Fichiers de verrouillage d'Excel, créés à l'ouverture d'un classeur
+~$*

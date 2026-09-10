@@ -52,6 +52,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [DELISSER](DELISSER/spec.md) — un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | ⬜ |
 | [RAPATRIER](RAPATRIER/spec.md) — faire redescendre ce que la voiture a déposé : les quatre dossiers du serveur en un paquet, depuis un téléphone | 🧑 |
 | [MOUVEMENT](MOUVEMENT/spec.md) — une seule notion de « est-ce qu'on ralentit ? » : deux compteurs se contredisent depuis le 8 septembre, et la boîte reste bloquée ou monte à contretemps | ⬜ |
+| [REFONTE](REFONTE/spec.md) — le cadre de la refonte du 10 septembre : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en deux, et un compte fait le lien | ⬜ |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
