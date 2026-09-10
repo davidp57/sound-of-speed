@@ -1,4 +1,5 @@
 import { SpeedSource, type SpeedSample } from './source'
+import { timeScaleOfSamples } from './timescale'
 
 /**
  * Rejeu d'une trace enregistrée.
@@ -26,6 +27,17 @@ export class ReplaySource extends SpeedSource {
   private elapsedMs = 0
   private running = false
   private baseAt = 0
+  /**
+   * Diviseur qui ramène les horodatages de la trace en millisecondes.
+   *
+   * Une trace enregistrée dans la voiture porte des microsecondes : sans lui, le
+   * rejeu attendait mille fois trop longtemps entre deux échantillons — une
+   * trace de soixante secondes se déroulait sur seize heures, donc ne se
+   * rejouait pas. Les traces déjà déposées sur le serveur restent lisibles
+   * telles quelles, ce qui est le seul moyen de rejouer l'essai du 9 septembre
+   * 2026.
+   */
+  private timeScale = 1
 
   constructor(
     private trace: Trace,
@@ -33,13 +45,24 @@ export class ReplaySource extends SpeedSource {
     public rate = 1,
   ) {
     super()
-    this.baseAt = trace.samples[0]?.at ?? trace.startedAt
+    this.adopt(trace)
   }
 
   setTrace(trace: Trace): void {
+    this.adopt(trace)
+    this.rewind()
+  }
+
+  /** Prend une trace, et relève l'unité dans laquelle elle est horodatée. */
+  private adopt(trace: Trace): void {
     this.trace = trace
     this.baseAt = trace.samples[0]?.at ?? trace.startedAt
-    this.rewind()
+    this.timeScale = timeScaleOfSamples(trace.samples)
+  }
+
+  /** Instant d'un échantillon depuis le début de la trace, en millisecondes. */
+  private offsetMs(sample: SpeedSample): number {
+    return (sample.at - this.baseAt) / this.timeScale
   }
 
   getTrace(): Trace {
@@ -50,7 +73,7 @@ export class ReplaySource extends SpeedSource {
   get durationS(): number {
     const last = this.trace.samples[this.trace.samples.length - 1]
     if (!last) return 0
-    return (last.at - this.baseAt) / 1000
+    return this.offsetMs(last) / 1000
   }
 
   /** Progression, de 0 à 1. */
@@ -93,7 +116,7 @@ export class ReplaySource extends SpeedSource {
     while (this.index < this.trace.samples.length) {
       const sample = this.trace.samples[this.index]
       if (!sample) break
-      if (sample.at - this.baseAt > this.elapsedMs) break
+      if (this.offsetMs(sample) > this.elapsedMs) break
       this.emit(sample)
       this.index += 1
     }

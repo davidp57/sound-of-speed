@@ -1,5 +1,6 @@
 import type { SpeedPreset } from '../preset/schema'
 import type { SpeedSample } from './source'
+import { detectTimeScale } from './timescale'
 
 /**
  * Conditionnement du signal de vitesse.
@@ -43,18 +44,6 @@ const MAX_FRAME_S = 0.25
 const MAX_HISTORY = 512
 /** Vitesse en deçà de laquelle on considère le véhicule à l'arrêt, en km/h. */
 const STANDSTILL_KMH = 0.8
-
-/**
- * Au-delà de cet écart entre deux positions, l'horodatage n'est pas en
- * millisecondes.
- *
- * Dix secondes : trois ordres de grandeur au-dessus de ce qu'un récepteur
- * produit en roulant, et cinq fois au-dessus de ce qu'il produit à l'arrêt.
- * Voir `normalizeAt` pour l'argument qui ferme le risque d'une fausse
- * détection.
- */
-const FINER_THAN_MS_ABOVE_MS = 10_000
-const MICROSECONDS_PER_MS = 1000
 
 export interface ConditionedSpeed {
   /** Vitesse lissée, en km/h. C'est elle qui pilote tout le reste. */
@@ -222,17 +211,8 @@ export class SpeedConditioner {
    * aval travaillait alors sur zéro : charge figée à un demi, garde-fous de la
    * boîte inertes, relief de charge plat.
    *
-   * L'échelle se déduit du **plus petit écart strictement positif** observé, et
-   * non de leur moyenne : un récepteur qui roule produit forcément des écarts
-   * courts, alors qu'un arrêt les espace. L'écart nul est écarté parce qu'il
-   * existe — deux positions consécutives portent parfois le même horodatage
-   * dans les traces relevées — et qu'il ne dit rien de l'échelle.
-   *
-   * Ce qui ferme le risque d'une fausse détection : **si le plus petit écart
-   * entre deux positions dépassait vraiment dix secondes, l'accélération serait
-   * inexploitable de toute façon.** L'heuristique ne peut donc pas dégrader un
-   * cas sain. Elle ne suppose pas non plus un navigateur particulier : elle
-   * mesure ce qui arrive.
+   * Le critère de détection vit dans `timescale.ts`, partagé avec le rejeu :
+   * le seuil doit être le même des deux côtés.
    *
    * Changer d'échelle vide l'historique : les points déjà rangés ne sont plus
    * comparables aux suivants, et une pente calculée à cheval sur les deux
@@ -249,8 +229,7 @@ export class SpeedConditioner {
     this.lastRawAt = rawAt
 
     if (this.rawGaps.length > 0) {
-      const shortest = Math.min(...this.rawGaps)
-      const scale = shortest > FINER_THAN_MS_ABOVE_MS ? MICROSECONDS_PER_MS : 1
+      const scale = detectTimeScale(this.rawGaps)
       if (scale !== this.timeScale) {
         this.timeScale = scale
         this.history = []

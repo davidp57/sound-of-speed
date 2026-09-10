@@ -8,6 +8,23 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Les traces enregistrées en voiture se rejouent enfin.** Même cause que
+  l'accélération : le rejeu comparait des horodatages en microsecondes à son
+  temps écoulé en millisecondes, et attendait donc mille fois trop longtemps
+  entre deux mesures — les deux traces du 9 septembre 2026 annonçaient 60 700 et
+  73 700 secondes, et ne se déroulaient pas. Elles annoncent maintenant 60,7 et
+  73,7 secondes, et se rejouent en temps réel.
+
+  Cela rend au projet son outil de mise au point le plus utile : un trajet réel,
+  avec la cadence de la voiture, sa quantification au kilomètre-heure et ses
+  paliers, rejoué autant de fois qu'on veut au bureau. C'est le seul signal réel
+  dont le projet dispose pour éprouver la boîte sans rouler.
+
+  La détection d'unité, commune au conditionnement et au rejeu, vit désormais
+  dans une pièce à part : le seuil doit être le même des deux côtés, et ce dépôt
+  a déjà payé deux fois la même erreur — deux mécanismes qui décrivent le même
+  fait avec des valeurs qui finissent par diverger.
+
 - **L'accélération était mille fois trop petite.** Le navigateur de la Tesla
   horodate ses positions en **microsecondes**, là où la norme du web dit
   millisecondes ; le code divisait par mille en croyant convertir. L'accélération

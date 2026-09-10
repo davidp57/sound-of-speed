@@ -216,3 +216,60 @@ describe('TraceRecorder', () => {
     expect(recorder.count).toBe(0)
   })
 })
+
+/**
+ * Traces horodatées dans une autre unité.
+ *
+ * Les traces enregistrées dans la voiture portent des **microsecondes** : le
+ * navigateur de la Tesla horodate ainsi, là où la norme du web dit
+ * millisecondes. Sans normalisation, le rejeu attendait mille fois trop
+ * longtemps entre deux échantillons — une trace de soixante secondes se
+ * déroulait sur seize heures, donc ne se rejouait pas du tout. Les deux traces
+ * de l'essai du 9 septembre 2026 sont dans ce cas, et elles sont le seul signal
+ * réel dont le projet dispose.
+ */
+describe("une trace horodatée en microsecondes", () => {
+  /** La même trace que ci-dessus, mais horodatée comme la voiture le fait. */
+  function traceMicrosecondes(count = 5, stepMs = 1000): Trace {
+    const startedAt = 1_700_000_000_000
+    // La base est celle d'une horloge monotone de bord, sans rapport avec
+    // l'heure du jour : c'est ce qu'on relève dans les traces réelles.
+    const base = 84_328_431_000
+    return {
+      name: 'Essai voiture',
+      startedAt,
+      samples: Array.from({ length: count }, (_, i) => sample(i * 10, base + i * stepMs * 1000)),
+    }
+  }
+
+  it('annonce sa vraie durée', () => {
+    // Cinq mesures espacées d'une seconde : quatre secondes de trace.
+    expect(new ReplaySource(traceMicrosecondes()).durationS).toBeCloseTo(4, 2)
+  })
+
+  it('se rejoue en temps réel, et non mille fois trop lentement', () => {
+    const source = new ReplaySource(traceMicrosecondes())
+    source.start()
+    const recu = collect(source, 4.2)
+    expect(recu).toHaveLength(5)
+    expect(source.isFinished).toBe(true)
+  })
+
+  it('respecte le rythme des mesures, comme sur une trace en millisecondes', () => {
+    const source = new ReplaySource(traceMicrosecondes())
+    source.start()
+    // Deux secondes et demie : les trois premières mesures, pas la quatrième.
+    expect(collect(source, 2.5)).toHaveLength(3)
+  })
+
+  it('progresse comme sur une trace en millisecondes', () => {
+    const source = new ReplaySource(traceMicrosecondes())
+    source.start()
+    collect(source, 2)
+    expect(source.progress).toBeCloseTo(0.5, 1)
+  })
+
+  it("n'altère pas une trace déjà en millisecondes", () => {
+    expect(new ReplaySource(trace()).durationS).toBeCloseTo(4, 2)
+  })
+})
