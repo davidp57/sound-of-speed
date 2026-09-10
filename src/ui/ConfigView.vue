@@ -35,7 +35,9 @@ import {
   type SynthRendering,
 } from '../core/synth/settings'
 import {
-  activeProfile,
+  editedProfile,
+  setSampleDir,
+  setSoundSource,
   tryClack,
   addProfile,
   advancedMode,
@@ -91,11 +93,9 @@ import {
   exportServerData,
   engineList,
   activeEngine,
-  activeEngineDrifted,
   engineUsage,
   chooseEngine,
   saveActiveAsEngine,
-  updateDesignatedEngine,
   forgetEngine,
   exportEngine,
   importEngine,
@@ -110,7 +110,15 @@ import {
  * transportés d'un appareil à l'autre.
  */
 
-const profile = activeProfile
+/**
+ * Ce qu'on règle : le profil assemblé, sections vivantes.
+ *
+ * Chaque curseur écrit dans le groupe où le réglage vit — le moteur, la boîte ou
+ * la voiture — et non plus dans le profil, qui ne porte plus de valeurs. Les
+ * chemins n'ont pas changé pour autant : `profile.engine.idleRpm` désigne
+ * toujours le ralenti, il atterrit simplement dans le moteur.
+ */
+const profile = editedProfile
 const importError = ref('')
 
 /**
@@ -128,7 +136,7 @@ const SOUND_SOURCE_LABELS: Record<SoundSource, string> = {
 const soundSource = computed<SoundSource>({
   get: () => soundSourceOf(profile.value),
   set: (value) => {
-    profile.value.soundSource = value
+    setSoundSource(value)
   },
 })
 
@@ -229,7 +237,8 @@ function onBank(event: Event): void {
   const name = (event.target as HTMLSelectElement).value
   // La ligne « réglée à la main » n'est pas un choix : elle dit seulement que la
   // valeur tapée ne correspond à aucune banque listée.
-  if (name !== '') profile.value.sampleDir = name
+  // La banque appartient au moteur : elle ne se pose donc pas sur le profil.
+  if (name !== '') setSampleDir(name)
 }
 
 /** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
@@ -693,9 +702,6 @@ function onSaveEngine(): void {
   direMoteur(saveActiveAsEngine(newEngineName.value))
   newEngineName.value = ''
 }
-function onUpdateEngine(): void {
-  direMoteur(updateDesignatedEngine())
-}
 function onExportEngine(): void {
   if (activeEngine.value) direMoteur(exportEngine(activeEngine.value.id))
 }
@@ -943,9 +949,9 @@ async function rapatrier(): Promise<void> {
         <span class="note">Moteur</span>
         <p class="note">
           Un moteur, c'est ses réglages, sa banque de sons, ses couches et son
-          mixage — tout ce qui fait qu'on le reconnaît. Il vit à part du profil :
-          on peut l'envoyer seul, et le corriger une fois pour tous les profils
-          qui le jouent.
+          mixage, ses pétarades — tout ce qui fait qu'on le reconnaît. Il vit à
+          part du profil, qui ne fait que le désigner : on peut l'envoyer seul,
+          et le corriger une fois pour tous les profils qui le jouent.
         </p>
         <div class="choices">
           <select
@@ -968,11 +974,11 @@ async function rapatrier(): Promise<void> {
           />
         </div>
         <p v-if="activeEngine?.source" class="note muted">{{ activeEngine.source }}</p>
-        <p v-if="activeEngineDrifted" class="note warn">
-          Ce profil a été affiné depuis qu'il a chargé « {{ activeEngine?.name }} » :
-          il ne sonne plus comme lui. Les écarts restent à ce profil, sauf si vous
-          les reportez dans le moteur.
-          <button @click="onUpdateEngine()">Reporter dans le moteur</button>
+        <p v-if="engineUsage(activeEngine?.id ?? '') > 1" class="note warn">
+          « {{ activeEngine?.name }} » est joué par
+          {{ engineUsage(activeEngine?.id ?? '') }} profils : ce qu'on règle ici
+          s'entend dans tous. Pour n'en changer qu'un, enregistrez d'abord le
+          moteur sous un autre nom.
         </p>
         <div class="choices">
           <input
