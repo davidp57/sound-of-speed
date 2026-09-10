@@ -1,7 +1,8 @@
 # PLANCHER — la boîte se décide sur un seul plancher de régime
 
-**Statut :** ⬜ prêt
-**Branche :** `feature/plancher` — à ouvrir après MOUVEMENT
+**Statut :** 🧑 attend David — la règle est livrée en version allégée, il reste
+l'écoute en roulant et le nettoyage du format de profil
+**Branche :** `feature/plancher`
 **Version visée :** à décider
 
 ## Le problème
@@ -312,6 +313,27 @@ régimes de passage, `gps-bench.test.ts` pour la fabrication de positions,
   une inconnue à relever en roulant, notée dans REFONTE.
 - **Le son du passage lui-même**, jugé correct par David.
 - **Le retrait de `BENCH=1` de l'image d'intégration**, indépendant.
+
+## Ce qui est livré, et ce qui ne l'est pas
+
+Livré le 10 septembre 2026 au soir, en version **allégée** — le format de profil
+n'a pas bougé, pour que la règle soit essayable dès le lendemain :
+
+- le plancher de montée, réglé par le mode et la demande ;
+- le premier passage à 810 tr/min en absolu, sans mode, sans charge, sans tirage
+  au sort ;
+- le plancher de descente, qui remonte avec la décélération et reste sous celui
+  de montée ;
+- le rétrogradage forcé au seuil du mode ;
+- la montée en croisière et la descente au freinage supprimées.
+
+Pas encore fait :
+
+- **le nettoyage du format de profil.** Les six réglages sont toujours là et ne
+  commandent plus rien ; le README le dit ligne par ligne. La montée de version
+  et la conversion restent à faire.
+- **l'irrégularité du régime**, à fusionner en un seul mécanisme dans le moteur.
+- **les marges elles-mêmes**, qui sont des points de départ.
 
 ## Notes
 

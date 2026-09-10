@@ -1134,13 +1134,13 @@ l'échappement.
 | **Rupteur atteint à** | Vitesse au rupteur dans le dernier rapport. **Modifier cette valeur recalcule le pont** — c'est le chiffre parlant |
 | **Rayon de roue** | En mètres. Entre dans le calcul du régime |
 | **Temps de passage** | Durée de la coupure de couple |
-| **Écart selon la charge** | De combien le passage recule pied au plancher et avance pied levé, de part et d'autre du seuil déduit du tempérament |
+| **Écart selon la charge** | **Sans effet depuis le 10 septembre 2026.** C'est la marge du mode qui se déplace avec la demande, et elle double à pleine charge |
 | **Dispersion aléatoire** | Tirée au sort à chaque passage. Sans elle, la boîte passe toujours au même régime exact et s'entend comme une machine |
-| **Ne jamais monter sous** | Plancher appliqué aux régimes de passage ci-dessus, toutes charges confondues : il empêche l'écart de charge de faire monter un rapport à un régime où le moteur peinerait. Sans effet sur le rétrogradage — c'est **Descente sous** qui le commande |
-| **Descente sous** | Seuil de rétrogradage, en fraction du rupteur, quand la vitesse n'est ni tenue ni franchement en baisse. Trop bas, la boîte reste sur le dernier rapport bien après qu'il n'a plus de sens. Mesuré sur le profil Sport, la quatrième cède la place à 46 km/h à 0,20 du rupteur, et à 114 km/h à 0,50 |
-| **Croisière au-dessus de** | Quand on tient une vitesse, la boîte monte les rapports d'elle-même et s'arrête juste avant de descendre sous ce régime. C'est le réglage qui décide de l'assiette en croisière : trop bas le moteur broute, trop haut il reste inutilement haut. Sur Route, 1500 tr/min place la sixième dès 90 km/h |
-| **Monter après** | Durée de vitesse stable avant de tenter un rapport de plus. Court, la boîte monte dès qu'on lève le pied ; long, elle garde ses rapports |
-| **Descendre en freinant à** | Décélération à partir de laquelle la boîte descend pour aider à ralentir, sans attendre que le régime soit tombé. Proche de zéro, elle descend au moindre lever de pied |
+| **Ne jamais monter sous** | **Sans effet depuis le 10 septembre 2026.** Le plancher du rapport visé joue ce rôle, et il ne peut par construction pas proposer un rapport où le moteur peinerait |
+| **Descente sous** | **Sans effet depuis le 10 septembre 2026.** Le rétrogradage se décide sur le plancher de descente, qui vient du mode et remonte avec la décélération |
+| **Croisière au-dessus de** | **Sans effet depuis le 10 septembre 2026.** Il n'y a plus de montée en croisière séparée : le plancher fait entrer le rapport long de lui-même, et c'est lui qui décide de l'assiette |
+| **Monter après** | **Sans effet depuis le 10 septembre 2026.** Voir ci-dessus : la montée en croisière n'existe plus |
+| **Descendre en freinant à** | Décélération à partir de laquelle la boîte cesse de monter. Elle ne commande plus la descente : celle-ci suit le plancher, qui remonte de lui-même avec la décélération |
 | **Temporisations de montée** | Une par rapport, en secondes. Les garder **inégales** : avec une valeur unique, la boîte sonne comme un métronome. Courtes de préférence — elles confirment une intention, elles ne retiennent pas le passage |
 
 ### Signal de vitesse
@@ -1923,8 +1923,35 @@ un trajet capturé, on roule pour de vrai, sans branche conditionnelle nulle par
 
 ### Ce que la boîte regarde
 
-Elle ne décide pas seulement sur le régime. Trois règles se partagent le travail,
-et chacune répond à une question différente :
+**Un seul nombre décide : le plancher d'un rapport**, c'est-à-dire le régime en
+dessous duquel ce rapport n'a pas sa place. On monte dès que le **rapport
+suivant** tournerait au-dessus de ce plancher, et on descend quand le rapport
+engagé tombe sous un plancher un peu plus bas. Le plancher vaut le ralenti du
+moteur plus une marge, et c'est cette marge qui porte le tempérament : le mode
+de conduite l'ajuste, la demande la déplace — plus on demande, plus on laisse
+monter dans les tours.
+
+Deux conséquences valent d'être dites. Le critère porte sur le régime du rapport
+**visé**, donc il s'adapte de lui-même à l'étagement de la boîte : un saut court
+et un saut long ne reçoivent plus le même seuil. Et un seul nombre gouvernant les
+deux sens, la montée et la descente **ne peuvent plus se contredire** — c'est ce
+qui ouvrait, sur chaque rapport, une plage de vitesse où la croisière autorisait
+un rapport que la descente au régime refusait, et la boîte y faisait le
+va-et-vient. Mesuré sur le profil Route, en accélération douce, mode Route : les
+rapports cèdent à 3005, 2597, 2367 et 2324 tr/min, contre 3700, 3350, 3050 et
+2950 avant.
+
+Le **premier passage** échappe à la règle : la première n'est qu'une amorce de
+lancement, et la deuxième s'engage dès qu'elle tient au-dessus du ralenti, sans
+regarder ni le mode ni la charge.
+
+Ce qui suit décrit les règles telles qu'elles étaient jusqu'au 10 septembre 2026,
+et **ce qu'il en reste** : l'inhibition de la montée pendant qu'on ralentit, qui
+tient toujours. La montée en croisière et la descente au freinage, elles, n'ont
+plus de mécanisme à elles — le plancher fait les deux.
+
+Elle ne décidait pas seulement sur le régime. Trois règles se partageaient le
+travail, et chacune répondait à une question différente :
 
 - **le régime**, pour les passages en accélération — chaque rapport a son seuil ;
 - **la stabilité de la vitesse**, pour la croisière. Un palier ne fait plus

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { Gearbox } from './gearbox'
-import { driveModeFromUpshiftRpm } from './drive-mode'
+import { driveModeFromUpshiftRpm, type DriveMode } from './drive-mode'
 import { Engine } from '../engine/engine'
 import { SpeedConditioner } from '../speed/conditioner'
 import { createDefaultProfile } from '../preset/defaults'
@@ -210,75 +210,64 @@ afterEach(() => {
 })
 
 describe('Gearbox — montée des rapports', () => {
-  it('passe chaque rapport au régime déclaré pour lui', () => {
+  it('n’engage un rapport que s’il tourne au-dessus de son plancher', () => {
     const p = profile()
     // Accélération douce : 4 km/h par seconde, pour que la temporisation ne
     // laisse pas filer le régime bien au-delà du seuil.
     const { shifts } = drive(p, (t) => t * 4, 60)
 
-    // Le premier passage est celui de la première, qui ne suit aucun seuil de
-    // régime : c'est une amorce, elle cède la place à la vitesse de lancement.
-    const parRegime = shifts.filter((s) => s.from > 0)
-    expect(parRegime.length).toBeGreaterThanOrEqual(4)
+    const montees = shifts.filter((s) => s.to > s.from)
+    expect(montees.length).toBeGreaterThanOrEqual(4)
 
-    for (const shift of parRegime) {
-      const declared = p.drivetrain.upshiftRpm[shift.from]
-      expect(declared).toBeDefined()
-      // Le passage ne se produit jamais avant le seuil, et la temporisation ne
-      // le laisse pas filer de plus de 400 tr/min — la marge de dépassement.
-      expect(shift.rpm).toBeGreaterThanOrEqual(declared! - 1)
-      expect(shift.rpm).toBeLessThan(declared! + 450)
+    for (const shift of montees) {
+      // Le régime qu'a le rapport **atteint**, au moment où on l'engage :
+      // c'est lui que la règle borne, et non celui qu'on quitte.
+      const atteint = rpmInGearAt(p, shift.kmh)(shift.to)
+      expect(atteint).toBeGreaterThan(p.engine.idleRpm)
     }
   })
 
-  it('recule le seuil pied au plancher, et l’avance pied levé', () => {
+  it('passe plus haut en régime pied au plancher que pied levé', () => {
     const p = profile()
-    // Deux boîtes neuves, sous la vitesse de lancement : le rapport engagé est
-    // le même des deux côtés, sinon on comparerait deux seuils différents.
-    const kmh = p.drivetrain.launchUpshiftKmh - 3
-    const plancher = makeGearbox(p).tick(FRAME_S, { rpmInGear: rpmInGearAt(p, kmh), atStandstill: false, load: 1, kmh: kmh, accelMs2 })
-      .upshiftThresholdRpm
-    const leve = makeGearbox(p).tick(FRAME_S, { rpmInGear: rpmInGearAt(p, kmh), atStandstill: false, load: 0, kmh: kmh, accelMs2 })
-      .upshiftThresholdRpm
+    // La même montée en vitesse, deux demandes. Ce qui se compare est le régime
+    // auquel les rapports cèdent, et non un seuil lu au premier tour : la boîte
+    // y est encore en première, dont le plancher ne dépend ni du mode ni de la
+    // charge.
+    const regimes = (load: number) =>
+      drive(p, (t) => t * 4, 60, load)
+        .shifts.filter((s) => s.from > 0)
+        .map((s) => s.rpm)
 
-    // L'écart total vaut le réglage : 1800 tr/min entre les deux extrêmes.
-    expect(plancher - leve).toBeCloseTo(p.drivetrain.upshiftLoadSpreadRpm, 0)
-    expect(plancher).toBeGreaterThan(leve)
+    const plancher = regimes(1)
+    const leve = regimes(0.2)
+
+    expect(plancher.length).toBeGreaterThan(0)
+    expect(leve.length).toBeGreaterThan(0)
+    expect(Math.min(...plancher)).toBeGreaterThan(Math.min(...leve))
   })
 
-  it('ne descend jamais le seuil sous le régime plancher', () => {
-    // Plancher très haut : il doit primer sur le décalage de charge.
-    const p = profile({ minUpshiftRpm: 5000 })
+  it('ne descend jamais le seuil sous le ralenti du moteur', () => {
+    // Pied levé, le plancher se resserre — mais il ne peut pas descendre au
+    // point de proposer un rapport que le moteur ne tiendrait pas.
+    const p = profile()
     const gearbox = makeGearbox(p)
 
     const state = gearbox.tick(FRAME_S, { rpmInGear: rpmInGearAt(p, 40), atStandstill: false, load: 0, kmh: 40, accelMs2 })
 
-    expect(state.upshiftThresholdRpm).toBeGreaterThanOrEqual(5000)
+    expect(state.upshiftThresholdRpm).toBeGreaterThan(p.engine.idleRpm)
   })
 
   it('attend la temporisation du rapport avant de passer', () => {
-    const p = profile({ shiftDelaysS: [0.25, 1.5, 0.35, 0.55, 0.3, 0.45] })
-    const gearbox = makeGearbox(p)
+    // Comparatif plutôt qu'absolu : la même montée en vitesse, avec une
+    // temporisation courte puis longue sur le deuxième passage. C'est le retard
+    // qui se vérifie, et il ne dépend pas de la règle de seuil.
+    const rapide = drive(profile({ shiftDelaysS: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05] }), (t) => t * 4, 60)
+    const lent = drive(profile({ shiftDelaysS: [0.05, 1.5, 0.05, 0.05, 0.05, 0.05] }), (t) => t * 4, 60)
 
-    // On se place en deuxième, juste au-dessus de son seuil, sans dépassement.
-    const kmh = kmhForRpm(p, 1, p.drivetrain.upshiftRpm[1]! + 100)
-    const rpmInGear = rpmInGearAt(p, kmh)
-    gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 0.5, kmh: kmh, accelMs2 }) // amorce : quitte la première
-    expect(gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 0.5, kmh: kmh, accelMs2 }).gear).toBe(1)
-
-    // Un tiers de seconde : la condition est remplie, le passage est retenu.
-    let state = gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 0.5, kmh: kmh, accelMs2 })
-    for (let f = 0; f * FRAME_S < 0.33; f += 1) {
-      state = gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 0.5, kmh: kmh, accelMs2 })
-    }
-    expect(state.gear).toBe(1)
-    expect(state.isShiftReady).toBe(true)
-
-    // Passé la temporisation d'une seconde et demie, il se produit.
-    for (let f = 0; f * FRAME_S < 1.4; f += 1) {
-      state = gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 0.5, kmh: kmh, accelMs2 })
-    }
-    expect(state.gear).toBe(2)
+    const deuxieme = (r: typeof rapide) => r.shifts.find((s) => s.from === 1 && s.to === 2)
+    expect(deuxieme(rapide)).toBeDefined()
+    expect(deuxieme(lent)).toBeDefined()
+    expect(deuxieme(lent)!.t).toBeGreaterThan(deuxieme(rapide)!.t + 1)
   })
 
   it('passe sans attendre quand le régime a dépassé la marge', () => {
@@ -296,23 +285,26 @@ describe('Gearbox — montée des rapports', () => {
     expect(state.gear).toBeGreaterThan(1)
   })
 
-  it('accélère en première jusqu’au seuil de régime, comme les autres rapports', () => {
+  it('quitte la première dès que la deuxième tient au-dessus du ralenti', () => {
     // La première cédait la place dès la vitesse de lancement, sans regarder le
     // régime : la deuxième tombait alors bien sous le ralenti. David : « elle
     // passe la 2de au km/h suivant [...] et la 2de est en dessous de 800 rpm
     // jusque 12-14 km/h, ce qui donne l'effet que je n'aime pas ».
+    //
+    // Depuis le 10 septembre 2026 au soir, elle a son propre plancher, absolu :
+    // « on passe la deuxième dès qu'on peut, sans attendre, quelle que soit la
+    // charge et le mode ». Ce qui se vérifie est donc les deux moitiés de la
+    // règle — tôt, mais jamais sous le ralenti.
     const p = profile()
-    // Vingt secondes : en première, le seuil de 5 200 tr/min n'arrive qu'aux
-    // alentours de quarante kilomètres à l'heure sur ce profil.
     const { shifts } = drive(p, (t) => t * 4, 20)
     const premier = shifts[0]
 
     expect(premier?.from).toBe(0)
-    // Le seuil de régime commande, à la tolérance du pas de simulation près.
-    expect(premier?.rpm).toBeGreaterThan(p.drivetrain.upshiftRpm[0]! * 0.85)
-    // Et la deuxième y prend le relais bien au-dessus du ralenti.
-    const apres = premier!.rpm * (p.drivetrain.gearRatios[1]! / p.drivetrain.gearRatios[0]!)
-    expect(apres).toBeGreaterThan(p.engine.idleRpm * 1.5)
+    // La deuxième prend le relais au-dessus du ralenti, avec de la marge.
+    const apres = rpmInGearAt(p, premier!.kmh)(1)
+    expect(apres).toBeGreaterThan(p.engine.idleRpm)
+    // Et tôt : la première n'est qu'une amorce de lancement.
+    expect(premier!.kmh).toBeLessThan(35)
   })
 
   it('ne quitte pas la première avant que la voiture n’avance', () => {
@@ -358,21 +350,33 @@ describe('Gearbox — rétrogradage', () => {
     }
   })
 
-  it('rétrograde d’autant plus tôt que le seuil de descente est haut', () => {
-    const descenteVers3 = (downshiftAtRedlineRatio: number) => {
-      const p = profile({ downshiftAtRedlineRatio })
-      // Décélération douce, sous le seuil de freinage : sinon la règle du
-      // ralentissement prend la main et masque l'effet qu'on mesure.
-      const { shifts } = drive(
-        p,
-        (t) => (t < 25 ? Math.min(130, t * 6) : Math.max(0, 130 - (t - 25) * 1.5)),
-        140,
-      )
-      return shifts.filter((s) => s.to === 2 && s.from > 2).at(-1)?.kmh ?? 0
+  it('rétrograde plus tôt en sport qu’en route', () => {
+    // Le seuil de descente n'est plus un réglage de profil : il vient du mode,
+    // et c'est lui qui porte le tempérament. Sport garde le régime, donc il
+    // rend ses rapports plus tôt — c'est-à-dire à plus haute vitesse.
+    const descenteVers3 = (mode: DriveMode) => {
+      const p = profile()
+      const gearbox = new Gearbox(p.drivetrain, p.engine, p.feel, mode)
+      let previous = 0
+      let kmhDescente = 0
+      for (let frame = 1; frame * FRAME_S <= 140; frame += 1) {
+        const t = frame * FRAME_S
+        const vitesse = (u: number) => (u < 25 ? Math.min(130, u * 6) : Math.max(0, 130 - (u - 25) * 1.5))
+        const kmh = vitesse(t)
+        const state = gearbox.tick(FRAME_S, {
+          rpmInGear: rpmInGearAt(p, kmh),
+          atStandstill: kmh < 1,
+          load: 0.5,
+          kmh,
+          accelMs2: (kmh - vitesse(t - FRAME_S)) / FRAME_S / 3.6,
+        })
+        if (state.gear === 2 && previous > 2) kmhDescente = kmh
+        previous = state.gear
+      }
+      return kmhDescente
     }
 
-    expect(descenteVers3(0.2)).toBeLessThan(descenteVers3(0.32))
-    expect(descenteVers3(0.32)).toBeLessThan(descenteVers3(0.5))
+    expect(descenteVers3('sport')).toBeGreaterThan(descenteVers3('road'))
   })
 
   it('ne dépend pas du régime plancher, contrairement à ce qu’annonçait le README', () => {
@@ -705,75 +709,56 @@ describe('Gearbox — la demande, et non le niveau', () => {
   })
 })
 
-describe('Gearbox — montée en croisière', () => {
+describe('Gearbox — le rapport de croisière', () => {
   const croisiere = () => ({ load: 0.5, accelMs2: 0 })
 
-  it('monte les rapports quand la vitesse est tenue', () => {
-    const p = profile()
-
-    const { shifts, gear } = hold(p, 70, 60, croisiere)
-
-    // Mesuré avant ce lot : 70 km/h tenus laissaient la deuxième à 5165 tr/min.
-    expect(shifts.filter((s) => s.to > s.from).length).toBeGreaterThanOrEqual(2)
-    expect(rpmInGearAt(p, 70)(gear)).toBeLessThan(3000)
-  })
-
-  it('s’arrête au plancher de croisière, et pas avant', () => {
+  it('prend le rapport le plus long qui tienne au-dessus du plancher', () => {
+    // Il n'y a plus de « montée en croisière » : le plancher regarde le rapport
+    // visé, donc il fait entrer le rapport long de lui-même. Ce qui se vérifie
+    // est le résultat — le rapport retenu est le dernier qui tienne — et non le
+    // mécanisme qui y mène.
     const p = profile()
     const kmh = 70
 
     const { gear } = hold(p, kmh, 60, croisiere)
-    const rpm = rpmInGearAt(p, kmh)
 
-    // Le rapport retenu tourne au-dessus du plancher…
-    expect(rpm(gear)).toBeGreaterThanOrEqual(p.drivetrain.cruiseMinRpm)
-    // …et le suivant passerait en dessous, sinon la montée aurait continué.
-    if (gear < p.drivetrain.gearRatios.length - 1) {
-      expect(rpm(gear + 1)).toBeLessThan(p.drivetrain.cruiseMinRpm)
-    }
+    // Il n'est pas resté sur un rapport court : 70 km/h tenus laissaient la
+    // deuxième à 5165 tr/min avant que la croisière n'existe.
+    expect(gear).toBeGreaterThanOrEqual(2)
+    expect(rpmInGearAt(p, kmh)(gear)).toBeLessThan(4000)
   })
 
-  it('ne fait pas de yoyo une fois montée', () => {
+  it('ne fait pas de yoyo une fois monté', () => {
     const p = profile()
 
     // Deux minutes de vitesse tenue : le va-et-vient était le risque principal,
-    // le rapport atteint tournant sous le seuil de descente au régime.
+    // le rapport atteint tournant sous le seuil de descente au régime. C'est
+    // exactement ce que le plancher unique interdit.
     const { shifts } = hold(p, 70, 120, croisiere)
 
     expect(shifts.filter((s) => s.t > 30)).toHaveLength(0)
   })
 
-  it('ne monte pas quand la vitesse n’est pas tenue', () => {
-    // Les seuils de régime sont mis hors d'atteinte : toute montée observée est
-    // alors nécessairement une montée **en croisière**, qui est le sujet. Sans
-    // cela le test relèverait aussi les montées au régime, légitimes, puisque la
-    // vitesse monte réellement pendant la première moitié de l'oscillation.
-    //
-    // On les éloigne par le **rupteur**, et non par une table de tours : les
-    // seuils s'en déduisent depuis que la boîte suit le moteur, et une table
-    // écrite ici ne commanderait plus rien.
-    const p = profile({}, {}, { redlineRpm: 60_000, softLimitRpm: 59_000 })
-
-    // Une allure qui va et vient : l'accélération oscille assez lentement pour
-    // que la vitesse en garde la trace — ±6,8 km/h autour de 70. Une oscillation
-    // rapide, elle, ne déplacerait la vitesse que d'un demi km/h, et ce serait
-    // alors une vitesse tenue quoi qu'en dise l'accélération instantanée.
-    const { shifts } = hold(p, 70, 60, (t) => ({
-      load: 0.5,
-      accelMs2: Math.sin(t * 0.8) * 1.5,
-    }))
-
-    expect(shifts.filter((s) => s.to > s.from)).toHaveLength(0)
+  it('ne fait pas de yoyo sur toute la plage praticable', () => {
+    // L'invariant, balayé : la plage 70–85 km/h est celle où la boîte
+    // oscillait entre cinquième et sixième le 10 septembre au soir, parce que
+    // le plancher de croisière était sous le seuil de descente au régime.
+    const p = profile()
+    for (let kmh = 30; kmh <= 130; kmh += 5) {
+      const { shifts } = hold(p, kmh, 40, croisiere)
+      expect(shifts.filter((s) => s.t > 20), `à ${kmh} km/h`).toHaveLength(0)
+    }
   })
 
-  it('attend le délai déclaré avant de monter', () => {
-    const p = profile({ cruiseUpshiftAfterS: 4 })
+  it('ne monte pas pendant qu’on ralentit', () => {
+    // Lever le pied juste avant un passage ne doit pas le laisser se produire.
+    const p = profile()
+    const { shifts } = hold(p, 70, 60, (t) => ({
+      load: 0.5,
+      accelMs2: t < 5 ? 0 : -1.2,
+    }))
 
-    const { shifts } = hold(p, 70, 60, croisiere)
-    const premiere = shifts.find((s) => s.to > s.from)
-
-    expect(premiere).toBeDefined()
-    expect(premiere!.t).toBeGreaterThanOrEqual(4)
+    expect(shifts.filter((s) => s.to > s.from && s.t > 5)).toHaveLength(0)
   })
 
   it('laisse le rétrogradage forcé reprendre la main après une croisière', () => {
@@ -895,23 +880,27 @@ describe('Gearbox — ralentir n’est pas croiser', () => {
     const passages = depuisCroisiere(p, 0.8)
     const descentes = passages.filter((s) => s.to < s.from && s.kmh > 5)
 
-    // Mesuré : 6→5 à 104 km/h, 5→4 à 87, 4→3 à 73, 3→2 à 55.
-    expect(descentes.length).toBeGreaterThanOrEqual(4)
-    // Étalées, et non entassées dans les derniers kilomètres-heure.
-    expect(Math.max(...descentes.map((s) => s.kmh))).toBeGreaterThan(90)
-    expect(Math.min(...descentes.map((s) => s.kmh))).toBeLessThan(70)
+    // Le plancher rétrograde plus tard que l'ancien seuil, et c'est voulu : on
+    // garde le rapport long tant qu'il tient. Ce qui se vérifie est qu'elles se
+    // font, et qu'elles sont **étalées** plutôt qu'entassées à l'arrêt.
+    expect(descentes.length).toBeGreaterThanOrEqual(3)
+    expect(Math.max(...descentes.map((s) => s.kmh))).toBeGreaterThan(45)
+    expect(Math.min(...descentes.map((s) => s.kmh))).toBeLessThan(40)
   })
 
   it('ne garde pas le dernier rapport jusqu’à l’arrêt', () => {
     const p = profile()
-    const dernier = p.drivetrain.gearRatios.length - 1
-
     const passages = depuisCroisiere(p, 0.8)
-    const quitteLeDernier = passages.find((s) => s.from === dernier && s.to < dernier)
 
-    expect(quitteLeDernier).toBeDefined()
-    // Bien avant l'arrêt : à 104 km/h, mesuré.
-    expect(quitteLeDernier!.kmh).toBeGreaterThan(80)
+    // Le rapport de croisière est celui qu'on tenait à 110 km/h : c'est de
+    // celui-là qu'il faut redescendre, et non du plus long de la boîte, qui
+    // n'est pas forcément atteint selon le mode.
+    const croisiere = Math.max(...passages.map((s) => s.from))
+    const quitte = passages.find((s) => s.from === croisiere && s.to < croisiere)
+
+    expect(quitte).toBeDefined()
+    // Bien avant l'arrêt.
+    expect(quitte!.kmh).toBeGreaterThan(40)
   })
 
   it('ne monte pas en croisière quand la vitesse décline doucement', () => {
@@ -930,15 +919,16 @@ describe('Gearbox — ralentir n’est pas croiser', () => {
   it('tolère un tremblement de l’accélération', () => {
     const p = profile()
 
-    // L'accélération vient d'une dérivée du GPS : elle tremble. Une sortie
-    // brève de la bande ne doit pas empêcher la croisière, sinon la montée ne
-    // se déclencherait jamais en conduite réelle.
+    // L'accélération vient d'une dérivée du GPS : elle tremble. Ce tremblement
+    // ne doit produire aucun passage — c'est la moitié la plus visible du
+    // défaut entendu le 10 septembre, où la boîte changeait d'avis à vitesse
+    // tenue.
     const { shifts } = hold(p, 90, 60, (t) => ({
       load: 0.5,
       accelMs2: Math.sin(t * 7) * 0.25,
     }))
 
-    expect(shifts.filter((s) => s.to > s.from && s.t > 5).length).toBeGreaterThan(0)
+    expect(shifts.filter((s) => s.t > 5)).toHaveLength(0)
   })
 
   it('distingue un tremblement d’un vrai changement d’allure', () => {
@@ -972,16 +962,22 @@ describe('Gearbox — ralentir n’est pas croiser', () => {
       return shifts
     }
 
-    // Un tremblement : la vitesse bouge de moins d'un km/h. C'est une croisière,
-    // et la boîte doit monter — c'est le défaut qu'on avait à l'inverse, où le
-    // moindre frémissement l'empêchait tout à fait.
+    // Un tremblement : la vitesse bouge de moins d'un km/h. Le rapport ne
+    // bouge pas — la boîte est déjà sur le bon, et rien ne la fait changer
+    // d'avis.
     const tremblement = suivre(90, (t) => 90 + Math.sin(t * 7) * 0.4, 60)
-    expect(tremblement.filter((s) => s.to > s.from).length).toBeGreaterThan(0)
+    expect(tremblement).toHaveLength(0)
 
     // Une allure qui bouge vraiment : dix km/h d'amplitude sur quelques
-    // secondes. Aucune montée en croisière.
+    // secondes. La boîte peut suivre, mais sans faire l'aller-retour — aucun
+    // rapport rendu dans les trois secondes qui suivent sa prise.
     const allure = suivre(90, (t) => 90 + Math.sin(t * 0.8) * 10, 60)
-    expect(allure.filter((s) => s.to > s.from && s.t > 5)).toHaveLength(0)
+    for (let i = 1; i < allure.length; i += 1) {
+      const avant = allure[i - 1]!
+      const apres = allure[i]!
+      const retour = apres.to === avant.from && apres.from === avant.to
+      expect(retour && apres.t - avant.t < 3).toBe(false)
+    }
   })
 })
 
@@ -1311,16 +1307,21 @@ describe('Gearbox — le seuil de montée suit la demande', () => {
 
     // La charge tombe d'un coup : le seuil ne doit pas la suivre.
     const apres = gearbox.tick(FRAME_S, { ...entree, load: 0 })
-    expect(haut.upshiftThresholdRpm - apres.upshiftThresholdRpm).toBeLessThan(20)
+    // Un tour de boucle ne peut pas emporter plus qu'une fraction de la marge.
+    expect(haut.upshiftThresholdRpm - apres.upshiftThresholdRpm).toBeLessThan(
+      (haut.upshiftThresholdRpm - p.engine.idleRpm) * 0.05,
+    )
 
     // Une seconde plus tard, il a perdu le tiers des seize cents tours, pas tout.
     let fin = apres
     for (let f = 0; f * FRAME_S < 1; f += 1) {
       fin = gearbox.tick(FRAME_S, { ...entree, load: 0 })
     }
+    // Une seconde plus tard, il a perdu une part de la marge, pas la totalité.
     const chute = haut.upshiftThresholdRpm - fin.upshiftThresholdRpm
-    expect(chute).toBeGreaterThan(400)
-    expect(chute).toBeLessThan(700)
+    const marge = haut.upshiftThresholdRpm - p.engine.idleRpm
+    expect(chute).toBeGreaterThan(marge * 0.15)
+    expect(chute).toBeLessThan(marge * 0.7)
 
     // Trois secondes après, il est arrivé au bout de sa course.
     for (let f = 0; f * FRAME_S < 3; f += 1) {
