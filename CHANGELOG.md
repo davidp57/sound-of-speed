@@ -8,6 +8,41 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un relecteur, pour revoir un trajet au lieu de le raconter de mémoire.** Il
+  vit sur une page à part, `/relecteur.html`, et déroule une session enregistrée
+  comme un lecteur vidéo : lecture, pause, déplacement libre, vitesse réglable
+  jusqu'à vingt fois.
+
+  Les sessions se listent depuis le serveur, la plus récente en tête, et leurs
+  tranches se recollent toutes seules. Il lit indifféremment les fichiers en
+  clair et compressés, et les deux natures : le journal des essais passés — ceux
+  des 8, 9 et 10 septembre restent relisibles — comme la capture continue.
+
+  **Ce qui est deviné se voit.** Un journal ne porte le régime, le rapport et la
+  charge qu'une fois toutes les dix secondes : entre deux relevés, les valeurs
+  affichées sont interpolées, et l'écran dit à quelle distance se trouve le
+  relevé le plus proche. Le rapport, lui, n'est jamais interpolé — entre la
+  troisième et la quatrième il n'y a pas de trois et demi.
+
+  Une **carte** montre le trajet et le véhicule qui le suit. Un clic sur le tracé
+  emmène la timeline à cet endroit ; un déplacement de la timeline déplace le
+  véhicule. Elle demande Leaflet et les tuiles d'OpenStreetMap — la première
+  dépendance d'interface du projet, acceptée pour ce seul écran. La page étant
+  séparée, **l'application de conduite ne grossit pas d'un octet** : elle reste
+  à 307 ko quand le relecteur en pèse 162 dans son propre paquet.
+
+  La **timeline est marquée** des faits du journal — arrêts, redémarrages du
+  suivi, salves de positions rejetées, coupures du son, changements de
+  configuration —, groupés pour qu'une rafale ne couvre pas la barre.
+
+  Un bouton **copie le repère** de l'instant affiché : une ligne lisible, puis
+  l'état complet avec les coordonnées. C'est le geste qui sert le but du lot —
+  David colle le repère, et la conversation part du bon moment.
+
+  Vérifié sur l'essai du 10 septembre 2026 rapatrié du serveur : 218 relevés,
+  2 111 positions, 36 minutes, et le tracé de l'A31 sur la carte.
+
+
 - **La capture d'un trajet démarre toute seule.** Elle se déclenche au démarrage
   du GPS, dès lors que la remontée est au dernier cran, et s'arrête avec lui. Il
   n'y a plus rien à penser avant de partir.

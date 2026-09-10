@@ -1,6 +1,6 @@
 # 06 — La carte
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 05 — le relecteur déroule une session
 

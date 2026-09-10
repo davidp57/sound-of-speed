@@ -21,6 +21,18 @@
         "4173"
       ],
       "port": 4173
+    },
+    {
+      "name": "speed-relecteur",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 5173,
+      "env": {
+        "SPEED_DATA": "//Salon/docker/speed"
+      }
     }
   ]
 }
