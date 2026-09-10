@@ -32,6 +32,8 @@ import {
   setKeepScreenOn,
   setMuted,
   setShiftMode,
+  setDriveMode,
+  currentDriveMode,
   setSource,
   shiftDown,
   shiftUp,
@@ -44,6 +46,7 @@ import {
   telemetry,
   type SourceKind,
 } from '../state'
+import { DRIVE_MODE_LABELS, DRIVE_MODES } from '../core/drivetrain/drive-mode'
 
 withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
 
@@ -433,6 +436,17 @@ const SPEED_STEP_KMH = 20
         <button :aria-pressed="manual" @click="setShiftMode('manual')">Manuelle</button>
         <button :disabled="!manual" @click="shiftDown()">−</button>
         <button :disabled="!manual" @click="shiftUp()">+</button>
+      </div>
+      <div class="group">
+        <span class="label">Tempérament</span>
+        <button
+          v-for="mode in DRIVE_MODES"
+          :key="mode"
+          :aria-pressed="currentDriveMode === mode"
+          @click="setDriveMode(mode)"
+        >
+          {{ DRIVE_MODE_LABELS[mode] }}
+        </button>
       </div>
       </div>
 
