@@ -7,7 +7,7 @@ import { loadDepositCredentials } from '../core/preset/store'
 import { listSessions, loadSession, type SessionEntry } from '../core/session/read'
 import { stateAt, trackAt, type Session } from '../core/session/model'
 import { findGearChanges, findShiftBursts } from '../core/session/shifts'
-import { accelProfile } from '../core/session/profile'
+import { accelProfile, profileRuns } from '../core/session/profile'
 
 /**
  * Le relecteur : revoir un trajet au lieu de le raconter de mémoire.
@@ -150,6 +150,24 @@ const relief = computed(() =>
  * rétrogradé alors qu'on accélérait, ce qui se remarque tout de suite quand
  * les deux se lisent sur la même ligne.
  */
+/**
+ * La courbe du relief, en tronçons de polyligne.
+ *
+ * Deux fois le même tracé : une fois découpé au-dessus de l'axe, une fois en
+ * dessous. C'est ce qui donne une courbe **continue** dont la couleur change au
+ * passage par zéro — deux courbes séparées se rejoindraient mal, et un dégradé
+ * placerait la limite ailleurs qu'à zéro.
+ */
+const reliefRuns = computed(() => {
+  const profil = relief.value
+  if (!profil || profil.peak <= 0) return []
+  return profileRuns(profil.columns).map((run) =>
+    run
+      .map((point) => `${point.x},${(14 - (point.value / profil.peak) * 12).toFixed(2)}`)
+      .join(' '),
+  )
+})
+
 const gearChanges = computed(() =>
   session.value ? findGearChanges(session.value.states) : [],
 )
@@ -441,26 +459,35 @@ void refresh()
             role="img"
             aria-label="Accélérations et freinages du trajet"
           >
-            <rect
-              v-for="(colonne, x) in relief.columns"
-              v-show="colonne.up > 0"
-              :key="`a${x}`"
+            <!--
+              Le même tracé deux fois, découpé à l'axe : au-dessus il est vert,
+              en dessous il est rouge, et la courbe reste continue au passage
+              par zéro.
+            -->
+            <defs>
+              <clipPath id="relief-haut">
+                <rect x="0" y="0" :width="relief.columns.length" height="14" />
+              </clipPath>
+              <clipPath id="relief-bas">
+                <rect x="0" y="14" :width="relief.columns.length" height="14" />
+              </clipPath>
+            </defs>
+
+            <polyline
+              v-for="(run, i) in reliefRuns"
+              :key="`h${i}`"
               class="monte"
-              :x="x"
-              :y="14 - (colonne.up / relief.peak) * 12"
-              width="1"
-              :height="(colonne.up / relief.peak) * 12"
+              :points="run"
+              clip-path="url(#relief-haut)"
             />
-            <rect
-              v-for="(colonne, x) in relief.columns"
-              v-show="colonne.down > 0"
-              :key="`f${x}`"
+            <polyline
+              v-for="(run, i) in reliefRuns"
+              :key="`b${i}`"
               class="freine"
-              :x="x"
-              y="14"
-              width="1"
-              :height="(colonne.down / relief.peak) * 12"
+              :points="run"
+              clip-path="url(#relief-bas)"
             />
+
             <line class="zero" x1="0" y1="14" :x2="relief.columns.length" y2="14" />
 
             <!--
@@ -690,12 +717,21 @@ select {
   margin-top: 0.2rem;
 }
 
+/* Une courbe, pas un remplissage : le trait suit la valeur, l'axe la coupe. */
+.relief .monte,
+.relief .freine {
+  fill: none;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+
 .relief .monte {
-  fill: #2e7d32;
+  stroke: #4caf50;
 }
 
 .relief .freine {
-  fill: #c62828;
+  stroke: #e53935;
 }
 
 /* Le chevron d'un passage : discret, mais lisible sur le vert comme sur le rouge. */
