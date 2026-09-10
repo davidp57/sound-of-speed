@@ -57,3 +57,32 @@ au moins :
 4. ce qui se lit **en roulant** contre ce qui se règle **garé** — deux publics,
    deux écrans, et aujourd'hui ils se mélangent ;
 5. dans quel ordre : ranger avant de résumer, ou l'inverse.
+
+## L'écran de conduite, dessiné par David
+
+Le 10 septembre 2026, David a envoyé un croquis de l'écran principal plutôt
+qu'une liste. Ce qu'il y demande, et ce qui en est fait :
+
+| Demandé | État |
+|---|---|
+| Deux cadrans grands, qui remplissent l'écran | ✅ la place libérée leur revient |
+| Les commandes de boîte **entre les cadrans**, au-dessus du rapport | ✅ |
+| Le tempérament sous le rapport | ✅ |
+| **Un seul bouton par choix**, qui change de valeur au clic | ✅ auto ⇄ manuelle, route ⇄ sport |
+| Pas de sélecteur GPS / simulateur / rejeu | ✅ en production ; ⬜ reste visible sur l'image `develop` |
+| **Aucun bouton en haut** | ⬜ la barre d'onglets demande les trois applications |
+| Plus de doublon « Route / Sport » | ✅ un seul profil livré, nommé d'après son moteur |
+
+**Ce qui bloque les deux points restants** : ils supposent que la version
+embarquée n'embarque pas les écrans de l'atelier. C'est le volet « trois
+applications » de [REFONTE](../REFONTE/spec.md), pas un ménage d'écran — le
+drapeau de construction qui met le simulateur et les bancs dans l'image
+`develop` les met aussi dans la voiture, et c'est ce que David voit.
+
+**Le doublon qui n'en était pas.** Son croquis relevait deux boutons
+« Route / Sport ». Ce n'était pas un doublon : l'un choisissait le profil,
+l'autre le tempérament, et ils portaient le même nom. Les profils livrés se
+nomment donc désormais d'après leur moteur — « V8 » —, et il n'y en a plus
+qu'un : leur différence tenait à leurs seuils de passage, qui ont déménagé vers
+le tempérament.
+

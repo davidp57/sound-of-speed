@@ -51,12 +51,14 @@ beforeEach(() => {
 describe('les moteurs livrés', () => {
   it('font un moteur par profil d\'usine', () => {
     const livres = factoryEngines()
-    expect(livres.map((m) => m.name)).toEqual(['Route', 'Sport'])
+    // Un seul profil est livré depuis le 10 septembre 2026 — le V8 —, donc un
+    // seul moteur livré. Leur différence tenait aux seuils de passage, qui ont
+    // déménagé vers le tempérament.
+    expect(livres.map((m) => m.name)).toEqual(['V8'])
   })
 
-  it('ont chacun leur rupteur : ce ne sont pas deux fois le même moteur', () => {
-    const [route, sport] = factoryEngines()
-    expect(route?.engine.redlineRpm).not.toBe(sport?.engine.redlineRpm)
+  it('porte le rupteur du GM LS, qui est le moteur livré', () => {
+    expect(factoryEngines()[0]?.engine.redlineRpm).toBe(6500)
   })
 
   it('disent qu\'ils sont livrés', () => {
@@ -66,7 +68,7 @@ describe('les moteurs livrés', () => {
 
 describe('le registre', () => {
   it('rend les moteurs livrés quand rien n\'est enregistré', () => {
-    expect(loadEngines().map((m) => m.name)).toEqual(['Route', 'Sport'])
+    expect(loadEngines().map((m) => m.name)).toEqual(['V8'])
   })
 
   it('ajoute un moteur enregistré aux livrés', () => {
@@ -74,25 +76,25 @@ describe('le registre', () => {
     saveEngines(upsertEngine(factoryEngines(), mien))
 
     expect(loadEngines().map((m) => m.name)).toContain('Mon V8')
-    expect(loadEngines()).toHaveLength(3)
+    expect(loadEngines()).toHaveLength(2)
   })
 
   it('remplace un moteur livré qu\'on a corrigé, au lieu d\'en montrer deux', () => {
     const livre = factoryEngines()[0]!
-    const corrige = { ...livre, name: 'Route retouchée' }
+    const corrige = { ...livre, name: 'V8 retouché' }
     saveEngines(upsertEngine(factoryEngines(), corrige))
 
     const noms = loadEngines().map((m) => m.name)
-    expect(noms).toContain('Route retouchée')
-    expect(noms).not.toContain('Route')
-    expect(loadEngines()).toHaveLength(2)
+    expect(noms).toContain('V8 retouché')
+    expect(noms).not.toContain('V8')
+    expect(loadEngines()).toHaveLength(1)
   })
 
   it('n\'enregistre pas les livrés restés intacts', () => {
     saveEngines(factoryEngines())
     expect(localStorage.getItem('speed.engines.v1')).toBe('[]')
-    // Et ils reviennent quand même, puisqu'ils se reconstruisent.
-    expect(loadEngines()).toHaveLength(2)
+    // Et il revient quand même, puisqu'il se reconstruit.
+    expect(loadEngines()).toHaveLength(1)
   })
 
   it('retire un moteur', () => {
@@ -103,12 +105,12 @@ describe('le registre', () => {
 
   it('survit à un stockage illisible', () => {
     localStorage.setItem('speed.engines.v1', '{ ceci n’est pas du JSON')
-    expect(loadEngines().map((m) => m.name)).toEqual(['Route', 'Sport'])
+    expect(loadEngines().map((m) => m.name)).toEqual(['V8'])
   })
 
   it('écarte une entrée enregistrée qui n\'est pas un moteur', () => {
     localStorage.setItem('speed.engines.v1', JSON.stringify([{ name: 'sans réglages' }]))
-    expect(loadEngines()).toHaveLength(2)
+    expect(loadEngines()).toHaveLength(1)
   })
 })
 

@@ -1,4 +1,4 @@
-import { createDefaultProfile, createFactoryProfiles } from './defaults'
+import { createFactoryProfiles, createV8Profile, knownFactoryProfiles } from './defaults'
 import { clampEngineDefinition } from './engine-definition'
 import { clampRealCar, type RealCar } from './real-car'
 import { isDriveMode, type DriveMode } from '../drivetrain/drive-mode'
@@ -320,8 +320,11 @@ export function captureOrigin(profile: Profile): ProfileOrigin {
  */
 function factoryOrigin(profile: Profile): ProfileOrigin {
   if (profile.origin) return deepCopy(profile.origin)
-  const livre = createFactoryProfiles().find((p) => p.id === profile.id)
-  return captureOrigin(livre ?? createDefaultProfile())
+  // Cherché parmi tous les calibrages connus, comme la reprise : un profil
+  // « Route » ou « Sport » enregistré doit retrouver **ses** valeurs, et non
+  // celles du profil livré du moment.
+  const livre = knownFactoryProfiles().find((p) => p.id === profile.id)
+  return captureOrigin(livre ?? createV8Profile())
 }
 
 /**
@@ -443,9 +446,12 @@ export function fromFile(text: string): Profile {
  * identifiant (`factoryOrigin`) : les deux chemins disent enfin la même chose.
  */
 function reconcile(profile: Partial<Profile>): Profile {
+  // Cherché parmi **tous** les calibrages connus, et non les seuls livrés : un
+  // profil « Route » ou « Sport » enregistré avant que le profil livré devienne
+  // le V8 doit garder sa base à lui, sinon il se voit complété avec les valeurs
+  // d'un autre.
   const base =
-    createFactoryProfiles().find((livre) => livre.id === profile.id) ??
-    createDefaultProfile()
+    knownFactoryProfiles().find((livre) => livre.id === profile.id) ?? createV8Profile()
   const complet: Profile = {
     id: typeof profile.id === 'string' && profile.id ? profile.id : newId(),
     name: typeof profile.name === 'string' && profile.name ? profile.name : base.name,
