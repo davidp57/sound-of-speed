@@ -428,6 +428,14 @@ function reconcile(profile: Partial<Profile>): Profile {
         : base.layers,
   }
 
+  // Le moteur désigné est repris tel quel, et simplement absent sinon. On ne lui
+  // en attribue pas d'office : un profil qui n'en désigne aucun joue ses propres
+  // valeurs, ce qu'il a toujours fait, et lui coller un moteur inventé
+  // prétendrait qu'il vient d'une bibliothèque où il n'a jamais été.
+  if (typeof profile.engineId === 'string' && profile.engineId) {
+    complet.engineId = profile.engineId
+  }
+
   // L'origine est reprise telle quelle quand elle est là, et simplement absente
   // sinon : un profil venu d'une version antérieure garde le repli d'avant
   // plutôt que de se voir attribuer une origine inventée.
