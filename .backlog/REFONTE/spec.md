@@ -54,11 +54,14 @@ course à bas régime » disparaît avec sa cause. Le clac de boîte, le rupteur
 pétarades et l'à-coup de passage sont synthétisés, parce qu'un événement court
 se rend mieux par une impulsion que par un échantillon.
 
-engine-sim ne tourne plus dans la voiture. Il devient un outil d'atelier qui
-**fabrique** les prises, hors temps réel, à sa cadence maximale. Ce mode corrige
-un défaut que ni le direct ni l'enregistré ne corrigeaient : l'ondulation du
-vilebrequin est dans le fichier, à sa vraie fréquence, alors que le pilotage en
-direct ne pouvait la moduler qu'à 45 Hz quand il en faudrait 121 pour un V8.
+engine-sim ne tourne plus dans la voiture, et cesse d'être la source des prises.
+« On ne fait plus de synthèse », écrit David sur les douze réglages du calcul ;
+« tous les sons seront enregistrés sauf les effets ». Il reste un outil
+d'atelier, sorti **en dernier recours** : quand aucun enregistrement n'existe
+pour un moteur qu'on veut, il en fabrique une banque hors temps réel. Ce
+repli garde son intérêt propre — l'ondulation du vilebrequin est alors dans le
+fichier, à sa vraie fréquence, alors que le pilotage en direct ne pouvait la
+moduler qu'à 45 Hz quand il en faudrait 121 pour un V8.
 
 **La boîte cesse de deviner de deux façons.** Une seule notion de l'état du
 mouvement — accélère, tient, ralentit — calculée à un endroit, avec une zone
@@ -68,9 +71,28 @@ le fait déjà : aujourd'hui ils sont en tours absolus, si bien qu'un moteur
 tournant à 11 000 tr/min passe ses rapports au même endroit qu'un V8 à 6 500, et
 qu'un moteur à 5 500 tape son rupteur avant d'avoir le droit de monter.
 
-**L'application se sépare en deux.** La voiture : un écran, ce qu'on lit en
-roulant, une poignée de choix. L'atelier : sur un vrai écran avec un vrai
-clavier, tout le réglage, les bancs, l'étalonnage, la fabrication des banques.
+**L'application se sépare en trois, pour trois publics qui ne se recouvrent
+pas.** La **voiture** : un écran, ce qu'on lit en roulant, une poignée de choix.
+L'app **utilisateur**, sur un vrai écran avec un vrai clavier : les profils, les
+réglages, et le simulateur pour écouter un moteur sans rouler. L'**atelier**,
+celle de David seul : engine-sim, la fabrication et la mesure des banques, les
+vingt-huit cotes de moteur, les bancs.
+
+Un même cœur, trois constructions. Ce n'est pas un mécanisme neuf : un drapeau
+posé à la fabrication met déjà les écrans de banc dans l'image de
+développement et les retire de la production. La refonte étend ce qui marche
+pour deux écrans à trois publics.
+
+**Les réglages se rangent en cinq groupes séparés**, et un profil cesse d'être
+un sac de cent cinquante-huit valeurs pour devenir un **assemblage** qui nomme
+un moteur, une boîte et un mode. On peut alors essayer le même V8 avec deux
+boîtes, ou la même boîte sur deux moteurs, et partager un moteur seul.
+
+**Beaucoup de réglages ne déménagent pas : ils disparaissent.** Le verrou
+d'écran, le son en arrière-plan et la source de vitesse se **forcent** — « pas
+besoin de paramètre », « GPS forcé en voiture ». Le mode avancé lui-même s'en
+va : « pas nécessaire si on simplifie les réglages ». Et l'étalonnage, qui
+demandait onze recopies à la main, passe en voiture avec un seul interrupteur.
 
 **Un compte fait le lien.** Créé automatiquement, sans courriel ni mot de passe.
 Il tient les profils, les met à l'abri, les porte d'un appareil à l'autre, et
@@ -229,14 +251,21 @@ appareil.
 - **Le mixage choisit les prises encadrantes** et fond entre elles, au lieu
   d'étirer une prise unique sur toute la plage. C'est la règle qui remplace
   l'ancrage unique.
-- **engine-sim quitte la voiture** et devient un outil d'atelier qui fabrique
-  les prises hors temps réel. Le mode « généré en direct » disparaît du produit.
-- **Les prises viennent de quatre sources**, dans cet ordre d'exploration :
-  engine-sim hors temps réel, les banques déjà sur le NAS, les dépôts publics
-  déjà repérés (`VehicleNoiseSynthesizer`, `exhaustnotes`, `engine-sound-generator`),
-  et les bibliothèques du commerce, à instruire. Pour un prototype la licence
-  ne gêne personne ; **une beta ouverte est une redistribution**, et la question
-  se tranche avant d'ouvrir.
+- **engine-sim quitte le produit.** « On ne fait plus de synthèse », et « tous
+  les sons seront enregistrés sauf les effets ». Le mode « généré en direct »
+  disparaît, et avec lui les douze réglages du calcul.
+- **Il reste dans l'atelier, en dernier recours** : quand aucun enregistrement
+  n'existe pour un moteur qu'on veut, il en fabrique une banque hors temps réel.
+  Choix de David contre la recommandation inverse — l'argument opposé était que
+  ses prises hériteraient du timbre qu'il juge perfectible. Comme l'atelier n'est
+  pas distribué, ce repli ne coûte rien au produit.
+- **Les prises viennent donc d'enregistrements**, dans cet ordre d'exploration :
+  les banques déjà sur le NAS, les dépôts publics déjà repérés
+  (`VehicleNoiseSynthesizer`, `exhaustnotes`, `engine-sound-generator`), les
+  bibliothèques du commerce, à instruire — et engine-sim seulement si rien
+  d'autre ne couvre le moteur visé. Pour un prototype la licence ne gêne
+  personne ; **une beta ouverte est une redistribution**, et la question se
+  tranche avant d'ouvrir.
 
 ### La mécanique
 
@@ -255,20 +284,74 @@ appareil.
 - **Une bascule par garde-fou**, pour rouler avec et sans et isoler celui qui
   dérape. Idée de David, retenue.
 
-### Les deux applications
+### Cinq groupes de réglages, et un profil qui n'est plus qu'un assemblage
 
-- **Deux interfaces, un seul dépôt.** La voiture ne porte que ce qui se lit et
-  se choisit en roulant ; l'atelier porte le réglage, les bancs et
-  l'étalonnage.
-- **Ce que la voiture garde** : le profil, le moteur, l'échappement, le point
-  d'écoute, le volume, la coupure du son, le visage de l'écran, le verrou
-  d'écran, le mode de boîte. La liste complète est à arrêter par David sur le
-  relevé des cent cinquante-huit réglages, qui accompagne le lot MENAGE-UI.
+Décidé par David le 10 septembre 2026 : « je penche pour une séparation nette
+des groupes de paramètres, moteur / boîte / mode de conduite / fonctions de
+l'app ». Ses notes du relevé en font apparaître un cinquième, qu'il n'avait pas
+nommé.
+
+| Groupe | Ce qu'il porte | Où il vit |
+|---|---|---|
+| **Moteur** | les cotes, la banque de sons, le rupteur, le caractère sonore | partageable, choisi dans une bibliothèque |
+| **Boîte** | les rapports et le pont | partageable, mais ses seuils se **déduisent** |
+| **Mode de conduite** | le tempérament — route ou sport | partageable, module la boîte |
+| **Voiture réelle** | le signal GPS, son bruit, les accélérations plausibles | **un seul par compte**, jamais dans un profil |
+| **Fonctions de l'app** | volume, écran, cadrans, compte, hors réseau | préférences de l'appareil |
+
+- **Un profil ne contient plus de réglages** : il nomme un moteur, une boîte et
+  un mode. C'est ce qui permet d'essayer le même moteur avec deux boîtes sans
+  refaire un profil entier.
+- **La boîte est une conséquence, pas une liste.** « Lier les paramètres de
+  boite au moteur + le mode — sport ou route » : le moteur donne le rupteur, le
+  mode donne le tempérament, les seuils s'en déduisent. C'est l'idée des seuils
+  dérivés du rupteur, étendue à toute la boîte, et c'est ce qui fait qu'un
+  moteur de moto ne conduira plus comme un V8.
+- **La voiture réelle est la seule entité dont il n'existe qu'un exemplaire.**
+  On ne la choisit pas comme on choisit un moteur : c'est celle qu'on a. Elle
+  appartient donc au compte et non au profil, et elle se renseigne de deux
+  façons — un modèle pris dans un catalogue, ou une mesure faite en roulant.
+  Note de David : « valeurs par défaut en atelier, potentiellement adaptées avec
+  le profil "voiture réelle" quand il est disponible ».
+
+### Les trois constructions
+
+- **Un cœur commun, trois versions produites à la fabrication.** La version
+  voiture n'embarque même pas le code des réglages : elle se charge plus vite
+  hors réseau, ce qui compte sur un navigateur embarqué faible. Un seul contrôle
+  qualité, un seul jeu de tests, trois images.
+- **L'atelier n'est pas distribué.** C'est ce qui permet de garder engine-sim
+  sans livrer cent quarante et un kilo-octets de WebAssembly et vingt-huit cotes
+  de moteur à des gens qui n'en feront rien.
+- **Le simulateur de vitesse devient public** dans l'app utilisateur. C'est un
+  renversement assumé : le dépôt dit qu'« un simulateur de vitesse dans une
+  voiture n'est qu'un moyen de se tromper sur ce qu'on entend », et cela reste
+  vrai — mais hors de la voiture, c'est précisément l'outil qui permet d'essayer
+  un moteur sans rouler.
+- **Ce que la voiture garde**, d'après le relevé arbitré par David : le profil
+  et la banque, le point d'écoute, le volume, la coupure du son, le visage de
+  l'écran, le mode de boîte, quatre réglages de caractère — rétrogradage forcé,
+  rapports descendus au plus, pétarade, clac de boîte —, l'étalonnage, et la
+  gestion du compte et du hors réseau.
 - **Aucun curseur en voiture**, sauf le volume — un choix se fait d'un coup
   d'œil, un curseur se dose en regardant. La règle vient de David lui-même, et
   la refonte la garde.
 - **Aucune animation**, hors l'aiguille d'un cadran, dont le mouvement *est* la
   valeur. La règle n'a plus d'exception depuis le 7 septembre.
+
+### Ce qui disparaît plutôt que de déménager
+
+- **Le verrou d'écran, le son en arrière-plan et la source de vitesse** sont
+  forcés : « pas besoin de paramètre », « GPS forcé en voiture ».
+- **Le mode avancé** : « pas nécessaire si on simplifie les réglages ».
+- **Les douze réglages du calcul de synthèse** quittent le produit avec
+  engine-sim.
+- **Les onze recopies d'étalonnage** deviennent automatiques, derrière un seul
+  interrupteur — « activer le profil étalonné ON/OFF ».
+- **Les deux champs d'identifiants de dépôt**, remplacés par le compte. Il
+  restera « le mini code à taper quand même si on veut se connecter à un compte
+  existant ».
+- **L'installation sur l'écran d'accueil** : « pas utile je pense ».
 
 ### Le compte et le serveur
 
