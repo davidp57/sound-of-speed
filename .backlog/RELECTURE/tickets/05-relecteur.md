@@ -1,6 +1,6 @@
 # 05 — Le relecteur déroule une session
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite — il se contente des
 journaux déjà déposés

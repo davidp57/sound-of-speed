@@ -1,6 +1,6 @@
 # 07 — Le repère copiable
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 05 — le relecteur déroule une session
 

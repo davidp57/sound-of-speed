@@ -1579,6 +1579,43 @@ navigateur ne sait pas compresser, la tranche part en clair. Les profils et les
 relevés de mesure, eux, restent en clair : l'application les retélécharge et les
 lit, et la bibliothèque de profils cesserait de fonctionner.
 
+### Le relecteur
+
+Une page à part, `/relecteur.html`, pour revoir un trajet au bureau au lieu de
+le raconter de mémoire. Elle n'est jamais chargée par l'application de conduite :
+sa carte et son code vivent dans leur propre paquet, tiré seulement quand on
+ouvre son adresse.
+
+Il liste les sessions du serveur, la plus récente en tête, et recolle leurs
+tranches tout seul. Il lit les fichiers en clair comme les compressés, le
+journal comme la capture — les essais des 8, 9 et 10 septembre 2026, antérieurs
+à la capture continue, restent relisibles avec leur seul journal.
+
+La **timeline** porte lecture, pause et déplacement libre, jusqu'à vingt fois la
+vitesse réelle. Elle est marquée des faits du journal : arrêts, redémarrages du
+suivi, salves de positions rejetées, coupures du son, changements de
+configuration. Ce sont les moments qu'on cherche.
+
+**Ce qui est deviné se voit.** Un journal ne porte le régime, le rapport et la
+charge qu'une fois toutes les dix secondes : entre deux relevés, les valeurs
+sont interpolées et l'écran dit à quelle distance se trouve le relevé le plus
+proche. Le rapport n'est jamais interpolé — entre la troisième et la quatrième,
+il n'y a pas de trois et demi.
+
+La **carte** montre le trajet et le véhicule qui le suit ; un clic sur le tracé
+emmène la timeline à cet endroit. Elle demande le réseau, ce qui est sans
+conséquence : le debriefing se fait au bureau.
+
+Le bouton **Copier le repère** met dans le presse-papier une ligne lisible —
+session, moment, vitesse, régime, rapport — suivie de l'état complet et des
+coordonnées. C'est ce qu'on colle dans une conversation pour désigner un moment
+précis.
+
+En développement, les dossiers du serveur n'existent pas : la variable
+`SPEED_DATA` désigne un dossier local qui contient `journal/` et `traces/` — le
+partage du NAS, par exemple — et le serveur de développement les sert comme le
+ferait nginx.
+
 ### La capture du trajet
 
 Elle **démarre au démarrage du GPS**, si la remontée est au dernier cran, et

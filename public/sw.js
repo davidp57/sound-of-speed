@@ -96,7 +96,11 @@ self.addEventListener('fetch', (event) => {
   // qui référence les ressources empreintes, donc elle seule fait basculer sur
   // une nouvelle version. Hors ligne, la copie en cache prend le relais.
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request, SHELL, '/index.html'))
+    // Deux pages, deux replis. Sans cette distinction, ouvrir le relecteur hors
+    // réseau afficherait l'application de conduite — ce qui se lit comme un
+    // bug, alors que c'est un repli.
+    const repli = url.pathname.startsWith('/relecteur') ? '/relecteur.html' : '/index.html'
+    event.respondWith(networkFirst(request, SHELL, repli))
     return
   }
 

@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -75,6 +76,59 @@ const audioListing: Plugin = {
   },
 }
 
+
+/**
+ * Les dossiers du serveur, servis en développement.
+ *
+ * Le relecteur lit `journal/` et `traces/` sur le serveur qui sert
+ * l'application. En développement, ce serveur est celui de Vite, qui n'a ni
+ * l'un ni l'autre : sans ce relais, le relecteur ne peut se mettre au point que
+ * déployé, ce qui revient à ne pas pouvoir le mettre au point.
+ *
+ * `SPEED_DATA` désigne un dossier qui contient `journal/` et `traces/` — le
+ * partage du NAS, ou une copie. Le listage imite celui de nginx, la seule chose
+ * dont l'application dépende ; l'authentification, elle, n'est pas rejouée, un
+ * poste de développement n'ayant rien à protéger.
+ */
+const dataRoot = process.env['SPEED_DATA'] ?? ''
+const serverFolders: Plugin = {
+  name: 'speed:server-folders',
+  configureServer(server) {
+    if (dataRoot === '') return
+    server.middlewares.use((req, res, next) => {
+      const chemin = decodeURIComponent((req.url ?? '').split('?')[0] ?? '')
+      const dossier = ['/journal/', '/traces/', '/mesures/', '/profiles/'].find((candidat) =>
+        chemin.startsWith(candidat),
+      )
+      if (dossier === undefined || chemin.includes('..')) return next()
+
+      const local = join(dataRoot, chemin)
+      if (chemin.endsWith('/')) {
+        try {
+          const entries = readdirSync(local, { withFileTypes: true }).map((entry) => ({
+            name: entry.name,
+            type: entry.isDirectory() ? 'directory' : 'file',
+          }))
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify(entries))
+        } catch {
+          res.statusCode = 404
+          res.end()
+        }
+        return
+      }
+
+      try {
+        res.setHeader('Content-Type', 'application/octet-stream')
+        res.end(readFileSync(local))
+      } catch {
+        res.statusCode = 404
+        res.end()
+      }
+    })
+  },
+}
+
 /**
  * Le HTTPS n'est activé qu'à la demande, par `npm run dev:mobile`.
  *
@@ -102,11 +156,28 @@ const bench = process.env['BENCH'] === '1'
 
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(version), __BENCH__: JSON.stringify(bench) },
-  plugins: [vue(), watchVersion, audioListing, ...(useHttps ? [basicSsl()] : [])],
+  plugins: [vue(), watchVersion, audioListing, serverFolders, ...(useHttps ? [basicSsl()] : [])],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   server: {
     host: true, // accessible depuis le téléphone sur le réseau local
+  },
+  build: {
+    /**
+     * Deux pages, et c'est ce qui garde le relecteur hors de la voiture.
+     *
+     * Il ne sert qu'au bureau : sa carte, sa bibliothèque de cartographie et
+     * son code de lecture n'ont aucune raison d'être téléchargés par une
+     * application qui doit se charger hors réseau sur un téléphone. Une entrée
+     * séparée les met dans leur propre paquet, tiré seulement quand on ouvre
+     * `/relecteur.html`.
+     */
+    rollupOptions: {
+      input: {
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
+        relecteur: fileURLToPath(new URL('./relecteur.html', import.meta.url)),
+      },
+    },
   },
 })
