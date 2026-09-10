@@ -39,9 +39,17 @@ Toutes les évolutions notables du projet. Format
   microsecondes, ce qui a coûté une semaine de diagnostic.
 
   Les tranches partent par la file de remontée déjà écrite, toutes les cinq
-  minutes, et **ce qui reste part quand la capture s'arrête** : la fin d'un
-  trajet est souvent ce qu'on cherche à revoir, et elle n'a plus de tour de
-  boucle pour atteindre ses cinq minutes. Rien n'est gardé dans le téléphone : trente-six minutes à dix relevés
+  minutes, et **ce qui reste part après quinze secondes à l'arrêt**. La dernière
+  tranche n'a pas cinq minutes devant elle, et personne n'arrête l'application :
+  David « sort de la voiture, et quand il s'éloigne elle s'éteint ». Un arrêt qui
+  dure est le dernier moment où l'on est encore là pour envoyer — le temps de se
+  garer suffit, un feu rouge n'y suffit pas, et le déclencheur ne tire qu'une
+  fois par arrêt pour qu'un embouteillage ne produise pas un fichier par quart de
+  minute.
+
+  Il compte sur l'horloge murale et non sur le temps de session : le pas de la
+  boucle est plafonné à un quart de seconde, si bien qu'une page en arrière-plan
+  voit son temps avancer quatre fois moins vite que le monde. Rien n'est gardé dans le téléphone : trente-six minutes à dix relevés
   par seconde font vingt-deux mille lignes, et le stockage local ne les
   absorberait pas trajet après trajet.
 

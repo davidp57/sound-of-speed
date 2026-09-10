@@ -37,6 +37,7 @@ import { Journal, newSessionId } from './core/journal/journal'
 import { Capture, type CaptureHeader } from './core/capture/capture'
 import { depositCaptureSlice } from './core/capture/deposit'
 import { captureHealth } from './core/capture/health'
+import { StandstillFlush } from './core/capture/standstill'
 import { JournalCollector, type SoundCost } from './core/journal/collect'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
 import { toWav } from './bench/wav'
@@ -882,6 +883,14 @@ export const capturing = computed(
 
 /** L'état retenu au tour précédent, pour n'inscrire que les bascules. */
 let wasCapturing = false
+/**
+ * Le déclencheur qui dépose ce qui attend quand la voiture s'arrête.
+ *
+ * Sans lui, la dernière tranche d'un trajet n'est jamais déposée : personne
+ * n'arrête l'application, la voiture s'éteint toute seule une fois qu'on s'en
+ * éloigne, et le navigateur disparaît avec elle sans prévenir.
+ */
+const standstill = new StandstillFlush()
 let captureBusy = false
 
 /**
@@ -931,7 +940,7 @@ function captureHeader(): CaptureHeader {
  * cadence du fichier est alors celle du GPS, ce qui est la seule qui décrive
  * vraiment ce que la voiture a livré.
  */
-function observeCapture(nowMs: number, out: CaptureOutput): void {
+function observeCapture(nowMs: number, out: CaptureOutput, stopped: boolean): void {
   const allowed = capturing.value
   if (allowed !== wasCapturing) {
     wasCapturing = allowed
@@ -944,6 +953,17 @@ function observeCapture(nowMs: number, out: CaptureOutput): void {
       depositCaptureIfDue(nowMs, true)
     }
   }
+  // Un arrêt qui dure est le dernier moment où l'on est encore là pour
+  // envoyer. Quinze secondes suffisent à se garer, pas à un feu rouge.
+  //
+  // Sur l'horloge murale, et non sur le temps de session : le pas de la boucle
+  // est plafonné à un quart de seconde, si bien qu'une page en arrière-plan —
+  // écran éteint, ce qui est le cas normal en roulant — voit son temps de
+  // session avancer quatre fois moins vite que le monde. Quinze secondes de
+  // session y feraient une minute de stationnement, et la voiture serait
+  // éteinte avant.
+  if (allowed && standstill.tick(Date.now(), stopped)) depositCaptureIfDue(nowMs, true)
+
   if (!allowed || pendingSamples.length === 0) return
 
   const reçus = pendingSamples
@@ -1546,13 +1566,17 @@ function step(dt: number): void {
     longitude: geolocation.lastPosition?.longitude ?? null,
     sound: soundCost(),
   })
-  observeCapture(journalElapsedMs, {
-    kmh: speed.kmh,
-    accelMs2: speed.accelMs2,
-    rpm: engineState.rpm,
-    gear: gearboxState.gear + 1,
-    load: engineState.load,
-  })
+  observeCapture(
+    journalElapsedMs,
+    {
+      kmh: speed.kmh,
+      accelMs2: speed.accelMs2,
+      rpm: engineState.rpm,
+      gear: gearboxState.gear + 1,
+      load: engineState.load,
+    },
+    speed.atStandstill,
+  )
   depositJournalIfDue(journalElapsedMs)
   depositCaptureIfDue(journalElapsedMs)
   flushUploadsIfDue()

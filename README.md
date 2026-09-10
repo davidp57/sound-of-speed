@@ -1605,6 +1605,12 @@ délibéré est une alarme qu'on apprend à ignorer. La frontière entre orange 
 rouge est la récupérabilité, pas la gravité ressentie. Le détail se lit sur
 l'écran de télémétrie.
 
+Les tranches partent toutes les cinq minutes, et **ce qui reste part après
+quinze secondes à l'arrêt** : la dernière tranche n'a pas cinq minutes devant
+elle, et une voiture s'éteint toute seule une fois qu'on s'en éloigne. Le temps
+de se garer suffit à déclencher l'envoi ; un feu rouge n'y suffit pas, et un
+embouteillage ne produit qu'un fichier, pas un par quart de minute.
+
 Rien n'est gardé dans le téléphone : une session de trente-six minutes à dix
 relevés par seconde fait vingt-deux mille lignes, et le stockage local du
 navigateur ne l'absorberait pas trajet après trajet.

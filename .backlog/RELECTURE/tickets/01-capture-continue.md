@@ -39,3 +39,6 @@ garde pour renvoyer.
 - [ ] La capture porte l'identifiant de session du journal, pour qu'on puisse
       apparier les deux.
 - [ ] Coupure du réseau en roulant : les tranches partent au retour, sans perte.
+- [ ] Quinze secondes à l'arrêt déposent ce qui attend, une seule fois par
+      arrêt : personne n'arrête l'application, la voiture s'éteint toute seule
+      quand on s'en éloigne.
