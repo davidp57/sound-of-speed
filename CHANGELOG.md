@@ -8,6 +8,15 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le rapport est inscrit au journal à l'instant où il change.** Le relevé
+  périodique le portait toutes les dix secondes : il prouvait qu'un passage
+  avait eu lieu, jamais quand ni combien. Le relecteur s'en sert quand il est
+  là, et mesure alors la durée d'un enchaînement au lieu de l'encadrer.
+- **Un relevé de l'accéléromètre en télémétrie.** Cadence réelle, présence de
+  l'accélération sans la gravité, amplitude observée : de quoi savoir, en
+  roulant, si la voiture peut mesurer l'accélération au lieu de la déduire d'une
+  vitesse GPS qui n'arrive qu'une fois par seconde.
+
 - **Un relecteur, pour revoir un trajet au lieu de le raconter de mémoire.** Il
   vit sur une page à part, `/relecteur.html`, et déroule une session enregistrée
   comme un lecteur vidéo : lecture, pause, déplacement libre, vitesse réglable
@@ -134,6 +143,13 @@ Toutes les évolutions notables du projet. Format
 
   Le détail se lit sur l'écran de télémétrie, en toutes lettres, avec ce qui a
   été retenu et ce qui est parti.
+
+### Modifié
+
+- **Aucune image publiée ne porte plus les écrans de banc.** L'image
+  d'intégration les portait, et l'application y démarrait donc sur le simulateur
+  au lieu du GPS — trente-six secondes de simulateur sur l'essai du
+  10 septembre 2026. Le banc reste en développement.
 
 ### Modifié
 

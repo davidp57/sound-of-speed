@@ -414,15 +414,16 @@ Mesuré au banc, en croisière tenue à 110 km/h :
 Un quart de la charge pleine du profil Route en pointe, sur une vitesse qui ne
 bouge pas : voilà ce que le premier mode cache.
 
-**Le simulateur n'existe pas en production.** Dans la voiture qui sert au
-quotidien il n'a aucun sens, et il n'y serait qu'un moyen de se tromper sur ce
-qu'on entend. La construction de production ne le propose pas, et la source au
-démarrage y est donc le GPS.
+**Le simulateur n'existe dans aucune image publiée.** Dans une voiture il n'a
+aucun sens, et il n'y serait qu'un moyen de se tromper sur ce qu'on entend. Ni
+`:latest` ni `:develop` ne le proposent, et la source au démarrage est donc le
+GPS partout.
 
-L'image `:develop`, elle, le porte — avec l'écran de réglage de la synthèse. La
-construction n'y met ces écrans que si `BENCH=1` est posé, ce que fait le
-workflow pour cette étiquette et pour elle seule. C'est ce qui permet de régler
-un son garé, sur l'appareil qui le rendra faux en roulant.
+L'image `:develop` l'a porté jusqu'au 10 septembre 2026, avec l'écran de réglage
+de la synthèse. C'est elle qu'on essaie en roulant, et elle démarrait sur le
+simulateur : sur l'essai de ce soir-là, trente-six secondes de simulateur avant
+la première position. Le banc reste en développement, où l'on règle un son garé,
+et `BENCH=1` permet de le mettre dans une image construite à la main.
 
 Autres commandes :
 

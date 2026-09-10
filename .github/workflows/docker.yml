@@ -70,11 +70,10 @@ jobs:
           # Les deux architectures que l'on rencontre sur un NAS. La
           # construction reste native grâce à BUILDPLATFORM dans le Dockerfile.
           platforms: linux/amd64,linux/arm64
-          # Les écrans de banc, dans l'image d'intégration seulement : c'est
-          # celle qu'on essaie dans la voiture, et c'est garé qu'on règle un
-          # timbre. La production n'en veut pas.
-          build-args: |
-            BENCH=${{ github.ref == 'refs/heads/develop' && '1' || '' }}
+          # Aucune image publiée ne porte les écrans de banc, pas même
+          # l'image d'intégration : c'est elle qu'on essaie dans la voiture, et
+          # elle démarrait sur le simulateur au lieu du GPS. Le banc reste en
+          # développement, où il a sa place.
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
