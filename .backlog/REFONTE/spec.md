@@ -1,6 +1,7 @@
 # REFONTE — le son, la mécanique, l'écran, et des comptes
 
-**Statut :** ⬜ prêt
+**Statut :** 🔄 en cours — le volet « cinq groupes de réglages » est découpé en
+quatre tickets ; les autres volets attendent leur tour
 **Branche :** à ouvrir, un lot d'exécution à la fois — la refonte ne tient pas
 dans une branche unique
 **Version visée :** 0.5
@@ -403,6 +404,17 @@ nommé.
   livraison — ce qui compense l'absence de release.
 
 ### La forme du lot
+
+**Le volet « cinq groupes de réglages » est découpé** en quatre tickets, le
+10 septembre 2026, David ayant choisi de commencer par lui : c'est la racine
+dont les trois autres volets dépendent — les applications ont besoin de savoir
+quoi montrer, les comptes quoi stocker, la banque dense où se déclarer. Les
+volets du son, des trois applications et des comptes ne sont pas découpés :
+écrire leurs tickets avant que leur conception soit tranchée donnerait des
+frontières qui ne survivraient pas à la première décision. Le volet son attend
+en plus une écoute — le relief de charge travaillait sur zéro jusqu'au
+correctif du lot HORODATAGE, et le son n'a donc jamais été jugé sur une charge
+vivante.
 
 Ce lot est un **cadre**, pas une unité de travail : il ne tient pas dans une
 branche. Les lots d'exécution en sont dérivés — MOUVEMENT pour la boîte,
