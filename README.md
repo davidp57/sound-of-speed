@@ -1607,10 +1607,12 @@ critère, quand la durée n'est pas mesurable, est la densité : plus d'un rappo
 franchi par relevé, c'est que la boîte a bougé plusieurs fois entre deux
 regards. Monter de la première à la sixième en cinquante secondes ne compte pas.
 
-Sous la barre, un **relief de vingt-huit pixels** montre où l'on a accéléré, en
-vert au-dessus de l'axe, et où l'on a freiné, en rouge en dessous. Chaque
+Sous la barre, un **relief de vingt-huit pixels** trace l'accélération en une
+courbe continue, verte au-dessus de l'axe et rouge en dessous — le même tracé
+découpé à zéro, pour que la couleur change sans que le trait se coupe. Chaque
 colonne garde l'extrême de ce qu'elle couvre, et non la moyenne, qui effacerait
-un freinage bref. Les **passages de rapport** s'y posent en chevrons sur l'axe :
+un freinage bref. Un trou d'enregistrement, lui, coupe le trait : le relier
+tracerait une pente qui n'a pas eu lieu. Les **passages de rapport** s'y posent en chevrons sur l'axe :
 vers le haut pour une montée, vers le bas pour un rétrogradage, d'autant plus
 hauts qu'ils franchissent de rapports. Les lire sur la même ligne que l'effort
 montre d'un coup ce qu'on cherche — un rétrogradage en pleine accélération, une

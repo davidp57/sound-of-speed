@@ -11,13 +11,17 @@ import type { StatePoint } from './model'
  * tracer tous coûterait cher pour un dessin qu'on ne verrait pas mieux. Chaque
  * colonne garde l'extrême de ce qu'elle couvre, et non la moyenne : une
  * moyenne efface un freinage bref, qui est justement ce qu'on cherche.
+ *
+ * **Une valeur signée par colonne, et non deux extrêmes.** Le dessin est une
+ * courbe continue dont la couleur change au passage par zéro ; il lui faut une
+ * valeur par abscisse, pas un maximum et un minimum qui se superposeraient.
  */
 
 export interface ProfileColumn {
-  /** Accélération la plus forte de la colonne, en m/s². Zéro s'il n'y en a pas. */
-  up: number
-  /** Freinage le plus fort, en m/s², compté positivement. */
-  down: number
+  /** Accélération en m/s², signée : positive en accélérant, négative en freinant. */
+  value: number
+  /** Faux quand aucun relevé ne couvre cette colonne — un trou, pas un zéro. */
+  filled: boolean
 }
 
 export interface AccelProfile {
@@ -27,11 +31,11 @@ export interface AccelProfile {
 }
 
 /**
- * Découpe la durée en colonnes et garde les extrêmes de chacune.
+ * Découpe la durée en colonnes et garde l'extrême de chacune.
  *
- * Les colonnes sans relevé restent vides plutôt que d'hériter de leur voisine :
- * un trou dans l'enregistrement est une information, et le combler dessinerait
- * une conduite qui n'a pas eu lieu.
+ * Les colonnes que rien ne couvre restent vides plutôt que d'hériter de leur
+ * voisine : un trou dans l'enregistrement est une information, et le combler
+ * dessinerait une conduite qui n'a pas eu lieu.
  */
 export function accelProfile(
   states: StatePoint[],
@@ -39,7 +43,10 @@ export function accelProfile(
   columns: number,
 ): AccelProfile {
   const largeur = Math.max(1, Math.floor(columns))
-  const colonnes: ProfileColumn[] = Array.from({ length: largeur }, () => ({ up: 0, down: 0 }))
+  const colonnes: ProfileColumn[] = Array.from({ length: largeur }, () => ({
+    value: 0,
+    filled: false,
+  }))
   if (states.length === 0 || durationMs <= 0) return { columns: colonnes, peak: 0 }
 
   // Au-delà de trois fois la cadence habituelle, c'est un trou dans
@@ -52,8 +59,8 @@ export function accelProfile(
 
   const poser = (index: number, valeur: number): void => {
     const colonne = colonnes[index] as ProfileColumn
-    if (valeur > colonne.up) colonne.up = valeur
-    if (-valeur > colonne.down) colonne.down = -valeur
+    if (!colonne.filled || Math.abs(valeur) > Math.abs(colonne.value)) colonne.value = valeur
+    colonne.filled = true
   }
 
   for (let i = 0; i < states.length; i += 1) {
@@ -74,6 +81,31 @@ export function accelProfile(
   }
 
   return { columns: colonnes, peak }
+}
+
+/**
+ * Les tronçons continus de la courbe.
+ *
+ * Un trou d'enregistrement coupe le trait : relier ses deux bords tracerait une
+ * pente qui n'a pas eu lieu, et c'est exactement ce qu'on refuse de dessiner.
+ * Chaque tronçon est une suite d'abscisses et de valeurs, prête à devenir une
+ * polyligne.
+ */
+export function profileRuns(columns: ProfileColumn[]): { x: number; value: number }[][] {
+  const runs: { x: number; value: number }[][] = []
+  let courant: { x: number; value: number }[] = []
+
+  for (const [x, colonne] of columns.entries()) {
+    if (!colonne.filled) {
+      if (courant.length > 0) runs.push(courant)
+      courant = []
+      continue
+    }
+    courant.push({ x, value: colonne.value })
+  }
+  if (courant.length > 0) runs.push(courant)
+
+  return runs
 }
 
 /** L'écart habituel entre deux relevés : la médiane, que les trous ne bougent pas. */

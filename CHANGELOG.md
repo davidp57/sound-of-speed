@@ -48,10 +48,12 @@ Toutes les évolutions notables du projet. Format
   neuf moments ressortent, dont les allers-retours deuxième-quatrième relevés
   entre 290 et 310 secondes.
 
-  Sous la barre, un **relief de vingt-huit pixels** montre les accélérations en
-  vert et les freinages en rouge, chaque colonne gardant l'extrême de ce qu'elle
-  couvre — une moyenne effacerait le freinage bref, qui est justement ce qu'on
-  cherche. Les **passages de rapport** s'y posent en chevrons sur l'axe, vers le
+  Sous la barre, un **relief de vingt-huit pixels** trace l'accélération en une
+  courbe continue, verte au-dessus de l'axe et rouge en dessous : le même tracé
+  découpé à zéro, pour que la couleur change sans que le trait se coupe. Chaque
+  colonne garde l'extrême de ce qu'elle couvre — une moyenne effacerait le
+  freinage bref, qui est justement ce qu'on cherche — et un trou
+  d'enregistrement coupe le trait plutôt que de se laisser traverser. Les **passages de rapport** s'y posent en chevrons sur l'axe, vers le
   haut pour une montée et vers le bas pour un rétrogradage : les lire sur la
   même ligne que l'effort montre d'un coup un rétrogradage en pleine
   accélération, ou une montée en freinant.
