@@ -89,6 +89,16 @@ import {
   synthSupported,
   archiveProgress,
   exportServerData,
+  engineList,
+  activeEngine,
+  activeEngineDrifted,
+  engineUsage,
+  chooseEngine,
+  saveActiveAsEngine,
+  updateDesignatedEngine,
+  forgetEngine,
+  exportEngine,
+  importEngine,
 } from '../state'
 
 /**
@@ -689,6 +699,40 @@ function impliedCylinders(index: number): number | null {
 }
 
 /**
+ * Les moteurs enregistrés.
+ *
+ * Le message dit ce qui vient de se passer et s'efface : enregistrer un moteur
+ * ou reporter des écarts dedans sont des gestes dont on veut la confirmation, et
+ * dont on ne veut pas la trace permanente.
+ */
+const engineFileInput = ref<HTMLInputElement | null>(null)
+const newEngineName = ref('')
+const engineNote = ref('')
+function direMoteur(message: string): void {
+  engineNote.value = message
+  setTimeout(() => {
+    engineNote.value = ''
+  }, 10_000)
+}
+function onSaveEngine(): void {
+  direMoteur(saveActiveAsEngine(newEngineName.value))
+  newEngineName.value = ''
+}
+function onUpdateEngine(): void {
+  direMoteur(updateDesignatedEngine())
+}
+function onExportEngine(): void {
+  if (activeEngine.value) direMoteur(exportEngine(activeEngine.value.id))
+}
+async function onImportEngine(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  direMoteur(importEngine(await file.text()))
+}
+
+/**
  * Rapatriement des données du serveur.
  *
  * Le message reste affiché quelques secondes puis s'efface : il porte le compte
@@ -918,6 +962,58 @@ async function rapatrier(): Promise<void> {
           <button @click="onShare()">Fermer</button>
         </div>
         <p v-if="shareNote" class="note">{{ shareNote }}</p>
+      </div>
+
+      <div class="engines">
+        <span class="note">Moteur</span>
+        <p class="note">
+          Un moteur, c'est ses réglages, sa banque de sons, ses couches et son
+          mixage — tout ce qui fait qu'on le reconnaît. Il vit à part du profil :
+          on peut l'envoyer seul, et le corriger une fois pour tous les profils
+          qui le jouent.
+        </p>
+        <div class="choices">
+          <select
+            :value="activeEngine?.id ?? ''"
+            @change="chooseEngine(($event.target as HTMLSelectElement).value)"
+          >
+            <option value="" disabled>Aucun moteur désigné</option>
+            <option v-for="moteur in engineList" :key="moteur.id" :value="moteur.id">
+              {{ moteur.name }}{{ engineUsage(moteur.id) > 1 ? ` — ${engineUsage(moteur.id)} profils` : '' }}
+            </option>
+          </select>
+          <button :disabled="!activeEngine" @click="onExportEngine()">Exporter le moteur</button>
+          <button @click="engineFileInput?.click()">Importer un moteur</button>
+          <input
+            ref="engineFileInput"
+            type="file"
+            accept="application/json,.json"
+            hidden
+            @change="onImportEngine"
+          />
+        </div>
+        <p v-if="activeEngine?.source" class="note muted">{{ activeEngine.source }}</p>
+        <p v-if="activeEngineDrifted" class="note warn">
+          Ce profil a été affiné depuis qu'il a chargé « {{ activeEngine?.name }} » :
+          il ne sonne plus comme lui. Les écarts restent à ce profil, sauf si vous
+          les reportez dans le moteur.
+          <button @click="onUpdateEngine()">Reporter dans le moteur</button>
+        </p>
+        <div class="choices">
+          <input
+            v-model="newEngineName"
+            placeholder="Nom du moteur à enregistrer"
+            @keyup.enter="onSaveEngine()"
+          />
+          <button @click="onSaveEngine()">Enregistrer ce moteur</button>
+          <button
+            v-if="activeEngine && engineUsage(activeEngine.id) === 0"
+            @click="forgetEngine(activeEngine.id)"
+          >
+            Oublier
+          </button>
+        </div>
+        <p v-if="engineNote" class="note">{{ engineNote }}</p>
       </div>
 
       <div class="library">

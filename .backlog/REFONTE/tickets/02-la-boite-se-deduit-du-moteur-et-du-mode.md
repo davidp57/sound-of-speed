@@ -37,6 +37,21 @@ explicite au lieu de le laisser dans cinq nombres.
 
 Cinq curseurs disparaissent de l'écran au passage.
 
+## Où le mode se choisit
+
+Sur l'**écran de conduite**, demandé par David le 10 septembre 2026 :
+
+> dans l'interface, je verrais bien les compteurs, le rapport engagé (comme
+> c'est actuellement) et juste en dessous les choix de boite (auto/manuel,
+> route/sport)
+
+Donc deux choix côte à côte sous les cadrans : la commande — automatique ou
+manuelle — et le mode — route ou sport. Ce sont deux listes à toucher une fois,
+jamais des curseurs : la règle du « pas de curseur en voiture » tient.
+
+C'est cohérent avec le relevé des réglages qu'il a arbitré, où le mode de
+conduite est le seul réglage de tempérament qui reste au volant.
+
 ## Critères d'acceptation
 
 - [ ] Les seuils de montée sont exprimés en fraction du rupteur du moteur
@@ -50,6 +65,8 @@ Cinq curseurs disparaissent de l'écran au passage.
       au-dessus de son propre rupteur. Le plafonnement de dernier recours devient
       inutile — s'il reste, c'est comme garde-fou, plus comme mécanisme.
 - [ ] Les cinq curseurs de régimes de passage quittent l'écran de réglage.
+- [ ] Le mode se choisit sur l'écran de conduite, sous les cadrans, à côté de la
+      commande automatique ou manuelle — deux listes, aucun curseur.
 - [ ] Les profils déjà enregistrés sont repris : les seuils absolus qu'ils
       portent se convertissent en fractions, et le comportement de chacun ne
       change pas — sauf là où il était incohérent avec son moteur.

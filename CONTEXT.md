@@ -250,6 +250,17 @@ boîte parfaitement lisse, ce qu'aucune n'est.
 
 ## La configuration
 
+**Moteur** (_engine_, `EngineEntity`) :
+Ce qui fait qu'on reconnaît un moteur : ses réglages — ralenti, rupteur,
+inertie, frein moteur —, sa banque de sons, ses couches et son mixage. C'est une
+entité qui a un nom, qu'on enregistre et qu'on envoie **seule** ; un profil la
+désigne au lieu d'en recopier les valeurs, ce qui permet de la corriger une fois
+pour tous les profils qui la jouent. Elle ne porte ni les rapports, ni le pont,
+ni le tempérament : ce sont la **boîte** et le **mode de conduite**.
+_Ne pas confondre_ avec `EnginePreset`, qui n'est que la section des réglages ;
+avec `EngineDefinition`, les vingt-huit cotes du moteur simulé ; ni avec la
+classe `Engine`, qui calcule le régime.
+
 **Profil** (_profile_, `Profile`) :
 L'unité complète de configuration : tout ce qui influence le son y est déclaré,
 rien n'est codé en dur ailleurs. Sérialisable en JSON, donc enregistrable,

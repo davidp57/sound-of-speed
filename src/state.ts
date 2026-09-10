@@ -38,6 +38,22 @@ import { JournalCollector, type SoundCost } from './core/journal/collect'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
 import { toWav } from './bench/wav'
 import { archiveName, collectArchive } from './core/export/collect'
+import {
+  applyEngine,
+  engineFromProfile,
+  matchesEngine,
+  profilesUsing,
+  refreshProfiles,
+  type EngineEntity,
+} from './core/preset/engine-entity'
+import {
+  engineFromFile,
+  engineToFile,
+  loadEngines,
+  removeEngine,
+  saveEngines,
+  upsertEngine,
+} from './core/preset/engine-store'
 import { buildZip } from './core/export/zip'
 import { UploadQueue, type QueuedUpload } from './core/upload/queue'
 import { loadQueue, saveQueue } from './core/upload/store'
@@ -2026,6 +2042,133 @@ export function setGearRatios(ratios: number[]): void {
   const next = [...profiles.value]
   next[index] = { ...resized, drivetrain: { ...resized.drivetrain, gearRatios: ratios } }
   profiles.value = next
+}
+
+// --- Moteurs enregistrés -------------------------------------------------
+
+/**
+ * Les moteurs disponibles : ceux qui sont livrés, et ceux qu'on enregistre.
+ *
+ * Un moteur est une entité entière — réglages, banque, couches, mixage — et non
+ * un paquet de valeurs recopiées dans un profil. C'est ce qui permet de le
+ * corriger une fois pour tous les profils qui le désignent, et de l'envoyer seul
+ * sans faire suivre un profil entier.
+ */
+const engines = ref<EngineEntity[]>(loadEngines())
+
+watch(engines, (list) => saveEngines(list), { deep: true })
+
+export const engineList = computed(() => engines.value)
+
+/** Le moteur que le profil actif désigne, quand il en désigne un. */
+export const activeEngine = computed<EngineEntity | null>(() => {
+  const id = activeProfile.value.engineId
+  if (!id) return null
+  return engines.value.find((moteur) => moteur.id === id) ?? null
+})
+
+/**
+ * Vrai quand le profil actif ne sonne plus comme le moteur qu'il désigne.
+ *
+ * On le dit plutôt que de le corriger dans son dos : ces écarts sont le réglage
+ * de David, et c'est à lui de décider s'ils remontent dans le moteur ou s'ils
+ * restent propres à ce profil.
+ */
+export const activeEngineDrifted = computed(() => {
+  const moteur = activeEngine.value
+  return moteur !== null && !matchesEngine(activeProfile.value, moteur)
+})
+
+/** Combien de profils désignent ce moteur. */
+export function engineUsage(id: string): number {
+  return profilesUsing(profiles.value, id).length
+}
+
+/** Applique un moteur au profil actif, et note lequel. */
+export function chooseEngine(id: string): void {
+  const moteur = engines.value.find((connu) => connu.id === id)
+  if (!moteur) return
+  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
+  const current = profiles.value[index]
+  if (!current) return
+  const next = [...profiles.value]
+  next[index] = applyEngine(current, moteur)
+  profiles.value = next
+}
+
+/**
+ * Enregistre le moteur du profil actif sous un nom, comme un moteur neuf.
+ *
+ * Le profil désigne aussitôt ce qu'il vient de donner : sans cela il faudrait le
+ * choisir dans la liste juste après l'avoir créé depuis lui, ce qui n'aurait
+ * aucun sens.
+ */
+export function saveActiveAsEngine(name: string): string {
+  const propose = name.trim()
+  const moteur: EngineEntity = {
+    ...engineFromProfile(activeProfile.value, propose || activeProfile.value.name),
+    id: newId(),
+  }
+  engines.value = upsertEngine(engines.value, moteur)
+  chooseEngine(moteur.id)
+  return `Moteur « ${moteur.name} » enregistré.`
+}
+
+/**
+ * Reporte les valeurs du profil actif dans le moteur qu'il désigne.
+ *
+ * C'est la raison d'être de l'entité : corriger un ancrage de couche une fois,
+ * et que les autres profils qui jouent ce moteur en profitent. Le message dit
+ * combien ils sont, parce que corriger pour trois profils sans le savoir serait
+ * une surprise désagréable.
+ */
+export function updateDesignatedEngine(): string {
+  const moteur = activeEngine.value
+  if (!moteur) return 'Ce profil ne désigne aucun moteur.'
+  const corrige: EngineEntity = {
+    ...engineFromProfile(activeProfile.value, moteur.name),
+    id: moteur.id,
+  }
+  if (moteur.source !== undefined) corrige.source = moteur.source
+  engines.value = upsertEngine(engines.value, corrige)
+  profiles.value = refreshProfiles(profiles.value, corrige)
+  const combien = engineUsage(moteur.id)
+  return combien > 1
+    ? `« ${moteur.name} » corrigé — ${combien} profils suivent.`
+    : `« ${moteur.name} » corrigé.`
+}
+
+/**
+ * Retire un moteur enregistré.
+ *
+ * Les profils qui le désignaient gardent leurs valeurs : ils ne deviennent pas
+ * muets, ils cessent seulement d'être rattachés.
+ */
+export function forgetEngine(id: string): void {
+  engines.value = removeEngine(engines.value, id)
+}
+
+/** Propose un moteur au téléchargement, seul. */
+export function exportEngine(id: string): string {
+  const moteur = engines.value.find((connu) => connu.id === id)
+  if (!moteur) return 'Moteur introuvable.'
+  const nom = `moteur-${slug(moteur.name)}.json`
+  const fichier = new Blob([engineToFile(moteur)], { type: 'application/json' })
+  if (!telecharger(fichier, nom)) {
+    return "Ce navigateur refuse le téléchargement : à faire depuis un ordinateur."
+  }
+  return `« ${moteur.name} » exporté.`
+}
+
+/** Reprend un moteur exporté, sous un identifiant neuf. */
+export function importEngine(text: string): string {
+  try {
+    const moteur = engineFromFile(text, newId)
+    engines.value = upsertEngine(engines.value, moteur)
+    return `Moteur « ${moteur.name} » ajouté.`
+  } catch (error) {
+    return error instanceof Error ? error.message : 'Import impossible.'
+  }
 }
 
 // --- Curseurs globaux ----------------------------------------------------
