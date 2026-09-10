@@ -1,8 +1,7 @@
 # MOUVEMENT — une seule notion de « est-ce qu'on ralentit ? »
 
-**Statut :** ⬜ prêt — l'écoute a eu lieu le 10 septembre au soir, il reste à
-découper
-**Branche :** à ouvrir
+**Statut :** ⬜ prêt — découpé en quatre tickets
+**Branche :** `feature/mouvement`, à ouvrir
 **Version visée :** à décider
 
 ## Ce qui a déclenché
