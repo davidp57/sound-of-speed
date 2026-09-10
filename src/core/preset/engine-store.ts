@@ -18,7 +18,7 @@
  * doit jamais interrompre la conduite.
  */
 
-import { createFactoryProfiles } from './defaults'
+import { createFactoryProfiles, createV8Profile } from './defaults'
 import { engineFromProfile, type EngineEntity } from './engine-entity'
 import { ProfileImportError } from './store'
 
@@ -30,8 +30,9 @@ export const ENGINE_FILE_VERSION = 1
 /**
  * Les moteurs livrés : un par profil d'usine.
  *
- * Route et Sport ne sont pas le même moteur — leurs rupteurs sont à 6 500 et
- * 8 500 tours, et leurs banques diffèrent —, donc deux entrées et non une.
+ * Il y en a un, le V8, depuis que le tempérament a quitté le profil : Route et
+ * Sport ne différaient plus que par leurs régimes de passage, qui se déduisent
+ * désormais du mode de conduite.
  */
 export function factoryEngines(): EngineEntity[] {
   return createFactoryProfiles().map((profil) => ({
@@ -50,7 +51,7 @@ export function factoryEngines(): EngineEntity[] {
  */
 export function loadEngines(): EngineEntity[] {
   const stored = readJson<EngineEntity[]>(ENGINES_KEY)
-  const enregistres = Array.isArray(stored) ? stored.filter(isEngine) : []
+  const enregistres = Array.isArray(stored) ? stored.filter(isEngine).map(withBackfire) : []
   const connus = new Set(enregistres.map((moteur) => moteur.id))
   return [...enregistres, ...factoryEngines().filter((moteur) => !connus.has(moteur.id))]
 }
@@ -117,9 +118,9 @@ export function engineFromFile(text: string, newId: () => string): EngineEntity 
   // champ `engine` — ses réglages —, si bien qu'un moteur écrit nu ressemblait à
   // l'enveloppe `{ version, engine }` et qu'on en lisait les réglages à la place
   // du moteur entier.
-  if (isEngine(parsed)) return { ...parsed, id: newId() }
+  if (isEngine(parsed)) return withBackfire({ ...parsed, id: newId() })
   const dansEnveloppe = isRecord(parsed) ? parsed['engine'] : undefined
-  if (isEngine(dansEnveloppe)) return { ...dansEnveloppe, id: newId() }
+  if (isEngine(dansEnveloppe)) return withBackfire({ ...dansEnveloppe, id: newId() })
   throw new ProfileImportError('Ce fichier ne contient pas de moteur exploitable.')
 }
 
@@ -141,6 +142,18 @@ function isEngine(value: unknown): value is EngineEntity {
     Array.isArray(value['layers']) &&
     isRecord(value['mix'])
   )
+}
+
+/**
+ * Complète un moteur enregistré avant que les pétarades ne le suivent.
+ *
+ * Sans elle, un moteur relu d'hier appliquerait des pétarades vides au profil :
+ * les réglages passeraient à « pas un nombre » et le lever de pied deviendrait
+ * muet, sans que rien ne le signale.
+ */
+function withBackfire(engine: EngineEntity): EngineEntity {
+  if (isRecord(engine.backfire)) return engine
+  return { ...engine, backfire: { ...createV8Profile().feel.backfire } }
 }
 
 function readJson<T>(key: string): T | null {

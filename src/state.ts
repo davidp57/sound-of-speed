@@ -17,7 +17,7 @@ import { GamepadReader, type PadSnapshot } from './core/input/gamepad'
 import { RejectionWatch, type RejectionCause } from './core/speed/rejection'
 import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
-import { soundSourceOf } from './core/preset/schema'
+import { soundSourceOf, type SoundSource } from './core/preset/schema'
 import { playBackfire, playClack, type EventTarget } from './core/audio/events'
 import { shiftCut } from './core/audio/mix'
 import type { EngineDefinition, Profile, ProfileOrigin } from './core/preset/schema'
@@ -40,13 +40,18 @@ import { toWav } from './bench/wav'
 import { archiveName, collectArchive } from './core/export/collect'
 import { driveModeFromUpshiftRpm, type DriveMode } from './core/drivetrain/drive-mode'
 import {
-  applyEngine,
   engineFromProfile,
-  matchesEngine,
   profilesUsing,
-  refreshProfiles,
   type EngineEntity,
 } from './core/preset/engine-entity'
+import {
+  gearboxFromProfile,
+  type GearboxEntity,
+} from './core/preset/gearbox-entity'
+import { loadGearboxes, saveGearboxes, upsertGearbox } from './core/preset/gearbox-store'
+import { assembleProfile, partsFor } from './core/preset/assemble'
+import { realCarFromProfile, type RealCar } from './core/preset/real-car'
+import { splitProfiles } from './core/preset/split'
 import {
   engineFromFile,
   engineToFile,
@@ -98,6 +103,8 @@ import {
   loadInheritedVolume,
   loadMasterVolume,
   loadSelectedId,
+  storedRealCar,
+  saveRealCar,
   newId,
   saveAdvancedMode,
   saveProfiles,
@@ -132,9 +139,106 @@ const DEFAULT_VOLUME = 0.7
 const profiles = ref<Profile[]>(loadProfiles())
 const selectedId = ref<string>(loadSelectedId() ?? profiles.value[0]?.id ?? '')
 
-export const activeProfile = computed<Profile>(() => {
+/**
+ * Les groupes de réglages : les moteurs, les boîtes, la voiture.
+ *
+ * Ils sont déclarés ici et non plus bas avec leurs fonctions, parce que le
+ * profil actif est **assemblé** depuis eux : il faut qu'ils existent avant lui.
+ */
+const engines = ref<EngineEntity[]>(loadEngines())
+const gearboxes = ref<GearboxEntity[]>(loadGearboxes())
+
+// Reprise, une seule fois : un profil enregistré avant les entités porte ses
+// valeurs et n'en désigne aucune. Sans ce passage, l'assemblage le laisserait
+// jouer des valeurs que plus rien n'édite.
+{
+  const scinde = splitProfiles(profiles.value, engines.value, gearboxes.value, newId)
+  profiles.value = scinde.profiles
+  engines.value = scinde.engines
+  gearboxes.value = scinde.gearboxes
+  // Enregistré tout de suite, et non par le veilleur : il est installé plus bas,
+  // donc après ce passage. Sans cela les rattachements ne seraient nulle part, et
+  // un profil dont on a réglé le moteur ne le reconnaîtrait plus au chargement
+  // suivant — il s'en fabriquerait un deuxième, puis un troisième.
+  saveProfiles(profiles.value)
+  saveEngines(engines.value)
+  saveGearboxes(gearboxes.value)
+}
+
+/** Le profil choisi, tel qu'il est enregistré : un nom et des références. */
+const storedProfile = computed<Profile>(() => {
   const found = profiles.value.find((p) => p.id === selectedId.value)
   return found ?? (profiles.value[0] as Profile)
+})
+
+/**
+ * La vraie voiture de cet appareil : une seule, et elle ne suit aucun profil.
+ *
+ * Reprise du profil actif au premier lancement, faute de mieux : c'est là que
+ * les réglages de mesure vivaient, étalonnage compris.
+ */
+const realCar = ref<RealCar>(storedRealCar() ?? realCarFromProfile(storedProfile.value))
+
+/** Le moteur que le profil actif désigne, quand il en désigne un. */
+export const activeEngine = computed<EngineEntity | null>(() => {
+  const id = storedProfile.value.engineId
+  if (!id) return null
+  return engines.value.find((moteur) => moteur.id === id) ?? null
+})
+
+/** La boîte que le profil actif désigne, quand il en désigne une. */
+export const activeGearbox = computed<GearboxEntity | null>(() => {
+  const id = storedProfile.value.gearboxId
+  if (!id) return null
+  return gearboxes.value.find((boite) => boite.id === id) ?? null
+})
+
+/**
+ * Le profil actif, assemblé : son moteur, sa boîte, la voiture.
+ *
+ * Ce que tout le reste lit. Les sections portent les noms qu'elles ont toujours
+ * eus — `engine`, `drivetrain`, `speed`, `mix`, `feel`, `layers` — si bien que
+ * la chaîne, les écrans et l'audio n'ont pas eu à changer : seule l'écriture a
+ * changé de destination, et elle passe désormais par les groupes.
+ */
+export const activeProfile = computed<Profile>(() =>
+  assembleProfile(
+    storedProfile.value,
+    partsFor(storedProfile.value, engines.value, gearboxes.value, realCar.value),
+  ),
+)
+
+/**
+ * Ce que l'écran de réglage édite : les sections **vivantes** des groupes.
+ *
+ * Le même profil que ci-dessus, à un détail près qui fait tout : ses sections
+ * ne sont pas des copies mais les objets des entités eux-mêmes. Un curseur qui
+ * écrit `profile.engine.idleRpm` écrit donc dans le moteur, et le veilleur
+ * l'enregistre. Sans ce partage, une écriture atterrirait dans une copie que
+ * l'assemblage refait au tour suivant : réglage perdu, et sans un mot.
+ */
+export const editedProfile = computed<Profile>(() => {
+  const assemble = activeProfile.value
+  const moteur = activeEngine.value
+  const boite = activeGearbox.value
+  return {
+    ...assemble,
+    ...(moteur
+      ? {
+          engine: moteur.engine,
+          mix: moteur.mix,
+          layers: moteur.layers,
+          sampleDir: moteur.sampleDir,
+        }
+      : {}),
+    ...(boite ? { drivetrain: boite.drivetrain } : {}),
+    feel: {
+      kickdown: boite ? boite.kickdown : assemble.feel.kickdown,
+      backfire: moteur ? moteur.backfire : assemble.feel.backfire,
+      shiftJolt: boite ? boite.shiftJolt : assemble.feel.shiftJolt,
+    },
+    speed: realCar.value,
+  }
 })
 
 /**
@@ -477,8 +581,9 @@ export const engineDefinition = computed<EngineDefinition>(() =>
  * coupure d'une seconde environ : c'est `SynthEngine` qui en décide.
  */
 export async function applyEngineDefinition(definition: EngineDefinition): Promise<void> {
-  activeProfile.value.engineDefinition = clampEngineDefinition(definition)
-  await synth.setEngineDefinition(activeProfile.value.engineDefinition)
+  const cotes = clampEngineDefinition(definition)
+  editEngine((moteur) => ({ ...moteur, definition: cotes }))
+  await synth.setEngineDefinition(cotes)
 }
 
 /**
@@ -491,10 +596,13 @@ export async function applyEngineDefinition(definition: EngineDefinition): Promi
  * ou il arrive avec le moteur.
  */
 export async function applyLibraryEngine(engine: LibraryEngine): Promise<void> {
-  activeProfile.value.engine.redlineRpm = engine.redlineRpm
-  // Le rendu part avec le moteur, sinon on l'écouterait à travers l'échappement
-  // du précédent — et l'on ne saurait plus lequel des deux on entend.
-  activeProfile.value.rendering = { ...engine.rendering }
+  editEngine((moteur) => ({
+    ...moteur,
+    engine: { ...moteur.engine, redlineRpm: engine.redlineRpm },
+    // Le rendu part avec le moteur, sinon on l'écouterait à travers
+    // l'échappement du précédent — et l'on ne saurait plus lequel on entend.
+    rendering: { ...engine.rendering },
+  }))
   // Le balayage du banc doit suivre le rupteur qui vient d'arriver, sinon il
   // continue de monter jusqu'à l'ancien.
   synth.setRpmRange(runtimeProfile.value.engine.idleRpm, runtimeProfile.value.engine.redlineRpm)
@@ -530,7 +638,7 @@ export async function applySynthSettings(settings: SynthSettings): Promise<void>
   // Le lot arrive entier ; il repart en deux, chacun là où il vit. Le profil
   // est enregistré tout seul, par le veilleur qui suit la liste des profils.
   synthDevice.value = settings
-  activeProfile.value.rendering = renderingOf(settings)
+  editEngine((moteur) => ({ ...moteur, rendering: renderingOf(settings) }))
   synth.setRpmRange(runtimeProfile.value.engine.idleRpm, runtimeProfile.value.engine.redlineRpm)
   await synth.apply(synthSettings.value)
 }
@@ -2037,8 +2145,20 @@ export async function importFromUrl(): Promise<string | null> {
   return profile.name
 }
 
+/**
+ * Ajoute un profil, d'où qu'il vienne, et lui donne ses groupes.
+ *
+ * Le passage obligé de tout ce qui entre : un fichier, un lien, la
+ * bibliothèque, le guide de création, une copie. Un profil reçu désigne le
+ * moteur de celui qui l'a envoyé, introuvable ici ; il arrive en revanche avec
+ * ses valeurs, donc on lui rend un moteur d'ici — le même s'il existe déjà.
+ * Sans ce passage il jouerait bien, mais plus rien ne pourrait le régler.
+ */
 export function addProfile(profile: Profile): void {
-  profiles.value = [...profiles.value, profile]
+  const scinde = splitProfiles([profile], engines.value, gearboxes.value, newId)
+  profiles.value = [...profiles.value, ...scinde.profiles]
+  engines.value = scinde.engines
+  gearboxes.value = scinde.gearboxes
   selectedId.value = profile.id
 }
 
@@ -2050,13 +2170,7 @@ export function restoreFactoryProfiles(): number {
 
 /** Ramène une section du profil actif — ou le profil entier — à son état d'usine. */
 export function resetActive(section: ProfileSection | 'all'): void {
-  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
-  if (index < 0) return
-  const current = profiles.value[index]
-  if (!current) return
-  const next = [...profiles.value]
-  next[index] = resetProfileSection(current, section)
-  profiles.value = next
+  editAssembled((profile) => resetProfileSection(profile, section))
 }
 
 /**
@@ -2074,14 +2188,10 @@ export function resetActive(section: ProfileSection | 'all'): void {
  */
 export function setGearRatios(ratios: number[]): void {
   if (ratios.length === 0) return
-  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
-  const current = profiles.value[index]
-  if (!current) return
-
-  const resized = resizeGearTables(current, ratios.length)
-  const next = [...profiles.value]
-  next[index] = { ...resized, drivetrain: { ...resized.drivetrain, gearRatios: ratios } }
-  profiles.value = next
+  editAssembled((profile) => {
+    const resized = resizeGearTables(profile, ratios.length)
+    return { ...resized, drivetrain: { ...resized.drivetrain, gearRatios: ratios } }
+  })
 }
 
 // --- Moteurs enregistrés -------------------------------------------------
@@ -2094,45 +2204,111 @@ export function setGearRatios(ratios: number[]): void {
  * corriger une fois pour tous les profils qui le désignent, et de l'envoyer seul
  * sans faire suivre un profil entier.
  */
-const engines = ref<EngineEntity[]>(loadEngines())
-
 watch(engines, (list) => saveEngines(list), { deep: true })
+watch(gearboxes, (list) => saveGearboxes(list), { deep: true })
+watch(realCar, (car) => saveRealCar(car), { deep: true })
 
 export const engineList = computed(() => engines.value)
 
-/** Le moteur que le profil actif désigne, quand il en désigne un. */
-export const activeEngine = computed<EngineEntity | null>(() => {
-  const id = activeProfile.value.engineId
-  if (!id) return null
-  return engines.value.find((moteur) => moteur.id === id) ?? null
-})
+/**
+ * La voiture réelle de cet appareil, et sa mise à jour.
+ *
+ * Un seul point d'écriture : les réglages de mesure ne se recopient plus dans un
+ * profil, ils décrivent la voiture — et un profil reçu de quelqu'un d'autre ne
+ * les touche pas.
+ */
+export const currentRealCar = computed<RealCar>(() => realCar.value)
+
+export function setRealCar(car: RealCar): void {
+  realCar.value = car
+}
 
 /**
- * Vrai quand le profil actif ne sonne plus comme le moteur qu'il désigne.
+ * Range dans les groupes un profil qu'on vient de modifier en bloc.
  *
- * On le dit plutôt que de le corriger dans son dos : ces écarts sont le réglage
- * de David, et c'est à lui de décider s'ils remontent dans le moteur ou s'ils
- * restent propres à ce profil.
+ * L'inverse de l'assemblage, et le seul chemin d'écriture pour tout ce qui
+ * change plusieurs sections d'un coup : un curseur global, une remise aux
+ * valeurs d'usine, une valeur d'étalonnage. Chaque section repart là où elle
+ * vit, et le profil enregistré ne reçoit que son identité.
+ *
+ * Ce qui n'est pas désigné n'est pas rangé : un profil sans moteur garderait ses
+ * valeurs. La reprise au chargement fait qu'il n'en existe plus.
  */
-export const activeEngineDrifted = computed(() => {
+function dissolve(next: Profile): void {
   const moteur = activeEngine.value
-  return moteur !== null && !matchesEngine(activeProfile.value, moteur)
-})
+  if (moteur) {
+    const corrige: EngineEntity = {
+      ...engineFromProfile(next, moteur.name),
+      id: moteur.id,
+    }
+    if (moteur.source !== undefined) corrige.source = moteur.source
+    engines.value = upsertEngine(engines.value, corrige)
+  }
+
+  const boite = activeGearbox.value
+  if (boite) {
+    const corrigee: GearboxEntity = {
+      ...gearboxFromProfile(next, boite.name),
+      id: boite.id,
+    }
+    if (boite.source !== undefined) corrigee.source = boite.source
+    gearboxes.value = upsertGearbox(gearboxes.value, corrigee)
+  }
+
+  realCar.value = realCarFromProfile(next)
+}
+
+/** Modifie le profil assemblé, et range le résultat dans les groupes. */
+function editAssembled(change: (profile: Profile) => Profile): void {
+  dissolve(change(activeProfile.value))
+}
+
+/** Pose la banque du moteur actif : elle lui appartient, pas au profil. */
+export function setSampleDir(name: string): void {
+  editEngine((moteur) => ({ ...moteur, sampleDir: name }))
+}
+
+/**
+ * Pose l'origine du son du profil actif.
+ *
+ * Elle reste sur le profil : ce n'est pas un réglage qu'on tâtonne, c'est la
+ * déclaration de ce qui produit le son.
+ */
+export function setSoundSource(value: SoundSource): void {
+  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
+  const current = profiles.value[index]
+  if (!current) return
+  const next = [...profiles.value]
+  next[index] = { ...current, soundSource: value }
+  profiles.value = next
+}
+
+/** Modifie le moteur du profil actif. Le seul chemin pour y écrire. */
+function editEngine(change: (engine: EngineEntity) => EngineEntity): void {
+  const moteur = activeEngine.value
+  if (!moteur) return
+  engines.value = upsertEngine(engines.value, change(moteur))
+}
 
 /** Combien de profils désignent ce moteur. */
 export function engineUsage(id: string): number {
   return profilesUsing(profiles.value, id).length
 }
 
-/** Applique un moteur au profil actif, et note lequel. */
+/**
+ * Désigne un moteur pour le profil actif.
+ *
+ * Une référence et non une recopie : le profil ne porte plus de valeurs, il dit
+ * lequel il joue. Corriger ce moteur s'entend donc aussitôt dans tous les
+ * profils qui le désignent, sans rien avoir à répercuter.
+ */
 export function chooseEngine(id: string): void {
-  const moteur = engines.value.find((connu) => connu.id === id)
-  if (!moteur) return
+  if (!engines.value.some((connu) => connu.id === id)) return
   const index = profiles.value.findIndex((p) => p.id === selectedId.value)
   const current = profiles.value[index]
   if (!current) return
   const next = [...profiles.value]
-  next[index] = applyEngine(current, moteur)
+  next[index] = { ...current, engineId: id }
   profiles.value = next
 }
 
@@ -2152,30 +2328,6 @@ export function saveActiveAsEngine(name: string): string {
   engines.value = upsertEngine(engines.value, moteur)
   chooseEngine(moteur.id)
   return `Moteur « ${moteur.name} » enregistré.`
-}
-
-/**
- * Reporte les valeurs du profil actif dans le moteur qu'il désigne.
- *
- * C'est la raison d'être de l'entité : corriger un ancrage de couche une fois,
- * et que les autres profils qui jouent ce moteur en profitent. Le message dit
- * combien ils sont, parce que corriger pour trois profils sans le savoir serait
- * une surprise désagréable.
- */
-export function updateDesignatedEngine(): string {
-  const moteur = activeEngine.value
-  if (!moteur) return 'Ce profil ne désigne aucun moteur.'
-  const corrige: EngineEntity = {
-    ...engineFromProfile(activeProfile.value, moteur.name),
-    id: moteur.id,
-  }
-  if (moteur.source !== undefined) corrige.source = moteur.source
-  engines.value = upsertEngine(engines.value, corrige)
-  profiles.value = refreshProfiles(profiles.value, corrige)
-  const combien = engineUsage(moteur.id)
-  return combien > 1
-    ? `« ${moteur.name} » corrigé — ${combien} profils suivent.`
-    : `« ${moteur.name} » corrigé.`
 }
 
 /**
@@ -2233,28 +2385,17 @@ const globalUndo = ref<{ id: string; origin: ProfileOrigin } | null>(null)
 export const canUndoGlobalChange = computed(() => globalUndo.value?.id === selectedId.value)
 
 function applyGlobalChange(change: (profile: Profile) => Profile): void {
-  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
-  const current = profiles.value[index]
-  if (!current) return
-
+  const current = activeProfile.value
   if (globalUndo.value?.id !== current.id) {
     globalUndo.value = { id: current.id, origin: captureOrigin(current) }
   }
-  const next = [...profiles.value]
-  next[index] = change(current)
-  profiles.value = next
+  dissolve(change(current))
 }
 
 export function undoGlobalChange(): void {
   const snapshot = globalUndo.value
-  if (!snapshot) return
-  const index = profiles.value.findIndex((p) => p.id === snapshot.id)
-  const current = profiles.value[index]
-  if (!current) return
-
-  const next = [...profiles.value]
-  next[index] = applyOrigin(current, snapshot.origin)
-  profiles.value = next
+  if (!snapshot || snapshot.id !== selectedId.value) return
+  dissolve(applyOrigin(activeProfile.value, snapshot.origin))
   globalUndo.value = null
 }
 
@@ -2315,13 +2456,7 @@ export function applyCalibrationSetting(
   path: SettingPath,
   value: number | number[],
 ): void {
-  const index = profiles.value.findIndex((p) => p.id === selectedId.value)
-  if (index < 0) return
-  const current = profiles.value[index]
-  if (!current) return
-  const next = [...profiles.value]
-  next[index] = writeSetting(current, path, value)
-  profiles.value = next
+  editAssembled((profile) => writeSetting(profile, path, value))
 }
 
 export function duplicateActive(): void {

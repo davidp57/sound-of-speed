@@ -791,6 +791,18 @@ export interface Profile {
    */
   engineId?: string
   /**
+   * La boîte que ce profil désigne, quand il en désigne une.
+   *
+   * Même mécanisme que le moteur, et même raison : les rapports, le pont et la
+   * façon de passer forment une chose entière, qu'on nomme et qu'on partage. Un
+   * profil la désigne au lieu d'en recopier les valeurs, si bien qu'on peut
+   * essayer le même moteur avec deux boîtes.
+   *
+   * Facultatif, comme `engineId` : un profil enregistré avant l'entité n'en
+   * désigne aucune et joue ses propres valeurs.
+   */
+  gearboxId?: string
+  /**
    * Définition du moteur simulé, pour les deux origines générées.
    *
    * Elle vit dans le profil parce que tout l'outillage y est déjà : export en

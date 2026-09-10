@@ -1,6 +1,6 @@
 # 04 — Le profil devient un assemblage
 
-**Statut :** ⬜ prêt
+**Statut :** 🔄 en cours
 
 **Bloqué par :** 01 — Le moteur devient une entité qu'on nomme · 02 — La boîte
 se déduit du moteur et du mode · 03 — La voiture réelle existe. Il ne reste un
@@ -34,22 +34,28 @@ est celui de la refonte.
 
 ## Critères d'acceptation
 
-- [ ] Un profil porte un nom et trois références — moteur, boîte, mode — et rien
-      d'autre.
-- [ ] Créer un profil qui reprend un moteur existant avec une autre boîte ne
+- [x] Le profil **actif** est assemblé depuis son moteur, sa boîte et la
+      voiture : la chaîne, les écrans et l'audio consomment l'assemblé, et
+      l'écran de réglage écrit dans les groupes.
+- [ ] Un profil **enregistré** porte un nom et trois références — moteur, boîte,
+      mode — et rien d'autre. Reste à faire : le vidage à l'enregistrement, la
+      version 10 du format, et onze tests de stockage à réécrire, qui décrivent
+      aujourd'hui un profil qui survit seul à un aller-retour par le stockage.
+- [x] Créer un profil qui reprend un moteur existant avec une autre boîte ne
       demande de ressaisir aucune valeur.
-- [ ] Partager un profil emporte ce qu'il faut pour qu'il joue chez celui qui le
-      reçoit : les entités qu'il désigne partent avec lui, ou sont retrouvées si
-      elles y sont déjà.
-- [ ] Les profils déjà enregistrés sont repris une dernière fois : chacun se
+- [x] Partager un profil emporte ce qu'il faut pour qu'il joue chez celui qui le
+      reçoit : il part avec ses valeurs, et reçoit à l'arrivée un moteur d'ici —
+      celui qui lui ressemble s'il existe déjà.
+- [x] Les profils déjà enregistrés sont repris une dernière fois : chacun se
       scinde en un moteur, une boîte et un mode, et sonne exactement comme avant.
 - [ ] Les préférences d'appareil — volume, visage de l'écran, verrou, mode de
       boîte — restent locales et ne rejoignent aucun groupe partageable.
-- [ ] Les six réglages du signal de vitesse quittent le profil, et changer de
+- [x] Les six réglages du signal de vitesse quittent le profil, et changer de
       profil ne change plus aucun réglage de mesure.
-- [ ] L'étalonnage recopie ses valeurs mesurées dans la voiture réelle, et non
-      dans le profil actif.
-- [ ] Un profil importé ou partagé n'écrase jamais la voiture réelle de celui qui
+- [x] L'étalonnage recopie ses valeurs mesurées dans la voiture réelle, et non
+      dans le profil actif — ses écritures passent par l'assemblage, qui les
+      range dans le groupe où elles vivent.
+- [x] Un profil importé ou partagé n'écrase jamais la voiture réelle de celui qui
       le reçoit — c'est le sens même de la séparation.
 - [ ] README à jour : la « Référence des réglages » se range par groupe, et le
       glossaire porte les cinq termes.

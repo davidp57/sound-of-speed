@@ -31,6 +31,12 @@ describe('le moteur extrait d\'un profil', () => {
     expect(moteur.mix).toEqual(profil.mix)
   })
 
+  it("emporte les pétarades : c'est son échappement qui claque", () => {
+    const profil = createRoadProfile()
+    profil.feel.backfire.intensity = 0.42
+    expect(engineFromProfile(profil).backfire.intensity).toBe(0.42)
+  })
+
   it('porte un nom et dit d\'où il vient', () => {
     const moteur = engineFromProfile(createRoadProfile())
     expect(moteur.name).toBe('Route')
@@ -88,7 +94,19 @@ describe('appliquer un moteur à un profil', () => {
     const applique = applyEngine(cible, engineFromProfile(createDefaultProfile(), 'Sport'))
 
     expect(applique.drivetrain).toEqual(cible.drivetrain)
-    expect(applique.feel).toEqual(cible.feel)
+    expect(applique.feel.kickdown).toEqual(cible.feel.kickdown)
+    expect(applique.feel.shiftJolt).toEqual(cible.feel.shiftJolt)
+  })
+
+  it('emporte en revanche ses pétarades, qui sont sa voix', () => {
+    const cible = createRoadProfile()
+    const source = createDefaultProfile()
+    source.feel.backfire.intensity = 0.77
+    const applique = applyEngine(cible, engineFromProfile(source, 'Sport'))
+
+    expect(applique.feel.backfire.intensity).toBe(0.77)
+    // Et le profil de départ n'a pas bougé : c'est une copie.
+    expect(cible.feel.backfire.intensity).not.toBe(0.77)
   })
 
   it('ne change pas les réglages de mesure de la vitesse', () => {

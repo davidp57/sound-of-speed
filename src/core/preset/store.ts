@@ -160,6 +160,19 @@ export function loadRealCar(): RealCar {
   return clampRealCar(readJson<Partial<RealCar>>(REAL_CAR_KEY) ?? undefined)
 }
 
+/**
+ * La voiture enregistrée, ou rien si elle ne l'a jamais été.
+ *
+ * Rend `null` plutôt que les valeurs d'usine, pour la même raison que le mode de
+ * conduite : au premier lancement, la voiture se **reprend** du profil actif,
+ * qui portait jusqu'ici les réglages de mesure. Imposer les valeurs d'usine
+ * effacerait un étalonnage fait au volant sans que rien ne le dise.
+ */
+export function storedRealCar(): RealCar | null {
+  const brut = readJson<Partial<RealCar>>(REAL_CAR_KEY)
+  return brut ? clampRealCar(brut) : null
+}
+
 export function saveRealCar(car: RealCar): void {
   writeJson(REAL_CAR_KEY, clampRealCar(car))
 }
@@ -486,6 +499,9 @@ function reconcile(profile: Partial<Profile>): Profile {
   // prétendrait qu'il vient d'une bibliothèque où il n'a jamais été.
   if (typeof profile.engineId === 'string' && profile.engineId) {
     complet.engineId = profile.engineId
+  }
+  if (typeof profile.gearboxId === 'string' && profile.gearboxId) {
+    complet.gearboxId = profile.gearboxId
   }
 
   // L'origine est reprise telle quelle quand elle est là, et simplement absente
