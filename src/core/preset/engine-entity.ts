@@ -26,23 +26,19 @@
  * - ses **cotes** et son **échappement**, quand il en a : ils ne servent qu'à
  *   l'atelier, qui fabrique les banques, mais ils décrivent bien ce moteur-ci.
  *
- * Ce qu'il ne porte pas : les rapports et le pont, qui sont la boîte ; le
- * tempérament, qui est le mode de conduite ; le signal de vitesse, qui décrit la
- * vraie voiture. Les pétarades et l'à-coup de passage, aujourd'hui mêlés dans le
- * même bloc de réglages, se rangeront avec la boîte et le moteur au ticket 04 :
- * les séparer maintenant toucherait cinquante points d'appel pour un gain nul.
+ * - ses **pétarades** : c'est son échappement qui claque, pas la boîte.
  *
- * **Le profil garde ses sections pour l'instant.** Ce module ajoute le moteur à
- * côté ; désigner un moteur applique ses valeurs au profil, comme le fait déjà
- * la bibliothèque. Vider le profil de ces sections toucherait environ trois
- * cent cinq points d'appel et ne pourrait pas rester vert : c'est le ticket 04
- * qui contracte, une fois les cinq groupes en place.
+ * Ce qu'il ne porte pas : les rapports et le pont, qui sont la boîte ; l'à-coup
+ * de passage et le rétrogradage forcé, qui sont des gestes de boîte ; le
+ * tempérament, qui est le mode de conduite ; le signal de vitesse, qui décrit la
+ * vraie voiture.
  */
 
 import type { SynthRendering } from '../synth/rendering'
 import type {
   EngineDefinition,
   EnginePreset,
+  FeelPreset,
   LayerPreset,
   MixPreset,
   Profile,
@@ -66,6 +62,14 @@ export interface EngineEntity {
   sampleDir: string
   layers: LayerPreset[]
   mix: MixPreset
+  /**
+   * Les pétarades au lever de pied.
+   *
+   * Le caractère du moteur, et non un geste de boîte : c'est l'échappement qui
+   * claque. Elles suivent donc le moteur — le même V8 pétarade de la même façon
+   * derrière deux boîtes différentes.
+   */
+  backfire: FeelPreset['backfire']
   /** Les cotes du moteur simulé. Atelier seulement, et facultatives. */
   definition?: EngineDefinition
   /** Échappement et point d'écoute. Facultatifs pour la même raison. */
@@ -87,6 +91,7 @@ export function engineFromProfile(profile: Profile, name = profile.name): Engine
     sampleDir: profile.sampleDir,
     layers: profile.layers.map((layer) => ({ ...layer })),
     mix: { ...profile.mix },
+    backfire: { ...profile.feel.backfire },
   }
   if (profile.engineDefinition) entity.definition = { ...profile.engineDefinition }
   if (profile.rendering) entity.rendering = { ...profile.rendering }
@@ -113,6 +118,7 @@ export function applyEngine(profile: Profile, engine: EngineEntity): Profile {
     sampleDir: engine.sampleDir,
     layers: engine.layers.map((layer) => ({ ...layer })),
     mix: { ...engine.mix },
+    feel: { ...profile.feel, backfire: { ...engine.backfire } },
   }
   if (engine.definition) applied.engineDefinition = { ...engine.definition }
   if (engine.rendering) applied.rendering = { ...engine.rendering }
@@ -144,6 +150,7 @@ export function matchesEngine(profile: Profile, engine: EngineEntity): boolean {
   }
   if (!memeNombre(profile.engine, engine.engine)) return false
   if (!memeNombre(profile.mix, engine.mix)) return false
+  if (!memeNombre(profile.feel.backfire, engine.backfire)) return false
   return profile.layers.every((layer, index) => {
     const attendue = engine.layers[index]
     return attendue !== undefined && memeNombre(layer, attendue)

@@ -2,14 +2,13 @@
  * Les boîtes enregistrées, et celles qui sont livrées.
  *
  * Le pendant du registre des moteurs — voir `engine-store.ts` —, et il suit les
- * mêmes règles : les boîtes livrées sont celles des deux profils d'usine, une
- * boîte corrigée remplace la sienne au lieu de s'ajouter à côté, et une boîte
- * reçue de quelqu'un d'autre reçoit un identifiant neuf.
+ * mêmes règles : les boîtes livrées sont celles des profils d'usine, une boîte
+ * corrigée remplace la sienne au lieu de s'ajouter à côté, et une boîte reçue de
+ * quelqu'un d'autre reçoit un identifiant neuf.
  *
- * **Deux boîtes livrées et non une** : Route et Sport ne partagent que leurs
- * rapports. Leur pont diffère — 3,7 contre 4,5 —, donc le régime à une vitesse
- * donnée aussi, et leurs durées de passage ne sont pas les mêmes. Ce sont bien
- * deux boîtes.
+ * **Une seule boîte livrée**, celle du V8 : Route et Sport partageaient leurs
+ * rapports et leur pont, et ne différaient que par leurs régimes de passage —
+ * qui viennent maintenant du mode de conduite.
  */
 
 import { createFactoryProfiles } from './defaults'
