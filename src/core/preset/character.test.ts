@@ -195,20 +195,19 @@ describe('le curseur « calme ↔ sportif »', () => {
     const calme = applySportiness(route, 0)
     const sportif = applySportiness(route, 1)
 
-    // Mesuré sur une accélération franche : la pointe de régime passe de 3929 à
-    // 6043 tr/min pour un rupteur à 6500, et la boîte n'est plus qu'en
-    // quatrième à 150 km/h là où le profil calme est en sixième.
+    // **Le tempérament de passage a déménagé.** Ce test relevait la pointe de
+    // régime — 3929 tr/min au plus calme, 6043 au plus sportif — parce que le
+    // curseur écrivait les régimes de passage. Ils se déduisent maintenant du
+    // **mode de conduite** et du rupteur du moteur, et le curseur ne commande
+    // plus la boîte de cette façon : la pointe ne bouge donc plus avec lui.
     //
-    // Les bornes laissent la place à la dispersion : la boîte tire au sort
-    // ±120 tr/min à chaque passage sur ce profil, exprès, pour ne pas sonner
-    // comme une machine. Le relevé varie donc d'une exécution à l'autre.
-    const bande = route.drivetrain.upshiftJitterRpm * 2
-    expect(fullThrottle(calme).peakRpm).toBeGreaterThan(3929 - bande)
-    expect(fullThrottle(calme).peakRpm).toBeLessThan(3929 + bande)
-    expect(fullThrottle(sportif).peakRpm).toBeGreaterThan(6043 - bande)
-    expect(fullThrottle(sportif).peakRpm).toBeLessThan(6043 + bande)
-    expect(fullThrottle(sportif).gear).toBeLessThan(fullThrottle(calme).gear)
+    // Le curseur écrit toujours la table, qui n'est plus lue. C'est une écriture
+    // morte, à retirer avec les curseurs globaux — la retirer ici changerait la
+    // façon dont le tempérament d'un profil se **lit**, donc six autres tests,
+    // et ce n'est pas le sujet de ce lot.
+    expect(fullThrottle(sportif).peakRpm).toBeCloseTo(fullThrottle(calme).peakRpm, -3)
 
+    // Ce que le curseur change encore, et qui s'entend :
     expect(sportif.engine.inertia).toBeLessThan(calme.engine.inertia)
     expect(sportif.drivetrain.shiftTimeMs).toBeLessThan(calme.drivetrain.shiftTimeMs)
     expect(sportif.drivetrain.cruiseMinRpm).toBeGreaterThan(calme.drivetrain.cruiseMinRpm)

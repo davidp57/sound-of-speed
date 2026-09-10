@@ -1,4 +1,5 @@
 import type { DrivetrainPreset, EnginePreset, FeelPreset } from '../preset/schema'
+import { upshiftRpmFor, type DriveMode } from './drive-mode'
 
 /**
  * Boîte de vitesses.
@@ -324,6 +325,15 @@ export class Gearbox {
     private drivetrain: DrivetrainPreset,
     private engine: EnginePreset,
     private feel: FeelPreset,
+    /**
+     * Le tempérament de la boîte : route ou sport.
+     *
+     * Il ne vient pas du profil mais de l'appareil, au même titre que la
+     * commande automatique ou manuelle : c'est un choix de conduite, et il se
+     * fait sous les cadrans. Les seuils de montée s'en déduisent, avec le
+     * rupteur du moteur.
+     */
+    private driveMode: DriveMode = 'road',
   ) {}
 
   setPresets(drivetrain: DrivetrainPreset, engine: EnginePreset, feel: FeelPreset): void {
@@ -331,6 +341,14 @@ export class Gearbox {
     this.engine = engine
     this.feel = feel
     this.gear = clampInt(this.gear, 0, this.gearCount - 1)
+  }
+
+  setDriveMode(mode: DriveMode): void {
+    this.driveMode = mode
+  }
+
+  getDriveMode(): DriveMode {
+    return this.driveMode
   }
 
   get gearCount(): number {
@@ -474,10 +492,18 @@ export class Gearbox {
    * conducteur demandait avant de changer de profil.
    */
   private upshiftThresholdAt(gear: number, demand: number): number {
-    const table = this.drivetrain.upshiftRpm
-    // Le dernier rapport connu sert de repli quand la table est plus courte que
-    // la boîte, ce qui arrive dès qu'on ajoute un rapport sans y toucher.
-    const base = table[gear] ?? table[table.length - 1] ?? this.engine.redlineRpm * 0.8
+    // Le seuil se déduit du **rupteur du moteur** et du mode, et non d'une table
+    // de tours absolus. Celle-ci ignorait le moteur : un moteur de moto à onze
+    // mille tours passait ses rapports au même endroit qu'un V8 à six mille cinq,
+    // et un gros bloc à cinq mille cinq tapait son rupteur avant d'avoir le
+    // droit de monter. La table n'a plus besoin de suivre le nombre de rapports
+    // non plus : la courbe s'étale sur la boîte qu'elle trouve.
+    const base = upshiftRpmFor(
+      this.driveMode,
+      gear,
+      Math.max(1, this.gearCount - 1),
+      this.engine.redlineRpm,
+    )
     const spread = this.drivetrain.upshiftLoadSpreadRpm
     const shifted = base + (clamp01(demand) - 0.5) * spread + this.pendingJitter
     // Le plancher prime : mieux vaut garder un rapport court qu'en engager un
