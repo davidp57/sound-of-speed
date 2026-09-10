@@ -771,6 +771,26 @@ export interface Profile {
    */
   soundSource: SoundSource
   /**
+   * Le moteur que ce profil désigne, quand il en désigne un.
+   *
+   * Un moteur est devenu une entité qu'on nomme, qu'on enregistre et qu'on
+   * partage seule — voir `engine-entity.ts`. Ce champ dit **lequel**, ce que rien
+   * ne disait jusqu'ici : la bibliothèque des neuf moteurs livrés le devinait, en
+   * comptant les écarts entre les valeurs du profil et celles de chaque entrée.
+   *
+   * Facultatif, et il le reste : un profil enregistré avant l'entité n'en
+   * désigne aucun, et il joue ses propres valeurs — ce qu'il a toujours fait.
+   * Le lien se crée quand on choisit un moteur, ou quand on enregistre celui du
+   * profil courant.
+   *
+   * Les sections que le moteur porte — `engine`, `sampleDir`, `layers`, `mix`,
+   * et les deux réglages de synthèse — restent dans le profil pour l'instant,
+   * alimentées par le moteur désigné. Les en retirer toucherait environ trois
+   * cent cinq points d'appel : c'est le dernier ticket du volet qui contracte,
+   * une fois les cinq groupes en place.
+   */
+  engineId?: string
+  /**
    * Définition du moteur simulé, pour les deux origines générées.
    *
    * Elle vit dans le profil parce que tout l'outillage y est déjà : export en
@@ -870,7 +890,7 @@ export type ProfileOrigin = Pick<
  * — il posait une couleur de plus là où il fallait en retirer une. Le rendu
  * porte à sa place la part de résonance que l'effort retire.
  */
-export const PROFILE_FORMAT_VERSION = 8
+export const PROFILE_FORMAT_VERSION = 9
 
 export interface ProfileFile {
   version: number

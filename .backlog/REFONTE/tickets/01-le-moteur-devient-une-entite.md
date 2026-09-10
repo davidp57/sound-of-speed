@@ -1,6 +1,6 @@
 # 01 — Le moteur devient une entité qu'on nomme
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — livré et vérifié dans le navigateur
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -26,17 +26,17 @@ suivants le réutilisent plutôt que d'en inventer chacun un.
 
 ## Critères d'acceptation
 
-- [ ] Un moteur est une entité qui porte un nom, ses cotes, son rupteur, sa
+- [x] Un moteur est une entité qui porte un nom, ses cotes, son rupteur, sa
       banque de sons et son caractère sonore ; un profil le désigne au lieu de
       recopier ses valeurs.
-- [ ] Choisir un moteur dans la liste applique d'un coup tout ce qu'il porte —
+- [x] Choisir un moteur dans la liste applique d'un coup tout ce qu'il porte —
       c'est déjà le cas de la bibliothèque de neuf moteurs, et cela doit le
       rester sans qu'aucune valeur ne soit recopiée dans le profil.
-- [ ] Un moteur s'exporte, se partage et se réimporte **seul**.
-- [ ] Deux profils peuvent désigner le même moteur ; le modifier vaut pour les
+- [x] Un moteur s'exporte, se partage et se réimporte **seul**.
+- [x] Deux profils peuvent désigner le même moteur ; le modifier vaut pour les
       deux.
-- [ ] Les profils déjà enregistrés sont repris sans perte : la version de format
+- [x] Les profils déjà enregistrés sont repris sans perte : la version de format
       monte, et personne ne retrouve un profil vide ni un moteur muet.
-- [ ] La « Référence des réglages » du README dit où vivent désormais les
+- [x] La « Référence des réglages » du README dit où vivent désormais les
       réglages du moteur, et `CONTEXT.md` porte le terme s'il se précise.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

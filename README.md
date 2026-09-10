@@ -1268,6 +1268,23 @@ domaine.
 Deux profils sont livrés avec l'application, et le bouton **Profils d'usine**
 réintroduit ceux qu'on aurait supprimés.
 
+**Un profil désigne un moteur.** Un moteur, ici, c'est tout ce qui fait qu'on le
+reconnaît : ses réglages, sa banque de sons, ses couches et son mixage. Il vit à
+part, il a un nom, et la section **Moteur** de l'écran de configuration permet
+de le choisir, de l'enregistrer, de l'exporter seul et d'en reprendre un reçu
+d'ailleurs. Trois conséquences :
+
+- on envoie **un moteur seul**, sans faire suivre tout un profil ;
+- on le **corrige une fois** pour tous les profils qui le jouent — l'écran dit
+  combien ils sont avant d'y toucher ;
+- un profil qu'on a affiné depuis qu'il a chargé son moteur le dit, et laisse le
+  choix : garder les écarts pour lui, ou les reporter dans le moteur.
+
+Ce qu'un moteur **n'emporte pas** : les rapports, le pont, la façon de passer
+les vitesses, ni les réglages de mesure du signal. Changer de moteur change le
+son, pas la conduite. Les moteurs livrés sont les deux profils d'usine — leurs
+rupteurs diffèrent de deux mille tours, ce sont bien deux moteurs.
+
 **Route** — calibré sur les vitesses que l'on pratique vraiment. En accélération
 les six rapports servent entre 0 et 100 km/h, et dès qu'on tient une vitesse la
 boîte monte d'elle-même : mesuré, la quatrième à 50 km/h (1532 tr/min), la

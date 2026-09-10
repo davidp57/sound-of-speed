@@ -59,6 +59,29 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un moteur devient une chose qu'on nomme.** Ses réglages, sa banque de sons,
+  ses couches et son mixage — tout ce qui fait qu'on le reconnaît — forment
+  désormais une entité qui a un nom, et que le profil **désigne** au lieu de
+  recopier. Trois gestes en découlent : envoyer un moteur **seul**, sans faire
+  suivre tout un profil ; le corriger une fois pour tous les profils qui le
+  jouent ; et savoir enfin lequel un profil joue — la bibliothèque le devinait,
+  en comptant les écarts entre ses valeurs et celles de chaque entrée.
+
+  Vérifié dans le navigateur : appliquer le moteur Sport au profil Route emporte
+  son rupteur, son ralenti et sa banque, et **ne touche ni la boîte, ni les
+  réglages de mesure**. C'est ce qu'on cherchait — un moteur n'est pas une façon
+  de passer les rapports.
+
+  Les moteurs livrés sont les deux profils d'usine, et non les neuf entrées de la
+  bibliothèque de définitions : celles-là portent des cotes et un échappement,
+  pas de banque, et n'ont donc pas de son à faire entendre. Elles restent un
+  catalogue pour l'atelier.
+
+  Le profil garde ses sections pour l'instant, alimentées par le moteur désigné.
+  Les en retirer touche environ trois cent cinq points d'appel et ne pourrait pas
+  rester vert : c'est le dernier ticket du volet qui contracte, une fois les cinq
+  groupes en place. Format de profil en version 9, profils repris.
+
 - **Tout ce que le serveur porte se récupère en un fichier.** Un bouton « Tout
   récupérer », dans la section Profils, liste les quatre dossiers du serveur —
   journal, traces, relevés de mesure, profils —, tire les fichiers et les rend
