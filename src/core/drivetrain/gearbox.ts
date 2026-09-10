@@ -1,5 +1,11 @@
 import type { DrivetrainPreset, EnginePreset, FeelPreset } from '../preset/schema'
-import { upshiftRpmFor, type DriveMode } from './drive-mode'
+import {
+  downshiftFloorRpm,
+  kickdownLoadFor,
+  upshiftFloorRpm,
+  FIRST_UPSHIFT_FLOOR_RPM,
+  type DriveMode,
+} from './drive-mode'
 
 /**
  * Boîte de vitesses.
@@ -63,71 +69,6 @@ const KICKDOWN_RISE_WINDOW_S = 1.5
 /** Délai minimal entre deux rétrogradages forcés, en secondes. */
 const KICKDOWN_COOLDOWN_S = 3
 /** Accélération au-delà de laquelle la vitesse n'est plus tenue, en m/s². */
-const CRUISE_STEADY_ACCEL_MS2 = 0.3
-/**
- * Fenêtre sur laquelle la dérive de vitesse est mesurée, en secondes.
- *
- * « Tenir une vitesse » se mesure sur la **vitesse**, pas sur sa dérivée. Cette
- * fenêtre est comparée par moitiés : l'écart entre la vitesse moyenne de la
- * seconde moitié et celle de la première, rapporté au temps qui les sépare,
- * donne une dérive en m/s² qu'on compare aux mêmes bornes qu'avant.
- *
- * C'est la moyenne qui fait le travail : le bruit d'une mesure isolée est divisé
- * par la racine du nombre d'images moyennées. L'accélération instantanée, elle,
- * est bruitée à un dixième de m/s² même une fois estimée proprement — soit
- * exactement la borne basse de la bande, si bien que le critère se décidait au
- * tirage au sort.
- *
- * Trois secondes, et la durée est **mesurée**. Sur douze minutes de vitesse
- * parfaitement tenue, à 25, 40, 60 et 90 km/h, avec un bruit de mesure de
- * ±1 km/h et la cadence rapide du GPS :
- *
- * - en jugeant sur l'accélération instantanée, quarante-six passages parasites ;
- * - sur une dérive mesurée sur deux secondes, quatre, dont deux descentes — donc
- *   encore des allers-retours ;
- * - sur trois secondes, aucun, et cela quelle que soit la fenêtre
- *   d'accélération réglée, de 200 à 2000 ms.
- *
- * Le coût est une latence : un ralentissement est vu en une seconde et demie au
- * lieu d'être vu tout de suite. C'est sans conséquence ici — ce critère décide
- * d'une montée en croisière, qui attend de toute façon deux secondes de
- * stabilité, et le freinage franc a son propre chemin, immédiat.
- */
-const CRUISE_WINDOW_S = 3
-/**
- * Décélération au-delà de laquelle la vitesse n'est plus tenue, en m/s².
- *
- * Bien plus serrée que du côté de l'accélération, et ce n'est pas une
- * coquetterie : une bande symétrique faisait passer un ralentissement doux —
- * 1 km/h par seconde — pour une croisière. La descente au régime s'en trouvait
- * suspendue, si bien qu'on gardait le dernier rapport jusqu'à l'arrêt, puis
- * qu'on passait tous les rapports d'un coup au premier freinage franc.
- *
- * Tenir une vitesse, c'est ne pas la perdre. Un dixième de m/s² laisse passer le
- * tremblement de la mesure, pas un ralentissement.
- */
-const CRUISE_DECEL_LIMIT_MS2 = 0.1
-/**
- * Délai après une descente avant qu'une montée en croisière soit permise, en
- * secondes.
- *
- * Sans lui, une accélération qui tremble autour de la bande fait alterner
- * descente et montée à quelques secondes d'intervalle — le va-et-vient qu'on
- * entend entre deux rapports voisins.
- */
-const CRUISE_AFTER_DOWNSHIFT_S = 4
-/**
- * Durée hors bande tolérée avant de considérer la croisière rompue, en secondes.
- *
- * L'accélération vient d'une dérivée du GPS : elle tremble. Sans cette
- * tolérance, une seule image en dehors de la bande remettait le compte à zéro,
- * et la montée en croisière ne se déclenchait jamais en conduite réelle —
- * mesuré, un tremblement de 0,25 m/s² suffisait à l'empêcher tout à fait.
- *
- * Elle ne rouvre pas le défaut qu'elle côtoie : un ralentissement, lui, sort de
- * la bande et **y reste**.
- */
-const CRUISE_BAND_GRACE_S = 0.4
 
 /**
  * Décélération à partir de laquelle on considère que la voiture ralentit
@@ -201,17 +142,6 @@ const CLEARLY_SLOWING_MS2 = 0.5
 const DEMAND_FALL_PER_S = 1 / 3
 /** Durée de décélération soutenue avant de descendre, en secondes. */
 const BRAKE_HOLD_S = 1
-/**
- * Plafond absolu du rapport visé par une descente au freinage, en fraction du
- * rupteur.
- *
- * Il ne sert que de garde-fou : le plafond utile est le **seuil de montée** du
- * rapport visé, que le profil règle déjà rapport par rapport. Descendre au-delà
- * mettrait le moteur au-dessus de son propre point de passage — mesuré, une
- * descente en deuxième à 98 km/h plaçait le moteur à 7232 tr/min, au ras du
- * rupteur, et il y restait jusqu'à l'arrêt.
- */
-const BRAKE_DOWNSHIFT_CEILING = 0.85
 
 /**
  * Ce que la boîte a besoin de savoir pour décider.
@@ -304,7 +234,6 @@ export class Gearbox {
   /** Temps depuis le dernier rétrogradage forcé, en secondes. */
   private sinceKickdownS = Number.POSITIVE_INFINITY
   /** Durée pendant laquelle la vitesse est restée stable, en secondes. */
-  private steadyForS = 0
   /**
    * Temps cumulé passé à ralentir, en secondes, moins ce qui a été rendu.
    *
@@ -317,9 +246,7 @@ export class Gearbox {
   /** Temps depuis la dernière descente, en secondes. */
   private sinceDownshiftS = Number.POSITIVE_INFINITY
   /** Durée passée hors de la bande de croisière, en secondes. */
-  private outOfBandForS = 0
   /** Vitesses récentes, pour mesurer la dérive sur la fenêtre déclarée. */
-  private speedHistory: { at: number; kmh: number }[] = []
 
   constructor(
     private drivetrain: DrivetrainPreset,
@@ -381,12 +308,9 @@ export class Gearbox {
     this.currentLoad = 0
     this.elapsedS = 0
     this.sinceKickdownS = Number.POSITIVE_INFINITY
-    this.steadyForS = 0
     this.slowingForS = 0
     this.brakingForS = 0
     this.sinceDownshiftS = Number.POSITIVE_INFINITY
-    this.outOfBandForS = 0
-    this.speedHistory = []
   }
 
   /**
@@ -412,57 +336,6 @@ export class Gearbox {
   }
 
   /** Retient la vitesse courante, en ne gardant que la fenêtre déclarée. */
-  private recordSpeed(kmh: number): void {
-    this.speedHistory.push({ at: this.elapsedS, kmh })
-    const limite = this.elapsedS - CRUISE_WINDOW_S
-    while (this.speedHistory.length > 1 && (this.speedHistory[0]?.at ?? 0) < limite) {
-      this.speedHistory.shift()
-    }
-  }
-
-  /**
-   * Dérive de la vitesse sur la fenêtre, en m/s².
-   *
-   * La fenêtre est comparée par moitiés plutôt que par ses deux extrémités : une
-   * moyenne divise le bruit, deux mesures isolées l'additionnent. Rendue en m/s²
-   * pour se comparer aux bornes de la bande, qui sont des accélérations et qui
-   * n'ont pas bougé — c'est la façon de les mesurer qui change.
-   *
-   * Rend `null` tant que la fenêtre n'est pas assez remplie pour que la
-   * comparaison ait un sens, et la vitesse n'est alors **pas** tenue : on ne peut
-   * pas affirmer qu'une allure se maintient avant de l'avoir observée. Rendre
-   * zéro, comme on l'a d'abord fait, revenait à l'affirmer — et la boîte montait
-   * un rapport dans les deux secondes suivant un démarrage ou un changement de
-   * profil, sans rien avoir constaté.
-   */
-  private speedDriftMs2(): number | null {
-    const points = this.speedHistory
-    const oldest = points[0]
-    if (!oldest) return null
-    const span = this.elapsedS - oldest.at
-    if (span < CRUISE_WINDOW_S * 0.5) return null
-
-    const milieu = oldest.at + span / 2
-    let sommeAvant = 0
-    let nAvant = 0
-    let sommeApres = 0
-    let nApres = 0
-    for (const point of points) {
-      if (point.at < milieu) {
-        sommeAvant += point.kmh
-        nAvant += 1
-      } else {
-        sommeApres += point.kmh
-        nApres += 1
-      }
-    }
-    if (nAvant === 0 || nApres === 0) return null
-
-    // Les deux moyennes sont séparées par la moitié de la fenêtre : c'est cette
-    // durée qui convertit un écart de vitesse en accélération.
-    const ecartKmh = sommeApres / nApres - sommeAvant / nAvant
-    return ecartKmh / (span / 2) / 3.6
-  }
 
   /** Retient la charge courante, en ne gardant que le double de la fenêtre. */
   private recordLoad(load: number): void {
@@ -492,24 +365,50 @@ export class Gearbox {
    * conducteur demandait avant de changer de profil.
    */
   private upshiftThresholdAt(gear: number, demand: number): number {
-    // Le seuil se déduit du **rupteur du moteur** et du mode, et non d'une table
-    // de tours absolus. Celle-ci ignorait le moteur : un moteur de moto à onze
-    // mille tours passait ses rapports au même endroit qu'un V8 à six mille cinq,
-    // et un gros bloc à cinq mille cinq tapait son rupteur avant d'avoir le
-    // droit de monter. La table n'a plus besoin de suivre le nombre de rapports
-    // non plus : la courbe s'étale sur la boîte qu'elle trouve.
-    const base = upshiftRpmFor(
+    // Le seuil se déduit du **régime qu'aurait le rapport visé**, et non d'une
+    // table ni d'une fraction du rupteur. On monte dès que le rapport suivant
+    // tourne au-dessus de son plancher — le ralenti plus une marge que le mode
+    // et la demande déplacent.
+    //
+    // Il est rendu exprimé sur le rapport engagé, parce que c'est là que la
+    // boîte lit son régime et que la télémétrie l'affiche. Le rapport des deux
+    // démultiplications fait la conversion, et c'est lui qui rend le critère
+    // sensible à l'**étagement** : un saut court et un saut long ne reçoivent
+    // plus le même seuil, ce que la table ne savait pas faire.
+    const ratios = this.drivetrain.gearRatios
+    const courant = ratios[gear] ?? 1
+    const suivant = ratios[gear + 1] ?? courant
+
+    // La première n'est qu'une amorce : on passe la deuxième dès qu'elle tient
+    // au-dessus du ralenti, sans regarder le mode ni la charge, et sans tirage
+    // au sort. David : « on passe la deuxième dès qu'on peut, sans attendre ».
+    if (gear === 0) {
+      return clamp(
+        (FIRST_UPSHIFT_FLOOR_RPM * courant) / suivant,
+        this.engine.idleRpm,
+        this.engine.redlineRpm,
+      )
+    }
+
+    const plancher = upshiftFloorRpm(this.driveMode, clamp01(demand), this.engine.idleRpm)
+    const seuil = (plancher * courant) / suivant + this.pendingJitter
+    return clamp(seuil, this.engine.idleRpm * 1.2, this.engine.redlineRpm)
+  }
+
+  /**
+   * Régime en dessous duquel le rapport engagé est rendu.
+   *
+   * Il remonte avec la décélération — plus on ralentit fort, plus on rétrograde
+   * tôt — et reste sous le seuil de montée du même rapport, ce qui interdit
+   * l'aller-retour.
+   */
+  private downshiftThreshold(accelMs2: number): number {
+    return downshiftFloorRpm(
       this.driveMode,
-      gear,
-      Math.max(1, this.gearCount - 1),
-      this.engine.redlineRpm,
+      accelMs2,
+      this.engine.idleRpm,
+      this.upshiftThreshold(this.gear),
     )
-    const spread = this.drivetrain.upshiftLoadSpreadRpm
-    const shifted = base + (clamp01(demand) - 0.5) * spread + this.pendingJitter
-    // Le plancher prime : mieux vaut garder un rapport court qu'en engager un
-    // long à un régime où le moteur peinerait.
-    const floored = Math.max(shifted, this.drivetrain.minUpshiftRpm)
-    return clamp(floored, this.engine.idleRpm * 1.2, this.engine.redlineRpm)
   }
 
   /**
@@ -576,61 +475,38 @@ export class Gearbox {
     // image, elle décide sur une tendance.
     this.elapsedS += dt
     this.recordLoad(load)
-    this.recordSpeed(kmh)
     this.sinceKickdownS += dt
     this.sinceDownshiftS += dt
     // Tenir une vitesse, c'est ne pas la perdre : la bande est asymétrique.
+    // La demande suit la charge à la montée et la retient à la descente.
+    this.demand =
+      load >= this.demand ? load : Math.max(load, this.demand - DEMAND_FALL_PER_S * dt)
+
+    // Ce qui reste des compteurs d'allure, et pourquoi il en reste.
     //
-    // Elle se juge sur la dérive de la vitesse, et non sur l'accélération
-    // instantanée : celle-ci est bruitée à un dixième de m/s² une fois estimée
-    // au mieux, soit la borne basse de la bande elle-même.
-    const drift = this.speedDriftMs2()
-    const inBand =
-      drift !== null && drift <= CRUISE_STEADY_ACCEL_MS2 && drift >= -CRUISE_DECEL_LIMIT_MS2
-    this.outOfBandForS = inBand ? 0 : this.outOfBandForS + dt
-    // Une sortie brève est du tremblement de mesure, pas un changement
-    // d'allure : le compte de stabilité ne repart à zéro qu'au bout d'un
-    // moment dehors.
-    const held = this.outOfBandForS < CRUISE_BAND_GRACE_S
-    this.steadyForS = held ? this.steadyForS + dt : 0
+    // La croisière n'a plus de mécanisme à elle : le plancher fait entrer le
+    // rapport long tout seul. Mais **inhiber la montée quand on ralentit** est
+    // une autre affaire, et elle tient toujours : sans elle, lever le pied
+    // juste avant un passage le laisse se produire alors que la voiture
+    // ralentit déjà. David : « si j'arrête d'accélérer juste avant que la boîte
+    // ne monte un rapport, elle le monte quand même ».
+    //
+    // Ces deux-là seront unifiés avec le reste par le lot MOUVEMENT ; ils sont
+    // gardés tels quels ici pour que ce lot ne fasse qu'une chose.
     this.brakingForS =
       accelMs2 <= this.drivetrain.brakeDownshiftAccelMs2 ? this.brakingForS + dt : 0
     this.slowingForS =
       accelMs2 < -CRUISE_SLOWING_MS2
         ? this.slowingForS + dt
         : Math.max(0, this.slowingForS - dt * 2)
-    // La demande suit la charge à la montée et la retient à la descente.
-    this.demand =
-      load >= this.demand ? load : Math.max(load, this.demand - DEMAND_FALL_PER_S * dt)
-
-    // Deux notions distinctes, et les confondre suffit à faire le yoyo.
-    //
-    // `steadyNow` dit que la vitesse est tenue **à cet instant** : c'est lui
-    // qui suspend la descente au régime, et il doit rester vrai pendant toute
-    // la croisière. `steadyLongEnough` dit qu'elle l'est depuis assez longtemps
-    // pour tenter un rapport de plus ; il repart à zéro après chaque montée,
-    // pour que la cascade se fasse palier par palier, et attend aussi qu'aucune
-    // descente ne soit trop récente.
-    //
-    // En les confondant, chaque montée réarmait la descente au régime dans la
-    // seconde — le rapport atteint tournant précisément sous ce seuil — et la
-    // boîte oscillait indéfiniment.
-    const steadyNow = held
-    // Ralentir n'est pas croiser, et cela se sait avant que la dérive ne
-    // l'ait vu : sans cette condition, lever le pied après une longue
-    // croisière laissait passer un rapport de plus.
     const slowing =
       accelMs2 <= -CLEARLY_SLOWING_MS2 || this.slowingForS >= CRUISE_SLOWING_HOLD_S
-    const steadyLongEnough =
-      this.steadyForS >= this.drivetrain.cruiseUpshiftAfterS &&
-      this.sinceDownshiftS >= CRUISE_AFTER_DOWNSHIFT_S &&
-      !slowing
     const braking = this.brakingForS >= BRAKE_HOLD_S
 
     let ready = false
     let blocked = false
     let upThresholdSeen = this.upshiftThreshold(this.gear)
-    const downThresholdSeen = this.engine.redlineRpm * this.drivetrain.downshiftAtRedlineRatio
+    const downThresholdSeen = this.downshiftThreshold(accelMs2)
     const auto = this.mode === 'auto' && this.hasGearbox && this.shiftRemainingS === 0
 
     // La première se conduit comme les autres : on y accélère jusqu'au seuil de
@@ -658,7 +534,7 @@ export class Gearbox {
     // les gaz » : faute de pédale, la charge est déduite de l'accélération, et
     // le seuil se franchissait dès 3,6 km/h par seconde.
     if (auto && this.feel.kickdown.enabled && !atStandstill) {
-      const threshold = this.feel.kickdown.loadThreshold
+      const threshold = kickdownLoadFor(this.driveMode)
       if (load < threshold * 0.7) this.kickdownArmed = true
       else if (
         this.kickdownArmed &&
@@ -671,40 +547,9 @@ export class Gearbox {
           this.kickdownArmed = false
           this.lastKickdown = dropped
           this.sinceKickdownS = 0
-          this.steadyForS = 0
           return this.report(atStandstill, false, false, upThresholdSeen, downThresholdSeen)
         }
         this.kickdownArmed = false
-      }
-    }
-
-    // Descente au ralentissement : le rétrogradage sert aussi à ralentir, et
-    // c'était la moitié manquante de son métier. Un seul seuil de régime
-    // décidait, le même qu'on lève le pied doucement ou qu'on freine fort.
-    if (
-      auto &&
-      braking &&
-      !atStandstill &&
-      this.gear > this.downshiftFloor() &&
-      // Les descentes au freinage s'espacent par le temps écoulé depuis la
-      // dernière, et **non** en remettant à zéro le compteur de freinage :
-      // celui-ci sert aussi à inhiber la montée, et le remettre à zéro levait
-      // cette inhibition pendant une seconde — juste assez pour que la boîte
-      // remonte le rapport qu'elle venait de descendre. Un compteur, un usage.
-      this.sinceDownshiftS >= BRAKE_HOLD_S
-    ) {
-      const candidate = rpmInGear(this.gear - 1)
-      // Le plafond utile est le seuil de montée du rapport visé : c'est la
-      // notion qu'a le profil du haut de sa plage, réglée rapport par rapport.
-      // Le rupteur ne sert que de garde-fou absolu.
-      const ceiling = Math.min(
-        this.engine.redlineRpm * BRAKE_DOWNSHIFT_CEILING,
-        this.upshiftThreshold(this.gear - 1),
-      )
-      if (candidate <= ceiling) {
-        this.readyForS = 0
-        this.applyShift(-1)
-        return this.report(atStandstill, false, false, upThresholdSeen, downThresholdSeen)
       }
     }
 
@@ -742,42 +587,23 @@ export class Gearbox {
       } else if (
         rpm <= downThresholdSeen &&
         this.gear > this.downshiftFloor() &&
-        !atStandstill &&
-        // Suspendue en croisière : la 4e à 50 km/h tourne à 1532 tr/min, sous
-        // ce seuil, et la boîte ferait le yoyo avec la montée en croisière.
-        // Cette règle existe pour éviter de brouter ; le plancher de croisière
-        // garantit précisément qu'on ne broute pas.
-        !steadyNow &&
-        // Garde contre le va-et-vient : rétrograder n'a de sens que si le régime
-        // obtenu ne franchit pas aussitôt le seuil de montée du rapport visé,
-        // ce qui ferait remonter dans la foulée. La marge évite de s'arrêter
-        // pile sur le seuil, où le moindre tremblement relancerait le cycle.
-        rpmInGear(this.gear - 1) < this.upshiftThreshold(this.gear - 1) * 0.98
+        !atStandstill
+        // Plus de garde contre le va-et-vient, et c'est le propos : le plancher
+        // de descente est tenu sous le seuil de montée du même rapport, donc un
+        // rapport qu'on vient d'engager ne peut pas être rendu dans la foulée.
+        // L'hystérésis se démontre au lieu de s'entourer de conditions.
       ) {
         this.readyForS = 0
         this.applyShift(-1)
       } else {
-        if (rpm <= downThresholdSeen && this.gear > 0 && !atStandstill && !steadyNow) {
-          blocked = true
-        }
+        if (rpm <= downThresholdSeen && this.gear > 0 && !atStandstill) blocked = true
         this.readyForS = 0
 
-        // Montée en croisière : la seule raison de monter qui ne regarde pas le
-        // régime. Sans elle, un palier figeait le rapport où l'on était — 50 km/h
-        // tenus laissaient la 2e à 3034 tr/min quand la 4e donnait 1532.
-        //
-        // Un rapport à la fois : la cascade se fait d'elle-même, palier par
-        // palier, et chaque étape est jugée sur son propre régime.
-        if (
-          steadyLongEnough &&
-          this.shiftRemainingS === 0 &&
-          this.gear < this.gearCount - 1 &&
-          !atStandstill &&
-          rpmInGear(this.gear + 1) >= this.drivetrain.cruiseMinRpm
-        ) {
-          this.steadyForS = 0
-          this.applyShift(1)
-        }
+        // Plus de montée en croisière non plus. Elle existait parce que le seuil
+        // de montée regardait le rapport qu'on quitte : un palier figeait alors
+        // le rapport où l'on était. Le plancher regarde le rapport visé, donc il
+        // fait entrer le rapport long de lui-même, sans mécanisme à part — et
+        // sans la plage de vitesse où les deux se contredisaient.
       }
       upThresholdSeen = upThreshold
     }

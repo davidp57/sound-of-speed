@@ -1,7 +1,8 @@
 # PLANCHER — la boîte se décide sur un seul plancher de régime
 
-**Statut :** ⬜ prêt
-**Branche :** `feature/plancher` — à ouvrir après MOUVEMENT
+**Statut :** 🧑 attend David — la règle est livrée en version allégée, il reste
+l'écoute en roulant et le nettoyage du format de profil
+**Branche :** `feature/plancher`
 **Version visée :** à décider
 
 ## Le problème
@@ -312,6 +313,46 @@ régimes de passage, `gps-bench.test.ts` pour la fabrication de positions,
   une inconnue à relever en roulant, notée dans REFONTE.
 - **Le son du passage lui-même**, jugé correct par David.
 - **Le retrait de `BENCH=1` de l'image d'intégration**, indépendant.
+
+## Ce qui est livré, et ce qui ne l'est pas
+
+Livré le 10 septembre 2026 au soir, en version **allégée** — le format de profil
+n'a pas bougé, pour que la règle soit essayable dès le lendemain :
+
+- le plancher de montée, réglé par le mode et la demande ;
+- le premier passage à 810 tr/min en absolu, sans mode, sans charge, sans tirage
+  au sort ;
+- le plancher de descente, qui remonte avec la décélération et reste sous celui
+  de montée ;
+- le rétrogradage forcé au seuil du mode ;
+- la montée en croisière et la descente au freinage supprimées.
+
+Pas encore fait :
+
+- **le nettoyage du format de profil.** Les six réglages sont toujours là et ne
+  commandent plus rien ; le README le dit ligne par ligne. La montée de version
+  et la conversion restent à faire.
+- **l'irrégularité du régime**, à fusionner en un seul mécanisme dans le moteur.
+- **les marges elles-mêmes**, qui sont des points de départ.
+
+## Ce qu'il faut écouter, à la prochaine sortie
+
+Dans l'ordre d'importance, et chacun se juge à l'oreille sans rien ouvrir :
+
+1. **Le départ.** La deuxième s'engage vers 15 km/h, la première ayant tourné à
+   1 534 tr/min. C'est le réglage le plus incertain du lot : à 810 tr/min de
+   plancher, la deuxième prend le relais à peine au-dessus du ralenti. Si cela
+   sonne mou, c'est ce nombre-là qui bouge, et lui seul.
+2. **La conduite en ville, mode Route.** Les rapports doivent céder vers 2 300 à
+   3 000 tr/min au lieu de 2 950 à 3 700. C'est le retour principal du
+   10 septembre.
+3. **Les vitesses tenues**, entre 40 et 80 km/h. C'est là que la boîte faisait
+   le va-et-vient ; elle ne devrait plus changer d'avis du tout. Le journal
+   compte maintenant les passages un par un, donc le trajet le dira exactement.
+4. **Les relances sur autoroute.** Le rétrogradage forcé ne devrait plus se
+   déclencher sur une reprise ordinaire, seulement pied au plancher.
+5. **Le frein moteur.** Les descentes doivent s'étaler plutôt que s'entasser à
+   l'arrêt, et se faire plus tôt quand on freine franchement.
 
 ## Notes
 

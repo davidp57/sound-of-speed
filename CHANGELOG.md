@@ -146,6 +146,29 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **La boîte se décide sur un seul plancher de régime.** On monte dès que le
+  rapport suivant tournerait au-dessus du ralenti plus une marge, et on descend
+  quand le rapport engagé tombe sous une marge un peu plus basse. La marge vient
+  du mode de conduite et se déplace avec la demande — elle double à pleine
+  charge. Le premier passage échappe à la règle : la deuxième s'engage dès
+  qu'elle tient au-dessus du ralenti, quels que soient le mode et la charge.
+
+  Mesuré sur le profil Route en mode Route, accélération douce : les rapports
+  cèdent à 3005, 2597, 2367 et 2324 tr/min, contre 3700, 3350, 3050 et 2950
+  avant. Pied au plancher : 4296, 3632, 3333 et 3213.
+
+  Deux mécanismes disparaissent, le plancher faisant leur travail : la montée en
+  croisière et la descente au freinage. Un seul nombre gouvernant les deux sens,
+  ils ne peuvent plus se contredire — c'est ce qui ouvrait sur chaque rapport une
+  plage de vitesse où la croisière autorisait un rapport que la descente au
+  régime refusait, et où la boîte faisait le va-et-vient. Entendu le 10 septembre
+  2026 entre 70 et 72 km/h, et relevé au journal.
+
+- **Le rétrogradage forcé dépend du mode.** Pied au plancher en Route, demande
+  forte en Sport. Sept rétrogradages en trente-six minutes le 10 septembre, sur
+  des relances ordinaires : le seuil du profil ne distinguait pas les deux modes.
+
+
 - **Aucune image publiée ne porte plus les écrans de banc.** L'image
   d'intégration les portait, et l'application y démarrait donc sur le simulateur
   au lieu du GPS — trente-six secondes de simulateur sur l'essai du

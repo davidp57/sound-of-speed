@@ -46,22 +46,98 @@ export const DRIVE_MODE_LABELS: Record<DriveMode, string> = {
 }
 
 /**
- * La courbe de chaque mode : une fraction du rupteur par passage.
+ * Le tempérament d'un mode : deux marges, et un seuil de rétrogradage forcé.
  *
- * Elles disent enfin explicitement ce que les deux profils faisaient sans le
- * dire : **Route monte de plus en plus tôt** — on cherche le rapport long — et
- * **Sport de plus en plus tard** — on garde le régime. Personne n'avait énoncé
- * ces deux philosophies ; elles vivaient dans dix nombres.
+ * **La règle a changé le 10 septembre 2026 au soir**, après une écoute en
+ * roulant. Les seuils étaient une courbe de fractions du rupteur, une par
+ * passage ; ils sont maintenant un **plancher de régime** — le régime en
+ * dessous duquel un rapport n'a pas sa place. Idée de David : « on peut passer
+ * le rapport suivant dès lors que les tours dans ce rapport seraient supérieurs
+ * au ralenti plus une marge ; en fonction de l'agressivité du mode, on ajuste
+ * la marge ; en fonction de la charge, on ajuste la marge ».
+ *
+ * Ce que cela apporte, au-delà du réglage. Le critère porte sur le régime du
+ * rapport **visé**, donc il s'adapte de lui-même à l'étagement de la boîte : un
+ * saut court et un saut long ne reçoivent plus le même seuil, ce que la courbe
+ * de fractions ne savait pas faire. Et un seul nombre gouverne les deux sens,
+ * si bien que la montée et la descente ne peuvent plus se contredire — c'est ce
+ * qui produisait, sur chaque rapport, une plage de vitesse où la croisière
+ * autorisait un rapport que la descente au régime refusait.
+ *
+ * Les marges sont des **points de départ**, calculés pour retomber sur les
+ * seuils d'avant au premier passage. Elles se règlent à l'oreille.
  */
-export const DRIVE_MODE_CURVES: Record<DriveMode, readonly number[]> = {
-  // Les seuils du profil Route, divisés par son rupteur. Écrits en division et
-  // non en décimales : quatre décimales déplacent le seuil de quelques dixièmes
-  // de tour, ce qui suffit à faire basculer une comparaison qui se joue à
-  // l'égalité — un test de la boîte l'a montré, et un réglage trouvé à l'oreille
-  // ne mérite pas d'être arrondi en le déplaçant.
-  road: [3700 / 6500, 3350 / 6500, 3050 / 6500, 2950 / 6500, 2950 / 6500],
-  // Idem pour Sport, rupteur 8 500.
-  sport: [5200 / 8500, 5600 / 8500, 5900 / 8500, 6200 / 8500, 6500 / 8500],
+export interface DriveModeFeel {
+  /** Marge au-dessus du ralenti pour engager le rapport suivant, à charge moyenne. */
+  upshiftMarginRpm: number
+  /** Marge au-dessus du ralenti en dessous de laquelle on rétrograde, pied levé. */
+  downshiftMarginRpm: number
+  /** Charge à partir de laquelle un rétrogradage forcé se déclenche. */
+  kickdownLoad: number
+}
+
+export const DRIVE_MODE_FEEL: Record<DriveMode, DriveModeFeel> = {
+  // Route : on cherche le rapport long, et le rétrogradage forcé demande le
+  // pied au plancher. 0,95 de charge, c'est +1,8 m/s² sur le profil Route —
+  // six relevés sur deux cent dix-huit lors de l'essai du 10 septembre.
+  road: { upshiftMarginRpm: 900, downshiftMarginRpm: 400, kickdownLoad: 0.95 },
+  // Sport : on garde le régime, et une demande forte suffit à faire descendre.
+  sport: { upshiftMarginRpm: 2200, downshiftMarginRpm: 700, kickdownLoad: 0.85 },
+}
+
+/**
+ * Le plancher du tout premier passage, en tours par minute, absolu.
+ *
+ * David : « on passe la deuxième dès qu'on peut, sans attendre, quelle que soit
+ * la charge et le mode ». Ni marge de mode, ni effet de la charge, ni tirage au
+ * sort : la première n'est qu'une amorce de lancement, et la seule chose à
+ * éviter est que la deuxième tombe sous le ralenti — c'était le défaut du
+ * passage imposé à la vitesse de lancement, 486 tr/min à 8 km/h.
+ */
+export const FIRST_UPSHIFT_FLOOR_RPM = 810
+
+/**
+ * Le plancher au-dessus duquel un rapport a sa place, à cette demande.
+ *
+ * La marge est **doublée à pleine charge** et de moitié pied levé : plus on
+ * demande, plus on laisse monter dans les tours avant de passer.
+ */
+export function upshiftFloorRpm(mode: DriveMode, demand: number, idleRpm: number): number {
+  const marge = DRIVE_MODE_FEEL[mode].upshiftMarginRpm
+  const facteur = Math.min(2, Math.max(0.5, 2 * clamp01(demand)))
+  return idleRpm + marge * facteur
+}
+
+/**
+ * Le plancher en dessous duquel le rapport engagé est rendu.
+ *
+ * Il **remonte avec la décélération** : plus on ralentit fort, plus on
+ * rétrograde tôt, et c'est ce qui donne l'impression du frein moteur. Une
+ * décélération franche — deux mètres par seconde carrée — double la marge.
+ *
+ * Il reste sous le plancher de montée, et c'est l'hystérésis : un rapport qu'on
+ * vient d'engager tourne au-dessus du plancher de montée, donc au-dessus de
+ * celui-ci, donc il ne peut pas être rendu dans la foulée. L'invariant se
+ * démontre au lieu de se régler.
+ */
+export function downshiftFloorRpm(
+  mode: DriveMode,
+  accelMs2: number,
+  idleRpm: number,
+  upshiftFloor: number,
+): number {
+  const marge = DRIVE_MODE_FEEL[mode].downshiftMarginRpm
+  const facteur = 1 + Math.min(1, Math.max(0, -accelMs2 / 2))
+  return Math.min(idleRpm + marge * facteur, upshiftFloor * 0.9)
+}
+
+/** La charge à partir de laquelle ce mode accepte un rétrogradage forcé. */
+export function kickdownLoadFor(mode: DriveMode): number {
+  return DRIVE_MODE_FEEL[mode].kickdownLoad
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value))
 }
 
 export function isDriveMode(value: unknown): value is DriveMode {
@@ -69,25 +145,30 @@ export function isDriveMode(value: unknown): value is DriveMode {
 }
 
 /**
- * La fraction du rupteur à laquelle ce passage se fait.
+ * Les courbes d'avant, gardées pour une seule chose : reconnaître un profil.
  *
- * La courbe est **redimensionnée** quand la boîte n'a pas cinq passages : les
- * fractions s'interpolent sur la longueur voulue, si bien qu'un rapport ajouté
- * reçoit un seuil cohérent avec ses voisins. C'était le défaut que
- * `resizeGearTables` devait corriger à la main sur les seuils absolus — un
- * rapport ajouté héritait du seuil de son prédécesseur.
- *
- * `gear` est l'indice du rapport qu'on quitte, `shifts` le nombre de passages
- * de la boîte, c'est-à-dire un de moins que son nombre de rapports.
+ * Elles ont piloté les passages entre le 10 septembre 2026 au matin et le même
+ * soir. Elles ne pilotent plus rien — le plancher les a remplacées — mais les
+ * profils enregistrés portent encore les seuils absolus qu'elles donnaient, et
+ * c'est à eux qu'on lit le tempérament choisi. Les effacer ferait conduire un
+ * profil Sport comme un profil Route.
  */
-export function upshiftFraction(mode: DriveMode, gear: number, shifts: number): number {
-  const courbe = DRIVE_MODE_CURVES[mode]
-  const dernier = courbe[courbe.length - 1] ?? 0.5
-  if (courbe.length === 0) return 0.5
-  if (shifts <= 1) return courbe[0] ?? dernier
+const LEGACY_UPSHIFT_CURVES: Record<DriveMode, readonly number[]> = {
+  road: [3700 / 6500, 3350 / 6500, 3050 / 6500, 2950 / 6500, 2950 / 6500],
+  sport: [5200 / 8500, 5600 / 8500, 5900 / 8500, 6200 / 8500, 6500 / 8500],
+}
 
-  // Position relative de ce passage dans la boîte, de 0 à 1, reportée sur la
-  // courbe : c'est ce qui rend la courbe indépendante du nombre de rapports.
+/** Ce que la courbe d'avant donnait pour ce passage, sur ce rupteur. */
+function legacyUpshiftRpm(
+  mode: DriveMode,
+  gear: number,
+  shifts: number,
+  redlineRpm: number,
+): number {
+  const courbe = LEGACY_UPSHIFT_CURVES[mode]
+  const dernier = courbe[courbe.length - 1] ?? 0.5
+  if (shifts <= 1) return (courbe[0] ?? dernier) * redlineRpm
+
   const position = Math.min(1, Math.max(0, gear / (shifts - 1)))
   const echelle = position * (courbe.length - 1)
   const bas = Math.floor(echelle)
@@ -95,22 +176,7 @@ export function upshiftFraction(mode: DriveMode, gear: number, shifts: number): 
   const reste = echelle - bas
   const a = courbe[bas] ?? dernier
   const b = courbe[haut] ?? dernier
-  return a + (b - a) * reste
-}
-
-/**
- * Le régime auquel ce passage se fait, sur un moteur donné.
- *
- * C'est tout le propos : le même mode sur deux moteurs donne deux régimes, et
- * changer de moteur change enfin la façon de conduire.
- */
-export function upshiftRpmFor(
-  mode: DriveMode,
-  gear: number,
-  shifts: number,
-  redlineRpm: number,
-): number {
-  return upshiftFraction(mode, gear, shifts) * redlineRpm
+  return (a + (b - a) * reste) * redlineRpm
 }
 
 /**
@@ -135,7 +201,7 @@ export function driveModeFromUpshiftRpm(
   const ecart = (mode: DriveMode): number =>
     upshiftRpm.reduce(
       (somme, seuil, gear) =>
-        somme + Math.abs(seuil - upshiftRpmFor(mode, gear, shifts, redlineRpm)),
+        somme + Math.abs(seuil - legacyUpshiftRpm(mode, gear, shifts, redlineRpm)),
       0,
     ) / shifts
   return ecart('sport') < ecart('road') ? 'sport' : 'road'

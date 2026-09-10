@@ -11,6 +11,7 @@ import {
 } from './defaults'
 import { Engine } from '../engine/engine'
 import { Gearbox } from '../drivetrain/gearbox'
+import { driveModeFromUpshiftRpm } from '../drivetrain/drive-mode'
 import type { Profile } from './schema'
 
 /**
@@ -160,7 +161,15 @@ describe('profils livrés — la croisière', () => {
    * longtemps pour que la montée en croisière ait fini sa cascade.
    */
   function croisiere(p: Profile, kmh: number): { gear: number; rpm: number } {
-    const gearbox = new Gearbox(p.drivetrain, p.engine, p.feel)
+    // Le tempérament vit dans le mode depuis le 10 septembre 2026, et c'est
+    // l'application qui le déduit du profil au chargement : un banc qui
+    // l'oublierait ferait conduire Sport comme Route.
+    const gearbox = new Gearbox(
+      p.drivetrain,
+      p.engine,
+      p.feel,
+      driveModeFromUpshiftRpm(p.drivetrain.upshiftRpm, p.engine.redlineRpm),
+    )
     const rpmInGear = (gear: number) =>
       Engine.kinematicRpm(
         kmh,
