@@ -1595,7 +1595,15 @@ journal comme la capture — les essais des 8, 9 et 10 septembre 2026, antérieu
 La **timeline** porte lecture, pause et déplacement libre, jusqu'à vingt fois la
 vitesse réelle. Elle est marquée des faits du journal : arrêts, redémarrages du
 suivi, salves de positions rejetées, coupures du son, changements de
-configuration. Ce sont les moments qu'on cherche.
+configuration. Ce sont les moments qu'on cherche. Le survol d'une marque dit ce
+qu'elle est, combien de fois et quand ; un clic y emmène la lecture.
+
+L'instant se lit sur **les cadrans de la voiture** — le même composant, la même
+échelle de vitesse fixe à 180 km/h, le rapport en grand entre les deux. Relire
+un trajet, c'est revoir ce qu'on avait sous les yeux ; deux dessins pour la même
+valeur donneraient deux impressions différentes du même instant. La zone rouge
+du compte-tours vient du rupteur enregistré dans l'en-tête de la session, donc
+du moteur qui jouait ce jour-là — une session sans capture n'en a pas.
 
 **Ce qui est deviné se voit.** Un journal ne porte le régime, le rapport et la
 charge qu'une fois toutes les dix secondes : entre deux relevés, les valeurs
@@ -1603,8 +1611,10 @@ sont interpolées et l'écran dit à quelle distance se trouve le relevé le plu
 proche. Le rapport n'est jamais interpolé — entre la troisième et la quatrième,
 il n'y a pas de trois et demi.
 
-La **carte** montre le trajet et le véhicule qui le suit ; un clic sur le tracé
-emmène la timeline à cet endroit. Elle demande le réseau, ce qui est sans
+La **carte** occupe tout ce que l'écran laisse. Elle montre le trajet et le
+véhicule qui le suit ; un clic sur le tracé emmène la timeline à cet endroit, et
+un bouton **garde la vue centrée** sur le véhicule — coupé, on peut examiner un
+endroit pendant que la lecture continue. Elle demande le réseau, ce qui est sans
 conséquence : le debriefing se fait au bureau.
 
 Le bouton **Copier le repère** met dans le presse-papier une ligne lisible —

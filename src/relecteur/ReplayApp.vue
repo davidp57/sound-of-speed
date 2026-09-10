@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import TrackMap from './TrackMap.vue'
+import DialGauge from '../ui/components/DialGauge.vue'
 import { loadDepositCredentials } from '../core/preset/store'
 import { listSessions, loadSession, type SessionEntry } from '../core/session/read'
 import { stateAt, trackAt, type Session } from '../core/session/model'
@@ -120,6 +121,51 @@ function label(kind: string): string {
   return KIND_LABELS[kind] ?? kind
 }
 
+/**
+ * L'infobulle d'un repère, suivie à la souris.
+ *
+ * Et non l'attribut `title` du navigateur : il met une seconde à paraître, ce
+ * qui est une seconde de trop quand on balaie une barre pour trouver où
+ * quelque chose s'est passé.
+ */
+const hovered = ref<{ x: number; text: string } | null>(null)
+
+function showMark(event: MouseEvent, mark: { at: number; kind: string; count: number }): void {
+  const barre = (event.currentTarget as HTMLElement).parentElement
+  const boite = barre?.getBoundingClientRect()
+  hovered.value = {
+    x: boite ? event.clientX - boite.left : 0,
+    text: `${label(mark.kind)}${mark.count > 1 ? ` — ${mark.count} fois` : ''} · ${clock(mark.at)}`,
+  }
+}
+
+/**
+ * Les échelles des cadrans, reprises de l'écran de conduite.
+ *
+ * Le compteur est fixe à 180 km/h pour la même raison que dans la voiture : la
+ * vitesse maximale théorique dépasse 300, et l'aiguille passerait sa vie dans
+ * le coin. Le compte-tours, lui, suit le rupteur enregistré dans l'en-tête de
+ * la session — c'est le moteur qui jouait ce jour-là, pas celui d'aujourd'hui.
+ */
+const SPEED_SCALE_KMH = 180
+const SPEED_STEP_KMH = 20
+
+const redlineRpm = computed<number | null>(() => {
+  const runtime = session.value?.header?.['runtime']
+  if (typeof runtime !== 'object' || runtime === null) return null
+  const engine = (runtime as Record<string, unknown>)['engine']
+  if (typeof engine !== 'object' || engine === null) return null
+  const rpm = (engine as Record<string, unknown>)['softLimitRpm']
+  return typeof rpm === 'number' ? rpm : null
+})
+
+/** Borne haute du compte-tours : le rupteur arrondi, ou de quoi tenir le relevé. */
+const rpmScale = computed(() => {
+  const rupteur = redlineRpm.value
+  const vu = Math.max(0, ...(session.value?.states.map((point) => point.rpm) ?? [0]))
+  return Math.ceil(Math.max(rupteur ?? 0, vu, 1000) / 1000) * 1000
+})
+
 /** L'horloge du lecteur. Vingt fois par seconde suffit à l'œil. */
 function play(): void {
   if (playing.value || duration.value <= 0) return
@@ -155,12 +201,6 @@ function clock(ms: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-/**
- * Un écart au relevé, dit dans l'unité qui le rend parlant.
- *
- * « 0,0 s » se lit comme « pile dessus » alors qu'il peut valoir quarante
- * millisecondes ; c'est justement la distinction que cet écran doit tenir.
- */
 /** Un délai depuis le départ, écrit sans qu'on puisse le confondre avec une heure. */
 function duree(ms: number): string {
   const total = Math.max(0, Math.round(ms / 1000))
@@ -169,6 +209,12 @@ function duree(ms: number): string {
   return m > 0 ? `${m} min ${String(sec).padStart(2, '0')} s` : `${sec} s`
 }
 
+/**
+ * Un écart au relevé, dit dans l'unité qui le rend parlant.
+ *
+ * « 0,0 s » se lit comme « pile dessus » alors qu'il peut valoir quarante
+ * millisecondes ; c'est justement la distinction que cet écran doit tenir.
+ */
 function ecart(ms: number): string {
   return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`
 }
@@ -176,6 +222,15 @@ function ecart(ms: number): string {
 function stamp(ms: number): string {
   return new Date(ms).toLocaleString('fr-FR')
 }
+
+/**
+ * La carte suit-elle le véhicule ?
+ *
+ * Active par défaut : on ouvre un trajet pour le voir se dérouler, pas pour
+ * courir derrière un point qui sort du cadre. Le bouton la coupe quand on veut
+ * examiner un endroit pendant que la lecture continue.
+ */
+const follow = ref(true)
 
 const copied = ref('')
 
@@ -245,6 +300,10 @@ void refresh()
         </select>
         <button :disabled="busy" @click="refresh()">Rafraîchir</button>
       </div>
+      <span v-if="session" class="muted">
+        {{ session.sources.capture > 0 ? 'capture et journal' : 'journal seul' }} —
+        {{ session.states.length }} relevés, {{ session.track.length }} positions
+      </span>
     </header>
 
     <p v-if="note" class="note">{{ note }}</p>
@@ -253,16 +312,7 @@ void refresh()
     </p>
 
     <template v-if="session">
-      <section class="panel">
-        <div class="entete">
-          <span class="numeric big">{{ clock(at) }}</span>
-          <span class="muted">sur {{ clock(duration) }}</span>
-          <span class="muted">
-            {{ session.sources.capture > 0 ? 'capture et journal' : 'journal seul' }} —
-            {{ session.states.length }} relevés, {{ session.track.length }} positions
-          </span>
-        </div>
-
+      <section class="panel lecture">
         <div class="timeline">
           <input
             type="range"
@@ -279,15 +329,22 @@ void refresh()
               class="mark"
               :class="mark.kind"
               :style="{ left: `${(mark.at / duration) * 100}%` }"
-              :title="`${label(mark.kind)}${mark.count > 1 ? ` (${mark.count})` : ''} à ${clock(mark.at)}`"
+              @mouseenter="showMark($event, mark)"
+              @mouseleave="hovered = null"
+              @click="at = mark.at"
             ></span>
+            <span v-if="hovered" class="bulle" :style="{ left: `${hovered.x}px` }">
+              {{ hovered.text }}
+            </span>
           </div>
         </div>
 
         <div class="controls">
           <button class="is-active" @click="toggle()">{{ playing ? 'Pause' : 'Lecture' }}</button>
+          <span class="numeric horloge">{{ clock(at) }}</span>
+          <span class="muted">sur {{ clock(duration) }}</span>
           <label>
-            Vitesse ×<span class="numeric">{{ rate.toFixed(1) }}</span>
+            ×<span class="numeric">{{ rate.toFixed(1) }}</span>
             <input
               type="range"
               min="0.5"
@@ -297,48 +354,83 @@ void refresh()
               @input="rate = Number(($event.target as HTMLInputElement).value)"
             />
           </label>
+          <button :aria-pressed="follow" @click="follow = !follow">
+            {{ follow ? 'Carte centrée' : 'Recentrer sur la voiture' }}
+          </button>
           <button @click="copyRepere()">Copier le repère</button>
           <span v-if="copied" class="muted">{{ copied }}</span>
         </div>
       </section>
 
-      <section class="panel">
-        <h2>À cet instant</h2>
-        <p v-if="reading && !reading.measured" class="devine">
-          Valeurs interpolées — le relevé le plus proche est à {{ ecart(reading.offsetMs) }}.
-        </p>
-        <p v-else-if="reading" class="mesure">Valeurs mesurées.</p>
-
-        <div v-if="reading" class="valeurs">
-          <div><span class="numeric big">{{ reading.value.kmh.toFixed(1) }}</span><span class="unite">km/h</span></div>
-          <div><span class="numeric big">{{ Math.round(reading.value.rpm) }}</span><span class="unite">tr/min</span></div>
-          <div><span class="numeric big">{{ reading.value.gear }}</span><span class="unite">rapport</span></div>
-          <div><span class="numeric big">{{ (reading.value.load * 100).toFixed(0) }}</span><span class="unite">% de charge</span></div>
-          <div><span class="numeric big">{{ reading.value.accelMs2.toFixed(2) }}</span><span class="unite">m/s²</span></div>
+      <!--
+        Les mêmes cadrans que dans la voiture, et le même composant : relire un
+        trajet, c'est revoir ce qu'on avait sous les yeux. Deux dessins pour la
+        même valeur donneraient deux impressions différentes du même instant.
+      -->
+      <section v-if="reading" class="panel cadrans">
+        <div class="cadran">
+          <DialGauge
+            :value="reading.value.kmh"
+            :max="SPEED_SCALE_KMH"
+            :step="SPEED_STEP_KMH"
+            unit="km/h"
+          />
         </div>
-        <p v-else class="note">Cette session ne porte aucun relevé de conduite.</p>
+
+        <div class="rapport">
+          <span class="numeric gear">{{ reading.value.gear }}</span>
+          <span class="unite">rapport</span>
+          <p class="etat" :class="{ devine: !reading.measured }">
+            {{
+              reading.measured
+                ? 'valeurs mesurées'
+                : `interpolé — relevé à ${ecart(reading.offsetMs)}`
+            }}
+          </p>
+          <p class="appoint">
+            charge {{ (reading.value.load * 100).toFixed(0) }} % ·
+            {{ reading.value.accelMs2.toFixed(2) }} m/s²
+          </p>
+        </div>
+
+        <div class="cadran">
+          <DialGauge
+            :value="reading.value.rpm"
+            :max="rpmScale"
+            :step="1000"
+            :redline="redlineRpm"
+            unit="tr/min"
+          />
+        </div>
+      </section>
+      <p v-else class="note">Cette session ne porte aucun relevé de conduite.</p>
+
+      <section class="panel carte">
+        <TrackMap :track="session.track" :at="position" :follow="follow" @seek="at = $event" />
       </section>
 
-      <section class="panel">
-        <h2>Où</h2>
-        <TrackMap :track="session.track" :at="position" @seek="at = $event" />
-      </section>
-
-      <section v-if="session.header" class="panel">
-        <h2>Configuration enregistrée</h2>
+      <details v-if="session.header" class="panel">
+        <summary>Configuration enregistrée</summary>
         <pre>{{ JSON.stringify(session.header, null, 2) }}</pre>
-      </section>
+      </details>
     </template>
   </div>
 </template>
 
 <style scoped>
+/*
+  Pleine hauteur, et la carte prend ce qui reste : c'est elle qu'on regarde le
+  plus longtemps, et une carte de vingt lignes ne montre pas un trajet.
+*/
 .relecteur {
-  max-width: 70rem;
-  margin: 0 auto;
-  padding: 1rem;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 0.8rem;
   display: grid;
-  gap: 1rem;
+  grid-template-rows: auto auto auto 1fr auto;
+  gap: 0.7rem;
+  max-width: 90rem;
+  margin: 0 auto;
 }
 
 header {
@@ -350,48 +442,32 @@ header {
 
 h1 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-}
-
-h2 {
-  margin: 0 0 0.6rem;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  font-weight: 600;
 }
 
 .pick {
   display: flex;
   gap: 0.5rem;
   flex: 1;
+  min-width: 20rem;
 }
 
 select {
   flex: 1;
-  min-width: 12rem;
 }
 
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 0.9rem 1.1rem;
+  padding: 0.7rem 0.9rem;
 }
 
-.entete {
-  display: flex;
-  align-items: baseline;
-  gap: 0.8rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.6rem;
-}
-
-.big {
-  font-size: 1.6rem;
+.lecture {
+  display: grid;
+  gap: 0.4rem;
 }
 
 .muted {
@@ -399,28 +475,33 @@ select {
   font-size: 0.85rem;
 }
 
+.horloge {
+  font-size: 1.2rem;
+}
+
 .timeline {
   position: relative;
-  padding-bottom: 0.9rem;
 }
 
 .timeline input {
   width: 100%;
+  display: block;
 }
 
 .marks {
   position: relative;
-  height: 0.6rem;
+  height: 0.7rem;
 }
 
 /* Une marque par fait : sa couleur dit sa nature, sa position son instant. */
 .mark {
   position: absolute;
   top: 0;
-  width: 2px;
-  height: 0.6rem;
+  width: 3px;
+  height: 0.7rem;
   background: var(--muted);
   transform: translateX(-1px);
+  cursor: pointer;
 }
 
 .mark.reject {
@@ -441,48 +522,89 @@ select {
   background: #2e7d32;
 }
 
+/* L'infobulle paraît sans délai : on balaie la barre pour trouver un moment. */
+.bulle {
+  position: absolute;
+  top: 1rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: #10131a;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  pointer-events: none;
+  z-index: 500;
+}
+
 .controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.9rem;
   flex-wrap: wrap;
 }
 
 .controls label {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.3rem;
   font-size: 0.85rem;
   color: var(--muted);
 }
 
-.valeurs {
-  display: flex;
-  gap: 1.6rem;
-  flex-wrap: wrap;
+.cadrans {
+  display: grid;
+  grid-template-columns: 1fr minmax(9rem, 0.6fr) 1fr;
+  align-items: center;
+  gap: 1rem;
 }
 
-.valeurs div {
+.cadran {
   display: flex;
-  align-items: baseline;
-  gap: 0.3rem;
+  justify-content: center;
+}
+
+.cadran :deep(svg) {
+  max-height: 12rem;
+}
+
+.rapport {
+  text-align: center;
+}
+
+.gear {
+  font-size: 3rem;
+  line-height: 1;
 }
 
 .unite {
+  display: block;
   color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.etat {
+  margin: 0.6rem 0 0;
   font-size: 0.8rem;
-}
-
-.devine {
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin: 0 0 0.6rem;
-}
-
-.mesure {
   color: #2e7d32;
-  font-size: 0.85rem;
-  margin: 0 0 0.6rem;
+}
+
+.etat.devine {
+  color: var(--muted);
+}
+
+.appoint {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.carte {
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .note {
@@ -491,9 +613,18 @@ select {
   margin: 0;
 }
 
+summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
 pre {
-  margin: 0;
-  overflow-x: auto;
+  margin: 0.6rem 0 0;
+  overflow: auto;
+  max-height: 12rem;
   font-size: 0.8rem;
   color: var(--muted);
 }

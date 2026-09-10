@@ -20,6 +20,8 @@ const props = defineProps<{
   track: TrackPoint[]
   /** Position courante, ou `null` quand la session n'en a pas. */
   at: TrackPoint | null
+  /** La vue suit-elle le véhicule ? */
+  follow: boolean
 }>()
 
 const emit = defineEmits<{ (event: 'seek', at: number): void }>()
@@ -102,6 +104,27 @@ watch(
     } else {
       marker.setLatLng([point.lat, point.lon])
     }
+
+    // Centré veut dire centré : la vue se pose sur le véhicule à chaque
+    // relevé. Une première version ne recadrait qu'à la sortie du cadre — elle
+    // économisait des mouvements, mais la voiture n'était jamais au centre, ce
+    // qui n'est pas ce qu'on demande à un bouton nommé ainsi.
+    //
+    // Sans animation : Leaflet glisserait vers la nouvelle position, et vingt
+    // glissements par seconde donnent une carte qui tremble.
+    if (props.follow) {
+      map.setView([point.lat, point.lon], map.getZoom(), { animate: false })
+    }
+  },
+)
+
+/** Activer le suivi recadre tout de suite : c'est ce qu'on attend d'un bouton. */
+watch(
+  () => props.follow,
+  (actif) => {
+    const point = props.at
+    if (!actif || map === null || point === null) return
+    map.setView([point.lat, point.lon], map.getZoom(), { animate: false })
   },
 )
 </script>
@@ -119,12 +142,14 @@ watch(
 <style scoped>
 .map-holder {
   position: relative;
+  height: 100%;
 }
 
+/* Elle prend la place que le parent lui laisse, et il lui laisse le reste. */
 .map {
-  height: 22rem;
+  height: 100%;
+  min-height: 12rem;
   border-radius: 10px;
-  border: 1px solid var(--line);
   background: #10131a;
 }
 
