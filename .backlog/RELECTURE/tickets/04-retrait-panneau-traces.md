@@ -1,6 +1,6 @@
 # 04 — Le panneau traces disparaît
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — la capture démarre toute seule et remonte par tranches ;
 03 — un témoin dit si la session sera exploitable

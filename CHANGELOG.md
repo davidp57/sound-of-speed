@@ -6,7 +6,101 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **La capture d'un trajet démarre toute seule.** Elle se déclenche au démarrage
+  du GPS, dès lors que la remontée est au dernier cran, et s'arrête avec lui. Il
+  n'y a plus rien à penser avant de partir.
+
+  Le mécanisme précédent demandait d'appuyer sur un bouton. Le 10 septembre
+  2026, un essai de trente-six minutes n'a laissé **aucune trace** : le journal
+  est remonté en huit tranches, la trace n'existait pas. La remontée automatique
+  des traces était pourtant en place depuis des jours — `core/upload/consent.ts`
+  les classe au dernier cran, et l'accord était donné, puisque le journal portait
+  les positions. Le transport marchait ; c'est le geste qui manquait.
+
+  Elle enregistre, à la cadence de l'appareil, **ce que la source livre** —
+  vitesse brute, précision, origine — et **ce que la chaîne en fait** au même
+  instant — vitesse conditionnée, accélération, régime, rapport, charge. La
+  sortie n'est pas là pour le rejeu, qui la recalculerait : elle permet de
+  comparer ce que la chaîne a produit ce jour-là à ce qu'elle produit
+  aujourd'hui, et rien d'autre dans ce projet ne montre les régressions.
+
+  Chaque tranche réécrit un **en-tête** qui décrit la session : profil, moteur,
+  boîte, version de l'application, et le profil assemblé en entier. Quatre
+  kilo-octets sur trois cents, pour qu'une tranche isolée se lise seule. Un
+  changement de configuration en cours de route s'inscrit, daté — et le journal
+  reçoit le même fait, son genre `profile` étant déclaré depuis le premier jour
+  sans que rien ne l'émette.
+
+  Chaque relevé garde aussi **l'horodatage brut de la source**, sans conversion :
+  c'est la seule façon de retrouver la cadence réelle de l'appareil, et l'unité
+  elle-même est une information — le navigateur de la Tesla compte en
+  microsecondes, ce qui a coûté une semaine de diagnostic.
+
+  Les tranches partent par la file de remontée déjà écrite, toutes les cinq
+  minutes, et **ce qui reste part après quinze secondes à l'arrêt**. La dernière
+  tranche n'a pas cinq minutes devant elle, et personne n'arrête l'application :
+  David « sort de la voiture, et quand il s'éloigne elle s'éteint ». Un arrêt qui
+  dure est le dernier moment où l'on est encore là pour envoyer — le temps de se
+  garer suffit, un feu rouge n'y suffit pas, et le déclencheur ne tire qu'une
+  fois par arrêt pour qu'un embouteillage ne produise pas un fichier par quart de
+  minute.
+
+  Il compte sur l'horloge murale et non sur le temps de session : le pas de la
+  boucle est plafonné à un quart de seconde, si bien qu'une page en arrière-plan
+  voit son temps avancer quatre fois moins vite que le monde. Rien n'est gardé dans le téléphone : trente-six minutes à dix relevés
+  par seconde font vingt-deux mille lignes, et le stockage local ne les
+  absorberait pas trajet après trajet.
+
+- **Un témoin sur l'écran de conduite dit si la session sera récupérable.** Vert :
+  la capture tourne et les tranches partent. Orange : ça se rattrapera tout
+  seul — pas de réseau, ou un GPS qui rejette beaucoup. Rouge : c'est perdu —
+  compte refusé, GPS mort, écriture impossible. Absent quand l'envoi est coupé.
+
+  **La frontière entre orange et rouge est la récupérabilité**, et non la gravité
+  ressentie : un réseau absent depuis dix minutes reste orange, parce que tout
+  partira ; un mot de passe refusé est rouge même si l'application tourne
+  parfaitement. Un seul témoin, qui prend le pire des états — une rangée de
+  voyants sur un écran qu'on lit en conduisant est une rangée qu'on ne lit pas.
+  Il ne clignote pas : sa couleur porte le sens.
+
+  Le détail se lit sur l'écran de télémétrie, en toutes lettres, avec ce qui a
+  été retenu et ce qui est parti.
+
 ### Modifié
+
+- **Ce qui part vers le serveur est compressé dans le navigateur**, par le
+  compresseur natif et sans bibliothèque — l'application doit se charger hors
+  réseau. Mesuré sur les huit tranches de l'essai du 10 septembre 2026 :
+  **226 483 octets deviennent 32 309, soit 85,7 % de moins**, la meilleure
+  tranche tombant à 93 %. Le gain porte d'abord sur la 4G en roulant, ensuite
+  sur la place du serveur. Là où le navigateur ne sait pas compresser, la
+  tranche part en clair plutôt que pas du tout.
+
+  Les profils et les relevés de mesure restent en clair : l'application les
+  retélécharge et les lit, et la bibliothèque de profils cesserait de
+  fonctionner.
+
+- **Le panneau des traces disparaît de l'écran de télémétrie** — capturer,
+  nommer, lister, supprimer, exporter, importer, rejouer, déposer. Une ligne
+  d'état le remplace. Deux mécanismes qui décrivent le même fait finissent par
+  diverger, et ce dépôt l'a déjà payé deux fois.
+
+  **Cela retire le seul rejeu sonore existant**, que le CHANGELOG appelait
+  « l'outil de mise au point le plus utile du projet ». C'est un prix accepté,
+  pas un oubli : le rejeu revient avec le relecteur, qui jouera une capture avec
+  la configuration de son en-tête.
+
+  L'étalonnage embarqué, lui, garde son enregistrement borné par étape :
+  délimiter une mesure n'est pas capturer une session, et une étape mal bornée
+  donne une mesure fausse. Un échec du stockage local se dit désormais sur son
+  panneau, faute de quoi il ne se dirait plus nulle part.
+
+- Le découpage en tranches, écrit pour le journal, est devenu une pièce à part :
+  la capture en avait besoin à l'identique, et le recopier aurait fait deux
+  mécanismes de plus.
+
 
 - Le profil actif est **assemblé** depuis les groupes qu'il désigne : son
   moteur, sa boîte et la voiture de l'appareil. Les réglages de l'écran de

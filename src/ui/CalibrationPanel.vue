@@ -18,6 +18,7 @@ import {
   startRecording,
   stopRecording,
   traces,
+  traceStorageError,
 } from '../state'
 
 /**
@@ -278,11 +279,16 @@ function gap(setting: NonNullable<Suggestion['setting']>): string {
       sortir, l'enregistrement continuant d'accumuler des mesures.
     -->
     <p v-if="isRecording && active === null" class="warn-bar">
-      Un enregistrement est en cours, lancé hors de cet écran.
+      Un enregistrement d’étape tourne sans étape active.
       <button class="is-active" @click="onStopUnknown()">
         L’arrêter ({{ recordedCount }} mesures)
       </button>
     </p>
+    <!--
+      Le stockage local des étapes peut refuser d'écrire, et c'est le seul
+      écran qui en enregistre encore : le dire ici, ou ne le dire nulle part.
+    -->
+    <p v-if="traceStorageError" class="error">{{ traceStorageError }}</p>
     <p v-if="!isRunning" class="error">
       Rien ne tourne : démarrez l’application avant d’enregistrer une étape.
     </p>

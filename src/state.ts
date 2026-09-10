@@ -34,6 +34,10 @@ import {
 import { SynthEngine, type SynthStatus } from './core/synth/synth'
 import { DEFAULT_RENDERING, DEFAULT_SYNTH, renderingOf, type SynthSettings } from './core/synth/settings'
 import { Journal, newSessionId } from './core/journal/journal'
+import { Capture, type CaptureHeader } from './core/capture/capture'
+import { depositCaptureSlice } from './core/capture/deposit'
+import { captureHealth } from './core/capture/health'
+import { StandstillFlush } from './core/capture/standstill'
 import { JournalCollector, type SoundCost } from './core/journal/collect'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
 import { toWav } from './bench/wav'
@@ -76,13 +80,7 @@ import {
   withCalibration,
 } from './core/calibration/onboard'
 import type { CalibrationStepId } from './core/calibration/protocol'
-import {
-  TRACE_FOLDER,
-  deposit,
-  depositName,
-  traceBody,
-  type DepositOutcome,
-} from './core/deposit/deposit'
+import { TRACE_FOLDER, depositName, traceBody } from './core/deposit/deposit'
 import { loadCalibration, saveCalibration, type CalibrationSession } from './core/calibration/store'
 import {
   applyOrigin,
@@ -93,8 +91,6 @@ import {
   missingFactoryProfiles,
   resetProfileSection,
   saveTraces,
-  tracesFromFile,
-  tracesToFile,
   type ProfileSection,
   loadAdvancedMode,
   loadDriveMode,
@@ -780,7 +776,14 @@ export function setUploadConsent(consent: UploadConsent): void {
  * tranches, ce qui les regroupe et les trie.
  */
 const journalStartedAt = Date.now()
-const journal = new Journal({ sessionId: newSessionId(), startedAt: journalStartedAt })
+/**
+ * L'identifiant de la session, partagé avec la capture continue.
+ *
+ * C'est lui qui apparie les deux : le journal raconte le trajet, la capture le
+ * rejoue, et le relecteur doit savoir qu'ils parlent du même.
+ */
+const sessionId = newSessionId()
+const journal = new Journal({ sessionId, startedAt: journalStartedAt })
 /**
  * Temps de session du journal, accumulé depuis le pas de la boucle.
  *
@@ -833,6 +836,215 @@ function depositJournalIfDue(nowMs: number): void {
 }
 
 /**
+ * La capture continue du trajet.
+ *
+ * Elle démarre **toute seule** quand le GPS démarre, si l'accord de remontée
+ * est au dernier cran. Le mécanisme précédent demandait d'appuyer sur un bouton
+ * avant de partir : le 10 septembre 2026, David a roulé trente-six minutes, le
+ * journal est remonté, et la trace n'existait pas. Le transport était en place
+ * depuis des jours ; c'est le geste qui manquait.
+ *
+ * Elle ne tourne qu'au GPS. Une session au clavier ou un rejeu n'a rien à
+ * enregistrer : on capture pour revoir un trajet réel, et le simulateur se
+ * refait à volonté.
+ */
+const capture = new Capture({
+  sessionId,
+  startedAt: journalStartedAt,
+  header: () => captureHeader(),
+})
+
+/** Nombre de relevés retenus, pour le dire à l'écran. */
+export const captureCount = ref(0)
+/** Tranches de capture déposées. */
+export const captureDeposits = ref<{ name: string; bytes: number }[]>([])
+/** Dernier échec de dépôt de capture, à afficher tel quel. */
+export const captureError = ref('')
+/**
+ * Pourquoi le dernier dépôt a échoué.
+ *
+ * Le motif et non le message : c'est lui qui décide de la couleur du témoin, et
+ * un message se réécrit sans qu'on y pense.
+ */
+export const captureFailure = ref<'no-credentials' | 'refused' | 'network' | ''>('')
+/**
+ * Vrai quand la capture tourne.
+ *
+ * Dérivé, et non posé par la boucle : un état d'affichage qui dépend de la
+ * cadence de la boucle ment dès que celle-ci ralentit — page en arrière-plan,
+ * application arrêtée —, et c'est précisément là qu'on regarde le témoin.
+ */
+export const capturing = computed(
+  () =>
+    sourceKind.value === 'geolocation' &&
+    isRunning.value &&
+    sendsAutomatically(uploadConsent.value, 'trace'),
+)
+
+/** L'état retenu au tour précédent, pour n'inscrire que les bascules. */
+let wasCapturing = false
+/**
+ * Le déclencheur qui dépose ce qui attend quand la voiture s'arrête.
+ *
+ * Sans lui, la dernière tranche d'un trajet n'est jamais déposée : personne
+ * n'arrête l'application, la voiture s'éteint toute seule une fois qu'on s'en
+ * éloigne, et le navigateur disparaît avec elle sans prévenir.
+ */
+const standstill = new StandstillFlush()
+let captureBusy = false
+
+/**
+ * Les échantillons reçus depuis le dernier tour, en attente d'être inscrits.
+ *
+ * Ils ne sont pas écrits à la réception mais au tour de boucle suivant : à la
+ * réception, la chaîne n'a pas encore tourné, et la sortie qu'on inscrirait
+ * serait celle de l'échantillon précédent. Une ligne de capture doit porter une
+ * entrée et la sortie **qu'elle a produite**.
+ *
+ * **Une file, et non un seul.** Le navigateur ralentit la boucle dès que la page
+ * n'est plus au premier plan — ce qui arrive en roulant, écran éteint —, et le
+ * GPS, lui, continue de livrer. Un seul emplacement perdait alors les positions
+ * silencieusement, ce qui est le défaut exact que ce lot corrige.
+ */
+let pendingSamples: SpeedSample[] = []
+
+/**
+ * Ce qui décrit la session, réécrit en tête de chaque tranche.
+ *
+ * Le profil **assemblé**, et non les identifiants seuls : c'est lui qui permet
+ * de rejouer le trajet tel qu'il a sonné, sur un appareil qui ne connaît ni ce
+ * moteur ni cette boîte. Les noms l'accompagnent pour que la tranche se lise
+ * sans le déchiffrer.
+ */
+function captureHeader(): CaptureHeader {
+  return {
+    session: sessionId,
+    startedAt: journalStartedAt,
+    app: __APP_VERSION__,
+    profile: { id: storedProfile.value.id, name: storedProfile.value.name },
+    engine: activeEngine.value
+      ? { id: activeEngine.value.id, name: activeEngine.value.name }
+      : null,
+    gearbox: activeGearbox.value
+      ? { id: activeGearbox.value.id, name: activeGearbox.value.name }
+      : null,
+    driveMode: driveMode.value,
+    runtime: runtimeProfile.value,
+  }
+}
+
+/**
+ * Inscrit l'échantillon en attente, avec la sortie qu'il vient de produire.
+ *
+ * Une ligne par échantillon de la source, et non par tour de boucle : la
+ * cadence du fichier est alors celle du GPS, ce qui est la seule qui décrive
+ * vraiment ce que la voiture a livré.
+ */
+function observeCapture(nowMs: number, out: CaptureOutput, stopped: boolean): void {
+  const allowed = capturing.value
+  if (allowed !== wasCapturing) {
+    wasCapturing = allowed
+    capture.note(nowMs, 'capture', { running: allowed })
+    if (!allowed) {
+      pendingSamples = []
+      // Ce qui reste part maintenant : une capture qui s'arrête n'a plus de
+      // tour de boucle pour atteindre ses cinq minutes, et la fin d'un trajet
+      // est souvent ce qu'on cherche à revoir.
+      depositCaptureIfDue(nowMs, true)
+    }
+  }
+  // Un arrêt qui dure est le dernier moment où l'on est encore là pour
+  // envoyer. Quinze secondes suffisent à se garer, pas à un feu rouge.
+  //
+  // Sur l'horloge murale, et non sur le temps de session : le pas de la boucle
+  // est plafonné à un quart de seconde, si bien qu'une page en arrière-plan —
+  // écran éteint, ce qui est le cas normal en roulant — voit son temps de
+  // session avancer quatre fois moins vite que le monde. Quinze secondes de
+  // session y feraient une minute de stationnement, et la voiture serait
+  // éteinte avant.
+  if (allowed && standstill.tick(Date.now(), stopped)) depositCaptureIfDue(nowMs, true)
+
+  if (!allowed || pendingSamples.length === 0) return
+
+  const reçus = pendingSamples
+  pendingSamples = []
+  for (const sample of reçus) {
+    capture.add({
+      at: nowMs,
+      src: sample.at,
+      kmh: sample.kmh,
+      acc: sample.accuracyM,
+      der: sample.derived,
+      out: out.kmh,
+      ms2: out.accelMs2,
+      rpm: out.rpm,
+      gear: out.gear,
+      load: out.load,
+    })
+  }
+  captureCount.value += reçus.length
+}
+
+/** Ce que la chaîne a produit à l'instant d'un échantillon. */
+interface CaptureOutput {
+  kmh: number
+  accelMs2: number
+  rpm: number
+  gear: number
+  load: number
+}
+
+/**
+ * L'état de la session, résumé pour le témoin de l'écran de conduite.
+ *
+ * Il répond à une seule question : ce qui est en train d'être vécu sera-t-il
+ * récupérable au retour ? Le détail vit dans `core/capture/health.ts`, où il se
+ * vérifie sans écran.
+ */
+export const captureStatus = computed(() =>
+  captureHealth({
+    capturing: capturing.value,
+    failure: captureFailure.value,
+    gpsActive: sourceStatus.value === 'active',
+    rejecting: rejectionCause.value !== null,
+  }),
+)
+
+/**
+ * Dépose une tranche de capture si l'heure est venue.
+ *
+ * Le même patron que le journal, et pour la même raison : sans l'attendre, un
+ * dépôt à la fois, et la tranche revient en attente si elle n'a pas pu partir.
+ */
+function depositCaptureIfDue(nowMs: number, force = false): void {
+  if (captureBusy || !sendsAutomatically(uploadConsent.value, 'trace')) return
+  if (!force && !capture.shouldSlice(nowMs)) return
+
+  const slice = capture.takeSlice(nowMs)
+  if (!slice) return
+
+  captureBusy = true
+  void depositCaptureSlice(slice, depositCredentials.value)
+    .then((outcome) => {
+      if (outcome.ok) {
+        captureError.value = ''
+        captureFailure.value = ''
+        captureDeposits.value = [
+          ...captureDeposits.value,
+          { name: outcome.name, bytes: outcome.bytes },
+        ]
+        return
+      }
+      captureError.value = outcome.detail
+      captureFailure.value = outcome.reason
+      if (outcome.retry) capture.restore(slice)
+    })
+    .finally(() => {
+      captureBusy = false
+    })
+}
+
+/**
  * Ce que le son a coûté, pour le journal.
  *
  * Rendu `null` quand le profil joue des échantillons : le lecteur de synthèse ne
@@ -880,25 +1092,6 @@ export const depositCredentials = ref(loadDepositCredentials())
 export function setDepositCredentials(user: string, password: string): void {
   depositCredentials.value = { user, password }
   saveDepositCredentials(depositCredentials.value)
-}
-
-/** Nom de la trace en cours de dépôt, pour désactiver son bouton. */
-export const depositing = ref('')
-/** Résultat du dernier dépôt, à afficher tel quel. */
-export const depositMessage = ref('')
-
-export async function depositTrace(trace: Trace): Promise<DepositOutcome> {
-  depositing.value = trace.name
-  depositMessage.value = ''
-  try {
-    const issue = await deposit(trace, depositCredentials.value)
-    depositMessage.value = issue.ok
-      ? `« ${issue.name} » déposée.`
-      : issue.detail
-    return issue
-  } finally {
-    depositing.value = ''
-  }
 }
 
 // --- La remontée automatique ---------------------------------------------
@@ -1097,6 +1290,9 @@ for (const source of [simulator, geolocation, replay]) {
   source.onSample((sample: SpeedSample) => {
     if (source !== currentSource()) return
     conditioner.push(sample)
+    // Retenu, pas inscrit : la chaîne n'a pas encore tourné pour cet
+    // échantillon, et la sortie qu'on écrirait serait celle du précédent.
+    if (capturing.value) pendingSamples.push(sample)
     if (recorder.isRecording) {
       recorder.push(sample)
       recordedCount.value = recorder.count
@@ -1370,7 +1566,19 @@ function step(dt: number): void {
     longitude: geolocation.lastPosition?.longitude ?? null,
     sound: soundCost(),
   })
+  observeCapture(
+    journalElapsedMs,
+    {
+      kmh: speed.kmh,
+      accelMs2: speed.accelMs2,
+      rpm: engineState.rpm,
+      gear: gearboxState.gear + 1,
+      load: engineState.load,
+    },
+    speed.atStandstill,
+  )
   depositJournalIfDue(journalElapsedMs)
+  depositCaptureIfDue(journalElapsedMs)
   flushUploadsIfDue()
 
   if (sourceKind.value === 'replay') replayProgress.value = replay.progress
@@ -1909,6 +2117,31 @@ const driveMode = ref<DriveMode>(
 
 export const currentDriveMode = computed(() => driveMode.value)
 
+/**
+ * Un changement de configuration en cours de route s'inscrit, daté.
+ *
+ * Sans cela, la fin d'une session serait relue avec la configuration du début :
+ * l'en-tête décrit l'instant où la tranche part, pas chaque instant qu'elle
+ * couvre. Le journal reçoit le même fait — son genre `profile` était déclaré
+ * depuis le premier jour sans que rien ne l'émette, et c'est ce qui empêchait
+ * de savoir quel moteur jouait pendant un essai.
+ */
+watch(
+  () => [storedProfile.value.id, activeEngine.value?.id, activeGearbox.value?.id, driveMode.value],
+  ([profileId, engineId, gearboxId, mode]) => {
+    const data = {
+      profile: profileId ?? null,
+      engine: engineId ?? null,
+      gearbox: gearboxId ?? null,
+      driveMode: mode ?? null,
+    }
+    // Le cran « rien n'est envoyé » ne tient pas de journal du tout : écrire
+    // ici contournerait le collecteur, qui est le seul à connaître l'accord.
+    if (uploadConsent.value !== 'none') journal.add(journalElapsedMs, 'profile', data)
+    if (capturing.value) capture.note(journalElapsedMs, 'profile', data)
+  },
+)
+
 watch(
   driveMode,
   (mode) => {
@@ -2024,23 +2257,6 @@ watch(
   },
   { deep: true },
 )
-
-export function deleteTrace(startedAt: number): void {
-  traces.value = traces.value.filter((t) => t.startedAt !== startedAt)
-}
-
-/** Exporte toutes les traces dans un fichier, pour les rejouer ailleurs. */
-export function exportTraces(): string {
-  return tracesToFile(traces.value)
-}
-
-export function importTraces(text: string): number {
-  const imported = tracesFromFile(text)
-  const known = new Set(traces.value.map((t) => t.startedAt))
-  const fresh = imported.filter((t) => !known.has(t.startedAt))
-  if (fresh.length > 0) traces.value = [...traces.value, ...fresh]
-  return fresh.length
-}
 
 /**
  * Arrête l'enregistrement et rend la trace obtenue, ou `null` si rien n'a été

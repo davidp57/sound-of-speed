@@ -1,6 +1,6 @@
 # 02 — Ce qui part est compressé
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite — mais prend tout son sens
 après le 01, la capture pesant dix fois le journal

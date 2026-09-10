@@ -11,6 +11,7 @@ import {
 import {
   activateAudio,
   activeProfile,
+  captureStatus,
   applyLibraryEngine,
   driveFace,
   favoriteProfiles,
@@ -274,6 +275,21 @@ const SPEED_STEP_KMH = 20
 <template>
   <div class="drive" :class="{ immersive }">
     <div class="toolbar">
+      <!--
+        Le témoin de session : la seule chose de cette barre qui reste visible
+        en immersion. Il répond à la question qu'on ne peut pas se poser en
+        roulant — ce que je vis là sera-t-il récupérable au retour ? Sa couleur
+        change, il ne bouge pas : l'écran se lit en conduisant.
+      -->
+      <span
+        v-if="captureStatus.state !== 'off'"
+        class="capture-light"
+        :class="captureStatus.state"
+        role="status"
+        :title="captureStatus.why"
+        :aria-label="captureStatus.why"
+      ></span>
+
       <section v-if="!immersive" class="sources">
       <template v-if="SOURCES.length > 1">
         <button
@@ -515,6 +531,26 @@ const SPEED_STEP_KMH = 20
   align-items: center;
   gap: 0.4rem;
   flex-wrap: wrap;
+}
+
+/*
+  Le témoin d'enregistrement. Aucune animation : sa couleur porte le sens, et
+  un point qui clignote attire l'œil sans jamais rien apprendre de plus.
+*/
+.capture-light {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  flex: none;
+  background: #2e7d32;
+}
+
+.capture-light.warn {
+  background: #ef6c00;
+}
+
+.capture-light.bad {
+  background: #c62828;
 }
 
 .status {
