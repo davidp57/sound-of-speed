@@ -45,7 +45,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [MENAGE-UI](MENAGE-UI/spec.md) — faire le ménage dans l'interface : six mille lignes d'écrans pour une application qui affiche trois chiffres | ⬜ |
 | [DELISSER](DELISSER/spec.md) — un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | 🧑 |
 | [RAPATRIER](RAPATRIER/spec.md) — faire redescendre ce que la voiture a déposé : les quatre dossiers du serveur en un paquet, depuis un téléphone | 🧑 |
-| [MOUVEMENT](MOUVEMENT/spec.md) — une seule notion de « est-ce qu'on ralentit ? » : deux compteurs se contredisent depuis le 8 septembre, et la boîte reste bloquée ou monte à contretemps | 🧑 |
+| [MOUVEMENT](MOUVEMENT/spec.md) — une seule notion de « est-ce qu'on ralentit ? » : deux compteurs se contredisent depuis le 8 septembre, et la boîte reste bloquée ou monte à contretemps | ⬜ |
 | [HORODATAGE](HORODATAGE/spec.md) — le navigateur de la Tesla compte en microsecondes : l'accélération sortait mille fois trop petite, et toute la chaîne travaillait sur zéro | 🧑 |
 | [REFONTE](REFONTE/spec.md) — le cadre de la refonte du 10 septembre : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en trois, et un compte fait le lien | 🔄 |
 | [RELECTURE](RELECTURE/spec.md) — revoir un trajet au bureau au lieu de le raconter de mémoire : une seule capture, automatique, et un relecteur avec timeline et carte | 🔄 sept tickets sur huit ; le rejeu sonore attend une capture réelle |
