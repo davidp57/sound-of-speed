@@ -580,3 +580,84 @@ describe('le silence de la source', () => {
     }
   })
 })
+
+/**
+ * L'échelle de l'horodatage des mesures.
+ *
+ * Le défaut que ces tests verrouillent, relevé sur le journal et les traces de
+ * l'essai du 9 septembre 2026 : le navigateur de la Tesla horodate ses
+ * positions en **microsecondes**, là où la norme du web dit millisecondes. Une
+ * trace de soixante secondes s'y annonçait longue de 60 700 « secondes », et
+ * l'accélération, qui est une pente donc une division par une durée, sortait
+ * mille fois trop petite — 0,0028 m/s² pour une vraie valeur de 2,78. Toute la
+ * chaîne en aval travaillait sur zéro : la charge figée à un demi, les
+ * garde-fous de la boîte inertes, le relief de charge plat.
+ *
+ * La détection porte sur le plus petit écart **strictement positif** observé,
+ * et non sur leur moyenne : un récepteur qui roule produit forcément des écarts
+ * courts, alors qu'un arrêt les espace. Deux positions peuvent porter le même
+ * horodatage — c'est le cas dans les traces relevées —, d'où l'écart nul
+ * écarté.
+ *
+ * Ce qui ferme le risque d'une fausse détection : si l'écart le plus court
+ * entre deux positions dépassait vraiment dix secondes, l'accélération serait
+ * inexploitable de toute façon. L'heuristique ne peut donc pas dégrader un cas
+ * sain.
+ */
+describe("l'échelle de l'horodatage", () => {
+  /**
+   * Une rampe régulière : un kilomètre-heure de plus à chaque mesure.
+   *
+   * À cent millisecondes de cadence, cela vaut dix km/h par seconde, soit
+   * 2,78 m/s² — une reprise franche, bien en dessous du plafond du profil.
+   */
+  function rampe(ecartParMesure: number): number {
+    const conditioner = new SpeedConditioner(preset())
+    const debut = 1_000_000
+    let accel = 0
+    for (let i = 0; i < 40; i += 1) {
+      conditioner.push(mesure(10 + i, debut + i * ecartParMesure))
+      accel = conditioner.tick(FRAME_S).accelMs2
+    }
+    return accel
+  }
+
+  it('lit la vraie accélération quand les mesures sont en millisecondes', () => {
+    expect(rampe(100)).toBeCloseTo(2.78, 1)
+  })
+
+  it('lit la même accélération quand elles sont en microsecondes', () => {
+    expect(rampe(100_000)).toBeCloseTo(rampe(100), 1)
+  })
+
+  it('ne se laisse pas tromper par un arrêt qui espace les mesures', () => {
+    // Deux secondes entre deux positions : c'est la cadence que le banc simule
+    // à l'arrêt, et elle reste franchement sous le seuil. L'échelle doit rester
+    // la milliseconde, sinon la pente serait mille fois trop grande.
+    const conditioner = new SpeedConditioner(preset())
+    const debut = 1_000_000
+    let accel = 0
+    for (let i = 0; i < 10; i += 1) {
+      // Une rampe lente : 2 km/h toutes les deux secondes, soit 0,28 m/s².
+      conditioner.push(mesure(10 + i * 2, debut + i * 2000))
+      accel = conditioner.tick(FRAME_S).accelMs2
+    }
+    expect(accel).toBeCloseTo(0.28, 1)
+  })
+
+  it('ignore les mesures qui portent le même horodatage', () => {
+    // Relevé dans les traces réelles : deux positions consécutives peuvent
+    // porter le même horodatage. Un écart nul ne dit rien de l'échelle.
+    const conditioner = new SpeedConditioner(preset())
+    const debut = 1_000_000
+    let accel = 0
+    for (let i = 0; i < 40; i += 1) {
+      const at = debut + Math.floor(i / 2) * 200_000
+      conditioner.push(mesure(10 + i * 0.5, at))
+      accel = conditioner.tick(FRAME_S).accelMs2
+    }
+    // Un demi km/h par mesure, deux mesures par palier de 200 ms : cela fait
+    // 5 km/h par seconde, soit 1,39 m/s².
+    expect(accel).toBeCloseTo(1.39, 1)
+  })
+})

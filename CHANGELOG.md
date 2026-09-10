@@ -6,6 +6,40 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Corrigé
+
+- **L'accélération était mille fois trop petite.** Le navigateur de la Tesla
+  horodate ses positions en **microsecondes**, là où la norme du web dit
+  millisecondes ; le code divisait par mille en croyant convertir. L'accélération
+  étant une pente, donc une division par une durée, elle sortait à 0,0028 m/s²
+  pour une vraie valeur de 2,78 — sous le seuil d'arrondi partout où on la
+  regardait.
+
+  Relevé sur le journal de l'essai du 9 septembre 2026, rapatrié depuis le NAS :
+  l'accélération est négligeable dans **476 relevés sur 480**, et la charge, qui
+  s'en déduit, est figée à 0,50 dans la même proportion. Le défaut était même
+  écrit dans le nom du fichier de trace déposé — `…_test2_60700s.json` annonce
+  60 700 secondes pour un trajet de soixante.
+
+  Ce que cela expliquait d'un coup : le relief de charge plat, donc l'effort
+  inaudible ; les garde-fous de la boîte inertes, faute d'atteindre leur seuil de
+  −0,05 m/s² ; la croisière qui se croyait éternelle, donc les rapports qui
+  montaient pendant un ralentissement — quatre cas dans le journal, dont un
+  3ᵉ → 5ᵉ à 64 km/h. La vitesse **affichée**, elle, était juste : seule sa
+  dérivée était morte.
+
+  Le conditionnement déduit maintenant l'échelle du plus petit écart strictement
+  positif entre deux mesures, et ramène l'horodatage en millisecondes. Le seuil
+  ne peut pas nuire : si le plus petit écart entre deux positions dépassait
+  vraiment dix secondes, l'accélération serait inexploitable de toute façon.
+  Rejouées dans le code corrigé, les deux traces du même essai rendent une
+  accélération exploitable sur 83 % et 70 % de leurs mesures, de médiane
+  0,36 m/s² et d'étendue −1,39 à +3,37 m/s².
+
+  Deux relevés bornent au passage ce qu'on peut attendre du signal de cette
+  voiture : la cadence réelle est de **dix** positions par seconde, et non trente
+  comme annoncé, et la vitesse est **quantifiée au kilomètre-heure entier**.
+
 ### Ajouté
 
 - **Tout ce que le serveur porte se récupère en un fichier.** Un bouton « Tout

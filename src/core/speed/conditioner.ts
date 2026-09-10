@@ -44,6 +44,18 @@ const MAX_HISTORY = 512
 /** Vitesse en deçà de laquelle on considère le véhicule à l'arrêt, en km/h. */
 const STANDSTILL_KMH = 0.8
 
+/**
+ * Au-delà de cet écart entre deux positions, l'horodatage n'est pas en
+ * millisecondes.
+ *
+ * Dix secondes : trois ordres de grandeur au-dessus de ce qu'un récepteur
+ * produit en roulant, et cinq fois au-dessus de ce qu'il produit à l'arrêt.
+ * Voir `normalizeAt` pour l'argument qui ferme le risque d'une fausse
+ * détection.
+ */
+const FINER_THAN_MS_ABOVE_MS = 10_000
+const MICROSECONDS_PER_MS = 1000
+
 export interface ConditionedSpeed {
   /** Vitesse lissée, en km/h. C'est elle qui pilote tout le reste. */
   kmh: number
@@ -84,6 +96,11 @@ interface HistoryEntry {
 export class SpeedConditioner {
   private history: HistoryEntry[] = []
   private gaps: number[] = []
+  /** Écarts bruts, avant normalisation : c'est sur eux que l'échelle se lit. */
+  private rawGaps: number[] = []
+  private lastRawAt = 0
+  /** Diviseur qui ramène l'horodatage en millisecondes. Voir `normalizeAt`. */
+  private timeScale = 1
 
   private rawKmh = 0
   private derived = false
@@ -99,10 +116,15 @@ export class SpeedConditioner {
    *
    * L'horodatage fourni avec une position n'est pas partout dans la même base
    * que `Date.now()` : certains navigateurs embarqués le comptent depuis le
-   * chargement de la page. Les écarts entre mesures restent justes — le suivi de
-   * vitesse ne s'en ressent pas — mais la différence avec l'heure courante donne
-   * alors un nombre absurde. On ne s'y fie donc que pour des différences entre
-   * deux mesures, jamais pour dater une mesure.
+   * chargement de la page, et la différence avec l'heure courante donne alors un
+   * nombre absurde. On ne s'y fie donc que pour des différences entre deux
+   * mesures, jamais pour dater une mesure.
+   *
+   * Et l'**unité** n'est pas partout la même non plus : ce commentaire affirmait
+   * que « les écarts entre mesures restent justes », ce que l'essai du
+   * 9 septembre 2026 a démenti — le navigateur de la Tesla compte en
+   * microsecondes. Les écarts sont justes entre eux, pas dans l'unité annoncée.
+   * C'est `normalizeAt` qui les ramène en millisecondes.
    */
   private lastSampleReceivedAt = 0
   /**
@@ -133,6 +155,8 @@ export class SpeedConditioner {
     this.waitingSince = Date.now()
     this.history = []
     this.gaps = []
+    this.rawGaps = []
+    this.lastRawAt = 0
     this.rawKmh = 0
     this.derived = false
     this.slopeKmhS = 0
@@ -165,23 +189,77 @@ export class SpeedConditioner {
     // mesure : on la ramène à l'arrêt.
     const kmh = Math.max(0, sample.kmh)
 
+    const at = this.normalizeAt(sample.at)
+
     if (this.lastSampleAt > 0) {
-      const gap = sample.at - this.lastSampleAt
+      const gap = at - this.lastSampleAt
       if (gap > 0) {
         this.gaps.push(Math.round(gap))
         if (this.gaps.length > 6) this.gaps.shift()
       }
     }
-    this.lastSampleAt = sample.at
+    this.lastSampleAt = at
     this.lastSampleReceivedAt = Date.now()
     this.rawKmh = kmh
     this.derived = sample.derived
     this.targetKmh = kmh
 
-    this.history.push({ at: sample.at, kmh })
-    this.prune(sample.at)
+    this.history.push({ at, kmh })
+    this.prune(at)
 
-    this.slopeKmhS = this.estimateSlope(sample.at)
+    this.slopeKmhS = this.estimateSlope(at)
+  }
+
+  /**
+   * Ramène l'horodatage d'une mesure en millisecondes.
+   *
+   * **Le navigateur de la Tesla horodate ses positions en microsecondes**, là
+   * où la norme du web dit millisecondes. Relevé sur les traces de l'essai du
+   * 9 septembre 2026 : soixante secondes de trajet s'y annonçaient longues de
+   * 60 700 « secondes », et le nom du fichier déposé le disait. L'accélération
+   * étant une pente, donc une division par une durée, elle sortait mille fois
+   * trop petite — 0,0028 m/s² pour une vraie valeur de 2,78. Toute la chaîne en
+   * aval travaillait alors sur zéro : charge figée à un demi, garde-fous de la
+   * boîte inertes, relief de charge plat.
+   *
+   * L'échelle se déduit du **plus petit écart strictement positif** observé, et
+   * non de leur moyenne : un récepteur qui roule produit forcément des écarts
+   * courts, alors qu'un arrêt les espace. L'écart nul est écarté parce qu'il
+   * existe — deux positions consécutives portent parfois le même horodatage
+   * dans les traces relevées — et qu'il ne dit rien de l'échelle.
+   *
+   * Ce qui ferme le risque d'une fausse détection : **si le plus petit écart
+   * entre deux positions dépassait vraiment dix secondes, l'accélération serait
+   * inexploitable de toute façon.** L'heuristique ne peut donc pas dégrader un
+   * cas sain. Elle ne suppose pas non plus un navigateur particulier : elle
+   * mesure ce qui arrive.
+   *
+   * Changer d'échelle vide l'historique : les points déjà rangés ne sont plus
+   * comparables aux suivants, et une pente calculée à cheval sur les deux
+   * échelles serait fausse des deux façons à la fois.
+   */
+  private normalizeAt(rawAt: number): number {
+    if (this.lastRawAt > 0) {
+      const gap = rawAt - this.lastRawAt
+      if (gap > 0) {
+        this.rawGaps.push(gap)
+        if (this.rawGaps.length > 6) this.rawGaps.shift()
+      }
+    }
+    this.lastRawAt = rawAt
+
+    if (this.rawGaps.length > 0) {
+      const shortest = Math.min(...this.rawGaps)
+      const scale = shortest > FINER_THAN_MS_ABOVE_MS ? MICROSECONDS_PER_MS : 1
+      if (scale !== this.timeScale) {
+        this.timeScale = scale
+        this.history = []
+        this.gaps = []
+        this.lastSampleAt = 0
+      }
+    }
+
+    return rawAt / this.timeScale
   }
 
   /**
