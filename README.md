@@ -2308,6 +2308,8 @@ chaque essai.
 | 34 | Le chemin du retour : les quatre dossiers du serveur se récupèrent en un paquet, depuis un téléphone | fait, reste l'essai de David |
 | 35 | Refonte : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en deux, et un compte fait le lien | spécifié, en cours |
 | 36 | L'accélération était mille fois trop petite : le navigateur de la voiture horodate en microsecondes | corrigé, reste à écouter en roulant |
+| 37 | La capture d'un trajet se fait toute seule, compressée, avec un témoin qui dit si la session sera récupérable | fait, reste le premier trajet réel |
+| 38 | Un relecteur : timeline, carte et repère copiable, pour revoir un trajet au bureau | fait, éprouvé sur l'essai du 10 septembre ; le rejeu sonore attend une capture |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

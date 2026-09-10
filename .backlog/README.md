@@ -48,7 +48,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [MOUVEMENT](MOUVEMENT/spec.md) — une seule notion de « est-ce qu'on ralentit ? » : deux compteurs se contredisent depuis le 8 septembre, et la boîte reste bloquée ou monte à contretemps | 🧑 |
 | [HORODATAGE](HORODATAGE/spec.md) — le navigateur de la Tesla compte en microsecondes : l'accélération sortait mille fois trop petite, et toute la chaîne travaillait sur zéro | 🧑 |
 | [REFONTE](REFONTE/spec.md) — le cadre de la refonte du 10 septembre : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en trois, et un compte fait le lien | 🔄 |
-| [RELECTURE](RELECTURE/spec.md) — revoir un trajet au bureau au lieu de le raconter de mémoire : une seule capture, automatique, et un relecteur avec timeline et carte | 🔄 |
+| [RELECTURE](RELECTURE/spec.md) — revoir un trajet au bureau au lieu de le raconter de mémoire : une seule capture, automatique, et un relecteur avec timeline et carte | 🔄 sept tickets sur huit ; le rejeu sonore attend une capture réelle |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,

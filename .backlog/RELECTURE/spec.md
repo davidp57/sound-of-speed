@@ -1,6 +1,7 @@
 # RELECTURE — revoir un trajet au bureau, au lieu de le raconter de mémoire
 
-**Statut :** 🔄 en cours
+**Statut :** 🔄 en cours — les deux volets sont livrés (PR #103 et #104) ; il
+reste le ticket 08, le rejeu sonore, qui a besoin d'une capture réelle
 **Branches :** `feature/capture-continue` puis `feature/relecteur` — deux lots
 d'exécution, deux PR
 **Version visée :** 0.2
