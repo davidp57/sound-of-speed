@@ -27,6 +27,7 @@ import {
   createDefaultProfile,
   createFactoryProfiles,
   createRoadProfile,
+  createV8Profile,
   GM_LS_V8,
   SUBARU_EJ25,
 } from './defaults'
@@ -91,13 +92,16 @@ describe('loadProfiles', () => {
   it('rend les profils d’usine quand le stockage est vide', () => {
     const profiles = loadProfiles()
 
-    expect(profiles.map((p) => p.id)).toEqual(['route', 'procar'])
+    // Un seul profil livré depuis le 10 septembre 2026 : le V8. Les deux
+    // d'avant ne différaient que par leurs seuils de passage, qui ont déménagé
+    // vers le tempérament.
+    expect(profiles.map((p) => p.id)).toEqual(['v8'])
   })
 
   it('rend les profils d’usine quand le stockage est illisible', () => {
     install(fakeStorage({ failReads: true }))
 
-    expect(loadProfiles().map((p) => p.id)).toEqual(['route', 'procar'])
+    expect(loadProfiles().map((p) => p.id)).toEqual(['v8'])
   })
 
   it('relit un profil enregistré à l’identique', () => {
@@ -161,7 +165,7 @@ describe('profil sélectionné', () => {
 
 describe('reconciliation', () => {
   it('complète un champ manquant par sa valeur d’usine', () => {
-    const base = createDefaultProfile()
+    const base = createV8Profile()
     // Un profil amputé, comme en écrirait une version antérieure : on passe par
     // un enregistrement libre, puisque le type complet interdit justement de
     // retirer un champ obligatoire.
@@ -287,7 +291,9 @@ describe('export et import de fichier', () => {
   })
 
   it('complète un fichier incomplet au lieu de le refuser', () => {
-    const base = createDefaultProfile()
+    // Un fichier sans identifiant connu se complète avec le repli générique,
+    // qui est le V8 depuis le 10 septembre 2026 et non plus Sport.
+    const base = createV8Profile()
 
     const relu = fromFile(JSON.stringify({ profile: { name: 'Presque vide' } }))
 
@@ -342,7 +348,10 @@ describe('réinitialisation par section', () => {
 
     const remis = resetProfileSection(profile, 'engine')
 
-    expect(remis.engine).toEqual(createDefaultProfile().engine)
+    // Le repli générique est le V8 depuis le 10 septembre 2026 : un profil dont
+    // aucun calibrage connu ne porte l'identifiant retombe sur lui, et non plus
+    // sur Sport.
+    expect(remis.engine).toEqual(createV8Profile().engine)
   })
 
   it('ne partage aucune référence avec le profil d’usine', () => {
@@ -378,7 +387,7 @@ describe('profils d’usine et duplication', () => {
   it('repère un profil livré absent de la liste', () => {
     const manquants = missingFactoryProfiles([createRoadProfile()])
 
-    expect(manquants.map((p) => p.id)).toEqual(['procar'])
+    expect(manquants.map((p) => p.id)).toEqual(['v8'])
   })
 
   it('n’en repère aucun quand ils sont tous là', () => {
@@ -744,6 +753,11 @@ describe('reprise par identifiant', () => {
 
     const relu = loadProfiles()[0] as Profile
 
+    // Sport n'est plus livré, mais son calibrage reste connu : un profil
+    // enregistré garde **sa** base, sinon il se verrait complété avec les
+    // valeurs d'un autre profil — le défaut que la reprise par identifiant avait
+    // corrigé, et qui avait fait porter les essais sur route sur des valeurs que
+    // personne n'avait choisies.
     expect(relu.drivetrain.cruiseMinRpm).toBe(createDefaultProfile().drivetrain.cruiseMinRpm)
     expect(relu.engine.redlineRpm).toBe(createDefaultProfile().engine.redlineRpm)
   })
@@ -756,7 +770,10 @@ describe('reprise par identifiant', () => {
 
     const relu = loadProfiles()[0] as Profile
 
-    expect(relu.engine.redlineRpm).toBe(createDefaultProfile().engine.redlineRpm)
+    // Le repli générique est le V8 depuis le 10 septembre 2026, et non plus
+    // Sport : tout profil fabriqué se voyait complété avec les valeurs d'un
+    // profil taillé pour une plage qu'on n'atteint jamais sur route.
+    expect(relu.engine.redlineRpm).toBe(createV8Profile().engine.redlineRpm)
     expect(relu.name).toBe('Le mien')
   })
 

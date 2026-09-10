@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createDefaultProfile,
+  knownFactoryProfiles,
   createFactoryProfiles,
   createRoadProfile,
   finalDriveFor,
@@ -45,11 +46,30 @@ describe('rpmAtSpeed et finalDriveFor', () => {
 })
 
 describe('profils livrés', () => {
-  it('en livre deux, dont un calibré pour la route', () => {
+  it("en livre un seul, nommé d'après son moteur", () => {
+    // Il y en avait deux, Route et Sport, et leur différence tenait à leurs
+    // seuils de passage. Ceux-ci se déduisent maintenant du rupteur et du
+    // tempérament : garder deux profils reviendrait à proposer deux fois le même
+    // moteur avec deux tempéraments figés. Un profil se nomme donc d'après ce
+    // qu'on entend, et non d'après une façon de conduire.
     const profiles = createFactoryProfiles()
 
-    expect(profiles.map((p) => p.id)).toEqual(['route', 'procar'])
-    expect(profiles.map((p) => p.name)).toEqual(['Route', 'Sport'])
+    expect(profiles.map((p) => p.id)).toEqual(['v8'])
+    expect(profiles.map((p) => p.name)).toEqual(['V8'])
+  })
+
+  it('livre le calibrage de la route, et non celui de Sport', () => {
+    // Rupteur à 6 500, celui du GM LS livré, et des rapports placés sur les
+    // vitesses qu'on pratique vraiment. Le nerf se prend au tempérament.
+    const v8 = createFactoryProfiles()[0]!
+    expect(v8.engine.redlineRpm).toBe(createRoadProfile().engine.redlineRpm)
+    expect(v8.drivetrain.finalDrive).toBe(createRoadProfile().drivetrain.finalDrive)
+  })
+
+  it('garde les anciens calibrages accessibles, pour la reprise', () => {
+    // Un profil « Route » ou « Sport » enregistré doit garder sa base à lui,
+    // sinon il se voit complété avec les valeurs d'un autre.
+    expect(knownFactoryProfiles().map((p) => p.id)).toEqual(['v8', 'route', 'procar'])
   })
 
   it('les fait sonner par échantillons, et décrit quand même leur moteur', () => {

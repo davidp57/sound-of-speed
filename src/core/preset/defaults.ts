@@ -305,8 +305,44 @@ export function createRoadProfile(): Profile {
 }
 
 /** Les profils livrés avec l'application. */
+/**
+ * Le profil livré : un seul, nommé d'après ce qu'on entend.
+ *
+ * Il y en avait deux, Route et Sport, et leur différence tenait à leurs seuils
+ * de passage. Depuis que ceux-ci se déduisent du rupteur et du **tempérament**,
+ * cette différence a déménagé : garder deux profils reviendrait à proposer deux
+ * fois le même moteur avec deux tempéraments figés, alors que le tempérament se
+ * choisit maintenant sous les cadrans.
+ *
+ * Décidé par David le 10 septembre 2026 : « les profils par défaut s'appelleront
+ * autrement (L4, V8, etc.) et pour le moment on a juste le V8 de Procar, donc
+ * appelons-le V8 ». Un profil se nomme donc d'après son moteur, et non d'après
+ * une façon de conduire — c'était la source de la confusion, deux boutons
+ * « Route / Sport » à l'écran ne commandant pas la même chose.
+ *
+ * **Son calibrage est celui de l'ancien profil Route**, et non de Sport : rupteur
+ * à 6 500 tr/min, qui est celui du GM LS livré, et des rapports placés sur les
+ * vitesses qu'on pratique vraiment. Le nerf se prend maintenant au tempérament.
+ */
+export function createV8Profile(): Profile {
+  return { ...createRoadProfile(), id: 'v8', name: 'V8' }
+}
+
 export function createFactoryProfiles(): Profile[] {
-  return [createRoadProfile(), createDefaultProfile()]
+  return [createV8Profile()]
+}
+
+/**
+ * Les calibrages d'usine connus, y compris ceux qui ne sont plus livrés.
+ *
+ * La reprise d'un profil enregistré cherche ici sa base par identifiant. Sans
+ * les anciens, un profil « Route » enregistré se verrait complété avec les
+ * valeurs de Sport — le défaut exact que la reprise par identifiant avait
+ * corrigé, et qui avait fait porter les essais sur route sur des valeurs que
+ * personne n'avait choisies.
+ */
+export function knownFactoryProfiles(): Profile[] {
+  return [createV8Profile(), createRoadProfile(), createDefaultProfile()]
 }
 
 export function createDefaultProfile(): Profile {

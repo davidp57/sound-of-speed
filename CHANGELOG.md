@@ -84,6 +84,30 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **L'écran de conduite tel que David l'a dessiné.** Les commandes de boîte
+  passent **entre les cadrans**, au-dessus du rapport, et le tempérament juste en
+  dessous : la main se trouve là où le regard est déjà, au lieu de descendre
+  chercher une barre en bas d'écran. Les cadrans reprennent la place libérée.
+
+  **Un seul bouton par choix**, qui change de valeur au clic — auto ⇄ manuelle,
+  route ⇄ sport. Deux boutons pour un choix binaire prennent la place de ce qu'on
+  lit en roulant, et il faut viser le bon des deux.
+
+- **Un seul profil livré, nommé d'après son moteur : le V8.** Il y en avait deux,
+  Route et Sport, et leur différence tenait à leurs seuils de passage. Ceux-ci se
+  déduisant maintenant du rupteur et du tempérament, garder deux profils
+  reviendrait à proposer deux fois le même moteur avec deux tempéraments figés.
+
+  Cela lève surtout une confusion que le croquis de David a mise au jour : deux
+  boutons « Route / Sport » à l'écran, l'un pour le profil, l'autre pour le
+  tempérament. Un profil se nomme d'après ce qu'on entend, plus d'après une façon
+  de conduire.
+
+  Son calibrage est celui de l'ancien profil Route — rupteur à 6 500, celui du
+  GM LS livré. Les anciens calibrages restent connus pour la reprise : un profil
+  « Route » ou « Sport » enregistré garde **ses** valeurs, sinon il se verrait
+  complété avec celles d'un autre.
+
 - **Un moteur devient une chose qu'on nomme.** Ses réglages, sa banque de sons,
   ses couches et son mixage — tout ce qui fait qu'on le reconnaît — forment
   désormais une entité qui a un nom, et que le profil **désigne** au lieu de

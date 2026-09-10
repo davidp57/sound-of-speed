@@ -46,7 +46,18 @@ import {
   telemetry,
   type SourceKind,
 } from '../state'
-import { DRIVE_MODE_LABELS, DRIVE_MODES } from '../core/drivetrain/drive-mode'
+import { DRIVE_MODE_LABELS } from '../core/drivetrain/drive-mode'
+
+/**
+ * Bascule le tempérament.
+ *
+ * Deux valeurs, donc un bouton et non deux : il porte celle qui est active et
+ * donne l'autre au clic. C'est le patron que le plein écran emploie déjà pour la
+ * commande de boîte.
+ */
+function toggleDriveMode(): void {
+  setDriveMode(currentDriveMode.value === 'sport' ? 'road' : 'sport')
+}
 
 withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
 
@@ -333,8 +344,24 @@ const SPEED_STEP_KMH = 20
       </div>
 
       <div class="cell gear">
+        <!--
+          Les commandes de boîte encadrent le rapport, et ne sont plus rangées
+          en bas de l'écran : c'est la disposition que David a dessinée le
+          10 septembre 2026, et elle place la main là où le regard est déjà —
+          entre les deux cadrans, au lieu de descendre chercher une barre.
+        -->
+        <div class="gear-controls">
+          <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
+            {{ manual ? 'Manuelle' : 'Auto' }}
+          </button>
+          <button :disabled="!manual" @click="shiftDown()">−</button>
+          <button :disabled="!manual" @click="shiftUp()">+</button>
+        </div>
         <div class="gear-value numeric">{{ telemetry.gearbox.label }}</div>
         <div class="unit">rapport</div>
+        <div class="gear-controls">
+          <button @click="toggleDriveMode()">{{ DRIVE_MODE_LABELS[currentDriveMode] }}</button>
+        </div>
       </div>
 
       <div class="cell rpm">
@@ -356,8 +383,18 @@ const SPEED_STEP_KMH = 20
       </div>
 
       <div class="cell gear">
+        <div class="gear-controls">
+          <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
+            {{ manual ? 'Manuelle' : 'Auto' }}
+          </button>
+          <button :disabled="!manual" @click="shiftDown()">−</button>
+          <button :disabled="!manual" @click="shiftUp()">+</button>
+        </div>
         <div class="value numeric">{{ telemetry.gearbox.label }}</div>
         <div class="unit">rapport</div>
+        <div class="gear-controls">
+          <button @click="toggleDriveMode()">{{ DRIVE_MODE_LABELS[currentDriveMode] }}</button>
+        </div>
       </div>
 
       <div class="cell rpm">
@@ -389,11 +426,6 @@ const SPEED_STEP_KMH = 20
         <button :class="{ 'is-active': audioOn }" @click="toggleAudio()">
           {{ audioLabel }}
         </button>
-        <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
-          {{ manual ? 'Manuelle' : 'Auto' }}
-        </button>
-        <button :disabled="!manual" @click="shiftDown()">−</button>
-        <button :disabled="!manual" @click="shiftUp()">+</button>
       </div>
     </section>
 
@@ -430,24 +462,7 @@ const SPEED_STEP_KMH = 20
           {{ screenLockError || 'Verrou non obtenu.' }}
         </span>
       </div>
-      <div class="group">
-        <span class="label">Boîte</span>
-        <button :aria-pressed="!manual" @click="setShiftMode('auto')">Auto</button>
-        <button :aria-pressed="manual" @click="setShiftMode('manual')">Manuelle</button>
-        <button :disabled="!manual" @click="shiftDown()">−</button>
-        <button :disabled="!manual" @click="shiftUp()">+</button>
-      </div>
-      <div class="group">
-        <span class="label">Tempérament</span>
-        <button
-          v-for="mode in DRIVE_MODES"
-          :key="mode"
-          :aria-pressed="currentDriveMode === mode"
-          @click="setDriveMode(mode)"
-        >
-          {{ DRIVE_MODE_LABELS[mode] }}
-        </button>
-      </div>
+
       </div>
 
       <p v-if="audioPhase === 'error'" class="hint warn">
@@ -757,6 +772,19 @@ const SPEED_STEP_KMH = 20
  * Mode conduite : les chiffres occupent toute la hauteur disponible et les
  * boutons deviennent des cibles qu'on atteint sans regarder.
  */
+.gear-controls {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Les commandes ne doivent pas voler la place du rapport, qui se lit d'abord. */
+.gear-controls button {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.9rem;
+}
+
 .drive.immersive {
   height: 100%;
   gap: 0.5rem;

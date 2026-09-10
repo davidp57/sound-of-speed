@@ -1264,8 +1264,10 @@ domaine.
 
 ### Le tempérament de la boîte
 
-Sous les cadrans, à côté de la commande automatique ou manuelle : **Route** ou
-**Sport**. C'est ce qui décide à quel régime les rapports passent, et c'est le
+**Entre les cadrans**, sous le rapport engagé : un bouton qui porte **Route** ou
+**Sport** et donne l'autre au clic. Les commandes de boîte — automatique ou
+manuelle, et les deux flèches — sont juste au-dessus du rapport, du même côté :
+la main se trouve là où le regard est déjà. C'est ce qui décide à quel régime les rapports passent, et c'est le
 seul réglage de tempérament qui reste au volant.
 
 Les régimes de passage ne se règlent plus un par un. Ils se déduisent du
@@ -1284,8 +1286,15 @@ profil. Au premier lancement, il se déduit du profil actif.
 
 ### Profils
 
-Deux profils sont livrés avec l'application, et le bouton **Profils d'usine**
-réintroduit ceux qu'on aurait supprimés.
+**Un** profil est livré avec l'application — le **V8** —, et le bouton
+**Profils d'usine** le réintroduit si on l'a supprimé.
+
+Il y en avait deux, Route et Sport, et leur différence tenait à leurs seuils de
+passage. Ceux-ci se déduisant du rupteur et du tempérament, garder deux profils
+reviendrait à proposer deux fois le même moteur avec deux tempéraments figés. Un
+profil se nomme donc d'après ce qu'on entend — son moteur — et non d'après une
+façon de conduire : c'était la source d'une confusion, deux boutons
+« Route / Sport » à l'écran ne commandant pas la même chose.
 
 **Un profil désigne un moteur.** Un moteur, ici, c'est tout ce qui fait qu'on le
 reconnaît : ses réglages, sa banque de sons, ses couches et son mixage. Il vit à
