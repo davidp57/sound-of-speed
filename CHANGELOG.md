@@ -39,8 +39,15 @@ Toutes les évolutions notables du projet. Format
   l'état complet avec les coordonnées. C'est le geste qui sert le but du lot —
   David colle le repère, et la conversation part du bon moment.
 
+  L'instant se lit sur **les cadrans de la voiture** — le même composant, pour
+  que relire un trajet soit revoir ce qu'on avait sous les yeux. La carte occupe
+  tout ce que l'écran laisse, un bouton **garde la vue centrée** sur le
+  véhicule, et le survol d'une marque de la timeline dit ce qu'elle est,
+  combien de fois et quand.
+
   Vérifié sur l'essai du 10 septembre 2026 rapatrié du serveur : 218 relevés,
-  2 111 positions, 36 minutes, et le tracé de l'A31 sur la carte.
+  2 111 positions, 36 minutes, le tracé de l'A31 sur la carte, et le véhicule
+  qui reste au pixel près au centre tant que le suivi est actif.
 
 
 - **La capture d'un trajet démarre toute seule.** Elle se déclenche au démarrage
