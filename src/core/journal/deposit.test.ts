@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { gunzip } from '../upload/compress'
 import { depositSlice } from './deposit'
 import { Journal } from './journal'
 
@@ -47,7 +48,7 @@ describe('le dépôt d’une tranche', () => {
     const outcome = await depositSlice(slice, CREDENTIALS, impl)
 
     expect(outcome.ok).toBe(true)
-    expect(calls[0]?.url).toBe(`/journal/${slice.name}`)
+    expect(calls[0]?.url).toBe(`/journal/${slice.name}.gz`)
     expect(calls[0]?.init?.method).toBe('PUT')
   })
 
@@ -62,13 +63,36 @@ describe('le dépôt d’une tranche', () => {
     expect(headers.Authorization).toBe(`Basic ${btoa('depot:motdepasse')}`)
   })
 
-  it('envoie le corps tel quel, une ligne par événement', async () => {
+  it('envoie le corps compressé, et il se relit à l’identique', async () => {
+    // Compresser vaut d'abord pour la 4G : une tranche part d'une voiture en
+    // mouvement, et ce qui compte est qu'elle tienne dans la fenêtre de réseau
+    // qu'on a.
     const { impl, calls } = fakeFetch(ok())
     const slice = tranche()
     await depositSlice(slice, CREDENTIALS, impl)
 
-    expect(calls[0]?.init?.body).toBe(slice.body)
-    expect(String(calls[0]?.init?.body).trimEnd().split('\n')).toHaveLength(2)
+    const body = calls[0]?.init?.body
+    expect(body).toBeInstanceOf(Blob)
+    expect(await gunzip(body as Blob)).toBe(slice.body)
+    expect((calls[0]?.init?.headers as Record<string, string>)['Content-Type']).toBe(
+      'application/gzip',
+    )
+  })
+
+  it('dépose en clair là où le navigateur ne sait pas compresser', async () => {
+    const original = globalThis.CompressionStream
+    // @ts-expect-error — on retire volontairement une capacité du navigateur.
+    delete globalThis.CompressionStream
+    try {
+      const { impl, calls } = fakeFetch(ok())
+      const slice = tranche()
+      await depositSlice(slice, CREDENTIALS, impl)
+
+      expect(calls[0]?.url).toBe(`/journal/${slice.name}`)
+      expect(calls[0]?.init?.body).toBe(slice.body)
+    } finally {
+      globalThis.CompressionStream = original
+    }
   })
 
   it('ne demande pas au serveur si le fichier est déjà là', async () => {
