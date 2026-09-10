@@ -1,5 +1,6 @@
 import { createDefaultProfile, createFactoryProfiles } from './defaults'
 import { clampEngineDefinition } from './engine-definition'
+import { clampRealCar, type RealCar } from './real-car'
 import { DEFAULT_RENDERING, clampSynthRendering, type SynthRendering } from '../synth/rendering'
 import {
   PROFILE_FORMAT_VERSION,
@@ -26,6 +27,7 @@ const TRACES_KEY = 'speed.traces.v1'
 const VOLUME_KEY = 'speed.masterVolume.v1'
 const DEPOSIT_KEY = 'speed.deposit.v1'
 const ADVANCED_KEY = 'speed.advancedMode.v1'
+const REAL_CAR_KEY = 'speed.realCar.v1'
 
 /**
  * Traces conservées d'une session à l'autre.
@@ -144,6 +146,22 @@ export function saveMasterVolume(volume: number): void {
  *
  * Absent, la vue reste courte : c'est le mode simplifié qui est le défaut.
  */
+/**
+ * La vraie voiture de cet appareil.
+ *
+ * Une préférence d'appareil et non un profil : il n'y a qu'une voiture, et un
+ * profil reçu de quelqu'un d'autre ne doit pas l'écraser. Rendue aux valeurs
+ * d'usine quand rien n'est enregistré, et nettoyée de ce qui sort de son
+ * domaine — un stockage local se modifie à la main.
+ */
+export function loadRealCar(): RealCar {
+  return clampRealCar(readJson<Partial<RealCar>>(REAL_CAR_KEY) ?? undefined)
+}
+
+export function saveRealCar(car: RealCar): void {
+  writeJson(REAL_CAR_KEY, clampRealCar(car))
+}
+
 export function loadAdvancedMode(): boolean {
   try {
     return localStorage.getItem(ADVANCED_KEY) === '1'
