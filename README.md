@@ -2181,6 +2181,7 @@ chaque essai.
 | 33 | Le passage de rapport s'entend : couple coupé, plongée, coup de gaz, clac de boîte, et un seuil de montée qui suit la demande | écouté au simulateur, échantillons et synthèse, reste à rouler |
 | 34 | Le chemin du retour : les quatre dossiers du serveur se récupèrent en un paquet, depuis un téléphone | fait, reste l'essai de David |
 | 35 | Refonte : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en deux, et un compte fait le lien | spécifié, en cours |
+| 36 | L'accélération était mille fois trop petite : le navigateur de la voiture horodate en microsecondes | corrigé, reste à écouter en roulant |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
@@ -2228,10 +2229,21 @@ dernier état qui a roulé ; il se retrouve avec
   application qui y arrive — fichier servi plutôt que fabriqué en mémoire,
   élément inséré dans le document, deux minutes de silence plutôt que quatre
   secondes.
-- **La mesure d'accélération dans la voiture.** Le GPS de la Tesla livre une
-  position toutes les quelques dizaines de millisecondes en roulant, là où le
-  conditionneur est bâti pour une par seconde. Mesuré en conséquence : une
-  accélération douce y est vue à zéro, ou à trois fois sa valeur selon le bruit.
-  Le volume, le timbre et la boîte travaillent donc sur un signal faux. Ce qui
-  n'est pas vérifié, c'est l'ampleur réelle du bruit de mesure de cette
-  voiture — la sensibilité, elle, est établie.
+- **La mesure d'accélération dans la voiture.** Elle était fausse, et on sait
+  maintenant pourquoi : le navigateur de la Tesla horodate ses positions en
+  **microsecondes**, là où la norme du web dit millisecondes. L'accélération
+  étant une pente, elle sortait mille fois trop petite — relevé sur le journal
+  de l'essai du 9 septembre 2026, elle est sous le seuil d'arrondi dans 476
+  relevés sur 480. Le volume, le timbre et la boîte travaillaient donc sur zéro.
+
+  C'est corrigé : le conditionnement déduit l'échelle du plus petit écart entre
+  deux mesures. Rejouées dans le code corrigé, les deux traces du même essai
+  rendent une accélération exploitable sur 83 % et 70 % de leurs mesures, de
+  médiane 0,36 m/s² et d'étendue −1,39 à +3,37. **Ce qui n'est pas vérifié, c'est
+  l'écoute** : ni le relief de charge ni la boîte n'ont jamais été entendus sur
+  une accélération juste.
+
+  Deux relevés du même essai bornent ce qu'on peut attendre du signal : la
+  cadence réelle est de **dix positions par seconde**, et la vitesse annoncée est
+  **quantifiée au kilomètre-heure entier** — seuls 9 à 11 % des échantillons
+  portent une valeur nouvelle.
