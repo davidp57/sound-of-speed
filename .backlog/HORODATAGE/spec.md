@@ -1,7 +1,6 @@
 # HORODATAGE — la Tesla compte en microsecondes
 
-**Statut :** 🔄 en cours — le conditionnement est corrigé, le rejeu des traces
-reste à reprendre
+**Statut :** 🧑 attend David — corrigé et mesuré, reste l'écoute en roulant
 **Branche :** `fix/mouvement`
 **Version visée :** 0.1.85
 
@@ -78,6 +77,19 @@ elle ne suppose aucun navigateur particulier — elle mesure ce qui arrive.
 Changer d'échelle vide l'historique : une pente calculée à cheval sur deux
 échelles serait fausse des deux façons à la fois.
 
+### Le rejeu, corrigé aussi
+
+Le rejeu comparait les horodatages bruts de la trace à son temps écoulé en
+millisecondes : il attendait mille fois trop longtemps entre deux mesures. Les
+deux traces du 9 septembre annonçaient 60 700 et 73 700 secondes ; elles
+annoncent maintenant 60,7 et 73,7 secondes et se déroulent en temps réel.
+
+Cela rend au projet son outil de mise au point le plus utile, et le seul signal
+réel dont il dispose pour éprouver la boîte sans rouler.
+
+La détection d'unité vit dans une pièce à part, partagée par le conditionnement
+et le rejeu : le seuil doit être le même des deux côtés.
+
 ### Mesuré
 
 Quatre tests neufs verrouillent le comportement, dont deux échouaient avant le
@@ -96,11 +108,6 @@ Des valeurs crédibles pour de la conduite, là où il n'y avait rien.
 
 ## Ce qui reste
 
-- **Le rejeu des traces.** Il compare les horodatages bruts à son temps écoulé
-  et sera donc mille fois trop lent sur une trace de la voiture ; la durée
-  affichée l'est aussi. Rejouer la trace du 9 septembre est le meilleur banc
-  possible pour la boîte : c'est du signal réel, avec sa quantification au
-  kilomètre-heure et ses paliers.
 - **La vitesse dérivée de deux positions.** Elle divise elle aussi par mille des
   microsecondes. Elle ne sert pas dans cette voiture — `derived` est `false`
   partout — mais elle servirait le jour où la vitesse annoncée manquerait, et
