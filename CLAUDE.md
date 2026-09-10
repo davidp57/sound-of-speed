@@ -207,6 +207,19 @@ release/x.y.z        préparation de version, depuis develop, PR vers main
 - `main` reste la branche par défaut du dépôt : c'est à elle que `:latest`
   s'accroche, et c'est `:latest` que tire la pile de production.
 
+### Repères
+
+Un **repère** est un tag posé sur un état auquel on veut pouvoir revenir, sans
+que ce soit une version publiée. Il ne suit donc pas `vX.Y.Z`, que la procédure
+de release réserve aux versions taguées sur `main` : un nom en clair, et un
+message qui dit de quoi c'est le repère.
+
+| Repère | Ce qu'il marque |
+|---|---|
+| `avant-refonte` | `develop` en version 0.1.83, dernier état à avoir roulé avant la refonte décidée le 10 septembre 2026 — nouvelle origine du son, modèle mécanique revu, interface refaite, comptes utilisateurs. |
+
+Y revenir sans rien perdre : `git switch --detach avant-refonte`.
+
 ### Messages de commit
 
 Conventional Commits, description en français, à l'impératif ou au nominal :

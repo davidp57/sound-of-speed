@@ -2163,6 +2163,17 @@ règles de travail du dépôt dans [`CLAUDE.md`](CLAUDE.md), son vocabulaire dan
 [`CONTEXT.md`](CONTEXT.md), et ce qui a été livré dans
 [`CHANGELOG.md`](CHANGELOG.md).
 
+**Les trente-trois premiers lots s'arrêtent au repère `avant-refonte`.** L'essai
+en voiture a rendu un verdict que les mesures au poste n'avaient pas vu : le
+processeur de la voiture ne tient pas la synthèse en direct — environ une fois
+le temps réel à 8 kHz de simulation, là où le seuil du lot était trois —, le son
+ne convainc pas, la boîte et l'écran non plus. Une refonte est décidée le
+10 septembre 2026 — origine du son, modèle mécanique, interface, et des
+comptes utilisateurs là où il n'y avait ni serveur ni compte. Le tag marque le
+dernier état qui a roulé ; il se retrouve avec
+`git switch --detach avant-refonte`, et la liste des repères est dans
+[`CLAUDE.md`](CLAUDE.md).
+
 ### Ce qui n'est pas vérifié
 
 - **Le verrou d'écran.** Le code est en place, mais le navigateur de
