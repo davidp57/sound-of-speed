@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findGearChanges, findShiftBursts } from './shifts'
+import { findGearChanges, findShiftBursts, recordedShifts } from './shifts'
 import type { StatePoint } from './model'
 
 /** Des relevés à cadence choisie, dont on ne fixe que le rapport. */
@@ -88,5 +88,58 @@ describe('les passages de rapport', () => {
 
   it('ne voit rien sans changement', () => {
     expect(findGearChanges(relevés(1000, [4, 4, 4]))).toEqual([])
+  })
+})
+
+describe('les passages inscrits font foi', () => {
+  const event = (at: number, from: number, to: number) => ({
+    at,
+    kind: 'shift',
+    data: { from, to },
+  })
+
+  it('lit les passages du journal plutôt que de les deviner', () => {
+    const changes = recordedShifts([
+      event(1000, 4, 5),
+      { at: 1500, kind: 'reject', data: { motif: 'inaccurate' } },
+      event(2000, 5, 4),
+    ])
+
+    expect(changes).toEqual([
+      { at: 1000, up: true, steps: 1, from: 4, to: 5 },
+      { at: 2000, up: false, steps: 1, from: 5, to: 4 },
+    ])
+  })
+
+  it('écarte ce qui n’est pas un passage lisible', () => {
+    expect(recordedShifts([event(10, 3, 3), { at: 20, kind: 'shift', data: {} }])).toEqual([])
+  })
+
+  it('mesure la durée d’un enchaînement au lieu de l’encadrer', () => {
+    // Quatre allers-retours en quatre secondes : avec les seuls relevés à dix
+    // secondes, ce moment se résumait à un changement, ou à rien du tout.
+    const changes = recordedShifts([
+      event(10_000, 5, 6),
+      event(11_200, 6, 5),
+      event(12_400, 5, 6),
+      event(13_600, 6, 5),
+    ])
+    const [rafale, ...reste] = findShiftBursts([], undefined, undefined, changes)
+
+    expect(reste).toEqual([])
+    expect(rafale).toMatchObject({ at: 10_000, count: 4, spanMs: 3600, measured: true })
+  })
+
+  it('ne groupe pas deux passages éloignés', () => {
+    const changes = recordedShifts([event(0, 1, 2), event(30_000, 2, 3)])
+    expect(findShiftBursts([], undefined, undefined, changes)).toEqual([])
+  })
+
+  it('rend les relevés quand le journal n’a rien inscrit', () => {
+    const états = [
+      { at: 0, kmh: 40, rpm: 2000, gear: 2, load: 0.5, accelMs2: 0 },
+      { at: 10_000, kmh: 60, rpm: 2000, gear: 4, load: 0.5, accelMs2: 0 },
+    ]
+    expect(findGearChanges(états, [])).toHaveLength(1)
   })
 })
