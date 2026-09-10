@@ -81,6 +81,18 @@ Toutes les évolutions notables du projet. Format
   Les en retirer touche environ trois cent cinq points d'appel et ne pourrait pas
   rester vert : c'est le dernier ticket du volet qui contracte, une fois les cinq
   groupes en place. Format de profil en version 9, profils repris.
+- **La vraie voiture devient une chose à part.** Les six réglages du signal de
+  vitesse — raideur du lissage, fenêtre d'accélération, vitesse plausible,
+  précision acceptée, bornes d'accélération — ne décrivent ni un moteur, ni un
+  goût : ils décrivent le récepteur GPS de la voiture et sa façon de bouger. Ils
+  forment désormais une entité, **une seule par appareil**, puisqu'on ne choisit
+  pas sa vraie voiture comme on choisit un V8.
+
+  Ce palier pose l'entité, ses valeurs — celles qui ont roulé, reprises telles
+  quelles —, leur domaine et la reprise depuis un profil déjà réglé. La chaîne
+  lit encore la section du profil : la sortie effective se fera avec le reste de
+  la contraction, l'étalonnage écrivant dans quatre de ces réglages et devant la
+  suivre dans le même mouvement.
 
 - **Tout ce que le serveur porte se récupère en un fichier.** Un bouton « Tout
   récupérer », dans la section Profils, liste les quatre dossiers du serveur —

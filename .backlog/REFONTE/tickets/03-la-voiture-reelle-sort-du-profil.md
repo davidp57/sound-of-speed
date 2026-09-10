@@ -1,9 +1,18 @@
-# 03 — La voiture réelle sort du profil
+# 03 — La voiture réelle existe
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — l'entité existe ; sa sortie effective du profil est passée
+au ticket 04, décidé par David le 10 septembre 2026
 
-**Bloqué par :** aucun, peut démarrer tout de suite. Indépendant de 01 et 02 :
-il déplace des réglages que ni le moteur ni la boîte ne lisent.
+**Bloqué par :** aucun.
+
+**Périmètre revu en cours de route.** Ce ticket devait aussi retirer la section
+du profil. Ce n'est pas faisable séparément : l'étalonnage écrit dans quatre de
+ces six réglages par un aiguillage explicite, et il superpose ses mesures au
+profil pour fabriquer le profil effectif que la chaîne consomme. Retirer la
+section sans le suivre laisserait ses recopies écrire dans un champ mort — pire
+que de ne rien faire. Et le ticket 04 vide le profil de toute façon : le faire
+deux fois coûterait deux migrations et deux fois le même travail. David a
+tranché : « on regroupe avec le 04 ».
 
 ## Ce qu'il faut obtenir
 
@@ -35,15 +44,21 @@ serveur.
 
 ## Critères d'acceptation
 
-- [ ] Les six réglages du signal de vitesse quittent le profil pour une entité
-      « voiture réelle », unique sur l'appareil.
+- [x] L'entité « voiture réelle » existe : les six réglages du signal, une seule
+      par appareil, avec son modèle quand on le connaît.
+- [x] Ses valeurs par défaut sont celles qui ont roulé — celles des profils
+      livrés —, et non des valeurs choisies en la déplaçant.
+- [x] Chaque valeur est ramenée dans son domaine à la lecture : un stockage local
+      se modifie à la main, et une fenêtre d'accélération nulle rendrait la pente
+      indéfinie.
+- [x] La reprise depuis un profil déjà réglé garde **ses** valeurs, au lieu
+      d'imposer celles d'usine à quelqu'un qui avait réglé les siennes.
+- [x] Contrôle qualité vert.
+
+Passés au ticket 04, avec la contraction :
+
+- [ ] Les six réglages quittent le profil.
 - [ ] Changer de profil ne change plus aucun réglage de mesure.
-- [ ] L'étalonnage recopie ses valeurs mesurées dans la voiture réelle, et non
-      dans le profil actif.
-- [ ] Les profils déjà enregistrés sont repris : leurs réglages de signal
-      alimentent la voiture réelle de l'appareil, et le comportement de la mesure
-      ne change pas.
-- [ ] Un profil importé ou partagé n'écrase jamais la voiture réelle de celui
-      qui le reçoit — c'est le sens même de la séparation.
-- [ ] README à jour sur les deux points : où vivent ces réglages, et pourquoi.
-- [ ] Contrôle qualité vert.
+- [ ] L'étalonnage recopie ses valeurs mesurées dans la voiture réelle.
+- [ ] Un profil importé n'écrase jamais la voiture réelle de celui qui le
+      reçoit.

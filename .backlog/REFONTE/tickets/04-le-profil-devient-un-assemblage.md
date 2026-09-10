@@ -3,8 +3,20 @@
 **Statut :** ⬜ prêt
 
 **Bloqué par :** 01 — Le moteur devient une entité qu'on nomme · 02 — La boîte
-se déduit du moteur et du mode · 03 — La voiture réelle sort du profil. Il ne
-reste un assemblage que quand les trois groupes qu'il assemble existent.
+se déduit du moteur et du mode · 03 — La voiture réelle existe. Il ne reste un
+assemblage que quand les groupes qu'il assemble existent.
+
+**Ce ticket a grossi, et c'est voulu.** Il porte désormais **toute la
+contraction** : les sections du moteur *et* celles du signal de vitesse quittent
+le profil dans le même mouvement. Décidé par David le 10 septembre 2026 — « on
+regroupe avec le 04 » — parce que vider le profil deux fois coûterait deux
+migrations, deux reprises de l'étalonnage et deux fois le même travail sur les
+mêmes fichiers.
+
+L'étalonnage est le morceau qui commande le calendrier : il écrit dans quatre
+réglages du signal par un aiguillage explicite, et il superpose ses mesures au
+profil pour fabriquer le profil effectif que la chaîne consomme. Ses écritures
+doivent viser la voiture réelle, ce qui touche cinq fichiers et leurs tests.
 
 ## Ce qu'il faut obtenir
 
@@ -33,6 +45,12 @@ est celui de la refonte.
       scinde en un moteur, une boîte et un mode, et sonne exactement comme avant.
 - [ ] Les préférences d'appareil — volume, visage de l'écran, verrou, mode de
       boîte — restent locales et ne rejoignent aucun groupe partageable.
+- [ ] Les six réglages du signal de vitesse quittent le profil, et changer de
+      profil ne change plus aucun réglage de mesure.
+- [ ] L'étalonnage recopie ses valeurs mesurées dans la voiture réelle, et non
+      dans le profil actif.
+- [ ] Un profil importé ou partagé n'écrase jamais la voiture réelle de celui qui
+      le reçoit — c'est le sens même de la séparation.
 - [ ] README à jour : la « Référence des réglages » se range par groupe, et le
       glossaire porte les cinq termes.
 - [ ] Contrôle qualité vert.
