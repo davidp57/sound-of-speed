@@ -87,6 +87,8 @@ import {
   setUploadConsent,
   setDepositCredentials,
   synthSupported,
+  archiveProgress,
+  exportServerData,
 } from '../state'
 
 /**
@@ -685,6 +687,30 @@ function impliedCylinders(index: number): number | null {
   // La raie mesurée vaut régime ÷ 120 × cylindres ; on inverse avec l'ancrage en place.
   return Math.round((best.firingHz * 120) / layer.anchorRpm)
 }
+
+/**
+ * Rapatriement des données du serveur.
+ *
+ * Le message reste affiché quelques secondes puis s'efface : il porte le compte
+ * de fichiers et ce qui a manqué, ce qui n'a d'intérêt qu'au moment où le
+ * téléchargement part.
+ */
+const archiveBusy = ref(false)
+const archiveMessage = ref('')
+async function rapatrier(): Promise<void> {
+  archiveBusy.value = true
+  archiveMessage.value = ''
+  try {
+    archiveMessage.value = await exportServerData()
+  } catch (error) {
+    archiveMessage.value = error instanceof Error ? error.message : 'Rapatriement impossible.'
+  } finally {
+    archiveBusy.value = false
+  }
+  setTimeout(() => {
+    archiveMessage.value = ''
+  }, 12_000)
+}
 </script>
 
 <template>
@@ -1044,6 +1070,16 @@ function impliedCylinders(index: number): number | null {
       <p v-if="uploadError" class="note warn">{{ uploadError }}</p>
       <p v-if="uploadStorageError" class="note warn">{{ uploadStorageError }}</p>
       <p v-if="journalError" class="note warn">{{ journalError }}</p>
+
+      <p class="note">
+        Le chemin du retour : tout ce que le serveur porte — journal, traces,
+        relevés, profils — en un seul fichier compressé. À faire depuis un
+        téléphone ou un ordinateur, le navigateur de la voiture ne téléchargeant
+        rien.
+        <button :disabled="archiveBusy" @click="rapatrier()">
+          {{ archiveProgress || archiveMessage || 'Tout récupérer' }}
+        </button>
+      </p>
 
       <div class="reset">
         <span class="note">Réinitialiser</span>

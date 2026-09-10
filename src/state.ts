@@ -37,6 +37,8 @@ import { Journal, newSessionId } from './core/journal/journal'
 import { JournalCollector, type SoundCost } from './core/journal/collect'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
 import { toWav } from './bench/wav'
+import { archiveName, collectArchive } from './core/export/collect'
+import { buildZip } from './core/export/zip'
 import { UploadQueue, type QueuedUpload } from './core/upload/queue'
 import { loadQueue, saveQueue } from './core/upload/store'
 import { putFile, slug, stamp } from './core/upload/put'
@@ -1472,6 +1474,48 @@ function telecharger(contenu: Blob, nom: string): boolean {
   } catch {
     return false
   }
+}
+
+/** Avancement du rapatriement, pour que l'attente ne ressemble pas à un blocage. */
+export const archiveProgress = ref('')
+
+/**
+ * Rapatrie en un seul fichier tout ce que le serveur porte.
+ *
+ * Le navigateur de la voiture ne télécharge rien : ce qu'elle produit —
+ * journal, traces, relevés — s'accumule sur le serveur sans qu'on puisse le
+ * reprendre autrement qu'en ouvrant le gestionnaire de fichiers du NAS. Depuis
+ * un téléphone, ce bouton suffit.
+ *
+ * Le paquet part **incomplet plutôt que pas du tout** quand un dossier
+ * manque, et le message dit lesquels : un essai à moitié rapatrié reste
+ * exploitable, mais il ne doit pas se faire passer pour complet.
+ */
+export async function exportServerData(): Promise<string> {
+  archiveProgress.value = 'Listage…'
+  const { entries, failures, bytes } = await collectArchive(
+    depositCredentials.value,
+    fetch,
+    (done, total) => {
+      archiveProgress.value = `${done}/${total}`
+    },
+  )
+  archiveProgress.value = ''
+
+  if (entries.length === 0) {
+    if (failures.length > 0) return `Rien récupéré — ${failures.join(', ')}`
+    return 'Le serveur ne porte aucun fichier.'
+  }
+
+  const nom = archiveName()
+  const fichier = new Blob([buildZip(entries)], { type: 'application/zip' })
+  const mo = (bytes / 1_048_576).toFixed(1)
+  if (!telecharger(fichier, nom)) {
+    return "Ce navigateur refuse le téléchargement : à faire depuis un téléphone ou un ordinateur."
+  }
+  const manques =
+    failures.length > 0 ? ` — ${failures.length} non repris : ${failures.join(', ')}` : ''
+  return `${entries.length} fichiers, ${mo} Mo${manques}`
 }
 
 export function start(): void {
