@@ -39,6 +39,23 @@ Toutes les évolutions notables du projet. Format
   l'état complet avec les coordonnées. C'est le geste qui sert le but du lot —
   David colle le repère, et la conversation part du bon moment.
 
+  La timeline marque aussi les **rapports enchaînés**, déduits des relevés et
+  non lus dans un fichier. Ce qui est mesuré et ce qui est déduit se
+  distinguent : à un relevé toutes les dix secondes, voir la deuxième puis la
+  quatrième prouve deux passages sans dire s'ils se sont suivis. Le critère
+  devient alors la densité — plus d'un rapport franchi par relevé, c'est que la
+  boîte a bougé plusieurs fois entre deux regards. Sur l'essai du 10 septembre,
+  neuf moments ressortent, dont les allers-retours deuxième-quatrième relevés
+  entre 290 et 310 secondes.
+
+  Sous la barre, un **relief de vingt-huit pixels** montre les accélérations en
+  vert et les freinages en rouge, chaque colonne gardant l'extrême de ce qu'elle
+  couvre — une moyenne effacerait le freinage bref, qui est justement ce qu'on
+  cherche. Les **passages de rapport** s'y posent en chevrons sur l'axe, vers le
+  haut pour une montée et vers le bas pour un rétrogradage : les lire sur la
+  même ligne que l'effort montre d'un coup un rétrogradage en pleine
+  accélération, ou une montée en freinant.
+
   L'instant se lit sur **les cadrans de la voiture** — le même composant, pour
   que relire un trajet soit revoir ce qu'on avait sous les yeux. La carte occupe
   tout ce que l'écran laisse, un bouton **garde la vue centrée** sur le

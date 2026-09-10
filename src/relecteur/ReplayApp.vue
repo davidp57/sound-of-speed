@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import TrackMap from './TrackMap.vue'
 import DialGauge from '../ui/components/DialGauge.vue'
 import { loadDepositCredentials } from '../core/preset/store'
 import { listSessions, loadSession, type SessionEntry } from '../core/session/read'
 import { stateAt, trackAt, type Session } from '../core/session/model'
+import { findGearChanges, findShiftBursts } from '../core/session/shifts'
+import { accelProfile } from '../core/session/profile'
 
 /**
  * Le relecteur : revoir un trajet au lieu de le raconter de mémoire.
@@ -93,7 +95,7 @@ const position = computed(() => (session.value ? trackAt(session.value.track, at
 const marks = computed(() => {
   const total = duration.value
   if (!session.value || total <= 0) return []
-  const groupes = new Map<string, { at: number; kind: string; count: number }>()
+  const groupes = new Map<string, Mark>()
   for (const event of session.value.events) {
     // Un centième de la durée : deux rejets à deux secondes d'écart sur une
     // heure de trajet sont le même moment, et deux marques superposées ne se
@@ -103,10 +105,90 @@ const marks = computed(() => {
     if (trouvé) trouvé.count += 1
     else groupes.set(cellule, { at: event.at, kind: event.kind, count: 1 })
   }
-  return [...groupes.values()]
+  const marques = [...groupes.values()]
+
+  // Les enchaînements de rapports ne sont pas inscrits dans un fichier : ils se
+  // déduisent des relevés. On les ajoute ici pour qu'ils vivent sur la même
+  // barre que les faits du journal — c'est le même geste de repérage.
+  for (const rafale of shiftBursts.value) {
+    marques.push({
+      at: rafale.at,
+      kind: rafale.measured ? 'shift' : 'shift-maybe',
+      count: rafale.count,
+      detail: rafale.measured
+        ? `${rafale.count} rapports en ${(rafale.spanMs / 1000).toFixed(1)} s, de la ${rafale.from} à la ${rafale.to}`
+        : `${rafale.count} rapports de la ${rafale.from} à la ${rafale.to}, quelque part dans ${(rafale.spanMs / 1000).toFixed(0)} s`,
+    })
+  }
+
+  return marques
 })
 
+/** Les enchaînements de rapports de la session. */
+const shiftBursts = computed(() =>
+  session.value ? findShiftBursts(session.value.states) : [],
+)
+
+/**
+ * Le relief des accélérations, une colonne par pixel de la barre.
+ *
+ * La largeur est relevée à l'affichage : mille colonnes pour une barre qui en
+ * fait mille, et pas trente-six mille points pour un dessin de vingt pixels de
+ * haut.
+ */
+const barWidth = ref(600)
+const relief = computed(() =>
+  session.value ? accelProfile(session.value.states, duration.value, barWidth.value) : null,
+)
+
+/**
+ * Les passages de rapport, posés sur l'axe du relief.
+ *
+ * Un chevron par passage : vers le haut pour une montée, vers le bas pour un
+ * rétrogradage, et d'autant plus large qu'il franchit de rapports. On voit
+ * ainsi d'un coup d'œil que la boîte a monté en accélérant — ou qu'elle a
+ * rétrogradé alors qu'on accélérait, ce qui se remarque tout de suite quand
+ * les deux se lisent sur la même ligne.
+ */
+const gearChanges = computed(() =>
+  session.value ? findGearChanges(session.value.states) : [],
+)
+
+const timeline = ref<HTMLElement | null>(null)
+
+/**
+ * Le chevron d'un passage, en coordonnées du relief.
+ *
+ * Sa largeur est en colonnes et sa hauteur en unités du dessin : le `viewBox`
+ * n'ayant pas le même rapport que la barre à l'écran, un triangle « carré » en
+ * coordonnées y paraîtrait écrasé. On le dessine donc large de quelques
+ * colonnes, ce qui donne à l'écran une pointe fine et visible.
+ */
+function chevron(at: number, up: boolean, steps: number): string {
+  const total = duration.value
+  if (total <= 0) return ''
+  const x = (at / total) * barWidth.value
+  const demi = Math.max(2, barWidth.value / 300)
+  const haut = Math.min(6, 3 + steps)
+  return up
+    ? `${x},${14 - haut} ${x - demi},14 ${x + demi},14`
+    : `${x},${14 + haut} ${x - demi},14 ${x + demi},14`
+}
+
+function mesurerBarre(): void {
+  const largeur = timeline.value?.getBoundingClientRect().width
+  if (largeur && largeur > 0) barWidth.value = Math.round(largeur)
+}
+
+onMounted(() => {
+  mesurerBarre()
+  window.addEventListener('resize', mesurerBarre)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', mesurerBarre))
+
 const KIND_LABELS: Record<string, string> = {
+  shift: 'rapports enchaînés',
+  'shift-maybe': 'rapports enchaînés (durée non mesurée)',
   source: 'source de vitesse',
   reject: 'positions rejetées',
   'fix-restart': 'suivi relancé',
@@ -130,12 +212,20 @@ function label(kind: string): string {
  */
 const hovered = ref<{ x: number; text: string } | null>(null)
 
-function showMark(event: MouseEvent, mark: { at: number; kind: string; count: number }): void {
+interface Mark {
+  at: number
+  kind: string
+  count: number
+  detail?: string
+}
+
+function showMark(event: MouseEvent, mark: Mark): void {
   const barre = (event.currentTarget as HTMLElement).parentElement
   const boite = barre?.getBoundingClientRect()
+  const quoi = mark.detail ?? `${label(mark.kind)}${mark.count > 1 ? ` — ${mark.count} fois` : ''}`
   hovered.value = {
     x: boite ? event.clientX - boite.left : 0,
-    text: `${label(mark.kind)}${mark.count > 1 ? ` — ${mark.count} fois` : ''} · ${clock(mark.at)}`,
+    text: `${label(mark.kind)} · ${clock(mark.at)}${mark.detail ? ` — ${quoi}` : mark.count > 1 ? ` — ${mark.count} fois` : ''}`,
   }
 }
 
@@ -313,7 +403,7 @@ void refresh()
 
     <template v-if="session">
       <section class="panel lecture">
-        <div class="timeline">
+        <div ref="timeline" class="timeline">
           <input
             type="range"
             min="0"
@@ -337,6 +427,63 @@ void refresh()
               {{ hovered.text }}
             </span>
           </div>
+
+          <!--
+            Le relief : où l'on a accéléré, où l'on a freiné. Quelques pixels
+            suffisent à viser un moment sans le chercher — c'est un repère, pas
+            une courbe qu'on lit.
+          -->
+          <svg
+            v-if="relief && relief.peak > 0"
+            class="relief"
+            :viewBox="`0 0 ${relief.columns.length} 28`"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="Accélérations et freinages du trajet"
+          >
+            <rect
+              v-for="(colonne, x) in relief.columns"
+              v-show="colonne.up > 0"
+              :key="`a${x}`"
+              class="monte"
+              :x="x"
+              :y="14 - (colonne.up / relief.peak) * 12"
+              width="1"
+              :height="(colonne.up / relief.peak) * 12"
+            />
+            <rect
+              v-for="(colonne, x) in relief.columns"
+              v-show="colonne.down > 0"
+              :key="`f${x}`"
+              class="freine"
+              :x="x"
+              y="14"
+              width="1"
+              :height="(colonne.down / relief.peak) * 12"
+            />
+            <line class="zero" x1="0" y1="14" :x2="relief.columns.length" y2="14" />
+
+            <!--
+              Les passages, posés sur l'axe : un chevron vers le haut pour une
+              montée, vers le bas pour un rétrogradage. Les lire sur la même
+              ligne que l'effort montre d'un coup ce qu'on cherche — un
+              rétrogradage en pleine accélération, une montée en freinant.
+            -->
+            <polygon
+              v-for="(passage, i) in gearChanges"
+              :key="`g${i}`"
+              class="passage"
+              :class="{ retro: !passage.up }"
+              :points="chevron(passage.at, passage.up, passage.steps)"
+            />
+            <line
+              class="tete"
+              :x1="(at / duration) * relief.columns.length"
+              y1="0"
+              :x2="(at / duration) * relief.columns.length"
+              y2="28"
+            />
+          </svg>
         </div>
 
         <div class="controls">
@@ -520,6 +667,56 @@ select {
 .mark.source,
 .mark.capture {
   background: #2e7d32;
+}
+
+.mark.shift {
+  background: #7e57c2;
+}
+
+/* Déduit, pas mesuré : la même couleur, en retrait. */
+.mark.shift-maybe {
+  background: #7e57c2;
+  opacity: 0.5;
+}
+
+/*
+  Le relief. Vingt pixels : assez pour distinguer une reprise d'un coup de
+  frein, pas assez pour qu'on le prenne pour une courbe à lire.
+*/
+.relief {
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin-top: 0.2rem;
+}
+
+.relief .monte {
+  fill: #2e7d32;
+}
+
+.relief .freine {
+  fill: #c62828;
+}
+
+/* Le chevron d'un passage : discret, mais lisible sur le vert comme sur le rouge. */
+.relief .passage {
+  fill: #d7cbe8;
+}
+
+.relief .passage.retro {
+  fill: #7e57c2;
+}
+
+.relief .zero {
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.relief .tete {
+  stroke: #e8a33d;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 
 /* L'infobulle paraît sans délai : on balaie la barre pour trouver un moment. */
