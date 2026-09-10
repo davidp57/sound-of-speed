@@ -49,6 +49,8 @@ export type JournalEventKind =
   | 'audio'
   /** Un relevé périodique de l'état de la conduite. */
   | 'sample'
+  /** Un rapport vient d'être engagé, montée ou descente. */
+  | 'shift'
   /** Un profil a été choisi, ou un réglage global déplacé. */
   | 'profile'
   /** Une erreur, avec ce qu'on en sait. */

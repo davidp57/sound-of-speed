@@ -238,3 +238,59 @@ describe('ce que le son a coûté', () => {
     expect(releve?.data).not.toHaveProperty('clipping')
   })
 })
+
+describe('le rapport est inscrit à l’instant où il change', () => {
+  it('inscrit un passage, avec ce qu’on faisait à ce moment-là', () => {
+    const { collector, events } = setup()
+    collector.observe(snapshot({ at: 0, gear: 4, kmh: 70, rpm: 2800, load: 0.82 }))
+    collector.observe(snapshot({ at: 1200, gear: 5, kmh: 72, rpm: 2310, load: 0.79 }))
+
+    const passage = events().find((e) => e.kind === 'shift')
+    expect(passage?.at).toBe(1200)
+    expect(passage?.data).toMatchObject({ from: 4, to: 5, kmh: 72, rpm: 2310, load: 0.79 })
+  })
+
+  it('inscrit aussi les rétrogradages', () => {
+    const { collector, events } = setup()
+    collector.observe(snapshot({ at: 0, gear: 6 }))
+    collector.observe(snapshot({ at: 800, gear: 4 }))
+
+    const passage = events().find((e) => e.kind === 'shift')
+    expect(passage?.data).toMatchObject({ from: 6, to: 4 })
+  })
+
+  it('distingue deux allers-retours de ce qu’un relevé décennal montrerait', () => {
+    // C'est le cas qui a manqué le 10 septembre : entre deux relevés espacés de
+    // dix secondes, quatre passages se voyaient comme un seul changement.
+    const { collector, events } = setup()
+    collector.observe(snapshot({ at: 0, gear: 5 }))
+    for (const [at, gear] of [
+      [1000, 6],
+      [2000, 5],
+      [3000, 6],
+      [4000, 5],
+    ] as const) {
+      collector.observe(snapshot({ at, gear }))
+    }
+
+    const passages = events().filter((e) => e.kind === 'shift')
+    expect(passages).toHaveLength(4)
+    expect(passages.map((e) => e.at)).toEqual([1000, 2000, 3000, 4000])
+  })
+
+  it('ne dit rien quand le rapport ne bouge pas', () => {
+    const { collector, events } = setup()
+    collector.observe(snapshot({ at: 0, gear: 5 }))
+    collector.observe(snapshot({ at: 500, gear: 5, kmh: 91 }))
+
+    expect(events().filter((e) => e.kind === 'shift')).toHaveLength(0)
+  })
+
+  it('n’inscrit rien sans accord de dépôt', () => {
+    const { collector, events } = setup('none')
+    collector.observe(snapshot({ at: 0, gear: 4 }))
+    collector.observe(snapshot({ at: 900, gear: 5 }))
+
+    expect(events()).toHaveLength(0)
+  })
+})

@@ -182,6 +182,26 @@ export class JournalCollector {
     if (before.audioState !== now.audioState) {
       this.journal.add(now.at, 'audio', { state: now.audioState })
     }
+
+    // Le rapport, à l'instant où il change.
+    //
+    // Le relevé périodique en porte déjà un, mais toutes les dix secondes : il
+    // prouve qu'un passage a eu lieu, jamais quand ni combien. L'essai du
+    // 10 septembre au soir a buté là-dessus — dix-neuf allers-retours d'un
+    // rapport à l'autre repérés, sans pouvoir dire leur fréquence réelle, donc
+    // sans pouvoir distinguer une boîte qui hésite d'une boîte qui oscille.
+    //
+    // Une ligne par passage : sur ce trajet de 36 minutes, quelques centaines
+    // d'octets pour la question à laquelle rien ne répondait.
+    if (before.gear !== now.gear) {
+      this.journal.add(now.at, 'shift', {
+        from: before.gear,
+        to: now.gear,
+        kmh: round(now.kmh, 1),
+        rpm: Math.round(now.rpm),
+        load: round(now.load, 2),
+      })
+    }
   }
 
   private sample(snapshot: JournalSnapshot): void {
