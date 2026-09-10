@@ -61,6 +61,7 @@ par Portainer sur un NAS Synology derrière le proxy inversé DSM. Les
 ```powershell
 npm run dev          # serveur de développement (http://localhost:5173)
 npm run dev:mobile   # idem en HTTPS, pour tester le GPS depuis un téléphone
+npm run relecteur    # idem, avec les dossiers du NAS, pour /relecteur.html
 npm run typecheck    # vue-tsc --noEmit
 npm run lint         # eslint
 npm test             # vitest, une passe

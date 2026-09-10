@@ -428,6 +428,7 @@ Autres commandes :
 
 ```bash
 npm run dev:mobile   # idem, en HTTPS, pour tester depuis un téléphone
+npm run relecteur    # idem, avec les dossiers du NAS, pour /relecteur.html
 npm run build        # produit dist/
 npm run typecheck    # vérification TypeScript stricte
 npm run lint         # style et fautes courantes
@@ -1611,10 +1612,28 @@ session, moment, vitesse, régime, rapport — suivie de l'état complet et des
 coordonnées. C'est ce qu'on colle dans une conversation pour désigner un moment
 précis.
 
-En développement, les dossiers du serveur n'existent pas : la variable
-`SPEED_DATA` désigne un dossier local qui contient `journal/` et `traces/` — le
-partage du NAS, par exemple — et le serveur de développement les sert comme le
-ferait nginx.
+**Où l'ouvrir.** En production, à l'adresse de l'application suivie de
+`/relecteur.html`. Il lit le serveur avec le compte de dépôt réglé sur
+l'appareil : depuis un poste qui n'en a pas encore, il faut le saisir une fois à
+l'écran de configuration de l'application.
+
+En développement, les dossiers du serveur n'existent pas et il faut les lui
+donner :
+
+```powershell
+npm run relecteur   # puis http://localhost:5173/relecteur.html
+```
+
+Ce script n'est que `vite` avec la variable `SPEED_DATA`, qui désigne un dossier
+contenant `journal/` et `traces/` — le partage du NAS par défaut. Pour en viser
+un autre :
+
+```powershell
+$env:SPEED_DATA = 'D:\copie-du-nas'; npm run dev
+```
+
+Le serveur de développement sert alors ces dossiers comme le ferait nginx, y
+compris leur listage.
 
 ### La capture du trajet
 
