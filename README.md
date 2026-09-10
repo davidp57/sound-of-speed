@@ -1618,6 +1618,13 @@ hauts qu'ils franchissent de rapports. Les lire sur la même ligne que l'effort
 montre d'un coup ce qu'on cherche — un rétrogradage en pleine accélération, une
 montée en freinant.
 
+Sous le rapport, une **jauge de charge** montre ce que le moteur croit qu'on
+demande — l'équivalent d'une position d'accélérateur, et donc l'effort qu'on
+entend. Elle est **calculée et jamais mesurée** : la voiture ne dit pas ce que
+fait le pied, la charge se déduit de l'accélération. C'est pourquoi elle prend
+la forme d'une barre et non d'un cadran, qui suggérerait un instrument dont il
+n'existe pas d'équivalent à bord.
+
 L'instant se lit sur **les cadrans de la voiture** — le même composant, la même
 échelle de vitesse fixe à 180 km/h, le rapport en grand entre les deux. Relire
 un trajet, c'est revoir ce qu'on avait sous les yeux ; deux dessins pour la même

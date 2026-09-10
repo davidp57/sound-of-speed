@@ -58,6 +58,12 @@ Toutes les évolutions notables du projet. Format
   même ligne que l'effort montre d'un coup un rétrogradage en pleine
   accélération, ou une montée en freinant.
 
+  Sous le rapport, une **jauge de charge** montre ce que le moteur croit qu'on
+  demande — l'équivalent d'une position d'accélérateur. Elle est calculée et
+  jamais mesurée, la voiture ne disant pas ce que fait le pied : d'où une barre
+  plutôt qu'un cadran, qui suggérerait un instrument dont il n'existe pas
+  d'équivalent à bord.
+
   L'instant se lit sur **les cadrans de la voiture** — le même composant, pour
   que relire un trajet soit revoir ce qu'on avait sous les yeux. La carte occupe
   tout ce que l'écran laisse, un bouton **garde la vue centrée** sur le
