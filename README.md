@@ -1598,6 +1598,24 @@ suivi, salves de positions rejetées, coupures du son, changements de
 configuration. Ce sont les moments qu'on cherche. Le survol d'une marque dit ce
 qu'elle est, combien de fois et quand ; un clic y emmène la lecture.
 
+Elle marque aussi les **rapports enchaînés** — plusieurs passages en peu de
+temps —, qui ne sont pas inscrits dans un fichier mais se déduisent des relevés.
+Ce qui est mesuré et ce qui est déduit se distinguent : un journal relève toutes
+les dix secondes, si bien que voir la deuxième puis la quatrième prouve deux
+passages sans dire s'ils se sont suivis en une seconde ou étalés sur neuf. Le
+critère, quand la durée n'est pas mesurable, est la densité : plus d'un rapport
+franchi par relevé, c'est que la boîte a bougé plusieurs fois entre deux
+regards. Monter de la première à la sixième en cinquante secondes ne compte pas.
+
+Sous la barre, un **relief de vingt-huit pixels** montre où l'on a accéléré, en
+vert au-dessus de l'axe, et où l'on a freiné, en rouge en dessous. Chaque
+colonne garde l'extrême de ce qu'elle couvre, et non la moyenne, qui effacerait
+un freinage bref. Les **passages de rapport** s'y posent en chevrons sur l'axe :
+vers le haut pour une montée, vers le bas pour un rétrogradage, d'autant plus
+hauts qu'ils franchissent de rapports. Les lire sur la même ligne que l'effort
+montre d'un coup ce qu'on cherche — un rétrogradage en pleine accélération, une
+montée en freinant.
+
 L'instant se lit sur **les cadrans de la voiture** — le même composant, la même
 échelle de vitesse fixe à 180 km/h, le rapport en grand entre les deux. Relire
 un trajet, c'est revoir ce qu'on avait sous les yeux ; deux dessins pour la même
