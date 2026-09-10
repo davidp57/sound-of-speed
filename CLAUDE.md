@@ -174,7 +174,7 @@ Un réglage nouveau, c'est cinq choses et pas une :
   s'est révélé raté, il a été retiré le 4 septembre, et le lot qui devait le
   redessiner est abandonné depuis le 7 septembre 2026 — l'exception est retirée
   avec lui. L'arbitrage est rendu : voir
-  [DECOR-PERSPECTIVE](.backlog/DECOR-PERSPECTIVE/spec.md) avant de reproposer un
+  [DECOR-PERSPECTIVE](.backlog/archive/DECOR-PERSPECTIVE.md) avant de reproposer un
   décor.
 
   Une **aiguille de cadran** n'a jamais relevé de cette règle : son mouvement

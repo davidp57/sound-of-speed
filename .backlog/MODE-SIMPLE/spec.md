@@ -96,7 +96,7 @@ C'était le choix dont tout le reste découlait.
   le mode avancé : chacun a été ajouté pour une raison mesurée, et le lot n'en supprime
   aucun.
 - Le volume général, qui sort du profil par le lot
-  [VOLUME-GLOBAL](../VOLUME-GLOBAL/spec.md) : ce n'est pas un caractère, c'est
+  [VOLUME-GLOBAL](../archive/VOLUME-GLOBAL.md) : ce n'est pas un caractère, c'est
   une préférence d'appareil.
 - Le défilement de l'écran, traité par [UI-DEFILEMENT](../UI-DEFILEMENT/spec.md).
   Le mode simplifié raccourcira la colonne, il ne réglera pas le glissement qui

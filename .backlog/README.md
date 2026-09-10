@@ -24,36 +24,30 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | Lot | Statut |
 |-----|--------|
 | [FIX-CORE](FIX-CORE/spec.md) — les quatre défauts que la mise sous test a trouvés | 🧑 |
-| [BG-AUDIO](BG-AUDIO/spec.md) — tenir le son quand le navigateur passe en arrière-plan | ✅ |
 | [BOITE-VIVANTE](BOITE-VIVANTE/spec.md) — une boîte qui regarde la vitesse, pas seulement le régime | 🧑 |
-| [FIX-BOITE](FIX-BOITE/spec.md) — ralentir n'est pas croiser : trois défauts de la boîte, relevés en roulant | 🧑 |
+| [FIX-BOITE](FIX-BOITE/spec.md) — ralentir n'est pas croiser : deux défauts de la boîte, relevés en roulant | 🧑 |
 | [MOTEURS-EN-VOITURE](MOTEURS-EN-VOITURE/spec.md) — choisir moteur, échappement et point d'écoute au volant | 🧑 |
 | [RELIEF](RELIEF/spec.md) — faire entendre l'effort : relief de charge, de régime, et niveau au ralenti | 🧑 |
 | [UI-DEFILEMENT](UI-DEFILEMENT/spec.md) — faire défiler l'écran de configuration sans dérégler un curseur | 🧑 |
-| [VOLUME-GLOBAL](VOLUME-GLOBAL/spec.md) — le volume est une préférence d'appareil, pas un caractère de profil | ✅ |
-| [MODE-SIMPLE](MODE-SIMPLE/spec.md) — quelques curseurs globaux qui commandent la cinquantaine d'autres | 🧑 |
+| [MODE-SIMPLE](MODE-SIMPLE/spec.md) — quelques curseurs globaux qui commandent les quarante-huit autres | 🧑 |
 | [DEPOSER](DEPOSER/spec.md) — sortir un profil ou une trace d'une voiture qui refuse les fichiers | 🧑 |
 | [ETALONNAGE](ETALONNAGE/spec.md) — mesurer la vraie voiture pour régler les virtuelles | 🧑 |
 | [TABLEAU-DE-BORD](TABLEAU-DE-BORD/spec.md) — un vrai tableau de bord, et un paysage qui défile | 🧑 |
 | [BANQUES](BANQUES/spec.md) — accueillir plusieurs banques de son : découverte, mesure outillée, choix par profil | 🧑 |
-| [PENTE](PENTE/spec.md) — le GPS de la Tesla livre trente fois par seconde, et le conditionneur en attend une | 🧑 |
+| [PENTE](PENTE/spec.md) — le GPS de la Tesla livre dix fois par seconde, et le conditionneur en attend une | 🧑 |
 | [EFFORT](EFFORT/spec.md) — la charge doit connaître la vitesse : tenir 50 km/h et tenir 130 ne sonnent pas pareil | 🧑 |
 | [PASSAGE](PASSAGE/spec.md) — un passage de rapport doit s'entendre comme un passage | 🧑 |
-| [IMPERFECTIONS](IMPERFECTIONS/spec.md) — un moteur ne tourne pas juste : tremblement de régime, couches désaccordées, boucle qui ne se répète plus | ✅ |
-| [ESSAI-04](ESSAI-04/spec.md) — six défauts relevés en roulant le 4 septembre : GPS muet, accélération bruitée, étalonnage bloqué, relief écrasé, sortie du plein écran, décor retiré | ✅ |
 | [JOURNAL](JOURNAL/spec.md) — savoir ce que la voiture a vécu, sans avoir à le demander : journal déposé tout seul, en deux crans d'accord | 🧑 |
 | [NAVIGATEUR-VOITURE](NAVIGATEUR-VOITURE/spec.md) — ce que l'appareil réel impose : filtrer sur la précision, mesurer la largeur utile | 🧑 |
-| [DECOR-PERSPECTIVE](DECOR-PERSPECTIVE/spec.md) — un décor vu de la place du conducteur, et non de côté | 🚫 |
-| [BANC-GPS](BANC-GPS/spec.md) — éprouver toute la chaîne sans rouler : trois modes de simulation, dont un qui traverse la vraie source GPS | ✅ |
 | [SYNTHESE](SYNTHESE/spec.md) — produire le son au lieu de le rejouer : trois origines au choix par profil — enregistré, généré en direct, généré à l'avance | 🧑 |
 | [REMONTEE](REMONTEE/spec.md) — tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils, sur un accord unique | 🧑 |
-| [ESSAI-08](ESSAI-08/spec.md) — quatre constats de l'essai du 8 septembre : GPS qui ne démarre pas, son faux en roulant, interface à consolider, dépôt qui refuse les identifiants | 🔄 |
+| [ESSAI-08](ESSAI-08/spec.md) — quatre constats de l'essai du 8 septembre : GPS qui ne démarre pas, son faux en roulant, interface à consolider, dépôt qui refuse les identifiants | 🧑 |
 | [MENAGE-UI](MENAGE-UI/spec.md) — faire le ménage dans l'interface : six mille lignes d'écrans pour une application qui affiche trois chiffres | ⬜ |
-| [DELISSER](DELISSER/spec.md) — un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | ⬜ |
+| [DELISSER](DELISSER/spec.md) — un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | 🧑 |
 | [RAPATRIER](RAPATRIER/spec.md) — faire redescendre ce que la voiture a déposé : les quatre dossiers du serveur en un paquet, depuis un téléphone | 🧑 |
 | [MOUVEMENT](MOUVEMENT/spec.md) — une seule notion de « est-ce qu'on ralentit ? » : deux compteurs se contredisent depuis le 8 septembre, et la boîte reste bloquée ou monte à contretemps | 🧑 |
-| [HORODATAGE](HORODATAGE/spec.md) — le navigateur de la Tesla compte en microsecondes : l'accélération sortait mille fois trop petite, et toute la chaîne travaillait sur zéro | 🔄 |
-| [REFONTE](REFONTE/spec.md) — le cadre de la refonte du 10 septembre : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en deux, et un compte fait le lien | 🔄 |
+| [HORODATAGE](HORODATAGE/spec.md) — le navigateur de la Tesla compte en microsecondes : l'accélération sortait mille fois trop petite, et toute la chaîne travaillait sur zéro | 🧑 |
+| [REFONTE](REFONTE/spec.md) — le cadre de la refonte du 10 septembre : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en trois, et un compte fait le lien | 🔄 |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
@@ -67,12 +61,20 @@ cadence de rafraîchissement d'un compteur avait mené à un défaut de mesure q
 faussait tout l'aval : à la cadence réelle du GPS de la Tesla, une accélération
 douce était vue à zéro. Restent ses deux vérifications en roulant.
 
+**Sa cadence annoncée était fausse, et son correctif insuffisant.** Le titre du
+lot dit « trente fois par seconde » ; le journal de l'essai du 9 septembre donne
+**dix**. Et PENTE ne pouvait pas suffire : la vraie cause était une unité
+d'horodatage, trouvée le 10 septembre par [HORODATAGE](HORODATAGE/spec.md) — le
+navigateur de la voiture compte en microsecondes, et l'accélération sortait mille
+fois trop petite. C'est pourquoi David avait raison de dire que PENTE était bon
+en roulant, et pourquoi la mesure restait morte malgré lui.
+
 EFFORT et IMPERFECTIONS attendaient cette mesure juste. **Les chiffres d'EFFORT
 ont été refaits** le 4 septembre 2026, après PENTE et ESSAI-04 : le lot continue
 inchangé, et il est livré. Il ne lui reste qu'une écoute en roulant.
 
-**IMPERFECTIONS est livré**, trois tickets sur trois ; il reste l'écoute en
-roulant. Le troisième — la boucle qui ne se répète plus — était réputé bloqué par
+**IMPERFECTIONS est livré et archivé**, trois tickets sur trois ; il restait
+l'écoute en roulant, jamais faite sur une accélération juste. Le troisième — la boucle qui ne se répète plus — était réputé bloqué par
 une mesure impossible depuis le dépôt. Il ne l'était pas : la banque livrée est
 présente en local, ses boucles font 3,14 s à 5,37 s, et le ticket prévoyait de
 s'abandonner si elles étaient longues. La lecture reprend maintenant ailleurs
@@ -81,10 +83,14 @@ puissance constante de vingt millisecondes. Deux parades prévues au ticket ont
 été essayées et écartées sur mesure : les deux instances permanentes en fondu
 croisé lent, et l'alignement de la nouvelle position sur le cycle moteur.
 
-**Tous les lots sont découpés en tickets**, sauf PENTE dont le travail est
-livré, et DECOR-PERSPECTIVE qui a été abandonné au moment même de le découper.
-Les huit lots nés de l'essai sur route du 3 septembre 2026 l'ont été le jour
-même, après deux décisions de conception prises par David :
+**Douze lots n'ont pas de tickets**, et c'est délibéré dans chaque cas : soit le
+travail est livré d'une pièce (PENTE, BANC-GPS, DELISSER, ESSAI-08, JOURNAL,
+MOTEURS-EN-VOITURE, NAVIGATEUR-VOITURE, PASSAGE, RAPATRIER, HORODATAGE), soit la
+conception n'est pas tranchée et des frontières écrites d'avance ne survivraient
+pas à la première décision (MENAGE-UI, MOUVEMENT).
+
+Les neuf lots nés de l'essai sur route du 3 septembre 2026 ont été découpés le
+jour même, après deux décisions de conception prises par David :
 
 - **La règle « aucune animation » avait été levée pour le paysage qui défile**,
   et pour lui seul. Le paysage a été retiré le 4 septembre, le lot qui devait le
@@ -101,6 +107,13 @@ d'accélération est juste (EFFORT, ticket 01). Le second — ce qu'un curseur g
 fait d'un réglage trouvé à la main — est tranché : **on écrase, avec un retour**
 (MODE-SIMPLE, spec).
 
+**Trois lots ont tous leurs tickets faits et restent pourtant 🧑** —
+BOITE-VIVANTE, FIX-BOITE et RELIEF. Ce n'est pas un oubli : c'est le sens du
+statut. Le code est livré, la preuve demande la voiture, et ce qu'il reste à
+faire ne se découpe pas en tickets — cela s'écoute. Les trois attendent en outre
+une accélération juste, que le correctif du 10 septembre vient seulement de
+rendre.
+
 **REMONTEE reprend deux tickets de DEPOSER** — déposer un profil, et le dépôt en
 attente qui part au retour du réseau. Ils y sont marqués abandonnés, avec le
 renvoi : ce ne sont plus des travaux séparés mais deux tranches d'un même
@@ -115,6 +128,12 @@ Clos depuis plus de trois jours, compactés dans `.backlog/archive/` :
 |-----|---------|
 | [TEST-CORE](archive/TEST-CORE.md) — mettre le cœur sous test : Vitest, ESLint, 211 tests, 94,6 % de `core/` | 2026-09-02 |
 | [ORIGINE](archive/ORIGINE.md) — réinitialiser un profil à ce qu'il était, et non aux réglages de Sport | 2026-09-02 |
+| [BG-AUDIO](archive/BG-AUDIO.md) — tenir le son quand le navigateur passe en arrière-plan | 2026-09-03 |
+| [VOLUME-GLOBAL](archive/VOLUME-GLOBAL.md) — le volume est une préférence d'appareil, pas un caractère de profil | 2026-09-03 |
+| [BANC-GPS](archive/BANC-GPS.md) — éprouver toute la chaîne sans rouler, en traversant la vraie source GPS | 2026-09-04 |
+| [ESSAI-04](archive/ESSAI-04.md) — six défauts relevés en roulant le 4 septembre, huit tickets | 2026-09-06 |
+| [IMPERFECTIONS](archive/IMPERFECTIONS.md) — un moteur ne tourne pas juste : tremblement, désaccord, boucle qui ne se répète plus | 2026-09-06 |
+| [DECOR-PERSPECTIVE](archive/DECOR-PERSPECTIVE.md) — un décor vu de la place du conducteur, abandonné au découpage | 2026-09-07 |
 
 ## Ce qui n'est pas dans le backlog
 

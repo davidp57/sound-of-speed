@@ -7,7 +7,7 @@
 Le paysage a été livré, puis jugé « complètement raté » en roulant le
 4 septembre : il défilait de côté, là où l'écran se voit de la place du
 conducteur. Le composant a été supprimé (ESSAI-04, ticket 07) et sa refonte en
-perspective, [DECOR-PERSPECTIVE](../../DECOR-PERSPECTIVE/spec.md), est abandonnée
+perspective, [DECOR-PERSPECTIVE](../../archive/DECOR-PERSPECTIVE.md), est abandonnée
 à son tour — les raisons y sont écrites.
 
 Ses deux critères non cochés ne le seront donc jamais : ils attendaient une

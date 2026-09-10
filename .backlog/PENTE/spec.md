@@ -1,6 +1,17 @@
-# PENTE — le GPS de la Tesla livre trente fois par seconde
+# PENTE — le GPS de la Tesla livre dix fois par seconde
 
 **Statut :** 🧑 attend David
+
+**Le titre disait trente, et c'était faux.** Le journal de l'essai du
+9 septembre 2026 donne **dix positions par seconde** — cent millisecondes
+d'écart médian. Le titre est corrigé le 10 septembre.
+
+Et ce lot ne pouvait pas suffire : la vraie cause de l'accélération morte était
+une **unité d'horodatage**, trouvée le même jour par
+[HORODATAGE](../HORODATAGE/spec.md). Le navigateur de la voiture compte en
+microsecondes, si bien que l'accélération sortait mille fois trop petite quoi
+qu'on fasse de la fenêtre de pente. C'est pourquoi David avait raison de dire
+que PENTE était bon en roulant, et pourquoi la mesure restait morte malgré lui.
 **Branche :** `fix/pente`
 **Version visée :** 0.2 — avant tout le reste
 

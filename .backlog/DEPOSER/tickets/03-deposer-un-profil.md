@@ -15,7 +15,7 @@ code existe déjà, et il ne télécharge rien — mais un profil déposé se re
 sans avoir à conserver une adresse.
 
 Ce qui ne doit pas partir avec : le statut de favori, et le volume général si le
-lot [VOLUME-GLOBAL](../../VOLUME-GLOBAL/spec.md) est passé avant. Les valeurs
+lot [VOLUME-GLOBAL](../../archive/VOLUME-GLOBAL.md) est passé avant. Les valeurs
 d'origine, elles, suivent — comme dans un fichier exporté, où la taille
 n'importe pas.
 
