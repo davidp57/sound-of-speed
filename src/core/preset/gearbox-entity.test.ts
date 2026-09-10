@@ -176,29 +176,29 @@ describe('la correction d\'une boîte se répercute', () => {
 
 describe('le registre des boîtes', () => {
   it('livre une boîte par profil d\'usine', () => {
-    expect(factoryGearboxes().map((b) => b.name)).toEqual(['Route', 'Sport'])
+    // Un seul profil livré depuis le 10 septembre 2026 — le V8 —, donc une
+    // seule boîte livrée.
+    expect(factoryGearboxes().map((b) => b.name)).toEqual(['V8'])
   })
 
-  it('livre bien deux boîtes différentes, et non deux fois la même', () => {
-    // Elles partagent leurs rapports, mais pas leur pont : le régime à une
-    // vitesse donnée diffère, et leurs durées de passage aussi.
-    const [route, sport] = factoryGearboxes()
-    expect(route?.drivetrain.finalDrive).not.toBe(sport?.drivetrain.finalDrive)
-    expect(route?.drivetrain.shiftTimeMs).not.toBe(sport?.drivetrain.shiftTimeMs)
+  it('livre le calibrage de la route : pont long, six rapports', () => {
+    const livree = factoryGearboxes()[0]!
+    expect(livree.drivetrain.finalDrive).toBe(3.7)
+    expect(livree.drivetrain.gearRatios).toHaveLength(6)
   })
 
-  it('rend les livrées quand rien n\'est enregistré', () => {
-    expect(loadGearboxes()).toHaveLength(2)
+  it("rend la livrée quand rien n'est enregistré", () => {
+    expect(loadGearboxes()).toHaveLength(1)
   })
 
   it('remplace une livrée qu\'on a corrigée, au lieu d\'en montrer deux', () => {
     const livree = factoryGearboxes()[0]!
-    saveGearboxes(upsertGearbox(factoryGearboxes(), { ...livree, name: 'Route longue' }))
+    saveGearboxes(upsertGearbox(factoryGearboxes(), { ...livree, name: 'V8 long' }))
 
     const noms = loadGearboxes().map((b) => b.name)
-    expect(noms).toContain('Route longue')
-    expect(noms).not.toContain('Route')
-    expect(loadGearboxes()).toHaveLength(2)
+    expect(noms).toContain('V8 long')
+    expect(noms).not.toContain('V8')
+    expect(loadGearboxes()).toHaveLength(1)
   })
 
   it('retire une boîte', () => {
@@ -209,12 +209,12 @@ describe('le registre des boîtes', () => {
 
   it('survit à un stockage illisible', () => {
     localStorage.setItem('speed.gearboxes.v1', 'pas du json')
-    expect(loadGearboxes()).toHaveLength(2)
+    expect(loadGearboxes()).toHaveLength(1)
   })
 
   it('écarte une entrée qui n\'est pas une boîte', () => {
     localStorage.setItem('speed.gearboxes.v1', JSON.stringify([{ name: 'sans rapports' }]))
-    expect(loadGearboxes()).toHaveLength(2)
+    expect(loadGearboxes()).toHaveLength(1)
   })
 })
 
