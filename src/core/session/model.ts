@@ -207,6 +207,24 @@ function collectPoint(
   })
 }
 
+/**
+ * Le premier point à cet instant ou après, par dichotomie.
+ *
+ * Et non par un parcours. La lecture interroge vingt fois par seconde, et une
+ * capture d'une heure porte trente-six mille points : un parcours en balaierait
+ * la moitié à chaque image. Les points sont triés, la dichotomie est gratuite.
+ */
+function firstAtOrAfter(points: { at: number }[], at: number): number {
+  let bas = 0
+  let haut = points.length
+  while (bas < haut) {
+    const milieu = (bas + haut) >> 1
+    if ((points[milieu] as { at: number }).at < at) bas = milieu + 1
+    else haut = milieu
+  }
+  return bas < points.length ? bas : -1
+}
+
 export interface Reading<T> {
   value: T
   /** Faux quand la valeur est interpolée entre deux relevés. */
@@ -226,7 +244,7 @@ export interface Reading<T> {
 export function stateAt(states: StatePoint[], at: number): Reading<StatePoint> | null {
   if (states.length === 0) return null
 
-  const i = states.findIndex((point) => point.at >= at)
+  const i = firstAtOrAfter(states, at)
   if (i === -1) {
     const last = states[states.length - 1] as StatePoint
     return { value: last, measured: false, offsetMs: at - last.at }
@@ -258,7 +276,7 @@ export function stateAt(states: StatePoint[], at: number): Reading<StatePoint> |
 /** La position à un instant donné, interpolée de la même façon. */
 export function trackAt(track: TrackPoint[], at: number): TrackPoint | null {
   if (track.length === 0) return null
-  const i = track.findIndex((point) => point.at >= at)
+  const i = firstAtOrAfter(track, at)
   if (i === -1) return track[track.length - 1] as TrackPoint
   const after = track[i] as TrackPoint
   if (i === 0) return after

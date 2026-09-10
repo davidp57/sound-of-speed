@@ -98,25 +98,32 @@ export async function loadSession(
 ): Promise<{ session: Session; failures: string[] }> {
   const headers = { Authorization: authHeader(credentials) }
   const failures: string[] = []
-  const files: SessionFile[] = []
   let done = 0
 
-  for (const file of entry.files) {
-    const folder = file.kind === 'journal' ? '/journal/' : '/traces/'
-    try {
-      const response = await fetchImpl(folder + encodeURIComponent(file.name), { headers })
-      if (!response.ok) {
-        failures.push(`${file.name} (${response.status})`)
-        continue
+  // Ensemble, et non l'un après l'autre : une session du 9 septembre porte
+  // seize tranches, et seize allers-retours en série sur un partage lent se
+  // comptent en secondes. L'ordre est rendu par le rang, à l'assemblage.
+  const lus = await Promise.all(
+    entry.files.map(async (file): Promise<SessionFile | null> => {
+      const folder = file.kind === 'journal' ? '/journal/' : '/traces/'
+      try {
+        const response = await fetchImpl(folder + encodeURIComponent(file.name), { headers })
+        if (!response.ok) {
+          failures.push(`${file.name} (${response.status})`)
+          return null
+        }
+        return { name: file.name, kind: file.kind, text: await readBody(response, file.name) }
+      } catch {
+        failures.push(`${file.name} (injoignable)`)
+        return null
+      } finally {
+        done += 1
+        onProgress?.(done, entry.files.length)
       }
-      files.push({ name: file.name, kind: file.kind, text: await readBody(response, file.name) })
-    } catch {
-      failures.push(`${file.name} (injoignable)`)
-    } finally {
-      done += 1
-      onProgress?.(done, entry.files.length)
-    }
-  }
+    }),
+  )
+
+  const files = lus.filter((file): file is SessionFile => file !== null)
 
   return { session: buildSession(entry.id, entry.startedAt, files), failures }
 }

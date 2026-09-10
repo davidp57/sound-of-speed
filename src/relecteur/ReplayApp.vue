@@ -52,22 +52,33 @@ async function refresh(): Promise<void> {
   }
 }
 
+/**
+ * Le chargement en cours, pour que deux ne se marchent pas dessus.
+ *
+ * Changer de session pendant qu'une autre charge lançait deux lectures, et
+ * c'était la plus lente qui s'affichait — donc pas celle qu'on avait demandée.
+ */
+let pending = 0
+
 async function open(key: string): Promise<void> {
   const entry = entries.value.find((candidate) => candidate.key === key)
   if (!entry) return
   stop()
+  const jeton = ++pending
   busy.value = true
   note.value = `Chargement de ${entry.files.length} fichier${entry.files.length > 1 ? 's' : ''}…`
   try {
     const chargé = await loadSession(entry, credentials)
+    if (jeton !== pending) return
     session.value = chargé.session
     failures.value = chargé.failures
     at.value = 0
     note.value = ''
   } catch (error) {
+    if (jeton !== pending) return
     note.value = error instanceof Error ? error.message : 'Session illisible.'
   } finally {
-    busy.value = false
+    if (jeton === pending) busy.value = false
   }
 }
 
@@ -150,6 +161,14 @@ function clock(ms: number): string {
  * « 0,0 s » se lit comme « pile dessus » alors qu'il peut valoir quarante
  * millisecondes ; c'est justement la distinction que cet écran doit tenir.
  */
+/** Un délai depuis le départ, écrit sans qu'on puisse le confondre avec une heure. */
+function duree(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000))
+  const m = Math.floor(total / 60)
+  const sec = total % 60
+  return m > 0 ? `${m} min ${String(sec).padStart(2, '0')} s` : `${sec} s`
+}
+
 function ecart(ms: number): string {
   return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`
 }
@@ -171,7 +190,10 @@ function repere(): string {
   if (!s) return ''
   const lu = reading.value
   const pos = position.value
-  const tête = `Session ${s.id} du ${stamp(s.startedAt)}, à ${clock(at.value)}`
+  // « 20:03 » se lit comme une heure dans une conversation, alors que c'est un
+  // délai depuis le début du trajet. Le repère est fait pour être collé et lu
+  // par quelqu'un d'autre : il dit son unité.
+  const tête = `Session ${s.id} du ${stamp(s.startedAt)}, à ${duree(at.value)} du départ`
   const corps = lu
     ? ` — ${lu.value.kmh.toFixed(1)} km/h, ${Math.round(lu.value.rpm)} tr/min, rapport ${lu.value.gear}`
     : ' — aucun relevé'

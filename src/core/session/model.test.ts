@@ -148,6 +148,27 @@ describe('la lecture à un instant', () => {
     expect(stateAt([], 0)).toBeNull()
   })
 
+  it('trouve le bon relevé dans une capture longue', () => {
+    // La recherche est dichotomique : une capture d'une heure porte trente-six
+    // mille points, et la lecture interroge vingt fois par seconde. Ce test
+    // vérifie surtout qu'elle ne se trompe pas de voisin aux bords.
+    const longue = Array.from({ length: 36_000 }, (_, i) => ({
+      at: i * 100,
+      kmh: i / 100,
+      rpm: 800 + i,
+      gear: 1 + (i % 6),
+      load: 0.5,
+      accelMs2: 0,
+    }))
+
+    expect(stateAt(longue, 0)?.measured).toBe(true)
+    expect(stateAt(longue, 1_234_500)?.value.rpm).toBe(800 + 12_345)
+    expect(stateAt(longue, 1_234_550)?.measured).toBe(false)
+    expect(stateAt(longue, 1_234_550)?.value.gear).toBe(longue[12_345]?.gear)
+    expect(stateAt(longue, 3_599_900)?.measured).toBe(true)
+    expect(stateAt(longue, 9_999_999)?.value.rpm).toBe(800 + 35_999)
+  })
+
   it('interpole la position', () => {
     const track = [
       { at: 0, lat: 45, lon: 4, kmh: 0 },
