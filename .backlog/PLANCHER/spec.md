@@ -335,6 +335,25 @@ Pas encore fait :
 - **l'irrégularité du régime**, à fusionner en un seul mécanisme dans le moteur.
 - **les marges elles-mêmes**, qui sont des points de départ.
 
+## Ce qu'il faut écouter, à la prochaine sortie
+
+Dans l'ordre d'importance, et chacun se juge à l'oreille sans rien ouvrir :
+
+1. **Le départ.** La deuxième s'engage vers 15 km/h, la première ayant tourné à
+   1 534 tr/min. C'est le réglage le plus incertain du lot : à 810 tr/min de
+   plancher, la deuxième prend le relais à peine au-dessus du ralenti. Si cela
+   sonne mou, c'est ce nombre-là qui bouge, et lui seul.
+2. **La conduite en ville, mode Route.** Les rapports doivent céder vers 2 300 à
+   3 000 tr/min au lieu de 2 950 à 3 700. C'est le retour principal du
+   10 septembre.
+3. **Les vitesses tenues**, entre 40 et 80 km/h. C'est là que la boîte faisait
+   le va-et-vient ; elle ne devrait plus changer d'avis du tout. Le journal
+   compte maintenant les passages un par un, donc le trajet le dira exactement.
+4. **Les relances sur autoroute.** Le rétrogradage forcé ne devrait plus se
+   déclencher sur une reprise ordinaire, seulement pied au plancher.
+5. **Le frein moteur.** Les descentes doivent s'étaler plutôt que s'entasser à
+   l'arrêt, et se faire plus tôt quand on freine franchement.
+
 ## Notes
 
 **Un excès sans cause établie.** La première tenue à 6 122 tr/min dépasse de
