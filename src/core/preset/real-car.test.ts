@@ -65,7 +65,10 @@ describe('le nettoyage des valeurs', () => {
   })
 
   it('écarte ce qui n\'est pas un nombre', () => {
-    const voiture = clampRealCar({ springOmega: Number.NaN, accelWindowMs: undefined })
+    // Le stockage local se modifie à la main : une valeur peut arriver en texte
+    // ou en « pas un nombre », et le type ne protège de rien à la lecture.
+    const trafique = { springOmega: Number.NaN, accelWindowMs: 'beaucoup' }
+    const voiture = clampRealCar(trafique as unknown as Partial<typeof DEFAULT_REAL_CAR>)
     expect(voiture.springOmega).toBe(DEFAULT_REAL_CAR.springOmega)
     expect(voiture.accelWindowMs).toBe(DEFAULT_REAL_CAR.accelWindowMs)
   })
