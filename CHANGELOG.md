@@ -6,6 +6,19 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Modifié
+
+- Le profil actif est **assemblé** depuis les groupes qu'il désigne : son
+  moteur, sa boîte et la voiture de l'appareil. Les réglages de l'écran de
+  configuration atterrissent dans le groupe où ils vivent, et corriger un
+  moteur s'entend dans tous les profils qui le jouent.
+- Les pétarades suivent le moteur : c'est son échappement qui claque.
+- Les profils enregistrés sont scindés au chargement — chacun reçoit un moteur
+  et une boîte, ou retrouve ceux qui lui ressemblent, sans doublon dans la
+  liste.
+- Un profil reçu par lien ou par fichier reçoit un moteur d'ici : il jouait
+  bien, il se règle maintenant aussi.
+
 ### Corrigé
 
 - **Changer de moteur change enfin la façon de conduire.** Les seuils de passage

@@ -15,6 +15,12 @@
  * donc à la tolérance près sur les nombres : un profil qui a fait l'aller-retour
  * par un lien de partage porte des valeurs arrondies, et cela ne fait pas de lui
  * un autre moteur.
+ *
+ * **Une référence qui ne mène à rien vaut une absence.** C'est ce qui fait
+ * marcher le partage : un profil reçu désigne le moteur de celui qui l'a envoyé,
+ * introuvable ici, mais il arrive avec ses valeurs — on lui rend donc un moteur
+ * d'ici, le même s'il existe déjà. C'est aussi ce qui répare un profil dont le
+ * moteur a été oublié.
  */
 
 import {
@@ -39,9 +45,10 @@ export interface SplitOutcome {
 /**
  * Donne à chaque profil un moteur et une boîte, en créant ce qui manque.
  *
- * Un profil qui en désigne déjà est laissé tel quel : la reprise ne se refait
- * pas à chaque lancement, et elle ne défait pas un rattachement choisi à la
- * main. Elle est donc sans effet au deuxième passage.
+ * Un profil dont les deux références mènent à une entité connue est laissé tel
+ * quel : la reprise ne se refait pas à chaque lancement, et elle ne défait pas
+ * un rattachement choisi à la main. Elle est donc sans effet au deuxième
+ * passage.
  */
 export function splitProfiles(
   profiles: readonly Profile[],
@@ -55,14 +62,14 @@ export function splitProfiles(
   const repris = profiles.map((profile) => {
     let repris = profile
 
-    if (!profile.engineId) {
+    if (!moteurs.some((moteur) => moteur.id === profile.engineId)) {
       const connu = moteurs.find((moteur) => matchesEngine(profile, moteur))
       const moteur = connu ?? nomme(engineFromProfile(profile), moteurs, newId)
       if (!connu) moteurs.push(moteur)
       repris = { ...repris, engineId: moteur.id }
     }
 
-    if (!profile.gearboxId) {
+    if (!boites.some((boite) => boite.id === profile.gearboxId)) {
       const connue = boites.find((boite) => matchesGearbox(profile, boite))
       const boite = connue ?? nomme(gearboxFromProfile(profile), boites, newId)
       if (!connue) boites.push(boite)

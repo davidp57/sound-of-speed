@@ -74,9 +74,23 @@ describe('la reprise des profils', () => {
   it('ne défait pas un rattachement choisi à la main', () => {
     // Un profil qui désigne un moteur dont il ne joue plus tout à fait les
     // valeurs le désigne quand même : c'est un choix, pas un accident.
-    const profil = { ...createRoadProfile(), engineId: 'choisi-a-la-main' }
-    const { profiles } = splitProfiles([profil], [], [], newId)
-    expect(profiles[0]?.engineId).toBe('choisi-a-la-main')
+    const autre = engineFromProfile(createDefaultProfile())
+    const profil = { ...createRoadProfile(), engineId: autre.id }
+
+    const { profiles, engines } = splitProfiles([profil], [autre], [], newId)
+
+    expect(profiles[0]?.engineId).toBe(autre.id)
+    expect(engines).toHaveLength(1)
+  })
+
+  it('rend un moteur d’ici à un profil reçu qui désigne celui d’ailleurs', () => {
+    // Le partage : la référence ne mène à rien ici, mais le profil arrive avec
+    // ses valeurs. Sans ce rattrapage il jouerait bien et ne se réglerait plus.
+    const recu = { ...createV8Profile(), engineId: 'chez-quelqu-un-d-autre' }
+    const { profiles, engines } = splitProfiles([recu], [], [], newId)
+
+    expect(profiles[0]?.engineId).not.toBe('chez-quelqu-un-d-autre')
+    expect(engines).toHaveLength(1)
   })
 
   it('évite deux entités sous le même identifiant', () => {

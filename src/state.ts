@@ -2145,8 +2145,20 @@ export async function importFromUrl(): Promise<string | null> {
   return profile.name
 }
 
+/**
+ * Ajoute un profil, d'où qu'il vienne, et lui donne ses groupes.
+ *
+ * Le passage obligé de tout ce qui entre : un fichier, un lien, la
+ * bibliothèque, le guide de création, une copie. Un profil reçu désigne le
+ * moteur de celui qui l'a envoyé, introuvable ici ; il arrive en revanche avec
+ * ses valeurs, donc on lui rend un moteur d'ici — le même s'il existe déjà.
+ * Sans ce passage il jouerait bien, mais plus rien ne pourrait le régler.
+ */
 export function addProfile(profile: Profile): void {
-  profiles.value = [...profiles.value, profile]
+  const scinde = splitProfiles([profile], engines.value, gearboxes.value, newId)
+  profiles.value = [...profiles.value, ...scinde.profiles]
+  engines.value = scinde.engines
+  gearboxes.value = scinde.gearboxes
   selectedId.value = profile.id
 }
 
