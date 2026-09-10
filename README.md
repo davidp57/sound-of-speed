@@ -1541,6 +1541,29 @@ Un profil ne part pas à la frappe : il attend que la main s'arrête, et son
 fichier porte un nom stable — le redéposer remplace sa version précédente au lieu
 d'accumuler des copies. Le statut de favori ne voyage pas.
 
+### Le chemin du retour
+
+Ce qui est monté sur le serveur y reste : le navigateur de la voiture ne
+télécharge rien, et rien ne redescend tout seul. Le bouton **Tout récupérer**,
+dans la section Profils, referme la boucle — il liste les quatre dossiers, tire
+tous les fichiers et les rend en un seul paquet compressé, nommé à la seconde
+pour que deux récupérations du même jour ne se recouvrent pas.
+
+Il se fait **depuis un téléphone ou un ordinateur**, pas depuis la voiture, qui
+refuse les téléchargements. Le compte de dépôt sert aussi à lire : sans lui,
+aucune requête ne part et l'écran le dit.
+
+Le paquet part **incomplet plutôt que pas du tout**. Un dossier refusé, un
+fichier illisible : les autres sont emportés quand même, et le message nomme ce
+qui manque — un essai à moitié rapatrié reste exploitable, mais il ne doit pas
+se faire passer pour complet. Un dossier **absent**, en revanche, ne compte pas
+comme un échec : ils naissent au premier dépôt.
+
+Le paquet n'est pas compressé, seulement assemblé : cela tient en une centaine
+de lignes sans dépendance, là où la compression demanderait une bibliothèque à
+une application qui doit se charger hors réseau. Une tranche de journal fait
+vingt-huit kilo-octets, et le paquet les garde toutes.
+
 ## Le journal de bord
 
 Ce que l'application a vécu pendant le trajet, en événements horodatés.
@@ -2156,6 +2179,7 @@ chaque essai.
 | 31 | Tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils | fait, NAS en place, reste un essai en roulant |
 | 32 | Plusieurs banques de son : découvertes sur le serveur, mesurées par un outil, choisies par profil | fait, reste à essayer hors réseau |
 | 33 | Le passage de rapport s'entend : couple coupé, plongée, coup de gaz, clac de boîte, et un seuil de montée qui suit la demande | écouté au simulateur, échantillons et synthèse, reste à rouler |
+| 34 | Le chemin du retour : les quatre dossiers du serveur se récupèrent en un paquet, depuis un téléphone | fait, reste l'essai de David |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

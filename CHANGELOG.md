@@ -6,6 +6,28 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Tout ce que le serveur porte se récupère en un fichier.** Un bouton « Tout
+  récupérer », dans la section Profils, liste les quatre dossiers du serveur —
+  journal, traces, relevés de mesure, profils —, tire les fichiers et les rend
+  en un paquet compressé. Le navigateur de la voiture ne télécharge rien : le
+  geste se fait depuis un téléphone ou un ordinateur, et c'est le seul chemin de
+  retour pour un essai enregistré en roulant. David : « j'utilise l'app sur
+  téléphone pour récupérer et sauvegarder les traces en .zip ».
+
+  Le paquet est **écrit à la main, sans dépendance ni compression** : une
+  centaine de lignes pures, vérifiées par vingt-quatre tests, plutôt qu'une
+  bibliothèque de plus dans une application qui doit se charger hors réseau. Le
+  format est vérifié à l'extérieur — le décompresseur de Windows l'ouvre,
+  arborescence et accents intacts. La compression native du navigateur
+  s'ajoutera si le poids devient gênant.
+
+  Il part **incomplet plutôt que pas du tout** : un dossier refusé ou un fichier
+  illisible n'emporte pas le reste, et le message dit lesquels manquent. Un
+  dossier absent, en revanche, n'est pas une anomalie — ils naissent au premier
+  dépôt.
+
 ### Sécurité
 
 - **Les quatre dossiers du serveur ne se lisent plus sans mot de passe.**
