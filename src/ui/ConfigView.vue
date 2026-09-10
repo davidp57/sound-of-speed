@@ -330,31 +330,6 @@ const redlineSpeed = computed<number>({
   },
 })
 
-/** Un curseur par passage : autant que de rapports, moins un. */
-const upshiftSlots = computed(() => {
-  const count = Math.max(0, profile.value.drivetrain.gearRatios.length - 1)
-  const table = profile.value.drivetrain.upshiftRpm
-  return Array.from({ length: count }, (_, i) => table[i] ?? table[table.length - 1] ?? 6000)
-})
-
-function setUpshiftRpm(index: number, value: number): void {
-  const table = [...upshiftSlots.value]
-  table[index] = value
-  profile.value.drivetrain.upshiftRpm = table
-}
-
-/**
- * Vitesse à laquelle le passage se produira, ce qui parle bien plus qu'un
- * régime seul quand on cherche à placer ses rapports.
- */
-function upshiftHint(index: number, rpm: number): string {
-  const { drivetrain } = profile.value
-  const ratio = drivetrain.gearRatios[index]
-  if (!ratio) return ''
-  const wheelRps = rpm / 60 / Math.max(0.01, ratio * drivetrain.finalDrive)
-  const kmh = wheelRps * 2 * Math.PI * drivetrain.wheelRadiusM * 3.6
-  return `Soit environ ${Math.round(kmh)} km/h à charge moyenne.`
-}
 
 /** Régime en croisière, repère utile pour juger si la boîte est trop courte. */
 const cruiseRpm = computed(() => {
@@ -1450,22 +1425,13 @@ async function rapatrier(): Promise<void> {
         hint="Durée pendant laquelle le couple est coupé, et durée de toute la séquence : chute au neutre, coup de gaz, clac, reprise. C'est elle qui décide si le passage s'entend — sous deux cents millisecondes, les quatre temps se chevauchent et l'on ne perçoit qu'un trou. Court sur une boîte moderne, plus long sur une ancienne."
       />
       <p class="note">
-        Régime auquel chaque rapport cède la place au suivant, à charge moyenne.
-        Les régler séparément est le seul moyen d'empêcher les rapports courts de
-        monter jusqu'au rupteur sans faire passer les longs beaucoup trop bas.
+        Les régimes de passage ne se règlent plus ici : ils se déduisent du
+        <strong>rupteur du moteur</strong> et du <strong>tempérament</strong> —
+        route ou sport —, qui se choisit sous les cadrans de l'écran de conduite.
+        C'est ce qui fait qu'un moteur de moto tient ses rapports plus longtemps
+        qu'un V8, là où cinq régimes en tours absolus ignoraient le moteur qu'ils
+        avaient devant eux.
       </p>
-      <NumberField
-        v-for="(rpm, index) in upshiftSlots"
-        :key="index"
-        :model-value="rpm"
-        :label="`Passage ${index + 1} → ${index + 2}`"
-        :min="1000"
-        :max="profile.engine.redlineRpm"
-        :step="50"
-        unit="tr/min"
-        :hint="upshiftHint(index, rpm)"
-        @update:model-value="setUpshiftRpm(index, $event)"
-      />
       <NumberField
         v-model="profile.drivetrain.upshiftLoadSpreadRpm"
         label="Écart selon la charge"

@@ -8,6 +8,31 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Changer de moteur change enfin la façon de conduire.** Les seuils de passage
+  étaient en tours absolus, si bien que la boîte ignorait le moteur qu'elle avait
+  devant elle : mesuré au banc, un moteur de moto qui monte à 11 000 tr/min
+  passait ses rapports au même endroit qu'un V8 qui s'arrête à 6 500, et un gros
+  bloc à 5 500 tapait son rupteur **avant d'avoir le droit de monter**.
+
+  Ils se déduisent maintenant du rupteur et d'un **tempérament** — route ou
+  sport —, comme la descente le faisait déjà : l'asymétrie était dans le code
+  depuis le début. Le tempérament se choisit sous les cadrans de l'écran de
+  conduite, à côté de la commande automatique ou manuelle, et il est retenu par
+  l'appareil. Au premier lancement, il se déduit du profil actif — imposer
+  « route » ferait conduire un profil Sport comme un profil Route sans que rien
+  ne le dise.
+
+  Les deux tempéraments disent enfin explicitement ce que les profils livrés
+  faisaient sans le dire : **Route monte de plus en plus tôt** — on cherche le
+  rapport long — et **Sport de plus en plus tard** — on garde le régime. Leurs
+  courbes sont les seuils de ces profils divisés par leur rupteur, donc rien ne
+  change sur les moteurs livrés.
+
+  **Cinq curseurs quittent l'écran de réglage.** Et un rapport ajouté reçoit
+  désormais un seuil cohérent avec ses voisins : la courbe s'étale sur la boîte
+  qu'elle trouve, là où une table absolue faisait hériter le nouveau rapport du
+  seuil de son prédécesseur.
+
 - **Les traces enregistrées en voiture se rejouent enfin.** Même cause que
   l'accélération : le rejeu comparait des horodatages en microsecondes à son
   temps écoulé en millisecondes, et attendait donc mille fois trop longtemps

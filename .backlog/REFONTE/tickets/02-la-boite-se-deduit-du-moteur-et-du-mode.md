@@ -1,6 +1,6 @@
 # 02 — La boîte se déduit du moteur et du mode
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré et mesuré au banc, reste l'écoute en roulant
 
 **Bloqué par :** 01 — Le moteur devient une entité qu'on nomme. Le rupteur
 appartient au moteur, et c'est de lui que les seuils se dérivent.
@@ -54,22 +54,22 @@ conduite est le seul réglage de tempérament qui reste au volant.
 
 ## Critères d'acceptation
 
-- [ ] Les seuils de montée sont exprimés en fraction du rupteur du moteur
+- [x] Les seuils de montée sont exprimés en fraction du rupteur du moteur
       désigné, et non plus en tours absolus.
-- [ ] Un mode de conduite — route ou sport — module ces fractions ; c'est lui
+- [x] Un mode de conduite — route ou sport — module ces fractions ; c'est lui
       qui porte le tempérament de la boîte.
-- [ ] Mesuré au banc : les quatre moteurs de la bibliothèque passent leurs
+- [x] Mesuré au banc : les quatre moteurs de la bibliothèque passent leurs
       rapports à des vitesses **proportionnées à leur rupteur**, et le Hayabusa
       tient chaque rapport plus longtemps que le GM LS.
-- [ ] Mesuré au banc : aucun moteur ne peut se retrouver avec un seuil de montée
+- [x] Mesuré au banc : aucun moteur ne peut se retrouver avec un seuil de montée
       au-dessus de son propre rupteur. Le plafonnement de dernier recours devient
       inutile — s'il reste, c'est comme garde-fou, plus comme mécanisme.
-- [ ] Les cinq curseurs de régimes de passage quittent l'écran de réglage.
-- [ ] Le mode se choisit sur l'écran de conduite, sous les cadrans, à côté de la
+- [x] Les cinq curseurs de régimes de passage quittent l'écran de réglage.
+- [x] Le mode se choisit sur l'écran de conduite, sous les cadrans, à côté de la
       commande automatique ou manuelle — deux listes, aucun curseur.
-- [ ] Les profils déjà enregistrés sont repris : les seuils absolus qu'ils
+- [x] Les profils déjà enregistrés sont repris : les seuils absolus qu'ils
       portent se convertissent en fractions, et le comportement de chacun ne
       change pas — sauf là où il était incohérent avec son moteur.
 - [ ] 🧑 Vérifié en roulant : essayer deux moteurs de rupteurs très différents
       sur le même trajet s'entend comme deux voitures différentes.
-- [ ] README et CHANGELOG à jour ; contrôle qualité vert.
+- [x] README et CHANGELOG à jour ; contrôle qualité vert.

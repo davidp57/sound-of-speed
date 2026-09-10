@@ -1133,8 +1133,7 @@ l'échappement.
 | **Rupteur atteint à** | Vitesse au rupteur dans le dernier rapport. **Modifier cette valeur recalcule le pont** — c'est le chiffre parlant |
 | **Rayon de roue** | En mètres. Entre dans le calcul du régime |
 | **Temps de passage** | Durée de la coupure de couple |
-| **Passage 1 → 2**, **2 → 3**, … | Régime auquel chaque rapport cède la place au suivant, à charge moyenne. Un curseur par passage : c'est le seul moyen d'empêcher les rapports courts de monter au rupteur sans faire passer les longs trop bas. L'aide indique la vitesse correspondante |
-| **Écart selon la charge** | De combien le passage recule pied au plancher et avance pied levé, de part et d'autre des valeurs ci-dessus |
+| **Écart selon la charge** | De combien le passage recule pied au plancher et avance pied levé, de part et d'autre du seuil déduit du tempérament |
 | **Dispersion aléatoire** | Tirée au sort à chaque passage. Sans elle, la boîte passe toujours au même régime exact et s'entend comme une machine |
 | **Ne jamais monter sous** | Plancher appliqué aux régimes de passage ci-dessus, toutes charges confondues : il empêche l'écart de charge de faire monter un rapport à un régime où le moteur peinerait. Sans effet sur le rétrogradage — c'est **Descente sous** qui le commande |
 | **Descente sous** | Seuil de rétrogradage, en fraction du rupteur, quand la vitesse n'est ni tenue ni franchement en baisse. Trop bas, la boîte reste sur le dernier rapport bien après qu'il n'a plus de sens. Mesuré sur le profil Sport, la quatrième cède la place à 46 km/h à 0,20 du rupteur, et à 114 km/h à 0,50 |
@@ -1262,6 +1261,26 @@ puisse afficher un gain nul alors que le fondu devrait la faire entrer : elle
 n'est simplement pas jouable à ce régime. Deux remèdes, selon le cas — abaisser
 sa borne basse, ou reculer le début de bascule pour ne l'appeler que dans son
 domaine.
+
+### Le tempérament de la boîte
+
+Sous les cadrans, à côté de la commande automatique ou manuelle : **Route** ou
+**Sport**. C'est ce qui décide à quel régime les rapports passent, et c'est le
+seul réglage de tempérament qui reste au volant.
+
+Les régimes de passage ne se règlent plus un par un. Ils se déduisent du
+**rupteur du moteur** et du tempérament choisi, comme la descente le faisait
+déjà. Sans cela la boîte ignorait le moteur : mesuré au banc, un moteur de moto
+qui monte à 11 000 tr/min passait ses rapports au même endroit qu'un V8 qui
+s'arrête à 6 500, et un gros bloc à 5 500 tapait son rupteur avant d'avoir le
+droit de monter.
+
+Les deux tempéraments disent explicitement ce que les profils livrés faisaient
+sans le dire : **Route monte de plus en plus tôt** — on cherche le rapport
+long — et **Sport de plus en plus tard** — on garde le régime.
+
+Le choix appartient à l'appareil, comme le volume : il ne voyage pas avec un
+profil. Au premier lancement, il se déduit du profil actif.
 
 ### Profils
 

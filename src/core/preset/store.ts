@@ -1,6 +1,7 @@
 import { createDefaultProfile, createFactoryProfiles } from './defaults'
 import { clampEngineDefinition } from './engine-definition'
 import { clampRealCar, type RealCar } from './real-car'
+import { isDriveMode, type DriveMode } from '../drivetrain/drive-mode'
 import { DEFAULT_RENDERING, clampSynthRendering, type SynthRendering } from '../synth/rendering'
 import {
   PROFILE_FORMAT_VERSION,
@@ -28,6 +29,7 @@ const VOLUME_KEY = 'speed.masterVolume.v1'
 const DEPOSIT_KEY = 'speed.deposit.v1'
 const ADVANCED_KEY = 'speed.advancedMode.v1'
 const REAL_CAR_KEY = 'speed.realCar.v1'
+const DRIVE_MODE_KEY = 'speed.driveMode.v1'
 
 /**
  * Traces conservées d'une session à l'autre.
@@ -160,6 +162,32 @@ export function loadRealCar(): RealCar {
 
 export function saveRealCar(car: RealCar): void {
   writeJson(REAL_CAR_KEY, clampRealCar(car))
+}
+
+/**
+ * Le mode de conduite retenu sur cet appareil, ou rien s'il n'a jamais été
+ * choisi.
+ *
+ * Rend `null` plutôt qu'un défaut : au premier lancement, le mode se **déduit**
+ * du profil actif, dont les seuils portaient jusqu'ici le tempérament. Imposer
+ * « route » ferait conduire un profil Sport comme un profil Route sans que rien
+ * ne le dise.
+ */
+export function loadDriveMode(): DriveMode | null {
+  try {
+    const brut = localStorage.getItem(DRIVE_MODE_KEY)
+    return isDriveMode(brut) ? brut : null
+  } catch {
+    return null
+  }
+}
+
+export function saveDriveMode(mode: DriveMode): void {
+  try {
+    localStorage.setItem(DRIVE_MODE_KEY, mode)
+  } catch {
+    // Comme le reste : l'échec d'écriture n'interrompt pas la conduite.
+  }
 }
 
 export function loadAdvancedMode(): boolean {

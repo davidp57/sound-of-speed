@@ -38,6 +38,7 @@ import { JournalCollector, type SoundCost } from './core/journal/collect'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
 import { toWav } from './bench/wav'
 import { archiveName, collectArchive } from './core/export/collect'
+import { driveModeFromUpshiftRpm, type DriveMode } from './core/drivetrain/drive-mode'
 import {
   applyEngine,
   engineFromProfile,
@@ -91,6 +92,8 @@ import {
   tracesToFile,
   type ProfileSection,
   loadAdvancedMode,
+  loadDriveMode,
+  saveDriveMode,
   loadDepositCredentials,
   loadInheritedVolume,
   loadMasterVolume,
@@ -1775,6 +1778,43 @@ export function setSimulatedSpeed(kmh: number | null): void {
 
 export function getSimulatedCruise(): number | null {
   return simulator.getCruise()
+}
+
+/**
+ * Le mode de conduite : le tempérament de la boîte.
+ *
+ * Une préférence d'appareil, au même titre que la commande automatique ou
+ * manuelle — c'est un choix de conduite, et il se fait sous les cadrans. Les
+ * seuils de montée s'en déduisent, avec le rupteur du moteur.
+ *
+ * **Au premier lancement, il se déduit du profil actif** : ses seuils portaient
+ * jusqu'ici le tempérament, et imposer « route » ferait conduire un profil Sport
+ * comme un profil Route sans que rien ne le dise.
+ */
+const driveMode = ref<DriveMode>(
+  loadDriveMode() ??
+    driveModeFromUpshiftRpm(
+      activeProfile.value.drivetrain.upshiftRpm,
+      activeProfile.value.engine.redlineRpm,
+    ),
+)
+
+export const currentDriveMode = computed(() => driveMode.value)
+
+watch(
+  driveMode,
+  (mode) => {
+    saveDriveMode(mode)
+    gearbox.setDriveMode(mode)
+    // Le rapport est réévalué tout de suite : changer de tempérament en roulant
+    // doit s'entendre, et non attendre le prochain passage.
+    gearbox.settleFor((gear) => rpmInGear(gear, telemetry.value.speed.kmh))
+  },
+  { immediate: true },
+)
+
+export function setDriveMode(mode: DriveMode): void {
+  driveMode.value = mode
 }
 
 export function setShiftMode(mode: ShiftMode): void {

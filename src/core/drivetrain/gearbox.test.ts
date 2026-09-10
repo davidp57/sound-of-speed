@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { Gearbox } from './gearbox'
+import { driveModeFromUpshiftRpm } from './drive-mode'
 import { Engine } from '../engine/engine'
 import { SpeedConditioner } from '../speed/conditioner'
 import { createDefaultProfile } from '../preset/defaults'
-import type { DrivetrainPreset, FeelPreset, Profile } from '../preset/schema'
+import type { DrivetrainPreset, EnginePreset, FeelPreset, Profile } from '../preset/schema'
 
 /**
  * Tests de la boîte de vitesses.
@@ -40,17 +41,30 @@ const accelMs2 = 0
  * reste occupée un tiers de seconde décale tout ce que ces tests comptent. Ils
  * déclarent donc la durée qu'ils supposent, au lieu de la subir.
  */
-function profile(over: Partial<DrivetrainPreset> = {}, feel: Partial<FeelPreset> = {}): Profile {
+function profile(
+  over: Partial<DrivetrainPreset> = {},
+  feel: Partial<FeelPreset> = {},
+  engine: Partial<EnginePreset> = {},
+): Profile {
   const base = createDefaultProfile()
   return {
     ...base,
     drivetrain: { ...base.drivetrain, upshiftJitterRpm: 0, shiftTimeMs: 120, ...over },
     feel: { ...base.feel, ...feel },
+    engine: { ...base.engine, ...engine },
   }
 }
 
 function makeGearbox(p: Profile): Gearbox {
-  return new Gearbox(p.drivetrain, p.engine, p.feel)
+  // Le tempérament que ce profil décrit, et non celui par défaut : les seuils de
+  // montée se déduisent maintenant du mode et du rupteur, et un test écrit pour
+  // le profil Sport doit conduire en sport.
+  return new Gearbox(
+    p.drivetrain,
+    p.engine,
+    p.feel,
+    driveModeFromUpshiftRpm(p.drivetrain.upshiftRpm, p.engine.redlineRpm),
+  )
 }
 
 /** Régime qu'aurait le moteur dans un rapport donné, à une vitesse donnée. */
@@ -734,7 +748,11 @@ describe('Gearbox — montée en croisière', () => {
     // alors nécessairement une montée **en croisière**, qui est le sujet. Sans
     // cela le test relèverait aussi les montées au régime, légitimes, puisque la
     // vitesse monte réellement pendant la première moitié de l'oscillation.
-    const p = profile({ upshiftRpm: [8500, 8500, 8500, 8500, 8500] })
+    //
+    // On les éloigne par le **rupteur**, et non par une table de tours : les
+    // seuils s'en déduisent depuis que la boîte suit le moteur, et une table
+    // écrite ici ne commanderait plus rien.
+    const p = profile({}, {}, { redlineRpm: 60_000, softLimitRpm: 59_000 })
 
     // Une allure qui va et vient : l'accélération oscille assez lentement pour
     // que la vitesse en garde la trace — ±6,8 km/h autour de 70. Une oscillation
