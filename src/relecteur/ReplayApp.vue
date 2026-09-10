@@ -561,10 +561,23 @@ void refresh()
                 : `interpolé — relevé à ${ecart(reading.offsetMs)}`
             }}
           </p>
-          <p class="appoint">
-            charge {{ (reading.value.load * 100).toFixed(0) }} % ·
-            {{ reading.value.accelMs2.toFixed(2) }} m/s²
-          </p>
+          <!--
+            La charge : ce que le moteur croit qu'on demande, et donc ce qui
+            fait l'effort qu'on entend. Elle est calculée, jamais mesurée — la
+            voiture ne dit pas ce que fait le pied —, et c'est pour cela qu'elle
+            se lit à côté du rapport plutôt que sur un cadran : un cadran
+            suggérerait un instrument, et il n'y en a pas.
+          -->
+          <div class="charge">
+            <div class="jauge" role="img" :aria-label="`charge ${(reading.value.load * 100).toFixed(0)} %`">
+              <span class="remplie" :style="{ width: `${Math.min(100, reading.value.load * 100)}%` }"></span>
+            </div>
+            <span class="unite">
+              accélérateur {{ (reading.value.load * 100).toFixed(0) }} %
+            </span>
+          </div>
+
+          <p class="appoint">{{ reading.value.accelMs2.toFixed(2) }} m/s²</p>
         </div>
 
         <div class="cadran">
@@ -816,6 +829,32 @@ select {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+/*
+  La jauge de charge. Pleine largeur de sa colonne, sous le rapport : elle se
+  lit d'un coup d'œil comme une pédale, sans qu'on ait à lire un nombre.
+*/
+.charge {
+  margin: 0.7rem 0 0;
+}
+
+.jauge {
+  height: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  background: #10131a;
+}
+
+.remplie {
+  display: block;
+  height: 100%;
+  background: #e8a33d;
+}
+
+.charge .unite {
+  margin-top: 0.2rem;
 }
 
 .etat {
