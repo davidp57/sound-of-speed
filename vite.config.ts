@@ -146,11 +146,12 @@ const useHttps = process.env['HTTPS'] === '1'
 /**
  * Les écrans de banc dans une image construite.
  *
- * Ils sont toujours là en développement. `BENCH=1` les met aussi dans une image
- * publiée, et la construction n'active ce drapeau que pour l'étiquette
- * `develop` — voir `.github/workflows/docker.yml`. La production n'en veut pas :
- * un simulateur de vitesse dans une voiture n'est qu'un moyen de se tromper sur
- * ce qu'on entend.
+ * Ils sont toujours là en développement, et `BENCH=1` permet de les mettre dans
+ * une image construite à la main. **Aucune image publiée ne l'active** : ni la
+ * production, ni l'intégration. Un simulateur de vitesse dans une voiture n'est
+ * qu'un moyen de se tromper sur ce qu'on entend — et l'application démarrait sur
+ * lui plutôt que sur le GPS, ce qu'on a mesuré sur l'essai du 10 septembre 2026 :
+ * trente-six secondes de simulateur avant la première position.
  */
 const bench = process.env['BENCH'] === '1'
 

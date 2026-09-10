@@ -1,19 +1,22 @@
-import type { StatePoint } from './model'
+import type { SessionEvent, StatePoint } from './model'
 
 /**
  * Les enchaînements de rapports : plusieurs passages en peu de temps.
  *
- * C'est le moment qu'on cherche en debriefing, et celui que le journal seul ne
- * raconte pas. Ce n'est pas un fait inscrit dans un fichier : il se déduit des
- * relevés, et sa fiabilité dépend de leur cadence.
+ * C'est le moment qu'on cherche en debriefing. Deux façons de le retrouver, et
+ * elles ne se valent pas.
  *
- * **Ce qu'un journal peut dire, et ce qu'il ne peut pas.** Il relève toutes les
- * dix secondes : voir la deuxième puis la quatrième prouve deux passages, mais
- * ne dit pas s'ils se sont suivis en une seconde ou étalés sur neuf. Une
- * capture, elle, relève à la cadence de l'appareil, et la question ne se pose
- * plus. Les deux cas sont donc distingués plutôt que confondus — annoncer un
- * passage rapide qu'on n'a pas mesuré ferait chercher un défaut là où il n'y en
- * a peut-être pas.
+ * **Les passages inscrits.** Depuis le 10 septembre 2026, le journal écrit un
+ * événement à chaque changement de rapport : l'enchaînement se lit alors
+ * directement, daté à la milliseconde.
+ *
+ * **Les passages déduits**, pour les trajets enregistrés avant, et pour les
+ * relevés seuls. Le journal relève toutes les dix secondes : voir la deuxième
+ * puis la quatrième prouve deux passages, mais ne dit pas s'ils se sont suivis
+ * en une seconde ou étalés sur neuf. Une capture, elle, relève à la cadence de
+ * l'appareil, et la question ne se pose plus. Les deux cas sont donc distingués
+ * plutôt que confondus — annoncer un passage rapide qu'on n'a pas mesuré ferait
+ * chercher un défaut là où il n'y en a peut-être pas.
  *
  * **Une montée ordinaire n'est pas un enchaînement.** Passer de la première à
  * la sixième en une minute, c'est conduire ; le faire en deux secondes, c'est
@@ -55,7 +58,12 @@ export function findShiftBursts(
   states: StatePoint[],
   windowMs: number = WINDOW_MS,
   minShifts: number = MIN_SHIFTS,
+  recorded: GearChange[] = [],
 ): ShiftBurst[] {
+  // Des passages inscrits valent mieux que des passages déduits : ils sont
+  // datés, donc la durée d'un enchaînement se mesure au lieu de s'encadrer.
+  if (recorded.length > 0) return burstsFromShifts(recorded, windowMs, minShifts)
+
   const bursts: ShiftBurst[] = []
   if (states.length < 2) return bursts
 
@@ -128,7 +136,12 @@ export interface GearChange {
  * Séparé des enchaînements : ceux-ci désignent un moment à examiner, ceux-là
  * dessinent la conduite. Le relief montre les deux, mais pas de la même façon.
  */
-export function findGearChanges(states: StatePoint[]): GearChange[] {
+export function findGearChanges(
+  states: StatePoint[],
+  recorded: GearChange[] = [],
+): GearChange[] {
+  if (recorded.length > 0) return recorded
+
   const out: GearChange[] = []
   for (let i = 0; i < states.length - 1; i += 1) {
     const a = states[i] as StatePoint
@@ -143,4 +156,66 @@ export function findGearChanges(states: StatePoint[]): GearChange[] {
     })
   }
   return out
+}
+
+/**
+ * Les passages tels que le journal les a inscrits.
+ *
+ * Depuis le 10 septembre 2026, un événement est écrit à chaque changement de
+ * rapport. Quand il y en a, ils font foi : datés à la milliseconde, ils disent
+ * la fréquence des allers-retours que des relevés espacés de dix secondes ne
+ * pouvaient que suggérer. Les sessions plus anciennes n'en portent pas, d'où le
+ * repli sur les relevés — un trajet déjà enregistré reste lisible.
+ */
+export function recordedShifts(events: SessionEvent[]): GearChange[] {
+  const out: GearChange[] = []
+  for (const event of events) {
+    if (event.kind !== 'shift') continue
+    const from = event.data['from']
+    const to = event.data['to']
+    if (typeof from !== 'number' || typeof to !== 'number' || from === to) continue
+    out.push({ at: event.at, up: to > from, steps: Math.abs(to - from), from, to })
+  }
+  return out
+}
+
+/**
+ * Les enchaînements, quand les passages sont datés.
+ *
+ * Le groupement ne regarde plus la densité : deux passages séparés de moins que
+ * la fenêtre appartiennent au même moment, et c'est tout. La densité n'était
+ * qu'un moyen de deviner ce que la cadence des relevés cachait.
+ */
+function burstsFromShifts(
+  changes: GearChange[],
+  windowMs: number,
+  minShifts: number,
+): ShiftBurst[] {
+  const bursts: ShiftBurst[] = []
+  let i = 0
+  while (i < changes.length) {
+    const premier = changes[i] as GearChange
+    let franchis = premier.steps
+    let dernier = premier
+    let j = i + 1
+    while (j < changes.length) {
+      const suivant = changes[j] as GearChange
+      if (suivant.at - dernier.at > windowMs) break
+      franchis += suivant.steps
+      dernier = suivant
+      j += 1
+    }
+    if (franchis >= minShifts && j > i + 1) {
+      bursts.push({
+        at: premier.at,
+        count: franchis,
+        spanMs: dernier.at - premier.at,
+        measured: true,
+        from: premier.from,
+        to: dernier.to,
+      })
+    }
+    i = j > i + 1 ? j : i + 1
+  }
+  return bursts
 }

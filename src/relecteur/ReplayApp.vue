@@ -6,7 +6,7 @@ import DialGauge from '../ui/components/DialGauge.vue'
 import { loadDepositCredentials } from '../core/preset/store'
 import { listSessions, loadSession, type SessionEntry } from '../core/session/read'
 import { stateAt, trackAt, type Session } from '../core/session/model'
-import { findGearChanges, findShiftBursts } from '../core/session/shifts'
+import { findGearChanges, findShiftBursts, recordedShifts } from '../core/session/shifts'
 import { accelProfile, profileRuns } from '../core/session/profile'
 
 /**
@@ -97,6 +97,10 @@ const marks = computed(() => {
   if (!session.value || total <= 0) return []
   const groupes = new Map<string, Mark>()
   for (const event of session.value.events) {
+    // Les passages ne sont pas des faits marquants : il y en a des centaines
+    // par trajet, et ils ont déjà leurs deux représentations — le relief les
+    // dessine tous, la barre ne retient que les enchaînements.
+    if (event.kind === 'shift') continue
     // Un centième de la durée : deux rejets à deux secondes d'écart sur une
     // heure de trajet sont le même moment, et deux marques superposées ne se
     // distinguent pas.
@@ -126,7 +130,19 @@ const marks = computed(() => {
 
 /** Les enchaînements de rapports de la session. */
 const shiftBursts = computed(() =>
-  session.value ? findShiftBursts(session.value.states) : [],
+  session.value
+    ? findShiftBursts(session.value.states, undefined, undefined, inscrits.value)
+    : [],
+)
+
+/**
+ * Les passages que le journal a inscrits, quand il en a inscrit.
+ *
+ * Ils datent du 10 septembre 2026 : un trajet enregistré avant n'en a pas, et
+ * le relecteur retombe alors sur ce que les relevés laissent deviner.
+ */
+const inscrits = computed(() =>
+  session.value ? recordedShifts(session.value.events) : [],
 )
 
 /**
@@ -169,7 +185,7 @@ const reliefRuns = computed(() => {
 })
 
 const gearChanges = computed(() =>
-  session.value ? findGearChanges(session.value.states) : [],
+  session.value ? findGearChanges(session.value.states, inscrits.value) : [],
 )
 
 const timeline = ref<HTMLElement | null>(null)

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import ValueRow from './components/ValueRow.vue'
 import { computeMix } from '../core/audio/mix'
+import { MotionProbe } from '../core/input/motion'
 import { rpmAtSpeed } from '../core/preset/defaults'
 import {
   activeProfile,
@@ -123,6 +124,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', readViewport)
+  window.removeEventListener('devicemotion', onMotion)
 })
 
 /** Réponse de l'API de verrou d'écran, en clair plutôt qu'en trois booléens. */
@@ -132,8 +134,94 @@ const verrou = computed(() => {
   return screenLockHeld.value ? 'tenu' : 'demandé, non obtenu'
 })
 
+/**
+ * L'accéléromètre : une inconnue qu'on relève avant d'écrire une source.
+ *
+ * L'accélération vient aujourd'hui de la vitesse GPS, qui n'arrive qu'une fois
+ * par seconde ; c'est d'elle que dépendent la charge, donc le son, donc les
+ * passages de rapport. Un accéléromètre la mesurerait directement — encore
+ * faut-il savoir ce que la voiture en donne. Trois questions, une par ligne
+ * affichée : à quelle cadence, avec ou sans la gravité, et quelle amplitude.
+ *
+ * L'écoute ne démarre pas toute seule : iOS exige un geste de l'utilisateur
+ * pour l'autoriser, et un relevé de diagnostic n'a pas à tourner quand on ne le
+ * regarde pas.
+ */
+type MotionPermissionApi = { requestPermission?: () => Promise<'granted' | 'denied'> }
+
+const motionProbe = new MotionProbe()
+const motionReading = ref(motionProbe.reading)
+const motionStatus = ref<'absent' | 'prêt' | 'refusée' | 'écoute'>(
+  typeof window !== 'undefined' && 'DeviceMotionEvent' in window ? 'prêt' : 'absent',
+)
+let motionLastPaint = 0
+const motionError = ref('')
+
+function vector(source: DeviceMotionEventAcceleration | null): {
+  x: number
+  y: number
+  z: number
+} | null {
+  if (!source || source.x === null || source.y === null || source.z === null) return null
+  return { x: source.x, y: source.y, z: source.z }
+}
+
+function onMotion(event: DeviceMotionEvent): void {
+  const at = performance.now()
+  motionProbe.add({
+    at,
+    linear: vector(event.acceleration),
+    withGravity: vector(event.accelerationIncludingGravity),
+    intervalMs: Number.isFinite(event.interval) ? event.interval : null,
+  })
+  // Les relevés arrivent jusqu'à soixante fois par seconde ; rafraîchir
+  // l'affichage à cette cadence coûterait plus que la mesure ne rapporte.
+  if (at - motionLastPaint < 250) return
+  motionLastPaint = at
+  motionReading.value = motionProbe.reading
+}
+
+async function listenToMotion(): Promise<void> {
+  if (motionStatus.value === 'absent' || motionStatus.value === 'écoute') return
+  const api = DeviceMotionEvent as unknown as MotionPermissionApi
+  motionError.value = ''
+  if (typeof api.requestPermission === 'function') {
+    // Elle rejette aussi bien qu'elle refuse — hors geste de l'utilisateur, par
+    // exemple. Sans ce filet, le bouton resterait sans effet et sans raison :
+    // exactement le silence qu'un écran de diagnostic ne doit pas produire.
+    try {
+      const réponse = await api.requestPermission()
+      if (réponse !== 'granted') {
+        motionStatus.value = 'refusée'
+        return
+      }
+    } catch (error) {
+      motionStatus.value = 'refusée'
+      motionError.value = error instanceof Error ? error.message : String(error)
+      return
+    }
+  }
+  window.addEventListener('devicemotion', onMotion)
+  motionStatus.value = 'écoute'
+}
+
+/** Ce que la sonde a trouvé, en clair. */
+const accéléromètre = computed(() => {
+  if (motionStatus.value === 'absent') return 'API absente'
+  if (motionStatus.value === 'refusée') return 'autorisation refusée'
+  if (motionStatus.value === 'prêt') return 'à démarrer'
+  const { count, linear } = motionReading.value
+  if (count === 0) return 'écoute, aucun relevé'
+  return linear ? 'relevés, sans gravité' : 'relevés, gravité comprise'
+})
+
 function fixed(value: number, digits = 1): string {
   return Number.isFinite(value) ? value.toFixed(digits) : '—'
+}
+
+/** Une mesure de la sonde, ou un tiret tant qu'elle n'a rien. */
+function motionValue(value: number | null, digits = 1): string {
+  return value === null ? '—' : value.toFixed(digits)
 }
 
 function onRateChange(event: Event): void {
@@ -459,6 +547,43 @@ function onRateChange(event: Event): void {
         :warn="geolocationPermissionAtStart === 'refusée'"
         hint="État relevé au chargement de la page, avant tout suivi. « Accordée » sans avoir rien demandé cette fois-ci veut dire que la voiture retient l'autorisation d'une session à l'autre ; « à demander » qu'il faut la redonner à chaque fois."
       />
+      <ValueRow
+        label="Accéléromètre"
+        :value="accéléromètre"
+        :warn="motionStatus === 'absent' || motionStatus === 'refusée'"
+        hint="L'accélération est aujourd'hui déduite de la vitesse GPS, qui n'arrive qu'une fois par seconde. Un accéléromètre la mesurerait. « Gravité comprise » veut dire qu'il faudrait connaître l'orientation du téléphone pour s'en servir."
+      />
+      <ValueRow v-if="motionError" label="Raison du refus" :value="motionError" warn />
+      <p v-if="motionStatus === 'prêt' || motionStatus === 'refusée'" class="note">
+        <button type="button" @click="listenToMotion">Écouter l'accéléromètre</button>
+        L'écoute demande une autorisation sur certains téléphones, et ne démarre
+        donc pas seule.
+      </p>
+      <template v-if="motionStatus === 'écoute'">
+        <ValueRow
+          label="Cadence mesurée"
+          :value="motionValue(motionReading.hz)"
+          unit="Hz"
+          hint="Relevés reçus par seconde, mesurés sur les cinq dernières secondes. À comparer au 1 Hz du GPS."
+        />
+        <ValueRow
+          label="Intervalle annoncé"
+          :value="motionValue(motionReading.announcedMs, 0)"
+          unit="ms"
+          hint="Ce que l'appareil déclare, qui n'est pas toujours ce qu'il tient."
+        />
+        <ValueRow
+          label="Accélération crête"
+          :value="motionValue(motionReading.peakMs2, 2)"
+          unit="m/s²"
+          hint="Norme la plus forte sur les cinq dernières secondes, gravité exclue. Vide si l'appareil ne sépare pas la gravité."
+        />
+        <ValueRow
+          label="Accélération moyenne"
+          :value="motionValue(motionReading.meanMs2, 2)"
+          unit="m/s²"
+        />
+      </template>
     </section>
 
     <section class="panel wide">
