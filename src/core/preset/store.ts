@@ -487,6 +487,9 @@ function reconcile(profile: Partial<Profile>): Profile {
   if (typeof profile.engineId === 'string' && profile.engineId) {
     complet.engineId = profile.engineId
   }
+  if (typeof profile.gearboxId === 'string' && profile.gearboxId) {
+    complet.gearboxId = profile.gearboxId
+  }
 
   // L'origine est reprise telle quelle quand elle est là, et simplement absente
   // sinon : un profil venu d'une version antérieure garde le repli d'avant
