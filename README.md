@@ -515,21 +515,27 @@ Six dossiers, sous `/volume1/docker/speed/` :
 | `traces/` | les trajets enregistrés en roulant. **Peut rester vide** | lecture-écriture |
 | `journal/` | le journal de bord, déposé tout seul en roulant. **Peut rester vide** | lecture-écriture |
 | `mesures/` | les relevés de mesure, dont ceux de la sonde. **Peut rester vide** | lecture-écriture |
-| `profils/` | ce que le profileur mesure de la vraie voiture. **Peut rester vide** | lecture-écriture pour le profileur, lecture pour le site |
+| `mesure-voiture/` | ce que le profileur mesure de la vraie voiture. **Peut rester vide** | lecture-écriture pour le profileur, lecture pour le site |
 
 Les six doivent **exister avant** de déployer la pile : Docker sous DSM ne
 crée pas un point de montage absent, il refuse de démarrer le conteneur avec un
 `Bind mount failed`. Des dossiers `profiles/`, `traces/`, `journal/`,
-`mesures/` et `profils/` vides suffisent — et à défaut, il faut commenter leur
+`mesures/` et `mesure-voiture/` vides suffisent — et à défaut, il faut commenter leur
 ligne dans la pile, au prix de la bibliothèque de profils, du dépôt de traces,
 du journal, des relevés et du profil mesuré.
 
-**`profils/` et `profiles/` sont deux dossiers différents**, et ce n'est pas
-une faute de frappe : le premier, en français, ne contient qu'un fichier écrit
-par le profileur ; le second, en anglais, est la bibliothèque de profils
-partagés. Ils ont des droits différents et ne se remplacent pas.
+**`mesure-voiture/` n'est pas `profiles/`**, et les deux ne se remplacent pas.
+Le second est la bibliothèque : l'application y lit **tout** ce qui s'y trouve
+comme un profil qu'on peut choisir, et la voiture y dépose les siens. Le
+premier ne contient qu'un fichier, écrit par le profileur, qui n'est pas un
+profil mais une **couche de mesure** posée par-dessus celui qu'on a choisi. Les
+deux n'ont pas non plus les mêmes droits.
 
-**`profils/` est né avec le profileur**, le 11 septembre 2026. Une pile
+Il s'est d'abord appelé `profils/`, à une lettre de `profiles/`. Deux dossiers
+voisins à ce point se confondent à la première manipulation dans File Station :
+le nom a été changé avant que le dossier existe.
+
+**`mesure-voiture/` est né avec le profileur**, le 11 septembre 2026. Une pile
 installée avant lui ne le monte pas et ne lance pas le second conteneur : il
 faut **recoller la pile entière** dans Portainer, un simple « repull » ne crée
 pas un service absent. Sans cela, l'application demande le profil mesuré,

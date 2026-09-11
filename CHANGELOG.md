@@ -125,13 +125,20 @@ Toutes les évolutions notables du projet. Format
 ### Corrigé
 
 - **Le profil mesuré n'était servi par personne.** L'application demandait
-  `/profils/profil-voiture.json` ; nginx n'avait pas d'emplacement pour ce
+  `/mesure-voiture/profil-voiture.json` ; nginx n'avait pas d'emplacement pour ce
   chemin, le volume n'était pas monté dans le conteneur du site, et le dossier
   n'existait pas sur le serveur. La requête tombait sur la règle générale, dont
   le `try_files … /index.html` répond **200 avec la page d'accueil** : le code
   voyait une réponse valable, échouait à la lire, et rendait la même absence
   qu'un serveur sans mesure. Le bandeau de proposition ne pouvait donc pas
   apparaître, et rien à l'écran ne le disait. Sortie du 11 septembre 2026.
+
+  Le dossier s'appelait d'abord `profils/`, à une lettre de `profiles/` qui est
+  la bibliothèque de profils. Deux dossiers voisins à ce point se confondent à
+  la première manipulation : il a été renommé **`mesure-voiture/`** avant
+  d'exister. Les deux ne contiennent pas la même chose — l'un ne porte qu'une
+  couche de mesure, l'autre les profils qu'on peut choisir — et n'ont pas les
+  mêmes droits.
 
 - **Le rétrogradage forcé rendait le rapport qu'il venait de prendre.** Sa cible
   vaut `redlineRpm × 0,55` — 3 575 tours sur le V8 — quand le seuil de montée

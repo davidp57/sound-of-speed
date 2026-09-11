@@ -69,7 +69,7 @@ const measuredCarLabel = computed(() => {
 /** Ce qu'il faut aller regarder, quand il y a quelque chose à regarder. */
 const measuredCarWarning = computed(() => {
   if (measuredCarStatus.value === 'illisible') {
-    return 'Le serveur a répondu autre chose que la mesure attendue — l’emplacement /profils/ manque à nginx, ou le dossier n’est pas monté.'
+    return 'Le serveur a répondu autre chose que la mesure attendue — l’emplacement /mesure-voiture/ manque à nginx, ou le dossier n’est pas monté.'
   }
   if (measuredCarStatus.value === 'perimee') {
     return 'Le profileur ne tourne pas dans la même version que l’application.'

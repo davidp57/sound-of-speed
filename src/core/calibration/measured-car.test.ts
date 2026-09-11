@@ -66,7 +66,7 @@ describe('fetchMeasuredCar', () => {
   /**
    * Le défaut du 11 septembre 2026, celui qui ne devait plus se taire.
    *
-   * Faute d'emplacement `/profils/`, nginx répondait **200 avec la page
+   * Faute d'emplacement pour ce fichier, nginx répondait **200 avec la page
    * d'accueil** : une réponse valable, du HTML, et `json()` qui rejette. Il ne
    * faut pas que cela se lise comme « le serveur n'a pas de mesure ».
    */

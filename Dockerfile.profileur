@@ -36,7 +36,7 @@ COPY --from=build /app/dist-profileur ./
 # pour la pile telle que le README la décrit ; l'une et l'autre se changent sans
 # reconstruire l'image.
 ENV SPEED_TRACES=/data/traces
-ENV SPEED_PROFILES=/data/profils
+ENV SPEED_PROFILES=/data/mesure-voiture
 ENV SPEED_SCAN_MS=5000
 
 # Le service n'a pas de port à écouter : sa santé est qu'il tourne encore.
