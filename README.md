@@ -2511,6 +2511,7 @@ chaque essai.
 | 41 | Le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | livré ; la chaîne servie était coupée, réparée le 11 septembre — reste à recoller la pile |
 | 42 | Trois retours de la sortie du 11 septembre au soir : le rétrogradage forcé qui rend son rapport, le clac de montée, l'aiguille du rapport suivant | fait, reste l'écoute en roulant |
 | 43 | Une boîte à sept rapports, étagée pour tenir bas : 50 en quatrième, 80 en cinquième, 110 en sixième, et les passages plus tôt en mode Route | fait, reste l'écoute en roulant |
+| 44 | Un bouton « tout réinitialiser » : seize clés de stockage remises au premier jour, sans toucher au serveur | spécifié, périmètre à trancher |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
