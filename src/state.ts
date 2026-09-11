@@ -2270,6 +2270,33 @@ export function setDriveMode(mode: DriveMode): void {
   driveMode.value = mode
 }
 
+/**
+ * Relance la géolocalisation à la main, depuis un geste.
+ *
+ * C'est le recours quand elle ne part pas, et il n'en existait plus : les
+ * boutons de source ont quitté l'écran de conduite, et « D » est devenu le seul
+ * moyen de la démarrer. Le 11 septembre 2026, il a fallu lancer une **autre
+ * version de l'application** pour s'en sortir — celle-ci n'avait rien à
+ * proposer.
+ *
+ * Les compteurs repartent de zéro avec elle : le chien de garde doit pouvoir
+ * relancer un suivi qui n'a jamais rien reçu, et la cause d'un rejet ne doit pas
+ * survivre à la relance qui la corrige peut-être.
+ *
+ * Le geste compte autant que l'appel. Un navigateur n'ouvre la position qu'après
+ * un appui, et c'est précisément l'hypothèse que ce bouton permet d'éprouver :
+ * s'il débloque, c'était le geste.
+ */
+export function restartGeolocation(): void {
+  geolocation.stop()
+  conditioner.reset()
+  fixWatchdog.reset()
+  fixRestarts.value = 0
+  rejectionWatch.reset()
+  rejectionCause.value = null
+  geolocation.start()
+}
+
 export function setShiftMode(mode: ShiftMode): void {
   gearbox.setMode(mode)
   shiftMode.value = mode
