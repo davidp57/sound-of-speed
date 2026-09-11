@@ -189,6 +189,25 @@ export class GeolocationSource extends SpeedSource {
     )
   }
 
+  /**
+   * Remet les comptes à zéro, sans toucher au suivi.
+   *
+   * Ils disent ce que la source a reçu et ce qu'elle en a tiré **depuis le
+   * démarrage du suivi** : après une relance demandée à la main, les garder
+   * ferait lire ensemble deux suivis, et la seule question qu'on se pose alors —
+   * est-ce que celui-ci reçoit quelque chose ? — n'aurait plus de réponse
+   * lisible.
+   */
+  resetStats(): void {
+    this.stats.received = 0
+    this.stats.emitted = 0
+    this.stats.lastAccuracyM = null
+    this.stats.recentAccuracyM = []
+    this.stats.rejected.implausible = 0
+    this.stats.rejected.tooClose = 0
+    this.stats.rejected.inaccurate = 0
+  }
+
   stop(): void {
     if (this.watchId !== null) {
       this.currentProvider()?.clearWatch(this.watchId)

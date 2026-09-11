@@ -22,6 +22,7 @@ import {
   replayProgress,
   setReplayRate,
   sourceKind,
+  isRunning,
   restartGeolocation,
   telemetry,
 } from '../state'
@@ -257,20 +258,24 @@ function onRateChange(event: Event): void {
     <section class="panel">
       <h2>Qualité du signal</h2>
       <!--
-        Le seul recours quand la localisation ne part pas, et il est ici parce
-        que c'est l'écran où l'on vient voir pourquoi. Les boutons de source ont
-        quitté l'écran de conduite le 11 septembre 2026, et « D » est devenu le
-        seul moyen de démarrer la position : le même jour, elle n'a jamais
-        démarré de tout un trajet et il a fallu lancer une autre version de
-        l'application pour s'en sortir.
+        Redemander une position **sans rien arrêter d'autre**. « P » puis « D »
+        le fait déjà, mais au prix du son coupé et d'une capture scindée en deux
+        sessions ; ce bouton est là pour le faire en roulant.
 
-        Il relance depuis un appui, ce qui est peut-être ce qui manquait.
+        Il est sur cet écran parce que c'est celui où l'on vient voir pourquoi la
+        vitesse ne bouge pas — les comptes de la source sont juste en dessous, et
+        ils repartent de zéro avec lui.
+
+        Au repos, il n'a rien à faire : la boucle est arrêtée, personne ne lirait
+        les positions, et ouvrir un suivi là rendrait sans effet le « D » qui
+        suit — un suivi déjà ouvert ne se redemande pas.
       -->
-      <div v-if="sourceKind === 'geolocation'" class="restart">
+      <div v-if="sourceKind === 'geolocation' && isRunning" class="restart">
         <button type="button" @click="restartGeolocation()">Relancer la localisation</button>
         <span class="note">
-          Arrête le suivi et le redemande. À essayer quand la vitesse reste à
-          zéro alors que la source dit « actif ».
+          Redemande une position sans couper le son ni scinder l'enregistrement.
+          À essayer quand la vitesse reste à zéro alors que la source dit
+          « actif ».
         </span>
       </div>
       <ValueRow

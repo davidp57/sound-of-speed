@@ -8,11 +8,12 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
-- **Un bouton pour relancer la localisation**, sur l'écran de télémétrie, dans
-  la section « Qualité du signal ». C'est le recours quand elle ne part pas, et
-  il n'en existait plus : les boutons de source ont quitté l'écran de conduite,
-  et « D » est devenu le seul moyen de la démarrer. Le 11 septembre 2026, il a
-  fallu lancer une autre version de l'application pour s'en sortir.
+- **Un bouton pour redemander une position en roulant**, sur l'écran de
+  télémétrie, dans la section « Qualité du signal ». Passer par « P » puis « D »
+  relance déjà la localisation, mais coupe le son et scinde l'enregistrement en
+  deux sessions ; celui-ci ne fait que redemander une position. Il n'apparaît
+  qu'en roulant, et remet à zéro les comptes de la source pour qu'on lise ce que
+  la relance produit.
 
 - **Les commandes de conduite deviennent un sélecteur de boîte.** `D` démarre
   l'application — localisation, son, enregistrement —, puis bascule en `S` pour

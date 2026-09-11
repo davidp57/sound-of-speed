@@ -2271,27 +2271,40 @@ export function setDriveMode(mode: DriveMode): void {
 }
 
 /**
- * Relance la géolocalisation à la main, depuis un geste.
+ * Relance la géolocalisation **en roulant**, à la main, depuis un geste.
  *
- * C'est le recours quand elle ne part pas, et il n'en existait plus : les
- * boutons de source ont quitté l'écran de conduite, et « D » est devenu le seul
- * moyen de la démarrer. Le 11 septembre 2026, il a fallu lancer une **autre
- * version de l'application** pour s'en sortir — celle-ci n'avait rien à
- * proposer.
+ * Ce n'est pas le seul moyen de la relancer : passer par « P » puis « D » le
+ * fait déjà, et c'est le propos du sélecteur. Mais « P » arrête tout — le son se
+ * coupe, la capture dépose sa tranche et la session se scinde en deux. Ce bouton
+ * fait la seule chose qui manquait : **redemander une position sans rien
+ * interrompre d'autre**.
  *
- * Les compteurs repartent de zéro avec elle : le chien de garde doit pouvoir
- * relancer un suivi qui n'a jamais rien reçu, et la cause d'un rejet ne doit pas
- * survivre à la relance qui la corrige peut-être.
+ * Il se calque sur le chien de garde, pas sur le démarrage. La distinction est
+ * ce qui l'empêche de nuire :
+ *
+ * - **le conditionnement n'est pas remis à zéro.** Il l'est au démarrage, où la
+ *   voiture est à l'arrêt et où il n'y a rien à perdre. Ici la voiture roule :
+ *   l'effacer ferait tomber la vitesse lissée et le régime à zéro jusqu'à la
+ *   position suivante — la boîte rétrograderait et le son retomberait au
+ *   ralenti, pour un bouton censé réparer.
+ * - **le compte de relances n'est pas remis à zéro.** C'est un témoin, affiché
+ *   en télémétrie et inscrit au journal du trajet : l'effacer détruirait la
+ *   preuve qu'on est venu chercher.
+ *
+ * Ce qui repart, en revanche, ce sont les comptes de la source — ce qu'elle
+ * reçoit et ce qu'elle en tire. Sans cela on lirait ensemble deux suivis, et la
+ * seule question que ce bouton pose, « celui-ci reçoit-il quelque chose ? »,
+ * n'aurait pas de réponse lisible.
  *
  * Le geste compte autant que l'appel. Un navigateur n'ouvre la position qu'après
- * un appui, et c'est précisément l'hypothèse que ce bouton permet d'éprouver :
- * s'il débloque, c'était le geste.
+ * un appui, et c'est précisément l'hypothèse que ce bouton permet d'éprouver
+ * une seconde fois : s'il débloque, c'était le geste.
  */
 export function restartGeolocation(): void {
+  if (!isRunning.value) return
   geolocation.stop()
-  conditioner.reset()
+  geolocation.resetStats()
   fixWatchdog.reset()
-  fixRestarts.value = 0
   rejectionWatch.reset()
   rejectionCause.value = null
   geolocation.start()

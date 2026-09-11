@@ -42,14 +42,20 @@ conducteur n'a **plus aucun recours** — c'est exactement la situation du
 David, le 11 septembre 2026 : « on peut mettre ça dans l'écran télémétrie ?
 Genre GPS on/off ».
 
-**Ce qu'on fait :** un interrupteur qui arrête et relance la géolocalisation,
-sur l'écran de télémétrie — l'écran de diagnostic, où le motif d'un rejet et le
-compte des relances sont déjà affichés. Il ne s'agit pas de choisir une source :
-il n'y en a qu'une en voiture. Il s'agit de pouvoir la **relancer à la main**
-quand elle ne part pas.
+**Ce qu'on fait :** un bouton qui redemande une position, sur l'écran de
+télémétrie — l'écran de diagnostic, où le motif d'un rejet et le compte des
+relances sont déjà affichés. Il ne s'agit pas de choisir une source : il n'y en a
+qu'une en voiture.
 
-Il relance depuis un geste de l'utilisateur, comme le fait **D** : c'est
-précisément ce qu'on cherche à pouvoir refaire.
+**Une relance, pas un interrupteur.** David demandait « genre GPS on/off » ; la
+moitié « off » a été écartée, et il faut le dire. Éteindre la localisation seule
+laisserait l'application tourner sans vitesse — un état qui ne sert à rien et
+qu'aucun écran ne saurait expliquer. « P » éteint déjà tout, proprement.
+
+**Et ce n'est pas le seul moyen de relancer** : « P » puis « D » ferme et rouvre
+le suivi, depuis un geste. Mais « P » arrête le son et scinde l'enregistrement en
+deux sessions. Ce bouton fait la seule chose qui manquait : redemander une
+position **en roulant**, sans rien interrompre d'autre.
 
 **Livré.** Le bouton « Relancer la localisation » ouvre la section « Qualité du
 signal », là où l'on vient déjà voir pourquoi la vitesse ne bouge pas. Il arrête
