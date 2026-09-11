@@ -1,6 +1,7 @@
 # PROFIL-REEL — le serveur apprend la vraie voiture et propose son profil
 
-**Statut :** ⬜ prêt — spécifié le 11 septembre 2026, à découper
+**Statut :** ⬜ prêt — spécifié le 11 septembre 2026, à découper. Ne dépend plus
+des comptes : on travaille à **compte unique**.
 **Branche :** à ouvrir
 **Version visée :** à décider
 
@@ -46,9 +47,17 @@ on veut un chiffre tout de suite. PROFIL-REEL mesure lentement et tout seul.
 
 - **Le serveur calcule, pas l'appareil.** C'est lui qui a les traces, et lui qui
   peut les relire toutes. L'appareil reçoit un profil, il ne le dérive pas.
-- **Le profil vit dans le compte de l'utilisateur.** Les comptes n'existent pas
-  encore ; c'est la dépendance principale, et elle vient de
+- **Un seul compte, pour commencer.** Décision de David, le 11 septembre 2026 :
+  « dans un premier temps, on considère qu'on a un seul compte et on travaille
+  comme ça ; quand on les aura on fera autrement, mais c'est pas la priorité ».
+  Tout ce qui est déposé sur le serveur appartient donc au même utilisateur, et
+  le profil dérivé y vit sans avoir à être rattaché. Ce lot n'attend plus
   [REFONTE](../REFONTE/spec.md).
+
+  Ce que cela coûte, et qu'il faut écrire pour ne pas l'oublier : le jour où les
+  comptes arrivent, la dérivation devra distinguer **de qui** sont les traces,
+  et un profil dérivé d'un mélange de deux voitures ne voudra rien dire. La
+  reprise est donc à prévoir, pas à découvrir.
 - **La proposition se refuse sans rien perdre.** Refusée, elle reste disponible
   dans le navigateur ; dans tous les cas le profil reste sur le serveur, et un
   bouton le récupère.
@@ -82,11 +91,11 @@ Ces points ne sont pas décidés, et ce lot ne prétend pas les trancher :
 
 ## Dépendances
 
-- **Les comptes** ([REFONTE](../REFONTE/spec.md)) : sans eux, les traces ne sont
-  rattachées à personne et le profil n'a pas où vivre.
-- **Un serveur qui calcule.** Aujourd'hui le NAS ne fait que servir des fichiers
-  et en recevoir. C'est le premier traitement qu'on lui demanderait, et cela se
-  chiffre avant de se décider.
+- **Un serveur qui calcule.** C'est la seule qui reste, et elle n'est pas
+  mince : aujourd'hui le NAS sert des fichiers et en reçoit, rien de plus. C'est
+  le premier traitement qu'on lui confierait. À chiffrer avant de décider —
+  faute de quoi le calcul peut aussi se faire ailleurs et ne déposer que son
+  résultat.
 - **La capture automatique** ([RELECTURE](../RELECTURE/spec.md)) : livrée, elle
   est la matière première de ce lot.
 
