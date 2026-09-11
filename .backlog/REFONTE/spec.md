@@ -348,7 +348,11 @@ nommé.
 - **Les douze réglages du calcul de synthèse** quittent le produit avec
   engine-sim.
 - **Les onze recopies d'étalonnage** deviennent automatiques, derrière un seul
-  interrupteur — « activer le profil étalonné ON/OFF ».
+  interrupteur — « activer le profil étalonné ON/OFF ». Et l'étalonnage lui-même
+  cesse d'être un protocole qu'on déroule : le serveur dérive le profil de la
+  vraie voiture depuis les traces ordinaires et le propose quand il en a assez.
+  C'est le lot [PROFIL-REEL](../PROFIL-REEL/spec.md), qui ne tenait ici qu'en
+  une ligne alors que David l'avait décrit en entier.
 - **Les deux champs d'identifiants de dépôt**, remplacés par le compte. Il
   restera « le mini code à taper quand même si on veut se connecter à un compte
   existant ».

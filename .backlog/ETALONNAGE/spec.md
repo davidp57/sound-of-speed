@@ -129,6 +129,9 @@ quand il existera.
 ## Hors périmètre
 
 - Appliquer les valeurs automatiquement. La proposition se lit, se compare, et
-  se recopie — comme les candidats d'ancrage de l'analyse d'échantillon.
+  se recopie — comme les candidats d'ancrage de l'analyse d'échantillon. C'est
+  [PROFIL-REEL](../PROFIL-REEL/spec.md) qui lèvera cette limite, par un autre
+  chemin : le serveur dérive le profil depuis les traces ordinaires, sans
+  protocole, et le propose.
 - Deviner le caractère du moteur. L'étalonnage mesure une voiture réelle sans
   moteur thermique : il ne dira jamais quel rupteur choisir.
