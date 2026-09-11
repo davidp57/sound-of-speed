@@ -19,9 +19,11 @@ Toutes les évolutions notables du projet. Format
 - **Un verdict qui dit ce qui manque, dans les termes du conducteur.** Pas un
   volume mais une couverture : il faut avoir roulé en ville, sur route et sur
   autoroute, être parti à l'arrêt, avoir accéléré franchement, et que les
-  ralentissements se séparent en deux façons de ralentir. Sinon rien n'est
-  proposé, et l'écran dit « il manque encore de la conduite sur autoroute »
-  plutôt qu'un compte.
+  ralentissements se séparent en deux façons de ralentir. Ce qui manque se
+  formule « il manque encore de la conduite sur autoroute » plutôt qu'en
+  comptes. Rien ne le montre encore : aucun écran ne le lit, et la couverture du
+  trajet du 11 septembre est déclarée complète après un seul matin — les comptes
+  exigés sont des points de départ.
 
 - **Le code d'étalonnage sait lire une capture de trajet.** Il mesurait les
   enregistrements du protocole ; il mesure désormais un trajet ordinaire, avec
@@ -84,6 +86,17 @@ Toutes les évolutions notables du projet. Format
   qu'on entend.
 
 ### Corrigé
+
+- **Le cumul des mesures d'une voiture donne le même résultat qu'un recalcul.**
+  Il n'en donnait pas : la vitesse pratiquée est un centile, qui **baisse**
+  quand un trajet s'allonge, et le cumul par extrêmes gardait la valeur qu'une
+  tranche courte avait rendue. Mesuré : 150 km/h contre 40 pour un même trajet,
+  sur la grandeur qui fixe la vitesse plausible.
+
+- **Un trajet n'est plus compté douze fois.** Le garde de remplacement le
+  cherchait dans la fenêtre des vingt derniers : un trajet qui n'y était pas —
+  arrivé en retard, ou sans horodatage lisible — était recompté à chaque tranche
+  déposée. Mesuré : trente-deux trajets là où il y en avait vingt et un.
 
 - **La boîte remonte les rapports après un arrêt.** Relevé en roulant le
   11 septembre 2026 : après quarante-quatre minutes de stationnement, la

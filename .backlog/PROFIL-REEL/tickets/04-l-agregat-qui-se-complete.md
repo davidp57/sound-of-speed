@@ -29,8 +29,12 @@ agrégat construit avec l'ancien ne vaut plus rien.
 
 - [x] L'agrégat se met à jour d'une tranche sans relire les précédentes.
 - [x] Ajouter les tranches une à une donne le même résultat que tout relire d'un
-      coup — vérifié sur la session du 11 septembre, tranche par tranche contre
-      session entière.
+      coup. **Coché à tort dans un premier temps** : le test qui l'accompagnait
+      ne vérifiait que l'indépendance à l'ordre entre trajets différents, et le
+      cumul divergeait bel et bien — la vitesse pratiquée est un centile, qui
+      baisse quand le trajet s'allonge, et le cumul par extrêmes gardait la
+      valeur d'une tranche courte. Mesuré : 150 km/h contre 40. Corrigé en
+      recalculant les capacités depuis les trajets gardés, et un test le fixe.
 - [x] Les capacités portent sur tout l'historique, les habitudes sur une fenêtre
       dont la taille est un réglage, pas une constante enfouie.
 - [x] Un recalcul complet se déclenche à la demande, et l'agrégat porte la

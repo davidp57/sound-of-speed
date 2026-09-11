@@ -8,6 +8,7 @@ import {
   needsRebuild,
   recentDepartures,
   recentPlateaus,
+  recentSignal,
   withTrip,
   type TripDigest,
 } from './aggregate'
@@ -45,13 +46,14 @@ function digest(over: Partial<TripDigest> = {}): TripDigest {
     tripId: 'a',
     at: 0,
     durationS: 60,
-    peakAccelMs2: 2.5,
-    peakDecelMs2: -3,
+    pushPeakMs2: 2.5,
+    slowdownPeakMs2: -3,
     practicedMaxKmh: 110,
     noiseKmh: 0.3,
     cadenceMs: 100,
     plateaus: { city: [], road: [], highway: [] },
     departureKmh: [],
+    pushCount: 3,
     slowdownPeaks: [],
     ...over,
   }
@@ -60,11 +62,11 @@ function digest(over: Partial<TripDigest> = {}): TripDigest {
 describe('le cumul des capacités', () => {
   it('garde la meilleure accélération jamais vue', () => {
     let a = emptyAggregate()
-    a = withTrip(a, digest({ tripId: 'a', at: 1, peakAccelMs2: 2.5 }))
-    a = withTrip(a, digest({ tripId: 'b', at: 2, peakAccelMs2: 3.4 }))
-    a = withTrip(a, digest({ tripId: 'c', at: 3, peakAccelMs2: 1.1 }))
+    a = withTrip(a, digest({ tripId: 'a', at: 1, pushPeakMs2: 2.5 }))
+    a = withTrip(a, digest({ tripId: 'b', at: 2, pushPeakMs2: 3.4 }))
+    a = withTrip(a, digest({ tripId: 'c', at: 3, pushPeakMs2: 1.1 }))
 
-    expect(a.capabilities.peakAccelMs2).toBe(3.4)
+    expect(a.capabilities.pushPeakMs2).toBe(3.4)
   })
 
   /**
@@ -73,42 +75,56 @@ describe('le cumul des capacités', () => {
    * quoi la charge pleine arriverait trop tôt.
    */
   it('ne perd pas une capacité quand les trajets récents sont calmes', () => {
-    let a = withTrip(emptyAggregate(), digest({ tripId: 'fort', at: 0, peakAccelMs2: 3.4 }))
+    let a = withTrip(emptyAggregate(), digest({ tripId: 'fort', at: 0, pushPeakMs2: 3.4 }))
     for (let i = 1; i <= RECENT_TRIPS + 5; i += 1) {
-      a = withTrip(a, digest({ tripId: `calme${i}`, at: i, peakAccelMs2: 0.9 }))
+      a = withTrip(a, digest({ tripId: `calme${i}`, at: i, pushPeakMs2: 0.9 }))
     }
 
     expect(a.recent.some((trip) => trip.tripId === 'fort')).toBe(false)
-    expect(a.capabilities.peakAccelMs2).toBe(3.4)
+    expect(a.capabilities.pushPeakMs2).toBe(3.4)
   })
 
   it('garde le freinage le plus fort, qui est le plus négatif', () => {
-    let a = withTrip(emptyAggregate(), digest({ tripId: 'a', at: 1, peakDecelMs2: -2 }))
-    a = withTrip(a, digest({ tripId: 'b', at: 2, peakDecelMs2: -4.1 }))
-    a = withTrip(a, digest({ tripId: 'c', at: 3, peakDecelMs2: -1 }))
+    let a = withTrip(emptyAggregate(), digest({ tripId: 'a', at: 1, slowdownPeakMs2: -2 }))
+    a = withTrip(a, digest({ tripId: 'b', at: 2, slowdownPeakMs2: -4.1 }))
+    a = withTrip(a, digest({ tripId: 'c', at: 3, slowdownPeakMs2: -1 }))
 
-    expect(a.capabilities.peakDecelMs2).toBe(-4.1)
+    expect(a.capabilities.slowdownPeakMs2).toBe(-4.1)
   })
 
-  /**
-   * La cadence et le bruit sont des contraintes, pas des performances : on les
-   * prend au pire cas rencontré, sans quoi on dimensionnerait la fenêtre
-   * d'accélération sur le meilleur trajet et elle serait trop courte partout
-   * ailleurs.
-   */
-  it('prend la cadence la plus lente et le bruit le plus fort', () => {
+  it('ignore une capacité absente plutôt que de la compter pour zéro', () => {
+    let a = withTrip(emptyAggregate(), digest({ tripId: 'a', at: 1, pushPeakMs2: 3.4 }))
+    a = withTrip(a, digest({ tripId: 'b', at: 2, pushPeakMs2: null }))
+
+    expect(a.capabilities.pushPeakMs2).toBe(3.4)
+  })
+})
+
+/**
+ * La cadence et le bruit ne sont pas des capacités de la voiture : ce sont des
+ * propriétés de l'appareil et de la couverture du jour. Ils se prennent sur le
+ * dernier trajet qui les a mesurés, et **ensemble** — ils entrent ensemble dans
+ * le calcul de la fenêtre d'accélération.
+ */
+describe('le signal', () => {
+  it('prend la cadence et le bruit du dernier trajet mesurable', () => {
+    let a = withTrip(emptyAggregate(), digest({ tripId: 'a', at: 1, cadenceMs: 1000, noiseKmh: 0.9 }))
+    a = withTrip(a, digest({ tripId: 'b', at: 2, cadenceMs: 100, noiseKmh: 0.3 }))
+
+    expect(recentSignal(a)).toEqual({ cadenceMs: 100, noiseKmh: 0.3 })
+  })
+
+  it('remonte au trajet précédent quand le dernier n’a pas pu mesurer', () => {
     let a = withTrip(emptyAggregate(), digest({ tripId: 'a', at: 1, cadenceMs: 100, noiseKmh: 0.3 }))
-    a = withTrip(a, digest({ tripId: 'b', at: 2, cadenceMs: 1000, noiseKmh: 0.1 }))
+    a = withTrip(a, digest({ tripId: 'b', at: 2, cadenceMs: 1000, noiseKmh: null }))
 
-    expect(a.capabilities.cadenceMs).toBe(1000)
-    expect(a.capabilities.noiseKmh).toBe(0.3)
+    expect(recentSignal(a)).toEqual({ cadenceMs: 100, noiseKmh: 0.3 })
   })
 
-  it('ignore une mesure absente plutôt que de la compter pour zéro', () => {
-    let a = withTrip(emptyAggregate(), digest({ tripId: 'a', at: 1, noiseKmh: 0.3 }))
-    a = withTrip(a, digest({ tripId: 'b', at: 2, noiseKmh: null }))
+  it('ne rend rien quand aucun trajet n’a pu mesurer', () => {
+    const a = withTrip(emptyAggregate(), digest({ tripId: 'a', at: 1, noiseKmh: null }))
 
-    expect(a.capabilities.noiseKmh).toBe(0.3)
+    expect(recentSignal(a)).toBeNull()
   })
 })
 
@@ -170,11 +186,20 @@ describe('un trajet qui revient', () => {
     expect(a.recent[0]!.practicedMaxKmh).toBe(130)
   })
 
-  it('ne retire pas une capacité que sa version précédente avait montrée', () => {
-    let a = withTrip(emptyAggregate(), digest({ tripId: 'a', at: 1, peakAccelMs2: 3.4 }))
-    a = withTrip(a, digest({ tripId: 'a', at: 1, peakAccelMs2: 1.2 }))
+  /**
+   * La version la plus récente d'un trajet fait foi sur les précédentes, y
+   * compris à la baisse. C'est l'inverse de ce que faisait la première version
+   * de ce module, et c'est ce qui rend le cumul équivalent à un recalcul : une
+   * valeur qu'une tranche courte a rendue et que le trajet entier ne rend plus
+   * était un artefact du découpage, pas une capacité.
+   *
+   * Ce qu'un **autre** trajet a montré, en revanche, ne bouge pas.
+   */
+  it('se laisse réviser à la baisse par sa version plus complète', () => {
+    let a = withTrip(emptyAggregate(), digest({ tripId: 'a', at: 1, pushPeakMs2: 3.4 }))
+    a = withTrip(a, digest({ tripId: 'a', at: 1, pushPeakMs2: 1.2 }))
 
-    expect(a.capabilities.peakAccelMs2).toBe(3.4)
+    expect(a.capabilities.pushPeakMs2).toBe(1.2)
   })
 })
 
@@ -201,8 +226,8 @@ describe('l’équivalence avec un calcul d’un bloc', () => {
   it('mesure un trajet réel de bout en bout', () => {
     const d = digestOf('a', trajet(1000))
 
-    expect(d.peakAccelMs2).toBeGreaterThan(2)
-    expect(d.peakDecelMs2).toBeLessThan(-2)
+    expect(d.pushPeakMs2).toBeGreaterThan(2)
+    expect(d.slowdownPeakMs2).toBeLessThan(-2)
     expect(d.practicedMaxKmh).toBeGreaterThan(100)
     expect(d.plateaus.highway.length).toBeGreaterThan(0)
     expect(d.departureKmh).toHaveLength(1)
@@ -213,5 +238,63 @@ describe('le recalcul complet', () => {
   it('se déclenche quand le procédé a changé', () => {
     expect(needsRebuild(emptyAggregate())).toBe(false)
     expect(needsRebuild({ ...emptyAggregate(), procedure: PROCEDURE_VERSION - 1 })).toBe(true)
+  })
+})
+
+/**
+ * Ce que la relecture du 11 septembre 2026 a mesuré, et que ces tests fixent.
+ *
+ * Les deux défauts venaient du même endroit : l'agrégat traitait la fenêtre des
+ * trajets récents comme s'il s'agissait de l'historique.
+ */
+describe('les défauts trouvés à la relecture', () => {
+  /**
+   * Le garde de remplacement cherchait le trajet dans la fenêtre des vingt
+   * derniers. Un trajet qui n'y est pas — arrivé en retard, ou daté de zéro
+   * faute d'en-tête lisible — était donc recompté à chaque tranche. Mesuré :
+   * trente-deux trajets là où il y en avait vingt et un.
+   */
+  it('ne recompte pas un trajet qui est sorti de la fenêtre', () => {
+    let a = emptyAggregate()
+    for (let i = 1; i <= RECENT_TRIPS; i += 1) {
+      a = withTrip(a, digest({ tripId: `t${i}`, at: 1000 + i }))
+    }
+    expect(a.tripCount).toBe(RECENT_TRIPS)
+
+    // Les douze tranches d'un trajet plus ancien : il n'entre jamais dans la
+    // fenêtre, mais il ne compte qu'une fois.
+    for (let tranche = 0; tranche < 12; tranche += 1) {
+      a = withTrip(a, digest({ tripId: 'vieux', at: 1 }))
+    }
+
+    expect(a.recent.some((trip) => trip.tripId === 'vieux')).toBe(false)
+    expect(a.tripCount).toBe(RECENT_TRIPS + 1)
+  })
+
+  /**
+   * Le cumul par extrêmes suppose que chaque grandeur ne peut que croître avec
+   * la matière. C'est vrai d'une crête, pas d'un **centile** : la vitesse
+   * pratiquée est le 99ᵉ centile, et elle **baisse** quand le trajet s'allonge.
+   *
+   * Mesuré : un trajet de vingt-cinq secondes à 150 km/h suivi d'une heure à 40
+   * rendait 150 en cumulant ses tranches, 40 en relisant tout — cent dix
+   * kilomètres-heure d'écart, sur la grandeur qui fixe la vitesse plausible.
+   */
+  it('rend la même chose qu’un recalcul quand un trajet s’allonge', () => {
+    const tranche = digest({ tripId: 'a', at: 1, practicedMaxKmh: 150 })
+    const entier = digest({ tripId: 'a', at: 1, practicedMaxKmh: 40 })
+
+    const cumul = withTrip(withTrip(emptyAggregate(), tranche), entier)
+    const relu = withTrip(emptyAggregate(), entier)
+
+    expect(cumul.capabilities.practicedMaxKmh).toBe(relu.capabilities.practicedMaxKmh)
+  })
+
+  it('garde la capacité d’un autre trajet quand celui-ci se révise à la baisse', () => {
+    let a = withTrip(emptyAggregate(), digest({ tripId: 'fort', at: 1, practicedMaxKmh: 150 }))
+    a = withTrip(a, digest({ tripId: 'b', at: 2, practicedMaxKmh: 130 }))
+    a = withTrip(a, digest({ tripId: 'b', at: 2, practicedMaxKmh: 40 }))
+
+    expect(a.capabilities.practicedMaxKmh).toBe(150)
   })
 })

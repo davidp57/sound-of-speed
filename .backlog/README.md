@@ -88,9 +88,9 @@ puissance constante de vingt millisecondes. Deux parades prévues au ticket ont
 été essayées et écartées sur mesure : les deux instances permanentes en fondu
 croisé lent, et l'alignement de la nouvelle position sur le cycle moteur.
 
-**PROFIL-REEL a ses huit tickets**, et les trois premiers sont livrés : le
-calcul sait lire une capture, y retrouver les moments et séparer le pied levé du
-freinage. Son point dur reste ouvert — la distribution des ralentissements du
+**PROFIL-REEL a ses huit tickets**, et les cinq premiers sont livrés : le calcul
+sait lire une capture, y retrouver les moments, séparer le pied levé du
+freinage, cumuler ce que les trajets montrent et dire s'il en sait assez. Son point dur reste ouvert — la distribution des ralentissements du
 trajet du 11 septembre n'a qu'une bosse et une queue, et rien ne prouve encore
 qu'il y ait deux façons de ralentir à y lire. Le lot est faisable sans attendre
 les comptes, puisqu'on travaille à compte unique.
