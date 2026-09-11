@@ -86,3 +86,24 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+  # Le profileur : il relit les traces déposées et en tire le profil de la vraie
+  # voiture. Rien à exposer — il n'ouvre aucun port et ne sert rien ; c'est nginx,
+  # au-dessus, qui sert ce qu'il écrit.
+  #
+  # Il vient du **même commit** que l'application : c'est ce qui garantit qu'ils
+  # calculent la même chose. Redéployer l'une sans l'autre les ferait diverger.
+  speed-profileur-develop:
+    image: ghcr.io/davidp57/speed-profileur:develop
+    container_name: speed-profileur-develop
+    restart: unless-stopped
+    volumes:
+      # Les traces, en **lecture seule** : il les lit, il n'y touche pas.
+      - /volume1/docker/speed/traces:/data/traces:ro
+      # Les profils, en lecture-écriture : c'est là qu'il dépose ce qu'il a
+      # mesuré, dans le dossier que l'application sert déjà.
+      - /volume1/docker/speed/profils:/data/profils
+    environment:
+      # Le relevé du dossier. Cinq secondes : une tranche arrive toutes les cinq
+      # minutes en roulant, et lire une liste de noms ne coûte rien.
+      SPEED_SCAN_MS: "5000"

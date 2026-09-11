@@ -4,6 +4,11 @@
 # image déjà prête. Mettre à jour tient en un « git push » suivi d'un bouton
 # dans l'interface de Portainer.
 #
+# Deux images sortent de ce dépôt, du même commit : l'application, servie par
+# nginx, et le profileur, qui relit les traces déposées sur le serveur. Les deux
+# partagent le cœur du projet, et c'est pourquoi elles doivent venir du même
+# commit — un seul calcul, pas deux qui divergent.
+#
 # Trois étiquettes, trois usages :
 #   latest    la production, poussée depuis `main` seulement
 #   develop   l'intégration, pour essayer sur le NAS avant de sortir une version
@@ -64,6 +69,17 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,format=short
 
+      - id: meta-profileur
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE }}-profileur
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -77,5 +93,19 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Le profileur : même dépôt, même commit, une image à part. Il ne sert
+      # rien et n'ouvre aucun port ; c'est nginx, à côté, qui sert ce qu'il
+      # écrit.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.profileur
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-profileur.outputs.tags }}
+          labels: ${{ steps.meta-profileur.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

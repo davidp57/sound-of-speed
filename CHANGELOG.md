@@ -8,6 +8,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un service qui profile la voiture sur le serveur.** Il regarde le dossier
+  des traces, remesure le trajet qu'une tranche vient de compléter, et dépose ce
+  qu'il sait dans le dossier des profils. Une seconde image, publiée par la même
+  chaîne que l'application et depuis le même commit — c'est ce qui garantit
+  qu'ils calculent la même chose.
+
+  Il ne sert rien et n'ouvre aucun port : c'est nginx, à côté, qui sert ce qu'il
+  écrit. Une tranche illisible est écartée et nommée sans faire tomber le
+  trajet ; une ligne tronquée ne fait rien tomber du tout.
+
 - **Ce que la voiture a montré d'elle se cumule trajet après trajet**, sans tout
   relire. Les capacités — accélération et freinage maximum, vitesse pratiquée,
   bornes du signal — se gardent sur tout l'historique par leurs extrêmes, donc

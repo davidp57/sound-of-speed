@@ -37,3 +37,4 @@ a.out.wasm
 
 # Fichiers de verrouillage d'Excel, créés à l'ouverture d'un classeur
 ~$*
+dist-profileur/

@@ -1,13 +1,15 @@
 {
   "name": "speed",
   "private": true,
-  "version": "0.1.105",
+  "version": "0.1.106",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:mobile": "cross-env HTTPS=1 vite",
     "relecteur": "cross-env SPEED_DATA=//Salon/docker/speed vite",
     "build": "vue-tsc -b && vite build",
+    "build:profileur": "esbuild src/profileur/main.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist-profileur/profileur.js",
+    "profileur": "npm run build:profileur && node dist-profileur/profileur.js",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
