@@ -155,3 +155,40 @@ describe('la reprise du mode depuis des seuils absolus', () => {
     expect(driveModeFromUpshiftRpm([3000], 0)).toBe('road')
   })
 })
+
+describe('le mode Route passe ses rapports plus tôt', () => {
+  /**
+   * Sortie du 11 septembre 2026. David : « ça reste trop longtemps en deux »,
+   * et « modifier le mode Route pour que les vitesses passent plus tôt que
+   * maintenant, moins vingt pour cent ».
+   *
+   * Le ralenti est un plancher fixe, donc la baisse de la marge ne se reporte
+   * pas telle quelle : le seuil perd vingt pour cent pied au plancher, où il
+   * l'a demandée, et quinze en conduite ordinaire. C'est le compromis retenu,
+   * et ces deux chiffres sont ce que le test protège.
+   */
+  it('perd vingt pour cent pied au plancher, quinze en conduite ordinaire', () => {
+    const idle = 800
+    // Les valeurs d'avant, avec la marge à 900.
+    const avant = (demand: number) => idle + 900 * Math.min(2, Math.max(0.5, 2 * demand))
+
+    expect(upshiftFloorRpm('road', 1, idle)).toBeCloseTo(2080, 0)
+    expect(upshiftFloorRpm('road', 1, idle) / avant(1)).toBeCloseTo(0.8, 2)
+
+    expect(upshiftFloorRpm('road', 0.5, idle)).toBeCloseTo(1440, 0)
+    expect(upshiftFloorRpm('road', 0.5, idle) / avant(0.5)).toBeCloseTo(0.85, 2)
+  })
+
+  it('ne touche pas au mode Sport', () => {
+    const idle = 780
+
+    expect(upshiftFloorRpm('sport', 1, idle)).toBeCloseTo(idle + 2200 * 2, 0)
+    expect(upshiftFloorRpm('sport', 0.5, idle)).toBeCloseTo(idle + 2200, 0)
+  })
+
+  it('garde le mode Route sous le mode Sport, à toute demande', () => {
+    for (const demand of [0, 0.25, 0.5, 0.75, 1]) {
+      expect(upshiftFloorRpm('road', demand, 800)).toBeLessThan(upshiftFloorRpm('sport', demand, 800))
+    }
+  })
+})

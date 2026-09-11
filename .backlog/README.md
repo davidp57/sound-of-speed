@@ -54,7 +54,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | 🧑 neuf tickets livrés ; la chaîne servie est réparée, reste à recoller la pile dans Portainer |
 | [SUITE-ESSAI-11](SUITE-ESSAI-11/spec.md) — deux points de l'essai du 11 septembre : sept cent vingt-six dépôts manqués à l'arrêt, et une relance GPS de secours | 🔄 relance livrée ; les dépôts manqués restent à instruire |
 | [RETOUR-11](RETOUR-11/spec.md) — trois demandes de la sortie du 11 septembre au soir : le rétrogradage forcé qui rend le rapport, le claquement à la montée, l'aiguille du rapport suivant | 🧑 les trois sont livrés ; deux s'écoutent en roulant |
-| [ETAGEMENT](ETAGEMENT/spec.md) — une boîte à sept rapports, étagée pour tenir bas : 50 en quatrième, 80 en cinquième, 110 en sixième, et les passages plus tôt en mode Route | ⬜ |
+| [ETAGEMENT](ETAGEMENT/spec.md) — une boîte à sept rapports, étagée pour tenir bas : 50 en quatrième, 80 en cinquième, 110 en sixième, et les passages plus tôt en mode Route | 🧑 les trois tickets sont livrés ; reste l'écoute en roulant |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,

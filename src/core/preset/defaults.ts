@@ -244,9 +244,28 @@ export function createRoadProfile(): Profile {
       // tenable, au lieu de 3390.
       finalDrive: 3.7,
       shiftTimeMs: 600,
-      // Passages placés en vitesse plutôt qu'en régime : 35, 55, 75, 96 et
-      // 115 km/h à charge moyenne.
-      upshiftRpm: [3700, 3350, 3050, 2950, 2950],
+      /*
+       * Sept rapports, et le haut réétagé — sortie du 11 septembre 2026.
+       *
+       * Les trois premiers ne bougent pas : le départ mesuré ce soir-là est
+       * celui que David a jugé « parfait », et il tient à eux. Les quatre
+       * autres sont redessinés depuis les vitesses qu'il a nommées, avec une
+       * septième pour l'autoroute :
+       *
+       *   50 km/h en quatrième   1 487 tr/min
+       *   80 km/h en cinquième   1 737 tr/min
+       *  110 km/h en sixième     1 734 tr/min
+       *  130 km/h en septième    1 508 tr/min
+       *
+       * L'ancienne boîte tournait à 2 046 à 80 et 2 355 à 110 — « trop haut »,
+       * et les sauts s'écrasaient en haut (1,32 · 1,20 · 1,19) au lieu de
+       * s'étaler. Ils valent maintenant 1,36 · 1,37 · 1,38 · 1,36.
+       */
+      gearRatios: [3.55, 2.04, 1.36, 1.0, 0.73, 0.53, 0.39],
+      // Un seuil par rapport sauf le dernier. Depuis le lot PLANCHER, le
+      // moment du passage se décide sur le régime du rapport visé ; cette table
+      // ne sert plus qu'à reconnaître le tempérament de la boîte.
+      upshiftRpm: [3700, 3350, 3050, 2950, 2950, 2950],
       upshiftLoadSpreadRpm: 1600,
       upshiftJitterRpm: 120,
       minUpshiftRpm: 2300,
@@ -254,16 +273,18 @@ export function createRoadProfile(): Profile {
       launchUpshiftKmh: 5,
       downshiftAtRedlineRatio: 0.28,
       // Croisière basse, mais pas au point de brouter ni de jouer les
-      // échantillons trop grave : à 1500, la croisière se tient entre 1500 et
-      // 2400 tr/min de 50 à 110 km/h — la moitié utile de la prise bas régime,
-      // ancrée à 3128 tr/min.
-      cruiseMinRpm: 1500,
+      // échantillons trop grave. Passé de 1500 à 1400 avec les sept rapports :
+      // la croisière se tient maintenant entre 1487 et 1954 tr/min de 50 à
+      // 130 km/h, contre 1532 à 2355 avant. C'est la moitié basse de la prise
+      // bas régime, ancrée à 3128 tr/min — et ce que ça donne à l'oreille reste
+      // à écouter.
+      cruiseMinRpm: 1400,
       // Il monte volontiers : deux secondes et deux dixièmes de vitesse stable
       // suffisent.
       cruiseUpshiftAfterS: 2.2,
       // Et il ne descend que sur un freinage franc, pas sur un lever de pied.
       brakeDownshiftAccelMs2: -1,
-      shiftDelaysS: [0.3, 0.55, 0.4, 0.6, 0.35, 0.5],
+      shiftDelaysS: [0.3, 0.55, 0.4, 0.6, 0.35, 0.5, 0.45],
     },
     feel: {
       ...base.feel,

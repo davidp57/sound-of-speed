@@ -181,10 +181,12 @@ describe('le registre des boîtes', () => {
     expect(factoryGearboxes().map((b) => b.name)).toEqual(['V8'])
   })
 
-  it('livre le calibrage de la route : pont long, six rapports', () => {
+  it('livre le calibrage de la route : pont long, sept rapports', () => {
     const livree = factoryGearboxes()[0]!
     expect(livree.drivetrain.finalDrive).toBe(3.7)
-    expect(livree.drivetrain.gearRatios).toHaveLength(6)
+    // Sept depuis la sortie du 11 septembre 2026, la septième étant un rapport
+    // d'autoroute : 130 km/h à 1508 tr/min.
+    expect(livree.drivetrain.gearRatios).toHaveLength(7)
   })
 
   it("rend la livrée quand rien n'est enregistré", () => {
@@ -242,5 +244,49 @@ describe('une boîte dans un fichier', () => {
     expect(() => gearboxFromFile('{"version":1,"gearbox":{"name":"vide"}}', () => 'x')).toThrow(
       ProfileImportError,
     )
+  })
+})
+
+describe('la reprise des boîtes enregistrées', () => {
+  /**
+   * La boîte de David vit dans le stockage local du téléphone, pas dans le
+   * code : sans cette reprise, changer les valeurs livrées ne se verrait pas
+   * dans sa voiture.
+   */
+  it('donne sa septième à une boîte de route enregistrée à six rapports', () => {
+    const livree = factoryGearboxes()[0]!
+    const ancienne = {
+      ...livree,
+      id: 'boite-de-david',
+      name: 'V8',
+      drivetrain: {
+        ...livree.drivetrain,
+        gearRatios: [3.55, 2.04, 1.36, 1.03, 0.86, 0.72],
+        upshiftRpm: [3700, 3350, 3050, 2950, 2950],
+        shiftDelaysS: [0.3, 0.55, 0.4, 0.6, 0.35, 0.5],
+      },
+    }
+
+    saveGearboxes([ancienne])
+    const relue = loadGearboxes().find((boite) => boite.id === 'boite-de-david')
+
+    expect(relue?.drivetrain.gearRatios).toHaveLength(7)
+    expect(relue?.drivetrain.upshiftRpm).toHaveLength(6)
+    expect(relue?.drivetrain.shiftDelaysS).toHaveLength(7)
+  })
+
+  it('laisse à six rapports une boîte qu’on a réglée', () => {
+    const livree = factoryGearboxes()[0]!
+    const reglee = {
+      ...livree,
+      id: 'sur-mesure',
+      drivetrain: { ...livree.drivetrain, gearRatios: [3.2, 1.9, 1.3, 1.0, 0.8, 0.66] },
+    }
+
+    saveGearboxes([reglee])
+
+    expect(
+      loadGearboxes().find((boite) => boite.id === 'sur-mesure')?.drivetrain.gearRatios,
+    ).toHaveLength(6)
   })
 })

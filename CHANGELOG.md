@@ -337,6 +337,33 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Une boîte à sept rapports, étagée pour tenir bas.** Les trois premiers
+  rapports ne bougent pas — le départ mesuré le 11 septembre au soir est celui
+  que David a jugé juste. Les quatre autres sont redessinés depuis les vitesses
+  qu'il a nommées, avec une septième pour l'autoroute :
+
+  | | avant | après |
+  |---|---|---|
+  | 50 km/h en quatrième | 1 532 tr/min | **1 487** |
+  | 80 km/h en cinquième | 2 046 tr/min | **1 737** |
+  | 110 km/h en sixième | 2 355 tr/min | **1 734** |
+  | 130 km/h en septième | — | **1 508** |
+
+  Les sauts s'écrasaient en haut de boîte — 1,32 · 1,20 · 1,19 — et valent
+  maintenant 1,36 · 1,37 · 1,38 · 1,36. La septième entre vers 125 km/h.
+
+  Les profils et les boîtes déjà enregistrés la reçoivent en s'ouvrant, y
+  compris ceux reçus par un lien de partage. Une boîte réglée à la main n'est
+  pas touchée : elle garde ce qu'on lui a donné.
+
+- **Les rapports passent plus tôt en mode Route.** David : « ça reste trop
+  longtemps en deux ». La marge au-dessus du ralenti passe de 900 à 640 tr/min,
+  soit −20 % sur le seuil pied au plancher et −15 % en conduite ordinaire. Le
+  mode Sport ne bouge pas. En accélération douce, les rapports cèdent maintenant
+  à 2 210, 1 983, 1 999, 1 995 et 1 969 tr/min, contre 3 005, 2 597, 2 367 et
+  2 324 avant — cinq valeurs presque égales, signature d'une boîte régulièrement
+  étagée.
+
 - **La boîte se décide sur un seul plancher de régime.** On monte dès que le
   rapport suivant tournerait au-dessus du ralenti plus une marge, et on descend
   quand le rapport engagé tombe sous une marge un peu plus basse. La marge vient

@@ -94,14 +94,52 @@ describe('profils livrés', () => {
 
   it('place la croisière du profil Route bien plus bas que celle du profil Sport', () => {
     // C'est la raison d'être du profil Route : à 130 km/h en dernier rapport,
-    // 2780 tr/min au lieu de 3390. Le README annonce ces deux chiffres.
+    // 1508 tr/min au lieu de 3390. Le README annonce ces deux chiffres.
+    //
+    // C'était 2780 avant la sortie du 11 septembre 2026 : la septième et le
+    // haut réétagé ont fait tomber la croisière de mille tours.
     const regime = (p: Profile) => {
       const { gearRatios, finalDrive, wheelRadiusM } = p.drivetrain
       return rpmAtSpeed(130, gearRatios[gearRatios.length - 1] ?? 1, finalDrive, wheelRadiusM)
     }
 
-    expect(regime(createRoadProfile())).toBeCloseTo(2780, -2)
+    expect(regime(createRoadProfile())).toBeCloseTo(1508, -2)
     expect(regime(createDefaultProfile())).toBeCloseTo(3390, -2)
+  })
+
+  /**
+   * Les trois vitesses que David a nommées après la sortie du 11 septembre
+   * 2026, et le rapport qu'il veut y trouver : « idéalement il faudrait qu'on
+   * soit dans une plage confortable (basse) à 50 en 4, 80 en 5 et 110 en 6 ».
+   *
+   * Ce test tient l'étagement : il échouera si quelqu'un touche aux rapports
+   * sans mesurer ce que ça fait à ces trois points.
+   */
+  it('tient les trois vitesses de référence du profil Route', () => {
+    const p = createRoadProfile()
+    const regime = (kmh: number, gear: number) =>
+      rpmAtSpeed(kmh, p.drivetrain.gearRatios[gear] ?? 1, p.drivetrain.finalDrive, p.drivetrain.wheelRadiusM)
+
+    expect(p.drivetrain.gearRatios).toHaveLength(7)
+    expect(regime(50, 3)).toBeCloseTo(1487, -2)
+    expect(regime(80, 4)).toBeCloseTo(1737, -2)
+    expect(regime(110, 5)).toBeCloseTo(1734, -2)
+    expect(regime(130, 6)).toBeCloseTo(1508, -2)
+  })
+
+  /**
+   * Une boîte bien étagée a des sauts réguliers : le régime retombe d'autant à
+   * chaque passage. L'ancienne s'écrasait en haut — 1,32 · 1,20 · 1,19 — ce
+   * qui rendait les trois derniers rapports presque interchangeables.
+   */
+  it('étage le haut du profil Route régulièrement', () => {
+    const ratios = createRoadProfile().drivetrain.gearRatios
+    const sauts = ratios.slice(0, -1).map((ratio, i) => ratio / (ratios[i + 1] ?? ratio))
+
+    for (const saut of sauts.slice(2)) {
+      expect(saut).toBeGreaterThan(1.3)
+      expect(saut).toBeLessThan(1.45)
+    }
   })
 
   it('donne à chaque profil des seuils de passage cohérents avec son rupteur', () => {
@@ -192,8 +230,10 @@ describe('profils livrés — la croisière', () => {
   it('ne laisse aucun régime de croisière absurde sur Route', () => {
     const p = createRoadProfile()
 
-    // Mesuré : 1820 à 30 km/h, 1532 à 50, 1790 à 70, 1927 à 90, 2355 à 110.
-    // C'est ce tableau que ce test protège d'un réglage futur maladroit.
+    // Mesuré après les sept rapports : 1820 à 30 km/h, 1487 à 50, 1520 à 70,
+    // 1954 à 90, 1734 à 110, 1508 à 130. C'était 1820 / 1532 / 1790 / 1927 /
+    // 2355 avant. C'est ce tableau que ce test protège d'un réglage futur
+    // maladroit.
     for (const kmh of VITESSES.filter((v) => v < 130)) {
       expect(croisiere(p, kmh).rpm).toBeLessThan(2500)
     }
@@ -207,11 +247,19 @@ describe('profils livrés — la croisière', () => {
     }
   })
 
-  it('engage la sixième sur route ouverte, avec le profil Route', () => {
-    const p = createRoadProfile()
+  it('engage le dernier rapport sur route ouverte, avec le profil Route', () => {
+    // Le tirage au sort est neutralisé : la septième entre vers 124 km/h, et à
+    // 130 le tirage suffisait à décider seul du rapport obtenu — ce test
+    // échouait une fois sur deux. C'est le point d'entrée qui est dispersé, ce
+    // qui est le rôle du tirage ; une fois engagée, elle ne se rend pas.
+    const base = createRoadProfile()
+    const p = { ...base, drivetrain: { ...base.drivetrain, upshiftJitterRpm: 0 } }
     const dernier = p.drivetrain.gearRatios.length - 1
 
-    expect(croisiere(p, 90).gear).toBe(dernier)
+    // La septième est un rapport d'autoroute : à 90 km/h elle tournerait à
+    // 1044 tr/min, et la boîte a raison de ne pas l'engager.
+    expect(croisiere(p, 90).gear).toBe(dernier - 2)
+    expect(croisiere(p, 120).gear).toBe(dernier - 1)
     expect(croisiere(p, 130).gear).toBe(dernier)
   })
 

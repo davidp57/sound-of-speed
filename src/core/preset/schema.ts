@@ -902,7 +902,11 @@ export type ProfileOrigin = Pick<
  * — il posait une couleur de plus là où il fallait en retirer une. Le rendu
  * porte à sa place la part de résonance que l'effort retire.
  */
-export const PROFILE_FORMAT_VERSION = 9
+/**
+ * Version dix : la boîte est passée à sept rapports le 11 septembre 2026, et
+ * les tableaux qui se comptent par rapport ont changé de longueur avec elle.
+ */
+export const PROFILE_FORMAT_VERSION = 10
 
 export interface ProfileFile {
   version: number

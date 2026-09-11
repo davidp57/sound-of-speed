@@ -1149,7 +1149,7 @@ milieu du curseur étant par construction le réglage qui a servi jusqu'ici.
 |---|---|
 | **Calme ↔ sportif** | Le caractère du moteur et de la boîte : inertie, montée à vide, temps de passage, écart selon la charge, régimes de passage, plancher et délai de croisière, seuil de rétrogradage au freinage, rétrogradage forcé, pétarade, à-coup de passage. Il ne touche ni au pont, ni aux démultiplications, ni au rupteur, ni au mixage. Mesuré sur Route, pied au plancher : la pointe de régime passe de 3929 tr/min au plus calme à 6043 au plus sportif, pour un rupteur à 6500 |
 | **Pépère ↔ nerveux** | La réactivité du **signal**, et non le caractère : raideur du lissage, fenêtre d'accélération, lissage de la charge, temporisations de passage. La distinction est réelle — le premier curseur dit si la voiture pousse fort, celui-ci si elle répond vite. Une voiture calme peut être vive, une sportive pâteuse |
-| **Nombre de rapports** | De trois à huit, en un appui. Le premier et le dernier rapport sont **conservés**, et le pont avec eux : le régime en dernier rapport à une vitesse donnée ne bouge pas — mesuré, 2355 tr/min à 110 km/h sur Route quel que soit le nombre de rapports. Seuls les rapports intermédiaires se redistribuent, géométriquement, avec les régimes de passage et les temporisations. Pour poser les démultiplications à la main, le champ reste là en mode avancé |
+| **Nombre de rapports** | De trois à huit, en un appui. Le premier et le dernier rapport sont **conservés**, et le pont avec eux : le régime en dernier rapport à une vitesse donnée ne bouge pas — mesuré, 1276 tr/min à 110 km/h sur Route quel que soit le nombre de rapports — la septième y est un rapport d'autoroute. Seuls les rapports intermédiaires se redistribuent, géométriquement, avec les régimes de passage et les temporisations. Pour poser les démultiplications à la main, le champ reste là en mode avancé |
 
 Les bornes du second sont **mesurées** sur une rampe de 0 à 90 km/h en quinze
 secondes, bruitée à ±1 km/h comme l'est une mesure GPS, à la cadence la plus
@@ -1383,12 +1383,18 @@ les vitesses, ni les réglages de mesure du signal. Changer de moteur change le
 son, pas la conduite. Les moteurs livrés sont les deux profils d'usine — leurs
 rupteurs diffèrent de deux mille tours, ce sont bien deux moteurs.
 
-**Route** — calibré sur les vitesses que l'on pratique vraiment. En accélération
-les six rapports servent entre 0 et 100 km/h, et dès qu'on tient une vitesse la
-boîte monte d'elle-même : mesuré, la quatrième à 50 km/h (1532 tr/min), la
-cinquième à 70 (1790), la sixième dès 90 (1927), et 2784 tr/min à 130. Pied au
-plancher, les passages reculent jusqu'aux trois quarts du rupteur : il reste de
-quoi s'amuser sans que ce soit le régime ordinaire.
+**Route** — calibré sur les vitesses que l'on pratique vraiment. **Sept
+rapports** depuis le 11 septembre 2026, dont une septième longue pour
+l'autoroute. Dès qu'on tient une vitesse, la boîte monte d'elle-même : mesuré,
+la quatrième à 50 km/h (1487 tr/min), la cinquième à 70 (1520), la sixième à 110
+(1734), et la septième vers 124 — 1508 tr/min à 130. Pied au plancher, les
+passages reculent : il reste de quoi s'amuser sans que ce soit le régime
+ordinaire.
+
+La croisière tient ainsi entre 1487 et 1954 tr/min de 50 à 130 km/h, là où elle
+allait de 1532 à 2355 avec six rapports. Les trois premiers rapports n'ont pas
+bougé — c'est le haut de la boîte qui a été redessiné, et les sauts y valent
+maintenant 1,36 à 1,38 au lieu de s'écraser à 1,19.
 
 **Sport** — le calibrage d'origine, taillé pour une plage que l'on n'atteint
 jamais sur route. Il garde ses rapports plus longtemps et croise plus haut :
@@ -1402,10 +1408,12 @@ Le tout se règle : c'est la différence entre les deux, pas une nature.
 | Rupteur | 6500 tr/min | 8500 |
 | Pont | 3,7 | 4,5 |
 | Passage 1 → 2 (charge moyenne) | 35 km/h | 40 |
-| Plancher de croisière | 1500 tr/min | 2000 |
-| Rapport tenu à 50 km/h | 4<sup>e</sup>, 1532 tr/min | 3<sup>e</sup>, 2460 |
-| Rapport tenu à 90 km/h | 6<sup>e</sup>, 1927 tr/min | 6<sup>e</sup>, 2344 |
-| Régime à 130 km/h en sixième | 2784 tr/min | 3386 |
+| Nombre de rapports | 7 | 6 |
+| Plancher de croisière | 1400 tr/min | 2000 |
+| Rapport tenu à 50 km/h | 4<sup>e</sup>, 1487 tr/min | 3<sup>e</sup>, 2460 |
+| Rapport tenu à 90 km/h | 5<sup>e</sup>, 1954 tr/min | 6<sup>e</sup>, 2344 |
+| Rapport tenu à 110 km/h | 6<sup>e</sup>, 1734 tr/min | 5<sup>e</sup>, 3422 |
+| Régime à 130 km/h en dernier rapport | 1508 tr/min | 3386 |
 
 Sélection, renommage, duplication, suppression, **export** et **import** en JSON.
 
@@ -2007,8 +2015,16 @@ deux sens, la montée et la descente **ne peuvent plus se contredire** — c'est
 qui ouvrait, sur chaque rapport, une plage de vitesse où la croisière autorisait
 un rapport que la descente au régime refusait, et la boîte y faisait le
 va-et-vient. Mesuré sur le profil Route, en accélération douce, mode Route : les
-rapports cèdent à 3005, 2597, 2367 et 2324 tr/min, contre 3700, 3350, 3050 et
-2950 avant.
+rapports cèdent à 2210, 1983, 1999, 1995 et 1969 tr/min, contre 3700, 3350, 3050
+et 2950 avant le plancher — et 3005, 2597, 2367 et 2324 avant que la marge du
+mode Route ne passe de 900 à 640, le 11 septembre 2026. Les cinq valeurs sont
+maintenant presque égales : c'est la signature d'une boîte régulièrement étagée,
+puisque le critère porte sur le rapport visé.
+
+La marge a baissé sur une remarque de David après cette sortie — « ça reste trop
+longtemps en deux ». Le ralenti étant un plancher fixe, la baisse ne se reporte
+pas telle quelle : le seuil perd vingt pour cent pied au plancher, quinze en
+conduite ordinaire.
 
 Le **premier passage** échappe à la règle : la première n'est qu'une amorce de
 lancement, et la deuxième s'engage dès qu'elle tient au-dessus du ralenti, sans
@@ -2463,9 +2479,11 @@ chaque essai.
 | 36 | L'accélération était mille fois trop petite : le navigateur de la voiture horodate en microsecondes | corrigé, reste à écouter en roulant |
 | 37 | La capture d'un trajet se fait toute seule, compressée, avec un témoin qui dit si la session sera récupérable | fait, reste le premier trajet réel |
 | 38 | Un relecteur : timeline, carte et repère copiable, pour revoir un trajet au bureau | fait, éprouvé sur l'essai du 10 septembre ; le rejeu sonore attend une capture |
-| 39 | La boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient | livré en version allégée, reste l'écoute et le nettoyage du format de profil |
+| 39 | La boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient | **écouté le 11 septembre au soir : le va-et-vient a disparu, le départ est conforme** |
 | 40 | Un sélecteur de boîte pour démarrer et arrêter, et une boîte qui remonte les rapports après un arrêt | fait, reste l'essai en roulant |
-| 41 | Le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | spécifié, huit tickets |
+| 41 | Le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | livré ; la chaîne servie était coupée, réparée le 11 septembre — reste à recoller la pile |
+| 42 | Trois retours de la sortie du 11 septembre au soir : le rétrogradage forcé qui rend son rapport, le clac de montée, l'aiguille du rapport suivant | fait, reste l'écoute en roulant |
+| 43 | Une boîte à sept rapports, étagée pour tenir bas : 50 en quatrième, 80 en cinquième, 110 en sixième, et les passages plus tôt en mode Route | fait, reste l'écoute en roulant |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

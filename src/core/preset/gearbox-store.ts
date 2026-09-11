@@ -13,6 +13,7 @@
 
 import { createFactoryProfiles } from './defaults'
 import { gearboxFromProfile, type GearboxEntity } from './gearbox-entity'
+import { withSevenGears } from './seven-gears'
 import { ProfileImportError } from './store'
 
 const GEARBOXES_KEY = 'speed.gearboxes.v1'
@@ -37,7 +38,13 @@ export function factoryGearboxes(): GearboxEntity[] {
  */
 export function loadGearboxes(): GearboxEntity[] {
   const stored = readJson<GearboxEntity[]>(GEARBOXES_KEY)
-  const enregistrees = Array.isArray(stored) ? stored.filter(isGearbox) : []
+  // La boîte à six rapports livrée jusqu'au 11 septembre 2026 gagne sa septième
+  // en s'ouvrant. Sans cela, le changement ne se verrait pas dans la voiture :
+  // celle de David est enregistrée ici, et non lue dans le code.
+  const enregistrees = (Array.isArray(stored) ? stored.filter(isGearbox) : []).map((boite) => ({
+    ...boite,
+    drivetrain: withSevenGears(boite.drivetrain),
+  }))
   const connues = new Set(enregistrees.map((boite) => boite.id))
   return [...enregistrees, ...factoryGearboxes().filter((boite) => !connues.has(boite.id))]
 }

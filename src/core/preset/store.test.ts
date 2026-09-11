@@ -358,7 +358,7 @@ describe('réinitialisation par section', () => {
     const remis = resetProfileSection(createRoadProfile(), 'drivetrain')
     remis.drivetrain.gearRatios.push(0.5)
 
-    expect(createRoadProfile().drivetrain.gearRatios).toHaveLength(6)
+    expect(createRoadProfile().drivetrain.gearRatios).toHaveLength(7)
   })
 
   it('remet la banque en même temps que les couches', () => {
@@ -943,5 +943,52 @@ describe('origine du son', () => {
     expect(relu.engineDefinition?.chamberVolume).toBe(15)
     // Ce qui manquait vient du profil d'usine, pas d'un zéro.
     expect(relu.engineDefinition?.bore).toBe(GM_LS_V8.bore)
+  })
+})
+
+describe('reprise de la boîte à sept rapports', () => {
+  /**
+   * Le cas réel : le profil « V8 » de David, enregistré en version 9 avec six
+   * rapports, tel qu'il dort dans le stockage de son téléphone et sur le NAS.
+   * S'il ne gagnait pas sa septième en s'ouvrant, le lot ne se verrait pas dans
+   * sa voiture.
+   */
+  it('donne sa septième à un profil de route enregistré à six rapports', () => {
+    const ancien = deepCopy(createRoadProfile())
+    ancien.drivetrain.gearRatios = [3.55, 2.04, 1.36, 1.03, 0.86, 0.72]
+    ancien.drivetrain.upshiftRpm = [3700, 3350, 3050, 2950, 2950]
+    ancien.drivetrain.shiftDelaysS = [0.3, 0.55, 0.4, 0.6, 0.35, 0.5]
+
+    saveProfiles([ancien])
+    const relu = loadProfiles()[0]
+
+    expect(relu?.drivetrain.gearRatios).toEqual([3.55, 2.04, 1.36, 1.0, 0.73, 0.53, 0.39])
+    expect(relu?.drivetrain.upshiftRpm).toHaveLength(6)
+    expect(relu?.drivetrain.shiftDelaysS).toHaveLength(7)
+  })
+
+  it('laisse à six rapports un profil dont la boîte a été réglée', () => {
+    const regle = deepCopy(createRoadProfile())
+    regle.drivetrain.gearRatios = [3.2, 1.9, 1.3, 1.0, 0.8, 0.66]
+
+    saveProfiles([regle])
+
+    expect(loadProfiles()[0]?.drivetrain.gearRatios).toHaveLength(6)
+  })
+
+  it('donne sa septième à un profil reçu par un lien ancien', async () => {
+    const ancien = deepCopy(createRoadProfile())
+    ancien.drivetrain.gearRatios = [3.55, 2.04, 1.36, 1.03, 0.86, 0.72]
+    ancien.drivetrain.upshiftRpm = [3700, 3350, 3050, 2950, 2950]
+    ancien.drivetrain.shiftDelaysS = [0.3, 0.55, 0.4, 0.6, 0.35, 0.5]
+
+    const reçu = await decodeProfile(await encodeProfile(ancien))
+
+    expect(reçu.drivetrain.gearRatios).toHaveLength(7)
+    expect(reçu.drivetrain.shiftDelaysS).toHaveLength(7)
+  })
+
+  it('monte la version du format, pour que la reprise soit datée', () => {
+    expect(PROFILE_FORMAT_VERSION).toBe(10)
   })
 })
