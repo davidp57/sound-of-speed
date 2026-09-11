@@ -23,13 +23,39 @@ sauvegarde, exporte et recharge.
 
 ## Les écrans
 
-**Conduite** — la vitesse, le rapport, le régime. Le choix de la source
-(simulateur, GPS, rejeu), l'activation du son, le volume, la boîte automatique ou
-manuelle, et le verrou d'écran. Les commandes du simulateur, elles, sont sur
-l'écran **Banc**. Un bouton **Plein écran** masque la barre du haut : l'affichage
+**Conduite** — la vitesse, le rapport, le régime, et les commandes de conduite
+entre les deux cadrans. Le son et le verrou d'écran sont montés en haut à droite,
+avec l'aide : ce sont des commandes d'appareil, pas de conduite. Le volume reste
+sous les cadrans, c'est un réglage qu'on pose une fois. Les commandes du
+simulateur, elles, sont sur l'écran **Banc**. Un bouton **Plein écran** masque la barre du haut : l'affichage
 occupe toute la hauteur et les commandes deviennent de grandes touches. On en sort
 par la **flèche de retour**, à gauche de la rangée, à l'écart des autres et d'une
 autre couleur — l'écart est ce qui empêche de la presser en visant sa voisine.
+
+### Les commandes de conduite
+
+Elles ont la forme d'un **sélecteur de boîte**, et c'en est un pour partie
+seulement : c'est d'abord l'interrupteur de l'application.
+
+| Touche | Ce qu'elle fait |
+|---|---|
+| **D** | démarre tout : localisation, son, enregistrement du trajet. Une fois en route, le même bouton bascule le tempérament et affiche **S** — un appui de plus revient à D. |
+| **P** | met tout au repos, et dépose ce que la capture gardait. L'affichage reste allumé : c'est par lui qu'on redémarre. Il fonctionne **aussi en roulant**. |
+| **AUTO** / **MAN** | choisissent la boîte. Chaque étiquette porte au-dessus d'elle les commandes de son mode : la touche de marche pour l'automatique, `+` et `−` pour la manuelle. |
+
+**L'application s'ouvre au repos**, et ce n'est pas une précaution d'usage. Elle
+démarrait la géolocalisation au chargement de la page, sans qu'on ait rien
+touché ; le 11 septembre 2026, elle n'a reçu que des positions annoncées à
+9 999,99 m de précision — la valeur qu'un navigateur sert faute d'en avoir une
+vraie — pendant tout un trajet, et trois relances n'y ont rien changé. Ce qui a
+fonctionné fut un appui sur un bouton, dans une autre version de l'application.
+Partir de « P » met ce geste au début de chaque trajet. Que ce soit bien le
+geste qui débloque reste **à vérifier en roulant**.
+
+Le tempérament survit au repos et à la boîte manuelle : la touche affiche « S »
+après un trajet en sport, même garé, et reste vive en manuelle — elle ne décide
+plus des rapports, mais elle décide encore du son. Les touches qui ne commandent
+réellement rien, elles, sont estompées.
 
 Cet écran a **deux visages**, et deux boutons pour passer de l'un à l'autre :
 
@@ -766,8 +792,8 @@ trajet.
 ### 6. Vérifier
 
 1. La page s'affiche, le cadenas est fermé.
-2. Écran Conduite › **Activer le son** → le bouton passe à « Son actif ».
-3. Source **GPS** → autoriser la localisation → le statut passe à « actif ».
+2. Écran Conduite › **D** → autoriser la localisation → le statut passe à
+   « actif » et l'icône de son s'allume.
 4. Écran Télémétrie → « Intervalles récents » se remplit, autour de 1000 ms.
 
 Si le GPS reste muet alors que la page s'affiche, c'est presque toujours le
