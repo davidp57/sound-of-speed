@@ -17,9 +17,10 @@
  * qu'on obtient en touchant l'autre étiquette.
  *
  * Le tempérament — route ou sport — vit sur la touche de marche, qui affiche
- * « D » ou « S ». Il **survit au repos et à la boîte manuelle** : passer au
- * parking ne doit pas faire oublier ce qu'on avait choisi, et la boîte manuelle
- * ne commande plus les passages mais le tempérament commande encore le son.
+ * « D » ou « S ». Il **survit à la boîte manuelle**, où il ne commande plus les
+ * passages mais commande encore le son ; il ne survit **pas** au repos, où la
+ * touche affiche toujours « D » : la garder en « S » ferait lire une lettre et
+ * repartir sur l'autre réglage.
  */
 import { computed } from 'vue'
 
@@ -75,8 +76,27 @@ const driveLabel = computed(() => {
             :aria-label="driveLabel"
             @click="pressDrive()"
           >
-            <span class="letter">{{ sport ? 'S' : 'D' }}</span>
+            <span class="letter">{{ isRunning && sport ? 'S' : 'D' }}</span>
             <svg v-if="!isRunning" class="power" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v9" />
+              <path d="M6.8 6.8a7.5 7.5 0 1 0 10.4 0" />
+            </svg>
+          </button>
+          <!--
+            P est sous la touche de marche, et jamais estompé : il commande les
+            deux colonnes, pas seulement celle où il se trouve. L'icône de veille
+            ne s'y pose que quand l'application tourne — c'est elle qui dit qu'on
+            a affaire à un interrupteur, et non à une vraie boîte.
+          -->
+          <button
+            type="button"
+            class="key park"
+            :class="{ 'is-active': !isRunning }"
+            :aria-label="isRunning ? 'Mettre au repos' : 'Au repos'"
+            @click="stop()"
+          >
+            <span class="letter">P</span>
+            <svg v-if="isRunning" class="power" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 3v9" />
               <path d="M6.8 6.8a7.5 7.5 0 1 0 10.4 0" />
             </svg>
@@ -127,24 +147,6 @@ const driveLabel = computed(() => {
       </div>
     </div>
 
-    <!--
-      P commande les deux colonnes, et il est seul sous elles. L'icône de veille
-      ne s'y pose que quand l'application tourne : c'est elle qui dit qu'on a
-      affaire à un interrupteur, et non à une vraie boîte.
-    -->
-    <button
-      type="button"
-      class="key park"
-      :class="{ 'is-active': !isRunning }"
-      :aria-label="isRunning ? 'Mettre au repos' : 'Au repos'"
-      @click="stop()"
-    >
-      <span class="letter">P</span>
-      <svg v-if="isRunning" class="power" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 3v9" />
-        <path d="M6.8 6.8a7.5 7.5 0 1 0 10.4 0" />
-      </svg>
-    </button>
   </div>
 </template>
 
@@ -220,9 +222,7 @@ const driveLabel = computed(() => {
 }
 
 
-.park {
-  width: 4rem;
-}
+
 
 .letter {
   line-height: 1;

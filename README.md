@@ -39,7 +39,7 @@ seulement : c'est d'abord l'interrupteur de l'application.
 
 | Touche | Ce qu'elle fait |
 |---|---|
-| **D** | démarre tout : localisation, son, enregistrement du trajet. Une fois en route, le même bouton bascule le tempérament et affiche **S** — un appui de plus revient à D. |
+| **D** | démarre tout : localisation, son, enregistrement du trajet. Une fois en route, le même bouton bascule le tempérament et affiche **S** — un appui de plus revient à D. Au repos il affiche toujours **D**. |
 | **P** | met tout au repos, et dépose ce que la capture gardait. L'affichage reste allumé : c'est par lui qu'on redémarre. Il fonctionne **aussi en roulant**. |
 | **AUTO** / **MAN** | choisissent la boîte. Chaque étiquette porte au-dessus d'elle les commandes de son mode : la touche de marche pour l'automatique, `+` et `−` pour la manuelle. |
 
@@ -52,10 +52,11 @@ fonctionné fut un appui sur un bouton, dans une autre version de l'application.
 Partir de « P » met ce geste au début de chaque trajet. Que ce soit bien le
 geste qui débloque reste **à vérifier en roulant**.
 
-Le tempérament survit au repos et à la boîte manuelle : la touche affiche « S »
-après un trajet en sport, même garé, et reste vive en manuelle — elle ne décide
-plus des rapports, mais elle décide encore du son. Les touches qui ne commandent
-réellement rien, elles, sont estompées.
+Le tempérament survit à la boîte manuelle : la touche reste vive, car elle ne
+décide plus des rapports mais décide encore du son. Il ne survit **pas** au
+repos, où la touche affiche toujours « D » et le tempérament revient à « route »
+— la garder en « S » ferait lire une lettre et repartir sur l'autre réglage. Les
+touches qui ne commandent réellement rien, elles, sont estompées.
 
 Cet écran a **deux visages**, et deux boutons pour passer de l'un à l'autre :
 

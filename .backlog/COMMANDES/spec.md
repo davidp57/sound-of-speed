@@ -36,7 +36,9 @@ le démarrage de la géolocalisation et du son.
 - **D** démarre tout. Une fois en route, le même bouton bascule le tempérament
   et affiche **S**. Rien ne l'annonce : la lettre change au premier appui, donc
   l'apprentissage coûte un appui, et l'aide le dit.
-- **P** met au repos : géolocalisation, boucle, son des deux origines, et la
+- **P** est sous la touche de marche, au-dessus de l'étiquette AUTO, et jamais
+  estompé : il commande les deux colonnes, pas seulement celle où il se trouve.
+  Il met au repos la géolocalisation, la boucle, le son des deux origines, et la
   capture dépose ce qu'elle avait en attente. L'affichage reste allumé — c'est
   par lui qu'on redémarre. **P fonctionne en roulant** : il remplace le bouton
   marche/arrêt, qui y était déjà accessible.

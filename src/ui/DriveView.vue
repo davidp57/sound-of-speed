@@ -25,7 +25,6 @@ import {
   audioStatus,
   synthIsOrigin,
   synthStatus,
-  currentDriveMode,
   isRunning,
   lastAccuracyM,
   soundState,
@@ -176,11 +175,7 @@ const REJECTION_LABELS: Record<string, string> = {
  * plusieurs reviendrait à n'en faire lire aucun.
  */
 const alerte = computed(() => {
-  if (!isRunning.value) {
-    // La touche porte « S » quand on roulait en sport : le message doit nommer
-    // ce qu'on voit, pas ce qu'on verrait par défaut.
-    return `Application au repos. Toucher ${currentDriveMode.value === 'sport' ? 'S' : 'D'} pour démarrer.`
-  }
+  if (!isRunning.value) return 'Application au repos. Toucher D pour démarrer.'
   if (sourceKind.value === 'geolocation' && sourceStatus.value === 'denied') {
     return 'La localisation a été refusée. Autorisez-la dans les réglages du site.'
   }

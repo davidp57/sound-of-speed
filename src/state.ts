@@ -1929,6 +1929,11 @@ export function stop(): void {
   isRunning.value = false
   audio.mute()
   void synth.stop()
+  // Le repos remet le tempérament à « route ». Décision de David, le
+  // 11 septembre 2026 : la touche de marche affiche « D » au parking, jamais
+  // « S ». Elle le garderait que l'écran mentirait — on lirait D et on
+  // repartirait en sport.
+  driveMode.value = 'road'
   // Ce qui a été enregistré jusqu'ici part maintenant : la voiture s'éteint
   // souvent dans la minute qui suit, et une tranche gardée serait perdue.
   depositCaptureIfDue(journalElapsedMs, true)
