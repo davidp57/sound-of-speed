@@ -218,10 +218,6 @@ const driveLabel = computed(() => {
   padding: 0;
 }
 
-
-
-
-
 .letter {
   line-height: 1;
 }
