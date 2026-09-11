@@ -1,6 +1,6 @@
 # 01 — Les sept rapports, et tout ce qui se compte par rapport
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré, reste l'écoute en roulant
 
 ## Ce qu'il faut obtenir
 

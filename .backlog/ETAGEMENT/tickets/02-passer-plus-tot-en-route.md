@@ -1,6 +1,6 @@
 # 02 — Passer plus tôt en mode Route
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré, reste l'écoute en roulant
 
 **Bloqué par :** 01 — les rapports déplacent les régimes de passage, régler les
 seuils avant serait les régler deux fois.

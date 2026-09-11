@@ -277,14 +277,14 @@ describe('suggest — conduite ordinaire', () => {
     // est la vitesse de fin de première ; les quatre autres découpent le temps
     // tenu en cinq parts égales.
     expect(line?.setting?.unit).toBe('km/h')
-    expect(line?.setting?.proposed).toEqual([9, 45, 70, 90, 130])
+    expect(line?.setting?.proposed).toEqual([9, 45, 70, 90, 110, 130])
     // Les seuils du profil Route, exprimés dans la même unité : c'est la seule
     // façon de les comparer sans parler de régime.
-    expect(line?.setting?.current).toEqual([35, 55, 75, 96, 115])
+    expect(line?.setting?.current).toEqual([35, 55, 75, 99, 136, 187])
     // Ce qui est écrit dans le profil, en tr/min, converti avec le pont et les
     // démultiplications. Non monotone, et c'est normal : un rapport plus long
     // tourne moins vite à une vitesse plus haute.
-    expect(line?.setting?.write).toEqual([950, 2730, 2831, 2757, 3325])
+    expect(line?.setting?.write).toEqual([950, 2730, 2831, 2677, 2388, 2049])
     expect(line?.setting?.conversion).toContain('tr/min')
   })
 
@@ -442,7 +442,7 @@ describe('writeSetting', () => {
 
   it('écrit la table des seuils, et refuse une table de mauvaise longueur', () => {
     const profile = createRoadProfile()
-    const table = [900, 2700, 2800, 2750, 3300]
+    const table = [900, 2700, 2800, 2750, 3300, 3300]
 
     const updated = writeSetting(profile, 'drivetrain.upshiftRpm', table)
     expect(updated.drivetrain.upshiftRpm).toEqual(table)
@@ -460,20 +460,26 @@ describe('writeSetting', () => {
 
 describe('upshiftSpeeds', () => {
   it('exprime les seuils du profil en km/h', () => {
-    // Le profil Route déclare ses passages à 3700, 3350, 3050, 2950 et
-    // 2950 tr/min. Ses commentaires disent qu'ils tombent « à 35, 55, 75, 96 et
-    // 115 km/h » : la conversion le confirme, et c'est ce qui permet de
-    // comparer un seuil mesuré à un seuil réglé sans parler de régime.
+    // Le profil Route déclare ses passages à 3700, 3350, 3050 puis 2950 tr/min.
+    // Converties avec les sept rapports, ces valeurs tombent à 35, 55, 75, 99,
+    // 136 et 187 km/h, et c'est ce qui permet de comparer un seuil mesuré à un
+    // seuil réglé sans parler de régime.
+    //
+    // Les deux derniers chiffres ne décrivent plus une conduite réelle : depuis
+    // le lot PLANCHER, le moment du passage se décide sur le régime du rapport
+    // visé, et cette table ne sert plus qu'à reconnaître le tempérament. Avec
+    // des rapports longs, elle annonce des vitesses que la boîte n'attend pas.
+    // C'est un défaut connu de cette table, antérieur aux sept rapports.
     const speeds = upshiftSpeeds(createRoadProfile()).map((kmh) => Math.round(kmh))
 
-    expect(speeds).toEqual([35, 55, 75, 96, 115])
+    expect(speeds).toEqual([35, 55, 75, 99, 136, 187])
   })
 
   it('rend zéro sur une démultiplication absurde plutôt que l’infini', () => {
     const profile = createRoadProfile()
     profile.drivetrain.finalDrive = 0
 
-    expect(upshiftSpeeds(profile)).toEqual([0, 0, 0, 0, 0])
+    expect(upshiftSpeeds(profile)).toEqual([0, 0, 0, 0, 0, 0])
   })
 })
 

@@ -225,10 +225,17 @@ describe('le curseur « calme ↔ sportif »', () => {
         const tenue = cruise(p, 110)
         expect(tenue.shifts).toBeLessThanOrEqual(p.drivetrain.gearRatios.length)
 
-        // Ne dort pas : le régime de croisière reste au-dessus du plancher, et
-        // loin du rupteur. Mesuré : 2355 tr/min sur Route, 2865 sur Sport, à
-        // 110 km/h et quel que soit le curseur — il ne touche pas au pont.
-        expect(tenue.rpm).toBeGreaterThanOrEqual(p.drivetrain.cruiseMinRpm)
+        // Ne dort pas : le régime de croisière reste bien au-dessus du ralenti
+        // et loin du rupteur. Mesuré à 110 km/h : 1734 tr/min sur Route depuis
+        // les sept rapports — c'était 2355 —, 2865 sur Sport, quel que soit le
+        // curseur, qui ne touche pas au pont.
+        //
+        // La comparaison portait sur `cruiseMinRpm`, et elle ne veut plus rien
+        // dire : depuis le lot PLANCHER, ce réglage ne pilote plus la boîte —
+        // il ne sert qu'au guide de création — et sa loi de caractère le monte
+        // à 1950 en plein sportif, au-dessus de ce qu'une boîte à rapports
+        // longs peut tenir.
+        expect(tenue.rpm).toBeGreaterThanOrEqual(p.engine.idleRpm * 1.6)
         expect(tenue.rpm).toBeLessThan(p.engine.redlineRpm * 0.6)
 
         // Et pied au plancher, elle n'attaque pas le rupteur. Mesuré : 93 % du
@@ -443,7 +450,7 @@ describe('le curseur « pépère ↔ nerveux »', () => {
         // La boîte ne brasse pas et ne dort pas, quelle que soit la combinaison.
         const tenue = cruise(p, 110)
         expect(tenue.shifts).toBeLessThanOrEqual(p.drivetrain.gearRatios.length)
-        expect(tenue.rpm).toBeGreaterThanOrEqual(p.drivetrain.cruiseMinRpm)
+        expect(tenue.rpm).toBeGreaterThanOrEqual(p.engine.idleRpm * 1.6)
         expect(fullThrottle(p).peakRpm).toBeLessThan(p.engine.redlineRpm)
 
         // Et le signal reste dans les bornes que l'écran de configuration
@@ -462,8 +469,8 @@ describe('le curseur « pépère ↔ nerveux »', () => {
 
 describe('les tables suivent le nombre de rapports', () => {
   it('rend tel quel un profil dont le nombre de rapports ne change pas', () => {
-    expect(resizeGearTables(route, 6)).toBe(route)
-    expect(resizeGearTables(sport, 6)).toBe(sport)
+    expect(resizeGearTables(route, route.drivetrain.gearRatios.length)).toBe(route)
+    expect(resizeGearTables(sport, sport.drivetrain.gearRatios.length)).toBe(sport)
   })
 
   it('ne laisse aucune valeur orpheline, en ajoutant comme en retirant', () => {
@@ -475,19 +482,17 @@ describe('les tables suivent le nombre de rapports', () => {
   })
 
   it('donne au rapport ajouté un seuil cohérent avec ses voisins', () => {
-    // Sept rapports là où le profil en a six : le seuil neuf ne peut pas
+    // Un rapport de plus que le profil n'en a : le seuil neuf ne peut pas
     // hériter de son prédécesseur, il s'intercale.
-    const { upshiftRpm } = resizeGearTables(route, 7).drivetrain
+    const count = route.drivetrain.gearRatios.length + 1
+    const { upshiftRpm } = resizeGearTables(route, count).drivetrain
 
-    expect(upshiftRpm).toHaveLength(6)
+    expect(upshiftRpm).toHaveLength(count - 1)
     for (let i = 1; i < upshiftRpm.length; i += 1) {
       expect(upshiftRpm[i]!).toBeGreaterThan(upshiftRpm[i - 1]!)
     }
-    // Mesuré sur Route : 3110, 3232, 3353, 3475, 3596, 3718 tr/min. Aucun
-    // doublon, donc aucun seuil recopié d'un voisin.
+    // Aucun doublon, donc aucun seuil recopié d'un voisin.
     expect(new Set(upshiftRpm).size).toBe(upshiftRpm.length)
-    expect(upshiftRpm[0]).toBe(3110)
-    expect(upshiftRpm[5]).toBe(3718)
   })
 
   it('donne des temporisations du profil, et non la valeur de repli', () => {
@@ -538,8 +543,10 @@ describe('le nombre de rapports se change en un geste', () => {
   it('garde le premier et le dernier rapport, donc le régime en dernier', () => {
     // C'est la contrainte qui a motivé le profil Route : le rapport le plus long
     // doit tourner à un régime tenable à la vitesse de croisière habituelle.
-    // Mesuré : 2355 tr/min à 110 km/h sur Route, quel que soit le nombre de
-    // rapports, et 2865 sur Sport.
+    // Mesuré : 1276 tr/min à 110 km/h sur Route en dernier rapport, quel que
+    // soit leur nombre, et 2865 sur Sport. C'était 2355 sur Route avant la
+    // septième — le dernier rapport y est un rapport d'autoroute, et 110 km/h
+    // n'est pas sa vitesse.
     for (const modele of [route, sport]) {
       const ratios = modele.drivetrain.gearRatios
       const attendu = rpmInGear(modele, ratios.length - 1, 110)
@@ -551,7 +558,7 @@ describe('le nombre de rapports se change en un geste', () => {
         expect(p.drivetrain.finalDrive).toBe(modele.drivetrain.finalDrive)
         expect(rpmInGear(p, n - 1, 110)).toBeCloseTo(attendu, 3)
       }
-      expect(attendu).toBeCloseTo(modele.id === 'route' ? 2355 : 2865, -1)
+      expect(attendu).toBeCloseTo(modele.id === 'route' ? 1276 : 2865, -1)
     }
   })
 
@@ -560,11 +567,17 @@ describe('le nombre de rapports se change en un geste', () => {
       for (const n of SIMPLE_GEAR_COUNTS) {
         const p = setGearCount(modele, n)
 
-        // La boîte monte jusqu'au dernier rapport à 110 km/h tenus, une fois, et
-        // s'y tient : mesuré, n − 1 passages sur nonante secondes.
+        // La boîte monte une fois et s'y tient : au plus n − 1 passages sur
+        // nonante secondes, et jamais de va-et-vient.
+        //
+        // Elle ne va plus forcément jusqu'au dernier rapport : depuis la
+        // septième, celui-ci est un rapport d'autoroute — 1276 tr/min à
+        // 110 km/h sur Route —, et une boîte a raison de ne pas l'engager si
+        // bas. Ce que ce test protège est qu'elle se pose et n'hésite plus.
         const tenue = cruise(p, 110)
-        expect(tenue.gear).toBe(n - 1)
-        expect(tenue.shifts).toBe(n - 1)
+        expect(tenue.gear).toBeGreaterThan(0)
+        expect(tenue.gear).toBeLessThanOrEqual(n - 1)
+        expect(tenue.shifts).toBe(tenue.gear)
 
         // Et pied au plancher elle ne tape pas dans le rupteur.
         expect(fullThrottle(p).peakRpm).toBeLessThan(p.engine.redlineRpm)
@@ -591,8 +604,8 @@ describe('le nombre de rapports se change en un geste', () => {
   })
 
   it('rend tel quel un profil qui a déjà ce nombre de rapports', () => {
-    expect(setGearCount(route, 6)).toBe(route)
-    expect(setGearCount(sport, 6)).toBe(sport)
+    expect(setGearCount(route, route.drivetrain.gearRatios.length)).toBe(route)
+    expect(setGearCount(sport, sport.drivetrain.gearRatios.length)).toBe(sport)
   })
 
   it('reprend l’étagement du guide quand la boîte n’en a pas', () => {

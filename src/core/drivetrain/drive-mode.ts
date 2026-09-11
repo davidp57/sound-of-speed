@@ -80,7 +80,14 @@ export const DRIVE_MODE_FEEL: Record<DriveMode, DriveModeFeel> = {
   // Route : on cherche le rapport long, et le rétrogradage forcé demande le
   // pied au plancher. 0,95 de charge, c'est +1,8 m/s² sur le profil Route —
   // six relevés sur deux cent dix-huit lors de l'essai du 10 septembre.
-  road: { upshiftMarginRpm: 900, downshiftMarginRpm: 400, kickdownLoad: 0.95 },
+  //
+  // La marge est passée de 900 à 640 après la sortie du 11 septembre 2026 —
+  // David : « ça reste trop longtemps en deux », et « que les vitesses passent
+  // plus tôt qu'aujourd'hui, moins vingt pour cent ». Le ralenti étant un
+  // plancher fixe, la baisse ne se reporte pas telle quelle sur le seuil : elle
+  // vaut −20 % pied au plancher, où il l'a demandée, et −15 % en conduite
+  // ordinaire.
+  road: { upshiftMarginRpm: 640, downshiftMarginRpm: 400, kickdownLoad: 0.95 },
   // Sport : on garde le régime, et une demande forte suffit à faire descendre.
   sport: { upshiftMarginRpm: 2200, downshiftMarginRpm: 700, kickdownLoad: 0.85 },
 }

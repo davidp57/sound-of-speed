@@ -10,6 +10,7 @@ import {
   type ProfileFile,
   type ProfileOrigin,
 } from './schema'
+import { withSevenGears } from './seven-gears'
 import type { Trace } from '../speed/replay'
 
 /**
@@ -606,7 +607,9 @@ function migrateDrivetrain(
   base: Profile,
   stored: Partial<Profile['drivetrain']> | undefined,
 ): Profile['drivetrain'] {
-  const merged = { ...base.drivetrain, ...(stored ?? {}) }
+  // La boîte à six rapports livrée jusqu'au 11 septembre 2026 gagne sa septième
+  // et son haut réétagé. Une boîte réglée à la main n'est pas touchée.
+  const merged = withSevenGears({ ...base.drivetrain, ...(stored ?? {}) })
   if (Array.isArray(stored?.upshiftRpm) && stored.upshiftRpm.length > 0) return merged
 
   const legacy = stored as { upshiftAtRedlineRatio?: number; upshiftAtLowLoadRatio?: number }

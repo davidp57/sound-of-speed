@@ -1,5 +1,6 @@
 import { deepCopy, newId } from './store'
 import { soundSourceOf } from './schema'
+import { withSevenGears } from './seven-gears'
 import type { Profile } from './schema'
 
 /**
@@ -52,7 +53,16 @@ export async function decodeProfile(token: string): Promise<Profile> {
   // l'arrivée du champ rendrait sinon un profil sans origine, là où son type en
   // annonce une.
   const reçu = (parsed as { p: Profile }).p
-  return { ...reçu, id: newId(), soundSource: soundSourceOf(reçu) }
+  return {
+    ...reçu,
+    id: newId(),
+    soundSource: soundSourceOf(reçu),
+    // Un lien émis avant le 11 septembre 2026 porte la boîte de route à six
+    // rapports : elle reçoit sa septième comme si elle venait du stockage.
+    // Seule cette reprise-là est faite ici — un lien ancien à qui il manquerait
+    // d'autres champs récents reste rendu tel quel, comme il l'a toujours été.
+    drivetrain: withSevenGears(reçu.drivetrain),
+  }
 }
 
 /** Adresse complète, prête à être envoyée ou transformée en code. */

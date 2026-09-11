@@ -1,8 +1,8 @@
 # ETAGEMENT — une boîte à sept rapports, étagée pour tenir bas
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 les trois tickets sont livrés ; reste l'écoute en roulant
 **Branche :** `feature/etagement`
-**Version visée :** à décider
+**Version visée :** 0.1.109
 
 Le débriefing du trajet du 11 septembre 2026 au soir a donné deux demandes qui
 n'en font qu'une : **la boîte tourne trop haut en croisière**, et il lui manque
