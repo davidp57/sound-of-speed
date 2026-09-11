@@ -2426,6 +2426,7 @@ chaque essai.
 | 38 | Un relecteur : timeline, carte et repère copiable, pour revoir un trajet au bureau | fait, éprouvé sur l'essai du 10 septembre ; le rejeu sonore attend une capture |
 | 39 | La boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient | livré en version allégée, reste l'écoute et le nettoyage du format de profil |
 | 40 | Un sélecteur de boîte pour démarrer et arrêter, et une boîte qui remonte les rapports après un arrêt | fait, reste l'essai en roulant |
+| 41 | Le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | spécifié, huit tickets |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

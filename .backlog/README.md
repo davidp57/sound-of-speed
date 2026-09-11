@@ -51,7 +51,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [RELECTURE](RELECTURE/spec.md) — revoir un trajet au bureau au lieu de le raconter de mémoire : une seule capture, automatique, et un relecteur avec timeline et carte | 🔄 sept tickets sur huit ; le rejeu sonore attend une capture réelle |
 | [PLANCHER](PLANCHER/spec.md) — la boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient, on ne descend qu'en ralentissant, et le rétrogradage forcé redevient exceptionnel | 🧑 règle livrée en version allégée, reste l'écoute et le format de profil |
 | [COMMANDES](COMMANDES/spec.md) — un interrupteur qui a la forme d'un sélecteur de boîte : D démarre, P met au repos, et la boîte remonte les rapports après un arrêt | 🧑 livré, reste l'essai en roulant |
-| [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | ⬜ spécifié, à découper ; à compte unique, donc sans attendre les comptes |
+| [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | ⬜ spécifié et découpé en huit tickets ; à compte unique, donc sans attendre les comptes |
 | [SUITE-ESSAI-11](SUITE-ESSAI-11/spec.md) — deux points de l'essai du 11 septembre : la numérotation des tranches, et un interrupteur GPS de secours | ⬜ |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
@@ -87,6 +87,11 @@ dans l'enregistrement toutes les six secondes en moyenne, par un fondu croisé �
 puissance constante de vingt millisecondes. Deux parades prévues au ticket ont
 été essayées et écartées sur mesure : les deux instances permanentes en fondu
 croisé lent, et l'alignement de la nouvelle position sur le cycle moteur.
+
+**PROFIL-REEL a ses huit tickets** et son point dur est nommé : rien dans une
+trace ne dit si le frein a été touché, et c'est la forme de la distribution des
+ralentissements qui doit le dire. Le lot est faisable sans attendre les comptes,
+puisqu'on travaille à compte unique.
 
 **Douze lots n'ont pas de tickets**, et c'est délibéré dans chaque cas : soit le
 travail est livré d'une pièce (PENTE, BANC-GPS, DELISSER, ESSAI-08, JOURNAL,
