@@ -22,6 +22,7 @@ import {
   replayProgress,
   setReplayRate,
   sourceKind,
+  restartGeolocation,
   telemetry,
 } from '../state'
 
@@ -255,6 +256,23 @@ function onRateChange(event: Event): void {
 
     <section class="panel">
       <h2>Qualité du signal</h2>
+      <!--
+        Le seul recours quand la localisation ne part pas, et il est ici parce
+        que c'est l'écran où l'on vient voir pourquoi. Les boutons de source ont
+        quitté l'écran de conduite le 11 septembre 2026, et « D » est devenu le
+        seul moyen de démarrer la position : le même jour, elle n'a jamais
+        démarré de tout un trajet et il a fallu lancer une autre version de
+        l'application pour s'en sortir.
+
+        Il relance depuis un appui, ce qui est peut-être ce qui manquait.
+      -->
+      <div v-if="sourceKind === 'geolocation'" class="restart">
+        <button type="button" @click="restartGeolocation()">Relancer la localisation</button>
+        <span class="note">
+          Arrête le suivi et le redemande. À essayer quand la vitesse reste à
+          zéro alors que la source dit « actif ».
+        </span>
+      </div>
       <ValueRow
         label="Depuis dernière mesure"
         :value="Math.round(telemetry.speed.sinceLastSampleMs)"
@@ -668,6 +686,23 @@ function onRateChange(event: Event): void {
   align-items: start;
   max-width: 80rem;
   margin: 0 auto;
+}
+
+
+/* Le recours tient sur une ligne, et dit quand s'en servir. */
+.restart {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.restart .note {
+  flex: 1;
+  min-width: 14rem;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .panel {

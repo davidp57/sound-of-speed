@@ -8,6 +8,12 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un bouton pour relancer la localisation**, sur l'écran de télémétrie, dans
+  la section « Qualité du signal ». C'est le recours quand elle ne part pas, et
+  il n'en existait plus : les boutons de source ont quitté l'écran de conduite,
+  et « D » est devenu le seul moyen de la démarrer. Le 11 septembre 2026, il a
+  fallu lancer une autre version de l'application pour s'en sortir.
+
 - **Les commandes de conduite deviennent un sélecteur de boîte.** `D` démarre
   l'application — localisation, son, enregistrement —, puis bascule en `S` pour
   le mode sport ; `P` met tout au repos et dépose ce qui attendait. `AUTO` et

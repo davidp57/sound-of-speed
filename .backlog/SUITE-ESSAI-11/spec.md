@@ -31,7 +31,7 @@ les noms de fichiers suffisent à reproduire le raisonnement.
 
 ## 02 — Un interrupteur GPS sur l'écran de télémétrie
 
-Statut : ⬜ prêt
+Statut : 🧑 attend David — livré le 11 septembre 2026, reste l'essai en roulant
 
 Depuis le lot [COMMANDES](../COMMANDES/spec.md), il n'existe plus aucun bouton
 de source dans l'application en production : le sélecteur **D** démarre la
@@ -50,3 +50,14 @@ quand elle ne part pas.
 
 Il relance depuis un geste de l'utilisateur, comme le fait **D** : c'est
 précisément ce qu'on cherche à pouvoir refaire.
+
+**Livré.** Le bouton « Relancer la localisation » ouvre la section « Qualité du
+signal », là où l'on vient déjà voir pourquoi la vitesse ne bouge pas. Il arrête
+le suivi, remet à zéro les compteurs — chien de garde, relances, cause de rejet
+— et le redemande.
+
+Vérifié à l'écran : présent quand la source est le GPS, absent sinon, et son
+appel ne lève rien. **Pas vérifié** : qu'il débloque une localisation qui ne
+part pas. En développement, le navigateur refuse la position faute de contexte
+sécurisé ; cela se juge dans la voiture, et c'est justement l'essai qui
+départagera l'hypothèse du geste.
