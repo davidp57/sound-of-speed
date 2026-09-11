@@ -22,13 +22,14 @@ function digest(over: Partial<TripDigest> = {}): TripDigest {
     tripId: 'a',
     at: 0,
     durationS: 600,
-    peakAccelMs2: 2.5,
-    peakDecelMs2: -3,
+    pushPeakMs2: 2.5,
+    slowdownPeakMs2: -3,
     practicedMaxKmh: 130,
     noiseKmh: 0.3,
     cadenceMs: 100,
     plateaus: { city: [], road: [], highway: [] },
     departureKmh: [],
+    pushCount: 3,
     slowdownPeaks: [],
     ...over,
   }
@@ -61,14 +62,14 @@ function completAgregat(over: Partial<TripDigest> = {}) {
 
 describe('coverageOf', () => {
   it('déclare complet un historique qui a tout vu', () => {
-    const coverage = coverageOf(completAgregat(), 3)
+    const coverage = coverageOf(completAgregat())
 
     expect(coverage.complete).toBe(true)
     expect(coverage.missing).toEqual([])
   })
 
   it('ne déclare rien de complet sur un historique vide', () => {
-    const coverage = coverageOf(emptyAggregate(), 0)
+    const coverage = coverageOf(emptyAggregate())
 
     expect(coverage.complete).toBe(false)
     expect(coverage.missing.length).toBeGreaterThan(3)
@@ -82,7 +83,6 @@ describe('coverageOf', () => {
   it('nomme le régime qui manque plutôt que de compter', () => {
     const coverage = coverageOf(
       completAgregat({ plateaus: { city: paliers(6, 30), road: paliers(6, 70), highway: [] } }),
-      3,
     )
 
     expect(coverage.complete).toBe(false)
@@ -91,13 +91,13 @@ describe('coverageOf', () => {
   })
 
   it('refuse quand on n’a jamais accéléré franchement', () => {
-    const coverage = coverageOf(completAgregat(), 0)
+    const coverage = coverageOf(completAgregat({ pushCount: 0 }))
 
     expect(coverage.missing).toEqual(['des accélérations franches'])
   })
 
   it('refuse quand on n’a pas assez de départs', () => {
-    const coverage = coverageOf(completAgregat({ departureKmh: [8] }), 3)
+    const coverage = coverageOf(completAgregat({ departureKmh: [8] }))
 
     expect(coverage.missing).toEqual(['des départs à l’arrêt'])
   })
@@ -109,14 +109,14 @@ describe('coverageOf', () => {
    */
   it('refuse quand les ralentissements ne se séparent pas', () => {
     const tous = Array.from({ length: 40 }, (_, i) => -1.2 - (i % 5) * 0.04)
-    const coverage = coverageOf(completAgregat({ slowdownPeaks: tous }), 3)
+    const coverage = coverageOf(completAgregat({ slowdownPeaks: tous }))
 
     expect(coverage.complete).toBe(false)
     expect(coverage.missing).toEqual(['des freinages nets, distincts des levers de pied'])
   })
 
   it('ne parle pas de séparation tant qu’il n’y a pas de quoi la chercher', () => {
-    const coverage = coverageOf(completAgregat({ slowdownPeaks: [-0.6, -2.8] }), 3)
+    const coverage = coverageOf(completAgregat({ slowdownPeaks: [-0.6, -2.8] }))
 
     expect(coverage.missing).toEqual(['des ralentissements'])
   })
@@ -124,13 +124,12 @@ describe('coverageOf', () => {
 
 describe('missingSentence', () => {
   it('ne dit rien quand tout est couvert', () => {
-    expect(missingSentence(coverageOf(completAgregat(), 3))).toBe('')
+    expect(missingSentence(coverageOf(completAgregat()))).toBe('')
   })
 
   it('énumère deux manques avec « et »', () => {
     const coverage = coverageOf(
       completAgregat({ plateaus: { city: [], road: paliers(6, 70), highway: [] } }),
-      3,
     )
 
     expect(missingSentence(coverage)).toBe(

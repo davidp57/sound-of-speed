@@ -65,8 +65,14 @@ export interface BrakingSplit {
   why: 'ok' | 'trop-peu' | 'pas-de-separation'
 }
 
-/** En dessous de ce compte, une distribution n'a pas de forme à lire. */
-const MIN_SLOWDOWNS = 20
+/**
+ * En dessous de ce compte, une distribution n'a pas de forme à lire.
+ *
+ * Exporté parce que le verdict de couverture pose la même question, et qu'un
+ * second nombre écrit ailleurs finirait par diverger : la couverture
+ * déclarerait la matière suffisante là où la séparation répondrait « trop peu ».
+ */
+export const MIN_SLOWDOWNS = 20
 
 /**
  * Ce qu'un ralentissement doit valoir pour entrer dans la distribution.
@@ -182,6 +188,21 @@ export interface PeakSplit {
   coastMs2: number
   /** Moyenne du groupe franc. */
   brakeMs2: number
+}
+
+/**
+ * Est-ce que ces ralentissements se séparent en deux façons de ralentir ?
+ *
+ * Une seule réponse, pour que la couverture et la mesure ne puissent pas se
+ * contredire. Attention : partager le code ne partage pas les entrées — la
+ * frontière d'un trajet et celle de vingt trajets réunis ne sont pas la même
+ * chose, et le seuillage n'est pas stable par réunion. C'est voulu : on décide
+ * sur ce dont on dispose.
+ */
+export function separates(peaks: readonly number[]): boolean {
+  if (peaks.length < MIN_SLOWDOWNS) return false
+  const split = otsuSplit(peaks)
+  return split !== null && split.coastMs2 - split.brakeMs2 >= DOWNSHIFT_SEPARATION_MS2
 }
 
 /**

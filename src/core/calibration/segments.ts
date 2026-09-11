@@ -6,7 +6,7 @@ import {
   ORDINARY_MIN_TOP_KMH,
 } from './protocol'
 import { measureTrace } from './measure'
-import type { Plateau, TracePoint } from './measure'
+import type { Plateau, TraceMeasure, TracePoint } from './measure'
 import type { Trace } from '../speed/replay'
 
 /**
@@ -101,8 +101,10 @@ export function regimeOf(kmh: number): Regime {
  * départs viennent de la mesure d'ensemble, qui les relève déjà sur toute la
  * durée.
  */
-export function segmentsOf(trace: Trace): TripSegments {
-  const measure = measureTrace(trace)
+export function segmentsOf(trace: Trace, measured?: TraceMeasure): TripSegments {
+  // La mesure peut être donnée : un appelant qui l'a déjà faite ne doit pas la
+  // refaire, le trajet étant relu à chaque tranche déposée.
+  const measure = measured ?? measureTrace(trace)
   const plateaus: Record<Regime, Plateau[]> = { city: [], road: [], highway: [] }
   for (const plateau of measure.plateaus) plateaus[regimeOf(plateau.kmh)].push(plateau)
 

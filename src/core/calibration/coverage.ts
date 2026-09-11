@@ -1,6 +1,11 @@
-import { DOWNSHIFT_SEPARATION_MS2 } from './protocol'
-import { recentDepartures, recentPlateaus, recentSlowdowns, type CarAggregate } from './aggregate'
-import { otsuSplit } from './braking'
+import {
+  recentDepartures,
+  recentPlateaus,
+  recentPushCount,
+  recentSlowdowns,
+  type CarAggregate,
+} from './aggregate'
+import { MIN_SLOWDOWNS, separates } from './braking'
 
 /**
  * Savoir si l'on en sait assez, et dire ce qui manque.
@@ -62,7 +67,10 @@ const NEEDED = {
   road: 5,
   highway: 5,
   pushes: 2,
-  slowdowns: 20,
+  // Le même nombre que la séparation exige, et pris à la même source : deux
+  // écritures finiraient par diverger, et la couverture déclarerait la matière
+  // suffisante là où la séparation répondrait « trop peu ».
+  slowdowns: MIN_SLOWDOWNS,
 } as const
 
 /**
@@ -72,12 +80,18 @@ const NEEDED = {
  * beaucoup, il faut qu'ils se **séparent** en deux façons de ralentir. Sans
  * cette séparation, le seuil de rétrogradage ne se déduit pas, et proposer
  * l'étalonnage sans lui reviendrait à l'appliquer incomplet.
+ *
+ * **Ce que cette case cochée ne dit pas** : qu'il y avait bien deux façons de
+ * ralentir. Le critère constate qu'une coupure sépare quelque chose, et une
+ * distribution à une seule bosse avec une queue le passe aussi — c'est le cas du
+ * trajet du 11 septembre 2026, comme `braking.ts` le détaille. Cette case
+ * autorise donc l'étalonnage sur une mesure dont la validité reste à établir.
  */
-export function coverageOf(aggregate: CarAggregate, pushCount: number): Coverage {
+export function coverageOf(aggregate: CarAggregate): Coverage {
   const plateaus = recentPlateaus(aggregate)
   const departures = recentDepartures(aggregate)
   const slowdowns = recentSlowdowns(aggregate)
-  const split = otsuSplit(slowdowns)
+  const pushCount = recentPushCount(aggregate)
 
   const items: CoverageItem[] = [
     item('des départs à l’arrêt', departures.length, NEEDED.departures),
@@ -92,8 +106,7 @@ export function coverageOf(aggregate: CarAggregate, pushCount: number): Coverage
   // pas : elle se constate. Elle n'entre dans la liste que si le compte est
   // atteint, sans quoi on dirait deux fois la même chose.
   const enough = slowdowns.length >= NEEDED.slowdowns
-  const separated =
-    split !== null && split.coastMs2 - split.brakeMs2 >= DOWNSHIFT_SEPARATION_MS2
+  const separated = separates(slowdowns)
   if (enough) {
     items.push({
       label: 'des freinages nets, distincts des levers de pied',
