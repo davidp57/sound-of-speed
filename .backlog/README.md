@@ -49,10 +49,12 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [HORODATAGE](HORODATAGE/spec.md) — le navigateur de la Tesla compte en microsecondes : l'accélération sortait mille fois trop petite, et toute la chaîne travaillait sur zéro | 🧑 |
 | [REFONTE](REFONTE/spec.md) — le cadre de la refonte du 10 septembre : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en trois, et un compte fait le lien | 🔄 |
 | [RELECTURE](RELECTURE/spec.md) — revoir un trajet au bureau au lieu de le raconter de mémoire : une seule capture, automatique, et un relecteur avec timeline et carte | 🔄 sept tickets sur huit ; le rejeu sonore attend une capture réelle |
-| [PLANCHER](PLANCHER/spec.md) — la boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient, on ne descend qu'en ralentissant, et le rétrogradage forcé redevient exceptionnel | 🧑 règle livrée en version allégée, reste l'écoute et le format de profil |
+| [PLANCHER](PLANCHER/spec.md) — la boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient, on ne descend qu'en ralentissant, et le rétrogradage forcé redevient exceptionnel | ✅ écouté le 11 septembre au soir : le va-et-vient a disparu, le départ est conforme ; la suite est dans RETOUR-11 et ETAGEMENT |
 | [COMMANDES](COMMANDES/spec.md) — un interrupteur qui a la forme d'un sélecteur de boîte : D démarre, P met au repos, et la boîte remonte les rapports après un arrêt | 🧑 livré, reste l'essai en roulant |
-| [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | 🧑 les huit tickets sont livrés ; restent l'essai en roulant et le conteneur sur le NAS |
+| [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | 🔄 neuf tickets : la chaîne servie était coupée en trois, le bandeau n'a pas pu se voir le 11 septembre |
 | [SUITE-ESSAI-11](SUITE-ESSAI-11/spec.md) — deux points de l'essai du 11 septembre : sept cent vingt-six dépôts manqués à l'arrêt, et une relance GPS de secours | 🔄 relance livrée ; les dépôts manqués restent à instruire |
+| [RETOUR-11](RETOUR-11/spec.md) — trois demandes de la sortie du 11 septembre au soir : le rétrogradage forcé qui rend le rapport, le claquement à la montée, l'aiguille du rapport suivant | ⬜ |
+| [ETAGEMENT](ETAGEMENT/spec.md) — une boîte à sept rapports, étagée pour tenir bas : 50 en quatrième, 80 en cinquième, 110 en sixième, et les passages plus tôt en mode Route | ⬜ |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
