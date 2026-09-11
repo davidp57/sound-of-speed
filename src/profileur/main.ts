@@ -37,7 +37,7 @@ interface Options {
 function options(env: NodeJS.ProcessEnv): Options {
   return {
     traces: env.SPEED_TRACES ?? '/data/traces',
-    out: env.SPEED_PROFILES ?? '/data/profils',
+    out: env.SPEED_PROFILES ?? '/data/mesure-voiture',
     scanMs: Number(env.SPEED_SCAN_MS ?? SCAN_MS),
   }
 }

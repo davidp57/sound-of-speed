@@ -41,7 +41,7 @@ services:
       # Ce que le profileur a mesuré de la vraie voiture. **En lecture seule**
       # de ce côté : c'est l'autre conteneur qui écrit, celui-ci ne fait que
       # servir le fichier. Le dossier doit exister, comme les autres.
-      - /volume1/docker/speed/profils:/usr/share/nginx/html/profils:ro
+      - /volume1/docker/speed/mesure-voiture:/usr/share/nginx/html/mesure-voiture:ro
       # Journal de bord, déposé tout seul en roulant. **En lecture-écriture**,
       # pour la même raison, et dans un dossier séparé : celui des traces est
       # servi en index JSON, et c'est cet index que l'application télécharge pour
@@ -85,9 +85,9 @@ services:
     volumes:
       # Les traces, en **lecture seule** : il les lit, il n'y touche pas.
       - /volume1/docker/speed/traces:/data/traces:ro
-      # Les profils, en lecture-écriture : c'est là qu'il dépose ce qu'il a
-      # mesuré, dans le dossier que l'application sert déjà.
-      - /volume1/docker/speed/profils:/data/profils
+      # La mesure de la voiture, en lecture-écriture : c'est là qu'il dépose ce
+      # qu'il a mesuré, dans le dossier que l'application sert déjà.
+      - /volume1/docker/speed/mesure-voiture:/data/mesure-voiture
     environment:
       # Le relevé du dossier. Cinq secondes : une tranche arrive toutes les cinq
       # minutes en roulant, et lire une liste de noms ne coûte rien.

@@ -15,7 +15,7 @@ import type { Coverage } from './coverage'
  * montrer.
  *
  * Mais tous les échecs se valaient, et c'était un défaut. Le 11 septembre 2026,
- * l'emplacement `/profils/` manquait à nginx : la requête tombait sur le
+ * l'emplacement du profil mesuré manquait à nginx : la requête tombait sur le
  * `try_files … /index.html`, donc sur une réponse **200 qui portait la page
  * d'accueil**. Le code voyait une réponse valable, échouait à la lire, et
  * rendait la même absence qu'un serveur qui n'a rien à dire. David a attendu
@@ -27,7 +27,7 @@ import type { Coverage } from './coverage'
  */
 
 /** Emplacement, servi par le même hôte que l'application. */
-const MEASURED_PATH = '/profils/profil-voiture.json'
+const MEASURED_PATH = '/mesure-voiture/profil-voiture.json'
 
 /**
  * Ce qui s'est passé au dernier essai.
