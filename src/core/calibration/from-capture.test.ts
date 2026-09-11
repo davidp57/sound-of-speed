@@ -91,8 +91,8 @@ describe('traceFromCapture', () => {
   /**
    * Une capture note ce que la chaîne fait à chaque tour de boucle, pas à chaque
    * position reçue : la même position y revient tant que la suivante n'est pas
-   * arrivée. Mesuré sur le trajet du 11 septembre 2026 : 23 988 relevés pour
-   * 21 829 positions, et l'une d'elles répétée 370 fois, à l'arrêt.
+   * arrivée. Mesuré sur le trajet du 11 septembre 2026 : 23 983 relevés pour
+   * 21 897 mesures distinctes, et l'une d'elles répétée 370 fois, à l'arrêt.
    *
    * Ces répétitions portent la même vitesse au bit près : comptées comme des
    * mesures, elles s'écartent de zéro de la droite ajustée et font ressortir un

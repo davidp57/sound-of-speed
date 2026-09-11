@@ -13,12 +13,24 @@ import type { TracePoint } from './measure'
  * ils forment deux tas : les doux, où la récupération freine seule, et les
  * francs. **La frontière entre les deux tas est le seuil recherché.**
  *
+ * Les ralentissements retenus doivent valoir quelque chose — une durée et une
+ * vitesse d'entrée, reprises du protocole —, faute de quoi deux dixièmes de
+ * seconde d'ondulation du GPS pèseraient autant qu'un freinage d'urgence.
+ *
  * Et quand les deux tas ne se séparent pas, on ne propose rien. C'est déjà la
  * règle du protocole, qui refuse une frontière lorsque les deux étapes rendent
  * la même décélération à moins d'un demi mètre par seconde carrée près. Une
  * mesure qu'on n'est pas sûr de savoir lire ne vaut pas mieux que pas de
  * mesure : une borne trop serrée ampute le signal, ce qui est bien pire qu'une
  * borne absente.
+ *
+ * **Ce module ne remplace pas `suggest.ts`, et il faudra trancher.** Les deux
+ * produisent le même réglage — le seuil de rétrogradage — par deux chemins :
+ * là-bas le milieu des crêtes de deux étapes garanties par le conducteur, ici
+ * la coupure d'une distribution de ralentissements ordinaires. Deux procédés
+ * pour une grandeur, c'est exactement ce qui finit par diverger. Tant que rien
+ * ne les branche ensemble, la coexistence est sans danger ; le ticket qui les
+ * réunira devra dire lequel prime, et sur quel critère.
  */
 
 /** Un ralentissement du trajet, réduit à ce qui le caractérise. */
@@ -57,6 +69,25 @@ export interface BrakingSplit {
 const MIN_SLOWDOWNS = 20
 
 /**
+ * Ce qu'un ralentissement doit valoir pour entrer dans la distribution.
+ *
+ * Sans ces deux bornes, deux relevés consécutifs sous le seuil — deux dixièmes
+ * de seconde d'ondulation du GPS en croisière — pèsent autant qu'un freinage
+ * d'urgence de dix secondes. Mesuré sur le trajet du 11 septembre 2026 : 424
+ * ralentissements en trente-six minutes de roulage, soit un toutes les cinq
+ * secondes, dont un pic de 305 dans la tranche la plus douce. C'est ce pic qui
+ * faisait douter de la bimodalité, et il était en partie fabriqué.
+ *
+ * Les valeurs viennent du protocole : il n'accepte une étape de lever de pied
+ * qu'au-dessus de cinquante kilomètres-heure et après cinq secondes. On garde
+ * la vitesse d'entrée, qui écarte les manœuvres et les arrêts ; on abaisse la
+ * durée, parce qu'un freinage franc est court par nature — le protocole lui
+ * demande trois secondes, pas cinq.
+ */
+const SLOWDOWN_MIN_S = 1
+const SLOWDOWN_MIN_FROM_KMH = 30
+
+/**
  * Relève les ralentissements d'un trajet.
  *
  * Le seuil d'entrée est celui que le protocole emploie pour vérifier qu'un
@@ -73,7 +104,7 @@ export function findSlowdowns(points: readonly TracePoint[]): Slowdown[] {
   const close = (end: TracePoint): void => {
     if (start === null) return
     const durationS = end.t - start.t
-    if (durationS > 0) {
+    if (durationS >= SLOWDOWN_MIN_S && start.kmh >= SLOWDOWN_MIN_FROM_KMH) {
       slowdowns.push({ startS: start.t, durationS, peakDecelMs2: peak, fromKmh: start.kmh })
     }
     start = null
@@ -112,17 +143,23 @@ export function findSlowdowns(points: readonly TracePoint[]): Slowdown[] {
  * étapes qu'il fait enregistrer.
  *
  * **Ce que ce critère ne prouve pas**, et il faut le dire : sur le trajet du
- * 11 septembre 2026, la distribution des 424 ralentissements relevés n'est pas
- * franchement à deux bosses — elle décroît continûment depuis un pic de 305
- * ralentissements doux. La coupure trouvée vaut −1,04 m/s², les deux moyennes
- * −0,51 et −1,56, et l'écart passe donc le critère. Mais une décroissance
- * régulière le passerait aussi : l'écart des moyennes dit que la coupure sépare
- * quelque chose, pas qu'il y avait deux tas.
+ * 11 septembre 2026, la distribution des 115 ralentissements retenus a une
+ * bosse nette autour de −0,8 m/s² et une queue qui s'étire jusqu'à −2,5, sans
+ * seconde bosse visible. La coupure trouvée vaut −1,34 m/s², les deux moyennes
+ * −0,74 et −1,78, et l'écart passe donc le critère. Mais une queue régulière le
+ * passerait aussi : l'écart des moyennes dit que la coupure sépare quelque
+ * chose, pas qu'il y avait deux tas.
  *
- * Un indice encourageant, et rien de plus : le profil règle ce même seuil à
- * **−1 m/s²**, posé à la main, et la mesure y retombe seule. Il faudra plusieurs
- * trajets pour savoir si c'est une coïncidence. En attendant, un critère de
- * creux entre les deux modes serait plus sûr que l'écart des moyennes.
+ * Un critère de **creux** entre les deux modes serait plus sûr, et plusieurs
+ * trajets diront si la valeur tient. En attendant, ce qu'on livre est une
+ * mesure dont on sait qu'elle peut couper une distribution qui n'a qu'une
+ * bosse.
+ *
+ * Repère de prudence : le profil règle ce même seuil à −1 m/s², posé à la main.
+ * Une première version de ce module, qui admettait n'importe quel soubresaut du
+ * signal comme un ralentissement, tombait sur −1,04 — et l'on aurait pu y lire
+ * une confirmation. Le filtrage a déplacé la réponse à −1,34 : ce que mesure ce
+ * module dépend d'abord de ce qu'on y fait entrer.
  */
 export function splitBraking(points: readonly TracePoint[]): BrakingSplit {
   const slowdowns = findSlowdowns(points)

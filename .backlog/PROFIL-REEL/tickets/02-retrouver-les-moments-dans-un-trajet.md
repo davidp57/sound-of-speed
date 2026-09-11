@@ -40,13 +40,13 @@ instants que les rétrogradages forcés entendus ce matin-là.
 
 ## Critères d'acceptation
 
-- [ ] Un trajet rend ses départs arrêtés, ses accélérations franches, et ses
+- [x] Un trajet rend ses départs arrêtés, ses accélérations franches, et ses
       paliers rangés par régime — ville, route, autoroute — selon les mêmes
       seuils que le protocole.
-- [ ] Le recollage des paliers est en place **avant** le filtre de durée : sans
+- [x] Le recollage des paliers est en place **avant** le filtre de durée : sans
       lui, 0,5 km/h de bruit coupe un palier de 80 s en vingt-sept morceaux.
-- [ ] Le plancher de 5 km/h tient : un feu rouge n'est pas le palier le mieux
+- [x] Le plancher de 5 km/h tient : un feu rouge n'est pas le palier le mieux
       tenu du trajet.
-- [ ] Relevé sur la session du 11 septembre, et les comptes sont confrontés à ce
+- [x] Relevé sur la session du 11 septembre, et les comptes sont confrontés à ce
       que le relecteur montre du même trajet.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

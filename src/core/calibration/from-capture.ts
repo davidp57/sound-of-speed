@@ -40,12 +40,15 @@ export interface FromCaptureOptions {
  * **Une mesure réémise n'est pas une mesure.** Une capture note ce que la chaîne
  * fait à chaque tour de boucle, pas à chaque position reçue : la même mesure y
  * revient tant que la suivante n'est pas arrivée. Mesuré sur le trajet du
- * 11 septembre 2026 : 23 983 relevés pour 21 897 mesures distinctes, et l'une
- * d'elles répétée 370 fois — la voiture était à l'arrêt.
+ * 11 septembre 2026 : 23 983 relevés pour 21 897 mesures distinctes, soit 8,7 %
+ * de réémissions — la boucle bat donc à peu près à la cadence de la source, et
+ * l'essentiel du surplus tient en un seul point répété 370 fois, à l'arrêt.
  *
  * Ces répétitions portent la même vitesse au bit près. Elles ne s'écartent donc
- * de la droite ajustée que de zéro, et le bruit du GPS en ressort
- * **sous-estimé** — or c'est lui qui dimensionne la fenêtre d'accélération.
+ * de la droite ajustée que de zéro, et le bruit du GPS en ressort sous-estimé —
+ * or c'est lui qui dimensionne la fenêtre d'accélération. **Mesuré sur ce même
+ * trajet : 0,240 km/h en les comptant, 0,306 en les écartant**, soit un quart
+ * de plus.
  *
  * On les reconnaît à la fois par l'horodatage de la source **et** par la
  * vitesse, et il faut les deux. L'horodatage seul ne suffit pas : mesuré sur le
@@ -63,19 +66,34 @@ export interface FromCaptureOptions {
  * Les instants restent ceux de la capture, comptés depuis le début de la
  * session. Les mesures d'étalonnage ne regardent que des écarts : l'origine n'a
  * pas d'importance, seule sa cohérence en a.
+ *
+ * `startedAt` est donc **facultatif**, et vaut zéro à défaut. Une trace du
+ * protocole y met un horodatage absolu ; ici les instants sont relatifs, et
+ * mélanger les deux conventions dans un même objet n'aurait pas de sens. Le
+ * passer quand on l'a — l'en-tête de la capture le porte — donne une trace qui
+ * se date ; ne pas le passer donne une trace qui se mesure quand même.
  */
 export function traceFromCapture(
   name: string,
   lines: readonly CaptureLine[],
   options: FromCaptureOptions = {},
 ): Trace {
+  // On trie **avant** d'écarter les doublons, et non après : les tranches d'une
+  // session n'arrivent pas forcément dans l'ordre — une tranche dont le dépôt a
+  // échoué est remise en file et rejoint la suivante. Dédupliquer d'abord
+  // garderait le premier relevé du fichier au lieu du premier dans le temps, et
+  // une mesure répétée de part et d'autre d'une frontière de tranche serait
+  // re-datée en avant.
+  const ordered = lines
+    .filter(isSample)
+    .filter((line) => Number.isFinite(line.at) && Number.isFinite(line.kmh))
+    .sort((a, b) => a.at - b.at)
+
   const samples: SpeedSample[] = []
   const seenAt = new Set<number>()
   const seenMeasures = new Set<string>()
 
-  for (const line of lines) {
-    if (!isSample(line)) continue
-    if (!Number.isFinite(line.at) || !Number.isFinite(line.kmh)) continue
+  for (const line of ordered) {
     if (seenAt.has(line.at)) continue
     // Une source qui n'horodate pas — le simulateur, un banc — ne permet pas
     // de reconnaître une réémission : on garde alors tout ce qui arrive.
@@ -93,6 +111,5 @@ export function traceFromCapture(
     })
   }
 
-  samples.sort((a, b) => a.at - b.at)
   return { name, startedAt: options.startedAt ?? 0, samples }
 }

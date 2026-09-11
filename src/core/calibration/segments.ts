@@ -126,6 +126,7 @@ function findLaunches(points: readonly TracePoint[]): Burst[] {
   const bursts: Burst[] = []
   let start: TracePoint | null = null
   let peak = 0
+  let slack = 0
 
   for (let i = 0; i < points.length; i += 1) {
     const point = points[i]!
@@ -143,9 +144,17 @@ function findLaunches(points: readonly TracePoint[]): Burst[] {
 
     if (accel !== null) peak = Math.max(peak, accel)
 
-    // La reprise se termine quand la voiture cesse d'accélérer. Un creux d'une
-    // mesure ne la coupe pas : c'est le passage sous zéro qui la ferme.
-    const ends = accel !== null && accel <= 0
+    // La reprise se termine quand la voiture cesse d'accélérer **et le reste**.
+    //
+    // Un seul relevé sous zéro ne la ferme pas, et c'est décisif : à dix relevés
+    // par seconde, une reprise met près d'une seconde à franchir les trois
+    // kilomètres-heure du seuil de départ, soit une dizaine de relevés. Un
+    // creux du signal dans cette fenêtre fermait la reprise naissante, et comme
+    // la voiture avait alors dépassé le seuil, elle ne se rouvrait plus jamais.
+    // Le trajet du 11 septembre 2026 rendait ainsi zéro départ franc, ce qui ne
+    // prouvait rien sur la voiture — seulement sur le détecteur.
+    slack = accel !== null && accel <= 0 ? slack + 1 : 0
+    const ends = slack >= BREAK_TOLERANCE_POINTS
     const last = i === points.length - 1
     if (!ends && !last) continue
 
@@ -163,6 +172,7 @@ function findLaunches(points: readonly TracePoint[]): Burst[] {
     }
     start = null
     peak = 0
+    slack = 0
   }
 
   return bursts
@@ -182,6 +192,15 @@ function findLaunches(points: readonly TracePoint[]): Burst[] {
  * deux secondes de poussée réelle.
  */
 const PUSH_MIN_S = 1
+
+/**
+ * Combien de relevés sous zéro ferment une reprise.
+ *
+ * Trois, soit trois dixièmes de seconde à la cadence de l'appareil : assez pour
+ * qu'un creux du signal ne compte pas, trop peu pour qu'un vrai lever de pied
+ * passe inaperçu.
+ */
+const BREAK_TOLERANCE_POINTS = 3
 
 function findPushes(points: readonly TracePoint[]): Burst[] {
   const bursts: Burst[] = []

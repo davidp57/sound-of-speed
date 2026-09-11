@@ -23,20 +23,26 @@ proposée à −0,5 m/s², qui aurait écrêté tout freinage réel.
 
 ## Ce que la trace réelle a appris
 
-La séparation **fonctionne** sur le trajet du 11 septembre : 424 ralentissements
-relevés, coupure à −1,04 m/s², pied levé moyen −0,51, freinage moyen −1,56.
-
-Et le profil règle ce même seuil à **−1 m/s²**, posé à la main : la mesure y
-retombe seule. C'est encourageant, ce n'est pas une preuve.
+La séparation **rend un résultat** sur le trajet du 11 septembre : 115
+ralentissements retenus, coupure à −1,34 m/s², pied levé moyen −0,74, freinage
+moyen −1,78.
 
 **Ce qui n'est pas établi** : que la distribution ait vraiment deux bosses. Elle
-décroît continûment depuis un pic de 305 ralentissements doux. Le critère retenu
-— l'écart des deux moyennes, comme le protocole l'exige de ses deux étapes —
-dit que la coupure sépare quelque chose, pas qu'il y avait deux tas. Une
-décroissance régulière le passerait aussi.
+en a une, nette, autour de −0,8, et une queue qui s'étire jusqu'à −2,5. Le
+critère retenu — l'écart des deux moyennes, comme le protocole l'exige de ses
+deux étapes — dit que la coupure sépare quelque chose, pas qu'il y avait deux
+tas. Une queue régulière le passerait aussi.
+
+**Et la réponse dépend d'abord de ce qu'on fait entrer.** Une première version
+admettait n'importe quel soubresaut du signal comme un ralentissement : elle en
+comptait 424, dont un pic de 305 dans la tranche la plus douce, et tombait sur
+−1,04 — soit très près du −1 que le profil règle à la main. On aurait pu y lire
+une confirmation. Le filtrage par durée et vitesse d'entrée a supprimé les trois
+quarts de cette population et déplacé la réponse de trois dixièmes.
 
 À reprendre quand plusieurs trajets seront là : un critère de **creux** entre
-les deux modes serait plus sûr, et plusieurs trajets diront si la valeur tient.
+les deux modes serait plus sûr que l'écart des moyennes. Et il faudra trancher
+avec `suggest.ts`, qui produit le même réglage par un autre chemin.
 
 ## Critères d'acceptation
 

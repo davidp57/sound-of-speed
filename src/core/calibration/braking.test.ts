@@ -24,7 +24,7 @@ function pointsFor(decels: readonly number[]): TracePoint[] {
   for (const decel of decels) {
     for (let i = 0; i < 12; i += 1) {
       points.push({ t, kmh: 80 - i, accelMs2: decel })
-      t += 0.1
+      t += 0.12
     }
     points.push({ t, kmh: 68, accelMs2: 0 })
     t += 1
@@ -111,13 +111,40 @@ describe('splitBraking', () => {
   it('situe un ralentissement par sa crête', () => {
     const points: TracePoint[] = [
       { t: 0, kmh: 90, accelMs2: -0.4 },
-      { t: 0.1, kmh: 89, accelMs2: -3.2 },
-      { t: 0.2, kmh: 87, accelMs2: -0.5 },
-      { t: 0.3, kmh: 86, accelMs2: 0 },
+      { t: 0.5, kmh: 89, accelMs2: -3.2 },
+      { t: 1, kmh: 87, accelMs2: -0.5 },
+      { t: 1.5, kmh: 86, accelMs2: 0 },
     ]
 
     const split = splitBraking(points)
 
     expect(split.slowdowns[0]!.peakDecelMs2).toBe(-3.2)
+  })
+
+  /**
+   * Deux relevés d'ondulation en croisière ne sont pas un ralentissement. Sans
+   * cette borne, ils pèsent dans la distribution autant qu'un freinage
+   * d'urgence — et le trajet du 11 septembre en comptait un toutes les cinq
+   * secondes, dont un pic de 305 dans la tranche la plus douce.
+   */
+  it('écarte une ondulation de deux dixièmes de seconde', () => {
+    const points: TracePoint[] = [
+      { t: 0, kmh: 90, accelMs2: 0 },
+      { t: 0.1, kmh: 90, accelMs2: -0.35 },
+      { t: 0.2, kmh: 90, accelMs2: -0.35 },
+      { t: 0.3, kmh: 90, accelMs2: 0 },
+    ]
+
+    expect(splitBraking(points).slowdowns).toEqual([])
+  })
+
+  it('écarte un ralentissement de manœuvre, trop lent pour compter', () => {
+    const points: TracePoint[] = Array.from({ length: 30 }, (_, i) => ({
+      t: i * 0.1,
+      kmh: 12,
+      accelMs2: -1.5,
+    }))
+
+    expect(splitBraking(points).slowdowns).toEqual([])
   })
 })
