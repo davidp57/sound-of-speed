@@ -8,6 +8,22 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **La voiture propose son propre profil.** Quand le serveur a mesuré de quoi
+  conclure, un bandeau l'annonce sous les cadrans : « Profil de la voiture prêt,
+  sur dix-sept trajets », à appliquer ou à remettre à plus tard. Il ne bloque
+  rien et s'affiche même en roulant — un « plus tard » ne vaut que pour cette
+  mesure-là, la suivante se reproposera.
+
+  Accepté, il se pose en **couche** sur le profil choisi : le son reste celui du
+  profil, seules les capacités de la voiture sont reprises, et aucun réglage
+  n'est modifié. L'écran de configuration annonce lesquels, avec l'écart.
+  Mesuré sur le trajet du 11 septembre : neuf réglages, dont l'accélération à
+  charge pleine à 3,4 m/s² au lieu de 2,0.
+
+  Une fois acceptée, la couche s'affine sans rien redemander ; elle signale
+  seulement quand une mesure se déplace de plus de vingt pour cent — pneus
+  d'hiver, voiture chargée, quelqu'un d'autre au volant.
+
 - **Un service qui profile la voiture sur le serveur.** Il regarde le dossier
   des traces, remesure le trajet qu'une tranche vient de compléter, et dépose ce
   qu'il sait dans le dossier des profils. Une seconde image, publiée par la même

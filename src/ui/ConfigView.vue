@@ -16,6 +16,7 @@ import {
   type Usage,
 } from '../core/preset/wizard'
 import { SIMPLE_GEAR_COUNTS } from '../core/preset/character'
+import { missingSentence } from '../core/calibration/coverage'
 import {
   SOUND_SOURCES,
   needsSimulatedEngine,
@@ -99,7 +100,11 @@ import {
   forgetEngine,
   exportEngine,
   importEngine,
+  answerMeasuredCar,
+  carDecision,
   driveFace,
+  measuredCar,
+  measuredOverrides,
   setDriveFace,
   simulatorAvailable,
   sourceKind,
@@ -773,6 +778,35 @@ async function rapatrier(): Promise<void> {
         ce qu'on lit au volant — et où le choix de la source n'était qu'un moyen
         de se tromper sur ce qu'on entend.
       -->
+      <!--
+        Le rattrapage d'un « plus tard » : la mesure attend, et ce bouton
+        l'applique. Pas un export — on n'emporte pas de fichier, on applique ce
+        qui est là.
+      -->
+      <template v-if="measuredCar !== null">
+        <p class="choice-label">Profil mesuré de la voiture</p>
+        <div class="choices">
+          <button
+            v-if="carDecision?.answer !== 'accepted'"
+            :disabled="!measuredCar.coverage.complete"
+            @click="answerMeasuredCar('accepted')"
+          >
+            Appliquer maintenant
+          </button>
+          <button v-else @click="answerMeasuredCar('later')">Ne plus l’appliquer</button>
+        </div>
+        <p class="note">
+          {{ measuredCar.aggregate.tripCount }}
+          {{ measuredCar.aggregate.tripCount === 1 ? 'trajet mesuré' : 'trajets mesurés' }}
+          par le serveur.
+          <template v-if="measuredCar.coverage.complete">
+            De quoi régler la reprise, le freinage et les passages de rapport,
+            sans toucher au son du profil choisi.
+          </template>
+          <template v-else>{{ missingSentence(measuredCar.coverage) }}</template>
+        </p>
+      </template>
+
       <p class="choice-label">Affichage de la conduite</p>
       <div class="choices">
         <button :aria-pressed="driveFace === 'dials'" @click="setDriveFace('dials')">
@@ -1080,6 +1114,31 @@ async function rapatrier(): Promise<void> {
             <span>{{ entry.profile.name }}</span>
             <span class="muted">{{ entry.file }}</span>
             <button @click="addProfile(entry.profile)">Ajouter</button>
+          </li>
+        </ul>
+      </div>
+
+      <!--
+        Ce que la mesure du serveur remplace, dit comme l'étalonnage le dit
+        déjà. Les deux couches se composent et l'étalonnage guidé passe en
+        dernier : quand on prend la peine de dérouler le protocole, c'est lui
+        qui décide.
+      -->
+      <div v-if="measuredOverrides.length > 0" class="calibrated">
+        <p class="note">
+          <strong>{{ measuredOverrides.length }}</strong> réglage{{
+            measuredOverrides.length > 1 ? 's' : ''
+          }}
+          de ce profil {{ measuredOverrides.length > 1 ? 'viennent' : 'vient' }} de ce que le
+          serveur a mesuré de votre voiture, sur
+          {{ measuredCar?.aggregate.tripCount }}
+          {{ measuredCar?.aggregate.tripCount === 1 ? 'trajet' : 'trajets' }}. Ce que vous
+          réglez ici reste inchangé.
+        </p>
+        <ul class="note">
+          <li v-for="entry in measuredOverrides" :key="entry.path">
+            {{ entry.label }} — <strong>{{ showOverride(entry.proposed, entry) }}</strong>
+            au lieu de {{ showOverride(entry.current, entry) }}
           </li>
         </ul>
       </div>

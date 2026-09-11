@@ -23,7 +23,12 @@ import {
   audioStatus,
   synthIsOrigin,
   synthStatus,
+  acknowledgeCarShift,
+  answerMeasuredCar,
   isRunning,
+  measuredCar,
+  measuredCarShift,
+  proposesMeasuredCar,
   lastAccuracyM,
   soundState,
   setMuted,
@@ -109,6 +114,12 @@ const STATUS_LABELS: Record<string, string> = {
  * même lettre dans les deux modes de boîte : « N » en manuelle laisserait
  * croire à un point mort qui n'existe pas ici, et à un moyen d'y aller.
  */
+/** « un trajet », « dix-sept trajets » : le pluriel se dit. */
+const trajetsMesures = computed(() => {
+  const count = measuredCar.value?.aggregate.tripCount ?? 0
+  return count === 1 ? '1 trajet' : `${count} trajets`
+})
+
 const gearLabel = computed(() => (isRunning.value ? telemetry.value.gearbox.label : 'P'))
 
 /**
@@ -402,6 +413,28 @@ const SPEED_STEP_KMH = 20
       trajet : le motif du rejet existait déjà, mais rangé sous les réglages, là
       où personne ne regarde en conduisant.
     -->
+    <!--
+      La proposition du serveur, et ce qui a bougé depuis.
+
+      Un bandeau, pas une fenêtre : il ne bloque rien, donc il n'a pas à
+      attendre l'arrêt. David : « y'a pas de raison, si je suis pas dispo je
+      l'ignore et je clic plus tard ». Une fenêtre s'ouvrirait au moment précis
+      où l'on veut appuyer sur D et partir.
+    -->
+    <p v-if="proposesMeasuredCar" class="propose">
+      <span>Profil de la voiture prêt, sur {{ trajetsMesures }}.</span>
+      <button type="button" @click="answerMeasuredCar('accepted')">Appliquer</button>
+      <button type="button" @click="answerMeasuredCar('later')">Plus tard</button>
+    </p>
+
+    <p v-else-if="measuredCarShift > 0" class="propose">
+      <span>
+        La voiture mesurée a changé de {{ Math.round(measuredCarShift * 100) }} %.
+        Le son suit.
+      </span>
+      <button type="button" @click="acknowledgeCarShift()">Vu</button>
+    </p>
+
     <p v-if="alerte" class="alert">{{ alerte }}</p>
 
     <!--
@@ -460,6 +493,23 @@ const SPEED_STEP_KMH = 20
  * L'alerte est sous les cadrans, en pleine largeur, et n'apparaît que quand il
  * y a quelque chose à faire. Pas de clignotement : sa présence est le signal.
  */
+/*
+ * La proposition se distingue d'une alerte : elle n'annonce rien qui cloche.
+ * Même place, même largeur, une couleur qui ne crie pas.
+ */
+.propose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+}
+
 .alert {
   margin: 0;
   padding: 0.5rem 0.75rem;

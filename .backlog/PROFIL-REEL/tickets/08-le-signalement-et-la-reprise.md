@@ -1,6 +1,6 @@
 # 08 — Dire quand ça bouge, et reprendre ce qu'on avait refusé
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré, reste l'essai en roulant
 
 **Bloqué par :** 07 — il faut une couche appliquée pour signaler qu'elle change.
 
@@ -25,10 +25,10 @@ export : on n'emporte pas de fichier, on applique ce qui attend.
 
 ## Critères d'acceptation
 
-- [ ] La couche acceptée se met à jour sans rien demander.
-- [ ] Un écart de plus de 20 % sur une mesure est signalé, en nommant la mesure
+- [x] La couche acceptée se met à jour sans rien demander.
+- [x] Un écart de plus de 20 % sur une mesure est signalé, en nommant la mesure
       et son déplacement.
-- [ ] Le seuil est un réglage, pas une constante enfouie.
-- [ ] Le bouton « Appliquer maintenant » applique la dernière couche disponible,
+- [x] Le seuil est un réglage, pas une constante enfouie.
+- [x] Le bouton « Appliquer maintenant » applique la dernière couche disponible,
       et dit sur combien de trajets elle repose.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

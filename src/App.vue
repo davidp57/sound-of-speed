@@ -21,6 +21,7 @@ import {
   sourceKind,
   stop,
   activateAudio,
+  refreshMeasuredCar,
   keepScreenOn,
   screenLockHeld,
   screenLockSupported,
@@ -195,6 +196,9 @@ onMounted(() => {
   window.addEventListener('keyup', onKeyUp)
   window.addEventListener('blur', releaseControls)
   document.addEventListener('fullscreenchange', onFullscreenChange)
+  // Ce que le serveur a mesuré de la voiture. Sans réseau ni serveur, il ne se
+  // passe rien : c'est une proposition, pas une dépendance.
+  void refreshMeasuredCar()
   // L'application s'ouvre **au repos**, et c'est le propos du sélecteur.
   //
   // Elle démarrait la géolocalisation ici même, sans qu'on ait rien touché.
