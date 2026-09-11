@@ -454,3 +454,39 @@ describe('ce que la source demande au navigateur', () => {
     expect(fake.options?.enableHighAccuracy).toBe(true)
   })
 })
+
+/**
+ * Les comptes d'une source disent ce qu'elle a reçu **depuis le démarrage du
+ * suivi**. Une relance demandée à la main ouvre un suivi neuf : les garder
+ * ferait lire ensemble deux suivis, et la seule question qu'on se pose alors —
+ * celui-ci reçoit-il quelque chose ? — n'aurait plus de réponse lisible.
+ */
+describe('resetStats', () => {
+  it('remet les comptes à zéro sans arrêter le suivi', () => {
+    const fake = installFakeGeolocation()
+    const source = new GeolocationSource({
+      maxPlausibleKmh: 260,
+      maxAccuracyM: DEFAULT_MAX_ACCURACY_M,
+    })
+    const statuses: SourceStatus[] = []
+    source.onStatus((status) => statuses.push(status))
+    source.start()
+    const watch = fake.watches[0]!
+    watch.onPosition(position(0, 0, 10))
+    watch.onPosition(position(1000, 10, 11, 9999.99))
+
+    expect(source.stats.received).toBeGreaterThan(0)
+
+    source.resetStats()
+
+    expect(source.stats).toMatchObject({
+      received: 0,
+      emitted: 0,
+      lastAccuracyM: null,
+      recentAccuracyM: [],
+      rejected: { implausible: 0, tooClose: 0, inaccurate: 0 },
+    })
+    // Le suivi n'est pas touché : le dernier statut reste « actif ».
+    expect(statuses.at(-1)).toBe('active')
+  })
+})

@@ -92,12 +92,13 @@ vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là qu
 se lit l'état de la **capture du trajet** : ce qu'elle retient, ce qui est parti,
 et ce qui l'empêche de partir.
 
-Elle porte aussi le seul moyen de **relancer la localisation à la main**. Depuis
-que les boutons de source ont quitté l'écran de conduite, `D` est le seul à la
-démarrer ; le 11 septembre 2026, elle n'a jamais démarré de tout un trajet et il
-a fallu lancer une autre version de l'application pour s'en sortir. Le bouton
-arrête le suivi, remet les compteurs à zéro et le redemande — depuis un appui,
-ce qui est peut-être ce qui lui manquait.
+Elle porte aussi de quoi **redemander une position en roulant**. Passer par `P`
+puis `D` relance déjà la localisation, mais au prix du son coupé et d'une capture
+scindée en deux sessions. Le bouton *Relancer la localisation* fait la même chose
+sans rien interrompre : il ferme le suivi, remet à zéro les comptes de la source
+— pour qu'on lise ce que la relance produit, et non deux suivis additionnés — et
+le redemande depuis un appui. Il n'apparaît qu'en roulant : au repos, personne ne
+lirait les positions, et ouvrir un suivi là rendrait sans effet le `D` qui suit.
 
 La section *Qualité du signal* dit aussi **d'où vient la vitesse** — lue du
 navigateur, ou déduite de la distance entre deux positions —, combien de
