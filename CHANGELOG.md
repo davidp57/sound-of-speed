@@ -26,6 +26,12 @@ Toutes les évolutions notables du projet. Format
   son » alors que personne ne l'avait coupé. Il le nomme, et le même appui le
   rend.
 
+- **L'écran de conduite ne porte plus que ce qu'on lit au volant.** Le choix
+  entre cadrans et chiffres, et celui de la source de vitesse, passent en
+  Configuration › Réglage : ni l'un ni l'autre ne se décide en roulant, et une
+  source qu'on peut changer au volant n'est qu'un moyen de se tromper sur ce
+  qu'on entend.
+
 ### Corrigé
 
 - **La boîte remonte les rapports après un arrêt.** Relevé en roulant le

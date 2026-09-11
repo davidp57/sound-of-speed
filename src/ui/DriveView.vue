@@ -17,9 +17,7 @@ import {
   driveFace,
   favoriteProfiles,
   masterVolume,
-  setDriveFace,
   setMasterVolume,
-  simulatorAvailable,
   selectProfile,
   selectedProfileId,
   audioStatus,
@@ -29,7 +27,6 @@ import {
   lastAccuracyM,
   soundState,
   setMuted,
-  setSource,
   fixRestarts,
   fixStats,
   rejectionCause,
@@ -37,7 +34,6 @@ import {
   sourceKind,
   sourceStatus,
   telemetry,
-  type SourceKind,
 } from '../state'
 
 /**
@@ -97,26 +93,6 @@ const engineLabel = computed(() => {
  * navigateur : cet écran ne fait que déclarer l'intention.
  */
 const emit = defineEmits<{ exit: [] }>()
-
-/**
- * Les sources de vitesse qu'on peut choisir, et pourquoi il n'y en a qu'une en
- * voiture.
- *
- * David : « en voiture on est toujours en GPS, pas besoin des boutons simu ou
- * rejeu ». Le simulateur et le rejeu sont des outils d'atelier — l'un fabrique
- * une vitesse, l'autre en rejoue une enregistrée ; ni l'un ni l'autre n'a de
- * sens au volant, où ils ne seraient qu'un moyen de se tromper sur ce qu'on
- * entend. Ils ne sont donc proposés qu'en développement, et la rangée entière
- * disparaît quand il ne reste que le GPS : un seul bouton qu'on ne peut pas
- * désactiver n'est pas un choix.
- */
-const SOURCES: { id: SourceKind; label: string }[] = simulatorAvailable
-  ? [
-      { id: 'simulator', label: 'Simulateur' },
-      { id: 'geolocation', label: 'GPS' },
-      { id: 'replay', label: 'Rejeu' },
-    ]
-  : [{ id: 'geolocation', label: 'GPS' }]
 
 /**
  * Les trois modes du banc, et ce que chacun met à l'épreuve.
@@ -320,17 +296,12 @@ const SPEED_STEP_KMH = 20
         :aria-label="captureStatus.why"
       ></span>
 
+      <!--
+        Le choix de la source vit dans la configuration : on ne le fait pas en
+        roulant, et l'écran embarqué reste sobre. Ne reste ici que l'état de la
+        source, qui est une information et non une commande.
+      -->
       <section v-if="!immersive" class="sources">
-      <template v-if="SOURCES.length > 1">
-        <button
-          v-for="entry in SOURCES"
-          :key="entry.id"
-          :aria-pressed="sourceKind === entry.id"
-          @click="setSource(entry.id)"
-        >
-          {{ entry.label }}
-        </button>
-      </template>
       <span class="status">
         {{ STATUS_LABELS[sourceStatus] ?? sourceStatus }}
         <template v-if="sourceDetail"> — {{ sourceDetail }}</template>
@@ -348,13 +319,6 @@ const SPEED_STEP_KMH = 20
       conducteur défile en perspective, d'avant en arrière. Il reviendra
       autrement, et le code de l'ancien est dans l'historique.
     -->
-      <section v-if="!immersive" class="face-switch">
-        <button :aria-pressed="driveFace === 'dials'" @click="setDriveFace('dials')">Cadrans</button>
-        <button :aria-pressed="driveFace === 'numbers'" @click="setDriveFace('numbers')">
-          Chiffres
-        </button>
-      </section>
-
       <section v-if="favoriteProfiles.length > 1" class="favorites" :class="{ large: immersive }">
       <button
         v-for="entry in favoriteProfiles"

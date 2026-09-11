@@ -24,10 +24,11 @@ sauvegarde, exporte et recharge.
 ## Les écrans
 
 **Conduite** — la vitesse, le rapport, le régime, et les commandes de conduite
-entre les deux cadrans. Le son et le verrou d'écran sont montés en haut à droite,
-avec l'aide : ce sont des commandes d'appareil, pas de conduite. Le volume reste
-sous les cadrans, c'est un réglage qu'on pose une fois. Les commandes du
-simulateur, elles, sont sur l'écran **Banc**. Un bouton **Plein écran** masque la barre du haut : l'affichage
+entre les deux cadrans. Rien d'autre : le choix de l'affichage et celui de la
+source sont passés en **Configuration**, le son et le verrou d'écran en haut à
+droite avec l'aide — ce sont des commandes d'appareil, pas de conduite. Le
+volume reste sous les cadrans, c'est un réglage qu'on pose une fois. Les
+commandes du simulateur, elles, sont sur l'écran **Banc**. Un bouton **Plein écran** masque la barre du haut : l'affichage
 occupe toute la hauteur et les commandes deviennent de grandes touches. On en sort
 par la **flèche de retour**, à gauche de la rangée, à l'écart des autres et d'une
 autre couleur — l'écart est ce qui empêche de la presser en visant sa voisine.
@@ -58,7 +59,8 @@ repos, où la touche affiche toujours « D » et le tempérament revient à « r
 — la garder en « S » ferait lire une lettre et repartir sur l'autre réglage. Les
 touches qui ne commandent réellement rien, elles, sont estompées.
 
-Cet écran a **deux visages**, et deux boutons pour passer de l'un à l'autre :
+Cet écran a **deux visages**, choisis en **Configuration** › *Affichage de la
+conduite* :
 
 - **Cadrans** — un tableau de bord. Le compteur de vitesse et le compte-tours
   sont deux cadrans à aiguille, le rapport engagé est écrit en grand entre les
