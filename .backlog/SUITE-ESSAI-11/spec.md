@@ -10,7 +10,7 @@ soit : ce sont des défauts vus en passant.
 
 ## 01 — La numérotation des tranches saute
 
-Statut : ⬜ prêt
+Statut : 🔄 la numérotation est correcte ; ce qu'elle révèle ne l'est pas
 
 Sur la session `2026-09-11-06-24-01_da2m`, les tranches déposées sont numérotées
 **001 à 015, puis 741, 742, 743**. Et côté traces, la même session va de 001 à
@@ -28,6 +28,32 @@ long, avec quarante-quatre minutes d'arrêt au milieu.
 
 **Ce qui est vérifiable sans rouler :** la trace du 11 septembre est rapatriée,
 les noms de fichiers suffisent à reproduire le raisonnement.
+
+**Trouvé — et ce n'est pas le défaut qu'on croyait.**
+
+Le rang vient d'un compteur incrémenté dans `takeSlice`, et il ne monte pas à
+vide : une tranche sans contenu n'en consomme pas. Ce qui le fait sauter, c'est
+`restore` : une tranche dont le dépôt a échoué revient en file et rejoint la
+suivante, mais son numéro reste consommé.
+
+**C'est délibéré, et il faut le laisser.** Le test qui le fixe porte sa raison :
+« deux fichiers de même nom sur le serveur seraient un dépôt qui en écrase un
+autre ; un numéro sauté se lit et ne coûte rien ». Un dépôt qu'on croit manqué a
+pu aboutir — une réponse perdue, un réseau qui coupe après l'écriture. Réemployer
+le rang échangerait une numérotation continue contre une perte de données
+possible.
+
+**Le vrai sujet est donc ailleurs, et il est plus sérieux :** le saut de 015 à
+741 dit que **sept cent vingt-six dépôts ont manqué** pendant les quarante-quatre
+minutes d'arrêt du 11 septembre. Et le 020 manquant côté traces en dit un de
+plus. Ce n'est pas la numérotation qui cloche, c'est ce qu'elle raconte.
+
+**Ce qu'il faut chercher maintenant :** pourquoi ces dépôts échouent à l'arrêt.
+Le témoin de capture aurait dû virer à l'orange — « ça se rattrapera tout seul »
+—, et la télémétrie compte les échecs. Les candidats : un réseau qui s'endort
+avec la voiture, une tranche vide refusée par le serveur, ou un dépôt forcé
+toutes les quinze secondes à l'arrêt qui repart en boucle sur la même tranche.
+Le journal du trajet porte de quoi trancher, il est rapatrié.
 
 ## 02 — Un interrupteur GPS sur l'écran de télémétrie
 

@@ -52,7 +52,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [PLANCHER](PLANCHER/spec.md) — la boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient, on ne descend qu'en ralentissant, et le rétrogradage forcé redevient exceptionnel | 🧑 règle livrée en version allégée, reste l'écoute et le format de profil |
 | [COMMANDES](COMMANDES/spec.md) — un interrupteur qui a la forme d'un sélecteur de boîte : D démarre, P met au repos, et la boîte remonte les rapports après un arrêt | 🧑 livré, reste l'essai en roulant |
 | [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | 🔄 le calcul est là (tickets 01 à 03) ; restent l'agrégat, le verdict, le service et l'écran |
-| [SUITE-ESSAI-11](SUITE-ESSAI-11/spec.md) — deux points de l'essai du 11 septembre : la numérotation des tranches, et une relance GPS de secours | 🧑 relance livrée, reste la numérotation |
+| [SUITE-ESSAI-11](SUITE-ESSAI-11/spec.md) — deux points de l'essai du 11 septembre : sept cent vingt-six dépôts manqués à l'arrêt, et une relance GPS de secours | 🔄 relance livrée ; les dépôts manqués restent à instruire |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
