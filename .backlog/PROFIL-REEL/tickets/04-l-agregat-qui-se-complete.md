@@ -1,6 +1,6 @@
 # 04 — Un agrégat qui se complète au lieu de tout relire
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — livré le 11 septembre 2026
 
 **Bloqué par :** 02 et 03 — il faut savoir quoi retenir avant de savoir le
 cumuler.
@@ -27,12 +27,12 @@ agrégat construit avec l'ancien ne vaut plus rien.
 
 ## Critères d'acceptation
 
-- [ ] L'agrégat se met à jour d'une tranche sans relire les précédentes.
-- [ ] Ajouter les tranches une à une donne le même résultat que tout relire d'un
+- [x] L'agrégat se met à jour d'une tranche sans relire les précédentes.
+- [x] Ajouter les tranches une à une donne le même résultat que tout relire d'un
       coup — vérifié sur la session du 11 septembre, tranche par tranche contre
       session entière.
-- [ ] Les capacités portent sur tout l'historique, les habitudes sur une fenêtre
+- [x] Les capacités portent sur tout l'historique, les habitudes sur une fenêtre
       dont la taille est un réglage, pas une constante enfouie.
-- [ ] Un recalcul complet se déclenche à la demande, et l'agrégat porte la
+- [x] Un recalcul complet se déclenche à la demande, et l'agrégat porte la
       version du procédé qui l'a produit.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

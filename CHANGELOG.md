@@ -8,6 +8,21 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Ce que la voiture a montré d'elle se cumule trajet après trajet**, sans tout
+  relire. Les capacités — accélération et freinage maximum, vitesse pratiquée,
+  bornes du signal — se gardent sur tout l'historique par leurs extrêmes, donc
+  sans rien conserver ; les habitudes — vitesses tenues, départs, façons de
+  ralentir — sur les vingt derniers trajets, gardés entiers. Un trajet qui
+  revient remplace sa version précédente au lieu de compter deux fois : le
+  serveur recalcule à chaque tranche déposée.
+
+- **Un verdict qui dit ce qui manque, dans les termes du conducteur.** Pas un
+  volume mais une couverture : il faut avoir roulé en ville, sur route et sur
+  autoroute, être parti à l'arrêt, avoir accéléré franchement, et que les
+  ralentissements se séparent en deux façons de ralentir. Sinon rien n'est
+  proposé, et l'écran dit « il manque encore de la conduite sur autoroute »
+  plutôt qu'un compte.
+
 - **Le code d'étalonnage sait lire une capture de trajet.** Il mesurait les
   enregistrements du protocole ; il mesure désormais un trajet ordinaire, avec
   le même calcul plutôt qu'un second qui divergerait. C'est la première pièce du

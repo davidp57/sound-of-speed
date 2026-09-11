@@ -167,21 +167,46 @@ export function splitBraking(points: readonly TracePoint[]): BrakingSplit {
 
   if (slowdowns.length < MIN_SLOWDOWNS) return { ...none, why: 'trop-peu' }
 
-  const peaks = slowdowns.map((s) => s.peakDecelMs2).sort((a, b) => a - b)
-  const cut = otsu(peaks)
-  if (cut === null) return { ...none, why: 'pas-de-separation' }
-
-  const hard = peaks.filter((p) => p <= cut)
-  const soft = peaks.filter((p) => p > cut)
-  if (hard.length === 0 || soft.length === 0) return { ...none, why: 'pas-de-separation' }
-
-  const brakeMs2 = mean(hard)
-  const coastMs2 = mean(soft)
-  if (coastMs2 - brakeMs2 < DOWNSHIFT_SEPARATION_MS2) {
+  const split = otsuSplit(slowdowns.map((s) => s.peakDecelMs2))
+  if (split === null || split.coastMs2 - split.brakeMs2 < DOWNSHIFT_SEPARATION_MS2) {
     return { ...none, why: 'pas-de-separation' }
   }
 
-  return { slowdowns, boundaryMs2: cut, coastMs2, brakeMs2, why: 'ok' }
+  return { slowdowns, ...split, why: 'ok' }
+}
+
+/** Les deux groupes d'une distribution de crêtes, et la coupure qui les sépare. */
+export interface PeakSplit {
+  boundaryMs2: number
+  /** Moyenne du groupe doux. */
+  coastMs2: number
+  /** Moyenne du groupe franc. */
+  brakeMs2: number
+}
+
+/**
+ * La séparation, sur des crêtes déjà relevées.
+ *
+ * Détachée de `splitBraking` pour que le cumul de plusieurs trajets puisse la
+ * refaire sans avoir gardé les points : un agrégat retient les crêtes, pas le
+ * signal. Une seule mise en œuvre, employée des deux côtés — le contraire
+ * donnerait deux frontières pour la même voiture selon qu'on regarde un trajet
+ * ou l'historique.
+ *
+ * Elle ne vérifie **pas** que les deux groupes s'écartent assez : c'est à
+ * l'appelant de le faire, parce que le seuil dépend de ce qu'il en fera.
+ */
+export function otsuSplit(peaks: readonly number[]): PeakSplit | null {
+  if (peaks.length < 2) return null
+  const sorted = [...peaks].sort((a, b) => a - b)
+  const cut = otsu(sorted)
+  if (cut === null) return null
+
+  const hard = sorted.filter((p) => p <= cut)
+  const soft = sorted.filter((p) => p > cut)
+  if (hard.length === 0 || soft.length === 0) return null
+
+  return { boundaryMs2: cut, coastMs2: mean(soft), brakeMs2: mean(hard) }
 }
 
 /**

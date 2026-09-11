@@ -1,6 +1,6 @@
 # 05 — Savoir dire qu'on en sait assez, et ce qui manque
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré, mais les comptes exigés sont sans doute trop bas
 
 **Bloqué par :** 02 et 03 — le verdict porte sur ce qu'ils savent reconnaître.
 
@@ -20,13 +20,25 @@ C'est la leçon du 4 septembre 2026 : une seule étape enregistrée dans un bouc
 avait porté la vitesse plausible à 40 km/h, et au-delà tout se figeait sans que
 rien n'en dise la cause. Un étalonnage ne s'applique qu'entier.
 
+## Ce que la trace réelle a appris
+
+Le trajet du 11 septembre — une heure et demie, cinquante et un kilomètres —
+**couvre tout** : 3 départs à l'arrêt, 39 paliers de ville, 28 de route, 83
+d'autoroute, 8 accélérations franches, 115 ralentissements qui se séparent. Le
+verdict dit « complet ».
+
+C'est fidèle à la règle qu'on s'est donnée — une couverture, pas un volume — et
+c'est probablement trop permissif : toute la mesure reposerait sur un seul matin.
+Les comptes exigés sont des points de départ, à régler quand plusieurs trajets
+seront là.
+
 ## Critères d'acceptation
 
-- [ ] Le verdict énumère ce qui est couvert et ce qui ne l'est pas, mesure par
+- [x] Le verdict énumère ce qui est couvert et ce qui ne l'est pas, mesure par
       mesure.
-- [ ] Rien n'est proposé tant qu'une mesure n'a pas sa matière.
-- [ ] Ce qui manque se dit dans les termes du conducteur — « il manque de
+- [x] Rien n'est proposé tant qu'une mesure n'a pas sa matière.
+- [x] Ce qui manque se dit dans les termes du conducteur — « il manque de
       l'autoroute » —, pas dans ceux du calcul.
-- [ ] Éprouvé sur la session du 11 septembre, qui est un cas réel incomplet :
+- [x] Éprouvé sur la session du 11 septembre, qui est un cas réel incomplet :
       elle n'a que deux segments de roulage et un long arrêt.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.
