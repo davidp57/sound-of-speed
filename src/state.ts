@@ -376,7 +376,28 @@ export const fixRestarts = ref(0)
  * qu'elle se corrige par un réglage et non en attendant.
  */
 const rejectionWatch = new RejectionWatch()
+/**
+ * La commande de boîte — automatique ou manuelle — telle que l'écran la montre.
+ *
+ * Elle ne peut pas se lire dans la télémétrie : celle-ci n'est produite que par
+ * la boucle, et la boucle s'arrête au repos. Les deux étiquettes semblaient
+ * alors mortes — on appuyait sur « AUTO » au parking et rien ne bougeait, alors
+ * que la boîte, elle, avait bien changé de mode.
+ */
+export const shiftMode = ref<ShiftMode>('auto')
+
 export const rejectionCause = ref<RejectionCause | null>(null)
+
+/**
+ * La dernière précision annoncée par la source, en mètres.
+ *
+ * Elle sert à nommer un rejet plutôt qu'à le décrire : le 11 septembre 2026, le
+ * navigateur de la voiture a annoncé **9 999,99 m** — une valeur sentinelle, pas
+ * une mesure — et toutes les positions ont été écartées pendant tout un trajet.
+ * L'écran disait « annoncées trop imprécises » sans donner le chiffre, et il n'y
+ * avait aucun moyen de deviner qu'il s'agissait d'une sentinelle.
+ */
+export const lastAccuracyM = ref<number | null>(null)
 
 /**
  * Manette de jeu, pour conduire le simulateur au bureau.
@@ -555,6 +576,30 @@ export const synthSettings = computed<SynthSettings>(() => ({
  */
 export const synthSilent = ref(false)
 export const synthStatus = ref<SynthStatus>({ ...synth.status })
+
+/**
+ * Ce que fait le son, en un mot, pour les deux écrans qui l'affichent.
+ *
+ * `taken` est le cas qui manquait : une autre application — la musique de la
+ * voiture, un appel — a pris la sortie audio et suspendu notre contexte. Le
+ * bouton annonçait alors « Activer le son » alors que personne ne l'avait
+ * coupé, ou « Son actif » alors que rien ne sortait. Le conducteur ne pouvait
+ * pas savoir s'il devait toucher quelque chose ou si l'application était
+ * cassée ; il faut le dire, et dire que le geste le rend.
+ */
+export type SoundState = 'loading' | 'error' | 'off' | 'muted' | 'taken' | 'on'
+
+export const soundState = computed<SoundState>(() => {
+  const phase = synthIsOrigin.value ? synthStatus.value.phase : audioStatus.value.phase
+  if (phase === 'loading') return 'loading'
+  if (phase === 'error') return 'error'
+  if (phase !== 'ready') return 'off'
+  if (isMuted.value) return 'muted'
+  // La synthèse n'expose pas d'état de contexte : elle s'arrête franchement
+  // quand on la coupe, il n'y a rien à reprendre.
+  if (!synthIsOrigin.value && audioStatus.value.contextState === 'suspended') return 'taken'
+  return 'on'
+})
 synth.onStatus = (status) => {
   synthStatus.value = status
 }
@@ -1521,6 +1566,7 @@ function step(dt: number): void {
 
   if (sourceKind.value === 'geolocation') {
     const stats = geolocation.stats
+    lastAccuracyM.value = stats.lastAccuracyM
     rejectionCause.value = watching
       ? rejectionWatch.tick(dt, {
           received: stats.received,
@@ -1866,13 +1912,26 @@ export function start(): void {
   isRunning.value = true
 }
 
+/**
+ * Met l'application au repos — c'est la position « P » du sélecteur.
+ *
+ * Tout s'arrête : la géolocalisation, la boucle, le son des deux origines, et
+ * la capture dépose ce qu'elle avait en attente plutôt que de le perdre.
+ * L'affichage, lui, reste allumé : c'est par lui qu'on redémarre, et un écran
+ * noir ne dirait plus comment.
+ *
+ * Arrêter le son est ce qui manquait : seule la synthèse se taisait, et le son
+ * enregistré continuait de tourner sur le dernier régime reçu.
+ */
 export function stop(): void {
   currentSource().stop()
   loop.stop()
   isRunning.value = false
-  // Le son synthétisé n'est plus alimenté en régime : le laisser tourner
-  // reviendrait à tenir indéfiniment le dernier régime reçu.
+  audio.mute()
   void synth.stop()
+  // Ce qui a été enregistré jusqu'ici part maintenant : la voiture s'éteint
+  // souvent dans la minute qui suit, et une tranche gardée serait perdue.
+  depositCaptureIfDue(journalElapsedMs, true)
 }
 
 /** Adresses des échantillons du profil actif, telles que le cache les connaît. */
@@ -2160,6 +2219,7 @@ export function setDriveMode(mode: DriveMode): void {
 
 export function setShiftMode(mode: ShiftMode): void {
   gearbox.setMode(mode)
+  shiftMode.value = mode
 }
 
 export function shiftUp(): void {

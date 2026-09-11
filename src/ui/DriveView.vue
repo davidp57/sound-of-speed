@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import DialGauge from './components/DialGauge.vue'
+import DriveSelector from './DriveSelector.vue'
 import { describesSimulatedEngine, soundSourceOf } from '../core/preset/schema'
 import {
   ENGINE_LIBRARY,
@@ -22,22 +23,14 @@ import {
   selectProfile,
   selectedProfileId,
   audioStatus,
-  isMuted,
   synthIsOrigin,
   synthStatus,
-  isRunning,
-  keepScreenOn,
-  screenLockError,
-  screenLockHeld,
-  screenLockSupported,
-  setKeepScreenOn,
-  setMuted,
-  setShiftMode,
-  setDriveMode,
   currentDriveMode,
+  isRunning,
+  lastAccuracyM,
+  soundState,
+  setMuted,
   setSource,
-  shiftDown,
-  shiftUp,
   fixRestarts,
   fixStats,
   rejectionCause,
@@ -47,7 +40,6 @@ import {
   telemetry,
   type SourceKind,
 } from '../state'
-import { DRIVE_MODE_LABELS } from '../core/drivetrain/drive-mode'
 
 /**
  * Bascule le tempérament.
@@ -56,9 +48,6 @@ import { DRIVE_MODE_LABELS } from '../core/drivetrain/drive-mode'
  * donne l'autre au clic. C'est le patron que le plein écran emploie déjà pour la
  * commande de boîte.
  */
-function toggleDriveMode(): void {
-  setDriveMode(currentDriveMode.value === 'sport' ? 'road' : 'sport')
-}
 
 withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
 
@@ -146,7 +135,14 @@ const STATUS_LABELS: Record<string, string> = {
   unavailable: 'indisponible',
 }
 
-const manual = computed(() => telemetry.value.gearbox.mode === 'manual')
+/**
+ * Le rapport affiché, et « P » quand l'application est au repos.
+ *
+ * C'est la position du sélecteur qu'on lit alors, pas un rapport engagé — et la
+ * même lettre dans les deux modes de boîte : « N » en manuelle laisserait
+ * croire à un point mort qui n'existe pas ici, et à un moyen d'y aller.
+ */
+const gearLabel = computed(() => (isRunning.value ? telemetry.value.gearbox.label : 'P'))
 
 /**
  * Ce qui écarte les positions, quand la vitesse se fige alors que le GPS parle.
@@ -163,15 +159,42 @@ const REJECTION_LABELS: Record<string, string> = {
   inaccurate:
     'Les positions sont annoncées trop imprécises et sont toutes écartées. ' +
     'Voyez « Précision GPS acceptée ».',
+  // Complété plus bas par la précision réellement annoncée : c'est elle qui
+  // distingue un GPS médiocre d'une valeur sentinelle.
+
   tooClose:
     'Les positions se suivent de trop près pour en tirer une vitesse, et le GPS ' +
     'n’annonce pas la sienne.',
   none: 'Le GPS envoie des positions, mais aucune vitesse n’en sort.',
 }
 
-const rejectionMessage = computed(() =>
-  rejectionCause.value === null ? '' : (REJECTION_LABELS[rejectionCause.value] ?? ''),
-)
+/**
+ * Le seul message qui compte à cet instant, ou rien.
+ *
+ * Un seul, et par ordre de ce que le conducteur peut y faire : une autorisation
+ * refusée se règle, un rejet se comprend, un silence s'attend. En empiler
+ * plusieurs reviendrait à n'en faire lire aucun.
+ */
+const alerte = computed(() => {
+  if (!isRunning.value) {
+    // La touche porte « S » quand on roulait en sport : le message doit nommer
+    // ce qu'on voit, pas ce qu'on verrait par défaut.
+    return `Application au repos. Toucher ${currentDriveMode.value === 'sport' ? 'S' : 'D'} pour démarrer.`
+  }
+  if (sourceKind.value === 'geolocation' && sourceStatus.value === 'denied') {
+    return 'La localisation a été refusée. Autorisez-la dans les réglages du site.'
+  }
+  if (rejectionMessage.value) return rejectionMessage.value
+  return silentSourceMessage.value
+})
+
+const rejectionMessage = computed(() => {
+  if (rejectionCause.value === null) return ''
+  const base = REJECTION_LABELS[rejectionCause.value] ?? ''
+  const annoncee = lastAccuracyM.value
+  if (rejectionCause.value !== 'inaccurate' || annoncee === null) return base
+  return `${base} Annoncée : ${Math.round(annoncee).toLocaleString('fr-FR')} m.`
+})
 /**
  * Ce que l'écran dit quand le GPS ne donne rien.
  *
@@ -222,26 +245,38 @@ const audioPhase = computed(() =>
   synthIsOrigin.value ? synthStatus.value.phase : audioStatus.value.phase,
 )
 
+/**
+ * Le bouton son du plein écran, où le sélecteur n'a pas sa place.
+ *
+ * Il lit le même état que lui — `soundState` — pour que les deux ne puissent
+ * pas se contredire, et il nomme le cas d'une autre application qui a pris la
+ * sortie : le bouton disait alors « Activer le son » alors que personne ne
+ * l'avait coupé.
+ */
 const audioLabel = computed(() => {
-  switch (audioPhase.value) {
+  switch (soundState.value) {
     case 'loading':
       return synthIsOrigin.value
         ? 'Moteur en construction'
         : `Chargement ${audioStatus.value.loaded}/${audioStatus.value.total}`
-    case 'ready':
-      return isMuted.value ? 'Son coupé' : 'Son actif'
     case 'error':
       return 'Son en erreur'
+    case 'muted':
+      return 'Son coupé'
+    case 'taken':
+      return 'Son pris ailleurs'
+    case 'on':
+      return 'Son actif'
     default:
       return 'Activer le son'
   }
 })
 
-/** Le bouton est allumé quand du son sort vraiment, et de n'importe quelle origine. */
-const audioOn = computed(() => audioPhase.value === 'ready' && !isMuted.value)
+const audioOn = computed(() => soundState.value === 'on')
 
 function toggleAudio(): void {
-  if (audioPhase.value === 'ready') setMuted(!isMuted.value)
+  if (soundState.value === 'on') setMuted(true)
+  else if (soundState.value === 'muted') setMuted(false)
   else void activateAudio()
 }
 
@@ -366,17 +401,10 @@ const SPEED_STEP_KMH = 20
           10 septembre 2026, et elle place la main là où le regard est déjà —
           entre les deux cadrans, au lieu de descendre chercher une barre.
         -->
-        <div class="gear-controls">
-          <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
-            {{ manual ? 'Manuelle' : 'Auto' }}
-          </button>
-          <button :disabled="!manual" @click="shiftDown()">−</button>
-          <button :disabled="!manual" @click="shiftUp()">+</button>
-        </div>
-        <div class="gear-value numeric">{{ telemetry.gearbox.label }}</div>
-        <div class="unit">rapport</div>
-        <div class="gear-controls">
-          <button @click="toggleDriveMode()">{{ DRIVE_MODE_LABELS[currentDriveMode] }}</button>
+        <DriveSelector />
+        <div class="gear-read">
+          <div class="gear-value numeric">{{ gearLabel }}</div>
+          <div class="unit">rapport</div>
         </div>
       </div>
 
@@ -399,17 +427,10 @@ const SPEED_STEP_KMH = 20
       </div>
 
       <div class="cell gear">
-        <div class="gear-controls">
-          <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
-            {{ manual ? 'Manuelle' : 'Auto' }}
-          </button>
-          <button :disabled="!manual" @click="shiftDown()">−</button>
-          <button :disabled="!manual" @click="shiftUp()">+</button>
-        </div>
-        <div class="value numeric">{{ telemetry.gearbox.label }}</div>
-        <div class="unit">rapport</div>
-        <div class="gear-controls">
-          <button @click="toggleDriveMode()">{{ DRIVE_MODE_LABELS[currentDriveMode] }}</button>
+        <DriveSelector />
+        <div class="gear-read">
+          <div class="value numeric">{{ gearLabel }}</div>
+          <div class="unit">rapport</div>
         </div>
       </div>
 
@@ -447,16 +468,14 @@ const SPEED_STEP_KMH = 20
 
     <section v-else class="controls">
       <div class="control-bar">
-      <div class="group">
+      <!--
+        Le son se coupe et se rend depuis l'en-tête. Il ne reste ici que le
+        volume, qui est un réglage : on le pose une fois pour la voiture et on
+        n'y revient pas en roulant.
+      -->
+      <div v-if="audioPhase === 'ready'" class="group">
         <span class="label">Son</span>
-        <button
-          :class="{ 'is-active': audioOn }"
-          :disabled="audioPhase === 'loading'"
-          @click="toggleAudio()"
-        >
-          {{ audioLabel }}
-        </button>
-        <label v-if="audioPhase === 'ready'" class="volume">
+        <label class="volume">
           Volume
           <input
             type="range"
@@ -468,38 +487,39 @@ const SPEED_STEP_KMH = 20
           />
         </label>
       </div>
-      <div v-if="screenLockSupported" class="group">
-        <span class="label">Écran</span>
-        <button :aria-pressed="keepScreenOn" @click="setKeepScreenOn(!keepScreenOn)">
-          Garder allumé
-        </button>
-        <span v-if="keepScreenOn && screenLockHeld" class="hint">actif</span>
-        <span v-else-if="keepScreenOn" class="hint warn">
-          {{ screenLockError || 'Verrou non obtenu.' }}
-        </span>
-      </div>
-
       </div>
 
       <p v-if="audioPhase === 'error'" class="hint warn">
         {{ synthIsOrigin ? synthStatus.error : audioStatus.error }}
       </p>
 
-      <p v-if="rejectionMessage" class="hint warn">{{ rejectionMessage }}</p>
-
-      <p v-else-if="sourceKind === 'geolocation' && sourceStatus === 'denied'" class="hint warn">
-        La localisation a été refusée. Autorisez-la dans les réglages du site pour
-        mesurer votre vitesse.
-      </p>
-
-      <p v-else-if="silentSourceMessage" class="hint warn">{{ silentSourceMessage }}</p>
     </section>
 
-    <p v-if="!isRunning" class="hint">La boucle est arrêtée. Rien n'est mis à jour.</p>
+    <!--
+      Ce qui ne va pas se lit **sous les cadrans**, pas au bas de l'écran.
+      Le 11 septembre 2026, la géolocalisation a été muette pendant tout un
+      trajet : le motif du rejet existait déjà, mais rangé sous les réglages, là
+      où personne ne regarde en conduisant.
+    -->
+    <p v-if="alerte" class="alert">{{ alerte }}</p>
   </div>
 </template>
 
 <style scoped>
+/*
+ * L'alerte est sous les cadrans, en pleine largeur, et n'apparaît que quand il
+ * y a quelque chose à faire. Pas de clignotement : sa présence est le signal.
+ */
+.alert {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  background: var(--warn-surface, #fdf2e2);
+  color: var(--warn, #8a4f06);
+  font-size: 0.95rem;
+}
+
 .drive {
   display: flex;
   flex-direction: column;
@@ -674,7 +694,12 @@ const SPEED_STEP_KMH = 20
 .dashboard {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr minmax(4.5rem, 0.5fr) 1fr;
+  /*
+   * La colonne centrale porte maintenant le sélecteur **et** le rapport, côte
+   * à côte : il lui faut la place des deux, sans quoi le rapport retombe sous
+   * les touches et la rangée dépasse les cadrans.
+   */
+  grid-template-columns: 1fr minmax(15rem, 0.8fr) 1fr;
   grid-template-areas: 'speed gear rpm';
   align-items: center;
   gap: 0.75rem;
@@ -700,9 +725,26 @@ const SPEED_STEP_KMH = 20
   grid-area: rpm;
 }
 
+/*
+ * Le sélecteur à gauche, le rapport à sa droite — la disposition que David a
+ * dessinée le 11 septembre 2026. Côte à côte, la colonne centrale reste à la
+ * hauteur des cadrans ; l'un sous l'autre, elle les dépassait de cinquante
+ * pixels et tirait toute la rangée vers le bas.
+ */
 .dashboard .gear {
   grid-area: gear;
   text-align: center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.gear-read {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .gear-value {

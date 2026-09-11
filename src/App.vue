@@ -19,10 +19,38 @@ import {
   shiftDown,
   shiftUp,
   sourceKind,
-  start,
   stop,
-  isRunning,
+  activateAudio,
+  keepScreenOn,
+  screenLockHeld,
+  screenLockSupported,
+  setKeepScreenOn,
+  setMuted,
+  soundState,
 } from './state'
+
+/**
+ * Ce que dit le bouton du son, dans chacun de ses états.
+ *
+ * « Son pris par une autre application » est le cas qui manquait : la musique
+ * de la voiture suspend notre contexte audio, et le bouton annonçait alors
+ * « Activer le son » alors que personne ne l'avait coupé. Le geste le rend — et
+ * il faut bien un geste, les navigateurs refusant de reprendre autrement.
+ */
+const SOUND_TITLES: Record<string, string> = {
+  loading: 'Son en chargement',
+  error: 'Son en erreur',
+  off: 'Activer le son',
+  muted: 'Son coupé — toucher pour le rendre',
+  taken: 'Son pris par une autre application — toucher pour le rendre',
+  on: 'Son actif — toucher pour le couper',
+}
+
+function toggleSound(): void {
+  if (soundState.value === 'on') setMuted(true)
+  else if (soundState.value === 'muted') setMuted(false)
+  else void activateAudio()
+}
 
 type Tab = 'drive' | 'telemetry' | 'config' | 'calibration' | 'synth' | 'bench'
 
@@ -167,7 +195,14 @@ onMounted(() => {
   window.addEventListener('keyup', onKeyUp)
   window.addEventListener('blur', releaseControls)
   document.addEventListener('fullscreenchange', onFullscreenChange)
-  start()
+  // L'application s'ouvre **au repos**, et c'est le propos du sélecteur.
+  //
+  // Elle démarrait la géolocalisation ici même, sans qu'on ait rien touché.
+  // Le 11 septembre 2026, elle n'a reçu que des positions annoncées à
+  // 9 999,99 m de précision — la sentinelle d'un navigateur qui n'en sert pas
+  // de vraie — pendant tout un trajet, et trois relances n'y ont rien changé.
+  // Ce qui a fonctionné est un appui sur un bouton, dans une autre version de
+  // l'application. Partir de « P » met ce geste au début de chaque trajet.
 })
 
 onBeforeUnmount(() => {
@@ -192,12 +227,48 @@ onBeforeUnmount(() => {
           {{ entry.label }}
         </button>
       </nav>
+      <!--
+        Le son et le verrou d'écran sont **là-haut**, avec l'aide et le plein
+        écran : ce sont des commandes d'appareil, pas de conduite. Les laisser
+        entre les cadrans chargeait la seule zone qui doit se lire en roulant.
+      -->
       <div class="right">
+        <button
+          class="icon-button"
+          :class="{ 'is-active': soundState === 'on', 'is-warn': soundState === 'taken' }"
+          :title="SOUND_TITLES[soundState]"
+          :aria-label="SOUND_TITLES[soundState]"
+          :aria-pressed="soundState === 'on'"
+          @click="toggleSound()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" />
+            <template v-if="soundState === 'on'">
+              <path d="M16 9.2a4 4 0 0 1 0 5.6" />
+              <path d="M18.6 6.6a7.6 7.6 0 0 1 0 10.8" />
+            </template>
+            <template v-else>
+              <path d="M16.5 9.5l5 5" />
+              <path d="M21.5 9.5l-5 5" />
+            </template>
+          </svg>
+        </button>
+        <button
+          v-if="screenLockSupported"
+          class="icon-button"
+          :class="{ 'is-active': keepScreenOn && screenLockHeld, 'is-warn': keepScreenOn && !screenLockHeld }"
+          :title="keepScreenOn ? 'Écran gardé allumé' : 'Laisser l’écran s’éteindre'"
+          :aria-label="keepScreenOn ? 'Écran gardé allumé' : 'Laisser l’écran s’éteindre'"
+          :aria-pressed="keepScreenOn"
+          @click="setKeepScreenOn(!keepScreenOn)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3.5" y="4.5" width="17" height="12" rx="1.5" />
+            <path d="M9 20h6" />
+          </svg>
+        </button>
         <button class="help-button" title="Aide" @click="helpOpen = true">?</button>
         <button @click="toggleImmersive()">Plein écran</button>
-        <button class="power" :class="{ 'is-active': isRunning }" @click="isRunning ? stop() : start()">
-          {{ isRunning ? 'En marche' : 'Arrêté' }}
-        </button>
       </div>
     </header>
 
@@ -291,8 +362,28 @@ onBeforeUnmount(() => {
   margin-left: auto;
 }
 
-.power {
-  min-width: 8rem;
+/* Les commandes d'appareil : une icône chacune, même gabarit que l'aide. */
+.icon-button {
+  width: 2.6rem;
+  padding: 0.45rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-button.is-warn {
+  border-color: var(--warn);
+  color: var(--warn);
 }
 
 .help-button {
