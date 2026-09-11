@@ -372,11 +372,19 @@ export class SpeedConditioner {
     // réactivité au maximum.
     //
     // La pente était déjà calculée ici, et ne servait qu'à l'extrapolation.
-    this.accelMs2 = clamp(
-      this.slopeKmhS / 3.6,
-      this.preset.minAccelMs2,
-      this.preset.maxAccelMs2,
-    )
+    // Une voiture immobile n'accélère pas, et cela vaut aussi quand plus aucune
+    // mesure n'arrive : la pente garde alors la dernière valeur estimée, et la
+    // chaîne entière la reçoit comme une vérité du moment.
+    //
+    // Relevé en roulant le 11 septembre 2026 : quarante-quatre minutes de
+    // stationnement, vitesse conditionnée à 0,000 km/h d'un bout à l'autre, et
+    // une décélération annoncée entre 0,19 et 0,39 m/s² pendant tout ce temps.
+    // La boîte en a nourri son compteur de ralentissement jusqu'à ne plus
+    // pouvoir monter un seul rapport du trajet. La garde posée sur l'estimation
+    // ne suffisait pas : elle ne protège que le calcul, pas la valeur retenue.
+    this.accelMs2 = this.smoothedKmh < STANDSTILL_KMH
+      ? 0
+      : clamp(this.slopeKmhS / 3.6, this.preset.minAccelMs2, this.preset.maxAccelMs2)
 
     this.guardAgainstNaN()
 
