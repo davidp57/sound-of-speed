@@ -248,6 +248,20 @@ export class Gearbox {
   private lastKickdown = 0
   /** Empêche un second rétrogradage forcé tant que la pédale reste enfoncée. */
   private kickdownArmed = true
+
+  /**
+   * Le rapport qu'un rétrogradage forcé vient de prendre, tant que le pied y
+   * reste.
+   *
+   * Une automatique tient ce rapport tant qu'on écrase — c'est le sens même du
+   * geste. Sans cela, la boîte le rendait dans la foulée : le 11 septembre
+   * 2026, à 118 km/h, 6→4 puis 4→5 quatre dixièmes plus tard.
+   *
+   * Ce n'est pas la garde de temps que David a écartée — « ce n'est pas comme
+   * ça que fonctionne une boîte auto ». Rien n'est compté en secondes : c'est
+   * la charge qui tient le rapport, et qui le libère dès qu'elle retombe.
+   */
+  private kickdownHold: number | null = null
   /** Horloge interne, en secondes. Sert à dater l'historique de charge. */
   private elapsedS = 0
   /** Charges récentes, pour mesurer la montée sur la fenêtre déclarée. */
@@ -388,7 +402,11 @@ export class Gearbox {
    * long qui convienne, comme après une reprise en douceur, et non de ce que le
    * conducteur demandait avant de changer de profil.
    */
-  private upshiftThresholdAt(gear: number, demand: number): number {
+  private upshiftThresholdAt(
+    gear: number,
+    demand: number,
+    jitter: number = this.pendingJitter,
+  ): number {
     // Le seuil se déduit du **régime qu'aurait le rapport visé**, et non d'une
     // table ni d'une fraction du rupteur. On monte dès que le rapport suivant
     // tourne au-dessus de son plancher — le ralenti plus une marge que le mode
@@ -415,7 +433,7 @@ export class Gearbox {
     }
 
     const plancher = upshiftFloorRpm(this.driveMode, clamp01(demand), this.engine.idleRpm)
-    const seuil = (plancher * courant) / suivant + this.pendingJitter
+    const seuil = (plancher * courant) / suivant + jitter
     return clamp(seuil, this.engine.idleRpm * 1.2, this.engine.redlineRpm)
   }
 
@@ -559,6 +577,8 @@ export class Gearbox {
     // le seuil se franchissait dès 3,6 km/h par seconde.
     if (auto && this.feel.kickdown.enabled && !atStandstill) {
       const threshold = kickdownLoadFor(this.driveMode)
+      // Le pied quitte le plancher : le rapport pris n'est plus retenu.
+      if (load < threshold) this.kickdownHold = null
       if (load < threshold * 0.7) this.kickdownArmed = true
       else if (
         this.kickdownArmed &&
@@ -571,6 +591,7 @@ export class Gearbox {
           this.kickdownArmed = false
           this.lastKickdown = dropped
           this.sinceKickdownS = 0
+          this.kickdownHold = this.gear
           return this.report(atStandstill, false, false, upThresholdSeen, downThresholdSeen)
         }
         this.kickdownArmed = false
@@ -596,7 +617,8 @@ export class Gearbox {
       // plus tard alors que la voiture ralentit déjà. Le compteur retombe à zéro
       // dans la branche `else`, donc l'intention est bien abandonnée et non
       // suspendue : reprendre les gaz repart d'un compte neuf.
-      if (!braking && !slowing && rpm >= upThreshold && this.gear < this.gearCount - 1) {
+      const retenu = this.kickdownHold !== null && this.gear >= this.kickdownHold
+      if (!braking && !slowing && !retenu && rpm >= upThreshold && this.gear < this.gearCount - 1) {
         if (this.readyForS === 0) {
           // Nouvelle intention de passer : on tire l'écart de ce passage-ci.
           this.pendingJitter = (Math.random() * 2 - 1) * this.drivetrain.upshiftJitterRpm
@@ -661,19 +683,55 @@ export class Gearbox {
     return this.drivetrain.firstGearLaunchOnly ? 1 : 0
   }
 
+  /**
+   * Régime à partir duquel un rapport est rendu **sans délai**.
+   *
+   * C'est la borne que le rétrogradage forcé doit respecter. Sans elle, il
+   * descendait dans un rapport dont le régime dépassait aussitôt le seuil de
+   * montée immédiate, et la boîte le rendait au tour suivant : le 11 septembre
+   * 2026, à 118 km/h, une reprise d'une seconde et demie a produit 6→4 puis
+   * 4→5 quatre dixièmes plus tard, puis 5→6. Trois passages pour rien.
+   *
+   * Ce n'était pas un hasard du trajet mais une conséquence des nombres : la
+   * cible du kickdown vaut `redlineRpm × 0,55` — 3 575 tours sur le V8 — quand
+   * le seuil de montée immédiate de la quatrième à pleine demande vaut 3 514.
+   * La cible passait au-dessus de sa propre porte de sortie.
+   *
+   * Le tirage au sort est pris à son pire cas, celui qui abaisse le plus le
+   * seuil : la borne doit tenir quel que soit le tirage du tour suivant.
+   */
+  private instantUpshiftRpm(gear: number): number {
+    if (gear >= this.gearCount - 1) return Number.POSITIVE_INFINITY
+    const seuil = this.upshiftThresholdAt(gear, this.demand, -this.drivetrain.upshiftJitterRpm)
+    return seuil + UPSHIFT_OVERSHOOT_RPM
+  }
+
   private kickdown(rpmInGear: (gear: number) => number): number {
     const target = this.engine.redlineRpm * this.feel.kickdown.targetRpmFraction
     const ceiling = this.engine.redlineRpm * 0.95
     let dropped = 0
 
     const floor = this.downshiftFloor()
-    while (dropped < this.feel.kickdown.maxGears && this.gear > floor) {
-      if (rpmInGear(this.gear) >= target) break
-      const candidate = rpmInGear(this.gear - 1)
-      if (candidate > ceiling) break
-      this.gear -= 1
-      dropped += 1
-      if (candidate >= target) break
+
+    // Deux passes, et la seconde est le filet.
+    //
+    // La première refuse les rapports qui seraient rendus sans délai. Mais en
+    // mode Route, à haute vitesse, elle peut les refuser **tous** : le seuil de
+    // montée pied au plancher y est plus bas que la cible du rétrogradage
+    // forcé, et écraser ne produirait plus rien du tout. Une boîte muette est
+    // un défaut pire que celui qu'on corrige, donc on redescend sans la borne —
+    // le rapport pris sera alors tenu par la charge, ce qui suffit.
+    for (const borner of [true, false]) {
+      while (dropped < this.feel.kickdown.maxGears && this.gear > floor) {
+        if (rpmInGear(this.gear) >= target) break
+        const candidate = rpmInGear(this.gear - 1)
+        if (candidate > ceiling) break
+        if (borner && candidate > this.instantUpshiftRpm(this.gear - 1)) break
+        this.gear -= 1
+        dropped += 1
+        if (candidate >= target) break
+      }
+      if (dropped > 0) break
     }
 
     if (dropped > 0) {

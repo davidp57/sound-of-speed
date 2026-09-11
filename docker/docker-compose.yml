@@ -38,6 +38,10 @@ services:
       # traces en sortent. Le dossier doit exister, comme celui des profils, et
       # le dépôt exige le fichier de mots de passe ci-dessous.
       - /volume1/docker/speed/traces:/usr/share/nginx/html/traces
+      # Ce que le profileur a mesuré de la vraie voiture. **En lecture seule**
+      # de ce côté : c'est l'autre conteneur qui écrit, celui-ci ne fait que
+      # servir le fichier. Le dossier doit exister, comme les autres.
+      - /volume1/docker/speed/profils:/usr/share/nginx/html/profils:ro
       # Journal de bord, déposé tout seul en roulant. **En lecture-écriture**,
       # pour la même raison, et dans un dossier séparé : celui des traces est
       # servi en index JSON, et c'est cet index que l'application télécharge pour

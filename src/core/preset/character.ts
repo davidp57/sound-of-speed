@@ -354,8 +354,11 @@ export function applySportiness(profile: Profile, sportiness: number): Profile {
         crackle: round3(0.25 + 0.5 * s),
         dipRpm: Math.round(250 + 400 * s),
         blipRpm: Math.round(300 + 500 * s),
-        clack: round3(0.35 + 0.35 * s),
-        clackDownshift: round3(0.5 + 0.15 * s),
+        // Les deux lois portent ensemble la baisse de trente pour cent du clac
+        // à la montée : la première la reçoit, la seconde la reprend, si bien
+        // que le rétrogradage sort au même niveau qu'avant, à tout caractère.
+        clack: round3((0.35 + 0.35 * s) * 0.7),
+        clackDownshift: round3((0.5 + 0.15 * s) / 0.7),
       },
     },
   }

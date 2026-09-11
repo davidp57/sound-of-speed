@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { Gearbox } from './gearbox'
-import { driveModeFromUpshiftRpm, type DriveMode } from './drive-mode'
+import { driveModeFromUpshiftRpm, upshiftFloorRpm, type DriveMode } from './drive-mode'
 import { Engine } from '../engine/engine'
 import { SpeedConditioner } from '../speed/conditioner'
-import { createDefaultProfile } from '../preset/defaults'
+import { createDefaultProfile, createRoadProfile } from '../preset/defaults'
 import type { DrivetrainPreset, EnginePreset, FeelPreset, Profile } from '../preset/schema'
 
 /**
@@ -52,6 +52,21 @@ function profile(
     drivetrain: { ...base.drivetrain, upshiftJitterRpm: 0, shiftTimeMs: 120, ...over },
     feel: { ...base.feel, ...feel },
     engine: { ...base.engine, ...engine },
+  }
+}
+
+/**
+ * Profil Route, celui sous lequel roulait la voiture le 11 septembre 2026.
+ *
+ * `profile()` part du profil par défaut, qui est un Sport : ses seuils de
+ * montée sont bien plus hauts, et tout ce qui se juge en mode Route s'y
+ * mesurerait à côté.
+ */
+function routeProfile(over: Partial<DrivetrainPreset> = {}): Profile {
+  const base = createRoadProfile()
+  return {
+    ...base,
+    drivetrain: { ...base.drivetrain, upshiftJitterRpm: 0, shiftTimeMs: 120, ...over },
   }
 }
 
@@ -503,6 +518,120 @@ describe('Gearbox — rétrogradage forcé', () => {
     const apres = gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 1, kmh: kmh, accelMs2 })
 
     expect(apres.gear).toBeGreaterThanOrEqual(premier)
+  })
+
+  /**
+   * Le défaut du 11 septembre 2026, et sa cause.
+   *
+   * La cible du rétrogradage forcé vaut `redlineRpm × targetRpmFraction` —
+   * 3 575 tours sur le V8 de Route — quand le seuil de montée immédiate de la
+   * quatrième à pleine demande vaut 3 514. Elle passait donc au-dessus de sa
+   * propre porte de sortie, et le rapport pris était rendu au tour suivant.
+   *
+   * L'invariant vaut pour les deux modes, mais il ne mord qu'en Route : en
+   * Sport le seuil de montée est si haut qu'un rapport court s'y garde tout
+   * seul. C'est bien ce qu'on veut, et c'est pourquoi le test lit le mode du
+   * profil au lieu de le supposer.
+   */
+  it('ne rend pas le rapport qu’il vient de prendre', () => {
+    for (const base of [profile(), routeProfile()]) {
+      for (const kmh of [80, 100, 118, 140]) {
+        const gearbox = makeGearbox(base)
+        const rpmInGear = rpmInGearAt(base, kmh)
+        const croisiere = { rpmInGear, atStandstill: false, load: 0.3, kmh, accelMs2 }
+
+        // Assez long pour que la boîte soit vraiment en croisière : tant
+        // qu'elle monte encore ses rapports, ce qu'on relèverait ne dirait rien
+        // du rétrogradage forcé.
+        for (let f = 0; f * FRAME_S < 15; f += 1) gearbox.tick(FRAME_S, croisiere)
+        const avant = gearbox.tick(FRAME_S, croisiere).gear
+        const pris = gearbox.tick(FRAME_S, { ...croisiere, load: 1 }).gear
+
+        expect(pris).toBeLessThan(avant)
+
+        // Le pied reste au plancher : le rapport tient. C'est la charge qui le
+        // retient, pas un compte à rebours.
+        for (let f = 0; f * FRAME_S < 1.5; f += 1) {
+          expect(gearbox.tick(FRAME_S, { ...croisiere, load: 1 }).gear).toBe(pris)
+        }
+      }
+    }
+  })
+
+  it('choisit le rapport qui se garde quand il en a le choix', () => {
+    // 118 km/h en Route : la quatrième tournerait à 3 615 tours pour un seuil
+    // de montée immédiate à 3 514 — elle serait rendue aussitôt. La cinquième
+    // tourne à 3 018 et se garde. C'est elle qu'il faut prendre.
+    const p = routeProfile()
+    const gearbox = makeGearbox(p)
+    const kmh = 118
+    const rpmInGear = rpmInGearAt(p, kmh)
+    const croisiere = { rpmInGear, atStandstill: false, load: 0.3, kmh, accelMs2 }
+
+    for (let f = 0; f * FRAME_S < 15; f += 1) gearbox.tick(FRAME_S, croisiere)
+    const apres = gearbox.tick(FRAME_S, { ...croisiere, load: 1 })
+
+    const plancher = upshiftFloorRpm('road', 1, p.engine.idleRpm)
+    const courant = p.drivetrain.gearRatios[apres.gear] ?? 1
+    const suivant = p.drivetrain.gearRatios[apres.gear + 1] ?? courant
+    expect(rpmInGear(apres.gear)).toBeLessThanOrEqual((plancher * courant) / suivant + 400)
+  })
+
+  it('descend quand même là où aucun rapport ne se garderait', () => {
+    // 140 km/h en Route : le seuil de montée pied au plancher est plus bas que
+    // la cible du rétrogradage forcé, donc aucun rapport ne passerait la borne.
+    // Une boîte muette serait un défaut pire que celui qu'on corrige : elle
+    // descend, et c'est la charge qui tient le rapport.
+    const p = routeProfile()
+    const gearbox = makeGearbox(p)
+    const kmh = 140
+    const rpmInGear = rpmInGearAt(p, kmh)
+    const croisiere = { rpmInGear, atStandstill: false, load: 0.3, kmh, accelMs2 }
+
+    for (let f = 0; f * FRAME_S < 15; f += 1) gearbox.tick(FRAME_S, croisiere)
+    const apres = gearbox.tick(FRAME_S, { ...croisiere, load: 1 })
+
+    expect(apres.kickdownGears).toBeGreaterThan(0)
+  })
+
+  it('rend le rapport dès que le pied quitte le plancher', () => {
+    const p = routeProfile()
+    const gearbox = makeGearbox(p)
+    const kmh = 118
+    const rpmInGear = rpmInGearAt(p, kmh)
+    const croisiere = { rpmInGear, atStandstill: false, load: 0.3, kmh, accelMs2 }
+
+    for (let f = 0; f * FRAME_S < 15; f += 1) gearbox.tick(FRAME_S, croisiere)
+    const avant = gearbox.tick(FRAME_S, croisiere).gear
+    const pris = gearbox.tick(FRAME_S, { ...croisiere, load: 1 }).gear
+    expect(pris).toBeLessThan(avant)
+
+    // Pied levé : la boîte reprend ses règles ordinaires et remonte.
+    let gear = pris
+    for (let f = 0; f * FRAME_S < 8; f += 1) {
+      gear = gearbox.tick(FRAME_S, { ...croisiere, load: 0.2 }).gear
+    }
+    expect(gear).toBeGreaterThan(pris)
+  })
+
+  it('garde le rapport qu’il vient de prendre — 118 km/h, le 11 septembre', () => {
+    const p = routeProfile()
+    const gearbox = makeGearbox(p)
+    const kmh = 118
+    const rpmInGear = rpmInGearAt(p, kmh)
+    const croisiere = { rpmInGear, atStandstill: false, load: 0.3, kmh, accelMs2 }
+
+    for (let f = 0; f * FRAME_S < 15; f += 1) gearbox.tick(FRAME_S, croisiere)
+    const avant = gearbox.tick(FRAME_S, croisiere).gear
+    const pris = gearbox.tick(FRAME_S, { ...croisiere, load: 1 }).gear
+
+    expect(pris).toBeLessThan(avant)
+
+    // Une seconde et demie plus tard, il est toujours là. Sur le trajet, la
+    // quatrième avait été rendue au bout de six dixièmes.
+    for (let f = 0; f * FRAME_S < 1.5; f += 1) {
+      expect(gearbox.tick(FRAME_S, { ...croisiere, load: 1 }).gear).toBe(pris)
+    }
   })
 
   it('ne fait rien quand il est désactivé', () => {

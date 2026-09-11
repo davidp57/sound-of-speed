@@ -618,3 +618,22 @@ describe('le nombre de rapports se change en un geste', () => {
     for (const ecart of ecarts) expect(ecart).toBeCloseTo(ecarts[0]!, 2)
   })
 })
+
+describe('caractère — le clac de passage', () => {
+  /**
+   * Les deux lois se répondent : la baisse de trente pour cent demandée le
+   * 11 septembre 2026 porte sur la montée seule, à tout caractère.
+   */
+  it('baisse la montée de trente pour cent sans toucher au rétrogradage', () => {
+    for (const s of [0, 0.25, 0.5, 0.75, 1]) {
+      const jolt = applySportiness(createRoadProfile(), s).feel.shiftJolt
+
+      // Les lois d'avant la sortie, telles qu'elles étaient écrites.
+      const clackAvant = 0.35 + 0.35 * s
+      const descenteAvant = clackAvant * (0.5 + 0.15 * s)
+
+      expect(jolt.clack).toBeCloseTo(clackAvant * 0.7, 2)
+      expect(jolt.clack * jolt.clackDownshift).toBeCloseTo(descenteAvant, 2)
+    }
+  })
+})

@@ -1,6 +1,6 @@
 # 09 — Servir le profil mesuré : la chaîne était coupée en trois
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré, reste à recoller la pile dans Portainer
 
 **Bloqué par :** rien. C'est le défaut qui a empêché le ticket 07 de se voir.
 

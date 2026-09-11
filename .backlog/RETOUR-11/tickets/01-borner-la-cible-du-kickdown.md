@@ -1,6 +1,6 @@
 # 01 — Le rétrogradage forcé rend le rapport aussitôt pris
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré, reste l'écoute en roulant
 
 ## Ce qui se passe
 

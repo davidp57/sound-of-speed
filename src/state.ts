@@ -19,7 +19,7 @@ import { FixWatchdog } from './core/speed/watchdog'
 import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source'
 import { soundSourceOf, type SoundSource } from './core/preset/schema'
 import { playBackfire, playClack, type EventTarget } from './core/audio/events'
-import { shiftCut } from './core/audio/mix'
+import { clackAmplitude, shiftCut } from './core/audio/mix'
 import type { EngineDefinition, Profile, ProfileOrigin } from './core/preset/schema'
 import { clampEngineDefinition } from './core/preset/engine-definition'
 import type { LibraryEngine } from './core/preset/engine-library'
@@ -91,6 +91,7 @@ import {
 import { overridesFromAggregate } from './core/calibration/from-aggregate'
 import {
   fetchMeasuredCar,
+  type MeasuredCarStatus,
   largestShift,
   shouldPropose,
   type CarAnswer,
@@ -312,6 +313,16 @@ export const calibrationMissing = computed(() =>
  * aucun écran ne montre quoi que ce soit.
  */
 export const measuredCar = ref<MeasuredCar | null>(null)
+
+/**
+ * Ce qui s'est passé au dernier essai de lecture, pour que la télémétrie le
+ * dise.
+ *
+ * Sans cela, une plomberie cassée se lit comme une absence de mesure, et il n'y
+ * a rien à l'écran pour distinguer les deux — ce qui a fait attendre David
+ * devant un bandeau qui ne pouvait pas venir, le 11 septembre 2026.
+ */
+export const measuredCarStatus = ref<MeasuredCarStatus | null>(null)
 export const carDecision = ref<CarDecision | null>(loadCarDecision())
 
 /** Ce que la voiture mesurée était la dernière fois qu'on l'a signalée. */
@@ -380,11 +391,12 @@ export function answerMeasuredCar(answer: CarAnswer): void {
  * réseau ni serveur, il ne se passe rien.
  */
 export async function refreshMeasuredCar(): Promise<void> {
-  const found = await fetchMeasuredCar()
-  if (found === null) return
+  const probe = await fetchMeasuredCar()
+  measuredCarStatus.value = probe.status
+  if (probe.car === null) return
   const first = measuredCar.value === null
-  measuredCar.value = found
-  if (first && carDecision.value?.answer === 'accepted') signalledCar.value = found.aggregate
+  measuredCar.value = probe.car
+  if (first && carDecision.value?.answer === 'accepted') signalledCar.value = probe.car.aggregate
 }
 
 /**
@@ -1469,6 +1481,29 @@ function rpmInGear(gear: number, kmh: number): number {
 }
 
 /**
+ * Régime qu'aurait le moteur si le rapport suivant était engagé maintenant.
+ *
+ * C'est ce que montre la seconde aiguille du compteur. David, après la sortie
+ * du 11 septembre 2026 : « afficher le RPM calculé du prochain rapport si on le
+ * passait maintenant ».
+ *
+ * Le calcul est celui que la boîte emploie pour décider, et non un second écrit
+ * à côté : deux formules pour la même grandeur finiraient par diverger, et
+ * l'aiguille annoncerait un régime auquel la voiture ne retomberait pas.
+ *
+ * Vaut `null` là où la question n'a pas de sens — moteur arrêté, boîte au point
+ * mort, dernier rapport — et l'aiguille disparaît alors.
+ */
+export const nextGearRpm = computed<number | null>(() => {
+  if (!isRunning.value) return null
+  const { gearbox, speed } = telemetry.value
+  if (gearbox.label === 'N') return null
+  const next = gearbox.gear + 1
+  if (next >= gearbox.gearCount) return null
+  return rpmInGear(next, speed.kmh)
+})
+
+/**
  * Un pas de simulation.
  *
  * Extrait de la boucle pour pouvoir être appelé à pas fixe depuis le banc de
@@ -1605,7 +1640,7 @@ function step(dt: number): void {
     // fort. C'est un réglage et non un calcul : le bon dosage dépend de la
     // banque.
     const descend = gearboxState.shiftDirection === 'down'
-    playEvent('clack', (t) => playClack(t, jolt.clack * (descend ? jolt.clackDownshift : 1)))
+    playEvent('clack', (t) => playClack(t, clackAmplitude(profile, descend)))
     clackDone = true
   }
   if (wasShifting && !gearboxState.isShifting) {

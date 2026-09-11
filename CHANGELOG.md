@@ -8,6 +8,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le régime du rapport suivant, sur le compteur.** Une seconde aiguille, plus
+  courte, plus fine et d'une autre couleur, montre où le moteur retomberait si
+  le rapport suivant était engagé à l'instant. Elle disparaît au point mort et
+  sur le dernier rapport. Le chiffre vient du calcul que la boîte emploie pour
+  décider, et non d'un second écrit à côté.
+
+- **L'état du profil mesuré, en télémétrie.** Une section dit ce que le dernier
+  essai de lecture a donné : profil reçu, rien à proposer, serveur injoignable,
+  réponse illisible, procédé plus ancien. Les trois derniers signalent une
+  plomberie qui ne marche pas — jusqu'ici, ils se taisaient tous.
+
 - **La voiture propose son propre profil.** Quand le serveur a mesuré de quoi
   conclure, un bandeau l'annonce sous les cadrans : « Profil de la voiture prêt,
   sur dix-sept trajets », à appliquer ou à remettre à plus tard. Il ne bloque
@@ -112,6 +123,29 @@ Toutes les évolutions notables du projet. Format
   qu'on entend.
 
 ### Corrigé
+
+- **Le profil mesuré n'était servi par personne.** L'application demandait
+  `/profils/profil-voiture.json` ; nginx n'avait pas d'emplacement pour ce
+  chemin, le volume n'était pas monté dans le conteneur du site, et le dossier
+  n'existait pas sur le serveur. La requête tombait sur la règle générale, dont
+  le `try_files … /index.html` répond **200 avec la page d'accueil** : le code
+  voyait une réponse valable, échouait à la lire, et rendait la même absence
+  qu'un serveur sans mesure. Le bandeau de proposition ne pouvait donc pas
+  apparaître, et rien à l'écran ne le disait. Sortie du 11 septembre 2026.
+
+- **Le rétrogradage forcé rendait le rapport qu'il venait de prendre.** Sa cible
+  vaut `redlineRpm × 0,55` — 3 575 tours sur le V8 — quand le seuil de montée
+  immédiate de la quatrième à pleine demande vaut 3 514 : elle passait au-dessus
+  de sa propre porte de sortie. Mesuré le 11 septembre à 118 km/h : 6→4, puis
+  4→5 quatre dixièmes plus tard, puis 5→6, pour une reprise d'une seconde et
+  demie. Le rapport visé est maintenant choisi pour se garder, et le pied au
+  plancher le retient tant qu'il y reste — comme une automatique. Là où aucun
+  rapport ne se garderait, la boîte descend quand même : une boîte muette serait
+  un défaut pire.
+
+- **Le claquement de passage était trop fort à la montée.** Il perd trente pour
+  cent ; le rétrogradage garde le sien, au niveau près. Les deux réglages
+  bougent ensemble, l'amplitude de descente étant le produit des deux.
 
 - **Le cumul des mesures d'une voiture donne le même résultat qu'un recalcul.**
   Il n'en donnait pas : la vitesse pratiquée est un centile, qui **baisse**

@@ -1,6 +1,6 @@
 # 03 — Le régime qu'on aurait en passant maintenant
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — vérifié dans l'application qui tourne
 
 ## Ce qu'il faut obtenir
 
