@@ -8,6 +8,28 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le code d'étalonnage sait lire une capture de trajet.** Il mesurait les
+  enregistrements du protocole ; il mesure désormais un trajet ordinaire, avec
+  le même calcul plutôt qu'un second qui divergerait. C'est la première pièce du
+  profil de la vraie voiture dérivé des traces déposées.
+
+  Deux choix tranchés par la mesure sur le trajet du 11 septembre : la vitesse
+  retenue est la brute et non la conditionnée — le conditionnement lisse, et
+  mesurer sa sortie rendrait une voiture moins vive qu'elle n'est — et une mesure
+  réémise à l'identique n'est pas comptée, 23 983 relevés ne portant que 21 897
+  mesures distinctes.
+
+- **Les moments d'un trajet se reconnaissent sans qu'on les provoque** :
+  départs arrêtés, mises de gaz franches, vitesses tenues rangées par régime.
+  Les critères sont ceux du protocole, appliqués à des morceaux du trajet.
+
+- **Le pied levé se distingue du freinage par la forme de la distribution.**
+  Rien dans une trace ne dit si le frein a été touché ; mais 424 ralentissements
+  rangés par force se partagent, et la frontière est le seuil de rétrogradage
+  recherché. Sur le trajet du 11 septembre elle tombe à −1,04 m/s², là où le
+  profil est réglé à −1 à la main. Rien n'est proposé quand les deux groupes ne
+  se séparent pas.
+
 - **Un bouton pour redemander une position en roulant**, sur l'écran de
   télémétrie, dans la section « Qualité du signal ». Passer par « P » puis « D »
   relance déjà la localisation, mais coupe le son et scinde l'enregistrement en

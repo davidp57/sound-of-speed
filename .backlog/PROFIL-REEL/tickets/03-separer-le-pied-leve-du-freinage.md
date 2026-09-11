@@ -1,6 +1,6 @@
 # 03 — Séparer le pied levé du freinage, sans le demander
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré, mais la bimodalité reste à établir
 
 **Bloqué par :** 01 — Lire une capture déposée.
 
@@ -20,6 +20,23 @@ déjà : le protocole refuse une frontière quand les deux étapes rendent la m�
 décélération à moins de 0,5 m/s² près. Une mesure qu'on n'est pas sûr de savoir
 lire ne vaut pas mieux que pas de mesure — c'est ce qu'a coûté la borne basse
 proposée à −0,5 m/s², qui aurait écrêté tout freinage réel.
+
+## Ce que la trace réelle a appris
+
+La séparation **fonctionne** sur le trajet du 11 septembre : 424 ralentissements
+relevés, coupure à −1,04 m/s², pied levé moyen −0,51, freinage moyen −1,56.
+
+Et le profil règle ce même seuil à **−1 m/s²**, posé à la main : la mesure y
+retombe seule. C'est encourageant, ce n'est pas une preuve.
+
+**Ce qui n'est pas établi** : que la distribution ait vraiment deux bosses. Elle
+décroît continûment depuis un pic de 305 ralentissements doux. Le critère retenu
+— l'écart des deux moyennes, comme le protocole l'exige de ses deux étapes —
+dit que la coupure sépare quelque chose, pas qu'il y avait deux tas. Une
+décroissance régulière le passerait aussi.
+
+À reprendre quand plusieurs trajets seront là : un critère de **creux** entre
+les deux modes serait plus sûr, et plusieurs trajets diront si la valeur tient.
 
 ## Critères d'acceptation
 

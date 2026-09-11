@@ -1,6 +1,6 @@
 # 01 — Lire une capture déposée et en tirer des mesures
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — livré le 11 septembre 2026
 
 **Bloqué par :** rien.
 
