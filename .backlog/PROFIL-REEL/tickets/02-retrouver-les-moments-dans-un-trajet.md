@@ -1,6 +1,6 @@
 # 02 — Retrouver dans un trajet ordinaire les moments que le protocole demande
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — livré le 11 septembre 2026
 
 **Bloqué par :** 01 — Lire une capture déposée. Il n'y a rien à découper tant
 qu'on ne sait pas lire.
@@ -21,15 +21,32 @@ d'un enregistrement entier.
 Ce ticket ne traite **pas** les ralentissements : distinguer un pied levé d'un
 freinage est le ticket 03.
 
+## Ce que la trace réelle a appris
+
+**Le critère du protocole ne trouvait rien.** Il exige un départ arrêté, et sur
+le trajet du 11 septembre aucune accélération n'en partait au-dessus du seuil —
+les trois départs relevés montaient à 3 ou 4 km/h en une seconde. Pourtant 285
+relevés dépassaient 2 m/s², jusqu'à 3,38 : toutes les accélérations franches du
+trajet étaient des **relances en roulant**.
+
+D'où deux relevés distincts plutôt qu'un : les **départs** disent comment la
+voiture s'élance, les **mises de gaz** disent ce qu'elle a sous le pied. Le
+protocole exigeait l'arrêt pour garantir qu'on mesurait bien une mise des gaz ;
+sur un trajet ordinaire, la garantie vient d'ailleurs — une accélération
+soutenue au-dessus du seuil ne s'obtient pas en roue libre.
+
+Relevé sur le trajet : 8 mises de gaz franches, de 2,35 à 3,38 m/s², aux mêmes
+instants que les rétrogradages forcés entendus ce matin-là.
+
 ## Critères d'acceptation
 
-- [ ] Un trajet rend ses départs arrêtés, ses accélérations franches, et ses
+- [x] Un trajet rend ses départs arrêtés, ses accélérations franches, et ses
       paliers rangés par régime — ville, route, autoroute — selon les mêmes
       seuils que le protocole.
-- [ ] Le recollage des paliers est en place **avant** le filtre de durée : sans
+- [x] Le recollage des paliers est en place **avant** le filtre de durée : sans
       lui, 0,5 km/h de bruit coupe un palier de 80 s en vingt-sept morceaux.
-- [ ] Le plancher de 5 km/h tient : un feu rouge n'est pas le palier le mieux
+- [x] Le plancher de 5 km/h tient : un feu rouge n'est pas le palier le mieux
       tenu du trajet.
-- [ ] Relevé sur la session du 11 septembre, et les comptes sont confrontés à ce
+- [x] Relevé sur la session du 11 septembre, et les comptes sont confrontés à ce
       que le relecteur montre du même trajet.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

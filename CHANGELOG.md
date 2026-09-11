@@ -8,6 +8,35 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le code d'étalonnage sait lire une capture de trajet.** Il mesurait les
+  enregistrements du protocole ; il mesure désormais un trajet ordinaire, avec
+  le même calcul plutôt qu'un second qui divergerait. C'est la première pièce du
+  profil de la vraie voiture dérivé des traces déposées.
+
+  Deux choix tranchés par la mesure sur le trajet du 11 septembre : la vitesse
+  retenue est la brute et non la conditionnée — le conditionnement lisse, et
+  mesurer sa sortie rendrait une voiture moins vive qu'elle n'est — et une mesure
+  réémise à l'identique n'est pas comptée, 23 983 relevés ne portant que 21 897
+  mesures distinctes — le bruit du GPS, qui dimensionne la fenêtre
+  d'accélération, passe de 0,240 à 0,306 km/h une fois les réémissions
+  écartées.
+
+- **Les moments d'un trajet se reconnaissent sans qu'on les provoque** :
+  départs arrêtés, mises de gaz franches, vitesses tenues rangées par régime.
+  Les critères sont ceux du protocole, appliqués à des morceaux du trajet.
+
+- **Une première mesure du seuil de rétrogradage, tirée d'un trajet ordinaire.**
+  Rien dans une trace ne dit si le frein a été touché ; on range donc les
+  ralentissements par force et l'on cherche la coupure qui les sépare le mieux.
+  Sur le trajet du 11 septembre, 115 ralentissements retenus et une coupure à
+  −1,34 m/s². Rien n'est proposé quand les deux groupes ne se séparent pas.
+
+  **Ce n'est pas encore une preuve** : la distribution n'a qu'une bosse et une
+  queue, et le critère retenu dit que la coupure sépare quelque chose, pas qu'il
+  y avait deux façons de ralentir. La réponse dépend aussi de ce qu'on fait
+  entrer — une version plus permissive comptait 424 ralentissements et rendait
+  −1,04. Plusieurs trajets trancheront.
+
 - **Un bouton pour redemander une position en roulant**, sur l'écran de
   télémétrie, dans la section « Qualité du signal ». Passer par « P » puis « D »
   relance déjà la localisation, mais coupe le son et scinde l'enregistrement en

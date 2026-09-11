@@ -1,6 +1,6 @@
 # 01 — Lire une capture déposée et en tirer des mesures
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — livré le 11 septembre 2026
 
 **Bloqué par :** rien.
 
@@ -22,13 +22,13 @@ fausse ; la médiane les absorbe déjà, c'est à vérifier plutôt qu'à suppos
 
 ## Critères d'acceptation
 
-- [ ] Les tranches d'une session se recollent dans l'ordre, les doublons
+- [x] Les tranches d'une session se recollent dans l'ordre, les doublons
       d'horodatage écartés.
-- [ ] `measureTrace` rend ses grandeurs sur la session du 11 septembre 2026,
+- [x] `measureTrace` rend ses grandeurs sur la session du 11 septembre 2026,
       qui sert de banc — elle est rapatriée et fait 24 000 relevés.
-- [ ] Les chiffres obtenus sont confrontés à ce que la trace montre vraiment :
+- [x] Les chiffres obtenus sont confrontés à ce que la trace montre vraiment :
       vitesse maximale, nombre de départs arrêtés, cadence. Un chiffre qui ne
       se retrouve pas à la main est un chiffre faux.
-- [ ] Les trous à l'arrêt ne faussent ni la cadence ni la durée retenue.
-- [ ] Tests dans `core/`, sous Node, sans navigateur.
-- [ ] Contrôle qualité vert.
+- [x] Les trous à l'arrêt ne faussent ni la cadence ni la durée retenue.
+- [x] Tests dans `core/`, sous Node, sans navigateur.
+- [x] Contrôle qualité vert.

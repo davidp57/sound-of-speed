@@ -51,7 +51,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [RELECTURE](RELECTURE/spec.md) — revoir un trajet au bureau au lieu de le raconter de mémoire : une seule capture, automatique, et un relecteur avec timeline et carte | 🔄 sept tickets sur huit ; le rejeu sonore attend une capture réelle |
 | [PLANCHER](PLANCHER/spec.md) — la boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient, on ne descend qu'en ralentissant, et le rétrogradage forcé redevient exceptionnel | 🧑 règle livrée en version allégée, reste l'écoute et le format de profil |
 | [COMMANDES](COMMANDES/spec.md) — un interrupteur qui a la forme d'un sélecteur de boîte : D démarre, P met au repos, et la boîte remonte les rapports après un arrêt | 🧑 livré, reste l'essai en roulant |
-| [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | ⬜ spécifié et découpé en huit tickets ; à compte unique, donc sans attendre les comptes |
+| [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | 🔄 le calcul est là (tickets 01 à 03) ; restent l'agrégat, le verdict, le service et l'écran |
 | [SUITE-ESSAI-11](SUITE-ESSAI-11/spec.md) — deux points de l'essai du 11 septembre : la numérotation des tranches, et une relance GPS de secours | 🧑 relance livrée, reste la numérotation |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
@@ -88,10 +88,12 @@ puissance constante de vingt millisecondes. Deux parades prévues au ticket ont
 été essayées et écartées sur mesure : les deux instances permanentes en fondu
 croisé lent, et l'alignement de la nouvelle position sur le cycle moteur.
 
-**PROFIL-REEL a ses huit tickets** et son point dur est nommé : rien dans une
-trace ne dit si le frein a été touché, et c'est la forme de la distribution des
-ralentissements qui doit le dire. Le lot est faisable sans attendre les comptes,
-puisqu'on travaille à compte unique.
+**PROFIL-REEL a ses huit tickets**, et les trois premiers sont livrés : le
+calcul sait lire une capture, y retrouver les moments et séparer le pied levé du
+freinage. Son point dur reste ouvert — la distribution des ralentissements du
+trajet du 11 septembre n'a qu'une bosse et une queue, et rien ne prouve encore
+qu'il y ait deux façons de ralentir à y lire. Le lot est faisable sans attendre
+les comptes, puisqu'on travaille à compte unique.
 
 **Douze lots n'ont pas de tickets**, et c'est délibéré dans chaque cas : soit le
 travail est livré d'une pièce (PENTE, BANC-GPS, DELISSER, ESSAI-08, JOURNAL,
