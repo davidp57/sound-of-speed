@@ -1344,3 +1344,147 @@ describe('Gearbox — le seuil de montée suit la demande', () => {
     expect(remis.upshiftThresholdRpm - bas.upshiftThresholdRpm).toBeGreaterThan(1000)
   })
 })
+
+/**
+ * Le stationnement ne compte pas comme un ralentissement.
+ *
+ * Relevé en roulant le 11 septembre 2026. Après quarante-quatre minutes à
+ * l'arrêt, la boîte n'a plus passé un seul rapport de tout le trajet : la
+ * deuxième a tenu de 22 à 108 km/h, jusqu'au rupteur, et n'a été quittée que
+ * parce que le conducteur a touché le mode de conduite. Zéro montée de la
+ * deuxième à la troisième sur cinquante et un kilomètres.
+ *
+ * La cause est le cumul du temps passé à ralentir. La page en veille bat au
+ * ralenti — jusqu'à vingt secondes par tour — et le compteur avalait ces pas
+ * entiers : mesuré à 2 706 secondes pour un seuil de 0,35. Il aurait fallu
+ * vingt-deux minutes d'accélération continue pour le rendre, donc l'inhibition
+ * de montée ne retombait jamais.
+ */
+describe('un long arrêt ne bloque pas les passages', () => {
+  /** Le pas que la boucle prend quand la page n'est plus au premier plan. */
+  const PAS_EN_VEILLE_S = 20
+
+  function gareLongtemps(gearbox: Gearbox, p: Profile, minutes: number): void {
+    const immobile = {
+      rpmInGear: rpmInGearAt(p, 0),
+      atStandstill: true,
+      load: 0.5,
+      kmh: 0,
+      // Ce que la chaîne a réellement transmis le 11 septembre : une voiture
+      // garée, vitesse nulle et constante, à laquelle le conditionneur prêtait
+      // une décélération de trois dixièmes de mètre par seconde carrée.
+      accelMs2: -0.3,
+    }
+    for (let t = 0; t < minutes * 60; t += PAS_EN_VEILLE_S) {
+      gearbox.tick(PAS_EN_VEILLE_S, immobile)
+    }
+  }
+
+  it('monte les rapports après quarante-cinq minutes de stationnement', () => {
+    const p = profile()
+    const gearbox = makeGearbox(p)
+    gareLongtemps(gearbox, p, 45)
+
+    // Puis on repart, franchement : quarante secondes pour atteindre 110 km/h.
+    const shifts: Shift[] = []
+    let precedent = gearbox.tick(FRAME_S, {
+      rpmInGear: rpmInGearAt(p, 0),
+      atStandstill: true,
+      load: 0.5,
+      kmh: 0,
+      accelMs2: 0,
+    }).gear
+    for (let frame = 1; frame * FRAME_S <= 40; frame += 1) {
+      const t = frame * FRAME_S
+      const kmh = Math.min(110, t * 2.75)
+      const etat = gearbox.tick(FRAME_S, {
+        rpmInGear: rpmInGearAt(p, kmh),
+        atStandstill: kmh < 1,
+        load: 0.7,
+        kmh,
+        accelMs2: kmh < 110 ? 2.75 / 3.6 : 0,
+      })
+      if (etat.gear !== precedent) {
+        shifts.push({ from: precedent, to: etat.gear, kmh, rpm: 0, t })
+        precedent = etat.gear
+      }
+    }
+
+    // Ce qui s'entend : la boîte a bien monté, et elle est allée au-delà de la
+    // deuxième — c'est exactement là qu'elle restait collée.
+    expect(shifts.length).toBeGreaterThanOrEqual(3)
+    expect(precedent).toBeGreaterThanOrEqual(3)
+  })
+
+  it('ne laisse pas la deuxième monter jusqu’au rupteur', () => {
+    const p = profile()
+    const gearbox = makeGearbox(p)
+    gareLongtemps(gearbox, p, 45)
+
+    let regimeMaxEnDeuxieme = 0
+    for (let frame = 1; frame * FRAME_S <= 40; frame += 1) {
+      const kmh = Math.min(110, frame * FRAME_S * 2.75)
+      const rpmInGear = rpmInGearAt(p, kmh)
+      const etat = gearbox.tick(FRAME_S, {
+        rpmInGear,
+        atStandstill: kmh < 1,
+        load: 0.7,
+        kmh,
+        accelMs2: kmh < 110 ? 2.75 / 3.6 : 0,
+      })
+      if (etat.gear === 1) regimeMaxEnDeuxieme = Math.max(regimeMaxEnDeuxieme, rpmInGear(1))
+    }
+
+    expect(regimeMaxEnDeuxieme).toBeLessThan(p.engine.redlineRpm * 0.9)
+  })
+})
+
+/**
+ * Le plafond du compteur ne rend pas la montée possible en pleine décélération.
+ *
+ * Le plafond posé le 11 septembre 2026 raccourcit la dette accumulée pendant un
+ * ralentissement : avant lui, dix secondes de freinage donnaient dix secondes
+ * de tampon, et un soubresaut du signal ne pouvait pas faire retomber
+ * l'inhibition. Il faut vérifier que la valeur retenue laisse encore de quoi
+ * traverser le bruit de la mesure, annoncé à un dixième de m/s² là où le seuil
+ * de ralentissement vaut 0,05.
+ */
+describe('une décélération bruitée n’autorise pas de montée', () => {
+  it('ne monte aucun rapport sur dix secondes de ralentissement tremblé', () => {
+    const p = profile()
+    const gearbox = makeGearbox(p)
+
+    // On part lancé, en sixième, à un régime qui dépasse le seuil de montée :
+    // si l'inhibition retombe une seule fois, un passage se déclenche.
+    let kmh = 130
+    gearbox.settleFor(rpmInGearAt(p, kmh))
+    const depart = gearbox.tick(FRAME_S, {
+      rpmInGear: rpmInGearAt(p, kmh),
+      atStandstill: false,
+      load: 0.5,
+      kmh,
+      accelMs2: 0,
+    }).gear
+
+    let montees = 0
+    let precedent = depart
+    for (let frame = 1; frame * FRAME_S <= 10; frame += 1) {
+      // Une décélération franche, tremblée de ±0,1 m/s² — le bruit annoncé de
+      // la mesure —, qui repasse donc régulièrement au-dessus du seuil de 0,05.
+      const bruit = Math.sin(frame * 1.7) * 0.1
+      const accelMs2 = -0.6 + bruit
+      kmh = Math.max(30, kmh + accelMs2 * 3.6 * FRAME_S)
+      const etat = gearbox.tick(FRAME_S, {
+        rpmInGear: rpmInGearAt(p, kmh),
+        atStandstill: false,
+        load: 0.35,
+        kmh,
+        accelMs2,
+      })
+      if (etat.gear > precedent) montees += 1
+      precedent = etat.gear
+    }
+
+    expect(montees).toBe(0)
+  })
+})

@@ -661,3 +661,40 @@ describe("l'échelle de l'horodatage", () => {
     expect(accel).toBeCloseTo(1.39, 1)
   })
 })
+
+/**
+ * Une voiture garée n'accélère pas, même quand la page n'est plus au premier
+ * plan.
+ *
+ * Relevé en roulant le 11 septembre 2026 : quarante-quatre minutes à l'arrêt,
+ * vitesse conditionnée à 0,000 km/h d'un bout à l'autre, et une décélération
+ * annoncée entre 0,19 et 0,39 m/s² pendant tout ce temps. La pente n'était plus
+ * recalculée faute de mesure neuve, et sa dernière valeur passait pour vraie.
+ *
+ * En aval, la boîte en a nourri son compteur de ralentissement jusqu'à ne plus
+ * pouvoir passer un seul rapport du trajet.
+ */
+describe('accélération à l’arrêt', () => {
+  it('reste nulle quand la voiture est immobile et que les mesures s’espacent', () => {
+    const conditioner = new SpeedConditioner(preset())
+    let at = 0
+
+    // D'abord un freinage jusqu'à l'arrêt : c'est lui qui charge la pente.
+    for (let kmh = 30; kmh >= 0; kmh -= 2) {
+      at += 1000
+      conditioner.push(mesure(Math.max(0, kmh), at))
+      for (let f = 0; f < 60; f += 1) conditioner.tick(FRAME_S)
+    }
+
+    // Puis la voiture reste garée, et la boucle passe au ralenti : vingt
+    // secondes par tour, sans qu'aucune mesure neuve n'arrive.
+    let maximum = 0
+    for (let tour = 0; tour < 45 * 3; tour += 1) {
+      const etat = conditioner.tick(20)
+      maximum = Math.max(maximum, Math.abs(etat.accelMs2))
+      expect(etat.kmh).toBeLessThan(0.8)
+    }
+
+    expect(maximum).toBe(0)
+  })
+})

@@ -289,20 +289,34 @@ export class SpeedConditioner {
    * elles-mêmes, pas sur la vitesse lissée, et il suffit qu'**une** mesure de la
    * fenêtre dépasse le seuil pour qu'on estime à nouveau : sinon un démarrage
    * franc serait manqué le temps que la vitesse lissée monte.
+   *
+   * L'accélération rendue emploie l'autre critère — la vitesse lissée —, et ce
+   * n'est pas une incohérence : celle-là s'aligne sur `atStandstill`, pour que
+   * les deux sorties ne se contredisent jamais. Ici c'est la réactivité qui
+   * prime, là-bas la cohérence. Ne pas unifier les deux sans mesurer ce qu'un
+   * démarrage franc y perd.
    */
+  /**
+   * Vrai dès qu'**une** mesure de la fenêtre dépasse le seuil d'arrêt.
+   *
+   * Le seuil porte sur les mesures et non sur la vitesse lissée : celle-ci met
+   * un instant à monter, et un démarrage franc serait vu immobile le temps que
+   * le ressort la rattrape. C'est le seul critère d'arrêt du fichier, employé
+   * par l'estimation de pente comme par l'accélération qu'on rend.
+   */
+  private measuresShowMotion(): boolean {
+    for (const point of this.history) {
+      if (point.kmh >= STANDSTILL_KMH) return true
+    }
+    return false
+  }
+
   private estimateSlope(at: number): number {
     const points = this.history
     const n = points.length
     if (n < 2) return 0
 
-    let moving = false
-    for (const point of points) {
-      if (point.kmh >= STANDSTILL_KMH) {
-        moving = true
-        break
-      }
-    }
-    if (!moving) return 0
+    if (!this.measuresShowMotion()) return 0
 
     // Abscisses relatives à la mesure courante, en secondes : les horodatages
     // bruts sont de grands nombres, et leur carré perdrait de la précision.
@@ -372,11 +386,29 @@ export class SpeedConditioner {
     // réactivité au maximum.
     //
     // La pente était déjà calculée ici, et ne servait qu'à l'extrapolation.
-    this.accelMs2 = clamp(
-      this.slopeKmhS / 3.6,
-      this.preset.minAccelMs2,
-      this.preset.maxAccelMs2,
-    )
+    // Une voiture immobile n'accélère pas, et cela vaut aussi quand plus aucune
+    // mesure n'arrive : la pente garde alors la dernière valeur estimée, et la
+    // chaîne entière la reçoit comme une vérité du moment.
+    //
+    // Relevé en roulant le 11 septembre 2026 : quarante-quatre minutes de
+    // stationnement, vitesse conditionnée à 0,000 km/h d'un bout à l'autre, et
+    // une décélération annoncée entre 0,19 et 0,39 m/s² pendant tout ce temps.
+    // La boîte en a nourri son compteur de ralentissement jusqu'à ne plus
+    // pouvoir monter un seul rapport du trajet. La garde posée sur l'estimation
+    // ne suffisait pas : elle ne protège que le calcul, pas la valeur retenue.
+    //
+    // Le critère est ici celui de la vitesse lissée, et non celui des mesures
+    // qu'emploie l'estimation de pente. Les deux coexistent exprès : la pente
+    // doit repartir dès qu'**une** mesure bouge, sans quoi un démarrage franc
+    // serait manqué le temps que le ressort monte ; l'accélération qu'on rend,
+    // elle, s'aligne sur `atStandstill` ci-dessous, qui se lit sur la même
+    // vitesse lissée. Les deux sorties du conditionnement disent alors la même
+    // chose, et aucun consommateur ne peut voir « à l'arrêt » et « en
+    // décélération » au même instant.
+    this.accelMs2 =
+      this.smoothedKmh < STANDSTILL_KMH
+        ? 0
+        : clamp(this.slopeKmhS / 3.6, this.preset.minAccelMs2, this.preset.maxAccelMs2)
 
     this.guardAgainstNaN()
 

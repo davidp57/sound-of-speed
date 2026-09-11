@@ -99,7 +99,31 @@ import {
   forgetEngine,
   exportEngine,
   importEngine,
+  driveFace,
+  setDriveFace,
+  simulatorAvailable,
+  sourceKind,
+  setSource,
+  type SourceKind,
 } from '../state'
+
+/**
+ * Les sources de vitesse qu'on peut choisir, et pourquoi il n'y en a qu'une en
+ * voiture.
+ *
+ * David : « en voiture on est toujours en GPS, pas besoin des boutons simu ou
+ * rejeu ». Le simulateur et le rejeu sont des outils d'atelier ; ni l'un ni
+ * l'autre n'a de sens au volant, où ils ne seraient qu'un moyen de se tromper
+ * sur ce qu'on entend. La rangée entière disparaît quand il ne reste que le
+ * GPS : un seul bouton qu'on ne peut pas désactiver n'est pas un choix.
+ */
+const SOURCES: { id: SourceKind; label: string }[] = simulatorAvailable
+  ? [
+      { id: 'simulator', label: 'Simulateur' },
+      { id: 'geolocation', label: 'GPS' },
+      { id: 'replay', label: 'Rejeu' },
+    ]
+  : [{ id: 'geolocation', label: 'GPS' }]
 
 /**
  * Écran de configuration.
@@ -742,6 +766,48 @@ async function rapatrier(): Promise<void> {
   <div class="config">
     <section class="panel wide simple">
       <h2>Réglage</h2>
+
+      <!--
+        Ce qui se règle une fois et ne se touche plus en roulant. Ces deux
+        rangées vivaient sur l'écran de conduite, où elles prenaient la place de
+        ce qu'on lit au volant — et où le choix de la source n'était qu'un moyen
+        de se tromper sur ce qu'on entend.
+      -->
+      <p class="choice-label">Affichage de la conduite</p>
+      <div class="choices">
+        <button :aria-pressed="driveFace === 'dials'" @click="setDriveFace('dials')">
+          Cadrans
+        </button>
+        <button :aria-pressed="driveFace === 'numbers'" @click="setDriveFace('numbers')">
+          Chiffres
+        </button>
+      </div>
+      <p class="note">
+        Les cadrans se lisent mieux en roulant ; les chiffres servent au réglage,
+        où cent tours d'écart ne se voient pas sur une aiguille. C'est une
+        préférence de cet appareil, comme le volume : elle ne voyage pas avec un
+        profil partagé.
+      </p>
+
+      <template v-if="SOURCES.length > 1">
+        <p class="choice-label">Source de vitesse</p>
+        <div class="choices">
+          <button
+            v-for="entry in SOURCES"
+            :key="entry.id"
+            :aria-pressed="sourceKind === entry.id"
+            @click="setSource(entry.id)"
+          >
+            {{ entry.label }}
+          </button>
+        </div>
+        <p class="note">
+          En voiture on est toujours au GPS. Le simulateur et le rejeu sont des
+          outils d'atelier — l'un fabrique une vitesse, l'autre en rejoue une
+          enregistrée — et n'existent pas dans l'image de production.
+        </p>
+      </template>
+
       <div class="mode">
         <button :aria-pressed="!advancedMode" @click="setAdvancedMode(false)">Simplifié</button>
         <button :aria-pressed="advancedMode" @click="setAdvancedMode(true)">Avancé</button>
@@ -1434,7 +1500,7 @@ async function rapatrier(): Promise<void> {
       <p class="note">
         Les régimes de passage ne se règlent plus ici : ils se déduisent du
         <strong>rupteur du moteur</strong> et du <strong>tempérament</strong> —
-        route ou sport —, qui se choisit sous les cadrans de l'écran de conduite.
+        route ou sport —, qui se choisit sur la touche de marche, entre les cadrans de l'écran de conduite.
         C'est ce qui fait qu'un moteur de moto tient ses rapports plus longtemps
         qu'un V8, là où cinq régimes en tours absolus ignoraient le moteur qu'ils
         avaient devant eux.

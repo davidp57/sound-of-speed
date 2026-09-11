@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import DialGauge from './components/DialGauge.vue'
+import DriveSelector from './DriveSelector.vue'
 import { describesSimulatedEngine, soundSourceOf } from '../core/preset/schema'
 import {
   ENGINE_LIBRARY,
@@ -16,28 +17,16 @@ import {
   driveFace,
   favoriteProfiles,
   masterVolume,
-  setDriveFace,
   setMasterVolume,
-  simulatorAvailable,
   selectProfile,
   selectedProfileId,
   audioStatus,
-  isMuted,
   synthIsOrigin,
   synthStatus,
   isRunning,
-  keepScreenOn,
-  screenLockError,
-  screenLockHeld,
-  screenLockSupported,
-  setKeepScreenOn,
+  lastAccuracyM,
+  soundState,
   setMuted,
-  setShiftMode,
-  setDriveMode,
-  currentDriveMode,
-  setSource,
-  shiftDown,
-  shiftUp,
   fixRestarts,
   fixStats,
   rejectionCause,
@@ -45,20 +34,7 @@ import {
   sourceKind,
   sourceStatus,
   telemetry,
-  type SourceKind,
 } from '../state'
-import { DRIVE_MODE_LABELS } from '../core/drivetrain/drive-mode'
-
-/**
- * Bascule le tempérament.
- *
- * Deux valeurs, donc un bouton et non deux : il porte celle qui est active et
- * donne l'autre au clic. C'est le patron que le plein écran emploie déjà pour la
- * commande de boîte.
- */
-function toggleDriveMode(): void {
-  setDriveMode(currentDriveMode.value === 'sport' ? 'road' : 'sport')
-}
 
 withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
 
@@ -111,26 +87,6 @@ const engineLabel = computed(() => {
 const emit = defineEmits<{ exit: [] }>()
 
 /**
- * Les sources de vitesse qu'on peut choisir, et pourquoi il n'y en a qu'une en
- * voiture.
- *
- * David : « en voiture on est toujours en GPS, pas besoin des boutons simu ou
- * rejeu ». Le simulateur et le rejeu sont des outils d'atelier — l'un fabrique
- * une vitesse, l'autre en rejoue une enregistrée ; ni l'un ni l'autre n'a de
- * sens au volant, où ils ne seraient qu'un moyen de se tromper sur ce qu'on
- * entend. Ils ne sont donc proposés qu'en développement, et la rangée entière
- * disparaît quand il ne reste que le GPS : un seul bouton qu'on ne peut pas
- * désactiver n'est pas un choix.
- */
-const SOURCES: { id: SourceKind; label: string }[] = simulatorAvailable
-  ? [
-      { id: 'simulator', label: 'Simulateur' },
-      { id: 'geolocation', label: 'GPS' },
-      { id: 'replay', label: 'Rejeu' },
-    ]
-  : [{ id: 'geolocation', label: 'GPS' }]
-
-/**
  * Les trois modes du banc, et ce que chacun met à l'épreuve.
  *
  * L'ordre est celui de la fidélité croissante, et le libellé dit ce qu'on gagne
@@ -146,7 +102,14 @@ const STATUS_LABELS: Record<string, string> = {
   unavailable: 'indisponible',
 }
 
-const manual = computed(() => telemetry.value.gearbox.mode === 'manual')
+/**
+ * Le rapport affiché, et « P » quand l'application est au repos.
+ *
+ * C'est la position du sélecteur qu'on lit alors, pas un rapport engagé — et la
+ * même lettre dans les deux modes de boîte : « N » en manuelle laisserait
+ * croire à un point mort qui n'existe pas ici, et à un moyen d'y aller.
+ */
+const gearLabel = computed(() => (isRunning.value ? telemetry.value.gearbox.label : 'P'))
 
 /**
  * Ce qui écarte les positions, quand la vitesse se fige alors que le GPS parle.
@@ -163,15 +126,38 @@ const REJECTION_LABELS: Record<string, string> = {
   inaccurate:
     'Les positions sont annoncées trop imprécises et sont toutes écartées. ' +
     'Voyez « Précision GPS acceptée ».',
+  // Complété plus bas par la précision réellement annoncée : c'est elle qui
+  // distingue un GPS médiocre d'une valeur sentinelle.
+
   tooClose:
     'Les positions se suivent de trop près pour en tirer une vitesse, et le GPS ' +
     'n’annonce pas la sienne.',
   none: 'Le GPS envoie des positions, mais aucune vitesse n’en sort.',
 }
 
-const rejectionMessage = computed(() =>
-  rejectionCause.value === null ? '' : (REJECTION_LABELS[rejectionCause.value] ?? ''),
-)
+/**
+ * Le seul message qui compte à cet instant, ou rien.
+ *
+ * Un seul, et par ordre de ce que le conducteur peut y faire : une autorisation
+ * refusée se règle, un rejet se comprend, un silence s'attend. En empiler
+ * plusieurs reviendrait à n'en faire lire aucun.
+ */
+const alerte = computed(() => {
+  if (!isRunning.value) return 'Application au repos. Toucher D pour démarrer.'
+  if (sourceKind.value === 'geolocation' && sourceStatus.value === 'denied') {
+    return 'La localisation a été refusée. Autorisez-la dans les réglages du site.'
+  }
+  if (rejectionMessage.value) return rejectionMessage.value
+  return silentSourceMessage.value
+})
+
+const rejectionMessage = computed(() => {
+  if (rejectionCause.value === null) return ''
+  const base = REJECTION_LABELS[rejectionCause.value] ?? ''
+  const annoncee = lastAccuracyM.value
+  if (rejectionCause.value !== 'inaccurate' || annoncee === null) return base
+  return `${base} Annoncée : ${Math.round(annoncee).toLocaleString('fr-FR')} m.`
+})
 /**
  * Ce que l'écran dit quand le GPS ne donne rien.
  *
@@ -213,35 +199,48 @@ const silentSourceMessage = computed(() => {
  * L'état du son, quelle que soit son origine.
  *
  * Un profil « généré en direct » ne charge pas de banque : c'est l'état du
- * moteur simulé que le bouton doit montrer. Une seule lecture pour tout ce que
- * le bouton dit de lui-même — son texte, sa couleur, son geste — sinon les trois
- * se désaccordent : le libellé tenait compte de l'origine, la couleur non, et le
- * bouton annonçait « Son actif » en gris pendant que le moteur simulé jouait.
+ * moteur simulé qu'il faut lire. Ce que le bouton dit de lui-même — son texte,
+ * sa couleur, son geste — vient désormais de `soundState`, qui compose cette
+ * phase avec le reste en une seule lecture ; sans quoi les trois se
+ * désaccordent, comme du temps où le libellé tenait compte de l'origine et la
+ * couleur non.
  */
 const audioPhase = computed(() =>
   synthIsOrigin.value ? synthStatus.value.phase : audioStatus.value.phase,
 )
 
+/**
+ * Le bouton son du plein écran, où le sélecteur n'a pas sa place.
+ *
+ * Il lit le même état que lui — `soundState` — pour que les deux ne puissent
+ * pas se contredire, et il nomme le cas d'une autre application qui a pris la
+ * sortie : le bouton disait alors « Activer le son » alors que personne ne
+ * l'avait coupé.
+ */
 const audioLabel = computed(() => {
-  switch (audioPhase.value) {
+  switch (soundState.value) {
     case 'loading':
       return synthIsOrigin.value
         ? 'Moteur en construction'
         : `Chargement ${audioStatus.value.loaded}/${audioStatus.value.total}`
-    case 'ready':
-      return isMuted.value ? 'Son coupé' : 'Son actif'
     case 'error':
       return 'Son en erreur'
+    case 'muted':
+      return 'Son coupé'
+    case 'taken':
+      return 'Son pris ailleurs'
+    case 'on':
+      return 'Son actif'
     default:
       return 'Activer le son'
   }
 })
 
-/** Le bouton est allumé quand du son sort vraiment, et de n'importe quelle origine. */
-const audioOn = computed(() => audioPhase.value === 'ready' && !isMuted.value)
+const audioOn = computed(() => soundState.value === 'on')
 
 function toggleAudio(): void {
-  if (audioPhase.value === 'ready') setMuted(!isMuted.value)
+  if (soundState.value === 'on') setMuted(true)
+  else if (soundState.value === 'muted') setMuted(false)
   else void activateAudio()
 }
 
@@ -290,17 +289,12 @@ const SPEED_STEP_KMH = 20
         :aria-label="captureStatus.why"
       ></span>
 
+      <!--
+        Le choix de la source vit dans la configuration : on ne le fait pas en
+        roulant, et l'écran embarqué reste sobre. Ne reste ici que l'état de la
+        source, qui est une information et non une commande.
+      -->
       <section v-if="!immersive" class="sources">
-      <template v-if="SOURCES.length > 1">
-        <button
-          v-for="entry in SOURCES"
-          :key="entry.id"
-          :aria-pressed="sourceKind === entry.id"
-          @click="setSource(entry.id)"
-        >
-          {{ entry.label }}
-        </button>
-      </template>
       <span class="status">
         {{ STATUS_LABELS[sourceStatus] ?? sourceStatus }}
         <template v-if="sourceDetail"> — {{ sourceDetail }}</template>
@@ -308,23 +302,14 @@ const SPEED_STEP_KMH = 20
     </section>
 
     <!--
-      Les deux visages de l'écran.
-      Les cadrans se lisent mieux en roulant ; on ne règle pas un profil sur une
-      aiguille, où cent tours d'écart ne se voient pas. Le choix est une
-      préférence de l'appareil, retenue d'une ouverture à l'autre.
+      Le choix entre les deux visages est passé en configuration : il se fait
+      une fois et ne se touche plus en roulant.
 
       Le décor qui défilait derrière les cadrans est retiré : il défilait de
       côté, comme un jeu de plateforme, là où une vue depuis la place du
       conducteur défile en perspective, d'avant en arrière. Il reviendra
       autrement, et le code de l'ancien est dans l'historique.
     -->
-      <section v-if="!immersive" class="face-switch">
-        <button :aria-pressed="driveFace === 'dials'" @click="setDriveFace('dials')">Cadrans</button>
-        <button :aria-pressed="driveFace === 'numbers'" @click="setDriveFace('numbers')">
-          Chiffres
-        </button>
-      </section>
-
       <section v-if="favoriteProfiles.length > 1" class="favorites" :class="{ large: immersive }">
       <button
         v-for="entry in favoriteProfiles"
@@ -361,22 +346,14 @@ const SPEED_STEP_KMH = 20
 
       <div class="cell gear">
         <!--
-          Les commandes de boîte encadrent le rapport, et ne sont plus rangées
-          en bas de l'écran : c'est la disposition que David a dessinée le
-          10 septembre 2026, et elle place la main là où le regard est déjà —
-          entre les deux cadrans, au lieu de descendre chercher une barre.
+          Les commandes ne sont pas rangées en bas de l'écran : elles sont entre
+          les deux cadrans, là où le regard est déjà, au lieu de descendre
+          chercher une barre. Le rapport se lit à leur droite.
         -->
-        <div class="gear-controls">
-          <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
-            {{ manual ? 'Manuelle' : 'Auto' }}
-          </button>
-          <button :disabled="!manual" @click="shiftDown()">−</button>
-          <button :disabled="!manual" @click="shiftUp()">+</button>
-        </div>
-        <div class="gear-value numeric">{{ telemetry.gearbox.label }}</div>
-        <div class="unit">rapport</div>
-        <div class="gear-controls">
-          <button @click="toggleDriveMode()">{{ DRIVE_MODE_LABELS[currentDriveMode] }}</button>
+        <DriveSelector />
+        <div class="gear-read">
+          <div class="gear-value numeric">{{ gearLabel }}</div>
+          <div class="unit">rapport</div>
         </div>
       </div>
 
@@ -399,17 +376,10 @@ const SPEED_STEP_KMH = 20
       </div>
 
       <div class="cell gear">
-        <div class="gear-controls">
-          <button :aria-pressed="manual" @click="setShiftMode(manual ? 'auto' : 'manual')">
-            {{ manual ? 'Manuelle' : 'Auto' }}
-          </button>
-          <button :disabled="!manual" @click="shiftDown()">−</button>
-          <button :disabled="!manual" @click="shiftUp()">+</button>
-        </div>
-        <div class="value numeric">{{ telemetry.gearbox.label }}</div>
-        <div class="unit">rapport</div>
-        <div class="gear-controls">
-          <button @click="toggleDriveMode()">{{ DRIVE_MODE_LABELS[currentDriveMode] }}</button>
+        <DriveSelector />
+        <div class="gear-read">
+          <div class="value numeric">{{ gearLabel }}</div>
+          <div class="unit">rapport</div>
         </div>
       </div>
 
@@ -425,6 +395,14 @@ const SPEED_STEP_KMH = 20
         </div>
       </div>
     </section>
+
+    <!--
+      Ce qui ne va pas se lit **sous les cadrans**, pas au bas de l'écran.
+      Le 11 septembre 2026, la géolocalisation a été muette pendant tout un
+      trajet : le motif du rejet existait déjà, mais rangé sous les réglages, là
+      où personne ne regarde en conduisant.
+    -->
+    <p v-if="alerte" class="alert">{{ alerte }}</p>
 
     <!--
       La sortie du plein écran est à gauche, à l'écart des autres et d'une autre
@@ -447,16 +425,14 @@ const SPEED_STEP_KMH = 20
 
     <section v-else class="controls">
       <div class="control-bar">
-      <div class="group">
+      <!--
+        Le son se coupe et se rend depuis l'en-tête. Il ne reste ici que le
+        volume, qui est un réglage : on le pose une fois pour la voiture et on
+        n'y revient pas en roulant.
+      -->
+      <div v-if="audioPhase === 'ready'" class="group">
         <span class="label">Son</span>
-        <button
-          :class="{ 'is-active': audioOn }"
-          :disabled="audioPhase === 'loading'"
-          @click="toggleAudio()"
-        >
-          {{ audioLabel }}
-        </button>
-        <label v-if="audioPhase === 'ready'" class="volume">
+        <label class="volume">
           Volume
           <input
             type="range"
@@ -468,38 +444,32 @@ const SPEED_STEP_KMH = 20
           />
         </label>
       </div>
-      <div v-if="screenLockSupported" class="group">
-        <span class="label">Écran</span>
-        <button :aria-pressed="keepScreenOn" @click="setKeepScreenOn(!keepScreenOn)">
-          Garder allumé
-        </button>
-        <span v-if="keepScreenOn && screenLockHeld" class="hint">actif</span>
-        <span v-else-if="keepScreenOn" class="hint warn">
-          {{ screenLockError || 'Verrou non obtenu.' }}
-        </span>
-      </div>
-
       </div>
 
       <p v-if="audioPhase === 'error'" class="hint warn">
         {{ synthIsOrigin ? synthStatus.error : audioStatus.error }}
       </p>
 
-      <p v-if="rejectionMessage" class="hint warn">{{ rejectionMessage }}</p>
-
-      <p v-else-if="sourceKind === 'geolocation' && sourceStatus === 'denied'" class="hint warn">
-        La localisation a été refusée. Autorisez-la dans les réglages du site pour
-        mesurer votre vitesse.
-      </p>
-
-      <p v-else-if="silentSourceMessage" class="hint warn">{{ silentSourceMessage }}</p>
     </section>
 
-    <p v-if="!isRunning" class="hint">La boucle est arrêtée. Rien n'est mis à jour.</p>
   </div>
 </template>
 
 <style scoped>
+/*
+ * L'alerte est sous les cadrans, en pleine largeur, et n'apparaît que quand il
+ * y a quelque chose à faire. Pas de clignotement : sa présence est le signal.
+ */
+.alert {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  border: 1px solid var(--warn);
+  color: var(--warn);
+  font-size: 0.95rem;
+}
+
 .drive {
   display: flex;
   flex-direction: column;
@@ -511,13 +481,14 @@ const SPEED_STEP_KMH = 20
 /*
  * Une seule barre d'outils, sur une ligne quand la place le permet.
  *
- * Les trois groupes — source, profil, visage — occupaient trois lignes, soit
- * autant de hauteur prise sur les cadrans. Ils se replient l'un après l'autre
- * dès que la largeur manque, ce qui compte : la largeur utile du navigateur de
- * la voiture n'est pas connue, et son zoom n'est pas réglable.
+ * Ce qui s'y choisissait — la source, l'affichage — est passé en
+ * configuration ; il n'y reste que l'état de la source et les profils
+ * épinglés. Les groupes se replient l'un après l'autre dès que la largeur
+ * manque, ce qui compte : la largeur utile du navigateur de la voiture n'est
+ * pas connue, et son zoom n'est pas réglable.
  *
- * Les groupes restent des sections distinctes : ce sont trois choix sans
- * rapport, et un lecteur d'écran doit continuer de les entendre séparés.
+ * Les groupes restent des sections distinctes : ce sont deux choses sans
+ * rapport, et un lecteur d'écran doit continuer de les entendre séparées.
  */
 .toolbar {
   display: flex;
@@ -559,19 +530,14 @@ const SPEED_STEP_KMH = 20
 }
 
 /*
- * Trois ancrages plutôt que trois places au fil du texte : la source à gauche,
- * l'affichage au centre, les profils à droite. Chacun garde sa place quand les
- * autres changent de largeur — un nom de profil plus long ne doit pas déplacer
- * les boutons de source, qu'on cherche au même endroit à chaque fois.
+ * Deux ancrages plutôt que deux places au fil du texte : l'état de la source à
+ * gauche, les profils à droite. Chacun garde sa place quand l'autre change de
+ * largeur — un nom de profil plus long ne doit pas déplacer ce qu'on cherche au
+ * même endroit à chaque fois.
  *
- * Les marges automatiques tombent d'elles-mêmes quand la barre se replie : les
- * groupes se rangent alors les uns sous les autres, alignés à gauche.
+ * La marge automatique tombe d'elle-même quand la barre se replie : les groupes
+ * se rangent alors l'un sous l'autre, alignés à gauche.
  */
-.face-switch {
-  margin-left: auto;
-  margin-right: auto;
-}
-
 .favorites {
   margin-left: auto;
 }
@@ -653,11 +619,6 @@ const SPEED_STEP_KMH = 20
   background: var(--warn);
 }
 
-.face-switch {
-  display: flex;
-  gap: 0.4rem;
-}
-
 
 /*
  * Tableau de bord.
@@ -674,7 +635,12 @@ const SPEED_STEP_KMH = 20
 .dashboard {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr minmax(4.5rem, 0.5fr) 1fr;
+  /*
+   * La colonne centrale porte maintenant le sélecteur **et** le rapport, côte
+   * à côte : il lui faut la place des deux, sans quoi le rapport retombe sous
+   * les touches et la rangée dépasse les cadrans.
+   */
+  grid-template-columns: 1fr minmax(15rem, 0.8fr) 1fr;
   grid-template-areas: 'speed gear rpm';
   align-items: center;
   gap: 0.75rem;
@@ -700,9 +666,26 @@ const SPEED_STEP_KMH = 20
   grid-area: rpm;
 }
 
+/*
+ * Le sélecteur à gauche, le rapport à sa droite — la disposition que David a
+ * dessinée le 11 septembre 2026. Côte à côte, la colonne centrale reste à la
+ * hauteur des cadrans ; l'un sous l'autre, elle les dépassait de cinquante
+ * pixels et tirait toute la rangée vers le bas.
+ */
 .dashboard .gear {
   grid-area: gear;
   text-align: center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.gear-read {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .gear-value {
@@ -719,9 +702,9 @@ const SPEED_STEP_KMH = 20
 }
 
 /*
- * Son, écran et boîte sur une ligne : trois réglages qu'on touche à l'arrêt, et
- * qui prenaient trois lignes de haut à eux seuls. Ils se replient quand la
- * largeur manque, comme la barre du haut.
+ * Il n'y reste que le volume : la boîte est passée dans le sélecteur, le son et
+ * le verrou d'écran dans l'en-tête. La barre se replie quand la largeur manque,
+ * comme celle du haut.
  */
 .control-bar {
   display: flex;
@@ -802,23 +785,6 @@ const SPEED_STEP_KMH = 20
 
 .hint.warn {
   color: var(--warn);
-}
-
-/*
- * Mode conduite : les chiffres occupent toute la hauteur disponible et les
- * boutons deviennent des cibles qu'on atteint sans regarder.
- */
-.gear-controls {
-  display: flex;
-  gap: 0.4rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* Les commandes ne doivent pas voler la place du rapport, qui se lit d'abord. */
-.gear-controls button {
-  padding: 0.35rem 0.7rem;
-  font-size: 0.9rem;
 }
 
 .drive.immersive {

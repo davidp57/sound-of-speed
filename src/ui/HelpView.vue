@@ -23,18 +23,50 @@ defineEmits<{ close: [] }>()
       <h2>Pour commencer</h2>
       <ol>
         <li>
-          Sur l'écran <b>Conduite</b>, appuyez sur <b>Activer le son</b>. Un
-          navigateur n'autorise le son qu'après un appui : sans ce geste, il ne se
-          passera rien.
+          Sur l'écran <b>Conduite</b>, appuyez sur <b>D</b>. L'application
+          démarre : la localisation, le son, l'enregistrement du trajet. Un
+          navigateur n'ouvre le son et la position qu'après un appui — sans ce
+          geste, il ne se passe rien.
         </li>
         <li>
-          Choisissez la source de vitesse : <b>Simulateur</b> pour essayer à
-          l'arrêt, <b>GPS</b> pour rouler.
+          Autorisez la localisation quand le navigateur la demande, la première
+          fois.
         </li>
         <li>
-          Avec le GPS, autorisez la localisation quand le navigateur la demande.
+          En arrivant, appuyez sur <b>P</b>. Tout s'arrête et ce qui a été
+          enregistré part vers le serveur.
         </li>
       </ol>
+
+      <h2>Les commandes de conduite</h2>
+      <p>
+        Elles sont entre les deux cadrans, et il y en a quatre.
+      </p>
+      <ul>
+        <li>
+          <b>D</b> démarre. Une fois en route, le même bouton passe en
+          <b>S</b> — le mode sport, qui tient les rapports plus haut dans les
+          tours. Un appui de plus revient à <b>D</b>.
+        </li>
+        <li>
+          <b>P</b> met tout au repos. Il fonctionne aussi en roulant : c'est le
+          bouton d'arrêt de l'application.
+        </li>
+        <li>
+          <b>AUTO</b> et <b>MAN</b> choisissent la boîte. Les commandes de
+          chaque mode sont montrées au-dessus de son étiquette : le bouton de
+          marche pour l'automatique, <b>+</b> et <b>−</b> pour la manuelle. Les
+          touches qui ne commandent plus rien sont estompées — le bouton de
+          marche, lui, reste vif en boîte manuelle, parce qu'il y règle encore
+          le mode sport, donc le son.
+        </li>
+      </ul>
+      <p>
+        Le son se coupe et se rend par l'icône de haut-parleur, en haut à
+        droite, sans rien arrêter d'autre. Si une autre application prend le son
+        — la musique de la voiture, un appel —, c'est le même bouton qui le
+        récupère.
+      </p>
 
       <h2>La vitesse reste à zéro ?</h2>
       <p>
@@ -45,7 +77,8 @@ defineEmits<{ close: [] }>()
 
       <h2>Le son est trop faible ?</h2>
       <p>
-        Le curseur <b>Volume</b> se trouve sur l'écran de conduite. Il peut monter
+        Le curseur <b>Volume</b> se trouve sur l'écran de conduite, sous les
+        cadrans, une fois le son démarré. Il peut monter
         au-delà du maximum habituel, ce qui est utile quand le volume de la voiture
         reste bas pour la musique.
       </p>

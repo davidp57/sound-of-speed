@@ -8,6 +8,73 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Les commandes de conduite deviennent un sélecteur de boîte.** `D` démarre
+  l'application — localisation, son, enregistrement —, puis bascule en `S` pour
+  le mode sport ; `P` met tout au repos et dépose ce qui attendait. `AUTO` et
+  `MAN` sont deux colonnes côte à côte, chacune montrant les commandes de son
+  mode plutôt que de le nommer.
+
+  **L'application s'ouvre au repos**, et c'est le propos : elle démarrait la
+  géolocalisation dès le chargement, sans geste. Le 11 septembre 2026, elle n'a
+  reçu que des positions annoncées à 9 999,99 m de précision — la valeur qu'un
+  navigateur sert faute d'en avoir une vraie — pendant tout un trajet, et il a
+  fallu lancer une autre version de l'application pour s'en sortir : celle-ci
+  n'avait plus aucun bouton pour relancer la source.
+
+- **Le son dit quand une autre application le lui a pris.** La musique de la
+  voiture suspend le contexte audio ; le bouton annonçait alors « Activer le
+  son » alors que personne ne l'avait coupé. Il le nomme, et le même appui le
+  rend.
+
+- **L'écran de conduite ne porte plus que ce qu'on lit au volant.** Le choix
+  entre cadrans et chiffres, et celui de la source de vitesse, passent en
+  Configuration › Réglage : ni l'un ni l'autre ne se décide en roulant, et une
+  source qu'on peut changer au volant n'est qu'un moyen de se tromper sur ce
+  qu'on entend.
+
+### Corrigé
+
+- **La boîte remonte les rapports après un arrêt.** Relevé en roulant le
+  11 septembre 2026 : après quarante-quatre minutes de stationnement, la
+  deuxième a tenu de 22 à 108 km/h jusqu'au rupteur, et pas un rapport n'a été
+  passé sur les cinquante et un kilomètres du trajet.
+
+  Deux défauts qui se composaient. Le conditionneur prêtait une décélération de
+  0,19 à 0,39 m/s² à une voiture immobile — vitesse à 0,000 km/h d'un bout à
+  l'autre — parce que la pente gardait sa dernière valeur faute de mesure
+  neuve. Et le compteur de ralentissement de la boîte avalait ces valeurs sans
+  plafond : mesuré à 2 706 secondes pour un seuil de 0,35, il aurait fallu
+  vingt-deux minutes d'accélération continue pour le rendre, si bien que
+  l'inhibition de montée ne retombait jamais.
+
+- **Le motif d'un rejet de position se lit sous les cadrans**, avec la précision
+  réellement annoncée. Il existait déjà, mais rangé sous les réglages, là où
+  personne ne regarde en conduisant.
+
+- **Le bouton du son ne ment plus quand l'application est au repos.** Il
+  annonçait « Son actif » alors que « P » avait coupé la cadence et le mixage.
+
+- **« P » coupe vraiment le son.** Il n'arrêtait que la boucle d'affichage,
+  alors que la banque d'échantillons est cadencée par l'horloge du fil audio :
+  celle-ci continuait de battre à soixante hertz, et le silence demandé était
+  défait au tour suivant. Le ralenti s'entendait toujours, la boîte tournait et
+  le journal s'incrémentait pendant que l'écran affichait « P ».
+
+- **« D » ne peut plus installer deux cadences.** Le démarrage passait par la
+  boucle d'affichage sans regarder si l'horloge du fil audio tournait déjà : le
+  pas de temps était alors compté deux fois, et tout ce qui s'intègre dessus —
+  compteurs de la boîte, durée d'un passage, lissage de la charge — avançait
+  deux fois trop vite. L'ordre était sûr tant que le démarrage avait lieu au
+  chargement de la page ; il ne l'est plus depuis que c'est un bouton.
+
+- **La commande de boîte changée à la manette se voit à l'écran.** Elle
+  s'adressait à la boîte sans passer par l'état que l'écran lit : « AUTO »
+  restait allumé pendant que la boîte était en manuelle.
+
+- **Le repos ne perd plus le mode de conduite enregistré.** Remettre « route »
+  au parking l'écrivait dans les préférences, si bien que le mode déduit du
+  profil disparaissait dès le deuxième trajet.
+
 - **Le rapport est inscrit au journal à l'instant où il change.** Le relevé
   périodique le portait toutes les dix secondes : il prouvait qu'un passage
   avait eu lieu, jamais quand ni combien. Le relecteur s'en sert quand il est

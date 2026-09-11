@@ -293,7 +293,8 @@ profil, il s'en **déduit** — huit de ses réglages suivent des lois qui
 s'inversent, et la médiane des lectures donne sa position. C'est ce qui permet
 au curseur du mode simplifié de refléter un profil réglé à la main.
 _Ne pas confondre_ avec le **caractère** ci-dessous, qui est un bloc de trois
-comportements, ni avec la **réactivité**, qui est celle du signal.
+comportements, ni avec la **réactivité**, qui est celle du signal, ni avec le
+**mode de conduite**, qui se choisit au volant et ne vit pas dans le profil.
 _Éviter_ : sportivité, agressivité.
 
 **Réactivité** (_responsiveness_) :
@@ -317,6 +318,35 @@ rétrogradage forcé, pétarade, à-coup de passage. Chacun s'active séparémen
 on les remarque surtout par leur absence.
 
 ## L'écran de conduite
+
+**Sélecteur** (_drive selector_, `DriveSelector`) :
+Les commandes de conduite, entre les deux cadrans. Il a la forme d'un sélecteur
+de boîte mais c'est d'abord **l'interrupteur de l'application** : `D` met en
+route, `P` met au repos. Les deux commandes de boîte — automatique et manuelle —
+y sont montrées côte à côte, chacune sous son étiquette, celle qui n'a pas la
+main étant estompée.
+_Éviter_ : levier, PRNDS (il n'y a ni marche arrière ni point mort), bouton
+marche/arrêt (il en fait plus).
+
+**En route** / **au repos** (_running_ / _idle_, `isRunning`) :
+Les deux états de l'application. **En route**, la localisation, le son, la
+boucle et l'enregistrement du trajet tournent. **Au repos**, tout cela s'arrête
+et la tranche en attente est déposée ; seul l'affichage reste allumé, parce que
+c'est par lui qu'on redémarre. L'application **s'ouvre au repos** : le démarrage
+demande un appui, qui est aussi le geste dont le navigateur a besoin pour ouvrir
+la position et le son.
+_Éviter_ : allumé / éteint (l'écran reste allumé), en marche / arrêté (l'ancien
+libellé du bouton disparu), veille (qui suggère une reprise automatique).
+
+**Mode de conduite** (_drive mode_, `DriveMode`) :
+Route ou sport. Il déplace les marges de passage de la boîte et la façon dont le
+moteur sonne sous charge. Il se prend sur la touche de marche, qui affiche alors
+`S`, et revient à « route » au repos pour que cette touche montre toujours `D`
+au parking. C'est un choix de **l'appareil**, pas du profil.
+_Ne pas confondre_ avec le **tempérament** ci-dessus, qui est une lecture des
+réglages d'un profil, ni avec la **commande de boîte**, qui est automatique ou
+manuelle.
+_Éviter_ : tempérament (déjà pris), agressivité, mode tout court.
 
 **Visage** (_face_, `DriveFace`) :
 L'un des deux affichages de l'écran de conduite : **cadrans** (`dials`), pour

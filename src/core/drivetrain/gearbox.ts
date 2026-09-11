@@ -97,6 +97,28 @@ const CRUISE_SLOWING_MS2 = 0.05
 const CRUISE_SLOWING_HOLD_S = 0.35
 
 /**
+ * Plafond du compteur de ralentissement, en secondes.
+ *
+ * Le compteur ne sert qu'à franchir `CRUISE_SLOWING_HOLD_S` : au-delà, chaque
+ * seconde de plus n'ajoute rien à la décision et ne fait qu'allonger le temps
+ * qu'il faudra pour la défaire. Sans plafond il devient une dette.
+ *
+ * Relevé en roulant le 11 septembre 2026 : après quarante-quatre minutes de
+ * stationnement, il valait **2 706 secondes** pour un seuil de 0,35. La page en
+ * veille bat au ralenti — jusqu'à vingt secondes par tour — et le conditionneur
+ * prêtait alors à une voiture immobile une décélération de trois dixièmes ;
+ * chaque tour versait donc vingt secondes au compteur. Il décroît deux fois
+ * plus vite qu'il ne monte, mais rendre 2 706 secondes demandait vingt-deux
+ * minutes d'accélération continue : l'inhibition de montée ne retombait jamais.
+ * La boîte a tenu la deuxième de 22 à 108 km/h, jusqu'au rupteur, et n'a plus
+ * passé un seul rapport de tout le trajet.
+ *
+ * Trois fois le seuil laisse la marge utile — une croisière bruitée n'y arrive
+ * pas — et se rend en un peu plus d'une demi-seconde.
+ */
+const SLOWING_CEILING_S = CRUISE_SLOWING_HOLD_S * 3
+
+/**
  * Décélération au-delà de laquelle on ne cumule plus rien : on ralentit, point.
  *
  * Le cumul existe pour ne pas confondre le bruit de la mesure avec un
@@ -235,10 +257,12 @@ export class Gearbox {
   private sinceKickdownS = Number.POSITIVE_INFINITY
   /** Durée pendant laquelle la vitesse est restée stable, en secondes. */
   /**
-   * Temps cumulé passé à ralentir, en secondes, moins ce qui a été rendu.
+   * Temps passé à ralentir, en secondes, moins ce qui a été rendu.
    *
    * Ce n'est pas une durée continue : elle décroît deux fois plus vite qu'elle
-   * ne monte, pour qu'une croisière bruitée ne la fasse jamais franchir le seuil.
+   * ne monte, pour qu'une croisière bruitée ne la fasse jamais franchir le
+   * seuil. Et elle est **plafonnée** — voir `SLOWING_CEILING_S` : au-delà de ce
+   * qu'il faut pour décider, chaque seconde de plus n'est qu'une dette à rendre.
    */
   private slowingForS = 0
   /** Durée pendant laquelle la décélération est restée soutenue, en secondes. */
@@ -257,7 +281,7 @@ export class Gearbox {
      *
      * Il ne vient pas du profil mais de l'appareil, au même titre que la
      * commande automatique ou manuelle : c'est un choix de conduite, et il se
-     * fait sous les cadrans. Les seuils de montée s'en déduisent, avec le
+     * fait sur la touche de marche, entre les cadrans. Les seuils de montée s'en déduisent, avec le
      * rupteur du moteur.
      */
     private driveMode: DriveMode = 'road',
@@ -497,7 +521,7 @@ export class Gearbox {
       accelMs2 <= this.drivetrain.brakeDownshiftAccelMs2 ? this.brakingForS + dt : 0
     this.slowingForS =
       accelMs2 < -CRUISE_SLOWING_MS2
-        ? this.slowingForS + dt
+        ? Math.min(SLOWING_CEILING_S, this.slowingForS + dt)
         : Math.max(0, this.slowingForS - dt * 2)
     const slowing =
       accelMs2 <= -CLEARLY_SLOWING_MS2 || this.slowingForS >= CRUISE_SLOWING_HOLD_S

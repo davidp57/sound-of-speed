@@ -312,7 +312,7 @@ export function createRoadProfile(): Profile {
  * de passage. Depuis que ceux-ci se déduisent du rupteur et du **tempérament**,
  * cette différence a déménagé : garder deux profils reviendrait à proposer deux
  * fois le même moteur avec deux tempéraments figés, alors que le tempérament se
- * choisit maintenant sous les cadrans.
+ * choisit maintenant sur la touche de marche, entre les cadrans.
  *
  * Décidé par David le 10 septembre 2026 : « les profils par défaut s'appelleront
  * autrement (L4, V8, etc.) et pour le moment on a juste le V8 de Procar, donc
