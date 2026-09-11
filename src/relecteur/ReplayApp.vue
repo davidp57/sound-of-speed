@@ -8,6 +8,10 @@ import { listSessions, loadSession, type SessionEntry } from '../core/session/re
 import { stateAt, trackAt, type Session } from '../core/session/model'
 import { findGearChanges, findShiftBursts, recordedShifts } from '../core/session/shifts'
 import { accelProfile, profileRuns } from '../core/session/profile'
+import { profileFromHeader, whyNoSound } from '../core/session/header'
+import { SessionPlayback, type PlaybackFrame } from '../core/session/playback'
+import { AudioEngine } from '../core/audio/engine'
+import type { Profile } from '../core/preset/schema'
 
 /**
  * Le relecteur : revoir un trajet au lieu de le raconter de mémoire.
@@ -37,6 +41,98 @@ const playing = ref(false)
 const rate = ref(1)
 let timer: ReturnType<typeof setInterval> | null = null
 let lastTick = 0
+
+/**
+ * Le son, et pourquoi il ne se met pas en route tout seul.
+ *
+ * Un navigateur refuse de produire du son sans un geste de l'utilisateur, et
+ * c'est tant mieux : on ouvre le relecteur pour regarder un trajet aussi
+ * souvent que pour l'écouter. Le bouton est donc explicite, et l'activation
+ * charge la banque de la capture — quelques mégaoctets qu'il serait absurde de
+ * tirer à chaque ouverture.
+ */
+const audio = new AudioEngine()
+const soundOn = ref(false)
+const soundBusy = ref(false)
+const soundNote = ref('')
+let playback: SessionPlayback | null = null
+let played: Profile | null = null
+const frame = ref<PlaybackFrame | null>(null)
+
+/** Ce que la capture peut faire entendre, ou ce qui l'en empêche. */
+const soundImpossible = computed(() => whyNoSound(session.value?.header ?? null))
+
+/**
+ * L'écart entre ce que la chaîne recalcule aujourd'hui et ce que la capture a
+ * inscrit ce jour-là.
+ *
+ * C'est la vérification que rien d'autre ne donne : une régression du moteur ou
+ * de la boîte se voit ici, sur un trajet réel, sans reprendre la route. Un écart
+ * de rapport est plus parlant qu'un écart de régime — il dit que la boîte ne
+ * décide plus pareil.
+ */
+const drift = computed(() => (frame.value === null ? null : SessionPlayback.drift(frame.value)))
+
+const driftLabel = computed(() => {
+  const écart = drift.value
+  if (écart === null) return ''
+  const rapport =
+    écart.gear === 0 ? 'même rapport' : `${écart.gear > 0 ? '+' : ''}${écart.gear} rapport`
+  return `Écart avec l'enregistré : ${Math.round(écart.rpm)} tr/min, ${rapport}`
+})
+
+async function toggleSound(): Promise<void> {
+  if (soundOn.value) {
+    stopSound()
+    return
+  }
+  const profile = profileFromHeader(session.value?.header ?? null)
+  if (profile === null || session.value === null) {
+    soundNote.value = soundImpossible.value
+    return
+  }
+  soundBusy.value = true
+  soundNote.value = 'Chargement de la banque…'
+  try {
+    await audio.activate(profile)
+    await audio.load(profile)
+    played = profile
+    playback = new SessionPlayback(profile, session.value)
+    playback.seek(at.value)
+    soundOn.value = true
+    soundNote.value = ''
+  } catch (error) {
+    soundNote.value = error instanceof Error ? error.message : 'Le son n’a pas pu démarrer.'
+  } finally {
+    soundBusy.value = false
+  }
+}
+
+function stopSound(): void {
+  audio.mute()
+  audio.unload()
+  soundOn.value = false
+  playback = null
+  played = null
+  frame.value = null
+}
+
+/**
+ * Repositionne la chaîne après un déplacement.
+ *
+ * Elle repart de son repos, calée sur le rapport qui convient à la vitesse
+ * d'arrivée : le son se rétablit en une seconde environ, et ce n'est pas un
+ * défaut à corriger — un moteur ne saute pas d'un régime à un autre.
+ */
+function seekSound(): void {
+  playback?.seek(at.value)
+}
+
+/** Déplacer la tête de lecture, et la chaîne avec elle. */
+function goTo(ms: number): void {
+  at.value = ms
+  seekSound()
+}
 
 const hasAccount = credentials.user !== '' && credentials.password !== ''
 
@@ -85,7 +181,12 @@ async function open(key: string): Promise<void> {
   }
 }
 
-watch(chosen, (key) => void open(key))
+watch(chosen, (key) => {
+  // La banque et la configuration appartiennent à la session : garder le son
+  // ouvert ferait entendre la précédente sur le trajet suivant.
+  stopSound()
+  void open(key)
+})
 
 const duration = computed(() => session.value?.durationMs ?? 0)
 const reading = computed(() => (session.value ? stateAt(session.value.states, at.value) : null))
@@ -290,32 +391,73 @@ const rpmScale = computed(() => {
   return Math.ceil(Math.max(rupteur ?? 0, vu, 1000) / 1000) * 1000
 })
 
-/** L'horloge du lecteur. Vingt fois par seconde suffit à l'œil. */
+/**
+ * L'horloge du lecteur.
+ *
+ * Vingt fois par seconde suffit à l'œil ; le son, lui, demande soixante — la
+ * boîte a des temporisations de trois dixièmes, et le moteur une inertie qu'un
+ * pas de cinquante millisecondes intègre grossièrement.
+ */
 function play(): void {
   if (playing.value || duration.value <= 0) return
   playing.value = true
   lastTick = performance.now()
-  timer = setInterval(() => {
-    const now = performance.now()
-    const dt = now - lastTick
-    lastTick = now
-    at.value = Math.min(duration.value, at.value + dt * rate.value)
-    if (at.value >= duration.value) stop()
-  }, 50)
+  timer = setInterval(
+    () => {
+      const now = performance.now()
+      const dt = now - lastTick
+      lastTick = now
+      at.value = Math.min(duration.value, at.value + dt * rate.value)
+      driveSound((dt * rate.value) / 1000)
+      if (at.value >= duration.value) stop()
+    },
+    soundOn.value ? 16 : 50,
+  )
+}
+
+/**
+ * Pousse un pas dans la chaîne et applique le mixage.
+ *
+ * Le pas suivi est celui de la **session**, pas celui de l'horloge : à double
+ * vitesse, deux secondes de trajet passent en une seconde de montre, et le
+ * moteur doit monter comme il l'a fait. C'est aussi pourquoi un rejeu accéléré
+ * sonne aigu — le trajet va plus vite, pas la bande.
+ */
+function driveSound(dtSession: number): void {
+  if (!soundOn.value || playback === null || played === null) return
+  const next = playback.tick(dtSession, at.value)
+  frame.value = next
+  if (next === null) return
+  audio.update(played, next.engine, {
+    isShifting: next.gearbox.isShifting,
+    progress: next.gearbox.shiftProgress,
+  })
 }
 
 function stop(): void {
   playing.value = false
   if (timer !== null) clearInterval(timer)
   timer = null
+  // À l'arrêt, la chaîne est figée : la laisser jouer tiendrait un régime
+  // immobile, ce qu'aucun moteur ne fait.
+  if (soundOn.value) audio.mute()
 }
 
 function toggle(): void {
   if (playing.value) stop()
-  else play()
+  else {
+    // Le mixage a été coupé à la pause : la chaîne repart d'où la tête de
+    // lecture se trouve, plutôt que de reprendre un état vieux de deux minutes.
+    if (soundOn.value) seekSound()
+    play()
+  }
 }
 
-onBeforeUnmount(stop)
+onBeforeUnmount(() => {
+  stop()
+  stopSound()
+  void audio.dispose()
+})
 
 /** Durée en minutes et secondes, telle qu'on la lit et qu'on la dit. */
 function clock(ms: number): string {
@@ -444,7 +586,7 @@ void refresh()
             :max="duration"
             step="100"
             :value="at"
-            @input="at = Number(($event.target as HTMLInputElement).value)"
+            @input="goTo(Number(($event.target as HTMLInputElement).value))"
           />
           <div class="marks">
             <span
@@ -455,7 +597,7 @@ void refresh()
               :style="{ left: `${(mark.at / duration) * 100}%` }"
               @mouseenter="showMark($event, mark)"
               @mouseleave="hovered = null"
-              @click="at = mark.at"
+              @click="goTo(mark.at)"
             ></span>
             <span v-if="hovered" class="bulle" :style="{ left: `${hovered.x}px` }">
               {{ hovered.text }}
@@ -549,6 +691,28 @@ void refresh()
           </button>
           <button @click="copyRepere()">Copier le repère</button>
           <span v-if="copied" class="muted">{{ copied }}</span>
+        </div>
+
+        <!--
+          Le son, et ce qu'il vaut.
+
+          Il ne démarre pas tout seul : un navigateur l'interdit sans un geste,
+          et le relecteur s'ouvre aussi souvent pour regarder que pour écouter.
+        -->
+        <div class="controls son">
+          <button
+            :disabled="soundBusy || soundImpossible !== ''"
+            :aria-pressed="soundOn"
+            @click="void toggleSound()"
+          >
+            {{ soundOn ? 'Couper le son' : 'Écouter le trajet' }}
+          </button>
+          <span v-if="soundImpossible" class="muted">{{ soundImpossible }}</span>
+          <span v-else-if="soundNote" class="muted">{{ soundNote }}</span>
+          <span v-else-if="soundOn && driftLabel" class="muted">{{ driftLabel }}</span>
+          <span v-else-if="soundOn" class="muted">
+            La configuration jouée est celle de la capture, pas celle du profil actif.
+          </span>
         </div>
       </section>
 
@@ -804,6 +968,13 @@ select {
   align-items: center;
   gap: 0.9rem;
   flex-wrap: wrap;
+}
+
+/* Le son sur sa propre ligne : c'est une autre nature que le transport. */
+.controls.son {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
 }
 
 .controls label {

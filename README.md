@@ -1749,6 +1749,40 @@ un bouton **garde la vue centrée** sur le véhicule — coupé, on peut examine
 endroit pendant que la lecture continue. Elle demande le réseau, ce qui est sans
 conséquence : le debriefing se fait au bureau.
 
+**Le son.** Le bouton **Écouter le trajet** fait retraverser la chaîne aux
+relevés de la capture : on entend le trajet tel qu'il a sonné dans la voiture,
+autant de fois qu'on veut, sans reprendre la route. C'est l'outil de mise au
+point le plus direct du projet.
+
+Il ne démarre pas tout seul — un navigateur l'interdit sans un geste, et l'on
+ouvre le relecteur aussi souvent pour regarder que pour écouter. L'activation
+charge la banque de la capture, quelques mégaoctets qu'il serait absurde de
+tirer à chaque ouverture.
+
+Quatre choses valent d'être sues :
+
+- **La configuration jouée est celle de l'en-tête**, pas celle du profil actif
+  du poste, et elle n'est pas reprise au format courant : une capture du
+  11 septembre 2026 se rejoue avec les six rapports qu'elle avait ce jour-là.
+  Un trajet se rejoue tel qu'il a été vécu.
+- **Le tempérament suit le trajet.** Un passage en Sport en cours de route est
+  respecté : celui du 11 septembre au soir a basculé à la vingt-deuxième minute.
+- **Le conditionnement n'est pas rejoué.** La capture porte à la fois la mesure
+  brute du GPS et la vitesse conditionnée ; c'est de la seconde qu'on repart. Le
+  conditionnement dépend de l'instant où chaque mesure arrive, et rien de cela
+  ne survit à un saut dans la timeline ni à une lecture au double de la vitesse.
+- **L'écart avec l'enregistré s'affiche** : régime et rapport, comparés à ce que
+  la capture a inscrit ce jour-là. C'est la vérification que rien d'autre ne
+  donne — une régression du moteur ou de la boîte se voit sur un trajet réel,
+  sans reprendre la route. Mesuré sur le trajet du 11 septembre au soir : zéro
+  tour d'écart sur les portions d'autoroute, et jusqu'à un rapport là où les
+  réglages de la boîte ont changé depuis.
+
+Après un déplacement dans la timeline, la chaîne repart de son repos, calée sur
+le rapport qui convient à la vitesse d'arrivée : le son se rétablit en une
+seconde environ. Ce n'est pas un défaut, c'est ce que fait un moteur. Une
+session qui n'a que son journal ne peut pas s'entendre, et le bouton le dit.
+
 Le bouton **Copier le repère** met dans le presse-papier une ligne lisible —
 session, moment, vitesse, régime, rapport — suivie de l'état complet et des
 coordonnées. C'est ce qu'on colle dans une conversation pour désigner un moment
@@ -2505,7 +2539,7 @@ chaque essai.
 | 35 | Refonte : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en deux, et un compte fait le lien | spécifié, en cours |
 | 36 | L'accélération était mille fois trop petite : le navigateur de la voiture horodate en microsecondes | corrigé, reste à écouter en roulant |
 | 37 | La capture d'un trajet se fait toute seule, compressée, avec un témoin qui dit si la session sera récupérable | fait, reste le premier trajet réel |
-| 38 | Un relecteur : timeline, carte et repère copiable, pour revoir un trajet au bureau | fait, éprouvé sur l'essai du 10 septembre ; le rejeu sonore attend une capture |
+| 38 | Un relecteur : timeline, carte et repère copiable, pour revoir un trajet au bureau | fait, **rejeu sonore compris** ; reste l'écoute |
 | 39 | La boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient | **écouté le 11 septembre au soir : le va-et-vient a disparu, le départ est conforme** |
 | 40 | Un sélecteur de boîte pour démarrer et arrêter, et une boîte qui remonte les rapports après un arrêt | fait, reste l'essai en roulant |
 | 41 | Le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | livré ; la chaîne servie était coupée, réparée le 11 septembre — reste à recoller la pile |

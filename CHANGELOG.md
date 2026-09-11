@@ -8,6 +8,23 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le relecteur fait entendre un trajet.** Le bouton « Écouter le trajet » fait
+  retraverser la chaîne aux relevés de la capture : le trajet sonne comme il a
+  sonné dans la voiture, autant de fois qu'on veut, sans reprendre la route.
+
+  La configuration jouée est celle de l'en-tête de la capture, jamais celle du
+  profil actif, et elle n'est pas reprise au format courant — une capture du
+  11 septembre 2026 se rejoue avec ses six rapports. Les bascules Route/Sport du
+  trajet sont suivies. Le conditionnement du signal, lui, n'est pas rejoué : sa
+  sortie enregistrée est reprise telle quelle, parce qu'il dépend de l'instant
+  d'arrivée de chaque mesure GPS et ne survit ni à un saut dans la timeline ni à
+  une lecture accélérée.
+
+  **L'écart entre l'enregistré et le recalculé s'affiche** — régime et rapport.
+  C'est la vérification que rien d'autre ne donne : mesuré sur le trajet du
+  11 septembre au soir, zéro tour d'écart sur les portions d'autoroute, et
+  jusqu'à un rapport là où les réglages de la boîte ont changé depuis.
+
 - **Le régime du rapport suivant, sur le compteur.** Une seconde aiguille, plus
   courte, plus fine et d'une autre couleur, montre où le moteur retomberait si
   le rapport suivant était engagé à l'instant. Elle disparaît au point mort et
