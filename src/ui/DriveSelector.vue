@@ -43,9 +43,9 @@ const sport = computed(() => currentDriveMode.value === 'sport')
  * La touche de marche : elle démarre, puis elle bascule le tempérament.
  *
  * Rien n'annonce que « D » cache « S » — décision de David, le 11 septembre
- * 2026 : la lettre change au premier appui, donc l'apprentissage coûte
- * exactement un appui, et l'aide le dit. Un second caractère en indice sur
- * chaque touche aurait chargé l'écran pour l'économie de cet appui-là.
+ * 2026 : la lettre change dès le premier appui donné en route, donc
+ * l'apprentissage coûte un appui, et l'aide le dit. Un second caractère en
+ * indice sur chaque touche aurait chargé l'écran pour l'économie de celui-là.
  */
 function pressDrive(): void {
   if (!isRunning.value) start()
@@ -164,7 +164,7 @@ const driveLabel = computed(() => {
   gap: 0.6rem;
 }
 
- /*
+/*
  * Les deux étiquettes sont sur la même ligne, quel que soit le nombre de
  * touches au-dessus : c'est par elles qu'on compare les deux modes.
  */
@@ -197,6 +197,7 @@ const driveLabel = computed(() => {
 
 .key:disabled {
   opacity: 0.3;
+  cursor: default;
 }
 
 /*
@@ -217,9 +218,6 @@ const driveLabel = computed(() => {
   padding: 0;
 }
 
-.key:disabled {
-  cursor: default;
-}
 
 
 

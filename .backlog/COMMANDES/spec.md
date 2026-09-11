@@ -90,6 +90,27 @@ Et l'état **« son pris par une autre application »**, qui manquait : la musiq
 de la voiture suspend le contexte audio, et le bouton annonçait alors « Activer
 le son » alors que personne ne l'avait coupé.
 
+## Ce que la revue a trouvé
+
+Quatre défauts, tous introduits par ce lot, tous corrigés avant la fusion. Ils
+se ressemblent : **un état déplacé vers une copie que quelque chose d'autre
+écrit déjà**.
+
+- **« P » ne coupait pas le son.** Seule la boucle d'affichage s'arrêtait, alors
+  que la banque d'échantillons est cadencée par l'horloge du fil audio. Le
+  correctif était donc inopérant dans la seule configuration qu'il visait, et
+  l'essai au navigateur ne pouvait pas le voir faute d'échantillons sur le poste.
+- **« D » pouvait installer deux cadences**, l'ordre n'étant plus garanti depuis
+  que le démarrage est un bouton et non le chargement de la page.
+- **Le bouton du son annonçait « Son actif » au repos.**
+- **La manette désynchronisait l'étiquette de boîte**, qui parlait à la boîte
+  sans passer par l'état que l'écran lit.
+
+Deux points instruits et clos : le plafond du compteur de ralentissement ne
+rouvre pas la montée sur une décélération bruitée — un test le vérifie —, et
+l'accélération rendue à l'arrêt s'aligne sur `atStandstill` plutôt que d'inventer
+un troisième critère.
+
 ## Ce qui reste supposé
 
 Que le navigateur de la voiture n'accorde une position précise que sur geste, et

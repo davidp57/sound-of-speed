@@ -51,6 +51,30 @@ Toutes les évolutions notables du projet. Format
   réellement annoncée. Il existait déjà, mais rangé sous les réglages, là où
   personne ne regarde en conduisant.
 
+- **Le bouton du son ne ment plus quand l'application est au repos.** Il
+  annonçait « Son actif » alors que « P » avait coupé la cadence et le mixage.
+
+- **« P » coupe vraiment le son.** Il n'arrêtait que la boucle d'affichage,
+  alors que la banque d'échantillons est cadencée par l'horloge du fil audio :
+  celle-ci continuait de battre à soixante hertz, et le silence demandé était
+  défait au tour suivant. Le ralenti s'entendait toujours, la boîte tournait et
+  le journal s'incrémentait pendant que l'écran affichait « P ».
+
+- **« D » ne peut plus installer deux cadences.** Le démarrage passait par la
+  boucle d'affichage sans regarder si l'horloge du fil audio tournait déjà : le
+  pas de temps était alors compté deux fois, et tout ce qui s'intègre dessus —
+  compteurs de la boîte, durée d'un passage, lissage de la charge — avançait
+  deux fois trop vite. L'ordre était sûr tant que le démarrage avait lieu au
+  chargement de la page ; il ne l'est plus depuis que c'est un bouton.
+
+- **La commande de boîte changée à la manette se voit à l'écran.** Elle
+  s'adressait à la boîte sans passer par l'état que l'écran lit : « AUTO »
+  restait allumé pendant que la boîte était en manuelle.
+
+- **Le repos ne perd plus le mode de conduite enregistré.** Remettre « route »
+  au parking l'écrivait dans les préférences, si bien que le mode déduit du
+  profil disparaissait dès le deuxième trajet.
+
 - **Le rapport est inscrit au journal à l'instant où il change.** Le relevé
   périodique le portait toutes les dix secondes : il prouvait qu'un passage
   avait eu lieu, jamais quand ni combien. Le relecteur s'en sert quand il est

@@ -28,10 +28,11 @@ entre les deux cadrans. Rien d'autre : le choix de l'affichage et celui de la
 source sont passés en **Configuration**, le son et le verrou d'écran en haut à
 droite avec l'aide — ce sont des commandes d'appareil, pas de conduite. Le
 volume reste sous les cadrans, c'est un réglage qu'on pose une fois. Les
-commandes du simulateur, elles, sont sur l'écran **Banc**. Un bouton **Plein écran** masque la barre du haut : l'affichage
-occupe toute la hauteur et les commandes deviennent de grandes touches. On en sort
-par la **flèche de retour**, à gauche de la rangée, à l'écart des autres et d'une
-autre couleur — l'écart est ce qui empêche de la presser en visant sa voisine.
+commandes du simulateur, elles, sont sur l'écran **Banc**. Un bouton **Plein
+écran** masque la barre du haut : l'affichage occupe toute la hauteur et les
+commandes deviennent de grandes touches. On en sort par la **flèche de retour**,
+à gauche de la rangée, à l'écart des autres et d'une autre couleur — l'écart est
+ce qui empêche de la presser en visant sa voisine.
 
 ### Les commandes de conduite
 
@@ -797,7 +798,7 @@ trajet.
 1. La page s'affiche, le cadenas est fermé.
 2. Écran Conduite › **D** → autoriser la localisation → le statut passe à
    « actif » et l'icône de son s'allume.
-4. Écran Télémétrie → « Intervalles récents » se remplit, autour de 1000 ms.
+3. Écran Télémétrie → « Intervalles récents » se remplit, autour de 1000 ms.
 
 Si le GPS reste muet alors que la page s'affiche, c'est presque toujours le
 contexte sécurisé : vérifier que l'adresse est bien en `https://`.
@@ -2423,6 +2424,8 @@ chaque essai.
 | 36 | L'accélération était mille fois trop petite : le navigateur de la voiture horodate en microsecondes | corrigé, reste à écouter en roulant |
 | 37 | La capture d'un trajet se fait toute seule, compressée, avec un témoin qui dit si la session sera récupérable | fait, reste le premier trajet réel |
 | 38 | Un relecteur : timeline, carte et repère copiable, pour revoir un trajet au bureau | fait, éprouvé sur l'essai du 10 septembre ; le rejeu sonore attend une capture |
+| 39 | La boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient | livré en version allégée, reste l'écoute et le nettoyage du format de profil |
+| 40 | Un sélecteur de boîte pour démarrer et arrêter, et une boîte qui remonte les rapports après un arrêt | fait, reste l'essai en roulant |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

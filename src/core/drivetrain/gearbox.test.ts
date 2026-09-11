@@ -1438,3 +1438,53 @@ describe('un long arrêt ne bloque pas les passages', () => {
     expect(regimeMaxEnDeuxieme).toBeLessThan(p.engine.redlineRpm * 0.9)
   })
 })
+
+/**
+ * Le plafond du compteur ne rend pas la montée possible en pleine décélération.
+ *
+ * Le plafond posé le 11 septembre 2026 raccourcit la dette accumulée pendant un
+ * ralentissement : avant lui, dix secondes de freinage donnaient dix secondes
+ * de tampon, et un soubresaut du signal ne pouvait pas faire retomber
+ * l'inhibition. Il faut vérifier que la valeur retenue laisse encore de quoi
+ * traverser le bruit de la mesure, annoncé à un dixième de m/s² là où le seuil
+ * de ralentissement vaut 0,05.
+ */
+describe('une décélération bruitée n’autorise pas de montée', () => {
+  it('ne monte aucun rapport sur dix secondes de ralentissement tremblé', () => {
+    const p = profile()
+    const gearbox = makeGearbox(p)
+
+    // On part lancé, en sixième, à un régime qui dépasse le seuil de montée :
+    // si l'inhibition retombe une seule fois, un passage se déclenche.
+    let kmh = 130
+    gearbox.settleFor(rpmInGearAt(p, kmh))
+    const depart = gearbox.tick(FRAME_S, {
+      rpmInGear: rpmInGearAt(p, kmh),
+      atStandstill: false,
+      load: 0.5,
+      kmh,
+      accelMs2: 0,
+    }).gear
+
+    let montees = 0
+    let precedent = depart
+    for (let frame = 1; frame * FRAME_S <= 10; frame += 1) {
+      // Une décélération franche, tremblée de ±0,1 m/s² — le bruit annoncé de
+      // la mesure —, qui repasse donc régulièrement au-dessus du seuil de 0,05.
+      const bruit = Math.sin(frame * 1.7) * 0.1
+      const accelMs2 = -0.6 + bruit
+      kmh = Math.max(30, kmh + accelMs2 * 3.6 * FRAME_S)
+      const etat = gearbox.tick(FRAME_S, {
+        rpmInGear: rpmInGearAt(p, kmh),
+        atStandstill: false,
+        load: 0.35,
+        kmh,
+        accelMs2,
+      })
+      if (etat.gear > precedent) montees += 1
+      precedent = etat.gear
+    }
+
+    expect(montees).toBe(0)
+  })
+})

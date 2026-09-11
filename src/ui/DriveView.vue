@@ -36,14 +36,6 @@ import {
   telemetry,
 } from '../state'
 
-/**
- * Bascule le tempérament.
- *
- * Deux valeurs, donc un bouton et non deux : il porte celle qui est active et
- * donne l'autre au clic. C'est le patron que le plein écran emploie déjà pour la
- * commande de boîte.
- */
-
 withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
 
 /**
@@ -207,10 +199,11 @@ const silentSourceMessage = computed(() => {
  * L'état du son, quelle que soit son origine.
  *
  * Un profil « généré en direct » ne charge pas de banque : c'est l'état du
- * moteur simulé que le bouton doit montrer. Une seule lecture pour tout ce que
- * le bouton dit de lui-même — son texte, sa couleur, son geste — sinon les trois
- * se désaccordent : le libellé tenait compte de l'origine, la couleur non, et le
- * bouton annonçait « Son actif » en gris pendant que le moteur simulé jouait.
+ * moteur simulé qu'il faut lire. Ce que le bouton dit de lui-même — son texte,
+ * sa couleur, son geste — vient désormais de `soundState`, qui compose cette
+ * phase avec le reste en une seule lecture ; sans quoi les trois se
+ * désaccordent, comme du temps où le libellé tenait compte de l'origine et la
+ * couleur non.
  */
 const audioPhase = computed(() =>
   synthIsOrigin.value ? synthStatus.value.phase : audioStatus.value.phase,
@@ -309,10 +302,8 @@ const SPEED_STEP_KMH = 20
     </section>
 
     <!--
-      Les deux visages de l'écran.
-      Les cadrans se lisent mieux en roulant ; on ne règle pas un profil sur une
-      aiguille, où cent tours d'écart ne se voient pas. Le choix est une
-      préférence de l'appareil, retenue d'une ouverture à l'autre.
+      Le choix entre les deux visages est passé en configuration : il se fait
+      une fois et ne se touche plus en roulant.
 
       Le décor qui défilait derrière les cadrans est retiré : il défilait de
       côté, comme un jeu de plateforme, là où une vue depuis la place du
@@ -355,10 +346,9 @@ const SPEED_STEP_KMH = 20
 
       <div class="cell gear">
         <!--
-          Les commandes de boîte encadrent le rapport, et ne sont plus rangées
-          en bas de l'écran : c'est la disposition que David a dessinée le
-          10 septembre 2026, et elle place la main là où le regard est déjà —
-          entre les deux cadrans, au lieu de descendre chercher une barre.
+          Les commandes ne sont pas rangées en bas de l'écran : elles sont entre
+          les deux cadrans, là où le regard est déjà, au lieu de descendre
+          chercher une barre. Le rapport se lit à leur droite.
         -->
         <DriveSelector />
         <div class="gear-read">
@@ -405,6 +395,14 @@ const SPEED_STEP_KMH = 20
         </div>
       </div>
     </section>
+
+    <!--
+      Ce qui ne va pas se lit **sous les cadrans**, pas au bas de l'écran.
+      Le 11 septembre 2026, la géolocalisation a été muette pendant tout un
+      trajet : le motif du rejet existait déjà, mais rangé sous les réglages, là
+      où personne ne regarde en conduisant.
+    -->
+    <p v-if="alerte" class="alert">{{ alerte }}</p>
 
     <!--
       La sortie du plein écran est à gauche, à l'écart des autres et d'une autre
@@ -454,13 +452,6 @@ const SPEED_STEP_KMH = 20
 
     </section>
 
-    <!--
-      Ce qui ne va pas se lit **sous les cadrans**, pas au bas de l'écran.
-      Le 11 septembre 2026, la géolocalisation a été muette pendant tout un
-      trajet : le motif du rejet existait déjà, mais rangé sous les réglages, là
-      où personne ne regarde en conduisant.
-    -->
-    <p v-if="alerte" class="alert">{{ alerte }}</p>
   </div>
 </template>
 
@@ -474,8 +465,8 @@ const SPEED_STEP_KMH = 20
   padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
   text-align: center;
-  background: var(--warn-surface, #fdf2e2);
-  color: var(--warn, #8a4f06);
+  border: 1px solid var(--warn);
+  color: var(--warn);
   font-size: 0.95rem;
 }
 
@@ -490,13 +481,14 @@ const SPEED_STEP_KMH = 20
 /*
  * Une seule barre d'outils, sur une ligne quand la place le permet.
  *
- * Les trois groupes — source, profil, visage — occupaient trois lignes, soit
- * autant de hauteur prise sur les cadrans. Ils se replient l'un après l'autre
- * dès que la largeur manque, ce qui compte : la largeur utile du navigateur de
- * la voiture n'est pas connue, et son zoom n'est pas réglable.
+ * Ce qui s'y choisissait — la source, l'affichage — est passé en
+ * configuration ; il n'y reste que l'état de la source et les profils
+ * épinglés. Les groupes se replient l'un après l'autre dès que la largeur
+ * manque, ce qui compte : la largeur utile du navigateur de la voiture n'est
+ * pas connue, et son zoom n'est pas réglable.
  *
- * Les groupes restent des sections distinctes : ce sont trois choix sans
- * rapport, et un lecteur d'écran doit continuer de les entendre séparés.
+ * Les groupes restent des sections distinctes : ce sont deux choses sans
+ * rapport, et un lecteur d'écran doit continuer de les entendre séparées.
  */
 .toolbar {
   display: flex;
@@ -538,19 +530,14 @@ const SPEED_STEP_KMH = 20
 }
 
 /*
- * Trois ancrages plutôt que trois places au fil du texte : la source à gauche,
- * l'affichage au centre, les profils à droite. Chacun garde sa place quand les
- * autres changent de largeur — un nom de profil plus long ne doit pas déplacer
- * les boutons de source, qu'on cherche au même endroit à chaque fois.
+ * Deux ancrages plutôt que deux places au fil du texte : l'état de la source à
+ * gauche, les profils à droite. Chacun garde sa place quand l'autre change de
+ * largeur — un nom de profil plus long ne doit pas déplacer ce qu'on cherche au
+ * même endroit à chaque fois.
  *
- * Les marges automatiques tombent d'elles-mêmes quand la barre se replie : les
- * groupes se rangent alors les uns sous les autres, alignés à gauche.
+ * La marge automatique tombe d'elle-même quand la barre se replie : les groupes
+ * se rangent alors l'un sous l'autre, alignés à gauche.
  */
-.face-switch {
-  margin-left: auto;
-  margin-right: auto;
-}
-
 .favorites {
   margin-left: auto;
 }
@@ -630,11 +617,6 @@ const SPEED_STEP_KMH = 20
 
 .fill.redline {
   background: var(--warn);
-}
-
-.face-switch {
-  display: flex;
-  gap: 0.4rem;
 }
 
 
@@ -720,9 +702,9 @@ const SPEED_STEP_KMH = 20
 }
 
 /*
- * Son, écran et boîte sur une ligne : trois réglages qu'on touche à l'arrêt, et
- * qui prenaient trois lignes de haut à eux seuls. Ils se replient quand la
- * largeur manque, comme la barre du haut.
+ * Il n'y reste que le volume : la boîte est passée dans le sélecteur, le son et
+ * le verrou d'écran dans l'en-tête. La barre se replie quand la largeur manque,
+ * comme celle du haut.
  */
 .control-bar {
   display: flex;
@@ -803,23 +785,6 @@ const SPEED_STEP_KMH = 20
 
 .hint.warn {
   color: var(--warn);
-}
-
-/*
- * Mode conduite : les chiffres occupent toute la hauteur disponible et les
- * boutons deviennent des cibles qu'on atteint sans regarder.
- */
-.gear-controls {
-  display: flex;
-  gap: 0.4rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* Les commandes ne doivent pas voler la place du rapport, qui se lit d'abord. */
-.gear-controls button {
-  padding: 0.35rem 0.7rem;
-  font-size: 0.9rem;
 }
 
 .drive.immersive {

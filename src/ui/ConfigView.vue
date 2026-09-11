@@ -1500,7 +1500,7 @@ async function rapatrier(): Promise<void> {
       <p class="note">
         Les régimes de passage ne se règlent plus ici : ils se déduisent du
         <strong>rupteur du moteur</strong> et du <strong>tempérament</strong> —
-        route ou sport —, qui se choisit sous les cadrans de l'écran de conduite.
+        route ou sport —, qui se choisit sur la touche de marche, entre les cadrans de l'écran de conduite.
         C'est ce qui fait qu'un moteur de moto tient ses rapports plus longtemps
         qu'un V8, là où cinq régimes en tours absolus ignoraient le moteur qu'ils
         avaient devant eux.

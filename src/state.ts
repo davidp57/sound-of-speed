@@ -590,6 +590,10 @@ export const synthStatus = ref<SynthStatus>({ ...synth.status })
 export type SoundState = 'loading' | 'error' | 'off' | 'muted' | 'taken' | 'on'
 
 export const soundState = computed<SoundState>(() => {
+  // Au repos il ne sort rien, quoi qu'en dise le moteur audio : « P » a coupé
+  // la cadence et le mixage. L'annoncer « actif » ferait chercher une panne là
+  // où il n'y a qu'un sélecteur au parking.
+  if (!isRunning.value) return 'off'
   const phase = synthIsOrigin.value ? synthStatus.value.phase : audioStatus.value.phase
   if (phase === 'loading') return 'loading'
   if (phase === 'error') return 'error'
@@ -1899,6 +1903,22 @@ export async function exportServerData(): Promise<string> {
   return `${entries.length} fichiers, ${mo} Mo${manques}`
 }
 
+/**
+ * Met l'application en route — c'est la position « D » du sélecteur.
+ *
+ * Elle rend le son en même temps que la mesure, parce que le geste qui l'a
+ * appelée est celui que les navigateurs exigent pour ouvrir un contexte audio.
+ * Le faire ailleurs demanderait un second appui pour la seule raison que le
+ * code est écrit en deux morceaux.
+ *
+ * La cadence passe par `syncDriver` et non par `loop.start()`, qui installerait
+ * la boucle d'affichage **en plus** de l'horloge du fil audio quand celle-ci
+ * tourne déjà : le pas de temps serait alors compté deux fois, et tout ce qui
+ * s'intègre dessus — compteurs de la boîte, durée d'un passage, lissage de la
+ * charge — avancerait deux fois trop vite. L'ordre était sûr tant que le
+ * démarrage avait lieu au chargement de la page, donc avant tout son ; il ne
+ * l'est plus depuis que c'est un bouton qui l'appelle.
+ */
 export function start(): void {
   // L'attente d'une première mesure s'ouvre ici : c'est ce qui permet au chien
   // de garde de relancer un suivi qui n'a jamais rien reçu.
@@ -1908,8 +1928,9 @@ export function start(): void {
   rejectionWatch.reset()
   rejectionCause.value = null
   currentSource().start()
-  loop.start()
   isRunning.value = true
+  syncDriver()
+  void activateAudio()
 }
 
 /**
@@ -1925,15 +1946,26 @@ export function start(): void {
  */
 export function stop(): void {
   currentSource().stop()
-  loop.stop()
   isRunning.value = false
+  // Les **deux** cadences s'arrêtent. Couper la seule boucle d'affichage ne
+  // suffit pas : dès que la banque joue, c'est l'horloge du fil audio qui bat
+  // la mesure, et elle continuait de poster à soixante hertz après « P ». Le
+  // silence demandé ci-dessous était alors défait au tour suivant, seize
+  // millisecondes plus tard — le ralenti s'entendait toujours, la boîte
+  // tournait, le journal s'incrémentait, pendant que l'écran affichait « P ».
+  loop.stop()
+  audio.onClockTick = null
   audio.mute()
   void synth.stop()
   // Le repos remet le tempérament à « route ». Décision de David, le
   // 11 septembre 2026 : la touche de marche affiche « D » au parking, jamais
   // « S ». Elle le garderait que l'écran mentirait — on lirait D et on
   // repartirait en sport.
-  driveMode.value = 'road'
+  //
+  // Sans toucher à la préférence enregistrée : la persistance sert à retrouver
+  // au lancement ce que le profil demande, et l'écraser à chaque arrêt la
+  // viderait de son sens dès le deuxième trajet.
+  setDriveModeWithoutSaving('road')
   // Ce qui a été enregistré jusqu'ici part maintenant : la voiture s'éteint
   // souvent dans la minute qui suit, et une tranche gardée serait perdue.
   depositCaptureIfDue(journalElapsedMs, true)
@@ -2164,13 +2196,28 @@ export function getSimulatedCruise(): number | null {
  * Le mode de conduite : le tempérament de la boîte.
  *
  * Une préférence d'appareil, au même titre que la commande automatique ou
- * manuelle — c'est un choix de conduite, et il se fait sous les cadrans. Les
+ * manuelle — c'est un choix de conduite, et il se fait sur la touche de marche, entre les cadrans. Les
  * seuils de montée s'en déduisent, avec le rupteur du moteur.
  *
  * **Au premier lancement, il se déduit du profil actif** : ses seuils portaient
  * jusqu'ici le tempérament, et imposer « route » ferait conduire un profil Sport
  * comme un profil Route sans que rien ne le dise.
  */
+/**
+ * Ce qui empêche un changement de tempérament d'être retenu.
+ *
+ * Le repos remet « route » pour que la touche de marche affiche « D », mais ce
+ * n'est pas un choix du conducteur : l'enregistrer effacerait, dès le deuxième
+ * trajet, le tempérament que le profil demande.
+ */
+let persistDriveMode = true
+
+function setDriveModeWithoutSaving(mode: DriveMode): void {
+  if (driveMode.value === mode) return
+  persistDriveMode = false
+  driveMode.value = mode
+}
+
 const driveMode = ref<DriveMode>(
   loadDriveMode() ??
     driveModeFromUpshiftRpm(
@@ -2209,7 +2256,8 @@ watch(
 watch(
   driveMode,
   (mode) => {
-    saveDriveMode(mode)
+    if (persistDriveMode) saveDriveMode(mode)
+    persistDriveMode = true
     gearbox.setDriveMode(mode)
     // Le rapport est réévalué tout de suite : changer de tempérament en roulant
     // doit s'entendre, et non attendre le prochain passage.
@@ -2283,7 +2331,11 @@ function applyPad(dt: number): void {
 
   if (intent.shiftUp) gearbox.shiftUp()
   if (intent.shiftDown) gearbox.shiftDown()
-  if (intent.toggleMode) gearbox.setMode(gearbox.getMode() === 'manual' ? 'auto' : 'manual')
+  // Par `setShiftMode` et non par la boîte directement : l'écran lit le mode
+  // dans un état à part — la télémétrie ne vit que tant que la boucle tourne —
+  // et une bascule faite à la manette le laisserait afficher « AUTO » pendant
+  // que la boîte est en manuelle.
+  if (intent.toggleMode) setShiftMode(gearbox.getMode() === 'manual' ? 'auto' : 'manual')
   if (intent.toggleCruise) {
     simulator.setCruise(simulator.getCruise() === null ? telemetry.value.speed.kmh : null)
   }

@@ -313,11 +313,14 @@ onBeforeUnmount(() => {
 /*
  * La barre se replie quand la place manque.
  *
- * Ses six boutons tenaient sur une seule ligne quoi qu'il arrive, et ce qui
- * dépassait sortait de l'écran. Mesuré sur un téléphone de 375 pixels :
- * « En marche » était entièrement dehors — 228 pixels au-delà du bord. Il
- * fallait faire glisser la page de côté pour atteindre le bouton qui démarre et
- * coupe tout, sans que rien n'indique qu'il était là.
+ * Ses boutons tenaient sur une seule ligne quoi qu'il arrive, et ce qui
+ * dépassait sortait de l'écran. Mesuré sur un téléphone de 375 pixels, à
+ * l'époque où le bouton de marche vivait ici : il était entièrement dehors —
+ * 228 pixels au-delà du bord. Il fallait faire glisser la page de côté pour
+ * atteindre ce qui démarre et coupe tout, sans que rien n'indique qu'il était
+ * là. Ce bouton est depuis passé dans le sélecteur, entre les cadrans, et la
+ * barre s'est allégée d'autant ; les mesures ci-dessous datent d'avant ce
+ * déplacement et décrivent donc un cas plus serré que l'actuel.
  *
  * L'écran de la voiture est large : le défaut ne s'y produisait pas, ce qui
  * explique qu'il ait vécu longtemps sans se voir.

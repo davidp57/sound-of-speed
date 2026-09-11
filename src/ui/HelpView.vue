@@ -55,8 +55,10 @@ defineEmits<{ close: [] }>()
         <li>
           <b>AUTO</b> et <b>MAN</b> choisissent la boîte. Les commandes de
           chaque mode sont montrées au-dessus de son étiquette : le bouton de
-          marche pour l'automatique, <b>+</b> et <b>−</b> pour la manuelle.
-          Celles qui ne servent pas sont estompées.
+          marche pour l'automatique, <b>+</b> et <b>−</b> pour la manuelle. Les
+          touches qui ne commandent plus rien sont estompées — le bouton de
+          marche, lui, reste vif en boîte manuelle, parce qu'il y règle encore
+          le mode sport, donc le son.
         </li>
       </ul>
       <p>
