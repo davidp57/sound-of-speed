@@ -1,6 +1,6 @@
 # RETOUR-11 — trois demandes de la sortie du 11 septembre au soir
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 les trois tickets sont livrés ; deux s'écoutent en roulant
 **Branche :** `feature/retour-11`
 **Version visée :** correctifs successifs
 

@@ -40,8 +40,18 @@ const props = withDefaults(
     redline?: number | null
     /** Passe l'aiguille en alerte, sans rien changer à sa position. */
     alert?: boolean
+    /**
+     * Seconde valeur, montrée par une aiguille plus courte et d'une autre
+     * couleur. `null` quand il n'y en a pas, et l'aiguille disparaît.
+     *
+     * Sur le compteur de régime, c'est le régime qu'aurait le moteur si le
+     * rapport suivant était engagé à l'instant. David, après la sortie du
+     * 11 septembre 2026 : « afficher le RPM calculé du prochain rapport si on
+     * le passait maintenant ».
+     */
+    ghost?: number | null
   }>(),
-  { min: 0, step: 1000, minorPerStep: 1, redline: null, alert: false },
+  { min: 0, step: 1000, minorPerStep: 1, redline: null, alert: false, ghost: null },
 )
 
 /** Centre, rayon de l'arc et balayage : voir le repère fixe du commentaire. */
@@ -55,6 +65,15 @@ const SWEEP = 240
 /** Longueur de l'aiguille et demi-largeur de son pied. */
 const NEEDLE = 64
 const NEEDLE_HALF_WIDTH = 4.5
+
+/**
+ * La seconde aiguille : nettement plus courte et plus fine.
+ *
+ * Assez pour qu'aucun coup d'œil ne les confonde — c'est une indication, pas
+ * une mesure, et elle ne doit jamais se lire à la place du régime.
+ */
+const GHOST_NEEDLE = 46
+const GHOST_HALF_WIDTH = 1.8
 
 interface Point {
   x: number
@@ -127,15 +146,23 @@ const labels = computed(() =>
   }),
 )
 
-const needle = computed(() => {
-  const fraction = fractionOf(props.value)
-  const tip = polar(fraction, NEEDLE)
+function needlePoints(value: number, length: number, halfWidth: number): string {
+  const fraction = fractionOf(value)
+  const tip = polar(fraction, length)
   const angle = ((START + fraction * SWEEP) * Math.PI) / 180
   // Perpendiculaire à l'aiguille : le pied s'élargit, l'aiguille se voit de loin.
-  const nx = -Math.sin(angle) * NEEDLE_HALF_WIDTH
-  const ny = Math.cos(angle) * NEEDLE_HALF_WIDTH
+  const nx = -Math.sin(angle) * halfWidth
+  const ny = Math.cos(angle) * halfWidth
   return `${tip.x.toFixed(2)},${tip.y.toFixed(2)} ${(CX + nx).toFixed(2)},${(CY + ny).toFixed(2)} ${(CX - nx).toFixed(2)},${(CY - ny).toFixed(2)}`
-})
+}
+
+const needle = computed(() => needlePoints(props.value, NEEDLE, NEEDLE_HALF_WIDTH))
+
+const ghostNeedle = computed(() =>
+  props.ghost === null || !Number.isFinite(props.ghost)
+    ? ''
+    : needlePoints(props.ghost, GHOST_NEEDLE, GHOST_HALF_WIDTH),
+)
 
 const shown = computed(() => Math.round(props.value))
 </script>
@@ -175,6 +202,11 @@ const shown = computed(() => Math.round(props.value))
       {{ label.text }}
     </text>
 
+    <!--
+      La seconde aiguille passe **sous** la principale : quand les deux se
+      croisent, c'est le régime qui doit rester lisible.
+    -->
+    <polygon v-if="ghostNeedle" class="needle ghost" :points="ghostNeedle" />
     <polygon class="needle" :class="{ alert }" :points="needle" />
     <circle class="hub" :cx="CX" :cy="CY" r="7" />
 
@@ -238,6 +270,10 @@ const shown = computed(() => Math.round(props.value))
 
 .needle.alert {
   fill: var(--warn);
+}
+
+.needle.ghost {
+  fill: var(--good);
 }
 
 .hub {

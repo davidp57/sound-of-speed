@@ -506,7 +506,7 @@ L'hébergement reste chez soi, ce qui règle du même coup la question des
 
 ### 1. Créer les dossiers et déposer les échantillons — File Station
 
-Trois dossiers, sous `/volume1/docker/speed/` :
+Six dossiers, sous `/volume1/docker/speed/` :
 
 | Dossier | Contenu | Accès |
 |---|---|---|
@@ -515,13 +515,27 @@ Trois dossiers, sous `/volume1/docker/speed/` :
 | `traces/` | les trajets enregistrés en roulant. **Peut rester vide** | lecture-écriture |
 | `journal/` | le journal de bord, déposé tout seul en roulant. **Peut rester vide** | lecture-écriture |
 | `mesures/` | les relevés de mesure, dont ceux de la sonde. **Peut rester vide** | lecture-écriture |
+| `profils/` | ce que le profileur mesure de la vraie voiture. **Peut rester vide** | lecture-écriture pour le profileur, lecture pour le site |
 
-Les cinq doivent **exister avant** de déployer la pile : Docker sous DSM ne
+Les six doivent **exister avant** de déployer la pile : Docker sous DSM ne
 crée pas un point de montage absent, il refuse de démarrer le conteneur avec un
-`Bind mount failed`. Des dossiers `profiles/`, `traces/`, `journal/` et
-`mesures/` vides suffisent — et à défaut, il faut commenter leur ligne dans la
-pile, au prix de la bibliothèque de profils, du dépôt de traces, du journal et
-des relevés.
+`Bind mount failed`. Des dossiers `profiles/`, `traces/`, `journal/`,
+`mesures/` et `profils/` vides suffisent — et à défaut, il faut commenter leur
+ligne dans la pile, au prix de la bibliothèque de profils, du dépôt de traces,
+du journal, des relevés et du profil mesuré.
+
+**`profils/` et `profiles/` sont deux dossiers différents**, et ce n'est pas
+une faute de frappe : le premier, en français, ne contient qu'un fichier écrit
+par le profileur ; le second, en anglais, est la bibliothèque de profils
+partagés. Ils ont des droits différents et ne se remplacent pas.
+
+**`profils/` est né avec le profileur**, le 11 septembre 2026. Une pile
+installée avant lui ne le monte pas et ne lance pas le second conteneur : il
+faut **recoller la pile entière** dans Portainer, un simple « repull » ne crée
+pas un service absent. Sans cela, l'application demande le profil mesuré,
+reçoit la page d'accueil à sa place, et n'a jamais rien à proposer — ce qui
+s'est produit le soir même. L'écran de télémétrie le dit maintenant, dans la
+section « Profil mesuré ».
 
 **`profiles/` était en lecture seule** jusqu'à la remontée automatique. Il passe
 en écriture parce que c'est là qu'un profil réglé dans la voiture doit atterrir :
@@ -692,6 +706,23 @@ dossier où l'on écrit :
 > commentées de `docker/docker-compose.yml` n'y sont pas, et le volume des
 > traces est de toute façon nouveau. Les commentaires du dépôt indiquent quoi
 > monter ; c'est dans l'éditeur de pile que le montage se déclare.
+
+### Le profileur, un second conteneur
+
+Depuis le 11 septembre 2026, la pile contient **deux** services : `speed`, qui
+sert le site, et `speed-profileur`, qui relit les traces déposées et en tire le
+profil de la vraie voiture. Le second n'ouvre aucun port et ne sert rien ; il
+écrit un fichier que le premier expose.
+
+Les deux images viennent du **même commit** — c'est ce qui garantit qu'elles
+calculent la même chose, et les redéployer séparément les ferait diverger.
+
+**Ajouter un service demande de recoller la pile.** Tirer les images à jour ne
+crée pas un conteneur qui n'était pas déclaré : il faut reprendre le texte de
+[`docker/docker-compose.yml`](docker/docker-compose.yml) dans l'éditeur de pile
+Portainer, et redéployer. Sans cela, l'application demande le profil mesuré et
+ne trouve rien — l'écran de télémétrie l'affiche alors dans sa section
+« Profil mesuré ».
 
 ### Redéployer ne suffit pas à changer de version
 

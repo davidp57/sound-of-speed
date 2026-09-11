@@ -1,6 +1,6 @@
 # 02 — Claquement à la montée, moins trente pour cent
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré, reste l'écoute en roulant
 
 ## Ce qu'il faut obtenir
 

@@ -477,8 +477,15 @@ export function createDefaultProfile(): Profile {
         cutDepth: 0.8,
         dipRpm: 450,
         blipRpm: 550,
-        clack: 0.5,
-        clackDownshift: 0.55,
+        // Le clac de la montée a perdu trente pour cent après la sortie du
+        // 11 septembre 2026 — David : « diminuer le son du claquement quand on
+        // monte d'un rapport, quand on rétrograde c'est bien comme ça ».
+        //
+        // L'amplitude vaut `clack` à la montée et `clack × clackDownshift` à la
+        // descente : baisser `clack` seul aurait baissé les deux. Le facteur de
+        // descente monte donc d'autant, et le rétrogradage reste à 0,275.
+        clack: 0.35,
+        clackDownshift: 0.786,
         crackle: 0.35,
       },
     },

@@ -23,6 +23,8 @@ import {
   setReplayRate,
   sourceKind,
   isRunning,
+  measuredCar,
+  measuredCarStatus,
   restartGeolocation,
   telemetry,
 } from '../state'
@@ -37,6 +39,48 @@ import {
 const maintien = computed(() => {
   if (!audioStatus.value.keepAlive) return 'coupé'
   return audioStatus.value.keepAlivePlaying ? 'joue' : 'arrêté'
+})
+
+/**
+ * Ce que le dernier essai de lecture a donné, dit en clair.
+ *
+ * Les trois derniers cas signalent une plomberie qui ne marche pas, et c'est
+ * tout l'intérêt de les distinguer : « rien à proposer » et « le serveur répond
+ * n'importe quoi » se ressemblaient à l'écran, puisque ni l'un ni l'autre n'y
+ * apparaissait.
+ */
+const measuredCarLabel = computed(() => {
+  switch (measuredCarStatus.value) {
+    case 'trouvee':
+      return 'profil reçu'
+    case 'absente':
+      return 'rien à proposer pour l’instant'
+    case 'injoignable':
+      return 'serveur injoignable'
+    case 'illisible':
+      return 'réponse illisible'
+    case 'perimee':
+      return 'mesure d’un procédé plus ancien'
+    default:
+      return 'pas encore essayé'
+  }
+})
+
+/** Ce qu'il faut aller regarder, quand il y a quelque chose à regarder. */
+const measuredCarWarning = computed(() => {
+  if (measuredCarStatus.value === 'illisible') {
+    return 'Le serveur a répondu autre chose que la mesure attendue — l’emplacement /profils/ manque à nginx, ou le dossier n’est pas monté.'
+  }
+  if (measuredCarStatus.value === 'perimee') {
+    return 'Le profileur ne tourne pas dans la même version que l’application.'
+  }
+  return ''
+})
+
+const measuredCoverage = computed(() => {
+  const coverage = measuredCar.value?.coverage
+  if (coverage === undefined) return ''
+  return coverage.complete ? 'complète' : `il manque ${coverage.missing.join(', ')}`
 })
 
 /** La version servie à cette page, injectée à la construction. */
@@ -672,6 +716,31 @@ function onRateChange(event: Event): void {
           <input type="range" min="0.25" max="4" step="0.25" :value="replayRate" @input="onRateChange" />
         </label>
       </template>
+    </section>
+
+    <!--
+      Ce que le serveur a mesuré de la voiture.
+
+      La section existe pour une raison précise : le 11 septembre 2026, la
+      chaîne était coupée et rien ne le disait. Une absence de mesure et une
+      plomberie cassée se ressemblaient à l'écran — c'est-à-dire qu'aucune des
+      deux ne s'y voyait.
+    -->
+    <section class="panel">
+      <h2>Profil mesuré</h2>
+      <p class="note">
+        Le serveur relit les traces déposées et en tire le profil de la vraie
+        voiture. Quand il a de quoi conclure, l'écran de conduite le propose.
+      </p>
+
+      <ValueRow label="Dernier essai" :value="measuredCarLabel" />
+      <ValueRow
+        v-if="measuredCar"
+        label="Trajets mesurés"
+        :value="String(measuredCar.aggregate.tripCount)"
+      />
+      <ValueRow v-if="measuredCar" label="Couverture" :value="measuredCoverage" />
+      <p v-if="measuredCarWarning" class="error">{{ measuredCarWarning }}</p>
     </section>
 
     <!--

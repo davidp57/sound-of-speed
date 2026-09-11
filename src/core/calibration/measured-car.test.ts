@@ -37,26 +37,50 @@ function reseau(body: unknown, ok = true): typeof fetch {
 
 describe('fetchMeasuredCar', () => {
   it('lit ce que le serveur a déposé', async () => {
-    const found = await fetchMeasuredCar(reseau(mesure()))
+    const probe = await fetchMeasuredCar(reseau(mesure()))
 
-    expect(found).not.toBeNull()
-    expect(found!.updatedAt).toBe(1000)
+    expect(probe.status).toBe('trouvee')
+    expect(probe.car).not.toBeNull()
+    expect(probe.car!.updatedAt).toBe(1000)
   })
 
   /**
-   * Les cas ordinaires d'une application qui a roulé avant que le serveur n'ait
-   * eu de quoi conclure. Aucun n'est une erreur.
+   * Le cas ordinaire d'une application qui a roulé avant que le serveur n'ait
+   * eu de quoi conclure : ce n'est pas une erreur, et rien ne s'affiche.
    */
-  it('rend null quand il n’y a rien', async () => {
-    expect(await fetchMeasuredCar(reseau(null, false))).toBeNull()
-    expect(await fetchMeasuredCar(reseau('pas du json'))).toBeNull()
-    expect(await fetchMeasuredCar(reseau({}))).toBeNull()
+  it('dit l’absence quand le serveur n’a rien écrit', async () => {
+    const probe = await fetchMeasuredCar(reseau(null, false))
+
+    expect(probe.status).toBe('absente')
+    expect(probe.car).toBeNull()
   })
 
-  it('rend null quand le réseau ne répond pas', async () => {
+  it('dit l’absence de réponse quand le réseau ne répond pas', async () => {
     const casse = (() => Promise.reject(new Error('hors réseau'))) as typeof fetch
+    const probe = await fetchMeasuredCar(casse)
 
-    expect(await fetchMeasuredCar(casse)).toBeNull()
+    expect(probe.status).toBe('injoignable')
+    expect(probe.car).toBeNull()
+  })
+
+  /**
+   * Le défaut du 11 septembre 2026, celui qui ne devait plus se taire.
+   *
+   * Faute d'emplacement `/profils/`, nginx répondait **200 avec la page
+   * d'accueil** : une réponse valable, du HTML, et `json()` qui rejette. Il ne
+   * faut pas que cela se lise comme « le serveur n'a pas de mesure ».
+   */
+  it('distingue une réponse illisible d’une absence de mesure', async () => {
+    const html = (() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.reject(new SyntaxError('Unexpected token <')),
+      } as unknown as Response)) as typeof fetch
+
+    expect((await fetchMeasuredCar(html)).status).toBe('illisible')
+    // Du JSON, mais pas la mesure attendue.
+    expect((await fetchMeasuredCar(reseau({}))).status).toBe('illisible')
+    expect((await fetchMeasuredCar(reseau('pas du json'))).status).toBe('illisible')
   })
 
   /**
@@ -64,9 +88,10 @@ describe('fetchMeasuredCar', () => {
    * corrigées : rien ne permet de le rattraper, et le profileur le refera.
    */
   it('écarte une mesure produite par un procédé plus ancien', async () => {
-    const vieux = await fetchMeasuredCar(reseau(mesure({ procedure: PROCEDURE_VERSION - 1 })))
+    const probe = await fetchMeasuredCar(reseau(mesure({ procedure: PROCEDURE_VERSION - 1 })))
 
-    expect(vieux).toBeNull()
+    expect(probe.status).toBe('perimee')
+    expect(probe.car).toBeNull()
   })
 })
 

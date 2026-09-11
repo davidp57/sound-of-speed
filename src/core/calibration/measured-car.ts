@@ -9,14 +9,48 @@ import type { Coverage } from './coverage'
  * Cette pièce ne fait que le chercher et vérifier qu'il dit ce qu'on attend —
  * elle ne mesure rien, elle ne décide rien.
  *
- * **Rien n'est une erreur ici.** Pas de fichier, pas de compte, un dossier qui
- * n'existe pas : ce sont les cas ordinaires d'une application qui a roulé avant
- * que le serveur n'ait eu de quoi conclure. On rend `null`, et l'écran n'a rien
- * à montrer.
+ * **Presque rien n'est une erreur ici.** Pas de fichier, pas de compte, un
+ * dossier qui n'existe pas : ce sont les cas ordinaires d'une application qui a
+ * roulé avant que le serveur n'ait eu de quoi conclure, et l'écran n'a rien à
+ * montrer.
+ *
+ * Mais tous les échecs se valaient, et c'était un défaut. Le 11 septembre 2026,
+ * l'emplacement `/profils/` manquait à nginx : la requête tombait sur le
+ * `try_files … /index.html`, donc sur une réponse **200 qui portait la page
+ * d'accueil**. Le code voyait une réponse valable, échouait à la lire, et
+ * rendait la même absence qu'un serveur qui n'a rien à dire. David a attendu
+ * une proposition qui ne pouvait pas venir, sans un signe à l'écran.
+ *
+ * Le motif de l'échec est donc rendu avec le résultat. Il ne change rien à ce
+ * que l'écran de conduite montre — c'est-à-dire rien — mais la télémétrie le
+ * dit, et une panne de plomberie cesse de ressembler à une absence de mesure.
  */
 
 /** Emplacement, servi par le même hôte que l'application. */
 const MEASURED_PATH = '/profils/profil-voiture.json'
+
+/**
+ * Ce qui s'est passé au dernier essai.
+ *
+ * `absente` est le cas ordinaire ; les trois autres disent une plomberie qui ne
+ * marche pas.
+ */
+export type MeasuredCarStatus =
+  /** Un fichier, lisible, du bon procédé. */
+  | 'trouvee'
+  /** Le serveur n'a rien écrit, ou le dossier n'existe pas encore. */
+  | 'absente'
+  /** Aucune réponse : hors réseau, ou serveur éteint. */
+  | 'injoignable'
+  /** Une réponse est venue, mais ce n'était pas la mesure attendue. */
+  | 'illisible'
+  /** Un fichier d'un procédé antérieur, que le profileur refera. */
+  | 'perimee'
+
+export interface MeasuredCarProbe {
+  status: MeasuredCarStatus
+  car: MeasuredCar | null
+}
 
 export interface MeasuredCar {
   /** Version du procédé qui l'a produit. */
@@ -38,30 +72,42 @@ export interface MeasuredCar {
 export async function fetchMeasuredCar(
   fetchImpl: typeof fetch = fetch,
   path = MEASURED_PATH,
-): Promise<MeasuredCar | null> {
+): Promise<MeasuredCarProbe> {
   let response: Response
   try {
     response = await fetchImpl(path, { cache: 'no-store' })
   } catch {
-    return null
+    return { status: 'injoignable', car: null }
   }
-  if (!response.ok) return null
+  if (!response.ok) return { status: 'absente', car: null }
 
   let parsed: unknown
   try {
     parsed = await response.json()
   } catch {
-    return null
+    // Une réponse qui n'est pas du JSON. C'est le cas du 11 septembre : nginx
+    // rendait la page d'accueil faute d'emplacement pour le fichier.
+    return { status: 'illisible', car: null }
   }
 
   const measured = parsed as Partial<MeasuredCar>
-  if (measured.aggregate === undefined || measured.coverage === undefined) return null
-  if (measured.procedure !== PROCEDURE_VERSION) return null
+  if (
+    typeof measured !== 'object' ||
+    measured === null ||
+    measured.aggregate === undefined ||
+    measured.coverage === undefined
+  ) {
+    return { status: 'illisible', car: null }
+  }
+  if (measured.procedure !== PROCEDURE_VERSION) return { status: 'perimee', car: null }
   return {
-    procedure: measured.procedure,
-    updatedAt: typeof measured.updatedAt === 'number' ? measured.updatedAt : 0,
-    aggregate: measured.aggregate,
-    coverage: measured.coverage,
+    status: 'trouvee',
+    car: {
+      procedure: measured.procedure,
+      updatedAt: typeof measured.updatedAt === 'number' ? measured.updatedAt : 0,
+      aggregate: measured.aggregate,
+      coverage: measured.coverage,
+    },
   }
 }
 

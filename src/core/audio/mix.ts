@@ -91,6 +91,23 @@ export function shiftCut(profile: Profile, shift?: { isShifting: boolean; progre
   return 1 - depth * Math.sin(clamp(shift.progress, 0, 1) * Math.PI)
 }
 
+/**
+ * Amplitude du clac mécanique, selon le sens du passage.
+ *
+ * Deux réglages pour deux sens, et l'ordre compte : `clack` porte les deux, et
+ * `clackDownshift` n'est qu'un facteur repris par-dessus en descente. Qui
+ * baisse `clack` en croyant ne toucher qu'à la montée baisse les deux — c'est
+ * précisément le piège du 11 septembre 2026, quand David a demandé trente pour
+ * cent de moins à la montée « et au rétrogradage c'est bien comme ça ».
+ *
+ * La règle vit ici plutôt que dans l'assemblage, pour qu'elle se vérifie sans
+ * sortir un son.
+ */
+export function clackAmplitude(profile: Profile, downshift: boolean): number {
+  const jolt = profile.feel.shiftJolt
+  return jolt.clack * (downshift ? jolt.clackDownshift : 1)
+}
+
 export function computeMix(
   profile: Profile,
   state: EngineState,

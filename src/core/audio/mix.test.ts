@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { computeMix } from './mix'
+import { clackAmplitude, computeMix } from './mix'
 import { createDefaultProfile, createRoadProfile } from '../preset/defaults'
 import type { EngineState } from '../engine/engine'
 import type { LayerPreset, Profile } from '../preset/schema'
@@ -701,5 +701,26 @@ describe('computeMix — coupure de couple au passage', () => {
     const milieu = computeMix(p, chargé, { isShifting: true, progress: 0.5 })
 
     expect(milieu.onWeight).toBeCloseTo(repos.onWeight, 6)
+  })
+})
+
+describe('clackAmplitude', () => {
+  it('sort le clac de la montée trente pour cent sous ce qu’il était', () => {
+    const p = createDefaultProfile()
+    // Le réglage livré avant la sortie du 11 septembre 2026.
+    const avant = { ...p, feel: { ...p.feel, shiftJolt: { ...p.feel.shiftJolt, clack: 0.5, clackDownshift: 0.55 } } }
+    const apres = { ...p, feel: { ...p.feel, shiftJolt: { ...p.feel.shiftJolt, clack: 0.35, clackDownshift: 0.786 } } }
+
+    expect(clackAmplitude(apres, false)).toBeCloseTo(clackAmplitude(avant, false) * 0.7, 3)
+    expect(clackAmplitude(apres, true)).toBeCloseTo(clackAmplitude(avant, true), 2)
+  })
+
+  it('applique le facteur de descente au seul rétrogradage', () => {
+    const p = createDefaultProfile()
+    const jolt = { ...p.feel.shiftJolt, clack: 0.4, clackDownshift: 0.5 }
+    const profil = { ...p, feel: { ...p.feel, shiftJolt: jolt } }
+
+    expect(clackAmplitude(profil, false)).toBeCloseTo(0.4, 6)
+    expect(clackAmplitude(profil, true)).toBeCloseTo(0.2, 6)
   })
 })

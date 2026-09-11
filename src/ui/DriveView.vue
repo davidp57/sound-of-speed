@@ -28,6 +28,7 @@ import {
   isRunning,
   measuredCar,
   measuredCarShift,
+  nextGearRpm,
   proposesMeasuredCar,
   lastAccuracyM,
   soundState,
@@ -375,6 +376,7 @@ const SPEED_STEP_KMH = 20
           :step="1000"
           :redline="activeProfile.engine.softLimitRpm"
           :alert="telemetry.engine.limiterActive"
+          :ghost="nextGearRpm"
           unit="tr/min"
         />
       </div>
