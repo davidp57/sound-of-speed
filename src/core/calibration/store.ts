@@ -1,4 +1,5 @@
 import { CALIBRATION_STEPS, type CalibrationStepId } from './protocol'
+import type { CarDecision } from './measured-car'
 
 /**
  * Ce qu'une session d'étalonnage garde d'une fois à l'autre.
@@ -44,6 +45,40 @@ export function saveCalibration(session: CalibrationSession): boolean {
   } catch {
     // Quota plein ou navigation privée : la session en cours reste utilisable,
     // elle ne survivra simplement pas au rechargement.
+    return false
+  }
+}
+
+/**
+ * Ce que le conducteur a répondu à une proposition de profil mesuré.
+ *
+ * Rangé à part de la session d'étalonnage : ce sont deux choses différentes —
+ * l'une est un protocole qu'on déroule, l'autre une proposition qu'on accepte —
+ * et les mêler ferait qu'effacer l'un effacerait l'autre.
+ */
+const DECISION_KEY = 'speed.measuredCar.v1'
+
+export function loadCarDecision(): CarDecision | null {
+  try {
+    const raw = localStorage.getItem(DECISION_KEY)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    const decision = parsed as Partial<CarDecision>
+    if (decision.answer !== 'accepted' && decision.answer !== 'later') return null
+    if (typeof decision.forUpdatedAt !== 'number') return null
+    return { answer: decision.answer, forUpdatedAt: decision.forUpdatedAt }
+  } catch {
+    return null
+  }
+}
+
+export function saveCarDecision(decision: CarDecision): boolean {
+  try {
+    localStorage.setItem(DECISION_KEY, JSON.stringify(decision))
+    return true
+  } catch {
+    // Le stockage local peut être plein ou refusé. Le profil reste appliqué
+    // pour cette session ; c'est la mémoire du choix qui manque, pas le choix.
     return false
   }
 }

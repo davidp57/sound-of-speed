@@ -51,7 +51,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [RELECTURE](RELECTURE/spec.md) — revoir un trajet au bureau au lieu de le raconter de mémoire : une seule capture, automatique, et un relecteur avec timeline et carte | 🔄 sept tickets sur huit ; le rejeu sonore attend une capture réelle |
 | [PLANCHER](PLANCHER/spec.md) — la boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient, on ne descend qu'en ralentissant, et le rétrogradage forcé redevient exceptionnel | 🧑 règle livrée en version allégée, reste l'écoute et le format de profil |
 | [COMMANDES](COMMANDES/spec.md) — un interrupteur qui a la forme d'un sélecteur de boîte : D démarre, P met au repos, et la boîte remonte les rapports après un arrêt | 🧑 livré, reste l'essai en roulant |
-| [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | 🔄 le calcul, le cumul et le service sont là (tickets 01 à 06) ; reste l'écran |
+| [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | 🧑 les huit tickets sont livrés ; restent l'essai en roulant et le conteneur sur le NAS |
 | [SUITE-ESSAI-11](SUITE-ESSAI-11/spec.md) — deux points de l'essai du 11 septembre : sept cent vingt-six dépôts manqués à l'arrêt, et une relance GPS de secours | 🔄 relance livrée ; les dépôts manqués restent à instruire |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
@@ -88,11 +88,16 @@ puissance constante de vingt millisecondes. Deux parades prévues au ticket ont
 été essayées et écartées sur mesure : les deux instances permanentes en fondu
 croisé lent, et l'alignement de la nouvelle position sur le cycle moteur.
 
-**PROFIL-REEL a ses huit tickets**, et les six premiers sont livrés : le calcul
-sait lire une capture, y retrouver les moments, séparer le pied levé du
-freinage, cumuler ce que les trajets montrent et dire s'il en sait assez ; le
-service qui fait tout cela sur le serveur est écrit et tourne sur un dossier
-réel, sans avoir encore tourné sur le NAS. Son point dur reste ouvert — la distribution des ralentissements du
+**PROFIL-REEL est livré**, ses huit tickets faits en une journée : le calcul sait
+lire une capture, y retrouver les moments, séparer le pied levé du freinage,
+cumuler ce que les trajets montrent et dire s'il en sait assez ; le service le
+fait sur le serveur ; l'écran le propose et l'applique. Éprouvé de bout en bout
+sur le trajet du 11 septembre, qui rend neuf réglages.
+
+Deux choses restent, et elles demandent David : que le conteneur tourne sur le
+NAS, et que le résultat s'entende en roulant. Et une question de fond demeure —
+rien ne prouve encore qu'il y ait deux façons de ralentir à lire dans la
+distribution. Son point dur reste ouvert — la distribution des ralentissements du
 trajet du 11 septembre n'a qu'une bosse et une queue, et rien ne prouve encore
 qu'il y ait deux façons de ralentir à y lire. Le lot est faisable sans attendre
 les comptes, puisqu'on travaille à compte unique.

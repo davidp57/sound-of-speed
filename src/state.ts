@@ -81,7 +81,23 @@ import {
 } from './core/calibration/onboard'
 import type { CalibrationStepId } from './core/calibration/protocol'
 import { TRACE_FOLDER, depositName, traceBody } from './core/deposit/deposit'
-import { loadCalibration, saveCalibration, type CalibrationSession } from './core/calibration/store'
+import {
+  loadCalibration,
+  loadCarDecision,
+  saveCalibration,
+  saveCarDecision,
+  type CalibrationSession,
+} from './core/calibration/store'
+import { overridesFromAggregate } from './core/calibration/from-aggregate'
+import {
+  fetchMeasuredCar,
+  largestShift,
+  shouldPropose,
+  type CarAnswer,
+  type CarDecision,
+  type MeasuredCar,
+} from './core/calibration/measured-car'
+import type { CarAggregate } from './core/calibration/aggregate'
 import {
   applyOrigin,
   captureOrigin,
@@ -288,6 +304,90 @@ export const calibrationMissing = computed(() =>
 )
 
 /**
+ * Ce que le serveur a mesuré de la voiture, et ce qu'on en a fait.
+ *
+ * Le profileur dépose un fichier ; l'application le lit au démarrage et le
+ * propose quand il est complet. Rien n'est bloquant : sans serveur, sans
+ * compte, ou avant que le serveur n'ait de quoi conclure, tout reste `null` et
+ * aucun écran ne montre quoi que ce soit.
+ */
+export const measuredCar = ref<MeasuredCar | null>(null)
+export const carDecision = ref<CarDecision | null>(loadCarDecision())
+
+/** Ce que la voiture mesurée était la dernière fois qu'on l'a signalée. */
+const signalledCar = ref<CarAggregate | null>(null)
+
+/**
+ * Faut-il proposer la mesure ?
+ *
+ * La proposition ne bloque rien : elle s'affiche sous les cadrans, même en
+ * roulant. David : « y'a pas de raison, si je suis pas dispo je l'ignore et je
+ * clic plus tard ».
+ */
+export const proposesMeasuredCar = computed(() =>
+  shouldPropose(measuredCar.value, carDecision.value),
+)
+
+/**
+ * L'écart au-delà duquel une mesure qui bouge se signale.
+ *
+ * Un seul nombre pour toutes les grandeurs, et le défaut est assumé : vingt
+ * pour cent sur un freinage et vingt pour cent sur une vitesse tenue ne
+ * s'entendent pas pareil. C'est un point de départ, à régler à l'usage.
+ */
+const SHIFT_NOTICE = 0.2
+
+/**
+ * Ce qui a bougé depuis la dernière fois qu'on l'a dit, quand c'est notable.
+ *
+ * Une couche acceptée s'affine sans rien demander — on ne redemande pas douze
+ * fois par trajet. Mais un déplacement franc se dit : pneus d'hiver, voiture
+ * chargée, quelqu'un d'autre au volant.
+ */
+export const measuredCarShift = computed(() => {
+  const measured = measuredCar.value
+  const previous = signalledCar.value
+  if (measured === null || previous === null) return 0
+  if (carDecision.value?.answer !== 'accepted') return 0
+  const shift = largestShift(previous, measured.aggregate)
+  return shift >= SHIFT_NOTICE ? shift : 0
+})
+
+export function acknowledgeCarShift(): void {
+  signalledCar.value = measuredCar.value?.aggregate ?? null
+}
+
+/** Ce que la voiture mesurée impose au profil courant. */
+export const measuredOverrides = computed(() => {
+  const measured = measuredCar.value
+  if (measured === null || carDecision.value?.answer !== 'accepted') return []
+  return overridesFromAggregate(activeProfile.value, measured.aggregate)
+})
+
+export function answerMeasuredCar(answer: CarAnswer): void {
+  const measured = measuredCar.value
+  if (measured === null) return
+  const decision: CarDecision = { answer, forUpdatedAt: measured.updatedAt }
+  carDecision.value = decision
+  saveCarDecision(decision)
+  if (answer === 'accepted') signalledCar.value = measured.aggregate
+}
+
+/**
+ * Va chercher ce que le serveur a mesuré.
+ *
+ * Appelé au démarrage, et quand on veut reprendre une proposition écartée. Sans
+ * réseau ni serveur, il ne se passe rien.
+ */
+export async function refreshMeasuredCar(): Promise<void> {
+  const found = await fetchMeasuredCar()
+  if (found === null) return
+  const first = measuredCar.value === null
+  measuredCar.value = found
+  if (first && carDecision.value?.answer === 'accepted') signalledCar.value = found.aggregate
+}
+
+/**
  * Le profil que le moteur emploie : le réglé, corrigé par le mesuré.
  *
  * C'est lui que lisent le conditionnement, le moteur, la boîte et le mixage.
@@ -295,7 +395,14 @@ export const calibrationMissing = computed(() =>
  * choisi, on entend ce que la voiture peut.
  */
 export const runtimeProfile = computed<Profile>(() =>
-  withCalibration(activeProfile.value, calibrationOverrides.value),
+  // Les deux couches se composent, et l'ordre compte : l'étalonnage guidé passe
+  // en dernier. Il se fait sur commande, en quelques minutes, et vise un
+  // réglage précis ; la mesure du serveur s'affine toute seule sur des semaines.
+  // Quand David prend la peine de dérouler le protocole, c'est lui qui décide.
+  withCalibration(
+    withCalibration(activeProfile.value, measuredOverrides.value),
+    calibrationOverrides.value,
+  ),
 )
 
 const simulator = new SimulatorSource()

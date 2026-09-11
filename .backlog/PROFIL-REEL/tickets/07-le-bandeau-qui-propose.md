@@ -1,6 +1,6 @@
 # 07 — Le bandeau qui propose, et la couche qui s'applique
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — livré, reste l'essai en roulant
 
 **Bloqué par :** 05 et 06 — il faut un verdict, et un résultat sur le serveur.
 
@@ -22,14 +22,30 @@ profite à tous les profils à la fois.
 Refusé, il ne revient pas tout seul — le ticket 08 donne le moyen de le
 reprendre.
 
+## Ce qui est vérifié
+
+La chaîne entière, de la trace au son, éprouvée dans le navigateur avec le
+fichier que le profileur a écrit depuis le trajet du 11 septembre :
+
+- le bandeau s'affiche sous les cadrans — « Profil de la voiture prêt, sur
+  1 trajet » ;
+- « Appliquer » le fait disparaître et compose la couche ;
+- l'écran de configuration annonce alors **neuf réglages** venus de la mesure,
+  avec l'écart : accélération à charge pleine 3,4 au lieu de 2,0 m/s²,
+  rétrogradage au freinage −1,6 au lieu de −1,0 ;
+- aucun réglage du profil n'est modifié — c'est une couche.
+
+**Pas vérifié** : le comportement en roulant, et ce que ces neuf réglages
+donnent à l'oreille.
+
 ## Critères d'acceptation
 
-- [ ] Le bandeau apparaît quand le serveur a de quoi proposer, et pas avant.
-- [ ] Il s'affiche aussi en roulant, sans rien bloquer, et sans animation.
-- [ ] « Appliquer » compose la couche par-dessus le profil actif ; aucun réglage
+- [x] Le bandeau apparaît quand le serveur a de quoi proposer, et pas avant.
+- [x] Il s'affiche aussi en roulant, sans rien bloquer, et sans animation.
+- [x] « Appliquer » compose la couche par-dessus le profil actif ; aucun réglage
       du profil n'est modifié.
-- [ ] La couche se retire, et l'écran de configuration annonce les réglages
+- [x] La couche se retire, et l'écran de configuration annonce les réglages
       qu'elle remplace — comme le fait déjà l'étalonnage.
-- [ ] « Plus tard » le fait disparaître pour ce trajet.
-- [ ] Sans réseau, rien ne change à l'écran de conduite.
-- [ ] Contrôle qualité vert.
+- [x] « Plus tard » le fait disparaître pour ce trajet.
+- [x] Sans réseau, rien ne change à l'écran de conduite.
+- [x] Contrôle qualité vert.
