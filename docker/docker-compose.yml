@@ -7,8 +7,10 @@
 # pile sous un autre nom, avec l'étiquette `:develop` et un autre port.
 # Mettre à jour tient alors à un bouton dans Portainer, sans terminal.
 #
-# Le registre étant privé comme le dépôt, Portainer doit s'y authentifier une
-# fois pour toutes : voir la section « Installation sur un NAS » du README.
+# **Les deux images doivent être accessibles à Portainer**, et chaque paquet a sa
+# propre visibilité — un paquet neuf naît privé, même quand son voisin est
+# public. C'est ce qui a fait échouer le premier déploiement du profileur, le
+# 11 septembre 2026 : voir la section « Installation sur un NAS » du README.
 #
 # Seule condition préalable : déposer les échantillons dans
 # /volume1/docker/speed/audio/ avec File Station. Ils restent hors de l'image,

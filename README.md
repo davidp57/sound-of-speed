@@ -595,6 +595,27 @@ Par la navigation : cliquer son avatar › *Your profile* › onglet **Packages*
 `speed` › *Package settings* dans la colonne de droite. L'onglet Packages
 n'apparaît que si l'on est connecté, un paquet privé n'étant pas listé autrement.
 
+> **Chaque paquet a sa propre visibilité, et chaque nouveau paquet naît privé.**
+> Le 11 septembre 2026, le profileur a ajouté une seconde image,
+> `speed-profileur`. Elle a été publiée sans encombre, et Portainer a pourtant
+> refusé la pile :
+>
+> ```
+> Head "https://ghcr.io/v2/davidp57/speed-profileur/manifests/develop": unauthorized
+> ```
+>
+> Mesuré : `speed` répondait 200 à une requête anonyme, `speed-profileur` 403.
+> L'image existait, le dépôt n'y était pour rien — seule la visibilité du
+> nouveau paquet manquait. Le réglage est à reprendre **par paquet**, à la même
+> adresse avec l'autre nom :
+>
+> <https://github.com/users/davidp57/packages/container/speed-profileur/settings>
+>
+> Le message `unauthorized` de ghcr.io ne distingue pas « pas le droit » de
+> « n'existe pas » : c'est délibéré de la part du registre, et c'est ce qui rend
+> le diagnostic trompeur. Pour trancher, regarder si la chaîne d'intégration a
+> bien poussé l'image — elle nomme le manifeste dans son journal.
+
 **Option conservatrice : garder le paquet privé.** Il faut alors déclarer le
 registre dans Portainer › **Registries** › **Add registry** › **Custom
 registry** :
