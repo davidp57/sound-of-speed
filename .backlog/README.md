@@ -51,7 +51,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [RELECTURE](RELECTURE/spec.md) — revoir un trajet au bureau au lieu de le raconter de mémoire : une seule capture, automatique, et un relecteur avec timeline et carte | 🔄 sept tickets sur huit ; le rejeu sonore attend une capture réelle |
 | [PLANCHER](PLANCHER/spec.md) — la boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient, on ne descend qu'en ralentissant, et le rétrogradage forcé redevient exceptionnel | 🧑 règle livrée en version allégée, reste l'écoute et le format de profil |
 | [COMMANDES](COMMANDES/spec.md) — un interrupteur qui a la forme d'un sélecteur de boîte : D démarre, P met au repos, et la boîte remonte les rapports après un arrêt | 🧑 livré, reste l'essai en roulant |
-| [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | 🔄 le calcul est là (tickets 01 à 03) ; restent l'agrégat, le verdict, le service et l'écran |
+| [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | 🔄 le calcul et le cumul sont là (tickets 01 à 05) ; restent le service et l'écran |
 | [SUITE-ESSAI-11](SUITE-ESSAI-11/spec.md) — deux points de l'essai du 11 septembre : sept cent vingt-six dépôts manqués à l'arrêt, et une relance GPS de secours | 🔄 relance livrée ; les dépôts manqués restent à instruire |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
