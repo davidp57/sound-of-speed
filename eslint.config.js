@@ -17,6 +17,8 @@ export default ts.config(
   {
     ignores: [
       'dist/**',
+      // Le service assemblé pour le serveur : du code produit, pas écrit.
+      'dist-profileur/**',
       'node_modules/**',
       // Service worker : écrit pour le navigateur, servi tel quel, hors chaîne
       // de construction.
@@ -58,8 +60,15 @@ export default ts.config(
     },
   },
   {
-    // Les scripts d'outillage tournent sous Node, pas dans le navigateur.
-    files: ['scripts/**/*.mjs', 'native/**/*.mjs', '*.config.ts', '*.config.js'],
+    // Ce qui tourne sous Node, pas dans le navigateur : les scripts
+    // d'outillage, et le service qui profile la voiture sur le serveur.
+    files: [
+      'scripts/**/*.mjs',
+      'native/**/*.mjs',
+      'src/profileur/**/*.ts',
+      '*.config.ts',
+      '*.config.js',
+    ],
     languageOptions: { globals: { ...globals.node } },
   },
 )
