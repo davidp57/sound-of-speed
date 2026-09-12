@@ -8,6 +8,18 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un serveur en TypeScript sert l'application, ses ressources et les
+  échantillons**, à la place du serveur de fichiers. Il honore les demandes de
+  plage d'octets, annonce les deux types que le navigateur exige pour le moteur
+  simulé, et son repli de page ne répond jamais sur un chemin de données — un
+  fichier de données absent rend un vrai 404, et non la page d'accueil avec un
+  code 200 que le client ne peut pas distinguer d'une panne.
+- **Les deux sources d'échantillons sont enfin réunies.** Les banques déposées
+  vivent dans un volume, celle de démonstration vient avec l'application : le
+  serveur cherche dans les deux, et le listage les montre ensemble. Le volume se
+  montait jusqu'ici par-dessus le dossier des échantillons et masquait la
+  démonstration, qui n'apparaissait donc dans aucune liste de banques.
+
 - **Une base de données, son schéma et ses migrations.** Sept tables — comptes,
   droits, moteurs, boîtes, profils, dépôts, voiture mesurée — dans un fichier
   SQLite qui vit dans un volume, avec des migrations versionnées jouées au

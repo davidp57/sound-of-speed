@@ -1,0 +1,200 @@
+/**
+ * Le serveur : l'application, ses ressources, les échantillons.
+ *
+ * Il reprend ce que nginx rendait, sans que rien en face ait à le savoir. Le jeu
+ * de requêtes de `scripts/accord/` en est le juge, et il décrit le contrat mieux
+ * que ce commentaire ne le ferait.
+ *
+ * **Ce qu'il ne fait pas encore** : les dossiers de données — profils, traces,
+ * journal, relevés — restent servis par l'ancien chemin. Ils passeront en base
+ * aux tickets suivants.
+ */
+
+import { readdirSync } from 'node:fs'
+
+import { Hono } from 'hono'
+
+import { cheminSur, fichierOuRien, servirFichier } from './fichiers'
+
+export interface OptionsDuServeur {
+  /** L'application construite : `dist/`. */
+  application: string
+  /**
+   * Les échantillons déposés, s'il y en a.
+   *
+   * Absent, on sert uniquement ce que l'application embarque — c'est le cas
+   * d'une installation neuve, qui doit quand même faire du son.
+   */
+  echantillons?: string
+}
+
+/** Une semaine, avec revalidation : un échantillon se remplace sans changer de nom. */
+const CACHE_ECHANTILLONS = 'public, must-revalidate, max-age=604800'
+/** Un an : les ressources construites portent leur empreinte dans leur nom. */
+const CACHE_RESSOURCES = 'public, immutable, max-age=31536000'
+
+/**
+ * Les dossiers de données, que ce serveur ne sert pas encore.
+ *
+ * Ils sont nommés ici pour une seule raison : **le repli de l'application ne
+ * doit pas leur répondre**. Quand il le fait, le client demande du JSON et reçoit
+ * une page HTML avec un code 200 — il ne peut plus distinguer « ce fichier
+ * n'existe pas », qui est une situation normale, de « le serveur est cassé ».
+ * Le cas est connu et contourné côté client, qui classe la réponse « illisible ».
+ */
+const DONNEES = ['/profiles/', '/traces/', '/journal/', '/mesures/', '/mesure-voiture/']
+
+export function creerServeur(options: OptionsDuServeur): Hono {
+  const app = new Hono()
+
+  // --- Les échantillons -----------------------------------------------------
+  //
+  // Deux sources, et c'est ce que le serveur de fichiers d'avant ne savait pas
+  // faire. Les banques déposées vivent dans un volume ; la banque de
+  // démonstration vient avec l'application. Le volume se montait **par-dessus**
+  // le dossier des échantillons et masquait donc la démonstration, qui a dû être
+  // rangée ailleurs et ramenée par un alias — au prix de son absence dans le
+  // listage des banques. Ici, on regarde dans les deux, et le listage les réunit.
+  app.get('/audio/*', (c) => {
+    const chemin = new URL(c.req.url).pathname
+
+    if (chemin.endsWith('/')) {
+      const entrees = listerLesDeux(options, chemin.slice('/audio'.length))
+      if (entrees === null) return c.notFound()
+      // Jamais en cache : une banque déposée doit apparaître tout de suite.
+      return c.json(entrees, 200, { 'Cache-Control': 'no-store' })
+    }
+
+    return servirDepuisLesDeux(options, chemin, c.req.raw.headers, CACHE_ECHANTILLONS) ?? c.notFound()
+  })
+
+  // --- Ce que l'application embarque ---------------------------------------
+  app.get('*', (c) => {
+    const chemin = new URL(c.req.url).pathname
+
+    const reponse = servirDepuis(options.application, chemin, c.req.raw.headers, cachePour(chemin))
+    if (reponse !== null) return reponse
+
+    // Le repli de l'application à page unique, et ses deux limites.
+    //
+    // Il ne répond que pour une **navigation**, pas pour une ressource : servir
+    // la page à la place d'une image ou d'un JSON rend un 200 là où il fallait
+    // un 404. Et il ne répond jamais sur un chemin de données, pour la même
+    // raison en pire — voir DONNEES.
+    if (DONNEES.some((dossier) => chemin.startsWith(dossier))) return c.notFound()
+    // La racine est une navigation par définition, quoi qu'annonce celui qui
+    // demande : un client qui n'envoie pas d'en-tête `Accept` — une sonde de
+    // santé, un outil en ligne de commande — doit obtenir la page, pas un 404.
+    if (chemin !== '/' && !ressembleAUneNavigation(c.req.header('accept'))) return c.notFound()
+
+    // Deux pages, deux replis : ouvrir le relecteur doit donner le relecteur, et
+    // non l'application de conduite, ce qui se lirait comme un bug.
+    const page = chemin.startsWith('/relecteur') ? '/relecteur.html' : '/index.html'
+    return servirDepuis(options.application, page, new Headers(), 'no-cache') ?? c.notFound()
+  })
+
+  return app
+}
+
+function cachePour(chemin: string): string | undefined {
+  if (chemin.startsWith('/assets/') || chemin.startsWith('/icons/')) return CACHE_RESSOURCES
+  // Le service worker et la page d'entrée décident de ce qui bascule sur une
+  // nouvelle version : les mettre en cache figerait l'application à la version
+  // du jour où elle a été ouverte.
+  if (chemin === '/sw.js' || chemin.endsWith('.html') || chemin === '/') return 'no-cache'
+  return undefined
+}
+
+/**
+ * Cette requête demande-t-elle une page, ou une ressource ?
+ *
+ * Le navigateur annonce `text/html` en tête de ce qu'il accepte quand il navigue,
+ * et jamais quand il va chercher une image ou un script. C'est ce qui permet de
+ * ne replier que les navigations.
+ */
+function ressembleAUneNavigation(accept: string | undefined): boolean {
+  return accept !== undefined && accept.includes('text/html')
+}
+
+/**
+ * Sert un fichier, en passant les en-têtes de la requête.
+ *
+ * Les en-têtes ne sont pas un détail de plomberie : c'est là que voyage la
+ * demande de plage d'octets. Les oublier donne un serveur qui répond à tout par
+ * le fichier entier — ce qui marche, et transfère cent mille octets là où le
+ * client en demandait cent. Mesuré ici avant de l'écrire.
+ */
+function servirDepuis(
+  racine: string,
+  chemin: string,
+  entetes: Headers,
+  cache?: string,
+): Response | null {
+  const fichier = cheminSur(racine, chemin)
+  if (fichier === null) return null
+
+  const info = fichierOuRien(fichier)
+  if (info === null) return null
+
+  return servirFichier(fichier, info.taille, entetes, cache === undefined ? {} : { cache })
+}
+
+/** Les échantillons déposés d'abord, ceux de l'application ensuite. */
+function servirDepuisLesDeux(
+  options: OptionsDuServeur,
+  chemin: string,
+  entetes: Headers,
+  cache: string,
+): Response | null {
+  const depose =
+    options.echantillons === undefined
+      ? null
+      : servirDepuis(options.echantillons, chemin.slice('/audio'.length), entetes, cache)
+  return depose ?? servirDepuis(options.application, chemin, entetes, cache)
+}
+
+/**
+ * Le listage, au format que quatre modules du cœur attendent.
+ *
+ * Un tableau d'entrées `{ name, type }`, `type` valant `directory` ou `file` —
+ * c'est la forme de l'autoindex de nginx, et le service worker distingue un
+ * listage d'un échantillon à la seule barre oblique finale. Les deux sources
+ * sont réunies, sans doublon : une banque déposée qui porterait le nom d'une
+ * banque livrée l'emporte, comme pour les fichiers.
+ */
+function listerLesDeux(
+  options: OptionsDuServeur,
+  sousChemin: string,
+): { name: string; type: 'file' | 'directory' }[] | null {
+  const trouve = new Map<string, 'file' | 'directory'>()
+  let auMoinsUn = false
+
+  const sources = [
+    options.echantillons === undefined ? null : cheminSur(options.echantillons, sousChemin),
+    cheminSur(options.application, `/audio${sousChemin}`),
+  ]
+
+  for (const source of sources) {
+    if (source === null) continue
+    let entrees
+    try {
+      entrees = readdirSync(source, { withFileTypes: true })
+    } catch {
+      // Dossier absent : ce n'est pas une panne, c'est une source qui n'a rien
+      // à dire. Le 404 ne sort que si aucune des deux n'existe.
+      continue
+    }
+    auMoinsUn = true
+    for (const entree of entrees) {
+      if (!trouve.has(entree.name)) {
+        trouve.set(entree.name, entree.isDirectory() ? 'directory' : 'file')
+      }
+    }
+  }
+
+  if (!auMoinsUn) return null
+
+  return [...trouve]
+    .map(([name, type]) => ({ name, type }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
