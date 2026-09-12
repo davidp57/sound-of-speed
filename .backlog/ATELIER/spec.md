@@ -4,6 +4,12 @@
 **Branche :** `feature/atelier-livre` pour le premier volet
 **Version visée :** 0.5
 
+**Le canal change**, le 12 septembre 2026, par
+[PLATEFORME](../PLATEFORME/spec.md) : déposer un moteur devient une écriture en
+base, pas un sixième dossier servi en WebDAV. Les décisions de ce lot tiennent —
+ce qui reste réglable au volant, l'ordre des volets —, mais son premier volet
+attend le serveur.
+
 ## Ce qui a déclenché
 
 David, le 12 septembre 2026, en reprenant le backlog :
@@ -107,10 +113,11 @@ un geste d'atelier, qui n'a pas à partir en voiture.
 
 1. **Le chemin** — l'atelier dépose, la voiture reçoit et garde. Premier, et
    c'est celui qui rend la boucle de réglage utilisable.
-2. **La séparation** — la construction embarquée n'emporte plus les écrans de
-   l'atelier. C'est le volet « trois constructions » de
-   [REFONTE](../REFONTE/spec.md), qui n'avait jamais été découpé, et
-   [MENAGE-UI](../MENAGE-UI/spec.md) en est le lot d'exécution côté interface.
+2. **La séparation** — la voiture ne montre plus les écrans de l'atelier. Ce
+   n'est plus une séparation à la fabrication, décidé le 12 septembre : il n'y a
+   qu'une application, et c'est le **droit porté par le compte** qui ouvre les
+   écrans. [MENAGE-UI](../MENAGE-UI/spec.md) en est le lot d'exécution côté
+   interface, et il attend le serveur de [PLATEFORME](../PLATEFORME/spec.md).
 3. **La contraction** — finir le vidage du profil, avec l'état de retour qui
    déménage. C'est le ticket 04 de REFONTE, suspendu le 12 septembre : le vider
    n'avait de sens qu'une fois su ce que l'atelier livre.

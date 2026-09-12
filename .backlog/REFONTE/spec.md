@@ -6,6 +6,14 @@ quatre tickets ; les autres volets attendent leur tour
 dans une branche unique
 **Version visée :** 0.5
 
+**Ce cadre est en partie remplacé**, le 12 septembre 2026, par
+[PLATEFORME](../PLATEFORME/spec.md). Trois choses changent : le volet « trois
+constructions » disparaît — il n'y a plus qu'une application, dont le compte
+ouvre les écrans ; le volet compte y est repris en plus complet, et le choix de
+PocketBase est abandonné au profit d'une bibliothèque qui vit dans le code ; le
+ticket 04 reste juste et devient un ticket de ce lot. Le volet du son n'est pas
+touché.
+
 ## Le problème
 
 David a essayé Speed dans sa voiture. Le verdict porte sur presque tout :

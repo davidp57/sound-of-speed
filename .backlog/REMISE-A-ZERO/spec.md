@@ -4,6 +4,12 @@
 **Branche :** à ouvrir
 **Version visée :** à décider
 
+**Sa limite tombe**, le 12 septembre 2026, par
+[PLATEFORME](../PLATEFORME/spec.md) : « sans toucher au serveur » n'était pas un
+choix de périmètre mais une impossibilité — nginx n'accorde que l'écriture, pas
+la suppression. Avec une base, effacer ce qu'un compte a déposé devient possible,
+et la question de périmètre se repose.
+
 Demandé par David le 11 septembre 2026 : **un bouton « tout réinitialiser »**
 dans l'application.
 
