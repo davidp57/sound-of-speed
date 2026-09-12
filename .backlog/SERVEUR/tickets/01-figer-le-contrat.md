@@ -1,6 +1,7 @@
 # 01 — Le contrat avec le client est figé avant qu'on touche au serveur
 
-**Statut :** 🔄 en cours — livré, reste à voir la CI le rejouer contre l'image
+**Statut :** ✅ fait le 12 septembre 2026 — 27 cas passés contre un conteneur
+nginx réel, en intégration continue
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -46,3 +47,33 @@ sans bruit :
 - [x] Il tourne dans l'intégration continue, contre l'image d'aujourd'hui
 - [x] Un contributeur comprend, en le lisant, ce que le serveur doit rendre —
       c'est la seule description exécutable de ce contrat
+
+## Ce que la première exécution a trouvé
+
+Treize échecs, trois causes. Le jeu a payé son écriture avant d'avoir servi.
+
+**Un vrai défaut, introduit le matin même avec la banque de démonstration.**
+Demander le dossier de cette banque rendait **403** : le bloc qui la ramène
+depuis l'image avait perdu le listage du bloc parent, et l'application ne pouvait
+donc plus énumérer ses prises. Rien d'autre dans le dépôt ne l'aurait signalé.
+
+**Deux cas étaient plus stricts que le client.** Le jeu exigeait que la
+démonstration figure au listage des banques — alors qu'elle vit précisément hors
+du dossier que le volume masque — et une taille annoncée sur une requête de tête,
+qu'un serveur qui comprime à la volée ne peut pas connaître. Un contrat plus
+exigeant que son client est un contrat qui empêche.
+
+**Un artefact du montage d'essai.** Le serveur écrit sous un compte qui n'est pas
+celui qui crée les dossiers : les dépôts rendaient 500, et le contrat désignait
+la mauvaise cause.
+
+## Ce qu'il laisse ouvert
+
+**La banque de démonstration ne se voit dans aucune liste de banques** — inscrit
+dans la spec d'[OUVRIR](../../OUVRIR/spec.md). Aucun listage ne fusionne deux
+sources ; c'est à l'application de savoir qu'une banque est livrée avec elle.
+
+**Le jeu ne passe pas contre le serveur de développement**, et trois de ses cas
+désignent de vrais écarts avec la production : le repli d'application y répond à
+la place d'un 404 sur un chemin de données, et il n'y a ni compte ni dépôt. La
+configuration de développement émule déjà le listage ; elle n'émule pas le 404.
