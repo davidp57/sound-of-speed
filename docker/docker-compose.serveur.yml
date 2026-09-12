@@ -1,10 +1,11 @@
 # La pile du serveur TypeScript : **un seul service**.
 #
 # Elle remplace les deux conteneurs d'avant — celui qui servait des fichiers et
-# celui qui relisait un dossier — mais elle ne remplace encore rien en
-# production : elle tourne à côté, sur l'étiquette d'intégration et son propre
-# port, le temps que le neuf convainque. La pile en service continue de servir
-# dans la voiture et fait repli.
+# celui qui relisait un dossier — et elle prend **la place de la pile
+# d'intégration**, port compris : c'est celle-là qu'elle rend inutile.
+#
+# La production, elle, n'est pas touchée. Elle continue de servir dans la voiture
+# et fait repli, le temps que le neuf convainque.
 #
 # À coller dans Portainer : Stacks > Add stack > Web editor. Les variables se
 # saisissent dans l'écran de la pile, section « Environment variables ».
@@ -24,10 +25,24 @@ services:
     container_name: sound-of-speed-serveur
     restart: unless-stopped
     ports:
-      # Un autre port que la pile en service : les deux tournent côte à côte.
-      # C'est le proxy inversé de DSM qui expose celui-ci en HTTPS — sans quoi
-      # l'application s'affiche mais refuse le GPS, sans rien dire.
-      - "${SPEED_PORT:-8090}:80"
+      # **Le port de la pile d'intégration**, et non un troisième.
+      #
+      # Ce serveur ne s'ajoute pas à cette pile-là : il la remplace. Elle fait
+      # tourner deux conteneurs — celui qui sert des fichiers et celui qui relit
+      # un dossier — dont celui-ci fait tout le travail. Les garder côte à côte
+      # sur deux ports reviendrait à essayer deux choses en croyant en essayer
+      # une, et à se tromper sur ce qu'on regarde.
+      #
+      # **Arrêter la pile d'intégration avant de démarrer celle-ci** : deux
+      # services ne peuvent pas écouter le même port, et le second refuserait de
+      # démarrer. Ce que cette pile-là avait déposé reste sur le disque du NAS,
+      # dans son propre dossier — rien n'est perdu, et rien n'est repris non
+      # plus : la reprise des données est le lot MIGRER.
+      #
+      # La production, elle, garde son port et continue de servir dans la
+      # voiture. C'est le proxy inversé de DSM qui expose celui-ci en HTTPS —
+      # sans quoi l'application s'affiche mais refuse le GPS, sans rien dire.
+      - "${SPEED_PORT:-8089}:80"
     volumes:
       # Tout ce que le serveur garde tient dans ce dossier : la base, et les
       # banques d'échantillons qu'on y dépose. Le reste — profils, traces,
