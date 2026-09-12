@@ -70,3 +70,19 @@ soit un navigateur :
 Le second conteneur, lui, **continue d'être publié** : la production tourne
 encore sur l'ancienne pile, et cesser de publier cette image la laisserait sans
 profil mesuré au premier redéploiement. Il s'arrêtera avec la bascule.
+
+## Ce que le nouveau contrôle a trouvé à sa première exécution
+
+**La bibliothèque qui vérifie les mots de passe était rangée parmi les
+dépendances de développement.** Elle y était pour un script d'outillage, et le
+serveur s'est mis à en dépendre sans qu'elle change de place. L'image n'installe
+que les dépendances de production : le conteneur démarrait, jouait ses
+migrations, puis mourait sur un module introuvable.
+
+Rien d'autre ne pouvait le voir. Tout le reste du lot s'exécute hors conteneur,
+là où les dépendances de développement sont présentes.
+
+Un second contrôle a été ajouté dans la foulée : il lit ce que le paquet assemblé
+importe vraiment et exige que chacun soit déclaré en production. Il dit la même
+chose que la construction d'image, en une seconde et sans Docker — et il a été
+vu refuser la régression avant d'être gardé.
