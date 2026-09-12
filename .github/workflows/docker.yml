@@ -22,6 +22,14 @@ on:
   push:
     branches: [main, develop]
     tags: ['v*']
+  # Les pull requests **construisent et essaient** l'image, sans rien publier.
+  #
+  # Elles ne le faisaient pas, et ça s'est payé le 12 septembre 2026 : une PR
+  # entièrement verte a été fusionnée alors que l'image ne se construisait plus.
+  # Le `.dockerignore` écartait le dossier qui venait d'être ajouté, ce qu'aucun
+  # test du dépôt ne pouvait voir — ils tournent sur les sources, pas sur
+  # l'image. Le défaut n'est apparu qu'au push sur `develop`, donc trop tard.
+  pull_request:
   workflow_dispatch:
 
 env:
@@ -29,7 +37,63 @@ env:
   IMAGE: ${{ github.repository }}
 
 jobs:
+  # L'image se construit, démarre, et **sonne** — sans qu'on ait rien déposé.
+  #
+  # Ce job ne publie rien : il ne sert qu'à ce qu'une PR dise la vérité sur
+  # l'image. Une seule architecture, parce qu'on vérifie un comportement et non
+  # un portage.
+  essai:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: sound-of-speed:essai
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: La pile démarre et sert sa banque de démonstration
+        run: |
+          set -euo pipefail
+
+          # Un dossier **vide** monté là où vivent les échantillons : c'est la
+          # situation de quelqu'un qui vient d'installer la pile et n'a rien
+          # déposé. Ce montage masque tout ce que l'image place sous `audio/`,
+          # et c'est précisément ce qu'on vérifie ici.
+          mkdir -p /tmp/audio-vide
+          docker run -d --name essai -p 8088:80 \
+            -v /tmp/audio-vide:/usr/share/nginx/html/audio:ro \
+            sound-of-speed:essai
+
+          for _ in $(seq 30); do
+            curl -fsS -o /dev/null http://localhost:8088/index.html && break
+            sleep 1
+          done
+
+          echo "--- l'application répond"
+          curl -fsS -o /dev/null http://localhost:8088/index.html
+
+          echo "--- la banque de démonstration est servie malgré le montage"
+          curl -fsS -o /dev/null http://localhost:8088/audio/demo/profil.json
+          curl -fsS -o /dev/null http://localhost:8088/audio/demo/on-800.flac
+          curl -fsS -o /dev/null http://localhost:8088/audio/demo/idle-800.flac
+
+          echo "--- et le volume vide reste vide, lui"
+          test "$(curl -s -o /dev/null -w '%{http_code}' \
+            http://localhost:8088/audio/procar/procar-on-low.wav)" = 404
+
+      - if: always()
+        run: docker logs essai || true
+
   build:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
