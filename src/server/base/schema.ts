@@ -16,7 +16,7 @@
  */
 
 import { sql } from 'drizzle-orm'
-import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { blob, index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 /** L'instant présent, en secondes, tel que SQLite le calcule lui-même. */
 const maintenant = sql`(unixepoch())`
@@ -172,8 +172,16 @@ export const deposits = sqliteTable(
     folder: text('folder').notNull(),
     /** Le nom déposé, extension comprise. */
     name: text('name').notNull(),
-    /** Les octets, tels qu'ils sont arrivés — compressés s'ils l'étaient. */
-    content: text('content').notNull(),
+    /**
+     * Les octets, tels qu'ils sont arrivés — compressés s'ils l'étaient.
+     *
+     * **Des octets, et non du texte.** Les tranches de journal et de trace
+     * arrivent compressées : les ranger dans une colonne de texte les ferait
+     * passer par un décodage qui n'a pas de sens pour elles, et ce qui
+     * redescendrait ne serait plus ce qui est monté. Le schéma posé au ticket 03
+     * disait « texte » ; le premier dépôt compressé l'a démenti.
+     */
+    content: blob('content', { mode: 'buffer' }).notNull(),
     bytes: integer('bytes').notNull(),
     depositedAt: integer('deposited_at').notNull().default(maintenant),
     /** Exempté de l'effacement. Voir le lot RETENTION. */

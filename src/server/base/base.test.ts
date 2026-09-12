@@ -123,15 +123,15 @@ describe('ce que le schéma garantit', () => {
       name: 'sortie.jsonl.gz',
     }
 
-    await base.insert(deposits).values({ id: 'a', ...commun, content: 'un', bytes: 2 })
+    await base.insert(deposits).values({ id: 'a', ...commun, content: Buffer.from('un'), bytes: 2 })
     await base
       .insert(deposits)
-      .values({ id: 'a', ...commun, content: 'deux', bytes: 4 })
-      .onConflictDoUpdate({ target: deposits.id, set: { content: 'deux', bytes: 4 } })
+      .values({ id: 'a', ...commun, content: Buffer.from('deux'), bytes: 4 })
+      .onConflictDoUpdate({ target: deposits.id, set: { content: Buffer.from('deux'), bytes: 4 } })
 
     const lignes = await base.select().from(deposits)
     expect(lignes).toHaveLength(1)
-    expect(lignes[0]?.content).toBe('deux')
+    expect(lignes[0]?.content?.toString('utf8')).toBe('deux')
   })
 
   it('une trace naît non épinglée', async () => {
@@ -141,7 +141,7 @@ describe('ce que le schéma garantit', () => {
       accountId: SOLO_ACCOUNT_ID,
       folder: 'traces',
       name: 'autre.jsonl.gz',
-      content: 'x',
+      content: Buffer.from('x'),
       bytes: 1,
     })
 

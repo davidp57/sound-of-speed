@@ -5,9 +5,9 @@
  * de requêtes de `scripts/accord/` en est le juge, et il décrit le contrat mieux
  * que ce commentaire ne le ferait.
  *
- * **Ce qu'il ne fait pas encore** : les dossiers de données — profils, traces,
- * journal, relevés — restent servis par l'ancien chemin. Ils passeront en base
- * aux tickets suivants.
+ * **Ce qu'il ne fait pas encore** : le profil mesuré de la vraie voiture est
+ * toujours écrit par un service à côté, qui relit un dossier toutes les cinq
+ * secondes. Il rejoint le serveur au ticket suivant.
  */
 
 import { readdirSync } from 'node:fs'
@@ -16,7 +16,8 @@ import { Hono } from 'hono'
 
 import { SOLO_ACCOUNT_ID, type Base } from './base/base'
 import { coupleDe, type Comptes } from './comptes'
-import { cheminSur, fichierOuRien, servirFichier } from './fichiers'
+import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
+import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
 
 export interface OptionsDuServeur {
@@ -43,7 +44,7 @@ const CACHE_ECHANTILLONS = 'public, must-revalidate, max-age=604800'
 const CACHE_RESSOURCES = 'public, immutable, max-age=31536000'
 
 /**
- * Les dossiers de données, que ce serveur ne sert pas encore.
+ * Les dossiers de données.
  *
  * Ils sont nommés ici pour une seule raison : **le repli de l'application ne
  * doit pas leur répondre**. Quand il le fait, le client demande du JSON et reçoit
@@ -98,6 +99,53 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       return c.text(contenu, 200, {
         'Content-Type': 'application/json; charset=utf-8',
         'Cache-Control': 'no-store',
+      })
+    })
+
+    // --- Ce que la voiture envoie en roulant -------------------------------
+    //
+    // Traces, tranches de journal, relevés de mesure. Trois dossiers, une seule
+    // table : ce sont trois fois la même chose, un nom, des octets, une date.
+    app.on(['GET', 'PUT'], '/:dossier{traces|journal|mesures}/*', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      const chemin = new URL(c.req.url).pathname
+      const [, dossier = '', ...reste] = chemin.split('/')
+      if (!estUnDossier(dossier)) return c.notFound()
+
+      const nomBrut = reste.join('/')
+      if (nomBrut === '') {
+        if (c.req.method !== 'GET') return c.text('', 405)
+        return c.json(await listerDepots(base, compte, dossier), 200, {
+          'Cache-Control': 'no-store',
+        })
+      }
+
+      let nom: string
+      try {
+        nom = decodeURIComponent(nomBrut)
+      } catch {
+        return c.notFound()
+      }
+
+      if (c.req.method === 'PUT') {
+        const octets = Buffer.from(await c.req.arrayBuffer())
+        const ecrit = await ecrireDepot(base, compte, dossier, nom, octets)
+        // 413, parce que le client ne rejoue pas ce code. Une charge refusée par
+        // un code de panne ferait réessayer la voiture indéfiniment, pour un
+        // envoi qui ne passera jamais.
+        if (ecrit === 'trop gros') return c.text('charge trop grosse', 413)
+        return c.text('', 201)
+      }
+
+      const octets = await lireDepot(base, compte, dossier, nom)
+      if (octets === null) return c.notFound()
+      // Le type suit le nom, comme le faisait le serveur de fichiers. Le client,
+      // lui, décide de décompresser au nom et ignore ce que le serveur annonce.
+      return new Response(new Uint8Array(octets), {
+        status: 200,
+        headers: { 'Content-Type': typeDe(nom), 'Cache-Control': 'no-store' },
       })
     })
   }
