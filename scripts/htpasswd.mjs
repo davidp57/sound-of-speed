@@ -11,7 +11,7 @@
  * Le mot de passe est demandé en saisie masquée plutôt que passé en argument :
  * un argument reste dans l'historique du terminal et dans la liste des processus.
  *
- * Le fichier produit est à déposer dans /volume1/docker/speed/ avec File
+ * Le fichier produit est à déposer dans /volume1/docker/sound-of-speed/ avec File
  * Station, puis à monter dans la pile Portainer.
  */
 
@@ -96,5 +96,5 @@ console.log(`\n${replaced ? 'Remplacé' : 'Ajouté'} dans ./${OUTPUT} — ${tota
 if (lines.length > 0) {
   console.log(`Entrées conservées : ${lines.map((line) => line.split(':')[0]).join(', ')}.`)
 }
-console.log('À déposer dans /volume1/docker/speed/ avec File Station,')
+console.log('À déposer dans /volume1/docker/sound-of-speed/ avec File Station,')
 console.log('puis à monter dans la pile Portainer.')

@@ -20,6 +20,14 @@ Toutes les évolutions notables du projet. Format
   le navigateur de la voiture ; et le vocabulaire du code, où « speed » continue de
   désigner la vitesse.
 
+- **Les dossiers du serveur portent le nom du projet.** `sound-of-speed/` et
+  `sound-of-speed-dev/` remplacent `speed/` et `speed-dev/`, et les conteneurs
+  suivent. Contrairement au stockage local du navigateur, ces dossiers se
+  renomment sans rien perdre : ils vivent sur le serveur, où l'on peut les
+  déplacer à la main. La documentation d'installation, le script du fichier de
+  mots de passe et la configuration du relecteur pointent tous sur les nouveaux
+  chemins.
+
 - **Les deux piles du serveur ne partagent plus leurs dossiers.** L'intégration
   lit et écrit dans les siens. Elles partageaient tout, ce qui coûtait plus cher
   que la recopie économisée : un trajet fait sur l'intégration entrait dans le

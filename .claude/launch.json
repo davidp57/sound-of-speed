@@ -31,7 +31,7 @@
       ],
       "port": 5173,
       "env": {
-        "SPEED_DATA": "//Salon/docker/speed"
+        "SPEED_DATA": "//Salon/docker/sound-of-speed"
       }
     }
   ]

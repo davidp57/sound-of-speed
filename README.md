@@ -506,7 +506,7 @@ L'hébergement reste chez soi, ce qui règle du même coup la question des
 
 ### 1. Créer les dossiers et déposer les échantillons — File Station
 
-Six dossiers, sous `/volume1/docker/speed/` :
+Six dossiers, sous `/volume1/docker/sound-of-speed/` :
 
 | Dossier | Contenu | Accès |
 |---|---|---|
@@ -686,7 +686,7 @@ npm run htpasswd
 ```
 
 Le mot de passe est demandé en saisie masquée, et le fichier `htpasswd` produit
-se dépose dans `/volume1/docker/speed/` avec File Station. Il reste à
+se dépose dans `/volume1/docker/sound-of-speed/` avec File Station. Il reste à
 décommenter les deux lignes `auth_basic` de `docker/nginx.conf` et le volume
 correspondant dans la pile.
 
@@ -713,22 +713,22 @@ npm run htpasswd
    une ligne : le nom d'utilisateur, puis l'empreinte du mot de passe. Le mot de
    passe lui-même n'y est pas — il n'est pas récupérable, et il faut refaire
    l'opération si on l'oublie.
-3. Déposer ce fichier dans `/volume1/docker/speed/` avec File Station.
+3. Déposer ce fichier dans `/volume1/docker/sound-of-speed/` avec File Station.
 4. Dans la pile Portainer, **ajouter** les deux lignes suivantes sous
    `volumes:`, puis tirer l'image à jour et redéployer :
 
 ```yaml
-      - /volume1/docker/speed/traces:/usr/share/nginx/html/traces
-      - /volume1/docker/speed/journal:/usr/share/nginx/html/journal
-      - /volume1/docker/speed/mesures:/usr/share/nginx/html/mesures
-      - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
+      - /volume1/docker/sound-of-speed/traces:/usr/share/nginx/html/traces
+      - /volume1/docker/sound-of-speed/journal:/usr/share/nginx/html/journal
+      - /volume1/docker/sound-of-speed/mesures:/usr/share/nginx/html/mesures
+      - /volume1/docker/sound-of-speed/htpasswd:/etc/nginx/htpasswd:ro
 ```
 
 Et **retirer le `:ro`** de la ligne des profils, qui devient elle aussi un
 dossier où l'on écrit :
 
 ```yaml
-      - /volume1/docker/speed/profiles:/usr/share/nginx/html/profiles
+      - /volume1/docker/sound-of-speed/profiles:/usr/share/nginx/html/profiles
 ```
 
 > **Ajouter, et non décommenter.** Une pile Portainer contient le texte qu'on y
@@ -782,7 +782,7 @@ Pour vérifier ce qui tourne réellement, sans Portainer : la date de
 curl -I https://ADRESSE/index.html
 ```
 
-Le dossier `/volume1/docker/speed/traces/` doit **exister** avant de
+Le dossier `/volume1/docker/sound-of-speed/traces/` doit **exister** avant de
 redéployer, même vide : Docker sous DSM refuse de démarrer un conteneur dont un
 point de montage est absent, avec un `Bind mount failed`.
 
@@ -1644,7 +1644,7 @@ n'en est journalisé.
 une adresse entre un poste de travail et un téléphone. Il est produit sur place,
 sans service extérieur.
 
-**Par le NAS.** Les fichiers déposés dans `/volume1/docker/speed/profiles/` avec
+**Par le NAS.** Les fichiers déposés dans `/volume1/docker/sound-of-speed/profiles/` avec
 File Station apparaissent sur tous les appareils, via le bouton **Profils du
 serveur**. nginx sait rendre le contenu d'un dossier en JSON, ce qui suffit à les
 découvrir : ni base, ni service à maintenir, et la protection est celle qui garde
