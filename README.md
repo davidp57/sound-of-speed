@@ -963,9 +963,17 @@ Une pile à **un seul service**, qui fait le travail des deux images d'avant :
 celle qui servait des fichiers, et celle qui relisait un dossier toutes les cinq
 secondes pour mesurer la vraie voiture.
 
-Elle tourne **à côté** de la pile en service, sur son propre port, le temps que
-le neuf convainque. La production continue de servir dans la voiture et fait
-repli : rien ne bascule tant que personne ne l'a décidé.
+Elle prend **la place de la pile d'intégration**, port compris : c'est celle-là
+qu'elle rend inutile, puisqu'elle fait le travail de ses deux conteneurs. Il faut
+donc **arrêter la pile d'intégration avant de démarrer celle-ci** — deux services
+ne peuvent pas écouter le même port.
+
+Ce que la pile d'intégration avait déposé reste sur le disque du NAS, dans son
+propre dossier : rien n'est perdu, et rien n'est repris non plus. La reprise des
+données est un lot à part.
+
+La production, elle, n'est pas touchée : elle continue de servir dans la voiture
+et fait repli, le temps que le neuf convainque.
 
 ```bash
 docker compose -f docker/docker-compose.serveur.yml up -d
