@@ -1,8 +1,28 @@
 # PLATEFORME — Speed devient un service qu'on déploie, qu'on partage et qu'on fait vivre
 
-**Statut :** ⬜ prêt
+**Statut :** ⬜ cadre — découpé le 12 septembre 2026 en cinq lots d'exécution
 **Branche :** un lot d'exécution à la fois — la bascule ne tient pas dans une branche
 **Version visée :** 0.5
+
+## Les cinq lots qui en sont dérivés
+
+Dans l'ordre, chacun bloqué par le précédent sauf mention contraire :
+
+| | Lot | Ce qu'il rend possible |
+|---|---|---|
+| 1 | [OUVRIR](../OUVRIR/spec.md) | le dépôt se forke et le conteneur sonne seul — ne dépend de rien |
+| 2 | [SERVEUR](../SERVEUR/spec.md) | un service à la place de nginx et du profileur, à compte unique |
+| 3 | [MIGRER](../MIGRER/spec.md) | les réglages rejoignent la base |
+| 4 | [RETENTION](../RETENTION/spec.md) | effacer devient possible |
+| 5 | [COMPTES](../COMPTES/spec.md) | l'identité et les droits s'ouvrent |
+
+**Pourquoi cet ordre.** OUVRIR ne dépend de rien et se livre en une soirée : le
+tenir en premier évite qu'il soit repoussé derrière le gros morceau, et tant
+qu'il n'est pas fait, « open source » est une intention et pas un état. SERVEUR
+est le seul lot vraiment risqué, et il reste à compte unique pour qu'on ne
+démêle pas l'authentification pendant qu'on déplace les données. RETENTION vient
+après MIGRER parce qu'effacer avant d'avoir tout rapatrié est le seul geste
+irréversible du chantier.
 
 ## Ce qui a déclenché
 

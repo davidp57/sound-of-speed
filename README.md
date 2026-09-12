@@ -2569,7 +2569,12 @@ suit pas.
 | 43 | Une boîte à sept rapports, étagée pour tenir bas : 50 en quatrième, 80 en cinquième, 110 en sixième, et les passages plus tôt en mode Route | fait, reste l'écoute en roulant |
 | 44 | Un bouton « tout réinitialiser » : seize clés de stockage remises au premier jour, sans toucher au serveur | spécifié, périmètre à trancher |
 | 45 | L'atelier fabrique les moteurs, la voiture les reçoit : un chemin du bureau au volant, et deux effets sonores qui restent réglables | spécifié, attend le serveur du lot 46 |
-| 46 | Sound of Speed devient un service qu'on déploie, qu'on partage et qu'on fait vivre : un serveur TypeScript à la place de nginx, une base, des comptes, une licence AGPL | spécifié, à découper |
+| 46 | Sound of Speed devient un service qu'on déploie, qu'on partage et qu'on fait vivre : un serveur TypeScript à la place de nginx, une base, des comptes, une licence AGPL | **cadre découpé le 12 septembre en cinq lots, 47 à 51** |
+| 47 | Le dépôt devient forkable et le conteneur fait du bruit tout seul : AGPL-3.0, banque de démonstration, de quoi contribuer et déployer | spécifié |
+| 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
+| 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | spécifié |
+| 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | spécifié |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | spécifié |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
