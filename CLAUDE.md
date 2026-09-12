@@ -266,9 +266,17 @@ bout sans attendre de feu vert intermédiaire :
    attendre, ou dire ce qui bloque.
 
 Cela vaut autorisation permanente de **committer, pousser, ouvrir des PR et les
-merger dans `develop` quand la CI est verte**. Cela **n'autorise pas** : merger
-dans `main`, forcer une poussée, ni pousser un tag. Ces trois-là restent à
-David.
+merger quand la CI est verte** — dans `develop`, et dans `main` depuis une
+branche de release. Cela **n'autorise pas** : forcer une poussée, ni pousser un
+tag. Ces deux-là restent à David.
+
+**Le tag reste à lui, et ce n'est pas un reste de prudence.** Merger dans `main`
+se défait ; un tag poussé déclenche la publication de l'image, qui part en
+production dans la minute. C'est le seul geste de ce dépôt dont l'effet sort de
+l'atelier, et il demande une décision, pas une exécution.
+
+La restriction sur `main` a été levée par David le 12 septembre 2026, en
+préparant la version 0.2.0.
 
 ## Règles de travail (mode chirurgical)
 
@@ -362,5 +370,6 @@ résumé :
 3. `package.json` (seul fichier de version), `CHANGELOG.md` daté, notes de
    version en français.
 4. Commit `chore(release): version X.Y.Z`, PR **vers `main`**.
-5. Merge dans `main` et tag `vX.Y.Z` : **par David**. Le tag et la poussée sur
-   `main` déclenchent la publication de l'image.
+5. Merge dans `main` quand la CI est verte, puis retour de `main` dans
+   `develop`. Le **tag `vX.Y.Z` reste à David** : c'est lui qui déclenche la
+   publication de l'image, donc la mise en production.
