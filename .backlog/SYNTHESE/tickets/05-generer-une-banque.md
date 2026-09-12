@@ -248,10 +248,25 @@ L'allumage d'un quatre cylindres à 800 tr/min vaut 26,7 Hz : le souffle du tube
 battait donc au double, à contretemps du moteur. C'est ce qui s'entendait comme
 « électronique ».
 
-**Ce qui reste ouvert.** `smooth_39` mate le haut-médium : à 3 167 tr/min la
-banque captée a 10 dB de moins entre 1 et 4 kHz que la banque enregistrée.
-`sharp_01` et `minimal_muffling_01` en gardent bien plus. Le choix revient à
-l'oreille de David, les trois banques sont produites.
+**La captation est choisie : `smooth_39`.** Trois banques ont été produites, une
+par réponse, et David les a classées à l'oreille le 12 septembre 2026. Son
+classement suit exactement l'énergie entre 4 et 8 kHz, et rien d'autre :
+
+| Rang | Captation | 1 – 4 kHz | 4 – 8 kHz |
+|---|---|---|---|
+| 1er | `smooth_39` | −8,1 dB | **−22,8 dB** |
+| 2e | `sharp_01` | −2,0 dB | −9,1 dB |
+| 3e, « très synthé » | `minimal_muffling_01` | −3,3 dB | −6,1 dB |
+
+Ce n'est donc pas le haut-médium qui décide : `sharp_01` en porte plus que
+`minimal_muffling_01` et passe devant. **C'est l'aigu de 4 à 8 kHz qui fait le
+« synthé »** — la bande même du souffle que le tube laissait passer. À retenir
+comme critère : sur une banque produite, cette bande se surveille avant le reste.
+
+La réserve mesurée qui laissait craindre l'inverse — `smooth_39` a 10 dB de
+moins entre 1 et 4 kHz que la banque enregistrée à 3 167 tr/min — ne s'est pas
+vérifiée à l'écoute. Le chiffre était juste, la conclusion qu'on en tirait ne
+l'était pas.
 
 **Et un défaut trouvé en passant, hors de ce ticket.** Le second test de
 `profile.test.mjs` échoue — sur la banque du 12 septembre comme sur celle du

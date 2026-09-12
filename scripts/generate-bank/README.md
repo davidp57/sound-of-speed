@@ -112,12 +112,21 @@ souffle aigu — et ce souffle battait **à contretemps** : 53,3 Hz au ralenti p
 un allumage à 26,7. Avec la captation, il retrouve exactement la fréquence
 d'allumage.
 
-Les quatre captations de `public/impulse/` n'ont pas le même caractère, et le
-choix n'est pas neutre : `smooth_39` (le V8 Chevrolet 454) est la plus
-silencieuse et mate le haut-médium ; `sharp_01` et `minimal_muffling_01` en
-gardent beaucoup plus. Sur un quatre cylindres, `smooth_39` laisse 10 dB de
-moins entre 1 et 4 kHz que la banque enregistrée de référence. C'est un réglage
-à juger à l'oreille, pas un défaut à corriger au chiffre.
+Les quatre captations de `public/impulse/` n'ont pas le même caractère.
+`smooth_39` est retenue par défaut, et ce choix a été fait à l'oreille sur trois
+banques produites du même moteur. Le classement obtenu suit exactement l'énergie
+entre 4 et 8 kHz :
+
+| Rang | Captation | 1 – 4 kHz | 4 – 8 kHz |
+|---|---|---|---|
+| 1er | `smooth_39` | −8,1 dB | **−22,8 dB** |
+| 2e | `sharp_01` | −2,0 dB | −9,1 dB |
+| 3e, « très synthé » | `minimal_muffling_01` | −3,3 dB | −6,1 dB |
+
+Ce n'est pas le haut-médium qui décide — `sharp_01` en porte plus que
+`minimal_muffling_01` et passe devant. **C'est l'aigu de 4 à 8 kHz qui fait
+sonner synthétique**, la bande même du souffle que le tube laissait passer.
+Surveiller celle-là d'abord sur une banque produite.
 
 **La géométrie du moteur reste en C++**, dans `native/engines.h` : cotes,
 came, courbes de débit, ordre d'allumage. Le JSON choisit une définition et
