@@ -91,8 +91,8 @@ export function gearboxToFile(gearbox: GearboxEntity): string {
   return JSON.stringify({ version: GEARBOX_FILE_VERSION, gearbox }, null, 2)
 }
 
-/** Relit une boîte exportée, sous un identifiant neuf. */
-export function gearboxFromFile(text: string, newId: () => string): GearboxEntity {
+/** Relit une boîte exportée. Voir `engineFromFile` sur le choix de l'identifiant. */
+export function gearboxFromFile(text: string, newId: (origine: string) => string): GearboxEntity {
   let parsed: unknown
   try {
     parsed = JSON.parse(text)
@@ -101,9 +101,9 @@ export function gearboxFromFile(text: string, newId: () => string): GearboxEntit
   }
   // Les deux formes sont essayées et non devinées, comme pour un moteur : le
   // piège y était qu'une entité nue porte un champ du même nom que l'enveloppe.
-  if (isGearbox(parsed)) return { ...parsed, id: newId() }
+  if (isGearbox(parsed)) return { ...parsed, id: newId(parsed.id) }
   const dansEnveloppe = isRecord(parsed) ? parsed['gearbox'] : undefined
-  if (isGearbox(dansEnveloppe)) return { ...dansEnveloppe, id: newId() }
+  if (isGearbox(dansEnveloppe)) return { ...dansEnveloppe, id: newId(dansEnveloppe.id) }
   throw new ProfileImportError('Ce fichier ne contient pas de boîte exploitable.')
 }
 

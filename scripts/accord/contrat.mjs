@@ -300,6 +300,24 @@ export function cas({ nom }) {
       attend: (r) => vrai(r.ok, `un code de succès, reçu ${r.status}`),
     },
     {
+      nom: 'le listage date ses entrées, comme l’autoindex le faisait',
+      part: 'entites',
+      // Sans la date, la voiture ne peut pas savoir au lancement si la base
+      // porte plus récent qu'elle sans télécharger chaque fichier pour le
+      // comparer. Les quatre listages la rendent ; seul celui-ci est vérifié
+      // ici, parce que c'est le seul que l'ancien serveur n'a jamais rendu.
+      requete: { chemin: '/engines/', compte: true, entetes: { Accept: 'application/json' } },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        const entree = autoindex(corps).find((e) => e.name === moteur)
+        vrai(entree !== undefined, 'le moteur déposé est listé')
+        vrai(
+          !Number.isNaN(Date.parse(entree?.mtime ?? '')),
+          `une date lisible, reçu ${String(entree?.mtime)}`,
+        )
+      },
+    },
+    {
       nom: 'un moteur absent rend un vrai 404',
       part: 'entites',
       requete: { chemin: '/engines/rien-du-tout.json', compte: true },

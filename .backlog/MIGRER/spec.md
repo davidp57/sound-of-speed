@@ -1,6 +1,6 @@
 # MIGRER — les réglages quittent le navigateur de la voiture et les dossiers du NAS
 
-**Statut :** 🔄 en cours — tickets 01 et 02 faits
+**Statut :** ✅ fait le 12 septembre 2026 — les quatre tickets
 **Branche :** `feature/migrer`
 **Version visée :** 0.4
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -117,13 +117,13 @@ révélées fausses.
 
 ## Critères d'acceptation
 
-- [ ] Les profils, moteurs et boîtes du navigateur de la voiture sont dans la
+- [x] Les profils, moteurs et boîtes du navigateur de la voiture sont dans la
       base, et l'application les y lit
-- [ ] Les quatre dossiers du NAS sont repris : traces, journal, relevés,
+- [x] Les quatre dossiers du NAS sont repris : traces, journal, relevés,
       profils ; le profil mesuré, lui, se recalcule depuis les traces reprises
-- [ ] Les traces reprises sont épinglées
-- [ ] Les préférences d'appareil sont restées locales
-- [ ] Relancer la reprise ne crée aucun doublon, ne change rien, et n'écrase
+- [x] Les traces reprises sont épinglées
+- [x] Les préférences d'appareil sont restées locales
+- [x] Relancer la reprise ne crée aucun doublon, ne change rien, et n'écrase
       rien de ce qui est déjà en base
-- [ ] Rien n'est effacé à la source par ce lot
-- [ ] Un décompte avant/après est produit et vérifié, source par source
+- [x] Rien n'est effacé à la source par ce lot
+- [x] Un décompte avant/après est produit et vérifié, source par source

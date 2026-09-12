@@ -1022,6 +1022,36 @@ relire un dossier à chaque démarrage.
 Les traces et le journal repris entrent **épinglés** : sans cela, la règle de
 rétention à venir effacerait un mois plus tard ce qu'on vient de déplacer.
 
+### Les réglages quittent le stockage du navigateur
+
+**Au premier lancement**, ce que le navigateur de la voiture porte depuis des
+mois part en base : les profils, les moteurs, les boîtes, et les traces qui
+n'étaient jamais remontées. Par petites poignées, pour ne pas faire déborder la
+file de dépôt, et en reprenant où on en était si le navigateur se ferme
+entre-temps. Les traces remontées ainsi entrent épinglées.
+
+**À chaque lancement**, la voiture prend ce que la base a de plus récent. Vider
+le stockage du navigateur ne fait donc plus perdre ses réglages, et ce qu'on
+règle au bureau se retrouve au volant.
+
+**La voiture reste le patron.** Elle garde sa copie et écrit dedans tout de
+suite, y compris hors réseau ; l'application ne l'attend jamais pour démarrer, et
+ce qui vient de la base arrive après l'écran. Trois garde-fous :
+
+- **ce qui attend de partir n'est jamais écrasé** — un réglage fait dans un
+  tunnel dort dans la file, et le remplacer par la version d'avant reviendrait à
+  perdre exactement ce que la file servait à garder ;
+- **une base vide ne fait rien perdre** : on ajoute et on remplace, jamais on
+  n'efface ;
+- **le profil qu'on est en train de régler ne bouge pas** : la reprise se joue au
+  lancement, pas en continu.
+
+**Ce qui reste local** : le volume, le visage de l'écran, le verrou, le mode de
+boîte, l'accord donné aux dépôts, l'aide déjà vue, l'étalonnage en cours. Ces
+réglages décrivent l'appareil, pas le conducteur.
+
+Rien n'est effacé du stockage local par cette reprise.
+
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
@@ -1041,6 +1071,7 @@ profil déposé seul désignait un moteur que personne d'autre ne possédait.
 | Deux conteneurs, deux images | **un conteneur** |
 | Cinq dossiers de fichiers sur le NAS | une base, dans un fichier |
 | Les moteurs et les boîtes n'allaient nulle part | ils remontent comme les profils |
+| Les réglages ne vivaient que dans le navigateur de la voiture | ils vivent aussi en base, et en redescendent |
 | Un service qui relit un dossier toutes les cinq secondes | le serveur sait qu'une trace arrive, puisqu'il l'écrit |
 | Un mot de passe partagé | le même, pour l'instant — les comptes viendront |
 

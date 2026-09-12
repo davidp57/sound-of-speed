@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+import { sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
@@ -47,13 +48,28 @@ describe('la bibliothèque de profils', () => {
   })
 
   it('liste au format que le cœur attend', async () => {
-    // Un tableau d'entrées `{ name, type }` : la bibliothèque filtre sur le type
-    // puis sur l'extension, et se sert du nom comme clé.
+    // Un tableau d'entrées `{ name, type, mtime }` : la bibliothèque filtre sur
+    // le type puis sur l'extension, et se sert du nom comme clé. La date est
+    // celle que l'autoindex de nginx rendait, et que la réécriture avait perdue.
     await ecrireProfil(base, SOLO_ACCOUNT_ID, 'mon-v8.json', UN_PROFIL)
 
-    expect(await listerProfils(base, SOLO_ACCOUNT_ID)).toEqual([
-      { name: 'mon-v8.json', type: 'file' },
-    ])
+    const [entree] = await listerProfils(base, SOLO_ACCOUNT_ID)
+    expect(entree?.name).toBe('mon-v8.json')
+    expect(entree?.type).toBe('file')
+    expect(Number.isNaN(Date.parse(entree?.mtime ?? ''))).toBe(false)
+  })
+
+  it('avance la date quand on redépose', async () => {
+    // Sans cela, la règle du plus récent n'arbitre rien : elle rendrait toujours
+    // le même verdict, et un profil réglé dans la voiture passerait pour ancien.
+    await ecrireProfil(base, SOLO_ACCOUNT_ID, 'mon-v8.json', UN_PROFIL)
+    await base.run(sql`UPDATE profiles SET updated_at = updated_at - 1`)
+    const [avant] = await listerProfils(base, SOLO_ACCOUNT_ID)
+
+    await ecrireProfil(base, SOLO_ACCOUNT_ID, 'mon-v8.json', UN_PROFIL)
+    const [apres] = await listerProfils(base, SOLO_ACCOUNT_ID)
+
+    expect(Date.parse(apres?.mtime ?? '')).toBeGreaterThan(Date.parse(avant?.mtime ?? ''))
   })
 
   it('rend le nom de fichier déposé, et non un nom dérivé du profil', async () => {
@@ -62,9 +78,7 @@ describe('la bibliothèque de profils', () => {
     // reviendrait à le renommer dans son dos.
     await ecrireProfil(base, SOLO_ACCOUNT_ID, 'autre-chose.json', UN_PROFIL)
 
-    expect(await listerProfils(base, SOLO_ACCOUNT_ID)).toEqual([
-      { name: 'autre-chose.json', type: 'file' },
-    ])
+    expect(nomsDe(await listerProfils(base, SOLO_ACCOUNT_ID))).toEqual(['autre-chose.json'])
   })
 
   it('remplace quand on redépose le même nom', async () => {
@@ -89,10 +103,7 @@ describe('la bibliothèque de profils', () => {
     await ecrireProfil(base, SOLO_ACCOUNT_ID, 'un.json', UN_PROFIL)
     await ecrireProfil(base, SOLO_ACCOUNT_ID, 'deux.json', UN_PROFIL)
 
-    expect(await listerProfils(base, SOLO_ACCOUNT_ID)).toEqual([
-      { name: 'deux.json', type: 'file' },
-      { name: 'un.json', type: 'file' },
-    ])
+    expect(nomsDe(await listerProfils(base, SOLO_ACCOUNT_ID))).toEqual(['deux.json', 'un.json'])
   })
 
   it('rend rien pour un profil qu’on n’a pas déposé', async () => {
@@ -118,3 +129,8 @@ describe('la bibliothèque de profils', () => {
     )
   })
 })
+
+/** Les noms d'un listage : la date, elle, est vérifiée à part. */
+function nomsDe(entrees: readonly { name: string; type: string }[]): string[] {
+  return entrees.map((entree) => entree.name)
+}

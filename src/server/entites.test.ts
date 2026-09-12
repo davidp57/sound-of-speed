@@ -41,9 +41,16 @@ describe('les moteurs et les boîtes', () => {
   it('liste dans la forme que le cœur lit déjà', async () => {
     await ecrireEntite(base, 'engines', SOLO_ACCOUNT_ID, 'v8.json', '{"name":"V8"}')
 
-    expect(await listerEntites(base, 'engines', SOLO_ACCOUNT_ID)).toEqual([
-      { name: 'v8.json', type: 'file' },
-    ])
+    expect(nomsDe(await listerEntites(base, 'engines', SOLO_ACCOUNT_ID))).toEqual(['v8.json'])
+  })
+
+  it('date chaque entrée, comme l’autoindex le faisait', async () => {
+    // Sans la date, la voiture ne peut pas savoir au lancement si la base porte
+    // plus récent qu'elle sans télécharger chaque fichier pour le comparer.
+    await ecrireEntite(base, 'engines', SOLO_ACCOUNT_ID, 'v8.json', '{"name":"V8"}')
+
+    const [entree] = await listerEntites(base, 'engines', SOLO_ACCOUNT_ID)
+    expect(Number.isNaN(Date.parse(entree?.mtime ?? ''))).toBe(false)
   })
 
   it('ne mélange pas les deux registres', async () => {
@@ -52,11 +59,9 @@ describe('les moteurs et les boîtes', () => {
     await ecrireEntite(base, 'engines', SOLO_ACCOUNT_ID, 'v8.json', '{"name":"V8"}')
     await ecrireEntite(base, 'gearboxes', SOLO_ACCOUNT_ID, 'longue.json', '{"name":"Longue"}')
 
-    expect(await listerEntites(base, 'engines', SOLO_ACCOUNT_ID)).toEqual([
-      { name: 'v8.json', type: 'file' },
-    ])
-    expect(await listerEntites(base, 'gearboxes', SOLO_ACCOUNT_ID)).toEqual([
-      { name: 'longue.json', type: 'file' },
+    expect(nomsDe(await listerEntites(base, 'engines', SOLO_ACCOUNT_ID))).toEqual(['v8.json'])
+    expect(nomsDe(await listerEntites(base, 'gearboxes', SOLO_ACCOUNT_ID))).toEqual([
+      'longue.json',
     ])
     expect(await lireEntite(base, 'engines', SOLO_ACCOUNT_ID, 'longue.json')).toBeNull()
   })
@@ -99,3 +104,8 @@ describe('les moteurs et les boîtes', () => {
     expect(estUnRegistre('profiles')).toBe(false)
   })
 })
+
+/** Les noms d'un listage : la date, elle, est vérifiée à part. */
+function nomsDe(entrees: readonly { name: string; type: string }[]): string[] {
+  return entrees.map((entree) => entree.name)
+}

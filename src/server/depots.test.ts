@@ -50,8 +50,8 @@ describe('ce que la voiture envoie en roulant', () => {
     // le serveur annonce. Renommer une tranche en chemin la rendrait illisible.
     await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', 'sortie.jsonl.gz', Buffer.from('x'))
 
-    expect(await listerDepots(base, SOLO_ACCOUNT_ID, 'traces')).toEqual([
-      { name: 'sortie.jsonl.gz', type: 'file' },
+    expect(nomsDe(await listerDepots(base, SOLO_ACCOUNT_ID, 'traces'))).toEqual([
+      'sortie.jsonl.gz',
     ])
   })
 
@@ -108,3 +108,8 @@ describe('les dossiers que la voiture connaît', () => {
     expect(estUnDossier('../etc')).toBe(false)
   })
 })
+
+/** Les noms d'un listage : la date, elle, est vérifiée à part. */
+function nomsDe(entrees: readonly { name: string; type: string }[]): string[] {
+  return entrees.map((entree) => entree.name)
+}

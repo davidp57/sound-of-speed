@@ -58,12 +58,10 @@ describe('la reprise des anciens dossiers', () => {
       ['profiles', 1],
       ['mesure-voiture', 0],
     ])
-    expect(await listerDepots(base, SOLO_ACCOUNT_ID, 'traces')).toEqual([
-      { name: 'sortie.jsonl.gz', type: 'file' },
+    expect(nomsDe(await listerDepots(base, SOLO_ACCOUNT_ID, 'traces'))).toEqual([
+      'sortie.jsonl.gz',
     ])
-    expect(await listerProfils(base, SOLO_ACCOUNT_ID)).toEqual([
-      { name: 'route.json', type: 'file' },
-    ])
+    expect(nomsDe(await listerProfils(base, SOLO_ACCOUNT_ID))).toEqual(['route.json'])
   })
 
   it('rend les octets **à l’identique**, compression comprise', async () => {
@@ -194,4 +192,9 @@ describe('le décompte imprimé', () => {
 
 function fichiersRestants(dossier: string): string[] {
   return readdirSync(join(ancien, dossier))
+}
+
+/** Les noms d'un listage : la date, elle, est vérifiée à part. */
+function nomsDe(entrees: readonly { name: string; type: string }[]): string[] {
+  return entrees.map((entree) => entree.name)
 }

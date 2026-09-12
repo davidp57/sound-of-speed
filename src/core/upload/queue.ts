@@ -35,6 +35,13 @@ export interface QueuedUpload {
   name: string
   body: string
   queuedAt: number
+  /**
+   * Ce dépôt est une reprise : le serveur l'épinglera.
+   *
+   * Facultatif, et absent de tout ce qui attendait avant que la reprise existe —
+   * une file enregistrée hier se relit sans lui.
+   */
+  epingle?: boolean
 }
 
 export interface QueueLimits {

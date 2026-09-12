@@ -134,6 +134,14 @@ describe('un moteur dans un fichier', () => {
     expect(engineFromFile(engineToFile(mien), () => 'neuf').id).toBe('neuf')
   })
 
+  it('peut garder son identifiant, quand c’est le mien qui redescend', () => {
+    // Un moteur qui revient de sa propre base est le même moteur : lui donner un
+    // identifiant neuf en ferait un double à chaque démarrage, et son prochain
+    // dépôt un second fichier sur le serveur.
+    const mien = engineFromProfile(createRoadProfile(), 'Mon V8')
+    expect(engineFromFile(engineToFile(mien), (origine) => origine).id).toBe(mien.id)
+  })
+
   it('refuse un fichier qui n\'est pas du JSON', () => {
     expect(() => engineFromFile('pas du json', () => 'x')).toThrow(ProfileImportError)
   })

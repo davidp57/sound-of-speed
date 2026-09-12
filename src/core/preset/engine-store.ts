@@ -114,10 +114,13 @@ export function engineToFile(engine: EngineEntity): string {
 /**
  * Relit un moteur exporté.
  *
- * Il reçoit un identifiant neuf : recevoir le moteur de quelqu'un d'autre ne
- * doit pas écraser le sien parce que les deux sont nés du même profil d'usine.
+ * **Qui décide de l'identifiant est passé en argument**, et ce n'est pas un
+ * détail : recevoir le moteur de quelqu'un d'autre ne doit pas écraser le sien
+ * parce que les deux sont nés du même profil d'usine — d'où un identifiant neuf
+ * à l'import. Mais un moteur qui redescend de **sa propre** base est le même
+ * moteur : lui en donner un neuf en ferait un double à chaque démarrage.
  */
-export function engineFromFile(text: string, newId: () => string): EngineEntity {
+export function engineFromFile(text: string, newId: (origine: string) => string): EngineEntity {
   let parsed: unknown
   try {
     parsed = JSON.parse(text)
@@ -128,9 +131,9 @@ export function engineFromFile(text: string, newId: () => string): EngineEntity 
   // champ `engine` — ses réglages —, si bien qu'un moteur écrit nu ressemblait à
   // l'enveloppe `{ version, engine }` et qu'on en lisait les réglages à la place
   // du moteur entier.
-  if (isEngine(parsed)) return withBackfire({ ...parsed, id: newId() })
+  if (isEngine(parsed)) return withBackfire({ ...parsed, id: newId(parsed.id) })
   const dansEnveloppe = isRecord(parsed) ? parsed['engine'] : undefined
-  if (isEngine(dansEnveloppe)) return withBackfire({ ...dansEnveloppe, id: newId() })
+  if (isEngine(dansEnveloppe)) return withBackfire({ ...dansEnveloppe, id: newId(dansEnveloppe.id) })
   throw new ProfileImportError('Ce fichier ne contient pas de moteur exploitable.')
 }
 
