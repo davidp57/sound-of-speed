@@ -842,7 +842,23 @@ export class AudioEngine {
     this.status.activeSources = 0
   }
 
+  /**
+   * Passe en erreur, et fait taire ce qui jouait.
+   *
+   * Le démontage est le point important. Sans lui, un chargement raté laissait
+   * branchées les couches de la banque précédente : on changeait de profil, la
+   * nouvelle banque ne se chargeait pas, et l'ancienne continuait de jouer
+   * exactement comme avant. Le son ne bougeait pas d'un décibel, donc l'échec ne
+   * s'entendait pas — il fallait aller lire « Couches chargées » en télémétrie
+   * pour le voir. Le 12 septembre 2026, une banque importée a été jugée
+   * identique à celle qu'elle devait remplacer, pour cette seule raison.
+   *
+   * Un profil dont la banque ne charge pas doit s'entendre comme un silence.
+   * C'est désagréable et c'est voulu : un silence se remarque, un défaut
+   * silencieux se paie plus tard.
+   */
   private fail(message: string): void {
+    this.disposeLayers()
     this.status.phase = 'error'
     this.status.error = message
   }

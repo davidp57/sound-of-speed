@@ -34,6 +34,25 @@ import { readWav, writeWav } from './wav.mjs'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..', '..')
 const BINARY = join(ROOT, 'native', '.build', 'generate-bank.exe')
+const IMPULSE_DIR = join(ROOT, 'public', 'impulse')
+
+/**
+ * La réponse d'échappement d'une définition, en chemin de fichier.
+ *
+ * Le banc fabriquait sa propre résonance — un train de pics espacés de 57 Hz,
+ * donc un filtre en peigne. Mesuré contre `smooth_39`, la captation que le son
+ * en direct utilise depuis le 8 septembre : le tube creuse le médium de 5,3 dB
+ * et laisse passer 14 à 22 dB d'aigu de trop. Ce qui s'entendait, sur la banque
+ * du 5 septembre, comme un son sourd doublé d'un souffle aigu battant à
+ * contretemps des explosions.
+ *
+ * `"tube"` garde l'ancienne résonance, pour comparer. C'est le seul usage qui
+ * lui reste : `public/impulse/LISEZMOI.md` la dit « repli ».
+ */
+function exhaustPath(definition) {
+  const nom = definition.exhaustResponse ?? 'smooth_39'
+  return nom === 'tube' ? '' : join(IMPULSE_DIR, `${nom}.wav`)
+}
 const SAMPLE_RATE = 44100
 
 /** Crête visée dans le fichier écrit. La marge évite l'écrêtage au décodage. */
@@ -72,6 +91,7 @@ function runBench(definition, plan, rawDir) {
         '--engine', definition.base,
         '--sim-hz', String(definition.simulationHz),
         '--impulse', String(definition.impulseSamples),
+        ...(exhaustPath(definition) === '' ? [] : ['--exhaust', exhaustPath(definition)]),
         '--out-dir', rawDir,
       ],
       { stdio: ['pipe', 'pipe', 'inherit'] },

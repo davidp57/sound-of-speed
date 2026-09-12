@@ -6,6 +6,25 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Corrigé
+
+- **Le générateur de banques capte son échappement au lieu de l'inventer.** Il
+  fabriquait un train de pics espacés de 57 Hz — un filtre en peigne — là où le
+  son en direct charge depuis le 8 septembre une captation réelle. Mesuré contre
+  `smooth_39` : le tube creusait le médium de 5,3 dB et laissait passer 14 à
+  22 dB d'aigu de trop. Sur la banque produite, cela s'entendait comme un son
+  sourd doublé d'un souffle aigu qui battait à contretemps des explosions —
+  53,3 Hz au ralenti pour un allumage à 26,7. Avec la captation, le souffle
+  tombe de 15 à 21 dB, le médium remonte de 6,6 dB au niveau de la banque
+  enregistrée, et la modulation de l'aigu retrouve exactement la fréquence
+  d'allumage. La réponse se choisit par `exhaustResponse` dans la définition de
+  moteur, parmi les quatre captations de `public/impulse/` ; `"tube"` garde
+  l'ancienne résonance pour comparer.
+- **Un chargement de banque raté fait taire le moteur.** Il laissait branchées
+  les couches de la banque précédente : changer de profil vers une banque qui ne
+  charge pas ne changeait rien au son, et l'échec ne s'entendait pas. Une banque
+  importée a ainsi été jugée identique à celle qu'elle devait remplacer.
+
 ## [0.2.1] — 2026-09-12
 
 Le projet change de nom, et rien d'autre : aucun comportement, aucun réglage,

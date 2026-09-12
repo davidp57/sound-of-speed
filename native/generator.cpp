@@ -23,6 +23,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -183,7 +184,88 @@ void writeWav(const std::string &path, const std::vector<int16_t> &samples) {
     std::fclose(f);
 }
 
-Bench *buildBench(const std::string &engineName, int simFrequency, unsigned int impulseSamples) {
+/**
+ * Lit une captation d'echappement : WAV PCM 16 bits mono.
+ *
+ * Le generateur fabriquait sa propre resonance — un train de pics espaces de
+ * 57 Hz, donc un filtre en peigne. Mesure contre la captation que le son en
+ * direct utilise depuis le 8 septembre : le tube creuse le medium de 5,3 dB et
+ * laisse passer 14 a 22 dB d'aigu de trop. La banque produite sonnait sourde,
+ * avec un souffle haute frequence qui bat a contretemps des explosions.
+ *
+ * Aucun repli silencieux ici : un fichier absent ou mal forme arrete le
+ * programme. Une banque produite avec la mauvaise reponse ne se distingue pas a
+ * l'oeil d'une bonne, et c'est plusieurs minutes de calcul jetees.
+ */
+std::vector<int16_t> readImpulseWav(const std::string &path) {
+    FILE *f = std::fopen(path.c_str(), "rb");
+    if (f == nullptr) {
+        std::fprintf(stderr, "captation introuvable : %s\n", path.c_str());
+        std::exit(1);
+    }
+
+    std::vector<unsigned char> raw;
+    unsigned char tampon[65536];
+    for (size_t lu = std::fread(tampon, 1, sizeof(tampon), f); lu > 0;
+         lu = std::fread(tampon, 1, sizeof(tampon), f)) {
+        raw.insert(raw.end(), tampon, tampon + lu);
+    }
+    std::fclose(f);
+
+    auto u16 = [&raw](size_t i) { return (uint16_t)(raw[i] | (raw[i + 1] << 8)); };
+    auto u32 = [&raw](size_t i) {
+        return (uint32_t)(raw[i] | (raw[i + 1] << 8) | (raw[i + 2] << 16) | (raw[i + 3] << 24));
+    };
+
+    if (raw.size() < 44 || std::memcmp(raw.data(), "RIFF", 4) != 0 ||
+        std::memcmp(raw.data() + 8, "WAVE", 4) != 0) {
+        std::fprintf(stderr, "pas un WAV : %s\n", path.c_str());
+        std::exit(1);
+    }
+
+    uint16_t format = 0;
+    uint16_t channels = 0;
+    uint16_t bits = 0;
+    uint32_t rate = 0;
+    const unsigned char *data = nullptr;
+    uint32_t dataBytes = 0;
+
+    for (size_t i = 12; i + 8 <= raw.size();) {
+        const uint32_t taille = u32(i + 4);
+        if (std::memcmp(raw.data() + i, "fmt ", 4) == 0 && taille >= 16) {
+            format = u16(i + 8);
+            channels = u16(i + 10);
+            rate = u32(i + 12);
+            bits = u16(i + 22);
+        } else if (std::memcmp(raw.data() + i, "data", 4) == 0) {
+            data = raw.data() + i + 8;
+            dataBytes = (uint32_t)std::min<size_t>(taille, raw.size() - i - 8);
+        }
+        i += 8 + taille + (taille & 1);
+    }
+
+    if (data == nullptr || format != 1 || bits != 16 || channels != 1) {
+        std::fprintf(stderr,
+                     "captation illisible : %s (format %u, %u canaux, %u bits ; "
+                     "attendu PCM 16 bits mono)\n",
+                     path.c_str(), (unsigned)format, (unsigned)channels, (unsigned)bits);
+        std::exit(1);
+    }
+    if (rate != (uint32_t)kAudioRate) {
+        std::fprintf(stderr, "captation a %u Hz : %s (attendu %d)\n", (unsigned)rate,
+                     path.c_str(), kAudioRate);
+        std::exit(1);
+    }
+
+    std::vector<int16_t> samples(dataBytes / 2);
+    for (size_t i = 0; i < samples.size(); ++i) {
+        samples[i] = (int16_t)(data[2 * i] | (data[2 * i + 1] << 8));
+    }
+    return samples;
+}
+
+Bench *buildBench(const std::string &engineName, int simFrequency,
+                  unsigned int impulseSamples, const std::string &exhaustPath) {
     Bench *bench = new Bench;
     bench->engine = (engineName == "inline4")
         ? engines::buildInline4()
@@ -233,7 +315,12 @@ Bench *buildBench(const std::string &engineName, int simFrequency, unsigned int 
     bench->simulator->synthesizer().m_levelingFilter.p_maxLevel = 1.0f;
     bench->simulator->synthesizer().m_levelingFilter.p_minLevel = 1.0f;
 
-    const std::vector<int16_t> ir = engines::makeImpulseResponse(impulseSamples, kAudioRate);
+    // La captation d'abord, le tube fabrique seulement quand aucune n'est
+    // donnee — c'est ce que dit public/impulse/LISEZMOI.md : la resonance
+    // fabriquee « ne sert que de repli ».
+    const std::vector<int16_t> ir = exhaustPath.empty()
+        ? engines::makeImpulseResponse(impulseSamples, kAudioRate)
+        : readImpulseWav(exhaustPath);
     for (int i = 0; i < bench->engine->getExhaustSystemCount(); ++i) {
         bench->simulator->synthesizer().initializeImpulseResponse(
             ir.data(), (unsigned int)ir.size(), 0.01f, i);
@@ -294,6 +381,8 @@ int main(int argc, char **argv) {
     const std::string engineName = argValue(argc, argv, "--engine", "crossplaneV8");
     const int simFrequency = std::atoi(argValue(argc, argv, "--sim-hz", "10000"));
     const int impulseSamples = std::atoi(argValue(argc, argv, "--impulse", "10000"));
+    // Vide : le tube fabrique. Renseigne : la captation, qui est la norme.
+    const std::string exhaustPath = argValue(argc, argv, "--exhaust", "");
     const std::string outDir = argValue(argc, argv, "--out-dir", ".");
 
     std::vector<Take> takes;
@@ -315,12 +404,14 @@ int main(int argc, char **argv) {
     }
 
     const auto started = Clock::now();
-    Bench *bench = buildBench(engineName, simFrequency, (unsigned int)impulseSamples);
+    Bench *bench =
+        buildBench(engineName, simFrequency, (unsigned int)impulseSamples, exhaustPath);
 
     // En-tete du releve, lu par l'outil qui pilote ce programme.
-    std::printf("# moteur %s cylindres %d echappements %d sim %d Hz impulsion %d\n",
+    std::printf("# moteur %s cylindres %d echappements %d sim %d Hz echappement %s\n",
         engineName.c_str(), bench->engine->getCylinderCount(),
-        bench->engine->getExhaustSystemCount(), simFrequency, impulseSamples);
+        bench->engine->getExhaustSystemCount(), simFrequency,
+        exhaustPath.empty() ? "tube fabrique" : exhaustPath.c_str());
     std::fflush(stdout);
 
     for (const Take &take : takes) {
