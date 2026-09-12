@@ -4,14 +4,16 @@
 **Branche :** à ouvrir
 **Version visée :** à décider
 
-**Sa limite tombe**, le 12 septembre 2026, par
-[PLATEFORME](../PLATEFORME/spec.md) : « sans toucher au serveur » n'était pas un
-choix de périmètre mais une impossibilité — nginx n'accorde que l'écriture, pas
-la suppression. Avec une base, effacer ce qu'un compte a déposé devient possible,
-et la question de périmètre se repose.
-
 Demandé par David le 11 septembre 2026 : **un bouton « tout réinitialiser »**
 dans l'application.
+
+**Ce lot ne touche pas au serveur, et c'est un choix.** Confirmé par David le
+12 septembre 2026. Le bouton remet les réglages de l'appareil à leurs valeurs
+d'usine ; les traces, le journal et les profils déposés ne le regardent pas. La
+spec l'avait tranché dès l'origine au point b ci-dessous ; un préambule ajouté
+le 12 septembre par [PLATEFORME](../PLATEFORME/spec.md) a dit l'inverse pendant
+quelques heures, en prenant ce choix pour une limite technique subie. Il est
+retiré.
 
 ## Pourquoi
 
@@ -61,10 +63,13 @@ aucun consentement. Mais cela emporte aussi les **dépôts en attente**
 serait perdue pour de bon. *Reco : tout effacer, mais prévenir nommément quand
 un dépôt attend, et proposer d'attendre.*
 
-**b. Ce qui est sur le serveur ?** Les profils déposés sur le NAS, les traces,
-le journal : un « tout réinitialiser » côté appareil n'y touche pas, et c'est
-sans doute ce qu'il faut — le serveur est une mémoire partagée entre appareils.
-*Reco : ne toucher à rien sur le serveur, et le dire dans la confirmation.*
+**b. Ce qui est sur le serveur ? — tranché le 12 septembre 2026 : on n'y touche
+pas.** Les profils déposés, les traces, le journal : un « tout réinitialiser »
+côté appareil n'y touche pas, parce que le serveur est une mémoire partagée
+entre appareils. La confirmation le dit. Que la base rende l'effacement
+techniquement possible ne change rien à cet arbitrage : c'est le lot
+[RETENTION](../RETENTION/spec.md) qui porte l'effacement côté serveur, et il le
+porte pour lui-même.
 
 **c. Où le mettre, et comment le protéger ?** Ce n'est pas un bouton qu'on
 frôle en conduisant. *Reco : tout en bas de l'écran de configuration, dans une

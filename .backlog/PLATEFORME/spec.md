@@ -73,9 +73,8 @@ Aucun des trois manques ne s'ajoute :
   dossier séparé pour ne pas alourdir l'index des traces. C'est un contournement
   d'architecture, déjà payé.
 - **pas de suppression.** `PUT` sans `DELETE` : rien ne s'efface, rien ne tourne.
-  C'est pourquoi le bouton « tout réinitialiser » du lot
-  [REMISE-A-ZERO](../REMISE-A-ZERO/spec.md) est spécifié « sans toucher au
-  serveur » — pas par choix, par impossibilité.
+  Une trace ratée, un dépôt de travers, une session avortée d'un kilo-octet
+  restent là pour toujours — la base en porte six.
 
 ### Et le dépôt n'est pas ouvrable en l'état
 
@@ -266,8 +265,11 @@ l'appareil est hors réseau, qui est le cas normal de la voiture.
   ce qui reste réglable au volant tiennent.
 - **[MENAGE-UI](../MENAGE-UI/spec.md)** — n'est plus une séparation à la
   fabrication mais une affaire de droits.
-- **[REMISE-A-ZERO](../REMISE-A-ZERO/spec.md)** — sa limite « sans toucher au
-  serveur » tombe : effacer devient possible.
+- **[REMISE-A-ZERO](../REMISE-A-ZERO/spec.md)** — ne bouge pas. Son « sans
+  toucher au serveur » est un choix, pas une limite subie : le bouton remet les
+  réglages de l'appareil à leurs valeurs d'usine, et le serveur est une mémoire
+  partagée qu'il n'a pas à vider. Écrit ici le 12 septembre 2026 comme une
+  limite qui tombait ; corrigé le jour même par David.
 
 ## Hors périmètre
 

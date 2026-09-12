@@ -15,13 +15,19 @@ on l'a épinglée ou emportée.
 
 ## Le problème
 
-**`PUT` sans `DELETE` : rien ne s'efface, rien ne tourne.** C'est pourquoi le
-bouton « tout réinitialiser » de [REMISE-A-ZERO](../REMISE-A-ZERO/spec.md) est
-spécifié « sans toucher au serveur » — pas par choix, par impossibilité. Ce lot
-lève cette limite.
+**`PUT` sans `DELETE` : rien ne s'efface, rien ne tourne.** Une trace ratée, une
+session avortée d'un kilo-octet, un dépôt de travers restent là pour toujours —
+la base en porte six. Ce lot ouvre la suppression.
 
 Et le stockage décide de la facture, pas le calcul. Une trace brute pèse ; le
 profil mesuré qu'on en tire pèse quelques kilo-octets et ne grossit pas.
+
+**Ce n'est pas le stockage qui presse, et il faut le dire.** Mesuré le
+12 septembre 2026 : 0,87 Mio de trace par heure de conduite, soit environ
+0,4 Gio par an à une heure par jour, sur un volume qui en a 2 512 de libres. Ce
+lot ne se justifie pas par la place qu'il rend aujourd'hui, mais par l'archive
+qu'il met chez l'utilisateur et par l'économie du jour où les comptes ne sont
+plus un seul.
 
 ## Ce qu'on construit
 
@@ -42,12 +48,6 @@ disparaît.
 La seconde porte est la condition de la première : tant que le relecteur ne sait
 pas ouvrir un fichier local, effacer revient à perdre.
 
-### Effacer devient possible partout
-
-[REMISE-A-ZERO](../REMISE-A-ZERO/spec.md) retrouve son périmètre entier : le
-bouton efface aussi ce qui est sur le serveur. Sa limite « sans toucher au
-serveur » est retirée de sa spec dans le même mouvement.
-
 ### Rien ne s'efface en silence
 
 Ce qui va disparaître se voit avant de disparaître : combien de traces, quelle
@@ -60,6 +60,11 @@ regrette.
   qui porte les droits. Ici, une seule règle pour tout le monde.
 - **Une analyse nouvelle.** Le profileur sait déjà ce qu'il cumule ; ce lot
   décide quand et où, pas quoi.
+- **Le bouton « tout réinitialiser ».** Il appartient à
+  [REMISE-A-ZERO](../REMISE-A-ZERO/spec.md), il remet les réglages de l'appareil
+  à leurs valeurs d'usine, et il ne touche pas au serveur — c'est un choix,
+  confirmé par David le 12 septembre 2026, et non une limite que ce lot lèverait.
+  Une version de cette spec a affirmé le contraire ; elle avait tort.
 
 ## Critères d'acceptation
 
@@ -68,7 +73,6 @@ regrette.
 - [ ] Une trace non épinglée disparaît passé le délai, et le délai est réglable
 - [ ] Épingler exempte de l'effacement, dans une limite bornée et annoncée
 - [ ] Télécharger rend un fichier que le relecteur rouvre depuis le disque
-- [ ] Le bouton « tout réinitialiser » efface aussi ce qui est sur le serveur,
-      et la limite est retirée de la spec de REMISE-A-ZERO
+- [ ] Une trace s'efface à la demande, sans attendre le délai
 - [ ] Ce qui va être effacé est montré avant de l'être
 - [ ] Le profil mesuré ne grossit pas avec le nombre de trajets — mesuré
