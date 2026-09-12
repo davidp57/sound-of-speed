@@ -14,6 +14,12 @@ stockage local d'un navigateur de voiture ni dans un dossier du NAS.
 
 Le jour où c'est fait, changer de téléphone ne fait plus perdre ses réglages.
 
+**Ce lot ne fait que rapatrier.** Décidé par David le 12 septembre 2026 : le
+serveur écrit en base dès [SERVEUR](../SERVEUR/spec.md), donc le chemin est déjà
+tracé et éprouvé quand on arrive ici. Le découpage d'origine laissait à ce lot la
+bascule du code **et** la reprise des données ; il aurait fallu écrire deux fois
+le code d'accès, et ce lot serait devenu une refonte déguisée en migration.
+
 ## Le problème
 
 Les réglages vivent à deux endroits qui ne se parlent pas : le stockage local du

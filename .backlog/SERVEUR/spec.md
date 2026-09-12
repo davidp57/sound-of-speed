@@ -54,9 +54,49 @@ suffit plus. Les migrations sont jouées au démarrage.
 **Drizzle** est retenu : son schéma est du TypeScript, donc pas de langage de
 plus dans le dépôt, ce qui est la raison même du choix « TypeScript partout ».
 Prisma est mieux outillé mais introduit son propre format et un client généré —
-exactement le coût qu'on a refusé en écartant PocketBase. C'est une
-recommandation assumée et non un arbitrage de David : elle se rejuge au premier
-ticket, après essai, comme PLATEFORME le prévoyait.
+exactement le coût qu'on a refusé en écartant PocketBase. Arbitré par David le
+12 septembre 2026 ; si l'essai dément la promesse, cela se dit au ticket 03 et
+pas trois tickets plus loin.
+
+### Hono, et les données en base dès le départ
+
+Deux décisions prises par David le 12 septembre 2026, une fois le contrat avec le
+client relevé.
+
+**Hono** porte le serveur. Il parle en `Request` et `Response` standard, ce que
+Better Auth attend pour le lot [COMPTES](../COMPTES/spec.md), et il pèse presque
+rien — ce qui compte dans un dépôt qui refuse les dépendances. Express serait
+plus familier, `node:http` nu éviterait toute dépendance mais demanderait un
+adaptateur plus tard.
+
+**Les données passent en base dans ce lot**, et non dans le suivant. Faire vivre
+le serveur sur le disque pour le basculer ensuite reviendrait à écrire deux fois
+le code d'accès. [MIGRER](../MIGRER/spec.md) ne fait donc plus que **rapatrier
+l'existant**, ce qu'une reprise doit être.
+
+**L'authentification ne bouge pas.** Le mot de passe unique reste, à l'identique,
+y compris pour la page de la sonde qui compose le sien. La remplacer maintenant
+reviendrait à démêler l'identité pendant qu'on déplace les données.
+
+### Le contrat avec le client est plus gros qu'annoncé
+
+Relevé le 12 septembre 2026 : **vingt-deux requêtes distinctes**, et quatre
+contraintes qu'une réécriture casse sans bruit.
+
+- **La forme du listage** est celle de l'autoindex de nginx, un tableau
+  d'entrées `{ name, type }`. Quatre modules du cœur la lisent, le service worker
+  distingue un listage d'un échantillon **à la seule barre oblique finale**, et la
+  configuration de développement l'émule déjà.
+- **Deux types MIME sont obligatoires**, sans quoi le moteur simulé ne se charge
+  pas du tout.
+- **Les codes portent du sens** : refus non rejouable, charge refusée, et un 404
+  sur un dossier de données qui est une situation normale.
+- **Le repli d'application à page unique** ne doit pas répondre à la place d'un
+  chemin de données absent — le cas est déjà connu et contourné côté client.
+
+D'où le premier ticket : figer ce contrat dans un test d'accord **avant** d'écrire
+une ligne de serveur. C'est le seul filet qui existera — les tests du dépôt
+tournent sur les sources et ne voient rien de ce que le serveur rend.
 
 Le schéma porte **dès le départ** les comptes, les moteurs, les boîtes, les
 profils, les traces et les droits — même si, dans ce lot, il n'y a qu'un compte
@@ -90,8 +130,9 @@ sur `:develop`.
 ## Ce qu'on ne construit pas
 
 - **Les comptes.** Un compte unique, pas de connexion, pas d'écran d'identité.
-- **La reprise des données existantes.** C'est [MIGRER](../MIGRER/spec.md) — le
-  serveur doit d'abord exister.
+- **La reprise des données existantes.** C'est [MIGRER](../MIGRER/spec.md). Le
+  serveur écrit en base dès ce lot, mais il n'y verse pas ce qui dort déjà
+  ailleurs.
 - **L'effacement et la rétention.** C'est [RETENTION](../RETENTION/spec.md).
 - **Héberger ailleurs que sur le NAS.** La pile doit rester déployable
   n'importe où, le déménagement n'est pas au programme.
