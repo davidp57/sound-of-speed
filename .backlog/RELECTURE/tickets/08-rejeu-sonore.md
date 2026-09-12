@@ -47,7 +47,7 @@ là où la boîte décidait exactement pareil.
 - [x] La configuration jouée est celle de l'en-tête, pas celle du profil actif.
 - [x] Un changement de tempérament en cours de session est respecté au rejeu.
 - [x] L'écart entre la sortie enregistrée et la sortie recalculée s'affiche.
-- [ ] Après un déplacement dans la timeline, le son se rétablit sans à-coup
+- [ ] 🧑 Après un déplacement dans la timeline, le son se rétablit sans à-coup
       désagréable. **À écouter** : la chaîne repart de son repos, calée sur le
       rapport de la vitesse d'arrivée.
 - [x] Le rejeu n'exige pas le réseau une fois la session et la banque chargées.

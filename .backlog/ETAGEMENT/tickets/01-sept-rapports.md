@@ -34,10 +34,12 @@ travaillent loin de leur ancrage. C'est à vérifier en roulant, pas au banc.
 
 ## Critères d'acceptation
 
-- [ ] Sept rapports, aux valeurs ci-dessus.
-- [ ] Un test donne le régime de chaque rapport à 50, 80, 110 et 130 km/h, et
+- [x] Sept rapports, aux valeurs ci-dessus.
+- [x] Un test donne le régime de chaque rapport à 50, 80, 110 et 130 km/h, et
       fixe les quatre chiffres attendus.
-- [ ] Aucun endroit du code ne suppose six rapports.
-- [ ] Un profil dérivé du caractère sort avec sept rapports et des tableaux de
+- [x] Aucun endroit du code ne suppose six rapports.
+- [x] Un profil dérivé du caractère sort avec sept rapports et des tableaux de
       la bonne longueur.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.
+
+Critères établis le 12 septembre 2026, en relisant le code et les tests : les vitesses de référence du profil Route sont tenues par un test dédié, l'étagement du haut par un autre, et un troisième vérifie qu'il y a une temporisation par rapport et un seuil par passage — ce qui écarte toute table figée à six. Le contrôle qualité est vert : 1 111 tests.

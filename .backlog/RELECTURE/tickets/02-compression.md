@@ -25,13 +25,15 @@ rien déposer.
 
 ## Critères d'acceptation
 
-- [ ] Une tranche de journal déposée arrive compressée sur le serveur, et se
+- [x] Une tranche de journal déposée arrive compressée sur le serveur, et se
       décompresse avec un outil courant.
-- [ ] Une tranche de capture déposée arrive compressée.
-- [ ] Le nom du fichier dit qu'il est compressé.
-- [ ] Le gain mesuré sur une tranche réelle est écrit dans le CHANGELOG — un
+- [x] Une tranche de capture déposée arrive compressée.
+- [x] Le nom du fichier dit qu'il est compressé.
+- [x] Le gain mesuré sur une tranche réelle est écrit dans le CHANGELOG — un
       chiffre, pas un adjectif.
-- [ ] « Tout récupérer » rend un paquet contenant les fichiers tels quels.
-- [ ] Sur un navigateur sans compresseur natif, le dépôt se fait en clair et
+- [x] « Tout récupérer » rend un paquet contenant les fichiers tels quels.
+- [x] Sur un navigateur sans compresseur natif, le dépôt se fait en clair et
       l'application ne s'arrête pas.
-- [ ] Les fichiers déjà déposés en clair restent en place et lisibles.
+- [x] Les fichiers déjà déposés en clair restent en place et lisibles.
+
+Critères établis le 12 septembre 2026 : des tests nomment le corps compressé qui se relit à l'identique, le suffixe du nom, le repli en clair là où le navigateur ne sait pas compresser, et la lecture des fichiers déjà déposés sans compression. Le gain mesuré est au CHANGELOG.

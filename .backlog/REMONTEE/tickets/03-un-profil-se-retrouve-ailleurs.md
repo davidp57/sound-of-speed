@@ -30,13 +30,13 @@ serveur. Tant qu'il ne l'est pas, le dépôt échoue proprement et le dit.
 
 - [x] Un profil modifié remonte tout seul quand l'accord est au moins au minimum
 - [x] Une rafale de modifications ne produit qu'un dépôt
-- [ ] Le profil déposé apparaît dans la bibliothèque sur un autre appareil
-- [ ] Un profil déposé puis récupéré est identique à l'original, valeurs
+- [ ] 🧑 Le profil déposé apparaît dans la bibliothèque sur un autre appareil
+- [ ] 🧑 Un profil déposé puis récupéré est identique à l'original, valeurs
       d'origine comprises
 - [x] Le statut de favori et le volume général ne voyagent pas
 - [x] Redéposer le même profil remplace son fichier, sans en créer un second
 - [x] Le nom du fichier dit de quel profil il s'agit
-- [ ] Le serveur accepte l'écriture dans le dossier des profils, authentifiée
+- [ ] 🧑 Le serveur accepte l'écriture dans le dossier des profils, authentifiée
       comme celle des traces
 - [x] Le README dit comment ouvrir ce dossier en écriture, au même endroit que
       pour les traces

@@ -1,7 +1,29 @@
 # RELECTURE — revoir un trajet au bureau, au lieu de le raconter de mémoire
 
 **Statut :** 🔄 en cours — les deux volets sont livrés (PR #103 et #104) ; il
-reste le ticket 08, le rejeu sonore, qui a besoin d'une capture réelle
+reste le ticket 08, le rejeu sonore, qui a besoin d'une capture réelle, et trois
+finitions relevées le 12 septembre 2026 en établissant les critères
+
+## Trois finitions, relevées le 12 septembre 2026
+
+Les quarante-six critères des sept tickets ont été repris un par un : quarante-deux
+sont établis par un test nommé ou par le code. Trois manques et une vérification
+restent, et ils ne sont pas de la paperasse.
+
+1. **Le trou d'un signal perdu ne se voit pas dans la capture.** Une perte de fix
+   GPS est marquée dans le journal, pas dans la capture. Le relecteur montre donc
+   une timeline continue là où le signal a manqué, ce qui est précisément le genre
+   de chose qu'on ouvre le relecteur pour trouver.
+2. **Du code mort est resté** après le retrait du panneau de traces : des règles
+   de style que plus aucun élément ne porte, une fonction de lecture de traces que
+   seul son propre test appelle, et un commentaire qui décrit encore le geste
+   retiré.
+3. **La liste des sessions n'affiche pas leur durée.** Elle n'est connue qu'après
+   chargement, alors que c'est le premier critère pour choisir quel trajet relire.
+
+Corrigé dans la foulée : le README décrivait encore l'export et la réimportation
+des traces en fichier, et leur enregistrement depuis l'écran Télémétrie — trois
+gestes retirés par le ticket 04.
 **Branches :** `feature/capture-continue` puis `feature/relecteur` — deux lots
 d'exécution, deux PR
 **Version visée :** 0.2

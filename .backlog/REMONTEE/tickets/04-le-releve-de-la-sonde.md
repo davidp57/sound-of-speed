@@ -29,7 +29,7 @@ Le bouton de copie reste : sur un poste, il est plus court.
 
 ## Critères d'acceptation
 
-- [ ] La sonde dépose son relevé d'un bouton, sans quitter la page
+- [ ] 🧑 La sonde dépose son relevé d'un bouton, sans quitter la page
 - [x] Le fichier déposé porte les mesures, l'environnement, la date et le verdict
 - [x] Le nom du fichier dit quand et où le relevé a été pris
 - [x] Le compte de dépôt est celui déjà saisi dans l'application, sans nouvelle

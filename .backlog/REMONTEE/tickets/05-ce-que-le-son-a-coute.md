@@ -30,7 +30,7 @@ champ vide vaut mieux qu'un zéro qu'on prendrait pour une mesure.
 
 ## Critères d'acceptation
 
-- [ ] Le relevé périodique du journal porte le facteur temps réel, les creux,
+- [x] Le relevé périodique du journal porte le facteur temps réel, les creux,
       l'écrêtage et la charge
 - [x] La cadence est celle du relevé périodique, pas celle de la boucle
 - [x] Un profil dont le son ne vient pas de la synthèse n'inscrit pas de mesure
@@ -47,3 +47,5 @@ n'inscrit rien plutôt qu'un zéro.
 ouverte de MOTEURS-EN-VOITURE — le taux d'écrêtage réel de la configuration
 retenue — et le seuil de SYNTHESE, un facteur temps réel de trois dans la
 voiture.
+
+Dernier critère établi le 12 septembre 2026 : un test nomme l'entrée du relevé dans le journal quand le son est synthétisé, et vérifie le facteur temps réel, la charge, les creux, leur durée, la crête et l'écrêtage.

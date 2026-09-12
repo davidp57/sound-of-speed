@@ -1,6 +1,7 @@
 # SUITE-ESSAI-11 — ce que l'essai du 11 septembre a laissé de côté
 
-**Statut :** ⬜ prêt
+**Statut :** 🔄 en cours — la relance de la localisation est livrée (commits
+`51b7af4` et `f2826d0`) ; les dépôts manqués à l'arrêt restent à instruire
 **Branche :** à ouvrir
 **Version visée :** à décider
 

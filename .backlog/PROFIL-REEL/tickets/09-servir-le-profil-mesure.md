@@ -43,9 +43,11 @@ le fichier posé à la main. Le chemin servi n'a jamais été traversé.
 ## Critères d'acceptation
 
 - [x] `GET /mesure-voiture/profil-voiture.json` rend le fichier, pas `index.html`.
-- [ ] Une réponse qui n'est pas du JSON ne passe pas pour une absence de profil.
-- [ ] L'écran de télémétrie dit l'état du dernier essai : jamais tenté, pas de
+- [x] Une réponse qui n'est pas du JSON ne passe pas pour une absence de profil.
+- [x] L'écran de télémétrie dit l'état du dernier essai : jamais tenté, pas de
       réponse, réponse illisible, ou la date du profil trouvé.
-- [ ] Le README liste `profils` parmi les dossiers à créer, et dit de recoller
+- [x] Le README liste `profils` parmi les dossiers à créer, et dit de recoller
       la pile.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.
+
+Critères établis le 12 septembre 2026 : un test nomme la distinction entre une réponse illisible et une absence de mesure, deux autres l'absence de dépôt et l'absence de réponse, un quatrième le rejet d'un procédé plus ancien ; l'écran de télémétrie rend ces états en clair. Le README dit de recoller la pile entière. Une réserve de vocabulaire : le critère parle du dossier « profils », renommé depuis en « mesure-voiture » précisément pour ne plus se confondre avec la bibliothèque « profiles ».

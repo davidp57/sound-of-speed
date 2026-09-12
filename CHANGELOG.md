@@ -141,6 +141,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le README décrivait trois gestes qui n'existent plus.** Il annonçait encore
+  des traces « exportables en un fichier et réimportables ailleurs », et un
+  trajet réel qui « s'enregistre une fois depuis l'écran Télémétrie » — le
+  panneau qui portait ces trois gestes a été retiré avec le relecteur. Le texte
+  dit maintenant ce qui se passe : l'étalonnage embarqué produit seul les traces
+  locales, la capture du trajet remonte toute seule, et c'est le relecteur qui
+  sert à revoir un trajet. Le rejeu, lui, reste bien une source de vitesse.
+
 - **Le profil mesuré n'était servi par personne.** L'application demandait
   `/mesure-voiture/profil-voiture.json` ; nginx n'avait pas d'emplacement pour ce
   chemin, le volume n'était pas monté dans le conteneur du site, et le dossier

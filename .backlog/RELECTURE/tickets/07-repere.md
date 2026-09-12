@@ -19,9 +19,11 @@ d'envoyer.
 
 ## Critères d'acceptation
 
-- [ ] Un bouton copie le repère de l'instant affiché.
-- [ ] La première ligne se lit sans effort et nomme la session et le moment.
-- [ ] L'état complet suit, avec les positions.
-- [ ] Le repère désigne un instant qu'on peut retrouver dans les fichiers du
+- [x] Un bouton copie le repère de l'instant affiché.
+- [x] La première ligne se lit sans effort et nomme la session et le moment.
+- [x] L'état complet suit, avec les positions.
+- [x] Le repère désigne un instant qu'on peut retrouver dans les fichiers du
       serveur sans ambiguïté.
-- [ ] La copie fonctionne, et le dit.
+- [x] La copie fonctionne, et le dit.
+
+Critères établis le 12 septembre 2026 : le repère nomme la session, l'instant depuis le départ, la vitesse, le régime et le rapport en première ligne, puis le détail complet avec les positions ; la copie dit si elle a réussi ou si le navigateur l'a refusée.

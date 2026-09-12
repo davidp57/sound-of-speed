@@ -33,14 +33,16 @@ mesuré.
 
 ## Critères d'acceptation
 
-- [ ] Le code du relecteur n'est pas téléchargé tant qu'on n'ouvre pas son
+- [x] Le code du relecteur n'est pas téléchargé tant qu'on n'ouvre pas son
       adresse.
 - [ ] La liste montre les sessions du serveur, la plus récente en tête, avec
       leur date et leur durée.
-- [ ] Les tranches d'une même session sont recollées dans le bon ordre.
-- [ ] Lecture, pause et déplacement fonctionnent, et l'affichage suit.
-- [ ] Les événements du journal sont marqués sur la timeline et se distinguent
+- [x] Les tranches d'une même session sont recollées dans le bon ordre.
+- [x] Lecture, pause et déplacement fonctionnent, et l'affichage suit.
+- [x] Les événements du journal sont marqués sur la timeline et se distinguent
       les uns des autres.
-- [ ] Les sessions des 8, 9 et 10 septembre 2026 se relisent, alors qu'elles
+- [x] Les sessions des 8, 9 et 10 septembre 2026 se relisent, alors qu'elles
       sont en clair et sans en-tête.
-- [ ] Une valeur interpolée est visiblement distinguée d'une valeur mesurée.
+- [x] Une valeur interpolée est visiblement distinguée d'une valeur mesurée.
+
+Critères établis le 12 septembre 2026, sur les tests du recollage des tranches, de l'ordre des rangs et de l'interpolation annoncée. Un reste ouvert : **la liste des sessions n'affiche pas leur durée**, qui n'est connue qu'après chargement.

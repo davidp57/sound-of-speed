@@ -46,11 +46,13 @@ avec `suggest.ts`, qui produit le même réglage par un autre chemin.
 
 ## Critères d'acceptation
 
-- [ ] Les ralentissements d'un trajet sont relevés et groupés par force.
-- [ ] La séparation en deux modes est **mesurée**, pas supposée : le critère qui
+- [x] Les ralentissements d'un trajet sont relevés et groupés par force.
+- [x] La séparation en deux modes est **mesurée**, pas supposée : le critère qui
       décide que les deux tas se distinguent est écrit et vérifiable.
-- [ ] Aucune frontière n'est proposée quand ils ne se séparent pas.
+- [x] Aucune frontière n'est proposée quand ils ne se séparent pas.
 - [ ] Éprouvé sur la session du 11 septembre, et sur des distributions
       fabriquées où la réponse est connue d'avance — un tas, deux tas nets, deux
       tas qui se touchent.
 - [ ] Contrôle qualité vert.
+
+Trois critères établis le 12 septembre 2026, par les tests du découpage des ralentissements : ils nomment la frontière entre deux tas nets, le refus de conclure sur un seul tas, et le refus quand les deux tas se touchent. Le dernier critère reste ouvert : la bimodalité sur une vraie session n'est toujours pas établie, ce que le statut du ticket dit déjà.

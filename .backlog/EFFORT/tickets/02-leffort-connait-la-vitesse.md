@@ -35,8 +35,8 @@ levé — un gain, mais un changement de caractère.
 
 ## Critères d'acceptation
 
-- [ ] À accélération nulle, l'effort croît avec la vitesse
-- [ ] À l'arrêt, l'effort est nul
+- [x] À accélération nulle, l'effort croît avec la vitesse
+- [x] À l'arrêt, l'effort est nul
 - [ ] Le niveau au ralenti est celui d'avant le ticket, après recalage
 - [ ] Une reprise douce à 130 km/h s'entend au moins 3 dB au-dessus de la
       croisière à la même vitesse
@@ -44,5 +44,7 @@ levé — un gain, mais un changement de caractère.
 - [ ] **Les passages de rapports se produisent aux mêmes vitesses qu'avant le
       ticket**
 - [ ] Le guide de création donne une valeur cohérente avec le caractère choisi
-- [ ] Le réglage est dans la référence des réglages du README
+- [x] Le réglage est dans la référence des réglages du README
 - [ ] 🧑 Vérifié en roulant : tenir 50 et tenir 130 ne sonnent plus pareil
+
+Trois critères établis le 12 septembre 2026, par les tests du moteur qui nomment la croissance de l'effort avec la vitesse à accélération nulle et sa nullité à l'arrêt, et par la présence du repère de traînée dans la référence des réglages du README. Les autres demandent une mesure de niveau ou une écoute, et restent ouverts.

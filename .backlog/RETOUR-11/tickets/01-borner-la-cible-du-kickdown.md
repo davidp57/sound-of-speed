@@ -41,10 +41,12 @@ met pas.
 
 ## Critères d'acceptation
 
-- [ ] Un test montre qu'après un rétrogradage forcé, le régime atteint reste
+- [x] Un test montre qu'après un rétrogradage forcé, le régime atteint reste
       sous le seuil de montée immédiate du rapport visé.
-- [ ] Un test rejoue le cas du 11 septembre — 118 km/h, charge 0,96, sixième —
+- [x] Un test rejoue le cas du 11 septembre — 118 km/h, charge 0,96, sixième —
       et le rapport pris tient plus d'une seconde.
-- [ ] Le rétrogradage forcé continue de descendre de deux rapports quand la
+- [x] Le rétrogradage forcé continue de descendre de deux rapports quand la
       cible le permet.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.
+
+Critères établis le 12 septembre 2026 : un test rejoue nommément le cas des 118 km/h du 11 septembre, un autre vérifie que le rapport pris n'est pas rendu aussitôt, un troisième que la descente de deux rapports subsiste quand elle se garde. Contrôle qualité vert.

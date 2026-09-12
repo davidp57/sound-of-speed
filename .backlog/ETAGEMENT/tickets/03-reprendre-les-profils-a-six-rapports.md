@@ -37,9 +37,17 @@ réparera le partage.
 
 ## Critères d'acceptation
 
-- [ ] Un profil enregistré à six rapports s'ouvre et sonne, sans rien perdre.
-- [ ] Un test part d'un profil au format précédent et vérifie les sept rapports
+- [x] Un profil enregistré à six rapports s'ouvre et sonne, sans rien perdre.
+- [x] Un test part d'un profil au format précédent et vérifie les sept rapports
       obtenus, ainsi que la longueur des tableaux qui les suivent.
-- [ ] Un profil partagé par URL, écrit avant ce lot, s'ouvre encore.
-- [ ] `PROFILE_FORMAT_VERSION` monte d'un cran.
-- [ ] Contrôle qualité vert.
+- [x] Un profil partagé par URL, écrit avant ce lot, s'ouvre encore.
+- [x] `PROFILE_FORMAT_VERSION` monte d'un cran.
+- [x] Contrôle qualité vert.
+
+Critères établis le 12 septembre 2026, en relisant le code et les tests : la
+reprise s'applique aux trois chemins d'entrée d'une boîte — le stockage local,
+un profil reçu par lien, une boîte enregistrée — et sept tests la couvrent, dont
+quatre qui vérifient qu'une boîte réglée à la main n'est pas touchée. La version
+du format de profil est montée par le commit du lot. Seul le mot « sonne » du
+premier critère relève de l'écoute, et il est couvert par la vérification en
+roulant du ticket 01.

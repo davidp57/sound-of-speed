@@ -26,9 +26,11 @@ accepté, pas un oubli : le rejeu revient au ticket 08.
 
 ## Critères d'acceptation
 
-- [ ] L'écran de télémétrie ne propose plus aucun geste sur les traces.
-- [ ] L'étalonnage embarqué enregistre, analyse et applique comme avant.
+- [x] L'écran de télémétrie ne propose plus aucun geste sur les traces.
+- [x] L'étalonnage embarqué enregistre, analyse et applique comme avant.
 - [ ] Le code mort part avec le panneau — rien ne subsiste qui ne serve plus
       qu'à l'étalonnage sans le dire.
-- [ ] Le README ne décrit plus des gestes qui n'existent plus.
-- [ ] Le contrôle qualité est vert, tests compris.
+- [x] Le README ne décrit plus des gestes qui n'existent plus.
+- [x] Le contrôle qualité est vert, tests compris.
+
+Critères relus le 12 septembre 2026. Le README a été corrigé le jour même : il décrivait encore l'export et la réimportation des traces, et leur enregistrement depuis l'écran Télémétrie, trois gestes qui n'existent plus. Un critère reste ouvert : **du code mort subsiste** — des règles de style sans élément qui les porte, une fonction de lecture de traces que seul son test appelle, et un commentaire qui décrit encore le geste retiré.

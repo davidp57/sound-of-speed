@@ -22,9 +22,15 @@ une aiguille ne relève pas de la règle « aucune animation » — son mouvemen
 
 ## Critères d'acceptation
 
-- [ ] L'aiguille montre le régime du rapport suivant, pris du même calcul que
+- [x] L'aiguille montre le régime du rapport suivant, pris du même calcul que
       la boîte.
-- [ ] Elle est plus courte et plus fine que l'aiguille principale, d'une autre
+- [x] Elle est plus courte et plus fine que l'aiguille principale, d'une autre
       couleur.
-- [ ] Elle n'apparaît pas sur le dernier rapport, ni à l'arrêt.
-- [ ] Contrôle qualité vert.
+- [x] Elle n'apparaît pas sur le dernier rapport, ni à l'arrêt.
+- [x] Contrôle qualité vert.
+
+Critères établis le 12 septembre 2026, en relisant le code : l'aiguille du
+rapport suivant mesure 46 contre 64 pour la principale, 1,8 contre 4,5 de
+demi-largeur, et porte sa propre couleur ; son régime vient de la fonction que
+la boîte emploie pour décider, et vaut `null` au point mort, à l'arrêt et sur le
+dernier rapport.

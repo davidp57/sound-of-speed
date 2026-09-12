@@ -26,7 +26,7 @@ effacée du stockage local au motif qu'elle est partie.
 
 ## Critères d'acceptation
 
-- [ ] Une trace enregistrée avec l'accord au troisième cran part sans geste
+- [ ] 🧑 Une trace enregistrée avec l'accord au troisième cran part sans geste
 - [x] Une trace enregistrée sans réseau est mise en attente, pas perdue
 - [x] Le retour du réseau déclenche le dépôt sans intervention
 - [x] Ce qui est parti quitte la file ; ce qui a échoué pour cause de réseau y

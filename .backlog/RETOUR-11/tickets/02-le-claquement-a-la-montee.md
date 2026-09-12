@@ -36,8 +36,10 @@ reviendrait à l'ancien équilibre.
 
 ## Critères d'acceptation
 
-- [ ] Le claquement à la montée perd trente pour cent d'amplitude.
-- [ ] Le claquement au rétrogradage est inchangé, à la valeur près.
-- [ ] Un test couvre les deux amplitudes, montée et descente.
-- [ ] Un profil dérivé du caractère donne le même équilibre.
-- [ ] Contrôle qualité vert.
+- [x] Le claquement à la montée perd trente pour cent d'amplitude.
+- [x] Le claquement au rétrogradage est inchangé, à la valeur près.
+- [x] Un test couvre les deux amplitudes, montée et descente.
+- [x] Un profil dérivé du caractère donne le même équilibre.
+- [x] Contrôle qualité vert.
+
+Critères établis le 12 septembre 2026 : le claquement porte deux amplitudes distinctes, montée et descente, et un test du mixage compare les deux réglages — 0,50 avant, 0,35 après, soit les trente pour cent demandés, la descente restant à sa valeur. Le caractère dérive les deux. Contrôle qualité vert.

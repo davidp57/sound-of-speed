@@ -2486,14 +2486,20 @@ C'est ainsi que les seuils de passage ont été vérifiés : la boîte monte un
 rapport 0,6 s après avoir franchi 94 % du rupteur à pleine charge, et bien plus
 tôt en charge partielle.
 
-Les traces sont **conservées d'une session à l'autre**, exportables en un fichier
-et réimportables ailleurs — c'est ainsi qu'un trajet enregistré au volant se
-rejoue au poste de travail.
+Les traces enregistrées par l'**étalonnage embarqué** sont conservées d'une
+session à l'autre dans le stockage local, et c'est lui seul qui les produit
+désormais : le panneau de l'écran Télémétrie qui permettait de les enregistrer,
+de les exporter et de les réimporter a été retiré.
 
-L'autre outil est le **rejeu de traces** : un trajet réel s'enregistre une fois
-depuis l'écran Télémétrie, puis se rejoue à l'identique sur un poste fixe. Régler
-le lissage devient reproductible, au lieu de demander un aller-retour sur route à
-chaque essai.
+Ce qui remonte au serveur, c'est la **capture du trajet**, automatique et
+compressée. Pour revoir un trajet réel au poste de travail — sa timeline, sa
+carte, son son —, l'outil est le [relecteur](#le-relecteur), et non plus un
+fichier qu'on transporte.
+
+Le **rejeu** reste une source de vitesse à part entière, au même titre que le
+simulateur et le GPS : il rejoue une trace à l'identique, ce qui rend le réglage
+du lissage reproductible au lieu de demander un aller-retour sur route à chaque
+essai.
 
 ---
 

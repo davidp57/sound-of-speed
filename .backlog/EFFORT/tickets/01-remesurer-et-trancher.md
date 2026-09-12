@@ -1,6 +1,10 @@
 # 01 — Remesurer, et dire si le lot vaut encore
 
-**Statut :** ✅ fait — le lot continue, inchangé
+**Statut :** ✅ fait — le lot continue, inchangé. Un critère reste ouvert et ne
+sera pas tenu ici : le tableau en niveaux acoustiques absolus demande le niveau
+efficace de chaque échantillon, et les échantillons vivent dans un volume du NAS.
+La spec le dit déjà à sa section « Ce qui n'a pas pu être chiffré, et pourquoi » ;
+le critère est laissé décoché plutôt que tenu pour acquis.
 
 **Bloqué par :** aucun, peut démarrer tout de suite — mais n'a de sens qu'après
 avoir roulé avec [PENTE](../../PENTE/spec.md)
@@ -27,11 +31,11 @@ insuffisant et le lot continue.
 ## Critères d'acceptation
 
 - [ ] Le tableau des niveaux est refait sur la version qui corrige la pente
-- [ ] L'écart mesuré entre une reprise douce à haute vitesse et la croisière à la
+- [x] L'écart mesuré entre une reprise douce à haute vitesse et la croisière à la
       même vitesse est chiffré
-- [ ] L'écart entre cette reprise et le pied levé est chiffré
-- [ ] La spécification est corrigée de ses chiffres périmés
-- [ ] La conclusion est écrite : le lot continue, se réduit, ou s'abandonne
+- [x] L'écart entre cette reprise et le pied levé est chiffré
+- [x] La spécification est corrigée de ses chiffres périmés
+- [x] La conclusion est écrite : le lot continue, se réduit, ou s'abandonne
 - [ ] 🧑 Confirmé en roulant : une reprise douce s'entend, ou ne s'entend toujours
       pas
 
@@ -53,3 +57,8 @@ L'écart vient de la correction de l'accélération, qui voit désormais la
 décélération réelle au lieu d'un signal bruité. Le contraste entre pied levé et
 croisière est donc **déjà** meilleur qu'annoncé, ce qui ne change pas la
 conclusion : c'est la croisière qui est plate.
+
+Critères relus le 12 septembre 2026. Les quatre cochés le sont sur la section
+« Remesuré le 4 septembre 2026 » de la spec. Le défaut d'horodatage trouvé le
+10 septembre ne les périme pas : il touche le navigateur de la voiture, pas les
+mesures prises au banc.

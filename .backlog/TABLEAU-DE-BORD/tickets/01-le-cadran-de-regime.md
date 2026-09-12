@@ -28,7 +28,7 @@ le conditionnement et le moteur — en rajouter la ferait mentir.
 - [x] Le régime se lit sur un cadran, avec le nombre en second
 - [x] La zone du rupteur est visible sans lire de valeur
 - [x] L'aiguille suit le régime sans inertie propre
-- [ ] Le cadran reste lisible en plein soleil et en mode plein écran
+- [ ] 🧑 Le cadran reste lisible en plein soleil et en mode plein écran
 - [x] Aucune régression de cadence : la mesure de durée d'image est inchangée
 - [ ] 🧑 Vérifié en roulant : le cadran se lit d'un coup d'œil, sans quitter la
       route longtemps

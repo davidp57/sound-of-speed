@@ -31,11 +31,13 @@ Le témoin ne bouge pas et ne clignote pas. Sa couleur change, c'est tout : un
 
 ## Critères d'acceptation
 
-- [ ] Capture en cours, dépôts réussis : le témoin est vert.
-- [ ] Réseau coupé, tranches en attente dans la file : il passe à l'orange, et
+- [x] Capture en cours, dépôts réussis : le témoin est vert.
+- [x] Réseau coupé, tranches en attente dans la file : il passe à l'orange, et
       revient au vert quand elles partent.
-- [ ] Mot de passe du dépôt refusé : il passe au rouge.
-- [ ] Accord de remontée pas au dernier cran : aucun témoin.
-- [ ] Deux soucis simultanés de gravités différentes : le témoin montre le pire.
-- [ ] L'écran de télémétrie dit ce que le témoin résume, en toutes lettres.
-- [ ] Le témoin n'a aucune animation.
+- [x] Mot de passe du dépôt refusé : il passe au rouge.
+- [x] Accord de remontée pas au dernier cran : aucun témoin.
+- [x] Deux soucis simultanés de gravités différentes : le témoin montre le pire.
+- [x] L'écran de télémétrie dit ce que le témoin résume, en toutes lettres.
+- [x] Le témoin n'a aucune animation.
+
+Critères établis le 12 septembre 2026 : six tests nomment chaque état du témoin, dont le cumul de deux soucis de gravités différentes. L'absence d'animation est vérifiée dans la feuille de style — seule la couleur de fond change.

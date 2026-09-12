@@ -24,11 +24,13 @@ déplacement de la timeline déplace le véhicule : les deux sens marchent.
 
 ## Critères d'acceptation
 
-- [ ] Le trajet est tracé sur le fond de carte, et la vue s'ajuste à son
+- [x] Le trajet est tracé sur le fond de carte, et la vue s'ajuste à son
       étendue.
-- [ ] Le véhicule suit la timeline.
-- [ ] Un clic sur le tracé déplace la timeline à cet endroit.
-- [ ] L'attribution d'OpenStreetMap est affichée.
-- [ ] Leaflet n'est téléchargé que sur cet écran.
-- [ ] Une session sans position affiche une carte vide et un message, sans
+- [x] Le véhicule suit la timeline.
+- [x] Un clic sur le tracé déplace la timeline à cet endroit.
+- [x] L'attribution d'OpenStreetMap est affichée.
+- [x] Leaflet n'est téléchargé que sur cet écran.
+- [x] Une session sans position affiche une carte vide et un message, sans
       erreur.
+
+Critères établis le 12 septembre 2026, en relisant le composant de carte et l'entrée de construction séparée : le tracé et son cadrage, le véhicule qui suit la timeline, le clic qui déplace la lecture, l'attribution d'OpenStreetMap, et la carte vide annoncée.

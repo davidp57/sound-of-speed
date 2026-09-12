@@ -461,7 +461,7 @@ s'agit plus de corriger un moteur dans le C++, mais de régler un profil.
       zéro creux mesuré, balayage complet compris
 - [x] Le régime entendu est celui du cadran, à quelques dizaines de tours près —
       écart nul à l'unité près
-- [ ] L'effort agit sur le timbre, et pas seulement sur le niveau — le niveau ne
+- [ ] 🧑 L'effort agit sur le timbre, et pas seulement sur le niveau — le niveau ne
       part plus à l'envers, mais il bouge peu et la brillance ne suit pas ; voir
       ci-dessus
 - [x] La charge processeur pendant la lecture est relevée, à côté du reste de

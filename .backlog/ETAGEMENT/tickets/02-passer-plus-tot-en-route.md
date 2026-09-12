@@ -26,7 +26,9 @@ Le mode Sport ne bouge pas.
 
 ## Critères d'acceptation
 
-- [ ] Un test fixe les seuils obtenus à demande pleine et à demande moyenne.
-- [ ] Le mode Sport est inchangé.
-- [ ] Un test montre qu'une montée arrive plus tôt qu'avant, à conduite égale.
-- [ ] Contrôle qualité vert.
+- [x] Un test fixe les seuils obtenus à demande pleine et à demande moyenne.
+- [x] Le mode Sport est inchangé.
+- [x] Un test montre qu'une montée arrive plus tôt qu'avant, à conduite égale.
+- [x] Contrôle qualité vert.
+
+Critères établis le 12 septembre 2026 : trois tests tiennent le seuil — la perte de vingt pour cent pied au plancher et quinze en conduite ordinaire, le mode Sport laissé intact, et le mode Route qui reste sous le mode Sport à toute demande. Contrôle qualité vert.

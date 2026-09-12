@@ -26,19 +26,21 @@ garde pour renvoyer.
 
 ## Critères d'acceptation
 
-- [ ] Le GPS démarre, l'accord est au dernier cran : la capture démarre sans
+- [x] Le GPS démarre, l'accord est au dernier cran : la capture démarre sans
       aucun geste.
-- [ ] L'accord est à un cran inférieur : rien n'est capturé, rien n'est écrit.
-- [ ] Une tranche déposée contient l'en-tête complet et se relit seule.
-- [ ] Un échantillon porte la vitesse brute, sa précision, son origine, et le
+- [x] L'accord est à un cran inférieur : rien n'est capturé, rien n'est écrit.
+- [x] Une tranche déposée contient l'en-tête complet et se relit seule.
+- [x] Un échantillon porte la vitesse brute, sa précision, son origine, et le
       régime, le rapport et la charge calculés au même instant.
-- [ ] Un changement de profil en cours de session apparaît comme un événement
+- [x] Un changement de profil en cours de session apparaît comme un événement
       daté.
 - [ ] Une coupure du GPS puis sa reprise laissent une seule session, avec un
       trou.
-- [ ] La capture porte l'identifiant de session du journal, pour qu'on puisse
+- [x] La capture porte l'identifiant de session du journal, pour qu'on puisse
       apparier les deux.
 - [ ] Coupure du réseau en roulant : les tranches partent au retour, sans perte.
-- [ ] Quinze secondes à l'arrêt déposent ce qui attend, une seule fois par
+- [x] Quinze secondes à l'arrêt déposent ce qui attend, une seule fois par
       arrêt : personne n'arrête l'application, la voiture s'éteint toute seule
       quand on s'en éloigne.
+
+Critères relus le 12 septembre 2026, sur les tests nommés de la capture, du consentement et du dépôt à l'arrêt. Deux restent ouverts : le dépôt après coupure du réseau demande la route, et **le trou laissé par une perte de fix GPS n'est pas inscrit dans la capture** — le journal le marque, la capture non, si bien qu'une relecture ne montre pas où le signal a manqué.
