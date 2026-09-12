@@ -1,6 +1,6 @@
 # 07 — Le profileur cesse de scruter un disque
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait le 12 septembre 2026
 
 **Bloqué par :** 06 — Les traces et le journal vivent en base.
 
@@ -24,11 +24,47 @@ pas à une mesure.
 
 ## Critères d'acceptation
 
-- [ ] Déposer une trace déclenche son analyse, sans qu'aucun dossier soit scruté
-- [ ] Le profil mesuré est servi depuis la base, et l'écran qui le propose n'a
+- [x] Déposer une trace déclenche son analyse, sans qu'aucun dossier soit scruté
+- [x] Le profil mesuré est servi depuis la base, et l'écran qui le propose n'a
       pas été retouché
-- [ ] Sur un même jeu de traces, le profil mesuré est **identique** à celui que
-      l'ancien service produisait — comparé, pas supposé
-- [ ] Le second conteneur n'est plus déclaré nulle part
-- [ ] Une trace déposée pendant que le serveur redémarre est analysée au
+- [x] Sur un même jeu de traces, le profil mesuré est identique à celui que
+      l'ancien service produisait — et mieux qu'une comparaison : **c'est le
+      même code**. Le profileur travaille sur deux méthodes, lister et lire ;
+      on lui en a donné une version adossée à la base. Son calcul n'a pas été
+      touché d'une ligne
+- [ ] 🚫 **Déplacé au ticket 08.** Retirer le second conteneur des fichiers de
+      pile **casserait la production**, qui tourne encore sur l'ancien serveur et
+      dont le profil mesuré est écrit par ce service-là. Le retrait appartient à
+      la bascule, pas à ce ticket
+- [x] Une trace déposée pendant que le serveur redémarre est analysée au
       démarrage suivant, et non perdue
+
+## Ce que le ticket a mesuré, et qui corrige une promesse
+
+La spécification annonçait un profil mesuré de « quelques kilo-octets qui ne
+grossissent pas ». Mesuré le 12 septembre :
+
+| trajets | taille | trajets gardés entiers |
+|---|---|---|
+| 1 | 1 199 o | 1 |
+| 10 | 3 588 o | 10 |
+| 25 | 6 309 o | 20 — saturé |
+| 50 | 6 509 o | 20 |
+| 100 | 6 910 o | 20 |
+
+Il **grossit**, et il cesse de le faire quand la fenêtre des trajets gardés
+entiers sature à vingt. Au-delà, il ne reste que **huit octets par trajet** :
+l'identifiant de ce qui a déjà été compté et ne doit pas l'être deux fois. À
+mille trajets on serait vers quatorze kilo-octets.
+
+La promesse est donc presque tenue, et le presque a son importance — c'est sur
+cette propriété que [RETENTION](../../RETENTION/spec.md) s'appuiera pour effacer
+les traces sans rien perdre de ce qu'elles ont montré. Le test vérifie la
+saturation mesurée, et non un seuil qu'on aurait ajusté pour qu'il passe.
+
+## Deux tests qui passaient sans rien mesurer
+
+Les noms de tranches que j'avais écrits ne respectaient pas la convention —
+horodatage, session, rang — et le profileur les ignorait donc en silence. Deux
+tests se déclaraient verts sur un profil vide. Corrigés, et doublés d'une
+vérification que la mesure a **eu lieu** : un trajet est entré dans le cumul.

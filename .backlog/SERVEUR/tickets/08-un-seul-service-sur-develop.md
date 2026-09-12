@@ -26,7 +26,10 @@ savoir avant la bascule que de l'entendre en roulant.
 
 ## Critères d'acceptation
 
-- [ ] Le fichier de pile ne déclare qu'un service
+- [ ] Le fichier de pile ne déclare qu'un service, et **le second conteneur
+      n'est plus déclaré nulle part** — critère venu du ticket 07, où le retirer
+      aurait cassé la production : elle tourne encore sur l'ancien serveur, dont
+      le profil mesuré est écrit par ce service-là
 - [ ] Les migrations sont jouées au démarrage du conteneur, sans intervention
 - [ ] La pile d'intégration tourne à son adresse, et la production est intacte
 - [ ] Le débit et la latence de `/audio/` sont **mesurés sur le NAS**, comparés à

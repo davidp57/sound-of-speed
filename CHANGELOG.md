@@ -8,6 +8,13 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le serveur mesure la vraie voiture sans plus scruter un disque.** Un service
+  séparé relisait le dossier des traces toutes les cinq secondes pour découvrir
+  ce qui s'y trouvait ; maintenant que le serveur écrit lui-même les traces, il
+  sait qu'elles arrivent. Le calcul n'a pas changé d'une ligne — c'est le même
+  code, à qui l'on donne une vue de la base au lieu d'un dossier. Une trace
+  déposée pendant que le serveur était arrêté est rattrapée au démarrage.
+
 - **Ce que la voiture envoie en roulant est rangé en base** : traces, tranches de
   journal, relevés de mesure. Une tranche compressée redescend à l'octet près et
   sous le nom exact qui la dit compressée — le client décide de décompresser au

@@ -10,8 +10,9 @@
 
 import { serve } from '@hono/node-server'
 
-import { ouvrirBase } from './base/base'
+import { SOLO_ACCOUNT_ID, ouvrirBase } from './base/base'
 import { lireComptes } from './comptes'
+import { reprendreTout } from './profil-mesure'
 import { creerServeur } from './serveur'
 
 const port = Number(process.env['SPEED_PORT'] ?? 8088)
@@ -23,6 +24,21 @@ const fichierDeComptes = process.env['SPEED_HTPASSWD']
 
 const { base, fermer } = await ouvrirBase({ fichier: fichierDeBase, migrations })
 console.log(`base ouverte et à jour : ${fichierDeBase}`)
+
+// Rattrapage : une trace déposée pendant que le serveur était arrêté n'a
+// déclenché aucune reprise, et serait perdue pour la mesure. Le profileur décide
+// lui-même s'il doit tout relire — un procédé corrigé rend l'ancien cumul sans
+// valeur — donc ceci ne coûte rien quand il n'y a rien à rattraper.
+try {
+  const rattrape = await reprendreTout(base, SOLO_ACCOUNT_ID)
+  if (rattrape.skipped.length > 0) {
+    console.warn(`tranches illisibles, écartées : ${rattrape.skipped.join(', ')}`)
+  }
+} catch (erreur) {
+  // Un rattrapage qui échoue ne doit pas empêcher le serveur de servir : la
+  // mesure se reprendra au prochain dépôt.
+  console.error(`rattrapage du profil mesuré : ${String(erreur)}`)
+}
 
 const serveur = serve(
   {
