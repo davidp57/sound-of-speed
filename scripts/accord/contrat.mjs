@@ -173,7 +173,6 @@ export function cas({ nom }) {
     // --- Le piège du repli d'application ----------------------------------
     {
       nom: "un chemin de données absent rend un vrai 404, pas la page d'accueil",
-      part: 'donnees',
       // Le repli d'application à page unique ne doit **pas** répondre ici. Quand
       // il le fait, le client reçoit du HTML là où il attend du JSON — le cas est
       // déjà connu côté client, qui le classe « illisible ».
@@ -185,7 +184,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'une trace absente rend un vrai 404',
-      part: 'donnees',
+      part: 'depots',
       requete: { chemin: '/traces/rien-du-tout.jsonl', compte: true },
       attend: (r) => egal(r.status, 404, 'statut'),
     },
@@ -193,7 +192,7 @@ export function cas({ nom }) {
     // --- Ce qui demande un compte -----------------------------------------
     {
       nom: 'le dépôt refuse sans compte, et le refus ne se rejoue pas',
-      part: 'donnees',
+      part: 'profils',
       // 401 et 403 disent « refusé » : le client n'essaie pas de rejouer. Tout
       // autre code le ferait réessayer indéfiniment.
       requete: { chemin: `/profiles/${profil}`, methode: 'PUT', corps: contenuProfil },
@@ -201,13 +200,13 @@ export function cas({ nom }) {
     },
     {
       nom: 'la bibliothèque de profils refuse sans compte',
-      part: 'donnees',
+      part: 'profils',
       requete: { chemin: '/profiles/', entetes: { Accept: 'application/json' } },
       attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
     },
     {
       nom: 'un profil se dépose avec un compte',
-      part: 'donnees',
+      part: 'profils',
       requete: {
         chemin: `/profiles/${profil}`,
         methode: 'PUT',
@@ -218,7 +217,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'le profil déposé se relit tel quel',
-      part: 'donnees',
+      part: 'profils',
       requete: { chemin: `/profiles/${profil}`, compte: true },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
@@ -227,7 +226,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'le profil déposé apparaît au listage',
-      part: 'donnees',
+      part: 'profils',
       requete: { chemin: '/profiles/', compte: true, entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
@@ -240,7 +239,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'déposer deux fois le même nom remplace',
-      part: 'donnees',
+      part: 'profils',
       requete: {
         chemin: `/profiles/${profil}`,
         methode: 'PUT',
@@ -253,7 +252,7 @@ export function cas({ nom }) {
     // --- Ce que la voiture dépose en roulant -------------------------------
     {
       nom: 'une tranche de journal compressée se dépose',
-      part: 'donnees',
+      part: 'depots',
       requete: {
         chemin: `/journal/${tranche}`,
         methode: 'PUT',
@@ -265,7 +264,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'le journal se liste',
-      part: 'donnees',
+      part: 'depots',
       requete: { chemin: '/journal/', compte: true, entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
@@ -277,7 +276,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'une tranche de trace se dépose et redescend sous le nom qui la dit compressée',
-      part: 'donnees',
+      part: 'depots',
       // Le client décide de décompresser **au nom du fichier**, jamais au type
       // annoncé par le serveur. Le nom doit donc revenir tel qu'il est parti.
       requete: {
@@ -291,7 +290,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'la trace déposée se liste sous son nom exact',
-      part: 'donnees',
+      part: 'depots',
       requete: { chemin: '/traces/', compte: true, entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
@@ -303,7 +302,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'un relevé de sonde se dépose',
-      part: 'donnees',
+      part: 'depots',
       // Déposé par une page autonome, hors de l'application, qui relit le compte
       // dans le stockage du navigateur et compose son propre en-tête.
       requete: {
@@ -316,7 +315,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'les relevés se listent',
-      part: 'donnees',
+      part: 'depots',
       requete: { chemin: '/mesures/', compte: true, entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')

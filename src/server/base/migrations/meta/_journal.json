@@ -8,6 +8,13 @@
       "when": 1789235872489,
       "tag": "0000_schema-initial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789237252743,
+      "tag": "0001_nom-de-fichier-des-profils",
+      "breakpoints": true
     }
   ]
 }

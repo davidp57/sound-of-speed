@@ -8,6 +8,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **La bibliothèque de profils est servie depuis la base.** Vu de
+  l'application, rien n'a changé : mêmes adresses, même forme de listage, mêmes
+  codes, même authentification. Déposer deux fois le même nom remplace, comme le
+  faisait le dépôt de fichiers. Le serveur refuse ce qui n'est pas du JSON — un
+  fichier illisible rendrait la bibliothèque muette sans rien dire — mais ne
+  valide pas la forme d'un profil : le cœur en est la seule autorité, et il la
+  vérifie déjà à la lecture.
+
 - **Un serveur en TypeScript sert l'application, ses ressources et les
   échantillons**, à la place du serveur de fichiers. Il honore les demandes de
   plage d'octets, annonce les deux types que le navigateur exige pour le moteur

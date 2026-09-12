@@ -55,18 +55,24 @@ function entetesDe(requete) {
 }
 
 /**
- * Deux parts, parce qu'un serveur se reprend en plusieurs fois.
+ * Trois parts, parce qu'un serveur se reprend en plusieurs fois.
  *
  * `publique` est ce qui se sert sans compte : l'application, ses ressources, les
- * échantillons. `donnees` est ce qui vit dans les dossiers de dépôt. Pendant la
- * réécriture, le serveur neuf tient la première avant la seconde, et pouvoir le
- * dire évite le seul mauvais réflexe possible : retirer d'un jeu de vérification
- * les cas qu'on ne sait pas encore passer.
+ * échantillons, et les 404 qu'un chemin de données absent doit rendre.
+ * `profils` est la bibliothèque. `depots` est ce que la voiture envoie en
+ * roulant — traces, journal, relevés.
  *
- * Sans `--part`, tout est joué. C'est ce que fait l'intégration continue.
+ * Pendant la réécriture, le serveur neuf tient ces parts l'une après l'autre, et
+ * pouvoir le dire évite le seul mauvais réflexe possible : retirer d'un jeu de
+ * vérification les cas qu'on ne sait pas encore passer. Plusieurs parts se
+ * demandent séparées par une virgule.
+ *
+ * Sans `--part`, tout est joué. C'est ce que fait l'intégration continue contre
+ * le serveur en service.
  */
+const partsVoulues = options.part === null ? null : options.part.split(',').map((p) => p.trim())
 const jeu = cas({ nom: marque() }).filter(
-  (unCas) => options.part === null || (unCas.part ?? 'publique') === options.part,
+  (unCas) => partsVoulues === null || partsVoulues.includes(unCas.part ?? 'publique'),
 )
 const resultats = []
 

@@ -14,11 +14,20 @@ import { readdirSync } from 'node:fs'
 
 import { Hono } from 'hono'
 
+import { SOLO_ACCOUNT_ID, type Base } from './base/base'
+import { coupleDe, type Comptes } from './comptes'
 import { cheminSur, fichierOuRien, servirFichier } from './fichiers'
+import { ecrireProfil, listerProfils, lireProfil } from './profils'
 
 export interface OptionsDuServeur {
   /** L'application construite : `dist/`. */
   application: string
+  /** La base, quand il y en a une. Sans elle, les dossiers de données ne sont pas servis. */
+  base?: Base
+  /** Les comptes qui ouvrent les dossiers protégés. */
+  comptes?: Comptes
+  /** À qui appartient ce qu'on range, tant que l'identité n'est pas ouverte. */
+  compte?: string
   /**
    * Les échantillons déposés, s'il y en a.
    *
@@ -46,6 +55,52 @@ const DONNEES = ['/profiles/', '/traces/', '/journal/', '/mesures/', '/mesure-vo
 
 export function creerServeur(options: OptionsDuServeur): Hono {
   const app = new Hono()
+
+  // --- La bibliothèque de profils ------------------------------------------
+  //
+  // Servie depuis la base quand il y en a une. Sans base, ce serveur ne sait pas
+  // encore répondre ici et laisse le repli faire son travail — c'est l'état des
+  // tickets précédents, où ces dossiers restaient servis par l'ancien chemin.
+  if (options.base !== undefined) {
+    const base = options.base
+    const compte = options.compte ?? SOLO_ACCOUNT_ID
+
+    app.on(['GET', 'PUT'], '/profiles/*', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      const chemin = new URL(c.req.url).pathname
+      const nomBrut = chemin.slice('/profiles/'.length)
+
+      if (nomBrut === '') {
+        if (c.req.method !== 'GET') return c.text('', 405)
+        // Jamais en cache : un profil déposé doit apparaître tout de suite.
+        return c.json(await listerProfils(base, compte), 200, { 'Cache-Control': 'no-store' })
+      }
+
+      let nom: string
+      try {
+        nom = decodeURIComponent(nomBrut)
+      } catch {
+        return c.notFound()
+      }
+
+      if (c.req.method === 'PUT') {
+        const ecrit = await ecrireProfil(base, compte, nom, await c.req.text())
+        // Une charge qu'on ne sait pas relire n'est pas une panne du serveur :
+        // c'est le seul autre code que le client ne rejoue pas.
+        if (ecrit === 'illisible') return c.text('profil illisible', 413)
+        return c.text('', 201)
+      }
+
+      const contenu = await lireProfil(base, compte, nom)
+      if (contenu === null) return c.notFound()
+      return c.text(contenu, 200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+      })
+    })
+  }
 
   // --- Les échantillons -----------------------------------------------------
   //
@@ -94,6 +149,30 @@ export function creerServeur(options: OptionsDuServeur): Hono {
   })
 
   return app
+}
+
+/**
+ * Refuse, et **dit lequel des deux refus c'est**.
+ *
+ * 401 quand le compte manque ou ne correspond pas ; 403 quand un compte existe
+ * mais que rien n'est configuré pour l'accepter. Le client ne rejoue ni l'un ni
+ * l'autre — c'est toute la différence avec un code de panne, qu'il rejouerait
+ * indéfiniment.
+ */
+function refuser(entetes: Headers, comptes: Comptes | undefined): Response | null {
+  if (comptes === undefined || !comptes.configure) {
+    return new Response('aucun compte configuré', { status: 403 })
+  }
+
+  const couple = coupleDe(entetes.get('authorization'))
+  if (couple === null || !comptes.verifie(couple.utilisateur, couple.motDePasse)) {
+    return new Response('compte requis', {
+      status: 401,
+      headers: { 'WWW-Authenticate': 'Basic realm="Sound of Speed"' },
+    })
+  }
+
+  return null
 }
 
 function cachePour(chemin: string): string | undefined {

@@ -113,6 +113,16 @@ export const profiles = sqliteTable(
       .references(() => accounts.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     /**
+     * Le nom sous lequel ce profil a été déposé, extension comprise.
+     *
+     * Deux noms, et ce n'est pas une redondance : `name` est ce qui s'affiche
+     * dans une liste, `fileName` est **l'identité que le client manipule**. La
+     * bibliothèque dépose « mon-v8.json », liste, et se sert du nom de fichier
+     * comme clé. Lui rendre un nom dérivé d'autre chose reviendrait à renommer
+     * son fichier dans son dos.
+     */
+    fileName: text('file_name'),
+    /**
      * Le moteur et la boîte que ce profil assemble.
      *
      * Sans contrainte de clé étrangère, et c'est délibéré : une désignation qui
@@ -125,7 +135,13 @@ export const profiles = sqliteTable(
     content: text('content', { mode: 'json' }).notNull(),
     updatedAt: integer('updated_at').notNull().default(maintenant),
   },
-  (table) => [index('profiles_account').on(table.accountId)],
+  (table) => [
+    index('profiles_account').on(table.accountId),
+    // Déposer deux fois le même nom **remplace**, comme le faisait le dépôt de
+    // fichiers. C'est ce que la bibliothèque attend quand elle renvoie un profil
+    // qu'elle a modifié.
+    uniqueIndex('profiles_account_file').on(table.accountId, table.fileName),
+  ],
 )
 
 /**
