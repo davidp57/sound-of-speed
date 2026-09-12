@@ -117,11 +117,12 @@ jobs:
 
       # --- Le serveur qui remplacera celui-là ---------------------------------
       #
-      # Le même jeu de requêtes, joué contre le serveur neuf. Il ne tient pour
-      # l'instant que la part publique — les dossiers de données passent en base
-      # aux tickets suivants — et c'est pourquoi la part est nommée : retirer du
-      # jeu les cas qu'on ne sait pas encore passer serait le seul mauvais
-      # réflexe possible ici.
+      # Le même jeu de requêtes, joué contre le serveur neuf. Deux fois : hors
+      # conteneur d'abord, ce qui dit vite si le code tient ; **dans son
+      # conteneur** ensuite, ce qui est la seule façon de savoir si l'image sait
+      # démarrer. Une image qui ne démarre pas est passée à travers une pull
+      # request entièrement verte le 12 septembre 2026, faute d'un contrôle comme
+      # celui-là.
       - name: Le serveur neuf tient le contrat en entier
         run: |
           set -euo pipefail
@@ -143,8 +144,75 @@ jobs:
           # doivent être indiscernables. Plus aucune part n'est exclue.
           node scripts/accord/accord.mjs http://localhost:8099 --compte essai:essai
 
+      - name: Construire l'image du serveur
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.serveur
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: sound-of-speed-serveur:essai
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: La pile à un service démarre et tient le contrat
+        # Le contrôle qui manquait. Tout le reste s'exécute hors conteneur et ne
+        # dit rien de l'image : ni que les dépendances s'y installent, ni que les
+        # migrations s'y jouent, ni que le serveur y démarre.
+        run: |
+          set -euo pipefail
+
+          # Un dossier de données vide, comme chez qui vient d'installer la pile.
+          mkdir -p /tmp/serveur/audio
+          cp /tmp/pile/htpasswd /tmp/serveur/htpasswd
+          chmod -R 777 /tmp/serveur
+
+          docker run -d --name serveur -p 8100:80 \
+            -v /tmp/serveur:/data \
+            -e SPEED_HTPASSWD=/data/htpasswd \
+            sound-of-speed-serveur:essai
+
+          for _ in $(seq 60); do
+            curl -fsS -o /dev/null http://localhost:8100/ && break
+            sleep 1
+          done
+
+          echo "--- la base s'est créée et migrée toute seule"
+          test -f /tmp/serveur/speed.db
+
+          echo "--- et le contrat est tenu, depuis l'image"
+          node scripts/accord/accord.mjs http://localhost:8100 --compte essai:essai
+
+      - name: La base survit au remplacement du conteneur
+        # La promesse du ticket 03, qui n'avait jamais pu être vérifiée faute de
+        # conteneur qui porte cette base.
+        run: |
+          set -euo pipefail
+          avant=$(curl -s -u essai:essai http://localhost:8100/profiles/ | wc -c)
+          curl -fsS -u essai:essai -X PUT --data '{"name":"Survivant"}' \
+            http://localhost:8100/profiles/survivant.json
+
+          docker rm -f serveur
+          docker run -d --name serveur-bis -p 8101:80 \
+            -v /tmp/serveur:/data \
+            -e SPEED_HTPASSWD=/data/htpasswd \
+            sound-of-speed-serveur:essai
+          for _ in $(seq 60); do
+            curl -fsS -o /dev/null http://localhost:8101/ && break
+            sleep 1
+          done
+
+          echo "--- le profil déposé avant le remplacement est toujours là"
+          curl -fsS -u essai:essai http://localhost:8101/profiles/survivant.json \
+            | grep -q Survivant
+          echo "(taille du listage avant dépôt : $avant octets)"
+
       - if: always()
-        run: docker logs essai || true
+        run: |
+          docker logs essai || true
+          docker logs serveur || true
+          docker logs serveur-bis || true
 
   build:
     if: github.event_name != 'pull_request'
@@ -217,6 +285,12 @@ jobs:
       # Le profileur : même dépôt, même commit, une image à part. Il ne sert
       # rien et n'ouvre aucun port ; c'est nginx, à côté, qui sert ce qu'il
       # écrit.
+      #
+      # **Il est publié tant que la pile en service en dépend**, et pas un jour
+      # de plus. Le serveur ci-dessous fait son travail sans scruter de dossier,
+      # mais la production tourne encore sur l'ancienne pile : cesser de publier
+      # cette image aujourd'hui la laisserait sans profil mesuré au premier
+      # redéploiement.
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -225,5 +299,28 @@ jobs:
           push: true
           tags: ${{ steps.meta-profileur.outputs.tags }}
           labels: ${{ steps.meta-profileur.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # --- Le serveur, qui remplacera les deux images ci-dessus ---------------
+      - id: meta-serveur
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE }}-serveur
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.serveur
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-serveur.outputs.tags }}
+          labels: ${{ steps.meta-serveur.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

@@ -1,0 +1,59 @@
+# Le serveur : un conteneur, un langage.
+#
+# Il remplace les deux images d'avant — celle qui servait des fichiers et celle
+# qui relisait un dossier toutes les cinq secondes. Il sert l'application, les
+# échantillons, les dossiers de données, et mesure la vraie voiture dès qu'une
+# trace arrive, puisque c'est lui qui l'écrit.
+#
+# Publié sur le registre de conteneurs GitHub par .github/workflows/docker.yml.
+
+# --- L'application et le serveur, assemblés ---------------------------------
+#
+# `--platform=$BUILDPLATFORM` n'est pas un détail : sans lui, produire une image
+# pour un NAS à processeur ARM ferait tourner npm sous émulation, pour de
+# longues minutes. Avec lui, l'assemblage se fait nativement sur le runner.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+# Les écrans de banc — simulateur de vitesse et réglage de la synthèse — ne sont
+# dans l'image que si on le demande. Un simulateur de vitesse dans une voiture
+# n'est qu'un moyen de se tromper sur ce qu'on entend.
+ARG BENCH=""
+RUN BENCH=$BENCH npm run build && npm run build:serveur
+
+# --- Ce qui tourne ----------------------------------------------------------
+FROM node:22-alpine
+WORKDIR /app
+
+# Les dépendances de production sont installées **ici**, et non copiées depuis
+# l'étape d'assemblage. Le pilote de la base est un binaire, choisi par
+# plateforme au moment de l'installation : celui du runner ne conviendrait pas à
+# un NAS ARM. Cette étape-là tourne donc sur l'architecture visée, ce qui la rend
+# lente sous émulation — c'est le prix d'un pilote natif, et il est payé une fois
+# par construction plutôt qu'à chaque démarrage.
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+
+# L'application construite, le serveur assemblé, et les migrations qu'il joue au
+# démarrage. Celles-ci sont des fichiers SQL versionnés : le serveur les lit, il
+# ne les contient pas.
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/dist-serveur ./dist-serveur
+COPY --from=build /app/src/server/base/migrations ./migrations
+
+ENV SPEED_APP=/app/dist
+ENV SPEED_MIGRATIONS=/app/migrations
+ENV SPEED_DB=/data/speed.db
+ENV SPEED_AUDIO=/data/audio
+ENV SPEED_PORT=80
+
+EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD wget -q -O /dev/null http://localhost/index.html || exit 1
+
+CMD ["node", "dist-serveur/serveur.js"]
