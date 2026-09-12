@@ -1,0 +1,191 @@
+{
+  "name": "Quatre cylindres (démonstration)",
+  "soundSource": "prerendered",
+  "engineDefinition": {
+    "name": "Quatre cylindres (démonstration)",
+    "sampleDir": "demo",
+    "base": "inline4",
+    "cylinders": 4,
+    "idleRpm": 800,
+    "redlineRpm": 6300,
+    "simulationHz": 10000,
+    "impulseSamples": 10000,
+    "exhaustResponse": "smooth_39",
+    "bank": {
+      "spacingOctaves": 0.5,
+      "takeSeconds": 3,
+      "settleSeconds": 3,
+      "idleThrottle": 0.08,
+      "limiterRpm": 0,
+      "reliefCompression": 0.35,
+      "witnesses": true
+    }
+  },
+  "sampleDir": "demo",
+  "engine": {
+    "cylinders": 4,
+    "idleRpm": 800,
+    "redlineRpm": 6300
+  },
+  "mix": {
+    "loadReliefDb": 0,
+    "rpmReliefDb": 0,
+    "idleLevelDb": 0,
+    "offLoadGain": 1,
+    "crossfadeLowRpm": 800,
+    "crossfadeHighRpm": 1128,
+    "idleFadeOutRpm": 1128
+  },
+  "layers": [
+    {
+      "key": "on_800",
+      "file": "on-800.flac",
+      "role": "on",
+      "anchorRpm": 800,
+      "gain": 0.2248,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "off_800",
+      "file": "off-800.flac",
+      "role": "off",
+      "anchorRpm": 800,
+      "gain": 0.218,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "on_1128",
+      "file": "on-1128.flac",
+      "role": "on",
+      "anchorRpm": 1128,
+      "gain": 0.3009,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "off_1128",
+      "file": "off-1128.flac",
+      "role": "off",
+      "anchorRpm": 1128,
+      "gain": 0.2605,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "on_1592",
+      "file": "on-1592.flac",
+      "role": "on",
+      "anchorRpm": 1592,
+      "gain": 0.4561,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "off_1592",
+      "file": "off-1592.flac",
+      "role": "off",
+      "anchorRpm": 1592,
+      "gain": 0.3914,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "on_2245",
+      "file": "on-2245.flac",
+      "role": "on",
+      "anchorRpm": 2245,
+      "gain": 0.4559,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "off_2245",
+      "file": "off-2245.flac",
+      "role": "off",
+      "anchorRpm": 2245,
+      "gain": 0.367,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "on_3167",
+      "file": "on-3167.flac",
+      "role": "on",
+      "anchorRpm": 3167,
+      "gain": 0.5509,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "off_3167",
+      "file": "off-3167.flac",
+      "role": "off",
+      "anchorRpm": 3167,
+      "gain": 0.5277,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "on_4466",
+      "file": "on-4466.flac",
+      "role": "on",
+      "anchorRpm": 4467,
+      "gain": 0.6337,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "off_4466",
+      "file": "off-4466.flac",
+      "role": "off",
+      "anchorRpm": 4467,
+      "gain": 0.4525,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "on_6300",
+      "file": "on-6300.flac",
+      "role": "on",
+      "anchorRpm": 6300,
+      "gain": 1,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "off_6300",
+      "file": "off-6300.flac",
+      "role": "off",
+      "anchorRpm": 6300,
+      "gain": 0.4373,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    },
+    {
+      "key": "idle_800",
+      "file": "idle-800.flac",
+      "role": "idle",
+      "anchorRpm": 800,
+      "gain": 0.2227,
+      "minRate": 0.649,
+      "maxRate": 1.544,
+      "enabled": true
+    }
+  ]
+}

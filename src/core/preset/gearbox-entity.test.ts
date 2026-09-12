@@ -16,7 +16,7 @@ import {
   saveGearboxes,
   upsertGearbox,
 } from './gearbox-store'
-import { createDefaultProfile, createRoadProfile } from './defaults'
+import { createDefaultProfile, createFactoryProfiles, createRoadProfile } from './defaults'
 import { ProfileImportError } from './store'
 import type { Profile } from './schema'
 
@@ -176,13 +176,13 @@ describe('la correction d\'une boîte se répercute', () => {
 
 describe('le registre des boîtes', () => {
   it('livre une boîte par profil d\'usine', () => {
-    // Un seul profil livré depuis le 10 septembre 2026 — le V8 —, donc une
-    // seule boîte livrée.
-    expect(factoryGearboxes().map((b) => b.name)).toEqual(['V8'])
+    // Deux profils livrés : la démonstration et le V8. Chacun porte sa boîte.
+    expect(factoryGearboxes()).toHaveLength(createFactoryProfiles().length)
+    expect(factoryGearboxes().map((b) => b.name)).toContain('V8')
   })
 
   it('livre le calibrage de la route : pont long, sept rapports', () => {
-    const livree = factoryGearboxes()[0]!
+    const livree = factoryGearboxes().find((b) => b.name === 'V8')!
     expect(livree.drivetrain.finalDrive).toBe(3.7)
     // Sept depuis la sortie du 11 septembre 2026, la septième étant un rapport
     // d'autoroute : 130 km/h à 1508 tr/min.
@@ -190,17 +190,17 @@ describe('le registre des boîtes', () => {
   })
 
   it("rend la livrée quand rien n'est enregistré", () => {
-    expect(loadGearboxes()).toHaveLength(1)
+    expect(loadGearboxes()).toHaveLength(factoryGearboxes().length)
   })
 
   it('remplace une livrée qu\'on a corrigée, au lieu d\'en montrer deux', () => {
-    const livree = factoryGearboxes()[0]!
+    const livree = factoryGearboxes().find((b) => b.name === 'V8')!
     saveGearboxes(upsertGearbox(factoryGearboxes(), { ...livree, name: 'V8 long' }))
 
     const noms = loadGearboxes().map((b) => b.name)
     expect(noms).toContain('V8 long')
     expect(noms).not.toContain('V8')
-    expect(loadGearboxes()).toHaveLength(1)
+    expect(loadGearboxes()).toHaveLength(factoryGearboxes().length)
   })
 
   it('retire une boîte', () => {
@@ -211,12 +211,12 @@ describe('le registre des boîtes', () => {
 
   it('survit à un stockage illisible', () => {
     localStorage.setItem('speed.gearboxes.v1', 'pas du json')
-    expect(loadGearboxes()).toHaveLength(1)
+    expect(loadGearboxes()).toHaveLength(factoryGearboxes().length)
   })
 
   it('écarte une entrée qui n\'est pas une boîte', () => {
     localStorage.setItem('speed.gearboxes.v1', JSON.stringify([{ name: 'sans rapports' }]))
-    expect(loadGearboxes()).toHaveLength(1)
+    expect(loadGearboxes()).toHaveLength(factoryGearboxes().length)
   })
 })
 

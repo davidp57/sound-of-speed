@@ -6,6 +6,27 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Le projet est sous licence AGPL-3.0**, et le dépôt devient forkable. Un
+  fichier `LICENSE`, le champ dans `package.json`, une section du README qui dit
+  ce que la licence implique, et un `CONTRIBUTING.md`. L'écran d'aide porte un
+  lien vers le code source et la version servie : ce n'est pas une politesse,
+  c'est ce que la section 13 de l'AGPL demande à qui fait tourner le programme
+  comme service. **Qui déploie une version modifiée doit faire pointer ce lien
+  vers son propre code.**
+- **Une banque de démonstration est livrée avec l'application** — un quatre
+  cylindres simulé, quinze prises, 1,6 Mo en FLAC — et un profil d'usine la
+  désigne. Un dépôt fraîchement cloné fait donc du son sans qu'on ait rien
+  déposé, là où il restait muet jusqu'ici : les banques enregistrées vivent sur
+  le serveur et ne se redistribuent pas. Ce profil est **premier** dans la liste
+  des profils d'usine, donc c'est lui qui joue au tout premier lancement ; une
+  installation déjà en service ne voit aucun changement.
+- **La pile se configure sans éditer le `docker-compose.yml`** : `SPEED_DATA`,
+  `SPEED_PORT` et `SPEED_TAG`, décrits dans un `.env.example` commenté, avec des
+  valeurs par défaut identiques à la configuration d'avant. Le README décrit
+  l'installation en quatre étapes.
+
 ### Corrigé
 
 - **Le générateur de banques capte son échappement au lieu de l'inventer.** Il

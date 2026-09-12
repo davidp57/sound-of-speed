@@ -7,6 +7,13 @@ de boîte, et joue le son correspondant à partir d'enregistrements réels. Tout
 règle sans couper le son, et les réglages se rangent dans des profils qu'on
 sauvegarde, exporte et recharge.
 
+**Logiciel libre, sous [AGPL-3.0](LICENSE).** Le code est public, il se forke et
+se déploie chez soi. Si vous le faites tourner comme service pour d'autres, la
+licence demande que vous en offriez la source à ceux qui s'en servent — voir
+[Licence](#licence). Les contributions sont bienvenues :
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+- [Installer en quatre étapes](#installer-en-quatre-étapes)
 - [Les écrans](#les-écrans)
 - [Démarrer en développement](#démarrer-en-développement)
 - [Installation sur un NAS Synology](#installation-sur-un-nas-synology)
@@ -18,6 +25,55 @@ sauvegarde, exporte et recharge.
 - [Comment ça marche](#comment-ça-marche)
 - [Banc de mise au point](#banc-de-mise-au-point)
 - [État du projet](#état-du-projet)
+- [Licence](#licence)
+
+---
+
+## Installer en quatre étapes
+
+Pour faire tourner la pile chez vous. Il faut Docker, et rien d'autre — ni
+compte, ni base de données, ni service tiers.
+
+**1. Récupérer la configuration.**
+
+```bash
+git clone https://github.com/davidp57/sound-of-speed.git
+cd sound-of-speed
+cp .env.example .env
+```
+
+**2. Créer les dossiers de données.** Docker ne crée pas un point de montage
+absent : il refuse de démarrer le conteneur, ce qui se lit comme une panne alors
+que c'est un dossier manquant. Avec les valeurs par défaut :
+
+```bash
+sudo mkdir -p /volume1/docker/sound-of-speed/{audio,profiles,traces,mesure-voiture,journal,mesures}
+```
+
+Changez le chemin dans `.env` (`SPEED_DATA`) si celui-là ne vous convient pas.
+
+**3. Démarrer.**
+
+```bash
+docker compose -f docker/docker-compose.yml up -d
+```
+
+**4. Ouvrir**, sur `http://<la machine>:8088`, et appuyer sur **Activer le son**.
+
+L'application joue déjà : une banque de démonstration est livrée avec elle. Ce
+qu'on entend est un moteur **simulé**, pas l'enregistrement d'une vraie voiture
+— pour un vrai son, déposez vos propres enregistrements dans
+`$SPEED_DATA/audio/`, un sous-dossier par banque (voir
+[Les échantillons](#les-échantillons)).
+
+**Une précaution qui n'en a pas l'air.** Le GPS, le verrou d'écran et le son
+exigent un « contexte sécurisé » : en HTTP simple, depuis une adresse qui n'est
+pas `localhost`, l'application s'affiche normalement et **refuse le GPS sans
+rien dire**. Mettez un proxy inversé devant, avec un certificat, avant de monter
+en voiture.
+
+Pour un NAS Synology et Portainer, la procédure détaillée est plus bas :
+[Installation sur un NAS Synology](#installation-sur-un-nas-synology).
 
 ---
 
@@ -1927,6 +1983,25 @@ Le dossier `public/audio/` **n'est pas versionné**, volontairement, et le code
 n'y référence rien en dur : chaque profil déclare un sous-dossier et la liste de
 ses couches.
 
+**Une seule exception, `audio/demo/`** : la banque de démonstration, qui est
+livrée avec l'application. C'est un quatre cylindres **simulé**, produit au banc
+par [`scripts/generate-bank/`](scripts/generate-bank/README.md) — quinze prises,
+1,6 Mo en FLAC. Un profil d'usine la désigne, et c'est lui qui joue au tout
+premier lancement : sans elle, une installation neuve serait muette jusqu'à ce
+qu'on ait déposé quelque chose.
+
+Elle est simulée pour une raison précise, et pas par goût : une prise sur une
+vraie voiture appartient à qui l'a faite. Les banques enregistrées restent donc
+hors du dépôt et hors de l'image, dans un volume — voir
+[`public/audio/demo/LISEZMOI.md`](public/audio/demo/LISEZMOI.md) et la section
+[Licence](#licence).
+
+Dans l'image, cette banque est rangée **hors de** `audio/`, et nginx la ramène
+sous `/audio/demo/` par un alias. Le volume des échantillons se monte sur
+`/usr/share/nginx/html/audio` et masquerait tout ce que l'image y place —
+la démonstration comprise, c'est-à-dire toujours, puisque le volume est monté
+dans la pile livrée.
+
 Il faut, par moteur, des boucles stationnaires à régime connu : montée en charge
 bas et haut régime, décélération bas et haut régime, un ralenti, un rupteur.
 C'est le format standard de l'audio de jeu — voir
@@ -2570,7 +2645,7 @@ suit pas.
 | 44 | Un bouton « tout réinitialiser » : seize clés de stockage remises au premier jour, sans toucher au serveur | spécifié, périmètre à trancher |
 | 45 | L'atelier fabrique les moteurs, la voiture les reçoit : un chemin du bureau au volant, et deux effets sonores qui restent réglables | spécifié, attend le serveur du lot 46 |
 | 46 | Sound of Speed devient un service qu'on déploie, qu'on partage et qu'on fait vivre : un serveur TypeScript à la place de nginx, une base, des comptes, une licence AGPL | **cadre découpé le 12 septembre en cinq lots, 47 à 51** |
-| 47 | Le dépôt devient forkable et le conteneur fait du bruit tout seul : AGPL-3.0, banque de démonstration, de quoi contribuer et déployer | spécifié |
+| 47 | Le dépôt devient forkable et le conteneur fait du bruit tout seul : AGPL-3.0, banque de démonstration, de quoi contribuer et déployer | **livré ; reste à essayer dans un conteneur** |
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | spécifié |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | spécifié |
@@ -2640,3 +2715,43 @@ dernier état qui a roulé ; il se retrouve avec
   cadence réelle est de **dix positions par seconde**, et la vitesse annoncée est
   **quantifiée au kilomètre-heure entier** — seuls 9 à 11 % des échantillons
   portent une valeur nouvelle.
+
+---
+
+## Licence
+
+Sound of Speed est distribué sous la **[GNU Affero General Public License,
+version 3](LICENSE)**.
+
+En clair, et sans que ce paragraphe remplace le texte de la licence :
+
+- vous pouvez **lire, modifier, redistribuer** le code, et le **déployer** chez
+  vous, y compris pour en faire un usage commercial ;
+- si vous le modifiez et que vous le **distribuez**, vos modifications
+  s'accompagnent de leur source, sous la même licence ;
+- et — c'est ce qui distingue l'AGPL de la GPL — si vous le faites tourner
+  **comme service**, pour d'autres personnes, vous devez **offrir la source à
+  ces personnes**, même sans leur distribuer le moindre fichier.
+
+C'est la raison du choix : ce produit est devenu un service qu'on atteint depuis
+un navigateur, et une licence qui ne se déclenche qu'à la distribution de
+fichiers n'y changerait rien. L'application satisfait elle-même cette exigence :
+l'écran d'aide porte un lien vers le dépôt et la version servie. **Si vous
+déployez une version modifiée, ce lien doit mener à votre code, pas à celui-ci.**
+
+### Ce qui n'est pas sous AGPL
+
+| | Provenance | Licence |
+|---|---|---|
+| Les réponses d'échappement de [`public/impulse/`](public/impulse/LISEZMOI.md) | engine-sim, © 2022 AngeTheGreat | MIT |
+| Les dépendances de production — Vue, `qrcode-generator`, Leaflet | leurs auteurs | MIT |
+
+La [banque de démonstration](public/audio/demo/LISEZMOI.md), elle, est produite
+par ce dépôt et suit sa licence.
+
+**Aucune banque enregistrée n'est distribuée avec le projet**, et ce n'est pas un
+oubli : une prise sur une vraie voiture appartient à qui l'a faite. Celle qui
+tourne dans la voiture de l'auteur vient d'une autre application et n'a aucune
+licence qui autorise à la rediffuser. Si vous déposez vos propres échantillons,
+ils restent les vôtres — ils vivent dans un volume, jamais dans l'image ni dans
+le dépôt.

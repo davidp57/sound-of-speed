@@ -1,6 +1,6 @@
 # OUVRIR — le dépôt devient forkable, et le conteneur fait du bruit tout seul
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait le 12 septembre 2026
 **Branche :** `feature/ouvrir`
 **Version visée :** 0.3
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -80,11 +80,46 @@ ici, c'est la pile d'aujourd'hui.
 
 ## Critères d'acceptation
 
-- [ ] Un fichier `LICENSE` porte l'AGPL-3.0, et `package.json` la déclare
-- [ ] Une banque de démonstration est dans l'image, et le conteneur sonne au
+- [x] Un fichier `LICENSE` porte l'AGPL-3.0, et `package.json` la déclare
+- [x] Une banque de démonstration est dans l'image, et le conteneur sonne au
       premier lancement sans qu'on dépose quoi que ce soit
-- [ ] La provenance et la licence de cette banque sont écrites à côté d'elle
-- [ ] `CONTRIBUTING.md` dit comment proposer une correction
-- [ ] Un `.env.example` et une procédure d'installation permettent à un tiers de
+- [x] La provenance et la licence de cette banque sont écrites à côté d'elle
+- [x] `CONTRIBUTING.md` dit comment proposer une correction
+- [x] Un `.env.example` et une procédure d'installation permettent à un tiers de
       monter la pile sans poser de question
-- [ ] Le README dit ce que l'AGPL implique pour qui déploie le service
+- [x] Le README dit ce que l'AGPL implique pour qui déploie le service
+
+## Ce que la réalisation a ajouté au périmètre
+
+**Le lien « Source » dans l'interface.** La section 13 de l'AGPL demande que qui
+fait tourner le programme comme service en offre la source aux gens qui s'en
+servent à distance — un lien dans l'interface est la façon que la licence cite
+elle-même. L'écran d'aide le porte, avec la version servie. Sans lui, notre
+propre déploiement ne respecterait pas la licence qu'on choisit.
+
+**Le profil d'usine de démonstration.** Livrer la banque ne suffisait pas : sans
+profil qui la désigne, il fallait importer un fichier à la main, et « sans qu'on
+dépose quoi que ce soit » aurait été faux. Le profil est donc **premier** dans la
+liste d'usine, puisque c'est le premier de cette liste qui joue au tout premier
+lancement. Vingt tests décrivaient « un seul profil livré » et ont été repris ;
+l'un d'eux a attrapé un vrai défaut au passage — la démonstration manquait aux
+profils d'usine **connus**, donc réinitialiser une de ses sections lui aurait
+rendu les valeurs du V8, réglées sur une tout autre banque.
+
+**Le contournement du montage.** Le volume des échantillons se monte **sur**
+`/usr/share/nginx/html/audio` : il masque tout ce que l'image place là-dessous.
+Une démonstration rangée dans `audio/demo/` aurait donc été invisible dès que la
+pile tourne avec son volume, c'est-à-dire toujours. Elle est rangée ailleurs dans
+l'image, et nginx la ramène sous `/audio/demo/` par un alias.
+
+## Ce qui n'a pas pu être vérifié
+
+**Rien n'a été essayé dans un conteneur** : Docker n'est pas installé sur le
+poste. Le YAML des deux fichiers de pile est validé, la substitution
+`${VAR:-défaut}` ne l'est pas, et l'alias nginx non plus. Le premier `docker
+compose up` sur une machine neuve est le vrai contrôle de ce lot.
+
+**Le rendu de la section « Code source et licence »** n'a pas été vu dans un
+navigateur : celui de l'outillage n'a pas d'accès réseau au serveur de
+développement et ne sert que son cache. La compilation valide la syntaxe, pas
+l'apparence.

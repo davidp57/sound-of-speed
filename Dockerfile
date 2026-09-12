@@ -31,6 +31,16 @@ FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
+# La banque de démonstration sort de `audio/`, et c'est ce qui la sauve.
+#
+# Le volume des échantillons se monte **sur** `/usr/share/nginx/html/audio` : il
+# masque tout ce que l'image a mis là-dessous. Une démonstration rangée dans
+# `audio/demo/` serait donc invisible dès que la pile tourne avec son volume,
+# c'est-à-dire toujours. On la déplace hors de portée du montage ; nginx la
+# ramène sous `/audio/demo/` par un alias.
+RUN mv /usr/share/nginx/html/audio/demo /usr/share/nginx/html/_demo \
+    && rm -rf /usr/share/nginx/html/audio
+
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD wget -q -O /dev/null http://localhost/index.html || exit 1
