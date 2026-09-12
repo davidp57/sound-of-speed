@@ -15,6 +15,25 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Les réglages ne dorment plus dans le seul navigateur de la voiture.** Au
+  premier lancement, les profils, les moteurs, les boîtes et les traces qui
+  n'étaient jamais remontées partent en base — par petites poignées, pour ne pas
+  faire déborder la file de dépôt, et en reprenant où on en était si le
+  navigateur se ferme entre-temps. Les traces ainsi remontées entrent épinglées.
+  Les préférences d'appareil — volume, visage de l'écran, verrou, mode de boîte —
+  ne bougent pas : elles décrivent l'appareil, pas le conducteur. Rien n'est
+  effacé du stockage local.
+
+- **Au lancement, la base rend ce qu'elle a de plus récent.** Vider le stockage
+  du navigateur de la voiture ne fait plus perdre ses réglages, et ce qu'on règle
+  au bureau se retrouve au volant. La voiture reste le patron : elle écrit dans
+  sa copie tout de suite, y compris hors réseau, et l'application démarre sans
+  jamais attendre le réseau. Ce qui attend de partir dans la file n'est jamais
+  écrasé par une version plus ancienne, et une base vide ne fait rien perdre.
+  Les listages rendent de nouveau une date, comme le faisait l'autoindex du
+  serveur de fichiers : c'est elle qui dit ce qui est plus récent, sans avoir à
+  télécharger chaque fichier pour le comparer.
+
 - **Ce qui dort dans les anciens dossiers du NAS rejoint la base.** On désigne
   au serveur le dossier de l'ancienne pile, monté en lecture seule, et il y
   verse ce qu'il trouve à son démarrage — traces, tranches de journal, relevés,

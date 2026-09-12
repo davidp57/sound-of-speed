@@ -273,6 +273,21 @@ describe('export et import de fichier', () => {
     expect({ ...relu, id: original.id }).toEqual(original)
   })
 
+  it('peut garder son identifiant, quand c’est le mien qui redescend', () => {
+    // Un profil qui revient de sa propre base est le même profil : un
+    // identifiant neuf en ferait un double à chaque démarrage, et son prochain
+    // dépôt un second fichier sur le serveur.
+    const original = { ...createRoadProfile(), name: 'Essai routier' }
+
+    expect(fromFile(toFile(original), (origine) => origine ?? 'sans').id).toBe(original.id)
+  })
+
+  it('sait quoi faire d’un fichier écrit à la main, sans identifiant', () => {
+    const relu = fromFile('{"name":"À la main"}', (origine) => origine ?? 'de-repli')
+
+    expect(relu.id).toBe('de-repli')
+  })
+
   it('écrit un fichier lisible, avec sa version de format', () => {
     const parsed: unknown = JSON.parse(toFile(createDefaultProfile()))
 

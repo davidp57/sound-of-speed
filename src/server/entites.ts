@@ -21,6 +21,7 @@ import { and, eq, sql } from 'drizzle-orm'
 
 import type { Base } from './base/base'
 import { engines, gearboxes } from './base/schema'
+import { dateHttp, type Entree } from './profils'
 
 /** Les deux registres, tels qu'ils s'écrivent dans une adresse. */
 export const REGISTRES = ['engines', 'gearboxes'] as const
@@ -30,11 +31,8 @@ export function estUnRegistre(nom: string): nom is Registre {
   return (REGISTRES as readonly string[]).includes(nom)
 }
 
-/** Ce qu'un listage rend, au format de l'autoindex que le cœur attend. */
-export interface Entree {
-  name: string
-  type: 'file' | 'directory'
-}
+/** Ce qu'un listage rend : la même forme que celui des profils, date comprise. */
+export type { Entree } from './profils'
 
 function tableDe(registre: Registre) {
   return registre === 'engines' ? engines : gearboxes
@@ -46,12 +44,18 @@ export async function listerEntites(
   compte: string,
 ): Promise<Entree[]> {
   const table = tableDe(registre)
-  const lignes = await base.select({ id: table.id }).from(table).where(eq(table.accountId, compte))
+  const lignes = await base
+    .select({ id: table.id, updatedAt: table.updatedAt })
+    .from(table)
+    .where(eq(table.accountId, compte))
 
   return lignes
-    .map((ligne) => nomDeFichierDe(ligne.id, compte))
-    .sort((a, b) => a.localeCompare(b))
-    .map((name) => ({ name, type: 'file' as const }))
+    .map((ligne) => ({
+      name: nomDeFichierDe(ligne.id, compte),
+      type: 'file' as const,
+      mtime: dateHttp(ligne.updatedAt),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /** Le contenu d'une entité, telle qu'elle a été déposée, ou rien. */

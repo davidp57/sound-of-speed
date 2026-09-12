@@ -54,6 +54,7 @@ import {
 } from './core/preset/gearbox-entity'
 import {
   customGearboxes,
+  gearboxFromFile,
   loadGearboxes,
   saveGearboxes,
   upsertGearbox,
@@ -73,6 +74,23 @@ import {
 import { buildZip } from './core/export/zip'
 import { UploadQueue, type QueuedUpload } from './core/upload/queue'
 import { loadQueue, saveQueue } from './core/upload/store'
+import {
+  aRapatrier,
+  cle,
+  listerDistant,
+  lireDistant,
+  loadDejaVu,
+  saveDejaVu,
+} from './core/upload/rapatriement'
+import {
+  loadReprise,
+  planDeReprise,
+  prochains,
+  resteAFaire,
+  sansCeuxLa,
+  saveReprise,
+  type ARemonter,
+} from './core/upload/reprise-locale'
 import { putFile, slug, stamp } from './core/upload/put'
 import { PROFILE_FOLDER, profileBody, profileFileName, profileUploadId } from './core/upload/profile'
 import {
@@ -126,6 +144,7 @@ import {
   loadAdvancedMode,
   loadDriveMode,
   saveDriveMode,
+  fromFile,
   loadDepositCredentials,
   loadInheritedVolume,
   loadMasterVolume,
@@ -945,8 +964,13 @@ export function setUploadConsent(consent: UploadConsent): void {
   writePreference(JOURNAL_KEY, consent)
   collector.setConsent(consent)
   // Un accord qui s'ouvre fait partir ce qui attendait, sans attendre le
-  // prochain passage de la boucle : c'est le geste qui vient d'être fait.
-  if (consent !== 'none') void flushUploads(Date.now(), true)
+  // prochain passage de la boucle : c'est le geste qui vient d'être fait. Et il
+  // ouvre peut-être la remontée initiale, ou la part de traces qu'un accord
+  // minimal laissait en attente.
+  if (consent !== 'none') {
+    poursuivreLaRemontee()
+    void flushUploads(Date.now(), true)
+  }
 }
 
 /**
@@ -1325,11 +1349,214 @@ export async function flushUploads(nowMs: number, force = false): Promise<void> 
   flushing = true
   try {
     await uploads.flush(nowMs, (item) =>
-      putFile(item.folder, item.name, item.body, depositCredentials.value),
+      putFile(item.folder, item.name, item.body, depositCredentials.value, {
+        epingle: item.epingle === true,
+      }),
     )
   } finally {
     flushing = false
     rememberQueue()
+    // La file vient de se vider un peu : on la remplit un peu plus. C'est ce qui
+    // fait avancer la remontée initiale sans jamais la faire déborder.
+    poursuivreLaRemontee()
+  }
+}
+
+// --- Ce que le navigateur portait rejoint la base -------------------------
+
+/**
+ * Combien de reprises on laisse attendre en même temps.
+ *
+ * La file garde au plus vingt-quatre dépôts et quatre mégaoctets : y verser
+ * d'un coup toutes les traces d'un stockage plein en ferait tomber la moitié,
+ * et ce qui tombe est justement ce qu'on essayait de sauver. Trois à la fois
+ * laisse la place aux dépôts du trajet en cours, qui, eux, ne peuvent pas
+ * attendre le démarrage suivant.
+ */
+const REPRISES_EN_VOL = 3
+
+/**
+ * Fait remonter ce qui dort dans le stockage local, par petites poignées.
+ *
+ * Appelée au démarrage et après chaque envoi : la file se vide, on la remplit
+ * un peu plus. Ce qui reste est gardé, donc une remontée interrompue — le
+ * navigateur qu'on ferme, le réseau qui tombe — reprend où elle en était.
+ *
+ * **Rien n'est effacé du stockage local.** Ce lot déplace une copie ; ce qui
+ * décide de ce que la voiture relit vient après, et l'effacement des anciennes
+ * sources plus tard encore.
+ */
+function poursuivreLaRemontee(): void {
+  if (uploadConsent.value === 'none') return
+
+  let restant = loadReprise()
+  if (restant === null) {
+    restant = planDeReprise({
+      profiles: profiles.value,
+      engines: customEngines(engines.value),
+      gearboxes: customGearboxes(gearboxes.value),
+      traces: traces.value,
+    })
+    saveReprise(restant)
+  }
+
+  if (!resteAFaire(restant, uploadConsent.value)) return
+
+  const partants = prochains(restant, uploadConsent.value, REPRISES_EN_VOL - uploads.list().length)
+  const partis: ARemonter[] = []
+
+  for (const entree of partants) {
+    const depot = depotDeReprise(entree)
+    // Une entrée dont la source a disparu depuis — un profil effacé entre deux
+    // démarrages — sort de la liste sans bruit : la garder ferait boucler la
+    // reprise sur quelque chose qui n'existe plus.
+    //
+    // **La poignée entière est posée avant le premier envoi.** Déclencher un
+    // envoi à chaque dépôt ne servait à rien : le premier part aussitôt, prend
+    // le verrou, et les suivants attendaient le prochain passage de la boucle —
+    // c'est-à-dire, à l'arrêt, indéfiniment.
+    if (depot !== null) enqueue(depot, false)
+    partis.push(entree)
+  }
+
+  if (partis.length === 0) return
+  saveReprise(sansCeuxLa(restant, partis))
+  void flushUploads(Date.now(), true)
+}
+
+/** Le dépôt qui correspond à une entrée du plan, ou rien si la source a disparu. */
+function depotDeReprise(entree: ARemonter): QueuedUpload | null {
+  const maintenant = Date.now()
+
+  if (entree.sorte === 'profile') {
+    const profil = profiles.value.find((candidat) => candidat.id === entree.id)
+    if (!profil) return null
+    return {
+      id: profileUploadId(profil),
+      kind: 'profile',
+      folder: PROFILE_FOLDER,
+      name: profileFileName(profil),
+      body: profileBody(profil),
+      queuedAt: maintenant,
+    }
+  }
+
+  if (entree.sorte === 'engine') {
+    const moteur = engines.value.find((candidat) => candidat.id === entree.id)
+    if (!moteur) return null
+    return {
+      id: entityUploadId(ENGINE_FOLDER, moteur),
+      kind: 'profile',
+      folder: ENGINE_FOLDER,
+      name: entityFileName(moteur),
+      body: engineBody(moteur),
+      queuedAt: maintenant,
+    }
+  }
+
+  if (entree.sorte === 'gearbox') {
+    const boite = gearboxes.value.find((candidat) => candidat.id === entree.id)
+    if (!boite) return null
+    return {
+      id: entityUploadId(GEARBOX_FOLDER, boite),
+      kind: 'profile',
+      folder: GEARBOX_FOLDER,
+      name: entityFileName(boite),
+      body: gearboxBody(boite),
+      queuedAt: maintenant,
+    }
+  }
+
+  const trace = traces.value.find((candidat) => String(candidat.startedAt) === entree.id)
+  if (!trace) return null
+  return {
+    id: `trace:${trace.startedAt}`,
+    kind: 'trace',
+    folder: TRACE_FOLDER,
+    name: depositName(trace),
+    body: traceBody(trace),
+    queuedAt: maintenant,
+    // Épinglée : une trace enregistrée il y a des mois et remontée aujourd'hui
+    // serait effacée un mois plus tard par la règle de rétention, c'est-à-dire
+    // déplacée pour être perdue.
+    epingle: true,
+  }
+}
+
+// --- Au lancement, la base rend ce qu'elle a de plus récent ---------------
+
+/**
+ * Vrai pendant qu'on applique ce que la base rend.
+ *
+ * Sans cela, appliquer un profil rapatrié déclencherait la surveillance qui le
+ * renvoie aussitôt — on redéposerait ce qu'on vient de recevoir, ce qui avance
+ * la date du serveur et fait tout reprendre au démarrage suivant.
+ */
+let pendantLeRapatriement = false
+
+/**
+ * Prend ce que la base a de plus récent, une fois, au lancement.
+ *
+ * Rien n'attend ce travail : l'application démarre sur sa copie locale, et ce
+ * qui arrive de la base arrive après. Hors réseau, il ne se passe simplement
+ * rien — et une base vide ne fait rien perdre, puisqu'on ajoute et on remplace,
+ * jamais on n'efface.
+ */
+export async function rapatrierAuLancement(): Promise<void> {
+  if (uploadConsent.value === 'none') return
+
+  const vu = loadDejaVu()
+  const enAttente = uploads.list().map((item) => cle(item.folder, item.name))
+  let change = false
+
+  for (const dossier of [PROFILE_FOLDER, ENGINE_FOLDER, GEARBOX_FOLDER]) {
+    const entrees = await listerDistant(dossier, depositCredentials.value)
+    for (const { name, quand } of aRapatrier(dossier, entrees, vu, enAttente)) {
+      const texte = await lireDistant(dossier, name, depositCredentials.value)
+      if (texte === null) continue
+      if (!appliquerLeRapatrie(dossier, texte)) continue
+      vu[cle(dossier, name)] = quand
+      change = true
+    }
+  }
+
+  if (change) saveDejaVu(vu)
+}
+
+/**
+ * Range ce qui vient d'arriver, et dit si ça a pris.
+ *
+ * Un fichier illisible n'est pas retenu comme vu : il redescendra au prochain
+ * lancement, ce qui laisse une chance à un dépôt réparé entre-temps.
+ */
+function appliquerLeRapatrie(dossier: string, texte: string): boolean {
+  pendantLeRapatriement = true
+  try {
+    if (dossier === PROFILE_FOLDER) {
+      // L'identifiant d'origine est gardé : ce profil est le nôtre, qui
+      // redescend. Un identifiant neuf en ferait un double à chaque démarrage,
+      // et son prochain dépôt un second fichier sur le serveur.
+      const profil = fromFile(texte, (origine) => origine ?? newId())
+      const connu = profiles.value.some((candidat) => candidat.id === profil.id)
+      profiles.value = connu
+        ? profiles.value.map((candidat) => (candidat.id === profil.id ? profil : candidat))
+        : [...profiles.value, profil]
+      return true
+    }
+
+    if (dossier === ENGINE_FOLDER) {
+      // L'identifiant d'origine est gardé : ce moteur est le nôtre, qui
+      // redescend. Lui en donner un neuf en ferait un double à chaque démarrage.
+      engines.value = upsertEngine(engines.value, engineFromFile(texte, (origine) => origine))
+      return true
+    }
+
+    gearboxes.value = upsertGearbox(gearboxes.value, gearboxFromFile(texte, (origine) => origine))
+    return true
+  } catch {
+    return false
+  } finally {
+    pendantLeRapatriement = false
   }
 }
 
@@ -1338,10 +1565,10 @@ export function retryUploads(): void {
   void flushUploads(Date.now(), true)
 }
 
-function enqueue(item: QueuedUpload): void {
+function enqueue(item: QueuedUpload, envoyer = true): void {
   uploads.add(item)
   rememberQueue()
-  void flushUploads(Date.now())
+  if (envoyer) void flushUploads(Date.now())
 }
 
 // Le retour du réseau est le moment exact où ce qui attend peut partir :
@@ -1380,6 +1607,7 @@ const PROFILE_SETTLE_MS = 3000
 let profileTimer: ReturnType<typeof setTimeout> | null = null
 
 function queueProfilesSoon(): void {
+  if (pendantLeRapatriement) return
   if (!sendsAutomatically(uploadConsent.value, 'profile')) return
   if (profileTimer !== null) clearTimeout(profileTimer)
   profileTimer = setTimeout(() => {
@@ -1416,6 +1644,7 @@ function queueProfilesSoon(): void {
 let entityTimer: ReturnType<typeof setTimeout> | null = null
 
 function queueEntitiesSoon(): void {
+  if (pendantLeRapatriement) return
   if (!sendsAutomatically(uploadConsent.value, 'profile')) return
   if (entityTimer !== null) clearTimeout(entityTimer)
   entityTimer = setTimeout(() => {
@@ -3068,3 +3297,16 @@ export function deleteProfile(id: string): void {
 export function resetProfileId(profile: Profile): Profile {
   return { ...profile, id: newId() }
 }
+
+// --- Les deux derniers gestes du chargement -------------------------------
+//
+// Placés en fin de module, et non près de la file : ils lisent les profils, les
+// moteurs, les boîtes et les traces, qui n'existent qu'une fois tout ce fichier
+// évalué. Les appeler plus haut les ferait travailler sur des listes vides, ce
+// qui ne se verrait pas — la reprise se déclarerait simplement terminée.
+//
+// La remontée d'abord, le rapatriement ensuite : ce qui n'est pas encore parti
+// d'ici est plus récent que tout ce que la base peut rendre, et le rapatriement
+// le sait — il laisse de côté ce qui attend dans la file.
+poursuivreLaRemontee()
+void rapatrierAuLancement()

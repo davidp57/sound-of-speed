@@ -17,22 +17,40 @@ import { and, eq, sql } from 'drizzle-orm'
 import type { Base } from './base/base'
 import { profiles } from './base/schema'
 
-/** Ce qu'un listage rend, au format de l'autoindex que le cœur attend. */
+/**
+ * Ce qu'un listage rend, au format de l'autoindex que le cœur attend.
+ *
+ * **`mtime` n'est pas un ajout, c'est un retour.** L'autoindex JSON de nginx
+ * rendait quatre champs — nom, type, date, taille — et la réécriture n'en avait
+ * gardé que deux, faute d'en avoir l'usage. L'usage est arrivé : la voiture doit
+ * savoir, au lancement, si la base porte plus récent qu'elle sans télécharger
+ * chaque fichier pour le comparer. La date est écrite comme nginx l'écrivait.
+ */
 export interface Entree {
   name: string
   type: 'file' | 'directory'
+  mtime: string
+}
+
+/** La date, dans la forme que l'autoindex de nginx rendait. */
+export function dateHttp(secondes: number): string {
+  return new Date(secondes * 1000).toUTCString()
 }
 
 export async function listerProfils(base: Base, compte: string): Promise<Entree[]> {
   const lignes = await base
-    .select({ fileName: profiles.fileName })
+    .select({ fileName: profiles.fileName, updatedAt: profiles.updatedAt })
     .from(profiles)
     .where(eq(profiles.accountId, compte))
 
   return lignes
-    .flatMap((ligne) => (ligne.fileName === null ? [] : [ligne.fileName]))
-    .sort((a, b) => a.localeCompare(b))
-    .map((name) => ({ name, type: 'file' as const }))
+    .flatMap((ligne) => (ligne.fileName === null ? [] : [ligne]))
+    .sort((a, b) => (a.fileName ?? '').localeCompare(b.fileName ?? ''))
+    .map((ligne) => ({
+      name: ligne.fileName ?? '',
+      type: 'file' as const,
+      mtime: dateHttp(ligne.updatedAt),
+    }))
 }
 
 /** Le contenu d'un profil, tel qu'il a été déposé, ou rien. */

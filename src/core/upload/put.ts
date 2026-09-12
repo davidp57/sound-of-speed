@@ -57,6 +57,18 @@ export function authHeader(credentials: DepositCredentials): string {
  * échappé ici, parce que l'oublier donnerait une adresse valide qui écrit au
  * mauvais endroit.
  */
+export interface PutOptions {
+  /**
+   * Ce dépôt est une reprise, et non un envoi du jour.
+   *
+   * Le serveur l'épingle alors : une trace enregistrée il y a trois mois et
+   * remontée aujourd'hui serait effacée un mois plus tard par la règle de
+   * rétention, c'est-à-dire déplacée pour être perdue.
+   */
+  epingle?: boolean
+  fetchImpl?: typeof fetch
+}
+
 export async function putFile(
   folder: string,
   name: string,
@@ -69,8 +81,9 @@ export async function putFile(
    */
   body: string | Blob,
   credentials: DepositCredentials,
-  fetchImpl: typeof fetch = fetch,
+  options: PutOptions = {},
 ): Promise<PutOutcome> {
+  const { epingle = false, fetchImpl = fetch } = options
   if (!hasCredentials(credentials)) {
     return {
       ok: false,
@@ -84,7 +97,8 @@ export async function putFile(
   }
 
   try {
-    const response = await fetchImpl(folder + encodeURIComponent(name), {
+    const adresse = folder + encodeURIComponent(name) + (epingle ? '?reprise=1' : '')
+    const response = await fetchImpl(adresse, {
       method: 'PUT',
       headers: { Authorization: authHeader(credentials) },
       body,

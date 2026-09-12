@@ -421,7 +421,19 @@ export class ProfileImportError extends Error {}
  * défaut plutôt que de faire échouer l'import : un profil exporté par une
  * version antérieure reste utilisable.
  */
-export function fromFile(text: string): Profile {
+export function fromFile(
+  text: string,
+  /**
+   * Qui décide de l'identifiant.
+   *
+   * Par défaut un identifiant neuf : recevoir le profil de quelqu'un d'autre ne
+   * doit pas écraser le sien parce que les deux sont nés du même profil
+   * d'usine. Mais un profil qui redescend de **sa propre** base est le même
+   * profil : lui en donner un neuf en ferait un double, et son prochain dépôt
+   * un second fichier sur le serveur.
+   */
+  identifiant: (origine?: string) => string = () => newId(),
+): Profile {
   let parsed: unknown
   try {
     parsed = JSON.parse(text)
@@ -434,7 +446,8 @@ export function fromFile(text: string): Profile {
   const candidate = isRecord(parsed['profile']) ? parsed['profile'] : parsed
   if (!isRecord(candidate)) throw new ProfileImportError('Aucun profil trouvé dans le fichier.')
 
-  return reconcile({ ...(candidate as Partial<Profile>), id: newId() } as Profile)
+  const origine = typeof candidate['id'] === 'string' ? candidate['id'] : undefined
+  return reconcile({ ...(candidate as Partial<Profile>), id: identifiant(origine) } as Profile)
 }
 
 /**

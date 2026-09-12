@@ -18,6 +18,7 @@ import { and, eq } from 'drizzle-orm'
 
 import type { Base } from './base/base'
 import { deposits } from './base/schema'
+import { dateHttp, type Entree } from './profils'
 
 /** Les dossiers que la voiture connaît. Tout autre nom n'existe pas. */
 export const DOSSIERS = ['traces', 'journal', 'mesures'] as const
@@ -41,10 +42,8 @@ export function estUnDossier(nom: string): nom is Dossier {
  */
 export const CHARGE_MAXIMALE = 16 * 1024 * 1024
 
-export interface Entree {
-  name: string
-  type: 'file' | 'directory'
-}
+/** La même forme que les autres listages, date comprise. */
+export type { Entree } from './profils'
 
 export async function listerDepots(
   base: Base,
@@ -52,14 +51,17 @@ export async function listerDepots(
   dossier: Dossier,
 ): Promise<Entree[]> {
   const lignes = await base
-    .select({ name: deposits.name })
+    .select({ name: deposits.name, depositedAt: deposits.depositedAt })
     .from(deposits)
     .where(and(eq(deposits.accountId, compte), eq(deposits.folder, dossier)))
 
   return lignes
-    .map((ligne) => ligne.name)
-    .sort((a, b) => a.localeCompare(b))
-    .map((name) => ({ name, type: 'file' as const }))
+    .map((ligne) => ({
+      name: ligne.name,
+      type: 'file' as const,
+      mtime: dateHttp(ligne.depositedAt),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /** Les octets déposés, tels qu'ils sont montés, ou rien. */
@@ -102,6 +104,16 @@ export async function ecrireDepot(
   dossier: Dossier,
   nom: string,
   octets: Buffer,
+  /**
+   * Ce qui remonte d'une reprise entre **épinglé**.
+   *
+   * Une trace enregistrée il y a trois mois et remontée aujourd'hui n'est pas un
+   * dépôt ordinaire : c'est un déménagement. Sans l'épingle, la règle de
+   * rétention l'effacerait un mois plus tard, et on l'aurait déplacée pour la
+   * perdre. Un dépôt ordinaire, lui, n'épingle rien et ne **dés**épingle rien —
+   * redéposer une trace reprise ne doit pas lui retirer sa protection.
+   */
+  epingle = false,
 ): Promise<Ecriture> {
   if (octets.byteLength > CHARGE_MAXIMALE) return 'trop gros'
 
@@ -114,10 +126,15 @@ export async function ecrireDepot(
       name: nom,
       content: octets,
       bytes: octets.byteLength,
+      pinned: epingle,
     })
     .onConflictDoUpdate({
       target: [deposits.accountId, deposits.folder, deposits.name],
-      set: { content: octets, bytes: octets.byteLength },
+      set: {
+        content: octets,
+        bytes: octets.byteLength,
+        ...(epingle ? { pinned: true } : {}),
+      },
     })
 
   return 'écrit'

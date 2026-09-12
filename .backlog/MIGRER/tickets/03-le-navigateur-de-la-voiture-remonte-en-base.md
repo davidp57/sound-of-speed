@@ -1,6 +1,6 @@
 # 03 — Ce que le navigateur de la voiture portait rejoint la base
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait le 12 septembre 2026
 
 **Bloqué par :** 02 — Les moteurs et les boîtes ont leur place sur le serveur.
 
@@ -31,10 +31,28 @@ Les préférences d'appareil ne bougent pas. Rien n'est effacé du stockage loca
 
 ## Critères d'acceptation
 
-- [ ] Au premier lancement, les profils, moteurs, boîtes et traces du navigateur
+- [x] Au premier lancement, les profils, moteurs, boîtes et traces du navigateur
       partent en base
-- [ ] Au second lancement, rien ne repart
-- [ ] Les traces ainsi remontées sont épinglées
-- [ ] Les préférences d'appareil sont restées dans le navigateur
-- [ ] Le stockage local n'est pas vidé
-- [ ] Le démarrage n'est pas ralenti, et la remontée n'empêche pas de rouler
+- [x] Au second lancement, rien ne repart
+- [x] Les traces ainsi remontées sont épinglées
+- [x] Les préférences d'appareil sont restées dans le navigateur
+- [x] Le stockage local n'est pas vidé
+- [x] Le démarrage n'est pas ralenti, et la remontée n'empêche pas de rouler
+
+## Ce que l'essai a trouvé
+
+**La poignée ne partait qu'à moitié.** Chaque dépôt déclenchait un envoi ; le
+premier partait, prenait le verrou d'envoi, et les suivants attendaient le
+prochain passage de la boucle — c'est-à-dire, moteur à l'arrêt, indéfiniment.
+Mesuré dans un navigateur : deux profils à remonter, un seul arrivé. La poignée
+entière est maintenant posée avant le premier envoi.
+
+Ce défaut ne se voyait dans aucun test : chacun vérifiait une pièce, et c'est
+leur enchaînement dans le temps qui était faux.
+
+## La mesure
+
+Contre un serveur local, base vide, dans un vrai navigateur : stockage vidé,
+rechargement, les deux profils arrivent en base. Rechargement suivant : rien ne
+repart, la file est vide, le serveur porte toujours les mêmes fichiers. Un moteur
+retouché remonte de la même façon, sous son nom lisible.
