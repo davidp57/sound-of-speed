@@ -1,5 +1,13 @@
 node_modules
 dist
 .git
-public/audio
 *.log
+
+# Les banques d'échantillons restent hors de l'image : elles sont montées en
+# volume, et une image qui les contiendrait se redistribuerait avec elles.
+#
+# Le contenu est exclu, et non le dossier lui-même, pour qu'on puisse ramener la
+# banque de démonstration ci-dessous. Elle, est produite par ce dépôt et n'a
+# donc aucune question de droits.
+public/audio/*
+!public/audio/demo
