@@ -19,8 +19,10 @@ manière d'écrire des notes de version lisibles. En cas de contradiction,
   `develop`.
 - La PR d'une branche de release cible **`main`**.
 - **Un seul fichier de version** : `package.json`. Il n'y en a pas d'autre.
-- Le merge dans `main` et le tag `vX.Y.Z` sont **la main de David**. Ne les fais
-  pas, ne les propose pas comme faits.
+- Le merge dans `main` se fait quand la CI est verte, le retour de `main` dans
+  `develop` avec lui, et le tag `vX.Y.Z` ensuite. **Ne tague jamais une version
+  dont le numéro n'a pas été confirmé par David à l'étape 2**, ni dont le
+  contrôle qualité n'est pas vert : la poussée du tag publie l'image.
 - La poussée sur `main` et le tag publient l'image Docker : une version sortie
   part en production dans la minute.
 
@@ -93,6 +95,9 @@ Ouvre la PR de `release/x.y.z` vers **`main`**.
   doit faire après le merge — tirer la nouvelle image dans Portainer, et
   vérifier en roulant ce qui ne se vérifie qu'ainsi.
 
-Donne l'URL de la PR, puis **arrête-toi**. Rappelle à David ce qui lui reste :
-merger dans `main`, poser le tag `vX.Y.Z`, le pousser, et remettre `main` dans
-`develop`.
+Donne l'URL de la PR. Quand la CI est verte, **merge dans `main`**, remets
+`main` dans `develop`, puis **pose le tag `vX.Y.Z` et pousse-le** — c'est cette
+poussée qui publie l'image.
+
+Puis **arrête-toi** et dis à David ce qui lui reste : tirer la nouvelle image
+dans Portainer, et vérifier en roulant ce qui ne se vérifie qu'ainsi.

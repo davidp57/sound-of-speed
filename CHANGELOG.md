@@ -6,6 +6,40 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+## [0.2.1] — 2026-09-12
+
+Le projet change de nom, et rien d'autre : aucun comportement, aucun réglage,
+aucun son ne bouge. Les notes de version sont dans
+[`docs/releases/v0.2.1.md`](docs/releases/v0.2.1.md).
+
+### Modifié
+
+- **Le projet s'appelle Sound of Speed.** « Speed » désignait à la fois
+  l'application et la grandeur qu'elle mesure : dans le code, cent soixante-quatre
+  occurrences du mot veulent dire « vitesse », et l'on ne pouvait chercher l'une
+  sans trouver l'autre. Le nouveau nom dit en plus ce que l'application fait.
+
+  Le dépôt, les deux images et le nom affiché suivent. **Trois choses ne suivent
+  pas**, et c'est délibéré : le dossier de données du serveur, qui demanderait de
+  déplacer traces et profils à la main ; les seize clés du stockage local, qui
+  rendraient introuvables les profils, moteurs, boîtes et étalonnages dormant dans
+  le navigateur de la voiture ; et le vocabulaire du code, où « speed » continue de
+  désigner la vitesse.
+
+- **Les dossiers du serveur portent le nom du projet.** `sound-of-speed/` et
+  `sound-of-speed-dev/` remplacent `speed/` et `speed-dev/`, et les conteneurs
+  suivent. Contrairement au stockage local du navigateur, ces dossiers se
+  renomment sans rien perdre : ils vivent sur le serveur, où l'on peut les
+  déplacer à la main. La documentation d'installation, le script du fichier de
+  mots de passe et la configuration du relecteur pointent tous sur les nouveaux
+  chemins.
+
+- **Les deux piles du serveur ne partagent plus leurs dossiers.** L'intégration
+  lit et écrit dans les siens. Elles partageaient tout, ce qui coûtait plus cher
+  que la recopie économisée : un trajet fait sur l'intégration entrait dans le
+  profil mesuré de la production, et le profileur de chaque pile relisait les
+  trajets de l'autre. Rien ne le signalait, et la mesure en était faussée.
+
 ## [0.2.0] — 2026-09-12
 
 Deux semaines et demie de septembre, en une version : la boîte se conduit

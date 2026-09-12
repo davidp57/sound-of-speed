@@ -1,4 +1,4 @@
-# Speed
+# Sound of Speed
 
 Un son de moteur pour une voiture qui n'en fait pas.
 
@@ -506,7 +506,7 @@ L'hébergement reste chez soi, ce qui règle du même coup la question des
 
 ### 1. Créer les dossiers et déposer les échantillons — File Station
 
-Six dossiers, sous `/volume1/docker/speed/` :
+Six dossiers, sous `/volume1/docker/sound-of-speed/` :
 
 | Dossier | Contenu | Accès |
 |---|---|---|
@@ -596,20 +596,23 @@ Par la navigation : cliquer son avatar › *Your profile* › onglet **Packages*
 n'apparaît que si l'on est connecté, un paquet privé n'étant pas listé autrement.
 
 > **Chaque paquet a sa propre visibilité, et chaque nouveau paquet naît privé.**
-> Le 11 septembre 2026, le profileur a ajouté une seconde image,
-> `speed-profileur`. Elle a été publiée sans encombre, et Portainer a pourtant
-> refusé la pile :
+> Le 11 septembre 2026, le profileur a ajouté une seconde image. Elle a été
+> publiée sans encombre, et Portainer a pourtant refusé la pile :
 >
 > ```
-> Head "https://ghcr.io/v2/davidp57/speed-profileur/manifests/develop": unauthorized
+> Head "https://ghcr.io/v2/davidp57/…-profileur/manifests/develop": unauthorized
 > ```
 >
-> Mesuré : `speed` répondait 200 à une requête anonyme, `speed-profileur` 403.
-> L'image existait, le dépôt n'y était pour rien — seule la visibilité du
-> nouveau paquet manquait. Le réglage est à reprendre **par paquet**, à la même
-> adresse avec l'autre nom :
+> Mesuré : l'image de l'application répondait 200 à une requête anonyme, celle du
+> profileur 403. L'image existait, le dépôt n'y était pour rien — seule la
+> visibilité du nouveau paquet manquait. Le réglage est à reprendre **par
+> paquet** :
 >
-> <https://github.com/users/davidp57/packages/container/speed-profileur/settings>
+> <https://github.com/users/davidp57/packages/container/sound-of-speed-profileur/settings>
+>
+> **Le renommage du 12 septembre 2026 rejoue ce piège en entier** : les deux
+> images ont changé de nom, donc ce sont deux paquets neufs, donc deux fois
+> privés. Les deux visibilités sont à ouvrir avant de recoller les piles.
 >
 > Le message `unauthorized` de ghcr.io ne distingue pas « pas le droit » de
 > « n'existe pas » : c'est délibéré de la part du registre, et c'est ce qui rend
@@ -653,7 +656,7 @@ faute de chiffrement.
 
 | Champ | Valeur |
 |---|---|
-| Description | Speed |
+| Description | Sound of Speed |
 | Protocole source | **HTTPS** |
 | Nom d'hôte source | `speed.<votre-nom>.synology.me` |
 | Port source | `443` |
@@ -683,7 +686,7 @@ npm run htpasswd
 ```
 
 Le mot de passe est demandé en saisie masquée, et le fichier `htpasswd` produit
-se dépose dans `/volume1/docker/speed/` avec File Station. Il reste à
+se dépose dans `/volume1/docker/sound-of-speed/` avec File Station. Il reste à
 décommenter les deux lignes `auth_basic` de `docker/nginx.conf` et le volume
 correspondant dans la pile.
 
@@ -710,22 +713,22 @@ npm run htpasswd
    une ligne : le nom d'utilisateur, puis l'empreinte du mot de passe. Le mot de
    passe lui-même n'y est pas — il n'est pas récupérable, et il faut refaire
    l'opération si on l'oublie.
-3. Déposer ce fichier dans `/volume1/docker/speed/` avec File Station.
+3. Déposer ce fichier dans `/volume1/docker/sound-of-speed/` avec File Station.
 4. Dans la pile Portainer, **ajouter** les deux lignes suivantes sous
    `volumes:`, puis tirer l'image à jour et redéployer :
 
 ```yaml
-      - /volume1/docker/speed/traces:/usr/share/nginx/html/traces
-      - /volume1/docker/speed/journal:/usr/share/nginx/html/journal
-      - /volume1/docker/speed/mesures:/usr/share/nginx/html/mesures
-      - /volume1/docker/speed/htpasswd:/etc/nginx/htpasswd:ro
+      - /volume1/docker/sound-of-speed/traces:/usr/share/nginx/html/traces
+      - /volume1/docker/sound-of-speed/journal:/usr/share/nginx/html/journal
+      - /volume1/docker/sound-of-speed/mesures:/usr/share/nginx/html/mesures
+      - /volume1/docker/sound-of-speed/htpasswd:/etc/nginx/htpasswd:ro
 ```
 
 Et **retirer le `:ro`** de la ligne des profils, qui devient elle aussi un
 dossier où l'on écrit :
 
 ```yaml
-      - /volume1/docker/speed/profiles:/usr/share/nginx/html/profiles
+      - /volume1/docker/sound-of-speed/profiles:/usr/share/nginx/html/profiles
 ```
 
 > **Ajouter, et non décommenter.** Une pile Portainer contient le texte qu'on y
@@ -766,7 +769,7 @@ Deux façons de s'en assurer :
   `develop` et `latest`, une étiquette immuable `sha-<commit court>` :
 
 ```yaml
-    image: ghcr.io/davidp57/speed:sha-28cc0a1
+    image: ghcr.io/davidp57/sound-of-speed:sha-28cc0a1
 ```
 
 Docker ne l'a jamais vue, donc il la tire forcément. C'est le moyen le plus sûr
@@ -779,7 +782,7 @@ Pour vérifier ce qui tourne réellement, sans Portainer : la date de
 curl -I https://ADRESSE/index.html
 ```
 
-Le dossier `/volume1/docker/speed/traces/` doit **exister** avant de
+Le dossier `/volume1/docker/sound-of-speed/traces/` doit **exister** avant de
 redéployer, même vide : Docker sous DSM refuse de démarrer un conteneur dont un
 point de montage est absent, avec un `Bind mount failed`.
 
@@ -925,7 +928,7 @@ seule : rien à recopier.
 
 | Champ | Valeur |
 |---|---|
-| Description | Speed (intégration) |
+| Description | Sound of Speed (intégration) |
 | Protocole source | **HTTPS** |
 | Nom d'hôte source | `speed-dev.<votre-nom>.synology.me` |
 | Port source | `443` |
@@ -1641,7 +1644,7 @@ n'en est journalisé.
 une adresse entre un poste de travail et un téléphone. Il est produit sur place,
 sans service extérieur.
 
-**Par le NAS.** Les fichiers déposés dans `/volume1/docker/speed/profiles/` avec
+**Par le NAS.** Les fichiers déposés dans `/volume1/docker/sound-of-speed/profiles/` avec
 File Station apparaissent sur tous les appareils, via le bouton **Profils du
 serveur**. nginx sait rendre le contenu d'un dossier en JSON, ce qui suffit à les
 découvrir : ni base, ni service à maintenir, et la protection est celle qui garde
@@ -2510,6 +2513,10 @@ essai.
 dans [ses notes de version](docs/releases/v0.2.0.md), et le détail dans le
 [CHANGELOG](CHANGELOG.md).
 
+**La 0.2.1, le même jour**, ne porte que le changement de nom du projet :
+[ses notes](docs/releases/v0.2.1.md) disent ce qui suit le nom et ce qui ne le
+suit pas.
+
 | Lot | Contenu | État |
 |---|---|---|
 | 0 | Squelette, boucle, écrans, simulateur clavier | fait |
@@ -2558,7 +2565,7 @@ dans [ses notes de version](docs/releases/v0.2.0.md), et le détail dans le
 | 43 | Une boîte à sept rapports, étagée pour tenir bas : 50 en quatrième, 80 en cinquième, 110 en sixième, et les passages plus tôt en mode Route | fait, reste l'écoute en roulant |
 | 44 | Un bouton « tout réinitialiser » : seize clés de stockage remises au premier jour, sans toucher au serveur | spécifié, périmètre à trancher |
 | 45 | L'atelier fabrique les moteurs, la voiture les reçoit : un chemin du bureau au volant, et deux effets sonores qui restent réglables | spécifié, attend le serveur du lot 46 |
-| 46 | Speed devient un service qu'on déploie, qu'on partage et qu'on fait vivre : un serveur TypeScript à la place de nginx, une base, des comptes, une licence AGPL | spécifié, à découper |
+| 46 | Sound of Speed devient un service qu'on déploie, qu'on partage et qu'on fait vivre : un serveur TypeScript à la place de nginx, une base, des comptes, une licence AGPL | spécifié, à découper |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

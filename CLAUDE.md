@@ -1,4 +1,4 @@
-# CLAUDE.md — Speed
+# CLAUDE.md — Sound of Speed
 
 Instructions pour Claude Code, et pour tout agent qui travaille sur ce dépôt. Ce
 fichier est la **source de vérité du process** : langue, git flow, contrôle
@@ -38,7 +38,7 @@ pour le README, les commentaires, le CHANGELOG et les messages de commit :
 
 ## Le projet en une page
 
-Speed mesure la vitesse au GPS, en calcule un régime moteur et un rapport de
+Sound of Speed mesure la vitesse au GPS, en calcule un régime moteur et un rapport de
 boîte, et joue le son correspondant à partir d'enregistrements réels. Il donne
 un son de moteur à une voiture qui n'en fait pas.
 
@@ -265,10 +265,20 @@ bout sans attendre de feu vert intermédiaire :
    passés, aucun conflit. Un contrôle rouge ou en attente n'est pas un merge :
    attendre, ou dire ce qui bloque.
 
-Cela vaut autorisation permanente de **committer, pousser, ouvrir des PR et les
-merger dans `develop` quand la CI est verte**. Cela **n'autorise pas** : merger
-dans `main`, forcer une poussée, ni pousser un tag. Ces trois-là restent à
-David.
+Cela vaut autorisation permanente de **committer, pousser, ouvrir des PR, les
+merger quand la CI est verte — dans `develop` comme dans `main` — et poser le
+tag de version**. Cela **n'autorise pas** de forcer une poussée : c'est le seul
+geste qui reste à David, parce que c'est le seul qui détruise du travail.
+
+**Ce que le tag engage, et qui ne disparaît pas avec la règle.** Le pousser
+publie l'image : la version part en production dans la minute. Donc on ne tague
+pas une version dont le contrôle qualité n'est pas vert, ni une version que
+David n'a pas confirmée au numéro près. La procédure de release le demande
+explicitement, et cette confirmation-là tient toujours.
+
+Les deux restrictions ont été levées par David le 12 septembre 2026, en
+préparant la version 0.2.0 : celle sur `main` d'abord, celle sur le tag dans la
+foulée.
 
 ## Règles de travail (mode chirurgical)
 
@@ -362,5 +372,7 @@ résumé :
 3. `package.json` (seul fichier de version), `CHANGELOG.md` daté, notes de
    version en français.
 4. Commit `chore(release): version X.Y.Z`, PR **vers `main`**.
-5. Merge dans `main` et tag `vX.Y.Z` : **par David**. Le tag et la poussée sur
-   `main` déclenchent la publication de l'image.
+5. Merge dans `main` quand la CI est verte, retour de `main` dans `develop`,
+   puis tag `vX.Y.Z` et poussée du tag — c'est elle qui publie l'image, donc
+   la mise en production. Elle suppose la version confirmée par David à
+   l'étape 2 et le contrôle qualité vert.

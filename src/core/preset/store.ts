@@ -23,6 +23,16 @@ import type { Trace } from '../speed/replay'
  * valeur manquante.
  */
 
+/**
+ * Les clés gardent le préfixe `speed.`, et non `sound-of-speed.`.
+ *
+ * Le projet a été renommé le 12 septembre 2026 ; ces clés ne l'ont pas suivi, et
+ * c'est délibéré. Elles nomment ce qui dort dans le navigateur de la voiture :
+ * les profils, les moteurs, les boîtes, l'étalonnage. Les renommer les rendrait
+ * introuvables au premier chargement — le stockage local ne suit aucun renommage
+ * — et demanderait une reprise pour un gain nul, puisque rien de tout cela ne se
+ * voit à l'usage.
+ */
 const STORAGE_KEY = 'speed.profiles.v1'
 const SELECTED_KEY = 'speed.selectedProfile.v1'
 const TRACES_KEY = 'speed.traces.v1'

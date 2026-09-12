@@ -1,12 +1,12 @@
 {
-  "name": "speed",
+  "name": "sound-of-speed",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:mobile": "cross-env HTTPS=1 vite",
-    "relecteur": "cross-env SPEED_DATA=//Salon/docker/speed vite",
+    "relecteur": "cross-env SPEED_DATA=//Salon/docker/sound-of-speed vite",
     "build": "vue-tsc -b && vite build",
     "build:profileur": "esbuild src/profileur/main.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist-profileur/profileur.js",
     "profileur": "npm run build:profileur && node dist-profileur/profileur.js",
