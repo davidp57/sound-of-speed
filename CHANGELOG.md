@@ -6,6 +6,26 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Modifié
+
+- **Le projet s'appelle Sound of Speed.** « Speed » désignait à la fois
+  l'application et la grandeur qu'elle mesure : dans le code, cent soixante-quatre
+  occurrences du mot veulent dire « vitesse », et l'on ne pouvait chercher l'une
+  sans trouver l'autre. Le nouveau nom dit en plus ce que l'application fait.
+
+  Le dépôt, les deux images et le nom affiché suivent. **Trois choses ne suivent
+  pas**, et c'est délibéré : le dossier de données du serveur, qui demanderait de
+  déplacer traces et profils à la main ; les seize clés du stockage local, qui
+  rendraient introuvables les profils, moteurs, boîtes et étalonnages dormant dans
+  le navigateur de la voiture ; et le vocabulaire du code, où « speed » continue de
+  désigner la vitesse.
+
+- **Les deux piles du serveur ne partagent plus leurs dossiers.** L'intégration
+  lit et écrit dans les siens. Elles partageaient tout, ce qui coûtait plus cher
+  que la recopie économisée : un trajet fait sur l'intégration entrait dans le
+  profil mesuré de la production, et le profileur de chaque pile relisait les
+  trajets de l'autre. Rien ne le signalait, et la mesure en était faussée.
+
 ## [0.2.0] — 2026-09-12
 
 Deux semaines et demie de septembre, en une version : la boîte se conduit

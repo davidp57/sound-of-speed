@@ -18,7 +18,7 @@
 
 services:
   speed:
-    image: ghcr.io/davidp57/speed:latest
+    image: ghcr.io/davidp57/sound-of-speed:latest
     container_name: speed
     restart: unless-stopped
     ports:
@@ -81,7 +81,7 @@ services:
   # Il vient du **même commit** que l'application : c'est ce qui garantit qu'ils
   # calculent la même chose. Redéployer l'une sans l'autre les ferait diverger.
   speed-profileur:
-    image: ghcr.io/davidp57/speed-profileur:latest
+    image: ghcr.io/davidp57/sound-of-speed-profileur:latest
     container_name: speed-profileur
     restart: unless-stopped
     volumes:
