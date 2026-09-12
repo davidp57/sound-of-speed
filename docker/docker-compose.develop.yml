@@ -32,9 +32,9 @@
 # fait plus ; reste l'export de profil par lien.
 
 services:
-  speed-develop:
+  sound-of-speed-develop:
     image: ghcr.io/davidp57/sound-of-speed:develop
-    container_name: speed-develop
+    container_name: sound-of-speed-develop
     restart: unless-stopped
     # Portainer ne retire pas de lui-même une image devenue obsolète : après une
     # poussée sur `develop`, il faut redéployer la pile en cochant
@@ -45,7 +45,7 @@ services:
       - "8089:80"
     volumes:
       # Mêmes échantillons que la production : ils ne dépendent pas du code.
-      - /volume1/docker/speed-dev/audio:/usr/share/nginx/html/audio:ro
+      - /volume1/docker/sound-of-speed-dev/audio:/usr/share/nginx/html/audio:ro
       # Profils partagés entre appareils, déposés avec File Station.
       #
       # Le dossier doit **exister**, même vide : Docker sous DSM ne crée pas un
@@ -57,27 +57,27 @@ services:
       #
       # **En lecture-écriture** depuis le lot REMONTEE : un profil réglé dans la
       # voiture y remonte tout seul, et c'est ce dossier que la bibliothèque lit.
-      - /volume1/docker/speed-dev/profiles:/usr/share/nginx/html/profiles
+      - /volume1/docker/sound-of-speed-dev/profiles:/usr/share/nginx/html/profiles
       # Dépôt des traces enregistrées en roulant. **En lecture-écriture** : le
       # navigateur de la voiture refuse tout téléchargement, c'est par là que les
       # traces en sortent. Le dossier doit exister, comme celui des profils, et
       # le dépôt exige le fichier de mots de passe ci-dessous.
-      - /volume1/docker/speed-dev/traces:/usr/share/nginx/html/traces
+      - /volume1/docker/sound-of-speed-dev/traces:/usr/share/nginx/html/traces
       # Ce que le profileur a mesuré de la vraie voiture. **En lecture seule**
       # de ce côté : c'est l'autre conteneur qui écrit, celui-ci ne fait que
       # servir le fichier. Le dossier doit exister, comme les autres.
-      - /volume1/docker/speed-dev/mesure-voiture:/usr/share/nginx/html/mesure-voiture:ro
+      - /volume1/docker/sound-of-speed-dev/mesure-voiture:/usr/share/nginx/html/mesure-voiture:ro
       # Journal de bord, déposé tout seul en roulant. **En lecture-écriture**,
       # pour la même raison, et dans un dossier séparé : celui des traces est
       # servi en index JSON, et c'est cet index que l'application télécharge pour
       # les lister — une tranche de journal toutes les cinq minutes l'alourdirait
       # à chaque sortie. Rien n'y est déposé tant que le journal n'a pas été
       # accepté dans l'écran de configuration.
-      - /volume1/docker/speed-dev/journal:/usr/share/nginx/html/journal
+      - /volume1/docker/sound-of-speed-dev/journal:/usr/share/nginx/html/journal
       # Relevés de mesure, déposés par la sonde et par l'application. **En
       # lecture-écriture**, dans un dossier à part : ces fichiers se lisent un par
       # un, à la main, et se noieraient parmi les tranches de journal.
-      - /volume1/docker/speed-dev/mesures:/usr/share/nginx/html/mesures
+      - /volume1/docker/sound-of-speed-dev/mesures:/usr/share/nginx/html/mesures
       # Fichier de mots de passe. À décommenter dans **deux** cas, qui sont
       # indépendants :
       #
@@ -90,7 +90,7 @@ services:
       #    docker/nginx.conf.
       #
       # Le fichier se produit avec `npm run htpasswd`, sans Docker.
-      # - /volume1/docker/speed-dev/htpasswd:/etc/nginx/htpasswd:ro
+      # - /volume1/docker/sound-of-speed-dev/htpasswd:/etc/nginx/htpasswd:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/index.html"]
       interval: 30s
@@ -103,16 +103,16 @@ services:
   #
   # Il vient du **même commit** que l'application : c'est ce qui garantit qu'ils
   # calculent la même chose. Redéployer l'une sans l'autre les ferait diverger.
-  speed-profileur-develop:
+  sound-of-speed-profileur-develop:
     image: ghcr.io/davidp57/sound-of-speed-profileur:develop
-    container_name: speed-profileur-develop
+    container_name: sound-of-speed-profileur-develop
     restart: unless-stopped
     volumes:
       # Les traces, en **lecture seule** : il les lit, il n'y touche pas.
-      - /volume1/docker/speed-dev/traces:/data/traces:ro
+      - /volume1/docker/sound-of-speed-dev/traces:/data/traces:ro
       # La mesure de la voiture, en lecture-écriture : c'est là qu'il dépose ce
       # qu'il a mesuré, dans le dossier que l'application sert déjà.
-      - /volume1/docker/speed-dev/mesure-voiture:/data/mesure-voiture
+      - /volume1/docker/sound-of-speed-dev/mesure-voiture:/data/mesure-voiture
     environment:
       # Le relevé du dossier. Cinq secondes : une tranche arrive toutes les cinq
       # minutes en roulant, et lire une liste de noms ne coûte rien.
