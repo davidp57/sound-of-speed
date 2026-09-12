@@ -25,7 +25,7 @@ const appVersion = __APP_VERSION__
 <template>
   <div class="help">
     <article>
-      <h1>Speed</h1>
+      <h1>Sound of Speed</h1>
       <p class="lead">
         Cette application ajoute un son de moteur à une voiture qui n'en fait pas.
         Elle mesure votre vitesse au GPS, en calcule un régime moteur et un rapport

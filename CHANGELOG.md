@@ -6,6 +6,13 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Corrigé
+
+- **Le titre de l'écran d'aide disait encore « Speed ».** Il avait échappé au
+  renommage du 12 septembre. Le nom court du manifeste, lui, reste « Speed » :
+  c'est celui qui s'affiche sous l'icône de l'écran d'accueil, et il doit tenir
+  en une douzaine de caractères.
+
 ### Ajouté
 
 - **Une pile à un seul service**, qui fait le travail des deux images d'avant.
