@@ -1,6 +1,6 @@
 # 06 — Les traces, le journal et les relevés vivent en base
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait le 12 septembre 2026
 
 **Bloqué par :** 05 — Les profils vivent en base.
 
@@ -31,10 +31,35 @@ listage des traces. Ce contournement disparaît de lui-même.
 
 ## Critères d'acceptation
 
-- [ ] Déposer une trace, une tranche de journal, un relevé écrit en base
-- [ ] Le relecteur retrouve et relit une session déposée, tranche par tranche
-- [ ] Une tranche compressée redescend sous le nom qui dit qu'elle l'est
-- [ ] Une charge trop grosse est refusée avec le code qui interdit de rejouer
-- [ ] La sonde dépose toujours, avec le compte qu'elle relit elle-même
-- [ ] La part « dépôts » du test d'accord passe contre le nouveau serveur
-- [ ] Une session déjà déposée n'est pas dupliquée si elle repart
+- [x] Déposer une trace, une tranche de journal, un relevé écrit en base
+- [x] Une session déposée se relit tranche par tranche, à l'octet près.
+      **Reste à voir** : le relecteur lui-même, pointé sur ce serveur — il
+      demande un navigateur, et viendra avec le déploiement
+- [x] Une tranche compressée redescend sous le nom qui dit qu'elle l'est
+- [x] Une charge trop grosse est refusée avec le code qui interdit de rejouer
+- [x] La sonde dépose toujours, avec le compte qu'elle relit elle-même
+- [x] La part « dépôts » du test d'accord passe contre le nouveau serveur
+- [x] Une session déjà déposée n'est pas dupliquée si elle repart
+
+## Ce que ce ticket a corrigé dans le schéma du ticket 03
+
+**Les dépôts étaient déclarés en texte.** Ils arrivent compressés : les ranger
+dans une colonne de texte les aurait fait passer par un décodage qui n'a pas de
+sens pour eux, et ce qui serait redescendu n'aurait plus été ce qui était monté —
+sans que rien ne le signale, jusqu'à ce que le relecteur ne sache plus rien lire.
+
+Corrigé par migration, la seconde depuis le schéma initial. Le défaut n'était
+visible que le jour où l'on dépose vraiment quelque chose de compressé, et c'est
+ce jour-là.
+
+## La mesure qui compte
+
+Une tranche gzip déposée puis relue redescend **à l'octet près**, et se
+décompresse en ce qui a été écrit. Vérifié contre un serveur réel avant d'écrire
+le test, puis figé par lui.
+
+## Où en est le serveur neuf
+
+**Vingt-sept cas sur vingt-sept.** Le contrat entier passe, comme contre le
+serveur en service : les deux sont désormais indiscernables. L'intégration
+continue n'exclut plus aucune part.

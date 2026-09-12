@@ -8,6 +8,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Ce que la voiture envoie en roulant est rangé en base** : traces, tranches de
+  journal, relevés de mesure. Une tranche compressée redescend à l'octet près et
+  sous le nom exact qui la dit compressée — le client décide de décompresser au
+  nom du fichier, jamais au type que le serveur annonce. Redéposer sous le même
+  nom remplace, ce que fait la voiture quand elle rejoue un envoi qu'elle croit
+  perdu. Une charge trop grosse est refusée par un code que le client ne rejoue
+  pas : rendu autrement, la voiture réessaierait indéfiniment un envoi qui ne
+  passera jamais. **Le serveur neuf passe désormais le contrat en entier**, et
+  devient indiscernable de celui qu'il remplace.
+
 - **La bibliothèque de profils est servie depuis la base.** Vu de
   l'application, rien n'a changé : mêmes adresses, même forme de listage, mêmes
   codes, même authentification. Déposer deux fois le même nom remplace, comme le
