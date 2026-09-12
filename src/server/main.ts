@@ -11,6 +11,7 @@
 import { serve } from '@hono/node-server'
 
 import { ouvrirBase } from './base/base'
+import { lireComptes } from './comptes'
 import { creerServeur } from './serveur'
 
 const port = Number(process.env['SPEED_PORT'] ?? 8088)
@@ -18,15 +19,19 @@ const application = process.env['SPEED_APP'] ?? 'dist'
 const echantillons = process.env['SPEED_AUDIO']
 const fichierDeBase = process.env['SPEED_DB'] ?? 'donnees/speed.db'
 const migrations = process.env['SPEED_MIGRATIONS'] ?? 'src/server/base/migrations'
+const fichierDeComptes = process.env['SPEED_HTPASSWD']
 
-const { fermer } = await ouvrirBase({ fichier: fichierDeBase, migrations })
+const { base, fermer } = await ouvrirBase({ fichier: fichierDeBase, migrations })
 console.log(`base ouverte et à jour : ${fichierDeBase}`)
 
 const serveur = serve(
   {
-    fetch: creerServeur(
-      echantillons === undefined ? { application } : { application, echantillons },
-    ).fetch,
+    fetch: creerServeur({
+      application,
+      base,
+      comptes: lireComptes(fichierDeComptes),
+      ...(echantillons === undefined ? {} : { echantillons }),
+    }).fetch,
     port,
   },
   (adresse) => {
