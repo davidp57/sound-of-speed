@@ -116,6 +116,8 @@ describe('le repli de l’application à page unique', () => {
       '/mesure-voiture/profil-voiture.json',
       '/traces/rien.jsonl',
       '/profiles/rien.json',
+      '/engines/rien.json',
+      '/gearboxes/rien.json',
       '/journal/rien.jsonl',
       '/mesures/rien.json',
     ]) {

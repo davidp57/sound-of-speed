@@ -49,14 +49,18 @@ export function loadGearboxes(): GearboxEntity[] {
   return [...enregistrees, ...factoryGearboxes().filter((boite) => !connues.has(boite.id))]
 }
 
-/** N'enregistre que ce qui n'est pas livré tel quel : le reste se reconstruit. */
-export function saveGearboxes(gearboxes: readonly GearboxEntity[]): void {
+/** Le pendant de `customEngines` : ce qui n'est pas livré tel quel. */
+export function customGearboxes(gearboxes: readonly GearboxEntity[]): GearboxEntity[] {
   const livrees = new Map(factoryGearboxes().map((boite) => [boite.id, boite]))
-  const aGarder = gearboxes.filter((boite) => {
+  return gearboxes.filter((boite) => {
     const livree = livrees.get(boite.id)
     return livree === undefined || JSON.stringify(livree) !== JSON.stringify(boite)
   })
-  writeJson(GEARBOXES_KEY, aGarder)
+}
+
+/** N'enregistre que ce qui n'est pas livré tel quel : le reste se reconstruit. */
+export function saveGearboxes(gearboxes: readonly GearboxEntity[]): void {
+  writeJson(GEARBOXES_KEY, customGearboxes(gearboxes))
 }
 
 /** Ajoute ou remplace une boîte, et rend la liste à enregistrer. */

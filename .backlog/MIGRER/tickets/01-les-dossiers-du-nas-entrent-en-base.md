@@ -1,6 +1,6 @@
 # 01 — Les dossiers du NAS entrent dans la base
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait le 12 septembre 2026
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -42,12 +42,39 @@ d'essai et pèse neuf cents octets ; celui d'après le sera sur quarante et une.
 
 ## Critères d'acceptation
 
-- [ ] Le serveur désigné sur l'ancien dossier reprend traces, journal, relevés et
+- [x] Le serveur désigné sur l'ancien dossier reprend traces, journal, relevés et
       profils à son démarrage
-- [ ] Les traces reprises sont épinglées
-- [ ] Le profil mesuré se recalcule depuis les traces reprises, et le décompte
+- [x] Les traces reprises sont épinglées
+- [x] Le profil mesuré se recalcule depuis les traces reprises, et le décompte
       dit sur combien de trajets il est cumulé
-- [ ] Un décompte s'imprime : trouvé, entré, écarté, dossier par dossier
-- [ ] Relancer la reprise ne crée aucun doublon, ne change rien, n'écrase rien
-- [ ] Les fichiers du NAS sont intacts, en nombre et en octets
-- [ ] Le compte en base correspond au compte sur le disque, dossier par dossier
+- [x] Un décompte s'imprime : trouvé, entré, écarté, dossier par dossier
+- [x] Relancer la reprise ne crée aucun doublon, ne change rien, n'écrase rien
+- [x] Les fichiers du NAS sont intacts, en nombre et en octets
+- [x] Le compte en base correspond au compte sur le disque, dossier par dossier
+
+## Ce que la mesure a donné
+
+Rejouée contre le vrai dossier du NAS, sur une base neuve, le 12 septembre 2026 :
+
+```
+reprise des anciens dossiers : le dossier de la pile de production
+  traces : 41 trouvé(s), 41 entré(s), 2262 Kio
+  journal : 53 trouvé(s), 53 entré(s), 767 Kio
+  mesures : 0 trouvé(s), 0 entré(s)
+  profiles : 4 trouvé(s), 4 entré(s), 18 Kio
+  mesure-voiture : 1 trouvé(s), 0 entré(s), 1 écarté(s)
+    écarté (ignoré, le cumul se recalcule depuis les traces) : tout le dossier
+```
+
+Relancée sur la même base, elle n'entre rien : 41, 53 et 4 « déjà en base,
+identique(s) », et pas une ligne de plus. Les 94 fichiers du disque sont intacts.
+
+**Le profil mesuré s'est refait tout seul** sur les quarante et un trajets :
+28 731 octets, contre 930 quand il n'était cumulé que sur trois traces d'essai.
+Sa couverture est complète — 7 départs à l'arrêt, 78 passages en ville, 65 sur
+route, 163 sur autoroute.
+
+**Le décompte a changé de forme en route.** Il nommait tout ce qu'il laissait de
+côté, ce qui donnait 98 lignes au second passage — le cas le plus courant noyait
+le seul qui compte. Il compare désormais le contenu : ce qui est identique se
+compte, ce qui diffère se nomme.

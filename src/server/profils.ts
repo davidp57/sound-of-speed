@@ -12,7 +12,7 @@
  * son dos.
  */
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 
 import type { Base } from './base/base'
 import { profiles } from './base/schema'
@@ -90,7 +90,10 @@ export async function ecrireProfil(
     })
     .onConflictDoUpdate({
       target: [profiles.accountId, profiles.fileName],
-      set: { name: nom, content: lu },
+      // La date est refaite à chaque écriture. Sans elle, la règle du plus
+      // récent n'arbitre rien : une colonne qui ne bouge jamais rend toujours le
+      // même verdict, et un profil réglé dans la voiture passerait pour ancien.
+      set: { name: nom, content: lu, updatedAt: sql`(unixepoch())` },
     })
 
   return 'écrit'

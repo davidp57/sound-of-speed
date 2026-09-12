@@ -15,6 +15,24 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Ce qui dort dans les anciens dossiers du NAS rejoint la base.** On désigne
+  au serveur le dossier de l'ancienne pile, monté en lecture seule, et il y
+  verse ce qu'il trouve à son démarrage — traces, tranches de journal, relevés,
+  profils. Les traces et le journal entrent épinglés, sans quoi la règle de
+  rétention à venir effacerait un mois plus tard ce qu'on vient de déplacer. Le
+  profil mesuré, lui, n'est pas repris : il se recalcule tout seul depuis les
+  traces reprises, et un cumul produit par un procédé qui a changé depuis ne
+  vaut rien. La reprise n'écrase jamais ce que la base porte déjà et ne touche
+  pas à la source ; un décompte s'imprime, qui nomme ce qui est resté de côté.
+  Mesuré sur le NAS : 41 traces (2,3 Mo), 53 tranches de journal (767 Kio),
+  4 profils, et un profil mesuré recalculé sur les quarante et un trajets.
+
+- **Les moteurs et les boîtes ont enfin leur place sur le serveur.** Leurs
+  tables existaient et rien ne les remplissait : un moteur réglé au volant
+  remonte désormais tout seul, comme un profil le fait déjà, et se relit depuis
+  un autre appareil. C'est ce qui manquait pour qu'un profil déposé ne désigne
+  plus un moteur que personne d'autre ne possède.
+
 - **Une pile à un seul service**, qui fait le travail des deux images d'avant.
   Elle tourne à côté de celle en service, sur son propre port, le temps que le
   neuf convainque — rien ne bascule tant que personne ne l'a décidé. La base se

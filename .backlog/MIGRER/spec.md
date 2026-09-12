@@ -1,6 +1,6 @@
 # MIGRER — les réglages quittent le navigateur de la voiture et les dossiers du NAS
 
-**Statut :** ⬜ prêt
+**Statut :** 🔄 en cours — tickets 01 et 02 faits
 **Branche :** `feature/migrer`
 **Version visée :** 0.4
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)

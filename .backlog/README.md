@@ -61,7 +61,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [PLATEFORME/banques-libres](PLATEFORME/banques-libres.md) — relevé : aucune banque libre n'est à la fois redistribuable et au bon format ; engine-sim reste la voie pour l'image publique | ✅ |
 | [OUVRIR](OUVRIR/spec.md) — 1/5 · le dépôt devient forkable et le conteneur fait du bruit tout seul : AGPL-3.0, banque de démonstration, de quoi contribuer et déployer | ✅ |
 | [SERVEUR](SERVEUR/spec.md) — 2/5 · un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | 🧑 8/8 — livré et mesuré sur le NAS ; reste l’essai hors réseau |
-| [MIGRER](MIGRER/spec.md) — 3/5 · les réglages quittent le navigateur de la voiture et les dossiers du NAS pour la base | ⬜ quatre tickets, découpés le 12 septembre |
+| [MIGRER](MIGRER/spec.md) — 3/5 · les réglages quittent le navigateur de la voiture et les dossiers du NAS pour la base | 🔄 2/4 — la reprise du NAS et les registres de moteurs sont faits |
 | [RETENTION](RETENTION/spec.md) — 4/5 · analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte ; effacer devient possible | ⬜ |
 | [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | ⬜ |
 

@@ -56,14 +56,24 @@ export function loadEngines(): EngineEntity[] {
   return [...enregistres, ...factoryEngines().filter((moteur) => !connus.has(moteur.id))]
 }
 
-/** N'enregistre que ce qui n'est pas livré tel quel : le reste se reconstruit. */
-export function saveEngines(engines: readonly EngineEntity[]): void {
+/**
+ * Ce qui mérite d'être gardé : ce qui n'est pas livré tel quel.
+ *
+ * Sorti de l'enregistrement parce que la remontée vers le serveur a le même
+ * besoin — envoyer les moteurs livrés inchangés remplirait le registre de
+ * copies de ce que toute installation possède déjà.
+ */
+export function customEngines(engines: readonly EngineEntity[]): EngineEntity[] {
   const livres = new Map(factoryEngines().map((moteur) => [moteur.id, moteur]))
-  const aGarder = engines.filter((moteur) => {
+  return engines.filter((moteur) => {
     const livre = livres.get(moteur.id)
     return livre === undefined || JSON.stringify(livre) !== JSON.stringify(moteur)
   })
-  writeJson(ENGINES_KEY, aGarder)
+}
+
+/** N'enregistre que ce qui n'est pas livré tel quel : le reste se reconstruit. */
+export function saveEngines(engines: readonly EngineEntity[]): void {
+  writeJson(ENGINES_KEY, customEngines(engines))
 }
 
 /**

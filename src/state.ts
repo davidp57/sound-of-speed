@@ -52,11 +52,17 @@ import {
   gearboxFromProfile,
   type GearboxEntity,
 } from './core/preset/gearbox-entity'
-import { loadGearboxes, saveGearboxes, upsertGearbox } from './core/preset/gearbox-store'
+import {
+  customGearboxes,
+  loadGearboxes,
+  saveGearboxes,
+  upsertGearbox,
+} from './core/preset/gearbox-store'
 import { assembleProfile, partsFor } from './core/preset/assemble'
 import { realCarFromProfile, type RealCar } from './core/preset/real-car'
 import { splitProfiles } from './core/preset/split'
 import {
+  customEngines,
   engineFromFile,
   engineToFile,
   loadEngines,
@@ -69,6 +75,14 @@ import { UploadQueue, type QueuedUpload } from './core/upload/queue'
 import { loadQueue, saveQueue } from './core/upload/store'
 import { putFile, slug, stamp } from './core/upload/put'
 import { PROFILE_FOLDER, profileBody, profileFileName, profileUploadId } from './core/upload/profile'
+import {
+  ENGINE_FOLDER,
+  GEARBOX_FOLDER,
+  engineBody,
+  entityFileName,
+  entityUploadId,
+  gearboxBody,
+} from './core/upload/entity'
 import { depositSlice } from './core/journal/deposit'
 import { fetchBanks, missingFiles, usedBanks, type Bank } from './core/audio/banks'
 import { fetchLibrary, type LibraryEntry } from './core/preset/library'
@@ -1380,6 +1394,52 @@ function queueProfilesSoon(): void {
       body: profileBody(profile),
       queuedAt: Date.now(),
     })
+  }, PROFILE_SETTLE_MS)
+}
+
+/**
+ * Les moteurs et les boîtes remontent comme les profils.
+ *
+ * Depuis que le profil désigne un moteur au lieu de porter ses valeurs, faire
+ * remonter le profil seul revient à faire remonter une désignation qui ne mène
+ * nulle part : l'autre appareil reçoit un profil qui parle d'un moteur qu'il n'a
+ * pas.
+ *
+ * **Sous le même accord que les profils.** Ce sont des réglages de la même
+ * nature ; en faire une catégorie de plus dans l'écran de consentement
+ * demanderait à David d'accepter deux fois la même chose.
+ *
+ * **Seulement ce qui n'est pas livré tel quel** : envoyer les moteurs d'usine
+ * inchangés remplirait le registre de copies de ce que toute installation
+ * possède déjà.
+ */
+let entityTimer: ReturnType<typeof setTimeout> | null = null
+
+function queueEntitiesSoon(): void {
+  if (!sendsAutomatically(uploadConsent.value, 'profile')) return
+  if (entityTimer !== null) clearTimeout(entityTimer)
+  entityTimer = setTimeout(() => {
+    entityTimer = null
+    for (const engine of customEngines(engines.value)) {
+      enqueue({
+        id: entityUploadId(ENGINE_FOLDER, engine),
+        kind: 'profile',
+        folder: ENGINE_FOLDER,
+        name: entityFileName(engine),
+        body: engineBody(engine),
+        queuedAt: Date.now(),
+      })
+    }
+    for (const gearbox of customGearboxes(gearboxes.value)) {
+      enqueue({
+        id: entityUploadId(GEARBOX_FOLDER, gearbox),
+        kind: 'profile',
+        folder: GEARBOX_FOLDER,
+        name: entityFileName(gearbox),
+        body: gearboxBody(gearbox),
+        queuedAt: Date.now(),
+      })
+    }
   }, PROFILE_SETTLE_MS)
 }
 
@@ -2719,8 +2779,22 @@ export function setGearRatios(ratios: number[]): void {
  * corriger une fois pour tous les profils qui le désignent, et de l'envoyer seul
  * sans faire suivre un profil entier.
  */
-watch(engines, (list) => saveEngines(list), { deep: true })
-watch(gearboxes, (list) => saveGearboxes(list), { deep: true })
+watch(
+  engines,
+  (list) => {
+    saveEngines(list)
+    queueEntitiesSoon()
+  },
+  { deep: true },
+)
+watch(
+  gearboxes,
+  (list) => {
+    saveGearboxes(list)
+    queueEntitiesSoon()
+  },
+  { deep: true },
+)
 watch(realCar, (car) => saveRealCar(car), { deep: true })
 
 export const engineList = computed(() => engines.value)

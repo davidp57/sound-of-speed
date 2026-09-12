@@ -969,8 +969,8 @@ donc **arrêter la pile d'intégration avant de démarrer celle-ci** — deux se
 ne peuvent pas écouter le même port.
 
 Ce que la pile d'intégration avait déposé reste sur le disque du NAS, dans son
-propre dossier : rien n'est perdu, et rien n'est repris non plus. La reprise des
-données est un lot à part.
+propre dossier : rien n'est perdu. La reprise se demande — voir « Reprendre les
+anciens dossiers » plus bas.
 
 La production, elle, n'est pas touchée : elle continue de servir dans la voiture
 et fait repli, le temps que le neuf convainque.
@@ -992,12 +992,47 @@ La base **se crée toute seule** au premier démarrage et se met à jour à chaq
 suivant. Il n'y a pas d'étape de migration à lancer à la main, et relancer le
 serveur deux fois de suite ne change rien.
 
+### Reprendre les anciens dossiers
+
+Le serveur sait verser dans sa base ce que l'ancienne pile avait laissé sur le
+disque. Deux lignes dans la pile, et c'est tout :
+
+- **monter l'ancien dossier en lecture seule**, par exemple
+  `/volume1/docker/sound-of-speed:/ancien:ro` ;
+- **désigner ce montage** par la variable `SPEED_REPRISE`, ici `/ancien`.
+
+La reprise se joue **au démarrage**, comme les migrations. Elle prend les traces,
+les tranches de journal, les relevés et les profils ; le profil mesuré, lui,
+n'est pas repris — il se recalcule tout seul depuis les traces reprises, et un
+cumul produit par un procédé qui a changé depuis ne vaut rien.
+
+Trois choses qu'elle ne fait jamais :
+
+- **écrire à la source** — le montage en lecture seule en est la garantie ;
+- **écraser ce que la base porte déjà** — un profil réglé dans la voiture ne se
+  fait pas effacer par la version d'avant qui dort sur le disque ;
+- **créer un doublon** si on la relance : elle compare, et se tait sur ce qui est
+  identique.
+
+Le **décompte s'imprime dans le journal du conteneur** : combien trouvé, combien
+entré, ce qui était déjà là, et ce qui a été laissé de côté avec la raison. Une
+fois lu, retirez la variable et le montage — les laisser ne casse rien, mais fait
+relire un dossier à chaque démarrage.
+
+Les traces et le journal repris entrent **épinglés** : sans cela, la règle de
+rétention à venir effacerait un mois plus tard ce qu'on vient de déplacer.
+
 ### Ce qui change, vu de l'application
 
-Rien. Mêmes adresses, même forme de listage, mêmes codes, même compte. Un jeu de
-vingt-sept requêtes le vérifie à chaque intégration, contre les deux serveurs :
-ils sont indiscernables — voir
+Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
+compte. Un jeu de trente-cinq requêtes le vérifie à chaque intégration — voir
 [`scripts/accord/`](scripts/accord/README.md).
+
+S'y ajoutent **deux emplacements que le serveur de fichiers n'a jamais rendus** :
+`/engines/` et `/gearboxes/`. Un moteur ou une boîte réglé au volant y remonte
+tout seul, comme un profil le fait déjà, et se relit depuis un autre appareil. La
+question ne se posait pas avant la base : un profil désigne un moteur, et un
+profil déposé seul désignait un moteur que personne d'autre ne possédait.
 
 ### Ce qui change, vu du serveur
 
@@ -1005,6 +1040,7 @@ ils sont indiscernables — voir
 |---|---|
 | Deux conteneurs, deux images | **un conteneur** |
 | Cinq dossiers de fichiers sur le NAS | une base, dans un fichier |
+| Les moteurs et les boîtes n'allaient nulle part | ils remontent comme les profils |
 | Un service qui relit un dossier toutes les cinq secondes | le serveur sait qu'une trace arrive, puisqu'il l'écrit |
 | Un mot de passe partagé | le même, pour l'instant — les comptes viendront |
 
