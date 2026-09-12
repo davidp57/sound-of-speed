@@ -19,12 +19,15 @@
 import { cas, marque } from './contrat.mjs'
 
 function lireArguments(argv) {
-  const options = { base: null, compte: null, verbeux: false }
+  const options = { base: null, compte: null, verbeux: false, part: null }
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i]
     if (arg === '--compte') {
       i += 1
       options.compte = argv[i] ?? null
+    } else if (arg === '--part') {
+      i += 1
+      options.part = argv[i] ?? null
     } else if (arg === '--verbeux') {
       options.verbeux = true
     } else if (!arg.startsWith('--')) {
@@ -51,7 +54,20 @@ function entetesDe(requete) {
   return entetes
 }
 
-const jeu = cas({ nom: marque() })
+/**
+ * Deux parts, parce qu'un serveur se reprend en plusieurs fois.
+ *
+ * `publique` est ce qui se sert sans compte : l'application, ses ressources, les
+ * échantillons. `donnees` est ce qui vit dans les dossiers de dépôt. Pendant la
+ * réécriture, le serveur neuf tient la première avant la seconde, et pouvoir le
+ * dire évite le seul mauvais réflexe possible : retirer d'un jeu de vérification
+ * les cas qu'on ne sait pas encore passer.
+ *
+ * Sans `--part`, tout est joué. C'est ce que fait l'intégration continue.
+ */
+const jeu = cas({ nom: marque() }).filter(
+  (unCas) => options.part === null || (unCas.part ?? 'publique') === options.part,
+)
 const resultats = []
 
 for (const unCas of jeu) {

@@ -128,10 +128,12 @@ Deux moitiés, dont une est corrigée :
 
 - **Lister ses prises** rendait 403, l'alias ayant perdu le listage du bloc
   parent. Corrigé dans le même mouvement.
-- **La voir parmi les banques** ne peut pas venir du serveur : aucun listage ne
-  fusionne deux sources. C'est à l'application de savoir qu'une banque est
-  **livrée** avec elle, au lieu de n'attendre que ce qui est déposé. Reste à
-  faire.
+- **La voir parmi les banques** ne pouvait pas venir de l'ancien serveur, aucun
+  listage n'y fusionnant deux sources. **Réglé le 12 septembre** par le serveur
+  du ticket 04 de [SERVEUR](../SERVEUR/spec.md), qui cherche dans le volume des
+  banques déposées **et** dans ce que l'application embarque, et dont le listage
+  montre les deux. Le correctif côté client, envisagé ici, n'aurait valu que pour
+  un serveur qu'on remplace.
 
 ## Ce qui n'a pas pu être vérifié
 

@@ -17,8 +17,9 @@ export default ts.config(
   {
     ignores: [
       'dist/**',
-      // Le service assemblé pour le serveur : du code produit, pas écrit.
+      // Les services assemblés : du code produit, pas écrit.
       'dist-profileur/**',
+      'dist-serveur/**',
       'node_modules/**',
       // Service worker : écrit pour le navigateur, servi tel quel, hors chaîne
       // de construction.

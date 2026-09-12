@@ -115,6 +115,30 @@ jobs:
         # dépôt tournent sur les sources et n'en voient rien.
         run: node scripts/accord/accord.mjs http://localhost:8088 --compte essai:essai
 
+      # --- Le serveur qui remplacera celui-là ---------------------------------
+      #
+      # Le même jeu de requêtes, joué contre le serveur neuf. Il ne tient pour
+      # l'instant que la part publique — les dossiers de données passent en base
+      # aux tickets suivants — et c'est pourquoi la part est nommée : retirer du
+      # jeu les cas qu'on ne sait pas encore passer serait le seul mauvais
+      # réflexe possible ici.
+      - name: Le serveur neuf tient la part publique du contrat
+        run: |
+          set -euo pipefail
+          # L'application construite, puis le serveur qui la sert : deux paquets
+          # distincts, et le second ne sait rien faire sans le premier.
+          npm run build
+          npm run build:serveur
+          SPEED_PORT=8099 \
+          SPEED_DB=/tmp/serveur-neuf/speed.db \
+          SPEED_AUDIO=/tmp/pile/audio \
+          node dist-serveur/serveur.js &
+          for _ in $(seq 30); do
+            curl -fsS -o /dev/null http://localhost:8099/ && break
+            sleep 1
+          done
+          node scripts/accord/accord.mjs http://localhost:8099 --part publique
+
       - if: always()
         run: docker logs essai || true
 
