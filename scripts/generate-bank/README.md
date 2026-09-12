@@ -83,7 +83,8 @@ Un fichier JSON, par exemple
 | `cylinders` | nombre de cylindres, repris dans le profil |
 | `idleRpm`, `redlineRpm` | les deux bouts de la plage couverte |
 | `simulationHz` | fréquence de simulation, 10 000 comme la sonde |
-| `impulseSamples` | longueur de la réponse impulsionnelle d'échappement |
+| `impulseSamples` | longueur du tube fabriqué, quand c'est lui qui sert |
+| `exhaustResponse` | captation d'échappement, un nom de `public/impulse/` sans l'extension ; `smooth_39` par défaut, `"tube"` pour l'ancienne résonance fabriquée |
 | `bank.spacingOctaves` | écart maximal entre deux ancrages voisins |
 | `bank.takeSeconds` | longueur visée d'une prise |
 | `bank.settleSeconds` | stabilisation avant enregistrement |
@@ -91,6 +92,32 @@ Un fichier JSON, par exemple
 | `bank.limiterRpm` | régime de la prise de rupteur, 0 pour ne pas en faire |
 | `bank.reliefCompression` | de combien le relief mesuré est rabattu, voir plus bas |
 | `bank.witnesses` | produire les prises témoins de mesure |
+
+### L'échappement se capte, il ne s'invente pas
+
+Le banc fabriquait sa propre résonance : un train de pics espacés de 57 Hz, à
+signe alterné, soit un filtre en peigne. Le son en direct, lui, charge une
+captation réelle depuis le 8 septembre 2026. Les deux réponses mesurées, en
+répartition d'énergie :
+
+| bande | tube fabriqué | `smooth_39` |
+|---|---|---|
+| 250 Hz – 1 kHz | −6,5 dB | −1,2 dB |
+| 4 – 8 kHz | −8,3 dB | −22,8 dB |
+| 8 – 16 kHz | −10,1 dB | −32,5 dB |
+
+Le tube creusait donc le médium de 5,3 dB et laissait passer 14 à 22 dB d'aigu
+de trop. Sur la banque produite, cela s'entendait comme un son sourd doublé d'un
+souffle aigu — et ce souffle battait **à contretemps** : 53,3 Hz au ralenti pour
+un allumage à 26,7. Avec la captation, il retrouve exactement la fréquence
+d'allumage.
+
+Les quatre captations de `public/impulse/` n'ont pas le même caractère, et le
+choix n'est pas neutre : `smooth_39` (le V8 Chevrolet 454) est la plus
+silencieuse et mate le haut-médium ; `sharp_01` et `minimal_muffling_01` en
+gardent beaucoup plus. Sur un quatre cylindres, `smooth_39` laisse 10 dB de
+moins entre 1 et 4 kHz que la banque enregistrée de référence. C'est un réglage
+à juger à l'oreille, pas un défaut à corriger au chiffre.
 
 **La géométrie du moteur reste en C++**, dans `native/engines.h` : cotes,
 came, courbes de débit, ordre d'allumage. Le JSON choisit une définition et

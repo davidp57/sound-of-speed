@@ -7,6 +7,7 @@
   "redlineRpm": 6300,
   "simulationHz": 10000,
   "impulseSamples": 10000,
+  "exhaustResponse": "smooth_39",
   "bank": {
     "spacingOctaves": 0.5,
     "takeSeconds": 3.0,

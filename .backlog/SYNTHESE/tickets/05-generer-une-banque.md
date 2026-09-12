@@ -220,18 +220,51 @@ chouette », et le seul dont la définition reprenne les cotes d'un moteur réel
 | Saut d'énergie au bouclage | 15,4 % au pire |
 | Génération | 85 s pour 21 prises |
 
-## À régénérer
+## À régénérer — fait le 12 septembre 2026
 
-La banque de `public/audio/i4-check/` date d'avant deux corrections qui touchent
-le modèle lui-même, et qui valent aussi pour le générateur :
+La banque de `public/audio/i4-check/` datait d'avant deux corrections qui
+touchent le modèle lui-même, et qui valaient aussi pour le générateur :
 
 - la **captation réelle** d'échappement, qui remplace la réponse fabriquée (voir
-  le ticket 04) — le générateur utilise encore le tube ;
+  le ticket 04) — le générateur utilisait encore le tube ;
 - le **papillon de ralenti** à 0,975 au lieu de 0,9985, dix-sept fois plus d'air.
 
-La seconde est déjà dans `engines.h` ; la première demande de charger un WAV
-dans le générateur, comme le fait l'application d'engine-sim. À faire avant de
-juger une banque produite.
+La seconde était déjà dans `engines.h`. La première a été faite : le générateur
+lit un WAV de `public/impulse/`, choisi par `exhaustResponse`.
+
+**Ce que l'écoute du 12 septembre a donné, avant le correctif.** David, sur la
+banque du 5 septembre : « ça sonne électronique, pas mécanique ; pire encore au
+ralenti », « c'est trop sourd, ça fait un peu bicylindre de petite cylindrée »,
+« y'a un "tttt ttt tttt" en trop ». Les trois désignaient le même tube :
+
+| | tube | capté | banque enregistrée |
+|---|---|---|---|
+| 250 Hz – 1 kHz, à 800 tr/min | −13,1 dB | **−6,5 dB** | −6,7 dB |
+| 4 – 8 kHz | −37,1 dB | **−52,3 dB** | −34,5 dB |
+| 8 – 16 kHz | −39,4 dB | **−60,5 dB** | −42,8 dB |
+| modulation de l'aigu au ralenti | 53,3 Hz | **26,7 Hz** | à l'allumage |
+
+L'allumage d'un quatre cylindres à 800 tr/min vaut 26,7 Hz : le souffle du tube
+battait donc au double, à contretemps du moteur. C'est ce qui s'entendait comme
+« électronique ».
+
+**Ce qui reste ouvert.** `smooth_39` mate le haut-médium : à 3 167 tr/min la
+banque captée a 10 dB de moins entre 1 et 4 kHz que la banque enregistrée.
+`sharp_01` et `minimal_muffling_01` en gardent bien plus. Le choix revient à
+l'oreille de David, les trois banques sont produites.
+
+**Et un défaut trouvé en passant, hors de ce ticket.** Le second test de
+`profile.test.mjs` échoue — sur la banque du 12 septembre comme sur celle du
+5, donc il ne vient pas du correctif d'échappement. Il vérifie que le profil
+produit « garde de quoi se refaire » ; or `clampEngineDefinition` borne
+`engineDefinition` aux vingt-sept nombres du contrat et perd `sampleDir` et
+`bank` à l'import. La définition qui permettrait de régénérer la banque
+disparaît donc dès qu'on importe le profil — exactement la boîte noire que le
+générateur disait éviter.
+
+Personne ne l'avait vu parce que ce fichier est en `describe.skipIf(!PROFIL)` :
+sans la variable `PROFIL_GENERE`, il ne tourne jamais, et la CI ne la donne pas.
+Un test qui ne tourne nulle part ne protège rien.
 
 ## Critères d'acceptation
 
