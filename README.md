@@ -17,6 +17,7 @@ licence demande que vous en offriez la source à ceux qui s'en servent — voir
 - [Les écrans](#les-écrans)
 - [Démarrer en développement](#démarrer-en-développement)
 - [Installation sur un NAS Synology](#installation-sur-un-nas-synology)
+- [Le serveur TypeScript](#le-serveur-typescript-qui-remplacera-les-deux-conteneurs)
 - [Une seconde pile, pour essayer l'intégration](#une-seconde-pile-pour-essayer-lintégration)
 - [En voiture](#en-voiture)
 - [Hors réseau](#hors-réseau)
@@ -955,6 +956,59 @@ npm run build && npm run deploy
 ```
 
 ---
+
+## Le serveur TypeScript, qui remplacera les deux conteneurs
+
+Une pile à **un seul service**, qui fait le travail des deux images d'avant :
+celle qui servait des fichiers, et celle qui relisait un dossier toutes les cinq
+secondes pour mesurer la vraie voiture.
+
+Elle tourne **à côté** de la pile en service, sur son propre port, le temps que
+le neuf convainque. La production continue de servir dans la voiture et fait
+repli : rien ne bascule tant que personne ne l'a décidé.
+
+```bash
+docker compose -f docker/docker-compose.serveur.yml up -d
+```
+
+Ce qu'il faut préparer, et rien d'autre :
+
+- **un dossier de données**, avec un sous-dossier `audio/` si vous avez des
+  banques enregistrées à déposer. Il doit exister avant de démarrer — Docker ne
+  crée pas un point de montage absent, il refuse de démarrer le conteneur ;
+- **un fichier de mots de passe** au format htpasswd, si vous voulez que les
+  dépôts soient protégés. Sans lui, ils sont refusés, ce qui est le comportement
+  sûr ; le reste de l'application marche.
+
+La base **se crée toute seule** au premier démarrage et se met à jour à chaque
+suivant. Il n'y a pas d'étape de migration à lancer à la main, et relancer le
+serveur deux fois de suite ne change rien.
+
+### Ce qui change, vu de l'application
+
+Rien. Mêmes adresses, même forme de listage, mêmes codes, même compte. Un jeu de
+vingt-sept requêtes le vérifie à chaque intégration, contre les deux serveurs :
+ils sont indiscernables — voir
+[`scripts/accord/`](scripts/accord/README.md).
+
+### Ce qui change, vu du serveur
+
+| Avant | Maintenant |
+|---|---|
+| Deux conteneurs, deux images | **un conteneur** |
+| Cinq dossiers de fichiers sur le NAS | une base, dans un fichier |
+| Un service qui relit un dossier toutes les cinq secondes | le serveur sait qu'une trace arrive, puisqu'il l'écrit |
+| Un mot de passe partagé | le même, pour l'instant — les comptes viendront |
+
+Les échantillons, eux, restent dans un volume : ce sont des fichiers, ils pèsent,
+et une image qui les contiendrait se redistribuerait avec eux.
+
+### Ce qui n'a pas encore été mesuré
+
+**Le débit des échantillons sur le disque d'un NAS.** Le serveur sert les mêmes
+vingt-trois mégaoctets de FLAC que le serveur de fichiers d'avant, avec les mêmes
+demandes de plage d'octets. C'est annoncé faisable depuis le début, et ce chiffre
+ne se prend ni sur un poste de développement ni en intégration continue.
 
 ## Une seconde pile, pour essayer l'intégration
 

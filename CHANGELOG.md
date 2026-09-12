@@ -8,6 +8,15 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Une pile à un seul service**, qui fait le travail des deux images d'avant.
+  Elle tourne à côté de celle en service, sur son propre port, le temps que le
+  neuf convainque — rien ne bascule tant que personne ne l'a décidé. La base se
+  crée et se met à jour toute seule au démarrage ; il n'y a rien à lancer à la
+  main. L'intégration continue vérifie désormais que l'image **démarre**, qu'elle
+  tient le contrat depuis le conteneur, et que la base **survit au remplacement
+  du conteneur** — une promesse posée trois tickets plus tôt et qui n'avait
+  jamais pu être vérifiée faute de conteneur qui porte cette base.
+
 - **Le serveur mesure la vraie voiture sans plus scruter un disque.** Un service
   séparé relisait le dossier des traces toutes les cinq secondes pour découvrir
   ce qui s'y trouvait ; maintenant que le serveur écrit lui-même les traces, il

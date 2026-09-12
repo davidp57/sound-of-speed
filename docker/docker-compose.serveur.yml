@@ -1,0 +1,45 @@
+# La pile du serveur TypeScript : **un seul service**.
+#
+# Elle remplace les deux conteneurs d'avant — celui qui servait des fichiers et
+# celui qui relisait un dossier — mais elle ne remplace encore rien en
+# production : elle tourne à côté, sur l'étiquette d'intégration et son propre
+# port, le temps que le neuf convainque. La pile en service continue de servir
+# dans la voiture et fait repli.
+#
+# À coller dans Portainer : Stacks > Add stack > Web editor. Les variables se
+# saisissent dans l'écran de la pile, section « Environment variables ».
+#
+# Ce qu'il faut préparer avant de démarrer, et rien d'autre :
+#
+#   - un dossier de données, avec un sous-dossier `audio/` si vous avez des
+#     banques enregistrées à déposer ;
+#   - un fichier de mots de passe, si vous voulez que les dépôts soient protégés.
+#
+# La base se crée toute seule au premier démarrage, et se met à jour à chaque
+# suivant. Il n'y a pas d'étape de migration à lancer à la main.
+
+services:
+  sound-of-speed-serveur:
+    image: ghcr.io/davidp57/sound-of-speed-serveur:${SPEED_TAG:-develop}
+    container_name: sound-of-speed-serveur
+    restart: unless-stopped
+    ports:
+      # Un autre port que la pile en service : les deux tournent côte à côte.
+      # C'est le proxy inversé de DSM qui expose celui-ci en HTTPS — sans quoi
+      # l'application s'affiche mais refuse le GPS, sans rien dire.
+      - "${SPEED_PORT:-8090}:80"
+    volumes:
+      # Tout ce que le serveur garde tient dans ce dossier : la base, et les
+      # banques d'échantillons qu'on y dépose. Le reste — profils, traces,
+      # journal, relevés — vit **dans la base**, et non plus dans cinq dossiers.
+      #
+      # Le dossier doit exister avant de démarrer : Docker ne crée pas un point
+      # de montage absent, il refuse de démarrer le conteneur, ce qui se lit
+      # comme une panne alors que c'est un dossier manquant.
+      - ${SPEED_DATA:-/volume1/docker/sound-of-speed-serveur}:/data
+      # Le fichier de mots de passe, au format htpasswd. Sans lui, les dépôts
+      # sont refusés — ce qui est le comportement sûr. Commentez cette ligne si
+      # vous n'en avez pas encore : le reste de l'application marche sans.
+      - ${SPEED_DATA:-/volume1/docker/sound-of-speed-serveur}/htpasswd:/data/htpasswd:ro
+    environment:
+      SPEED_HTPASSWD: /data/htpasswd
