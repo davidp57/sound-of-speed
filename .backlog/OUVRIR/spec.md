@@ -76,7 +76,11 @@ ici, c'est la pile d'aujourd'hui.
 - **Le serveur.** Il est le lot suivant. OUVRIR décrit ce qui existe.
 - **Une reprise de l'historique git.** Rien n'y est à retirer, c'est vérifié.
 - **Le dépôt public lui-même.** Rendre le dépôt visible est une décision de
-  David, pas une tâche : ce lot le rend *possible*.
+  David, pas une tâche : ce lot le rend *possible*. **Il l'a prise le
+  12 septembre 2026** — le dépôt est public, et tout ce que ce lot a préparé
+  prend effet : la licence vaut pour qui le lit, la banque de démonstration fait
+  du son chez qui le clone, et le lien « Source » de l'écran d'aide mène
+  quelque part.
 
 ## Critères d'acceptation
 

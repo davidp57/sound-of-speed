@@ -31,9 +31,11 @@ savoir avant la bascule que de l'entendre en roulant.
       aurait cassé la production : elle tourne encore sur l'ancien serveur, dont
       le profil mesuré est écrit par ce service-là
 - [x] Les migrations sont jouées au démarrage du conteneur, sans intervention
-- [ ] 🧑 La pile d'intégration tourne à son adresse, et la production est
-      intacte — la pile est écrite et l'image publiée ; la coller dans Portainer
-      revient à David
+- [x] La pile tourne à son adresse, et la production est intacte. **Vérifié sur
+      le NAS le 12 septembre 2026**, en 0.2.12 : l'image démarre sur
+      l'architecture du NAS, Portainer la tire, le proxy inversé la sert. Elle a
+      pris le port de la pile d'intégration, arrêtée — le serveur fait le travail
+      de ses deux conteneurs
 - [ ] Le débit et la latence de `/audio/` sont **mesurés sur le NAS**, comparés à
       nginx, et le chiffre est écrit — pas « ça marche »
 - [x] L'application se charge hors réseau après une première visite, depuis le
