@@ -1,8 +1,17 @@
 # MENAGE-UI — faire le ménage dans l'interface
 
-**Statut :** ⬜ prêt — périmètre à cadrer par entretien avant tout découpage
+**Statut :** ⬜ prêt — devenu le deuxième volet d'[ATELIER](../ATELIER/spec.md)
 **Branche :** à ouvrir
 **Version visée :** à décider
+
+**L'entretien a eu lieu**, le 12 septembre 2026. Il a trouvé plus grand que
+l'interface : le ménage n'est pas une passe sur les écrans, c'est la séparation
+de l'atelier et de la voiture. Ce lot garde son objet — ce que la voiture montre
+— et passe derrière le chemin qui livre les moteurs. Les décisions sont dans la
+spec d'ATELIER.
+
+Le relevé ci-dessous date du 8 septembre et a vieilli : `ConfigView.vue` fait
+2 524 lignes, et l'ensemble des écrans 6 960.
 
 ## Ce qui a déclenché
 

@@ -1,6 +1,9 @@
 # 01 — La sonde : engine-sim tient-il dans la voiture ?
 
-**Statut :** 🧑 attend David — la sonde tourne et a servi, reste le relevé dans la Tesla
+**Statut :** 🚫 abandonné le 12 septembre 2026 — la sonde mesurait si la
+voiture pouvait synthétiser en roulant. La réponse est connue sans elle : ×1 à
+8 kHz, et le son ne se génère plus en direct dans la voiture. engine-sim reste
+un outil d'atelier, pour fabriquer des banques — voir le ticket 05.
 
 > **Un relevé pris dans la voiture avant le 6 septembre 2026 ne vaut rien.** Le
 > serveur annonçait `probe.mjs` en `application/octet-stream`, le navigateur

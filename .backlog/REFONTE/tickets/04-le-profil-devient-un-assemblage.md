@@ -1,6 +1,9 @@
 # 04 — Le profil devient un assemblage
 
-**Statut :** 🔄 en cours
+**Statut :** 🔄 suspendu le 12 septembre 2026 — le vidage n'a de sens qu'une fois
+su ce que l'atelier livre et ce que la voiture garde. Repris comme troisième
+volet d'[ATELIER](../../ATELIER/spec.md), avec une décision de plus : l'état de
+retour déménage dans les entités, chaque moteur et chaque boîte portant le sien.
 
 **Bloqué par :** 01 — Le moteur devient une entité qu'on nomme · 02 — La boîte
 se déduit du moteur et du mode · 03 — La voiture réelle existe. Il ne reste un

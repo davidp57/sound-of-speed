@@ -1,6 +1,7 @@
 # 02 — Remesurer à froid, et dire ce que le temps réel permet
 
-**Statut :** 🧑 attend David — mesuré ici, reste le relevé dans la voiture
+**Statut :** 🚫 abandonné le 12 septembre 2026 — même raison que le ticket 01 :
+le verdict du temps réel ne décide plus rien, la voiture ne synthétise pas.
 
 **Bloqué par :** 01 — la sonde, qui existe
 

@@ -39,10 +39,10 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [PASSAGE](PASSAGE/spec.md) — un passage de rapport doit s'entendre comme un passage | 🧑 |
 | [JOURNAL](JOURNAL/spec.md) — savoir ce que la voiture a vécu, sans avoir à le demander : journal déposé tout seul, en deux crans d'accord | 🧑 |
 | [NAVIGATEUR-VOITURE](NAVIGATEUR-VOITURE/spec.md) — ce que l'appareil réel impose : filtrer sur la précision, mesurer la largeur utile | 🧑 |
-| [SYNTHESE](SYNTHESE/spec.md) — produire le son au lieu de le rejouer : trois origines au choix par profil — enregistré, généré en direct, généré à l'avance | 🧑 |
+| [SYNTHESE](SYNTHESE/spec.md) — produire le son au lieu de le rejouer : engine-sim reste un outil d'atelier, qui fabrique des banques ; la génération en direct dans la voiture est abandonnée | 🧑 |
 | [REMONTEE](REMONTEE/spec.md) — tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils, sur un accord unique | 🧑 |
 | [ESSAI-08](ESSAI-08/spec.md) — quatre constats de l'essai du 8 septembre : GPS qui ne démarre pas, son faux en roulant, interface à consolider, dépôt qui refuse les identifiants | 🧑 |
-| [MENAGE-UI](MENAGE-UI/spec.md) — faire le ménage dans l'interface : six mille lignes d'écrans pour une application qui affiche trois chiffres | ⬜ |
+| [MENAGE-UI](MENAGE-UI/spec.md) — faire le ménage dans l'interface : sept mille lignes d'écrans pour une application qui affiche trois chiffres | ⬜ devenu le deuxième volet d'[ATELIER](ATELIER/spec.md) |
 | [DELISSER](DELISSER/spec.md) — un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | 🧑 |
 | [RAPATRIER](RAPATRIER/spec.md) — faire redescendre ce que la voiture a déposé : les quatre dossiers du serveur en un paquet, depuis un téléphone | 🧑 |
 | [MOUVEMENT](MOUVEMENT/spec.md) — une seule notion de « est-ce qu'on ralentit ? » : deux compteurs se contredisent depuis le 8 septembre, et la boîte reste bloquée ou monte à contretemps | ⬜ |
@@ -56,6 +56,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [RETOUR-11](RETOUR-11/spec.md) — trois demandes de la sortie du 11 septembre au soir : le rétrogradage forcé qui rend le rapport, le claquement à la montée, l'aiguille du rapport suivant | 🧑 les trois sont livrés ; deux s'écoutent en roulant |
 | [ETAGEMENT](ETAGEMENT/spec.md) — une boîte à sept rapports, étagée pour tenir bas : 50 en quatrième, 80 en cinquième, 110 en sixième, et les passages plus tôt en mode Route | 🧑 les trois tickets sont livrés ; reste l'écoute en roulant |
 | [REMISE-A-ZERO](REMISE-A-ZERO/spec.md) — tout remettre comme au premier jour, en un bouton : seize clés de stockage, et trois questions de périmètre à trancher | ⬜ |
+| [ATELIER](ATELIER/spec.md) — l'atelier fabrique les moteurs, la voiture les reçoit : un chemin du bureau au volant, et deux effets sonores qui restent réglables | ⬜ |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
