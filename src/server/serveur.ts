@@ -18,6 +18,7 @@ import { SOLO_ACCOUNT_ID, type Base } from './base/base'
 import { coupleDe, type Comptes } from './comptes'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
 import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
+import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
 
 export interface OptionsDuServeur {
@@ -102,6 +103,22 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       })
     })
 
+    // --- Ce que le serveur a appris de la vraie voiture ---------------------
+    //
+    // En lecture seule, et sans compte : c'est le serveur qui l'écrit, et
+    // l'écran qui le propose le lit sans en demander un — il n'en a jamais
+    // demandé.
+    app.get('/mesure-voiture/profil-voiture.json', async (c) => {
+      const contenu = await lireProfilMesure(base, compte)
+      // Un 404 franc, et surtout pas la page d'application : le client distingue
+      // « pas encore mesuré », qui est normal, de « illisible », qui ne l'est pas.
+      if (contenu === null) return c.notFound()
+      return c.text(contenu, 200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+      })
+    })
+
     // --- Ce que la voiture envoie en roulant -------------------------------
     //
     // Traces, tranches de journal, relevés de mesure. Trois dossiers, une seule
@@ -136,6 +153,19 @@ export function creerServeur(options: OptionsDuServeur): Hono {
         // un code de panne ferait réessayer la voiture indéfiniment, pour un
         // envoi qui ne passera jamais.
         if (ecrit === 'trop gros') return c.text('charge trop grosse', 413)
+
+        // La trace vient d'arriver, et c'est nous qui l'avons écrite : plus
+        // besoin de scruter un dossier pour l'apprendre. La mesure se reprend
+        // ici, et son échec ne fait pas échouer le dépôt — perdre une trace
+        // qu'on vient de recevoir serait pire que la mesurer plus tard.
+        if (dossier === 'traces') {
+          try {
+            await reprendreApresDepot(base, compte, nom)
+          } catch (erreur) {
+            console.error(`reprise du profil mesuré : ${String(erreur)}`)
+          }
+        }
+
         return c.text('', 201)
       }
 
