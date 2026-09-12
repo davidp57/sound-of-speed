@@ -77,8 +77,14 @@ export interface SliceBufferOptions<T> {
   header?: () => string[]
 }
 
-/** Cinq minutes : six fichiers pour un trajet d'une demi-heure. */
-const SLICE_AFTER_MS = 5 * 60 * 1000
+/**
+ * Cinq minutes : six fichiers pour un trajet d'une demi-heure.
+ *
+ * Exporté parce que le relecteur s'en sert pour dire la durée approchée d'une
+ * session sans ouvrir un seul fichier : compter ses tranches suffit. Deux
+ * constantes finiraient par diverger.
+ */
+export const SLICE_AFTER_MS = 5 * 60 * 1000
 /** Trente kilo-octets, l'ordre de grandeur d'une demi-heure de relevés. */
 const SLICE_AT_BYTES = 30_000
 const MAX_PENDING = 20_000

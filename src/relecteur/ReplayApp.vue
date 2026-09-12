@@ -4,7 +4,12 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import TrackMap from './TrackMap.vue'
 import DialGauge from '../ui/components/DialGauge.vue'
 import { loadDepositCredentials } from '../core/preset/store'
-import { listSessions, loadSession, type SessionEntry } from '../core/session/read'
+import {
+  atLeastDurationMs,
+  listSessions,
+  loadSession,
+  type SessionEntry,
+} from '../core/session/read'
 import { stateAt, trackAt, type Session } from '../core/session/model'
 import { findGearChanges, findShiftBursts, recordedShifts } from '../core/session/shifts'
 import { accelProfile, profileRuns } from '../core/session/profile'
@@ -490,6 +495,21 @@ function stamp(ms: number): string {
 }
 
 /**
+ * Ce qu'on lit dans la liste avant d'avoir choisi.
+ *
+ * La date situe le trajet, la durée dit s'il vaut la peine d'être ouvert. Elle
+ * est annoncée comme une borne — « plus de 15 min » — parce que c'est ce que le
+ * nombre de tranches établit, et qu'une durée exacte demanderait de charger la
+ * session qu'on est justement en train de choisir.
+ */
+function sessionLabel(entry: SessionEntry): string {
+  const ms = atLeastDurationMs(entry)
+  const durée =
+    ms === null ? 'journal seul' : ms === 0 ? 'moins de 5 min' : `plus de ${ms / 60_000} min`
+  return `${stamp(entry.startedAt)} — ${entry.id} — ${durée}`
+}
+
+/**
  * La carte suit-elle le véhicule ?
  *
  * Active par défaut : on ouvre un trajet pour le voir se dérouler, pas pour
@@ -560,7 +580,7 @@ void refresh()
         <select v-model="chosen" :disabled="busy || entries.length === 0">
           <option value="" disabled>Choisir une session…</option>
           <option v-for="entry in entries" :key="entry.key" :value="entry.key">
-            {{ stamp(entry.startedAt) }} — {{ entry.id }} ({{ entry.files.length }}
+            {{ sessionLabel(entry) }} ({{ entry.files.length }}
             {{ entry.files.length > 1 ? 'fichiers' : 'fichier' }})
           </option>
         </select>

@@ -20,7 +20,6 @@ import {
   saveSelectedId,
   saveTraces,
   toFile,
-  tracesFromFile,
   tracesToFile,
 } from './store'
 import {
@@ -456,7 +455,7 @@ describe('traces', () => {
     expect(loadTraces()).toEqual([{ name: 'Bonne', startedAt: 0, samples: [] }])
   })
 
-  it('fait un aller-retour par fichier', () => {
+  it('sérialise une trace dans un fichier relisible', () => {
     const traces = [
       {
         name: 'Aller',
@@ -465,20 +464,9 @@ describe('traces', () => {
       },
     ]
 
-    expect(tracesFromFile(tracesToFile(traces))).toEqual(traces)
+    expect(JSON.parse(tracesToFile(traces))).toEqual({ version: 1, traces })
   })
 
-  it('accepte un fichier qui n’est qu’un tableau de traces', () => {
-    const traces = [{ name: 'Nue', startedAt: 0, samples: [] }]
-
-    expect(tracesFromFile(JSON.stringify(traces))).toEqual(traces)
-  })
-
-  it('refuse un fichier de traces inexploitable', () => {
-    expect(() => tracesFromFile('pas du json')).toThrow(ProfileImportError)
-    expect(() => tracesFromFile('{"traces":[]}')).toThrow(ProfileImportError)
-    expect(() => tracesFromFile('{"autre":1}')).toThrow(ProfileImportError)
-  })
 })
 
 describe('valeurs d’origine', () => {

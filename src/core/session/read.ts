@@ -1,5 +1,6 @@
 import { authHeader, hasCredentials, type DepositCredentials } from '../upload/put'
 import { gunzip } from '../upload/compress'
+import { SLICE_AFTER_MS } from '../upload/slicing'
 import { buildSession, sessionKeyOf, type Session, type SessionFile } from './model'
 
 /**
@@ -81,6 +82,25 @@ export async function listSessions(
   }
 
   return [...sessions.values()].sort((a, b) => b.startedAt - a.startedAt)
+}
+
+/**
+ * Durée minimale d'une session, lue sur le seul nombre de ses tranches.
+ *
+ * Choisir quel trajet relire demande sa durée, et elle n'était connue qu'une
+ * fois la session chargée — trop tard pour choisir. La capture découpe au temps,
+ * une tranche toutes les cinq minutes : `n` tranches veulent donc dire que le
+ * trajet a duré au moins `(n - 1)` fois cinq minutes, la dernière pouvant être
+ * partielle. C'est une **borne basse**, jamais une estimation : elle se lit sans
+ * ouvrir un fichier, et elle ne ment pas.
+ *
+ * Rend `null` pour une session sans capture — celles des 8, 9 et 10 septembre
+ * 2026 n'ont que leur journal, qui découpe à la taille et non au temps.
+ */
+export function atLeastDurationMs(entry: SessionEntry): number | null {
+  const tranches = entry.files.filter((file) => file.kind === 'capture').length
+  if (tranches === 0) return null
+  return (tranches - 1) * SLICE_AFTER_MS
 }
 
 /**

@@ -66,20 +66,6 @@ export function tracesToFile(traces: Trace[]): string {
   return JSON.stringify({ version: 1, traces }, null, 2)
 }
 
-export function tracesFromFile(text: string): Trace[] {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(text)
-  } catch {
-    throw new ProfileImportError('Le fichier n’est pas du JSON valide.')
-  }
-  const list = isRecord(parsed) && Array.isArray(parsed['traces']) ? parsed['traces'] : parsed
-  if (!Array.isArray(list)) throw new ProfileImportError('Aucune trace trouvée dans le fichier.')
-  const traces = list.filter(isTrace)
-  if (traces.length === 0) throw new ProfileImportError('Aucune trace exploitable dans le fichier.')
-  return traces
-}
-
 export function loadProfiles(): Profile[] {
   const stored = readJson<Profile[]>(STORAGE_KEY)
   if (!stored || !Array.isArray(stored) || stored.length === 0) {

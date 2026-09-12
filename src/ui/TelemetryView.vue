@@ -877,38 +877,6 @@ td.over {
   margin-top: 0.8rem;
 }
 
-.trace-controls {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.trace-controls input {
-  flex: 1;
-}
-
-.trace-controls button {
-  white-space: nowrap;
-}
-
-.trace-list {
-  list-style: none;
-  margin: 0.8rem 0;
-  padding: 0;
-}
-
-.trace-list li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.35rem 0;
-  border-top: 1px solid var(--line);
-}
-
-.trace-list li span:first-child {
-  flex: 1;
-}
-
 .error {
   color: var(--warn);
   margin: 0.5rem 0 0;
