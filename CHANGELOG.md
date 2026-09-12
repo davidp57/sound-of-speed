@@ -8,6 +8,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Une base de données, son schéma et ses migrations.** Sept tables — comptes,
+  droits, moteurs, boîtes, profils, dépôts, voiture mesurée — dans un fichier
+  SQLite qui vit dans un volume, avec des migrations versionnées jouées au
+  démarrage. Ouvrir la base deux fois ne change rien : c'est la seule façon
+  d'accepter qu'elle se migre toute seule. Un compte unique est semé au premier
+  lancement, et rien ne demande de se connecter — mais tout ce qui est rangé
+  appartient à un compte dès maintenant, pour qu'il n'y ait rien à rattacher
+  après coup le jour où l'identité s'ouvrira. Les réglages y sont gardés tels que
+  le cœur les décrit plutôt qu'étalés en colonnes : le cœur reste la seule
+  autorité sur la forme d'une entité.
+
 - **Les trois zones du code ne se mélangent plus par règle, et non par
   consigne.** Le cœur, l'interface et le serveur ont chacun leurs frontières :
   le cœur n'importe ni Vue, ni un écran, ni le serveur ; l'interface n'importe
