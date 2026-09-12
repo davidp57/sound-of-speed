@@ -6,7 +6,45 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+## [0.2.0] — 2026-09-12
+
+Deux semaines et demie de septembre, en une version : la boîte se conduit
+comme une boîte, le passage de rapport s'entend, la voiture capture ses
+trajets toute seule et les fait relire au bureau, et elle tire d'eux le profil
+de la vraie voiture. Les notes de version sont dans
+[`docs/releases/v0.2.0.md`](docs/releases/v0.2.0.md).
+
 ### Ajouté
+
+- **Une boîte devient une chose qu'on nomme.** Comme le moteur avant elle : une
+  boîte porte ses rapports, son pont, le rayon de roue, la durée d'un passage et
+  ses temporisations, plus le rétrogradage forcé et l'à-coup — deux gestes de
+  boîte, et non des propriétés de moteur, puisqu'un moteur ne fait pas de clac.
+  Elle ne porte ni les régimes de passage, qui se déduisent du rupteur et du
+  mode, ni les pétarades, qui sont le caractère du moteur et le suivent.
+
+  Deux boîtes sont livrées et non une : elles partagent leurs rapports mais pas
+  leur pont — 3,7 contre 4,5 —, donc ni le régime à une vitesse donnée, ni les
+  durées de passage. Et changer de boîte ne change ni la voix, ni la banque, ni
+  le mixage : sans ce verrou, on croirait avoir changé de moteur.
+
+- **Capturer le son qui sort, et le déposer sur le serveur.** Un cliquetis
+  entendu dans la voiture était absent du son que le banc fabrique avec les mêmes
+  réglages : le banc refait la chaîne, mais ni le lecteur, ni la réverbération du
+  navigateur, ni la carte son. Trois étages où le défaut pouvait se loger, sans
+  moyen de savoir lequel.
+
+  Un bouton de l'écran de synthèse garde les huit dernières secondes de ce qui
+  sort réellement, les encode et les dépose sur le serveur — le navigateur de la
+  voiture ne téléchargeant rien. Ce que la journée a appris et qui justifie
+  l'outil : chaque fois que la mesure et l'oreille ont divergé, c'est la mesure
+  qui avait tort.
+
+- **Une sonde qui mesure le moteur simulé hors de l'application.** Le cœur
+  d'engine-sim a été porté pour tourner dans un navigateur, et une page séparée
+  le fait tourner seul, sans le reste de Speed. C'est elle qui a permis de
+  chiffrer ce que la voiture peut tenir, et de trouver les défauts de la
+  simulation là où l'application entière les aurait noyés.
 
 - **Le relecteur fait entendre un trajet.** Le bouton « Écouter le trajet » fait
   retraverser la chaîne aux relevés de la capture : le trajet sonne comme il a
@@ -139,427 +177,6 @@ Toutes les évolutions notables du projet. Format
   source qu'on peut changer au volant n'est qu'un moyen de se tromper sur ce
   qu'on entend.
 
-### Corrigé
-
-- **La liste du relecteur dit la durée de chaque trajet.** Elle n'affichait que
-  la date et le nombre de fichiers ; il fallait ouvrir une session pour savoir si
-  elle durait deux minutes ou une heure — c'est-à-dire charger celle qu'on était
-  en train de choisir. La durée s'annonce comme une **borne basse** — « plus de
-  15 min » —, lue sur le seul nombre de tranches, la capture découpant toutes les
-  cinq minutes. Une session sans capture, comme celles des 8, 9 et 10 septembre,
-  affiche « journal seul » plutôt qu'une durée inventée.
-
-- **Du code mort a été retiré** après le retrait du panneau de traces : des
-  règles de style que plus aucun élément ne portait, la lecture de traces en
-  fichier que seul son propre test appelait, et deux commentaires qui décrivaient
-  encore le geste supprimé.
-
-- **Le README décrivait trois gestes qui n'existent plus.** Il annonçait encore
-  des traces « exportables en un fichier et réimportables ailleurs », et un
-  trajet réel qui « s'enregistre une fois depuis l'écran Télémétrie » — le
-  panneau qui portait ces trois gestes a été retiré avec le relecteur. Le texte
-  dit maintenant ce qui se passe : l'étalonnage embarqué produit seul les traces
-  locales, la capture du trajet remonte toute seule, et c'est le relecteur qui
-  sert à revoir un trajet. Le rejeu, lui, reste bien une source de vitesse.
-
-- **Le profil mesuré n'était servi par personne.** L'application demandait
-  `/mesure-voiture/profil-voiture.json` ; nginx n'avait pas d'emplacement pour ce
-  chemin, le volume n'était pas monté dans le conteneur du site, et le dossier
-  n'existait pas sur le serveur. La requête tombait sur la règle générale, dont
-  le `try_files … /index.html` répond **200 avec la page d'accueil** : le code
-  voyait une réponse valable, échouait à la lire, et rendait la même absence
-  qu'un serveur sans mesure. Le bandeau de proposition ne pouvait donc pas
-  apparaître, et rien à l'écran ne le disait. Sortie du 11 septembre 2026.
-
-  Le dossier s'appelait d'abord `profils/`, à une lettre de `profiles/` qui est
-  la bibliothèque de profils. Deux dossiers voisins à ce point se confondent à
-  la première manipulation : il a été renommé **`mesure-voiture/`** avant
-  d'exister. Les deux ne contiennent pas la même chose — l'un ne porte qu'une
-  couche de mesure, l'autre les profils qu'on peut choisir — et n'ont pas les
-  mêmes droits.
-
-- **Le rétrogradage forcé rendait le rapport qu'il venait de prendre.** Sa cible
-  vaut `redlineRpm × 0,55` — 3 575 tours sur le V8 — quand le seuil de montée
-  immédiate de la quatrième à pleine demande vaut 3 514 : elle passait au-dessus
-  de sa propre porte de sortie. Mesuré le 11 septembre à 118 km/h : 6→4, puis
-  4→5 quatre dixièmes plus tard, puis 5→6, pour une reprise d'une seconde et
-  demie. Le rapport visé est maintenant choisi pour se garder, et le pied au
-  plancher le retient tant qu'il y reste — comme une automatique. Là où aucun
-  rapport ne se garderait, la boîte descend quand même : une boîte muette serait
-  un défaut pire.
-
-- **Le claquement de passage était trop fort à la montée.** Il perd trente pour
-  cent ; le rétrogradage garde le sien, au niveau près. Les deux réglages
-  bougent ensemble, l'amplitude de descente étant le produit des deux.
-
-- **Le cumul des mesures d'une voiture donne le même résultat qu'un recalcul.**
-  Il n'en donnait pas : la vitesse pratiquée est un centile, qui **baisse**
-  quand un trajet s'allonge, et le cumul par extrêmes gardait la valeur qu'une
-  tranche courte avait rendue. Mesuré : 150 km/h contre 40 pour un même trajet,
-  sur la grandeur qui fixe la vitesse plausible.
-
-- **Un trajet n'est plus compté douze fois.** Le garde de remplacement le
-  cherchait dans la fenêtre des vingt derniers : un trajet qui n'y était pas —
-  arrivé en retard, ou sans horodatage lisible — était recompté à chaque tranche
-  déposée. Mesuré : trente-deux trajets là où il y en avait vingt et un.
-
-- **La boîte remonte les rapports après un arrêt.** Relevé en roulant le
-  11 septembre 2026 : après quarante-quatre minutes de stationnement, la
-  deuxième a tenu de 22 à 108 km/h jusqu'au rupteur, et pas un rapport n'a été
-  passé sur les cinquante et un kilomètres du trajet.
-
-  Deux défauts qui se composaient. Le conditionneur prêtait une décélération de
-  0,19 à 0,39 m/s² à une voiture immobile — vitesse à 0,000 km/h d'un bout à
-  l'autre — parce que la pente gardait sa dernière valeur faute de mesure
-  neuve. Et le compteur de ralentissement de la boîte avalait ces valeurs sans
-  plafond : mesuré à 2 706 secondes pour un seuil de 0,35, il aurait fallu
-  vingt-deux minutes d'accélération continue pour le rendre, si bien que
-  l'inhibition de montée ne retombait jamais.
-
-- **Le motif d'un rejet de position se lit sous les cadrans**, avec la précision
-  réellement annoncée. Il existait déjà, mais rangé sous les réglages, là où
-  personne ne regarde en conduisant.
-
-- **Le bouton du son ne ment plus quand l'application est au repos.** Il
-  annonçait « Son actif » alors que « P » avait coupé la cadence et le mixage.
-
-- **« P » coupe vraiment le son.** Il n'arrêtait que la boucle d'affichage,
-  alors que la banque d'échantillons est cadencée par l'horloge du fil audio :
-  celle-ci continuait de battre à soixante hertz, et le silence demandé était
-  défait au tour suivant. Le ralenti s'entendait toujours, la boîte tournait et
-  le journal s'incrémentait pendant que l'écran affichait « P ».
-
-- **« D » ne peut plus installer deux cadences.** Le démarrage passait par la
-  boucle d'affichage sans regarder si l'horloge du fil audio tournait déjà : le
-  pas de temps était alors compté deux fois, et tout ce qui s'intègre dessus —
-  compteurs de la boîte, durée d'un passage, lissage de la charge — avançait
-  deux fois trop vite. L'ordre était sûr tant que le démarrage avait lieu au
-  chargement de la page ; il ne l'est plus depuis que c'est un bouton.
-
-- **La commande de boîte changée à la manette se voit à l'écran.** Elle
-  s'adressait à la boîte sans passer par l'état que l'écran lit : « AUTO »
-  restait allumé pendant que la boîte était en manuelle.
-
-- **Le repos ne perd plus le mode de conduite enregistré.** Remettre « route »
-  au parking l'écrivait dans les préférences, si bien que le mode déduit du
-  profil disparaissait dès le deuxième trajet.
-
-- **Le rapport est inscrit au journal à l'instant où il change.** Le relevé
-  périodique le portait toutes les dix secondes : il prouvait qu'un passage
-  avait eu lieu, jamais quand ni combien. Le relecteur s'en sert quand il est
-  là, et mesure alors la durée d'un enchaînement au lieu de l'encadrer.
-- **Un relevé de l'accéléromètre en télémétrie.** Cadence réelle, présence de
-  l'accélération sans la gravité, amplitude observée : de quoi savoir, en
-  roulant, si la voiture peut mesurer l'accélération au lieu de la déduire d'une
-  vitesse GPS qui n'arrive qu'une fois par seconde.
-
-- **Un relecteur, pour revoir un trajet au lieu de le raconter de mémoire.** Il
-  vit sur une page à part, `/relecteur.html`, et déroule une session enregistrée
-  comme un lecteur vidéo : lecture, pause, déplacement libre, vitesse réglable
-  jusqu'à vingt fois.
-
-  Les sessions se listent depuis le serveur, la plus récente en tête, et leurs
-  tranches se recollent toutes seules. Il lit indifféremment les fichiers en
-  clair et compressés, et les deux natures : le journal des essais passés — ceux
-  des 8, 9 et 10 septembre restent relisibles — comme la capture continue.
-
-  **Ce qui est deviné se voit.** Un journal ne porte le régime, le rapport et la
-  charge qu'une fois toutes les dix secondes : entre deux relevés, les valeurs
-  affichées sont interpolées, et l'écran dit à quelle distance se trouve le
-  relevé le plus proche. Le rapport, lui, n'est jamais interpolé — entre la
-  troisième et la quatrième il n'y a pas de trois et demi.
-
-  Une **carte** montre le trajet et le véhicule qui le suit. Un clic sur le tracé
-  emmène la timeline à cet endroit ; un déplacement de la timeline déplace le
-  véhicule. Elle demande Leaflet et les tuiles d'OpenStreetMap — la première
-  dépendance d'interface du projet, acceptée pour ce seul écran. La page étant
-  séparée, **l'application de conduite ne grossit pas d'un octet** : elle reste
-  à 307 ko quand le relecteur en pèse 162 dans son propre paquet.
-
-  La **timeline est marquée** des faits du journal — arrêts, redémarrages du
-  suivi, salves de positions rejetées, coupures du son, changements de
-  configuration —, groupés pour qu'une rafale ne couvre pas la barre.
-
-  Un bouton **copie le repère** de l'instant affiché : une ligne lisible, puis
-  l'état complet avec les coordonnées. C'est le geste qui sert le but du lot —
-  David colle le repère, et la conversation part du bon moment.
-
-  La timeline marque aussi les **rapports enchaînés**, déduits des relevés et
-  non lus dans un fichier. Ce qui est mesuré et ce qui est déduit se
-  distinguent : à un relevé toutes les dix secondes, voir la deuxième puis la
-  quatrième prouve deux passages sans dire s'ils se sont suivis. Le critère
-  devient alors la densité — plus d'un rapport franchi par relevé, c'est que la
-  boîte a bougé plusieurs fois entre deux regards. Sur l'essai du 10 septembre,
-  neuf moments ressortent, dont les allers-retours deuxième-quatrième relevés
-  entre 290 et 310 secondes.
-
-  Sous la barre, un **relief de vingt-huit pixels** trace l'accélération en une
-  courbe continue, verte au-dessus de l'axe et rouge en dessous : le même tracé
-  découpé à zéro, pour que la couleur change sans que le trait se coupe. Chaque
-  colonne garde l'extrême de ce qu'elle couvre — une moyenne effacerait le
-  freinage bref, qui est justement ce qu'on cherche — et un trou
-  d'enregistrement coupe le trait plutôt que de se laisser traverser. Les **passages de rapport** s'y posent en chevrons sur l'axe, vers le
-  haut pour une montée et vers le bas pour un rétrogradage : les lire sur la
-  même ligne que l'effort montre d'un coup un rétrogradage en pleine
-  accélération, ou une montée en freinant.
-
-  Sous le rapport, une **jauge de charge** montre ce que le moteur croit qu'on
-  demande — l'équivalent d'une position d'accélérateur. Elle est calculée et
-  jamais mesurée, la voiture ne disant pas ce que fait le pied : d'où une barre
-  plutôt qu'un cadran, qui suggérerait un instrument dont il n'existe pas
-  d'équivalent à bord.
-
-  L'instant se lit sur **les cadrans de la voiture** — le même composant, pour
-  que relire un trajet soit revoir ce qu'on avait sous les yeux. La carte occupe
-  tout ce que l'écran laisse, un bouton **garde la vue centrée** sur le
-  véhicule, et le survol d'une marque de la timeline dit ce qu'elle est,
-  combien de fois et quand.
-
-  Vérifié sur l'essai du 10 septembre 2026 rapatrié du serveur : 218 relevés,
-  2 111 positions, 36 minutes, le tracé de l'A31 sur la carte, et le véhicule
-  qui reste au pixel près au centre tant que le suivi est actif.
-
-
-- **La capture d'un trajet démarre toute seule.** Elle se déclenche au démarrage
-  du GPS, dès lors que la remontée est au dernier cran, et s'arrête avec lui. Il
-  n'y a plus rien à penser avant de partir.
-
-  Le mécanisme précédent demandait d'appuyer sur un bouton. Le 10 septembre
-  2026, un essai de trente-six minutes n'a laissé **aucune trace** : le journal
-  est remonté en huit tranches, la trace n'existait pas. La remontée automatique
-  des traces était pourtant en place depuis des jours — `core/upload/consent.ts`
-  les classe au dernier cran, et l'accord était donné, puisque le journal portait
-  les positions. Le transport marchait ; c'est le geste qui manquait.
-
-  Elle enregistre, à la cadence de l'appareil, **ce que la source livre** —
-  vitesse brute, précision, origine — et **ce que la chaîne en fait** au même
-  instant — vitesse conditionnée, accélération, régime, rapport, charge. La
-  sortie n'est pas là pour le rejeu, qui la recalculerait : elle permet de
-  comparer ce que la chaîne a produit ce jour-là à ce qu'elle produit
-  aujourd'hui, et rien d'autre dans ce projet ne montre les régressions.
-
-  Chaque tranche réécrit un **en-tête** qui décrit la session : profil, moteur,
-  boîte, version de l'application, et le profil assemblé en entier. Quatre
-  kilo-octets sur trois cents, pour qu'une tranche isolée se lise seule. Un
-  changement de configuration en cours de route s'inscrit, daté — et le journal
-  reçoit le même fait, son genre `profile` étant déclaré depuis le premier jour
-  sans que rien ne l'émette.
-
-  Chaque relevé garde aussi **l'horodatage brut de la source**, sans conversion :
-  c'est la seule façon de retrouver la cadence réelle de l'appareil, et l'unité
-  elle-même est une information — le navigateur de la Tesla compte en
-  microsecondes, ce qui a coûté une semaine de diagnostic.
-
-  Les tranches partent par la file de remontée déjà écrite, toutes les cinq
-  minutes, et **ce qui reste part après quinze secondes à l'arrêt**. La dernière
-  tranche n'a pas cinq minutes devant elle, et personne n'arrête l'application :
-  David « sort de la voiture, et quand il s'éloigne elle s'éteint ». Un arrêt qui
-  dure est le dernier moment où l'on est encore là pour envoyer — le temps de se
-  garer suffit, un feu rouge n'y suffit pas, et le déclencheur ne tire qu'une
-  fois par arrêt pour qu'un embouteillage ne produise pas un fichier par quart de
-  minute.
-
-  Il compte sur l'horloge murale et non sur le temps de session : le pas de la
-  boucle est plafonné à un quart de seconde, si bien qu'une page en arrière-plan
-  voit son temps avancer quatre fois moins vite que le monde. Rien n'est gardé dans le téléphone : trente-six minutes à dix relevés
-  par seconde font vingt-deux mille lignes, et le stockage local ne les
-  absorberait pas trajet après trajet.
-
-- **Un témoin sur l'écran de conduite dit si la session sera récupérable.** Vert :
-  la capture tourne et les tranches partent. Orange : ça se rattrapera tout
-  seul — pas de réseau, ou un GPS qui rejette beaucoup. Rouge : c'est perdu —
-  compte refusé, GPS mort, écriture impossible. Absent quand l'envoi est coupé.
-
-  **La frontière entre orange et rouge est la récupérabilité**, et non la gravité
-  ressentie : un réseau absent depuis dix minutes reste orange, parce que tout
-  partira ; un mot de passe refusé est rouge même si l'application tourne
-  parfaitement. Un seul témoin, qui prend le pire des états — une rangée de
-  voyants sur un écran qu'on lit en conduisant est une rangée qu'on ne lit pas.
-  Il ne clignote pas : sa couleur porte le sens.
-
-  Le détail se lit sur l'écran de télémétrie, en toutes lettres, avec ce qui a
-  été retenu et ce qui est parti.
-
-### Modifié
-
-- **Une boîte à sept rapports, étagée pour tenir bas.** Les trois premiers
-  rapports ne bougent pas — le départ mesuré le 11 septembre au soir est celui
-  que David a jugé juste. Les quatre autres sont redessinés depuis les vitesses
-  qu'il a nommées, avec une septième pour l'autoroute :
-
-  | | avant | après |
-  |---|---|---|
-  | 50 km/h en quatrième | 1 532 tr/min | **1 487** |
-  | 80 km/h en cinquième | 2 046 tr/min | **1 737** |
-  | 110 km/h en sixième | 2 355 tr/min | **1 734** |
-  | 130 km/h en septième | — | **1 508** |
-
-  Les sauts s'écrasaient en haut de boîte — 1,32 · 1,20 · 1,19 — et valent
-  maintenant 1,36 · 1,37 · 1,38 · 1,36. La septième entre vers 125 km/h.
-
-  Les profils et les boîtes déjà enregistrés la reçoivent en s'ouvrant, y
-  compris ceux reçus par un lien de partage. Une boîte réglée à la main n'est
-  pas touchée : elle garde ce qu'on lui a donné.
-
-- **Les rapports passent plus tôt en mode Route.** David : « ça reste trop
-  longtemps en deux ». La marge au-dessus du ralenti passe de 900 à 640 tr/min,
-  soit −20 % sur le seuil pied au plancher et −15 % en conduite ordinaire. Le
-  mode Sport ne bouge pas. En accélération douce, les rapports cèdent maintenant
-  à 2 210, 1 983, 1 999, 1 995 et 1 969 tr/min, contre 3 005, 2 597, 2 367 et
-  2 324 avant — cinq valeurs presque égales, signature d'une boîte régulièrement
-  étagée.
-
-- **La boîte se décide sur un seul plancher de régime.** On monte dès que le
-  rapport suivant tournerait au-dessus du ralenti plus une marge, et on descend
-  quand le rapport engagé tombe sous une marge un peu plus basse. La marge vient
-  du mode de conduite et se déplace avec la demande — elle double à pleine
-  charge. Le premier passage échappe à la règle : la deuxième s'engage dès
-  qu'elle tient au-dessus du ralenti, quels que soient le mode et la charge.
-
-  Mesuré sur le profil Route en mode Route, accélération douce : les rapports
-  cèdent à 3005, 2597, 2367 et 2324 tr/min, contre 3700, 3350, 3050 et 2950
-  avant. Pied au plancher : 4296, 3632, 3333 et 3213.
-
-  Deux mécanismes disparaissent, le plancher faisant leur travail : la montée en
-  croisière et la descente au freinage. Un seul nombre gouvernant les deux sens,
-  ils ne peuvent plus se contredire — c'est ce qui ouvrait sur chaque rapport une
-  plage de vitesse où la croisière autorisait un rapport que la descente au
-  régime refusait, et où la boîte faisait le va-et-vient. Entendu le 10 septembre
-  2026 entre 70 et 72 km/h, et relevé au journal.
-
-- **Le rétrogradage forcé dépend du mode.** Pied au plancher en Route, demande
-  forte en Sport. Sept rétrogradages en trente-six minutes le 10 septembre, sur
-  des relances ordinaires : le seuil du profil ne distinguait pas les deux modes.
-
-
-- **Aucune image publiée ne porte plus les écrans de banc.** L'image
-  d'intégration les portait, et l'application y démarrait donc sur le simulateur
-  au lieu du GPS — trente-six secondes de simulateur sur l'essai du
-  10 septembre 2026. Le banc reste en développement.
-
-### Modifié
-
-- **Ce qui part vers le serveur est compressé dans le navigateur**, par le
-  compresseur natif et sans bibliothèque — l'application doit se charger hors
-  réseau. Mesuré sur les huit tranches de l'essai du 10 septembre 2026 :
-  **226 483 octets deviennent 32 309, soit 85,7 % de moins**, la meilleure
-  tranche tombant à 93 %. Le gain porte d'abord sur la 4G en roulant, ensuite
-  sur la place du serveur. Là où le navigateur ne sait pas compresser, la
-  tranche part en clair plutôt que pas du tout.
-
-  Les profils et les relevés de mesure restent en clair : l'application les
-  retélécharge et les lit, et la bibliothèque de profils cesserait de
-  fonctionner.
-
-- **Le panneau des traces disparaît de l'écran de télémétrie** — capturer,
-  nommer, lister, supprimer, exporter, importer, rejouer, déposer. Une ligne
-  d'état le remplace. Deux mécanismes qui décrivent le même fait finissent par
-  diverger, et ce dépôt l'a déjà payé deux fois.
-
-  **Cela retire le seul rejeu sonore existant**, que le CHANGELOG appelait
-  « l'outil de mise au point le plus utile du projet ». C'est un prix accepté,
-  pas un oubli : le rejeu revient avec le relecteur, qui jouera une capture avec
-  la configuration de son en-tête.
-
-  L'étalonnage embarqué, lui, garde son enregistrement borné par étape :
-  délimiter une mesure n'est pas capturer une session, et une étape mal bornée
-  donne une mesure fausse. Un échec du stockage local se dit désormais sur son
-  panneau, faute de quoi il ne se dirait plus nulle part.
-
-- Le découpage en tranches, écrit pour le journal, est devenu une pièce à part :
-  la capture en avait besoin à l'identique, et le recopier aurait fait deux
-  mécanismes de plus.
-
-
-- Le profil actif est **assemblé** depuis les groupes qu'il désigne : son
-  moteur, sa boîte et la voiture de l'appareil. Les réglages de l'écran de
-  configuration atterrissent dans le groupe où ils vivent, et corriger un
-  moteur s'entend dans tous les profils qui le jouent.
-- Les pétarades suivent le moteur : c'est son échappement qui claque.
-- Les profils enregistrés sont scindés au chargement — chacun reçoit un moteur
-  et une boîte, ou retrouve ceux qui lui ressemblent, sans doublon dans la
-  liste.
-- Un profil reçu par lien ou par fichier reçoit un moteur d'ici : il jouait
-  bien, il se règle maintenant aussi.
-
-### Corrigé
-
-- **Changer de moteur change enfin la façon de conduire.** Les seuils de passage
-  étaient en tours absolus, si bien que la boîte ignorait le moteur qu'elle avait
-  devant elle : mesuré au banc, un moteur de moto qui monte à 11 000 tr/min
-  passait ses rapports au même endroit qu'un V8 qui s'arrête à 6 500, et un gros
-  bloc à 5 500 tapait son rupteur **avant d'avoir le droit de monter**.
-
-  Ils se déduisent maintenant du rupteur et d'un **tempérament** — route ou
-  sport —, comme la descente le faisait déjà : l'asymétrie était dans le code
-  depuis le début. Le tempérament se choisit sous les cadrans de l'écran de
-  conduite, à côté de la commande automatique ou manuelle, et il est retenu par
-  l'appareil. Au premier lancement, il se déduit du profil actif — imposer
-  « route » ferait conduire un profil Sport comme un profil Route sans que rien
-  ne le dise.
-
-  Les deux tempéraments disent enfin explicitement ce que les profils livrés
-  faisaient sans le dire : **Route monte de plus en plus tôt** — on cherche le
-  rapport long — et **Sport de plus en plus tard** — on garde le régime. Leurs
-  courbes sont les seuils de ces profils divisés par leur rupteur, donc rien ne
-  change sur les moteurs livrés.
-
-  **Cinq curseurs quittent l'écran de réglage.** Et un rapport ajouté reçoit
-  désormais un seuil cohérent avec ses voisins : la courbe s'étale sur la boîte
-  qu'elle trouve, là où une table absolue faisait hériter le nouveau rapport du
-  seuil de son prédécesseur.
-
-- **Les traces enregistrées en voiture se rejouent enfin.** Même cause que
-  l'accélération : le rejeu comparait des horodatages en microsecondes à son
-  temps écoulé en millisecondes, et attendait donc mille fois trop longtemps
-  entre deux mesures — les deux traces du 9 septembre 2026 annonçaient 60 700 et
-  73 700 secondes, et ne se déroulaient pas. Elles annoncent maintenant 60,7 et
-  73,7 secondes, et se rejouent en temps réel.
-
-  Cela rend au projet son outil de mise au point le plus utile : un trajet réel,
-  avec la cadence de la voiture, sa quantification au kilomètre-heure et ses
-  paliers, rejoué autant de fois qu'on veut au bureau. C'est le seul signal réel
-  dont le projet dispose pour éprouver la boîte sans rouler.
-
-  La détection d'unité, commune au conditionnement et au rejeu, vit désormais
-  dans une pièce à part : le seuil doit être le même des deux côtés, et ce dépôt
-  a déjà payé deux fois la même erreur — deux mécanismes qui décrivent le même
-  fait avec des valeurs qui finissent par diverger.
-
-- **L'accélération était mille fois trop petite.** Le navigateur de la Tesla
-  horodate ses positions en **microsecondes**, là où la norme du web dit
-  millisecondes ; le code divisait par mille en croyant convertir. L'accélération
-  étant une pente, donc une division par une durée, elle sortait à 0,0028 m/s²
-  pour une vraie valeur de 2,78 — sous le seuil d'arrondi partout où on la
-  regardait.
-
-  Relevé sur le journal de l'essai du 9 septembre 2026, rapatrié depuis le NAS :
-  l'accélération est négligeable dans **476 relevés sur 480**, et la charge, qui
-  s'en déduit, est figée à 0,50 dans la même proportion. Le défaut était même
-  écrit dans le nom du fichier de trace déposé — `…_test2_60700s.json` annonce
-  60 700 secondes pour un trajet de soixante.
-
-  Ce que cela expliquait d'un coup : le relief de charge plat, donc l'effort
-  inaudible ; les garde-fous de la boîte inertes, faute d'atteindre leur seuil de
-  −0,05 m/s² ; la croisière qui se croyait éternelle, donc les rapports qui
-  montaient pendant un ralentissement — quatre cas dans le journal, dont un
-  3ᵉ → 5ᵉ à 64 km/h. La vitesse **affichée**, elle, était juste : seule sa
-  dérivée était morte.
-
-  Le conditionnement déduit maintenant l'échelle du plus petit écart strictement
-  positif entre deux mesures, et ramène l'horodatage en millisecondes. Le seuil
-  ne peut pas nuire : si le plus petit écart entre deux positions dépassait
-  vraiment dix secondes, l'accélération serait inexploitable de toute façon.
-  Rejouées dans le code corrigé, les deux traces du même essai rendent une
-  accélération exploitable sur 83 % et 70 % de leurs mesures, de médiane
-  0,36 m/s² et d'étendue −1,39 à +3,37 m/s².
-
-  Deux relevés bornent au passage ce qu'on peut attendre du signal de cette
-  voiture : la cadence réelle est de **dix** positions par seconde, et non trente
-  comme annoncé, et la vitesse est **quantifiée au kilomètre-heure entier**.
-
-### Ajouté
-
 - **L'écran de conduite tel que David l'a dessiné.** Les commandes de boîte
   passent **entre les cadrans**, au-dessus du rapport, et le tempérament juste en
   dessous : la main se trouve là où le regard est déjà, au lieu de descendre
@@ -638,22 +255,6 @@ Toutes les évolutions notables du projet. Format
   illisible n'emporte pas le reste, et le message dit lesquels manquent. Un
   dossier absent, en revanche, n'est pas une anomalie — ils naissent au premier
   dépôt.
-
-### Sécurité
-
-- **Les quatre dossiers du serveur ne se lisent plus sans mot de passe.**
-  L'écriture était protégée depuis le début, la lecture ne l'était pas : qui
-  connaissait l'adresse du site — publique, puisque la voiture n'est pas sur le
-  réseau local — pouvait lister les trajets et les télécharger, positions
-  comprises dès le cran étendu du journal. David : « c'est accessible de
-  l'extérieur, bien sûr ; ferme tout en utilisant le mot de passe du dépôt ».
-
-  L'application s'annonce désormais pour lire la bibliothèque de profils et pour
-  vérifier qu'une trace n'est pas déjà déposée. **Sur un appareil sans compte de
-  dépôt, la bibliothèque est vide** ; le partage par lien ne passe pas par le
-  serveur et fonctionne toujours.
-
-### Ajouté
 
 - **Un passage de rapport se déroule en cinq temps.** Il n'en avait qu'un :
   baisser le niveau de 3,8 dB pendant un dixième de seconde, sur un timbre
@@ -1112,111 +713,622 @@ Toutes les évolutions notables du projet. Format
   Le format de profil passe en version 5 : un profil enregistré sans définition
   reçoit celle de son profil d'usine.
 
+- **Un régime de décollage, et le ralenti cesse de s'entendre en roulant.**
+  David : « le bruit du moteur qui pousse ne commence que vers 15 km/h [...] en
+  pratique un moteur qui démarre utilise son embrayage, puis la première, et donc
+  les tours sont *toujours* au-dessus du ralenti ».
 
-### Corrigé
+  Le régime était borné au ralenti tant que les roues tournaient moins vite — de
+  zéro à six kilomètres à l'heure sur le profil Sport, où la première ne donne
+  que 385 tr/min à trois kilomètres à l'heure et 642 à cinq. Le son y était donc
+  exactement celui de l'arrêt, ce qu'aucune voiture ne fait.
 
-- **Le passage de rapport s'entend aussi sur les moteurs en synthèse.** David,
-  après un essai sur le NAS : « ça ne marche pas pour les moteurs en synthèse,
-  juste ceux qui sont enregistrés — je parle de tout le toutim, du claquement au
-  passage en particulier ».
+  Dès que la voiture avance, c'est maintenant l'embrayage qui commande : le
+  moteur monte au **régime de décollage** et l'y tient pendant qu'elle prend de la
+  vitesse, jusqu'à ce que les roues le rejoignent. Réglable par profil, 1 300
+  tr/min sur Route et 1 500 sur Sport.
 
-  Trois pièces sur quatre étaient logées du mauvais côté. Le clac de la boîte et
-  la pétarade étaient joués par le moteur à échantillons, dont la garde exige une
-  banque chargée : un profil en synthèse n'en charge pas, et ouvre de surcroît
-  son propre contexte audio. La coupure de couple, elle, vit dans le mixage des
-  couches, qui n'est jamais appelé quand le synthé tourne — l'effort transmis au
-  moteur simulé restait donc entier pendant tout le passage. Seul le mouvement de
-  régime — plongée, coup de gaz, engagement — passait, parce qu'il est calculé
-  dans le moteur et transmis tel quel.
+  Un garde-fou est nécessaire : l'embrayage ne patine qu'en partant. Au-delà de
+  vingt-cinq kilomètres à l'heure il est tenu pour fermé, faute de quoi une
+  allure tenue sur un rapport long — trente kilomètres à l'heure à mille cent
+  tours — passerait pour un décollage et verrait son régime relevé à tort. Ce
+  sont deux tests existants qui l'ont montré.
 
-  Les deux bruits deviennent des pièces autonomes, jouées sur le graphe qui sonne,
-  quel qu'il soit : c'est le même son des deux côtés, pas deux sons qui se
-  ressemblent. Sur le graphe du synthé ils entrent après le silencieux et la
-  résonance d'échappement — un choc de carter ne traverse pas la ligne
-  d'échappement, et l'y faire passer le noierait sous quinze décibels de
-  résonance à 500 Hz. La coupure de couple s'applique désormais à l'effort
-  transmis au moteur simulé, avec la même forme que pour les couches.
+  La version du format de profil passe de 3 à 4 ; les profils enregistrés
+  reçoivent le régime de décollage de leur profil d'usine.
 
-  Le compteur « Clacs de boîte » de la télémétrie reste unique et monte quelle
-  que soit l'origine : c'est un compte, pas un son, et c'est lui qui permet de
-  distinguer un défaut de déclenchement d'un défaut de niveau.
 
-- **Le coup de gaz ne se produit plus quand on a levé le pied.** David : « je
-  crois que le rapport passe automatiquement au moment du coup de gaz, même si
-  j'ai commencé à ralentir juste avant. »
+- **Un choix « où l'on écoute »** sur le banc de synthèse : dehors à côté de la
+  voiture, ou dedans vitres fermées. Le passe-bas de sortie faisait déjà cela
+  sans qu'on l'ait cherché — c'est David qui l'a remarqué en réglant à
+  l'oreille. Le réglage libre reste accessible.
 
-  Deux effets se cumulaient. Le blocage des montées demandait six dixièmes de
-  seconde de ralentissement avéré pour agir ; il en demande un tiers. Et surtout,
-  un passage décidé légitimement dure lui-même six dixièmes de seconde : il
-  s'engage quand même, et son coup de gaz tombe alors que la voiture ralentit
-  déjà. En montée, celui-ci suit donc l'effort du moment — pied levé, il ne
-  reste que la chute. Au rétrogradage il reste entier : c'est là qu'il est le
-  geste du conducteur, et l'on rétrograde précisément pied levé.
 
-- **La boîte ne monte plus un rapport pendant qu'on ralentit.** David, en
-  laissant décélérer : « parfois le simu passe une vitesse supérieure au lieu de
-  laisser ralentir et de finalement rétrograder ; et comme le son du moteur est
-  faible en décélération, on entend le claquement fort ».
+- **La résonance d'échappement est maintenant une captation réelle**, et non
+  plus un modèle. C'est ce que fait engine-sim depuis toujours, et nous ne
+  l'avions pas vu : son application charge un fichier WAV enregistré sur un vrai
+  échappement, là où nous fabriquions une réponse — d'abord un bruit blanc, puis
+  un tube. Une captation porte ce qu'aucun modèle ne reproduit : la géométrie du
+  tube, le silencieux, la caisse, le lieu de la prise.
 
-  La bande de croisière juge sur la dérive de la vitesse mesurée sur trois
-  secondes — robuste au bruit, mais lente. Quand on lève le pied après une
-  longue croisière, la stabilité est déjà acquise et la dérive met plus d'une
-  seconde à voir le ralentissement : assez pour laisser passer un rapport de
-  plus. Reproduit au banc — un passage du quatrième au cinquième une seconde
-  après le lever de pied, sur une perte de 0,5 km/h par seconde.
+  Quatre réponses sont reprises de sa bibliothèque, dont celle du V8 Chevrolet
+  454 qu'il livre, retenue par défaut. Un sélecteur **Échappement** permet d'en
+  changer, et la réponse fabriquée reste disponible en repli.
 
-  L'accélération instantanée le sait tout de suite mais elle est bruitée à un
-  dixième de m/s². Elle est donc cumulée dans un compteur qui monte pendant
-  qu'on ralentit et redescend deux fois plus vite sinon : une croisière qui
-  tremble autour de zéro ne l'atteint jamais, un vrai ralentissement le
-  franchit en un tiers de seconde.
+  Relevé sur le ralenti du V8, sortie complète : l'écart entre le grave et la
+  bande de 8 kHz vaut **40,1 dB**, quand une prise faite sur une vraie voiture en
+  montre 39,1. Le spectre décroît de 33 dB entre 2 et 8 kHz au lieu de remonter.
 
-  **Et surtout, le seuil de montée suit la demande et non la charge.** C'est
-  David qui a vu la cause : « les rapports montent plus tôt quand on accélère
-  moins, et plus tard après un kickdown ; je pense que ça a un lien ». Les deux
-  viennent du même décalage de seize cents tours.
+  Au passage, notre gain de convolution valait 0,01 là où engine-sim applique
+  0,001 — dix fois trop.
 
-  Ce décalage attend l'**intention** du conducteur — sur une vraie automatique,
-  la position de la pédale. Faute de pédale, la charge se déduit de
-  l'accélération, donc du **résultat**. En côte, pied au plancher, l'accélération
-  est faible : la charge tombe, le seuil descend de huit cents tours et la boîte
-  monte tôt, l'inverse de ce qu'il faudrait. Et au lever de pied, la charge
-  s'effondre en une demi-seconde, si bien que le seuil passe sous le régime sans
-  que le moteur ait bougé.
 
-  La demande monte instantanément avec la charge et n'en redescend qu'en trois
-  secondes : une accélération franche garde ses rapports longs quelques secondes
-  après qu'on a relâché, et le seuil ne peut plus tomber que d'environ cinq cent
-  trente tours par seconde. Relevé sur le profil Route, quatrième à 4000 tr/min
-  puis lever de pied : plus aucun passage dans les trois secondes qui suivent.
+- **La banque générée portait le même parasite que le son en direct**, et un de
+  plus. Les deux bruits d'engine-sim y étaient aussi restés à leurs valeurs de
+  démonstration — ils sont fixés dans les définitions de moteur, où est leur
+  place. Et sa réponse impulsionnelle était un bruit blanc, avec ce commentaire :
+  « le contenu importe peu, seule sa longueur pèse sur le coût ». Vrai quand on
+  mesurait le coût processeur, faux dès qu'on produit du son à écouter. Elle
+  simule maintenant un tube, comme celle du son en direct.
 
-  Quatre gardes avaient été posées en aval avant d'en arriver là ; trois
-  dépendaient du moment où l'accélération mesurée devient franchement négative,
-  or elle est lissée quand la charge ne l'est presque pas. La quatrième freinait
-  la descente du seuil : la demande la remplace, en disant pourquoi il ne doit
-  pas descendre.
+  Mesuré sur les prises produites, l'écart entre le grave et la bande de 8 kHz
+  passe de **3,4 à 42,9 dB** — une prise faite sur une vraie voiture en montre
+  39,1. En revanche le saut d'énergie au bouclage recule de 7,1 à 15,4 % au
+  pire : la queue d'un tube est tonale et se raccorde moins bien que du bruit.
 
-  **Et le passage immédiat ne vaut plus qu'en accélérant.** « Accélération
-  jusqu'à 4800 tr/min en 4e, arrêt de l'accélération, le simu passe la 5 et la
-  6. » Le seuil de montée se décale de seize cents tours avec la charge : pied
-  au plancher il est haut, et il s'effondre en une demi-seconde quand on
-  relâche, bien plus vite que le régime ne descend. La marge de dépassement — qui
-  court-circuite la temporisation — se trouvait franchie non parce que le moteur
-  montait, mais parce que la barre était tombée. Deux rapports passaient
-  d'affilée, chacun voyant son propre seuil effondré, et sans laisser aux gardes
-  précédentes le temps d'agir. S'y ajoute un blocage immédiat au-delà d'un demi
-  m/s² de décélération, où le cumul n'apporte plus aucune certitude : la traînée
-  du simulateur en donne déjà 1,4 à cent kilomètres à l'heure.
 
-  **Cela vaut aussi pour la montée au régime**, et c'était le gros du reproche.
-  « Si j'arrête d'accélérer juste avant que la boîte ne monte un rapport, elle le
-  monte quand même. » Le franchissement du seuil de régime lance un compte à
-  rebours de quelques dixièmes de seconde, que plus rien n'annulait : reproduit
-  au banc — le seuil franchi, le pied levé dans la foulée, et le passage se
-  produit une demi-seconde plus tard. Le compte est désormais abandonné et non
-  suspendu, donc reprendre les gaz repart d'un compte neuf.
+- **Les deux bruits d'engine-sim étaient restés à leurs valeurs de
+  démonstration.** C'est la cause du parasite que David entendait à tous les
+  régimes — « une fréquence assez aiguë en trop », puis « on n'entend pas du
+  tout le moteur, juste le souffle, comme des interférences sur une radio FM ».
+
+  Le spectre du ralenti montrait deux anomalies qu'aucune prise faite sur une
+  vraie voiture ne présente : un plateau plat de 250 Hz à 2 kHz, et une remontée
+  de 11 dB entre 2 et 8 kHz. Elles correspondent exactement aux deux bruits
+  qu'engine-sim ajoute à dessein, avec leurs coupures à 2 et 10 kHz :
+  `airNoise` à 1,0 et `inputSampleNoise` à 0,5.
+
+  Le premier ne s'ajoute pas au signal, il le **multiplie** : à un, le moteur
+  est entièrement modulé par un bruit blanc. Les deux sont maintenant réglables,
+  et ramenés à 0,15 et 0,05 — pas à zéro, un moteur a du souffle.
+
+  Ralenti d'un quatre cylindres, silencieux coupé : le parasite à 8 kHz chute de
+  17 dB, le corps à 250 Hz gagne 6 dB, et la remontée vers l'aigu disparaît
+  (+10,8 dB avant, −1,3 après). Sur le V8, le rapport entre le corps et le
+  plateau passe de 5,7 à 10,6 dB.
+
+  Le **silencieux** est coupé par défaut : il avait été ajouté pour masquer ce
+  parasite, et il fallait le descendre si bas qu'il rendait le moteur sourd.
+
+
+- **Un bouton « Réglages d'origine » sur le banc de synthèse.** Sept curseurs,
+  dont plusieurs se compensent : on s'y perd en tâtonnant à l'oreille, et la
+  seule issue était de recharger la page — ce qui coupe le son et rebâtit le
+  moteur. Le bouton remet les valeurs par défaut sans rien interrompre.
+
+
+- **La résonance d'échappement est un tube, et non plus un bruit.** C'est une
+  erreur de fond que je traînais depuis le début du portage : la réponse
+  impulsionnelle était un bruit blanc décroissant, repris d'engine-sim. Or
+  convoluer des explosions par du bruit rend du bruit. À haut régime les
+  explosions se succèdent assez vite pour que la texture tienne ; en dessous,
+  chaque explosion devient une bouffée de souffle au lieu d'un coup. David,
+  résonance à fond : « on n'entend pas du tout le moteur, juste le souffle,
+  comme des interférences sur une radio FM ».
+
+  Un échappement est un tube. L'onde court jusqu'au bout, se réfléchit sur
+  l'extrémité ouverte en changeant de signe, revient, et ainsi de suite en
+  s'affaiblissant. La réponse est donc une suite d'échos espacés du temps
+  d'aller-retour, adoucis à chaque réflexion — c'est ce qui donne sa note à un
+  échappement. Un réglage **Accord de l'échappement** en fixe la fréquence :
+  57 Hz par défaut, soit trois mètres de tube environ.
+
+  Mesuré sur un ralenti de V8 à 750 tr/min, tout en réverbéré, par le facteur de
+  crête — il dit si les coups restent détachés ou si tout s'étale :
+
+  | Réponse | Niveau efficace | Facteur de crête |
+  |---|---|---|
+  | aucune, son sec | 0,023 | 6,0 |
+  | bruit blanc | 0,023 | 3,4 |
+  | tube à 57 Hz | 0,062 | 5,7 |
+
+  Le bruit détruisait près de la moitié du relief ; le tube le rend intact. Il
+  sort au passage 2,7 fois plus fort, ce qui dégage le volume du plafond où il
+  butait — plafond relevé de 2 à 6, puisqu'il y butait quand même.
+
+  Les valeurs par défaut sont celles trouvées à l'oreille : silencieux à 1 kHz,
+  résonance entière, longueur 50 ms. Deux cent vingt millisecondes étaient une
+  salle et non un échappement — à 800 tr/min un V8 explose toutes les 19 ms,
+  et douze explosions se superposaient dans la queue.
+
+
+- **Le curseur de résonance d'échappement ne change plus le volume.** Il en
+  faisait deux à la fois : monter la résonance rendait le son nettement plus
+  faible, si bien qu'on ne pouvait pas juger la couleur sans juger le niveau en
+  même temps.
+
+  Deux causes, toutes deux corrigées. Le `ConvolverNode` normalisait la réponse
+  impulsionnelle selon sa propre règle ; elle est désormais normalisée en
+  énergie chez nous, ce qui rend aussi la **longueur** de résonance réglable sans
+  qu'elle emporte le volume avec elle. Et le mélange sec/réverbéré se fait
+  maintenant en racine : les deux signaux étant décorrélés, ce sont leurs
+  énergies qui s'ajoutent, là où des gains proportionnels perdaient trois
+  décibels au milieu de la course.
+
+  Relevé après coup, régime tenu : le niveau crête reste entre 0,15 et 0,21 sur
+  toute la course du curseur.
+
+- **Un silencieux sur le son synthétisé.** David a entendu « une fréquence
+  assez aiguë en trop », présente en permanence, ralenti compris. Mesuré : la
+  bande 4-16 kHz n'était qu'à 12 dB sous la bande 200-800 Hz, là où une prise
+  faite dans une vraie voiture est à 22-37 dB en dessous.
+
+  Ce n'est pas un artefact de calcul : l'écart **se resserre** quand on affine
+  la simulation — 15,2 dB à 6 kHz, 12,4 à 10, 9,9 à 20 —, donc l'aigu vient du
+  modèle. Il manquait le pot : la résonance d'échappement est un bruit blanc,
+  elle atténue de 17 dB à toutes les fréquences également et ne filtre rien.
+
+  Un passe-bas réglable est placé avant la séparation du son sec et du son
+  réverbéré. À 3 500 Hz par défaut, l'écart passe à 26 dB. Il se tourne en
+  écoutant, sans couper le son.
+
+- **Un profil déclare d'où vient son son**, parmi trois origines : *enregistré*
+  — la banque d'échantillons jouée en changeant sa vitesse de lecture, ce que
+  fait l'application depuis le début —, *généré en direct* — le moteur simulé
+  pendant la conduite — et *généré à l'avance* — une banque produite au bureau
+  par cette simulation, une prise par plage de régime, que la voiture rejoue.
+
+  Le choix se fait dans l'écran de configuration, panneau *Profils*, et suit le
+  profil dans un export en fichier comme dans un lien de partage. Un profil peut
+  aussi porter la définition du moteur qui a produit sa banque, pour qu'une
+  banque générée ne devienne pas une boîte noire qu'on ne saurait plus refaire.
+
+  Les trois origines sont gréées, et c'est le même bouton « Activer le son » qui
+  les démarre. Un navigateur sans `AudioWorklet` ni WebAssembly ne peut pas faire
+  tourner le moteur simulé : il le dit, et la banque continue de jouer plutôt que
+  de grésiller.
+
+  Les profils déjà enregistrés sont repris en *enregistré*, ce qu'ils ont
+  toujours été. La version du format de profil passe de 2 à 3.
+
+- **Une banque d'échantillons produite ici par engine-sim, et rejouée telle
+  quelle dans la voiture.** `scripts/generate-bank/` fait tourner le moteur
+  simulé au bureau, aussi lentement qu'il le faut, à un régime tenu par un
+  dynamomètre, et en tire une prise par plage de régime — en charge et pied
+  levé, plus le ralenti et le rupteur. Rien n'est modifié dans le moteur de
+  lecture : la banque et le profil qui la déclare s'importent tels quels.
+
+  Ce que ça corrige. La banque enregistrée est jouée entre 0,26 et 0,81 fois sa
+  vitesse sur toute la conduite ordinaire, et le rééchantillonnage descend les
+  résonances de l'échappement en même temps que la fréquence d'allumage : un
+  moteur change de régime sans changer de corps. Mesuré sur le V8 simulé, le
+  centroïde spectral ne suit le régime qu'à 8 % — 0,21 octave de timbre pour 2,67
+  octaves de régime. C'est bien le rééchantillonnage qui déplace le timbre, pas
+  le moteur.
+
+  Combien de prises faut-il ? La question se mesure : on génère au quart
+  d'octave, avec une prise témoin au milieu de chaque intervalle, puis on compare
+  ce que donneraient les écartements plus larges. Une octave laisse 2,7 demi-tons
+  d'erreur de timbre, un demi-octave 1,0, un quart 0,78 pour deux fois plus de
+  prises. **Le demi-octave est retenu** : huit ancrages par famille, plus le
+  ralenti et le rupteur, et une vitesse de lecture qui reste entre 0,74 et 1,36
+  au lieu de 0,26 à 0,81.
+
+  Les boucles font un nombre entier de cycles moteur, ce qui met leurs deux bouts
+  en phase par construction. Saut d'énergie au raccord, une fois la fermeture de
+  l'application appliquée : 1,6 % en médiane, 4,8 % au pire sur les 18 prises —
+  contre 2,3 % et 10,8 % mesurés de la même façon sur la banque enregistrée.
+
+  Les ancrages, les gains et les bornes de lecture sont **mesurés**, pas relevés
+  à la main : c'est ce que le lot BANQUES devait faire à l'oreille. Un seul
+  chiffre reste un choix — de combien rabattre le relief de niveau, qui couvre
+  37,4 dB bruts sur le V8 et 13,1 dB une fois rabattu. C'est le premier réglage à
+  juger à l'oreille, et le timbre n'a encore été écouté par personne.
+
+- **Le son d'engine-sim sort, et il suit le régime.** Le portage WebAssembly ne
+  produisait que des chiffres ; il produit maintenant du son, joué en direct, à
+  la cadence du navigateur. Un onglet **Synthèse**, réservé au développement
+  comme le simulateur, l'allume et le règle.
+
+  Trois fils : le fil principal transmet à chaque tour de boucle le **régime du
+  cadran** et l'**effort** ; un fil de calcul fait tourner engine-sim et remplit
+  une réserve ; un `AudioWorklet` la vide et compte ce qui manque. Le calcul
+  n'est pas dans le fil audio, faute de pouvoir y instancier un module
+  Emscripten sans `SharedArrayBuffer` — donc sans les en-têtes COOP/COEP que le
+  lot a écartés. Ce qu'on y gagne : une pointe de calcul mange la réserve au
+  lieu de faire un trou.
+
+  Le **régime est imposé au dynamomètre** d'engine-sim plutôt que trouvé par le
+  moteur : le régime entendu et celui du cadran doivent dire la même chose,
+  sinon c'est le compteur qu'on croira faux. Mesuré, du ralenti au rupteur :
+  écart nul, à l'unité près.
+
+  Relevé sur un Ryzen 7 7800X3D, contexte audio à 48 kHz, l'application entière
+  tournant à côté, résonance d'échappement déportée sur un `ConvolverNode` :
+  **×2,0 temps réel** pour le V8 à 10 kHz de simulation, **×3,7** pour un quatre
+  cylindres, **×0,95** si l'on laisse engine-sim convoluer lui-même. Réserve
+  tenue à 250 ms, **aucun creux** sur un balayage complet 800 → 6 500 tr/min. Le
+  seuil du lot est ×3 dans la voiture, où rien de tout cela n'a encore été
+  mesuré : sur ce poste, seul le quatre cylindres le passe.
+
+  Le banc affiche ce qui se mesure — régime demandé et entendu, coefficient
+  temps réel, charge, creux, réserve, niveau crête, niveau efficace, brillance —
+  et donne un **balayage de régime** pour écouter la montée sans rouler. **Le
+  timbre, lui, reste à juger à l'oreille** : la machine ne peut pas le faire.
+
+- **L'effort du moteur tient compte de la vitesse : la croisière n'est plus
+  plate.** Faute de pédale, tout se déduisait de l'accélération, si bien que
+  tenir une allure donnait toujours le même demi — mesuré, cinq allures tenues à
+  0,50 au centième près, de l'arrêt à 130 km/h. Or tenir 130 demande beaucoup de
+  couple et tenir 30 presque rien : la traînée croît comme le carré de la vitesse.
+
+  Deux grandeurs remplacent donc l'unique charge. La **charge** dit l'intention
+  du conducteur et pilote la boîte, inchangée. L'**effort** dit le travail du
+  moteur — l'accélération plus la traînée — et pilote le son : le fondu entre
+  « en charge » et « pied levé », et le relief de charge. Un réglage nouveau, le
+  **repère de traînée**, donne la vitesse à laquelle tenir l'allure consomme la
+  moitié de l'effort maximal : 130 km/h sur Route, 150 sur Sport.
+
+  Mesuré sur Route : l'effort passe de 0,07 à 30 km/h tenus à 0,57 à 130, et la
+  croisière s'étage sur 3,4 dB là où elle était plate. Une reprise douce à
+  130 km/h passe 2,2 dB au-dessus de la croisière à la même vitesse. La charge,
+  elle, n'a pas bougé d'un centième — aucun seuil de passage n'est à recaler, et
+  les tests de la boîte le vérifient.
+
+  `idleLevelDb` est recalé de −5 à −1 sur Route et de −5 à 0 sur Sport : l'effort
+  vaut zéro à l'arrêt là où la charge valait un demi sans raison, et le relief lui
+  retirait donc ses décibels pleins. **Un profil déjà enregistré est repris de la
+  même façon** — sans quoi son ralenti aurait sonné quatre à cinq décibels plus
+  bas qu'hier, sans que rien ne le dise.
+
+
+- **Trois modes de simulation**, pour éprouver toute la chaîne sans rouler. Le
+  simulateur livrait jusqu'ici une vitesse parfaite à chaque image, ce qui fait
+  disparaître toute la difficulté du produit : mesuré en croisière tenue à
+  110 km/h, l'accélération vue vaut exactement zéro, quand un vrai GPS en montre
+  0,51 m/s² de pointe — un quart de la charge pleine du profil Route, sur une
+  vitesse qui ne bouge pas.
+
+  *Vitesse exacte* garde ce comportement, commode pour juger un réglage de son.
+  *Mesure GPS* livre la même vitesse à la cadence d'un récepteur (30 ms en
+  roulant, deux secondes à l'arrêt : les valeurs mesurées sur la voiture) et
+  bruitée. *Positions GPS* fabrique des positions complètes que la **vraie**
+  source GPS traite — le seul mode qui éprouve la dérivation par distance, le
+  rejet des positions trop rapprochées et le filtre de précision, c'est-à-dire
+  exactement là où vivaient les deux derniers défauts relevés en roulant. Le
+  blocage du 4 septembre se reproduit désormais au banc, sans voiture.
+
+  Une case « le récepteur annonce sa vitesse » permet d'écouter les deux cas : on
+  ne sait toujours pas ce que fait la Tesla, et l'attendre coûterait un trajet.
+
+  Mesuré au banc : écart-type de l'accélération vue de 0 en vitesse exacte, 0,177
+  en mesure GPS, 0,179 en positions.
+
+- **L'application dit quelle version elle sert**, en tête de la section
+  *Appareil* de l'écran de télémétrie. Dans la voiture il n'y a ni console ni
+  outils de développement, un service worker garde un cache, et rien ne
+  permettait de savoir si l'on essayait la version qu'on croyait — un correctif
+  jugé sur la version précédente est un correctif jugé pour rien. Le numéro est
+  lu dans `package.json` au moment de la construction.
+
+- **Une manette Xbox conduit le simulateur.** Deux gâchettes analogiques valent
+  mieux qu'une flèche du clavier pour juger un son : la charge s'entend sur des
+  transitions, et une commande tout ou rien ne produit que la plus brutale.
+  Gâchette droite pour accélérer, gauche pour freiner, A et B pour changer de
+  rapport, X pour la boîte automatique ou manuelle, Y pour tenir la vitesse ou
+  rendre la main, stick gauche pour le volume.
+
+  La lecture est une pièce du cœur qui ne parle pas au navigateur : elle reçoit
+  un instantané de boutons et rend des intentions, ce qui la rend vérifiable
+  sans manette — onze tests couvrent les zones mortes, le redressement de course,
+  les bascules qui ne comptent qu'une fois par appui et la manette débranchée en
+  pleine accélération. La manette ne prend la main sur les curseurs de l'écran
+  qu'en étant touchée, et la rend en revenant au repos.
+
+  Deux choses corrigées aussitôt, la manette n'étant pas détectée sur le poste de
+  David. **Aucun agencement n'est plus refusé** : exiger `mapping === 'standard'`
+  écartait en silence une manette qui s'annonce autrement — ce qui dépend du
+  navigateur, du pilote et du mode de liaison. Et **la détection ne dépend plus de
+  la boucle** : elle passe par l'événement de connexion, qui arrive au premier
+  appui, si bien qu'une boucle à l'arrêt ne fait plus dire à l'écran qu'aucune
+  manette n'est branchée. L'écran annonce enfin ce que le navigateur voit — nom et
+  agencement — et prévient quand l'agencement n'est pas standard.
+
+- **Un journal de bord, déposé tout seul.** Le navigateur de la voiture n'a pas
+  de console : on ne consulte rien au volant, et le diagnostic se faisait donc en
+  devinant. Le drapeau qui distingue une vitesse lue d'une vitesse déduite
+  existait depuis le premier jour sans être affiché nulle part — il aurait
+  désigné en une seconde un défaut qui a vécu une semaine.
+
+  L'application retient désormais des **événements horodatés** — source de
+  vitesse et son état, bascule de l'origine de la vitesse, relances du suivi,
+  mesures rejetées par motif, suspensions du son, erreurs — plus un relevé
+  toutes les dix secondes. Des faits qui se comptent, et non du texte : on ne
+  répond pas à « combien de fois » avec de la prose. Les états ne sont inscrits
+  qu'à leurs **transitions**, sans quoi la boucle en produirait deux cent seize
+  mille lignes à l'heure ; mesuré sur une minute de conduite étale, il en reste
+  sept.
+
+  Le dépôt est **automatique**, toutes les cinq minutes ou dès qu'une tranche
+  atteint sa taille, par le chemin d'écriture déjà en place sur le serveur — dans
+  un dossier `journal/` séparé de celui des traces, dont l'index est téléchargé
+  par l'application pour les lister. Pas de connexion permanente : une voiture
+  traverse des zones sans réseau, et le temps réel n'a de valeur que si quelqu'un
+  regarde, or celui qui pourrait regarder conduit. Ce qui n'a pas pu partir est
+  gardé et **joint à la tranche suivante**, si bien qu'un tunnel ne coûte pas un
+  journal — et non un fichier par tentative.
+
+  Des tranches, et non un fichier réécrit à chaque envoi. Le stockage aurait été
+  le même, mais ce qu'on renvoie grossit à chaque fois puisque c'est le journal
+  complet depuis le début : sur une demi-heure, huit fois trop de données
+  transférées, et un dernier envoi de deux cents kilo-octets qui doit réussir en
+  entier sur un réseau intermittent.
+
+  **Rien ne part par défaut, et l'accord a deux crans.** Une fenêtre de
+  confirmation dit ce qui sera envoyé avant que cela ne parte. Le minimum couvre
+  ce que fait l'application ; le cran étendu ajoute **la position**, un point par
+  seconde, et se choisit séparément — il ne se déduit jamais du premier, une
+  donnée de déplacement se disant avant et non après. Couper est immédiat, sans
+  confirmation : on n'a pas à confirmer qu'on ne veut plus rien envoyer.
+
+  La règle vit dans le cœur et non dans l'interface : c'est une fonction
+  vérifiable par un test qui décide de ce qui peut être inscrit, et un test
+  échoue si une position se glisse au cran minimum. Une promesse faite à
+  l'utilisateur mérite mieux qu'une condition d'affichage.
+
+  La position est tenue **hors du flux des mesures**. Ce flux est recopié tel
+  quel par l'enregistreur de traces, et une trace s'exporte et se dépose sans
+  accord particulier : y faire entrer des coordonnées les aurait fait sortir par
+  une porte déjà ouverte.
+
+  L'application ne peut pas effacer ses journaux — le serveur ne lui ouvre que
+  l'écriture — et c'est voulu : un témoin qui peut effacer ses notes est un
+  mauvais témoin. Le ménage se fait avec File Station, et l'écran dit ce qui a
+  été déposé.
+
+- Quatre lignes dans « Qualité du signal » de l'écran Télémétrie :
+  l'**origine de la vitesse** — lue du navigateur ou déduite de deux positions —,
+  les **positions reçues**, les **vitesses produites** et les **rejets** par
+  motif. Le drapeau qui distingue une vitesse déduite d'une vitesse lue existait
+  depuis le premier jour et n'était affiché nulle part : c'est ce qui a rendu
+  invisible pendant une semaine le défaut du repli ci-dessus. Une source qui
+  reçoit des positions sans en tirer aucune vitesse donne le même écran qu'une
+  source muette ; ces comptes distinguent les deux.
+- **Les positions imprécises sont écartées**, par un réglage nouveau —
+  *Précision GPS acceptée*, dans « Signal de vitesse ». La précision annoncée
+  avec chaque position était transmise depuis le premier jour et ne servait à
+  rien : un point à 200 mètres près entrait dans le calcul comme un point à 5
+  mètres. Une position écartée n'est ni une mesure ni la référence de la
+  mesure suivante, et son rejet se compte à l'écran.
+
+  Le seuil est livré à **250 mètres, volontairement large** : les valeurs de la
+  voiture ne sont pas mesurées, et un seuil trop serré rejetterait des mesures
+  saines pour faire taire le GPS — le défaut qu'on vient de corriger deux fois.
+  Une position dont la précision n'est pas renseignée n'est jamais rejetée : un
+  champ absent n'est pas un mauvais chiffre.
+- Deux lignes de plus dans « Qualité du signal » : la **précision annoncée**
+  avec la dernière position, et les **douze dernières**. C'est ce relevé qui
+  servira à resserrer le seuil ci-dessus, sur des chiffres et non sur une
+  intuition.
+- **Une section « Appareil »** sur l'écran Télémétrie : largeur et hauteur
+  utiles de la page en pixels CSS, taille d'écran annoncée, densité de pixels,
+  réponse de l'API de maintien d'écran allumé, et état de l'autorisation de
+  géolocalisation **relevé au chargement** — plus tard, il vaudrait « accordée »
+  dans tous les cas et ne dirait plus si la voiture la retient d'une session à
+  l'autre. Le zoom du navigateur de bord n'est pas réglable et sa valeur par
+  défaut a changé : la mise en page ne peut se caler que sur un relevé.
+
+- **Un tableau de bord à cadrans** sur l'écran de conduite : compteur de vitesse,
+  compte-tours avec sa zone de rupteur, rapport engagé au centre. L'écran a deux
+  visages et l'on passe de l'un à l'autre — les cadrans pour conduire, les
+  chiffres pour régler, car un écart de cent tours ne se voit pas sur une
+  aiguille. Le mouvement d'une aiguille **est** la valeur : il ne relevait pas de
+  la règle qui interdit les animations.
+
+  Un **paysage** défile derrière les cadrans, coupé par défaut. Celui-là est de
+  l'agrément assumé, et la règle a été levée pour lui seul. Mesuré avant de le
+  promettre, sur la même trace rejouée : l'écart de durée d'image entre décor
+  coupé et décor actif est de 0,2 ms, plus petit que l'écart de passe à passe du
+  même état (1,8 ms), et aucune image ne dépasse 33 ms dans les deux cas.
+
+  L'échelle du compteur est fixe à 180 km/h. La déduire de la voiture donnait
+  304 km/h sur Route : l'aiguille aurait passé sa vie dans le coin inférieur
+  gauche. Un compteur se gradue pour ce qu'on roule.
+- **Un mode simplifié** de l'écran de configuration : deux curseurs globaux et le
+  nombre de rapports, le détail des cinquante réglages attendant derrière une
+  bascule « avancé ». Aucun réglage n'est supprimé.
+
+  Le curseur **calme ↔ sportif** commande onze valeurs du moteur et de la boîte ;
+  le curseur **pépère ↔ nerveux** commande la réactivité du signal, ce qui n'est
+  pas la même chose — une voiture calme peut être vive. Le milieu de ce second
+  curseur est exactement le réglage qui a servi jusqu'ici.
+
+  Le tempérament n'est pas stocké : il se **déduit** des réglages. Les lois du
+  guide de création sont devenues inversibles, si bien qu'un profil réglé à la
+  main se lit quand même sur les curseurs, à un dix-millième près. Le guide passe
+  désormais par ces mêmes lois — quatre-vingt-seize lignes de règles dupliquées
+  ont disparu.
+
+  Un mouvement de curseur global écrase les réglages détaillés, mais **se
+  rattrape** : l'état d'avant est pris au premier mouvement et gardé jusqu'à
+  usage.
+- **Le nombre de rapports se règle**, de trois à huit. Il était déjà modifiable
+  par la saisie d'une liste, mais les tables de seuils et de temporisations ne
+  suivaient pas : un rapport ajouté héritait du seuil de son prédécesseur et
+  d'une temporisation étrangère au profil. Le premier et le dernier rapport sont
+  désormais conservés, le pont avec eux, donc le régime en dernier rapport à
+  110 km/h ne bouge pas — 2355 tr/min sur Route, quel que soit le nombre.
+- **Un écran d'étalonnage** : un protocole guidé en six étapes — ville, route,
+  autoroute, accélération franche, décélération pied levé, freinage franc — qui
+  mesure la vraie voiture et propose onze réglages en regard de ceux du profil.
+  Chaque étape juge si elle a bien été faite : une « accélération franche » qui
+  n'atteint pas le critère est refusée, et la raison est dite, plutôt que de
+  donner une charge fausse.
+
+  **Elle propose, elle n'applique pas** : chaque valeur se recopie séparément,
+  jamais en bloc, et le profil sait revenir à ce qu'il était.
+- **Le moteur tremble.** Un tremblement lent s'ajoute au régime, d'amplitude
+  décroissante avec le régime et avec la charge — un moteur se stabilise en
+  poussant, il tremble au ralenti et à vide. Il ne touche pas la boîte : le
+  moteur sort désormais deux régimes, le net qui pilote les seuils de passage et
+  le **régime entendu** qui porte le tremblement et ne sert qu'aux hauteurs de
+  lecture.
+- **Deux couches d'une même famille jouent légèrement désaccordées**, ce qui
+  produit le battement lent d'un moteur réel. Mesuré : le désaccord ne déplace
+  aucun gain, au bit près, et ne peut pas sortir une couche de son domaine
+  jouable.
+- **Le serveur accepte le dépôt d'une trace.** Le navigateur de la voiture refuse
+  tout téléchargement : rien ne sortait d'une session d'enregistrement, alors que
+  les traces ne servent qu'ailleurs. Un dossier `traces/` est servi en lecture
+  comme les profils, et en écriture pour la seule méthode qui dépose un fichier —
+  ni suppression, ni création de dossier. L'écriture exige l'authentification en
+  toutes circonstances, y compris quand celle du site reste désactivée.
+- **Une trace se dépose sur le serveur depuis la voiture.** C'est le seul moyen
+  de l'en sortir : le navigateur de bord refuse tout téléchargement, alors que
+  les traces naissent en roulant et ne servent qu'ailleurs.
+
+  L'application s'annonce avec un **compte du fichier `htpasswd`** — un nom et un
+  mot de passe — réglé une fois à l'écran de configuration et rangé hors du
+  profil. Elle est obligée de le faire elle-même : le navigateur ne demande
+  l'authentification que sur une navigation, jamais sur une requête lancée par
+  une page, si bien qu'un dépôt aurait échoué en silence.
+
+  Le compte déjà créé fonctionne, mais un second dédié au dépôt vaut mieux : il
+  vit en clair dans le navigateur de la voiture, et il ne donnerait pas accès au
+  site entier si l'authentification générale était activée un jour.
+
+  Le champ dit que la saisie est retenue, et sa longueur : l'écran de
+  configuration n'a pas de bouton d'enregistrement — tout s'y applique à la
+  frappe — mais pour un champ masqué, rien ne le montrait.
+
+  Le nom du fichier dit la date, l'enregistrement et sa durée, et il se relit par
+  la fonction d'import. Chaque échec dit lequel il est — compte absent, refus
+  d'authentification, droit d'écriture manquant, hors couverture, déjà déposée — parce
+  qu'ils ne se corrigent pas au même endroit. Une trace n'est jamais perdue au
+  profit d'un dépôt raté.
+
+- Trois lignes dans « Qualité du signal » de l'écran Télémétrie : la **cadence
+  typique** des mesures — la médiane, car une seule interruption rend une
+  moyenne illisible — et le **nombre de mesures** qui servent à estimer la
+  pente. C'est ce chiffre qui a permis de trouver le défaut ci-dessus.
+- Une **seconde pile Portainer**, sur l'étiquette `develop`, pour essayer en
+  voiture ce qui n'est pas encore sorti sans toucher à l'application qui sert au
+  quotidien : `docker/docker-compose.develop.yml`, et la marche à suivre dans le
+  README — port, proxy inversé, et ce que les deux piles ne partagent pas.
+- Process de développement écrit : `CLAUDE.md` (langue, git flow, contrôle
+  qualité, workflow par défaut, release), `CONTEXT.md` (glossaire du projet) et
+  `docs/agents/` (configuration des skills de backlog).
+- Backlog par lot dans `.backlog/`.
+- **211 tests sur le cœur de l'application**, avec Vitest : conditionnement du
+  signal, moteur, boîte de vitesses, mixage, analyse d'échantillon, simulateur,
+  rejeu de trace, profils et partage. 94,6 % des lignes de `src/core/`
+  couvertes. Les tests tournent sous Node, sans navigateur, en une seconde.
+- ESLint, et les commandes `npm run lint`, `npm test`, `npm run test:watch` et
+  `npm run coverage`.
+- Chaîne d'intégration : types, style, tests et construction du paquet sur
+  chaque PR vers `develop` et `main`.
+- Publication de l'image Docker depuis `develop` (étiquette `develop`) en plus
+  de `main` (`latest`), et depuis un tag de version.
 
 ### Modifié
+
+- **Une boîte à sept rapports, étagée pour tenir bas.** Les trois premiers
+  rapports ne bougent pas — le départ mesuré le 11 septembre au soir est celui
+  que David a jugé juste. Les quatre autres sont redessinés depuis les vitesses
+  qu'il a nommées, avec une septième pour l'autoroute :
+
+  | | avant | après |
+  |---|---|---|
+  | 50 km/h en quatrième | 1 532 tr/min | **1 487** |
+  | 80 km/h en cinquième | 2 046 tr/min | **1 737** |
+  | 110 km/h en sixième | 2 355 tr/min | **1 734** |
+  | 130 km/h en septième | — | **1 508** |
+
+  Les sauts s'écrasaient en haut de boîte — 1,32 · 1,20 · 1,19 — et valent
+  maintenant 1,36 · 1,37 · 1,38 · 1,36. La septième entre vers 125 km/h.
+
+  Les profils et les boîtes déjà enregistrés la reçoivent en s'ouvrant, y
+  compris ceux reçus par un lien de partage. Une boîte réglée à la main n'est
+  pas touchée : elle garde ce qu'on lui a donné.
+
+- **Les rapports passent plus tôt en mode Route.** David : « ça reste trop
+  longtemps en deux ». La marge au-dessus du ralenti passe de 900 à 640 tr/min,
+  soit −20 % sur le seuil pied au plancher et −15 % en conduite ordinaire. Le
+  mode Sport ne bouge pas. En accélération douce, les rapports cèdent maintenant
+  à 2 210, 1 983, 1 999, 1 995 et 1 969 tr/min, contre 3 005, 2 597, 2 367 et
+  2 324 avant — cinq valeurs presque égales, signature d'une boîte régulièrement
+  étagée.
+
+- **La boîte se décide sur un seul plancher de régime.** On monte dès que le
+  rapport suivant tournerait au-dessus du ralenti plus une marge, et on descend
+  quand le rapport engagé tombe sous une marge un peu plus basse. La marge vient
+  du mode de conduite et se déplace avec la demande — elle double à pleine
+  charge. Le premier passage échappe à la règle : la deuxième s'engage dès
+  qu'elle tient au-dessus du ralenti, quels que soient le mode et la charge.
+
+  Mesuré sur le profil Route en mode Route, accélération douce : les rapports
+  cèdent à 3005, 2597, 2367 et 2324 tr/min, contre 3700, 3350, 3050 et 2950
+  avant. Pied au plancher : 4296, 3632, 3333 et 3213.
+
+  Deux mécanismes disparaissent, le plancher faisant leur travail : la montée en
+  croisière et la descente au freinage. Un seul nombre gouvernant les deux sens,
+  ils ne peuvent plus se contredire — c'est ce qui ouvrait sur chaque rapport une
+  plage de vitesse où la croisière autorisait un rapport que la descente au
+  régime refusait, et où la boîte faisait le va-et-vient. Entendu le 10 septembre
+  2026 entre 70 et 72 km/h, et relevé au journal.
+
+- **Le rétrogradage forcé dépend du mode.** Pied au plancher en Route, demande
+  forte en Sport. Sept rétrogradages en trente-six minutes le 10 septembre, sur
+  des relances ordinaires : le seuil du profil ne distinguait pas les deux modes.
+
+
+- **Aucune image publiée ne porte plus les écrans de banc.** L'image
+  d'intégration les portait, et l'application y démarrait donc sur le simulateur
+  au lieu du GPS — trente-six secondes de simulateur sur l'essai du
+  10 septembre 2026. Le banc reste en développement.
+
+- **Ce qui part vers le serveur est compressé dans le navigateur**, par le
+  compresseur natif et sans bibliothèque — l'application doit se charger hors
+  réseau. Mesuré sur les huit tranches de l'essai du 10 septembre 2026 :
+  **226 483 octets deviennent 32 309, soit 85,7 % de moins**, la meilleure
+  tranche tombant à 93 %. Le gain porte d'abord sur la 4G en roulant, ensuite
+  sur la place du serveur. Là où le navigateur ne sait pas compresser, la
+  tranche part en clair plutôt que pas du tout.
+
+  Les profils et les relevés de mesure restent en clair : l'application les
+  retélécharge et les lit, et la bibliothèque de profils cesserait de
+  fonctionner.
+
+- **Le panneau des traces disparaît de l'écran de télémétrie** — capturer,
+  nommer, lister, supprimer, exporter, importer, rejouer, déposer. Une ligne
+  d'état le remplace. Deux mécanismes qui décrivent le même fait finissent par
+  diverger, et ce dépôt l'a déjà payé deux fois.
+
+  **Cela retire le seul rejeu sonore existant**, que le CHANGELOG appelait
+  « l'outil de mise au point le plus utile du projet ». C'est un prix accepté,
+  pas un oubli : le rejeu revient avec le relecteur, qui jouera une capture avec
+  la configuration de son en-tête.
+
+  L'étalonnage embarqué, lui, garde son enregistrement borné par étape :
+  délimiter une mesure n'est pas capturer une session, et une étape mal bornée
+  donne une mesure fausse. Un échec du stockage local se dit désormais sur son
+  panneau, faute de quoi il ne se dirait plus nulle part.
+
+- Le découpage en tranches, écrit pour le journal, est devenu une pièce à part :
+  la capture en avait besoin à l'identique, et le recopier aurait fait deux
+  mécanismes de plus.
+
+
+- Le profil actif est **assemblé** depuis les groupes qu'il désigne : son
+  moteur, sa boîte et la voiture de l'appareil. Les réglages de l'écran de
+  configuration atterrissent dans le groupe où ils vivent, et corriger un
+  moteur s'entend dans tous les profils qui le jouent.
+- Les pétarades suivent le moteur : c'est son échappement qui claque.
+- Les profils enregistrés sont scindés au chargement — chacun reçoit un moteur
+  et une boîte, ou retrouve ceux qui lui ressemblent, sans doublon dans la
+  liste.
+- Un profil reçu par lien ou par fichier reçoit un moteur d'ici : il jouait
+  bien, il se règle maintenant aussi.
 
 - **Le point d'écoute « Dehors » referme le silencieux à 4 kHz.** Il laissait
   tout passer, y compris ce que le moteur simulé produit au-dessus, et ce qu'il
@@ -1525,384 +1637,12 @@ Toutes les évolutions notables du projet. Format
   vise une crête constante et masque tout changement d'amplitude. Le ralenti
   reste à juger.
 
-### Ajouté
-
-- **Un régime de décollage, et le ralenti cesse de s'entendre en roulant.**
-  David : « le bruit du moteur qui pousse ne commence que vers 15 km/h [...] en
-  pratique un moteur qui démarre utilise son embrayage, puis la première, et donc
-  les tours sont *toujours* au-dessus du ralenti ».
-
-  Le régime était borné au ralenti tant que les roues tournaient moins vite — de
-  zéro à six kilomètres à l'heure sur le profil Sport, où la première ne donne
-  que 385 tr/min à trois kilomètres à l'heure et 642 à cinq. Le son y était donc
-  exactement celui de l'arrêt, ce qu'aucune voiture ne fait.
-
-  Dès que la voiture avance, c'est maintenant l'embrayage qui commande : le
-  moteur monte au **régime de décollage** et l'y tient pendant qu'elle prend de la
-  vitesse, jusqu'à ce que les roues le rejoignent. Réglable par profil, 1 300
-  tr/min sur Route et 1 500 sur Sport.
-
-  Un garde-fou est nécessaire : l'embrayage ne patine qu'en partant. Au-delà de
-  vingt-cinq kilomètres à l'heure il est tenu pour fermé, faute de quoi une
-  allure tenue sur un rapport long — trente kilomètres à l'heure à mille cent
-  tours — passerait pour un décollage et verrait son régime relevé à tort. Ce
-  sont deux tests existants qui l'ont montré.
-
-  La version du format de profil passe de 3 à 4 ; les profils enregistrés
-  reçoivent le régime de décollage de leur profil d'usine.
-
-
-- **Un choix « où l'on écoute »** sur le banc de synthèse : dehors à côté de la
-  voiture, ou dedans vitres fermées. Le passe-bas de sortie faisait déjà cela
-  sans qu'on l'ait cherché — c'est David qui l'a remarqué en réglant à
-  l'oreille. Le réglage libre reste accessible.
-
-
-- **La résonance d'échappement est maintenant une captation réelle**, et non
-  plus un modèle. C'est ce que fait engine-sim depuis toujours, et nous ne
-  l'avions pas vu : son application charge un fichier WAV enregistré sur un vrai
-  échappement, là où nous fabriquions une réponse — d'abord un bruit blanc, puis
-  un tube. Une captation porte ce qu'aucun modèle ne reproduit : la géométrie du
-  tube, le silencieux, la caisse, le lieu de la prise.
-
-  Quatre réponses sont reprises de sa bibliothèque, dont celle du V8 Chevrolet
-  454 qu'il livre, retenue par défaut. Un sélecteur **Échappement** permet d'en
-  changer, et la réponse fabriquée reste disponible en repli.
-
-  Relevé sur le ralenti du V8, sortie complète : l'écart entre le grave et la
-  bande de 8 kHz vaut **40,1 dB**, quand une prise faite sur une vraie voiture en
-  montre 39,1. Le spectre décroît de 33 dB entre 2 et 8 kHz au lieu de remonter.
-
-  Au passage, notre gain de convolution valait 0,01 là où engine-sim applique
-  0,001 — dix fois trop.
-
-
-- **La banque générée portait le même parasite que le son en direct**, et un de
-  plus. Les deux bruits d'engine-sim y étaient aussi restés à leurs valeurs de
-  démonstration — ils sont fixés dans les définitions de moteur, où est leur
-  place. Et sa réponse impulsionnelle était un bruit blanc, avec ce commentaire :
-  « le contenu importe peu, seule sa longueur pèse sur le coût ». Vrai quand on
-  mesurait le coût processeur, faux dès qu'on produit du son à écouter. Elle
-  simule maintenant un tube, comme celle du son en direct.
-
-  Mesuré sur les prises produites, l'écart entre le grave et la bande de 8 kHz
-  passe de **3,4 à 42,9 dB** — une prise faite sur une vraie voiture en montre
-  39,1. En revanche le saut d'énergie au bouclage recule de 7,1 à 15,4 % au
-  pire : la queue d'un tube est tonale et se raccorde moins bien que du bruit.
-
-
-- **Les deux bruits d'engine-sim étaient restés à leurs valeurs de
-  démonstration.** C'est la cause du parasite que David entendait à tous les
-  régimes — « une fréquence assez aiguë en trop », puis « on n'entend pas du
-  tout le moteur, juste le souffle, comme des interférences sur une radio FM ».
-
-  Le spectre du ralenti montrait deux anomalies qu'aucune prise faite sur une
-  vraie voiture ne présente : un plateau plat de 250 Hz à 2 kHz, et une remontée
-  de 11 dB entre 2 et 8 kHz. Elles correspondent exactement aux deux bruits
-  qu'engine-sim ajoute à dessein, avec leurs coupures à 2 et 10 kHz :
-  `airNoise` à 1,0 et `inputSampleNoise` à 0,5.
-
-  Le premier ne s'ajoute pas au signal, il le **multiplie** : à un, le moteur
-  est entièrement modulé par un bruit blanc. Les deux sont maintenant réglables,
-  et ramenés à 0,15 et 0,05 — pas à zéro, un moteur a du souffle.
-
-  Ralenti d'un quatre cylindres, silencieux coupé : le parasite à 8 kHz chute de
-  17 dB, le corps à 250 Hz gagne 6 dB, et la remontée vers l'aigu disparaît
-  (+10,8 dB avant, −1,3 après). Sur le V8, le rapport entre le corps et le
-  plateau passe de 5,7 à 10,6 dB.
-
-  Le **silencieux** est coupé par défaut : il avait été ajouté pour masquer ce
-  parasite, et il fallait le descendre si bas qu'il rendait le moteur sourd.
-
-
-- **Un bouton « Réglages d'origine » sur le banc de synthèse.** Sept curseurs,
-  dont plusieurs se compensent : on s'y perd en tâtonnant à l'oreille, et la
-  seule issue était de recharger la page — ce qui coupe le son et rebâtit le
-  moteur. Le bouton remet les valeurs par défaut sans rien interrompre.
-
-
-- **La résonance d'échappement est un tube, et non plus un bruit.** C'est une
-  erreur de fond que je traînais depuis le début du portage : la réponse
-  impulsionnelle était un bruit blanc décroissant, repris d'engine-sim. Or
-  convoluer des explosions par du bruit rend du bruit. À haut régime les
-  explosions se succèdent assez vite pour que la texture tienne ; en dessous,
-  chaque explosion devient une bouffée de souffle au lieu d'un coup. David,
-  résonance à fond : « on n'entend pas du tout le moteur, juste le souffle,
-  comme des interférences sur une radio FM ».
-
-  Un échappement est un tube. L'onde court jusqu'au bout, se réfléchit sur
-  l'extrémité ouverte en changeant de signe, revient, et ainsi de suite en
-  s'affaiblissant. La réponse est donc une suite d'échos espacés du temps
-  d'aller-retour, adoucis à chaque réflexion — c'est ce qui donne sa note à un
-  échappement. Un réglage **Accord de l'échappement** en fixe la fréquence :
-  57 Hz par défaut, soit trois mètres de tube environ.
-
-  Mesuré sur un ralenti de V8 à 750 tr/min, tout en réverbéré, par le facteur de
-  crête — il dit si les coups restent détachés ou si tout s'étale :
-
-  | Réponse | Niveau efficace | Facteur de crête |
-  |---|---|---|
-  | aucune, son sec | 0,023 | 6,0 |
-  | bruit blanc | 0,023 | 3,4 |
-  | tube à 57 Hz | 0,062 | 5,7 |
-
-  Le bruit détruisait près de la moitié du relief ; le tube le rend intact. Il
-  sort au passage 2,7 fois plus fort, ce qui dégage le volume du plafond où il
-  butait — plafond relevé de 2 à 6, puisqu'il y butait quand même.
-
-  Les valeurs par défaut sont celles trouvées à l'oreille : silencieux à 1 kHz,
-  résonance entière, longueur 50 ms. Deux cent vingt millisecondes étaient une
-  salle et non un échappement — à 800 tr/min un V8 explose toutes les 19 ms,
-  et douze explosions se superposaient dans la queue.
-
-
-- **Le curseur de résonance d'échappement ne change plus le volume.** Il en
-  faisait deux à la fois : monter la résonance rendait le son nettement plus
-  faible, si bien qu'on ne pouvait pas juger la couleur sans juger le niveau en
-  même temps.
-
-  Deux causes, toutes deux corrigées. Le `ConvolverNode` normalisait la réponse
-  impulsionnelle selon sa propre règle ; elle est désormais normalisée en
-  énergie chez nous, ce qui rend aussi la **longueur** de résonance réglable sans
-  qu'elle emporte le volume avec elle. Et le mélange sec/réverbéré se fait
-  maintenant en racine : les deux signaux étant décorrélés, ce sont leurs
-  énergies qui s'ajoutent, là où des gains proportionnels perdaient trois
-  décibels au milieu de la course.
-
-  Relevé après coup, régime tenu : le niveau crête reste entre 0,15 et 0,21 sur
-  toute la course du curseur.
-
-### Ajouté
-
-- **Un silencieux sur le son synthétisé.** David a entendu « une fréquence
-  assez aiguë en trop », présente en permanence, ralenti compris. Mesuré : la
-  bande 4-16 kHz n'était qu'à 12 dB sous la bande 200-800 Hz, là où une prise
-  faite dans une vraie voiture est à 22-37 dB en dessous.
-
-  Ce n'est pas un artefact de calcul : l'écart **se resserre** quand on affine
-  la simulation — 15,2 dB à 6 kHz, 12,4 à 10, 9,9 à 20 —, donc l'aigu vient du
-  modèle. Il manquait le pot : la résonance d'échappement est un bruit blanc,
-  elle atténue de 17 dB à toutes les fréquences également et ne filtre rien.
-
-  Un passe-bas réglable est placé avant la séparation du son sec et du son
-  réverbéré. À 3 500 Hz par défaut, l'écart passe à 26 dB. Il se tourne en
-  écoutant, sans couper le son.
-
-- **Un profil déclare d'où vient son son**, parmi trois origines : *enregistré*
-  — la banque d'échantillons jouée en changeant sa vitesse de lecture, ce que
-  fait l'application depuis le début —, *généré en direct* — le moteur simulé
-  pendant la conduite — et *généré à l'avance* — une banque produite au bureau
-  par cette simulation, une prise par plage de régime, que la voiture rejoue.
-
-  Le choix se fait dans l'écran de configuration, panneau *Profils*, et suit le
-  profil dans un export en fichier comme dans un lien de partage. Un profil peut
-  aussi porter la définition du moteur qui a produit sa banque, pour qu'une
-  banque générée ne devienne pas une boîte noire qu'on ne saurait plus refaire.
-
-  Les trois origines sont gréées, et c'est le même bouton « Activer le son » qui
-  les démarre. Un navigateur sans `AudioWorklet` ni WebAssembly ne peut pas faire
-  tourner le moteur simulé : il le dit, et la banque continue de jouer plutôt que
-  de grésiller.
-
-  Les profils déjà enregistrés sont repris en *enregistré*, ce qu'ils ont
-  toujours été. La version du format de profil passe de 2 à 3.
-
-- **Une banque d'échantillons produite ici par engine-sim, et rejouée telle
-  quelle dans la voiture.** `scripts/generate-bank/` fait tourner le moteur
-  simulé au bureau, aussi lentement qu'il le faut, à un régime tenu par un
-  dynamomètre, et en tire une prise par plage de régime — en charge et pied
-  levé, plus le ralenti et le rupteur. Rien n'est modifié dans le moteur de
-  lecture : la banque et le profil qui la déclare s'importent tels quels.
-
-  Ce que ça corrige. La banque enregistrée est jouée entre 0,26 et 0,81 fois sa
-  vitesse sur toute la conduite ordinaire, et le rééchantillonnage descend les
-  résonances de l'échappement en même temps que la fréquence d'allumage : un
-  moteur change de régime sans changer de corps. Mesuré sur le V8 simulé, le
-  centroïde spectral ne suit le régime qu'à 8 % — 0,21 octave de timbre pour 2,67
-  octaves de régime. C'est bien le rééchantillonnage qui déplace le timbre, pas
-  le moteur.
-
-  Combien de prises faut-il ? La question se mesure : on génère au quart
-  d'octave, avec une prise témoin au milieu de chaque intervalle, puis on compare
-  ce que donneraient les écartements plus larges. Une octave laisse 2,7 demi-tons
-  d'erreur de timbre, un demi-octave 1,0, un quart 0,78 pour deux fois plus de
-  prises. **Le demi-octave est retenu** : huit ancrages par famille, plus le
-  ralenti et le rupteur, et une vitesse de lecture qui reste entre 0,74 et 1,36
-  au lieu de 0,26 à 0,81.
-
-  Les boucles font un nombre entier de cycles moteur, ce qui met leurs deux bouts
-  en phase par construction. Saut d'énergie au raccord, une fois la fermeture de
-  l'application appliquée : 1,6 % en médiane, 4,8 % au pire sur les 18 prises —
-  contre 2,3 % et 10,8 % mesurés de la même façon sur la banque enregistrée.
-
-  Les ancrages, les gains et les bornes de lecture sont **mesurés**, pas relevés
-  à la main : c'est ce que le lot BANQUES devait faire à l'oreille. Un seul
-  chiffre reste un choix — de combien rabattre le relief de niveau, qui couvre
-  37,4 dB bruts sur le V8 et 13,1 dB une fois rabattu. C'est le premier réglage à
-  juger à l'oreille, et le timbre n'a encore été écouté par personne.
-
-- **Le son d'engine-sim sort, et il suit le régime.** Le portage WebAssembly ne
-  produisait que des chiffres ; il produit maintenant du son, joué en direct, à
-  la cadence du navigateur. Un onglet **Synthèse**, réservé au développement
-  comme le simulateur, l'allume et le règle.
-
-  Trois fils : le fil principal transmet à chaque tour de boucle le **régime du
-  cadran** et l'**effort** ; un fil de calcul fait tourner engine-sim et remplit
-  une réserve ; un `AudioWorklet` la vide et compte ce qui manque. Le calcul
-  n'est pas dans le fil audio, faute de pouvoir y instancier un module
-  Emscripten sans `SharedArrayBuffer` — donc sans les en-têtes COOP/COEP que le
-  lot a écartés. Ce qu'on y gagne : une pointe de calcul mange la réserve au
-  lieu de faire un trou.
-
-  Le **régime est imposé au dynamomètre** d'engine-sim plutôt que trouvé par le
-  moteur : le régime entendu et celui du cadran doivent dire la même chose,
-  sinon c'est le compteur qu'on croira faux. Mesuré, du ralenti au rupteur :
-  écart nul, à l'unité près.
-
-  Relevé sur un Ryzen 7 7800X3D, contexte audio à 48 kHz, l'application entière
-  tournant à côté, résonance d'échappement déportée sur un `ConvolverNode` :
-  **×2,0 temps réel** pour le V8 à 10 kHz de simulation, **×3,7** pour un quatre
-  cylindres, **×0,95** si l'on laisse engine-sim convoluer lui-même. Réserve
-  tenue à 250 ms, **aucun creux** sur un balayage complet 800 → 6 500 tr/min. Le
-  seuil du lot est ×3 dans la voiture, où rien de tout cela n'a encore été
-  mesuré : sur ce poste, seul le quatre cylindres le passe.
-
-  Le banc affiche ce qui se mesure — régime demandé et entendu, coefficient
-  temps réel, charge, creux, réserve, niveau crête, niveau efficace, brillance —
-  et donne un **balayage de régime** pour écouter la montée sans rouler. **Le
-  timbre, lui, reste à juger à l'oreille** : la machine ne peut pas le faire.
-
-- **L'effort du moteur tient compte de la vitesse : la croisière n'est plus
-  plate.** Faute de pédale, tout se déduisait de l'accélération, si bien que
-  tenir une allure donnait toujours le même demi — mesuré, cinq allures tenues à
-  0,50 au centième près, de l'arrêt à 130 km/h. Or tenir 130 demande beaucoup de
-  couple et tenir 30 presque rien : la traînée croît comme le carré de la vitesse.
-
-  Deux grandeurs remplacent donc l'unique charge. La **charge** dit l'intention
-  du conducteur et pilote la boîte, inchangée. L'**effort** dit le travail du
-  moteur — l'accélération plus la traînée — et pilote le son : le fondu entre
-  « en charge » et « pied levé », et le relief de charge. Un réglage nouveau, le
-  **repère de traînée**, donne la vitesse à laquelle tenir l'allure consomme la
-  moitié de l'effort maximal : 130 km/h sur Route, 150 sur Sport.
-
-  Mesuré sur Route : l'effort passe de 0,07 à 30 km/h tenus à 0,57 à 130, et la
-  croisière s'étage sur 3,4 dB là où elle était plate. Une reprise douce à
-  130 km/h passe 2,2 dB au-dessus de la croisière à la même vitesse. La charge,
-  elle, n'a pas bougé d'un centième — aucun seuil de passage n'est à recaler, et
-  les tests de la boîte le vérifient.
-
-  `idleLevelDb` est recalé de −5 à −1 sur Route et de −5 à 0 sur Sport : l'effort
-  vaut zéro à l'arrêt là où la charge valait un demi sans raison, et le relief lui
-  retirait donc ses décibels pleins. **Un profil déjà enregistré est repris de la
-  même façon** — sans quoi son ralenti aurait sonné quatre à cinq décibels plus
-  bas qu'hier, sans que rien ne le dise.
-
-
-- **Trois modes de simulation**, pour éprouver toute la chaîne sans rouler. Le
-  simulateur livrait jusqu'ici une vitesse parfaite à chaque image, ce qui fait
-  disparaître toute la difficulté du produit : mesuré en croisière tenue à
-  110 km/h, l'accélération vue vaut exactement zéro, quand un vrai GPS en montre
-  0,51 m/s² de pointe — un quart de la charge pleine du profil Route, sur une
-  vitesse qui ne bouge pas.
-
-  *Vitesse exacte* garde ce comportement, commode pour juger un réglage de son.
-  *Mesure GPS* livre la même vitesse à la cadence d'un récepteur (30 ms en
-  roulant, deux secondes à l'arrêt : les valeurs mesurées sur la voiture) et
-  bruitée. *Positions GPS* fabrique des positions complètes que la **vraie**
-  source GPS traite — le seul mode qui éprouve la dérivation par distance, le
-  rejet des positions trop rapprochées et le filtre de précision, c'est-à-dire
-  exactement là où vivaient les deux derniers défauts relevés en roulant. Le
-  blocage du 4 septembre se reproduit désormais au banc, sans voiture.
-
-  Une case « le récepteur annonce sa vitesse » permet d'écouter les deux cas : on
-  ne sait toujours pas ce que fait la Tesla, et l'attendre coûterait un trajet.
-
-  Mesuré au banc : écart-type de l'accélération vue de 0 en vitesse exacte, 0,177
-  en mesure GPS, 0,179 en positions.
-
-- **L'application dit quelle version elle sert**, en tête de la section
-  *Appareil* de l'écran de télémétrie. Dans la voiture il n'y a ni console ni
-  outils de développement, un service worker garde un cache, et rien ne
-  permettait de savoir si l'on essayait la version qu'on croyait — un correctif
-  jugé sur la version précédente est un correctif jugé pour rien. Le numéro est
-  lu dans `package.json` au moment de la construction.
-
-- **Une manette Xbox conduit le simulateur.** Deux gâchettes analogiques valent
-  mieux qu'une flèche du clavier pour juger un son : la charge s'entend sur des
-  transitions, et une commande tout ou rien ne produit que la plus brutale.
-  Gâchette droite pour accélérer, gauche pour freiner, A et B pour changer de
-  rapport, X pour la boîte automatique ou manuelle, Y pour tenir la vitesse ou
-  rendre la main, stick gauche pour le volume.
-
-  La lecture est une pièce du cœur qui ne parle pas au navigateur : elle reçoit
-  un instantané de boutons et rend des intentions, ce qui la rend vérifiable
-  sans manette — onze tests couvrent les zones mortes, le redressement de course,
-  les bascules qui ne comptent qu'une fois par appui et la manette débranchée en
-  pleine accélération. La manette ne prend la main sur les curseurs de l'écran
-  qu'en étant touchée, et la rend en revenant au repos.
-
-  Deux choses corrigées aussitôt, la manette n'étant pas détectée sur le poste de
-  David. **Aucun agencement n'est plus refusé** : exiger `mapping === 'standard'`
-  écartait en silence une manette qui s'annonce autrement — ce qui dépend du
-  navigateur, du pilote et du mode de liaison. Et **la détection ne dépend plus de
-  la boucle** : elle passe par l'événement de connexion, qui arrive au premier
-  appui, si bien qu'une boucle à l'arrêt ne fait plus dire à l'écran qu'aucune
-  manette n'est branchée. L'écran annonce enfin ce que le navigateur voit — nom et
-  agencement — et prévient quand l'agencement n'est pas standard.
-
-- **Un journal de bord, déposé tout seul.** Le navigateur de la voiture n'a pas
-  de console : on ne consulte rien au volant, et le diagnostic se faisait donc en
-  devinant. Le drapeau qui distingue une vitesse lue d'une vitesse déduite
-  existait depuis le premier jour sans être affiché nulle part — il aurait
-  désigné en une seconde un défaut qui a vécu une semaine.
-
-  L'application retient désormais des **événements horodatés** — source de
-  vitesse et son état, bascule de l'origine de la vitesse, relances du suivi,
-  mesures rejetées par motif, suspensions du son, erreurs — plus un relevé
-  toutes les dix secondes. Des faits qui se comptent, et non du texte : on ne
-  répond pas à « combien de fois » avec de la prose. Les états ne sont inscrits
-  qu'à leurs **transitions**, sans quoi la boucle en produirait deux cent seize
-  mille lignes à l'heure ; mesuré sur une minute de conduite étale, il en reste
-  sept.
-
-  Le dépôt est **automatique**, toutes les cinq minutes ou dès qu'une tranche
-  atteint sa taille, par le chemin d'écriture déjà en place sur le serveur — dans
-  un dossier `journal/` séparé de celui des traces, dont l'index est téléchargé
-  par l'application pour les lister. Pas de connexion permanente : une voiture
-  traverse des zones sans réseau, et le temps réel n'a de valeur que si quelqu'un
-  regarde, or celui qui pourrait regarder conduit. Ce qui n'a pas pu partir est
-  gardé et **joint à la tranche suivante**, si bien qu'un tunnel ne coûte pas un
-  journal — et non un fichier par tentative.
-
-  Des tranches, et non un fichier réécrit à chaque envoi. Le stockage aurait été
-  le même, mais ce qu'on renvoie grossit à chaque fois puisque c'est le journal
-  complet depuis le début : sur une demi-heure, huit fois trop de données
-  transférées, et un dernier envoi de deux cents kilo-octets qui doit réussir en
-  entier sur un réseau intermittent.
-
-  **Rien ne part par défaut, et l'accord a deux crans.** Une fenêtre de
-  confirmation dit ce qui sera envoyé avant que cela ne parte. Le minimum couvre
-  ce que fait l'application ; le cran étendu ajoute **la position**, un point par
-  seconde, et se choisit séparément — il ne se déduit jamais du premier, une
-  donnée de déplacement se disant avant et non après. Couper est immédiat, sans
-  confirmation : on n'a pas à confirmer qu'on ne veut plus rien envoyer.
-
-  La règle vit dans le cœur et non dans l'interface : c'est une fonction
-  vérifiable par un test qui décide de ce qui peut être inscrit, et un test
-  échoue si une position se glisse au cran minimum. Une promesse faite à
-  l'utilisateur mérite mieux qu'une condition d'affichage.
-
-  La position est tenue **hors du flux des mesures**. Ce flux est recopié tel
-  quel par l'enregistreur de traces, et une trace s'exporte et se dépose sans
-  accord particulier : y faire entrer des coordonnées les aurait fait sortir par
-  une porte déjà ouverte.
-
-  L'application ne peut pas effacer ses journaux — le serveur ne lui ouvre que
-  l'écriture — et c'est voulu : un témoin qui peut effacer ses notes est un
-  mauvais témoin. Le ménage se fait avec File Station, et l'écran dit ce qui a
-  été déposé.
-
-### Modifié
+  **Jugé depuis, et la valeur est revenue à 0,9985.** David a écouté les trois
+  positions : à 0,996 — la valeur du fichier de référence — « ça craque, ça fait
+  des parasites » ; 0,9975 et 0,9985 sont équivalents et nettement meilleurs.
+  C'est donc un écart assumé à la référence, et le premier : le fichier dit une
+  chose, l'oreille en dit une autre, et c'est l'oreille qui tranche. La valeur
+  n'est pas définitive pour autant — elle dépend des autres réglages du moteur.
 
 - **Les commandes de l'écran de conduite tiennent sur une seule ligne**, en trois
   groupes ancrés : la source à gauche, l'affichage au centre, les profils à
@@ -1954,7 +1694,520 @@ Toutes les évolutions notables du projet. Format
   animation » tient — le lot est reporté, pas abandonné — et l'ancien code est
   dans l'historique.
 
+- **Le fichier de mots de passe accepte plusieurs entrées.** `npm run htpasswd`
+  écrasait le fichier : créer un second identifiant effaçait le premier. Il
+  ajoute désormais une ligne, et remplace celle d'un nom déjà présent. C'est ce
+  qui permet d'en avoir deux — le vôtre pour ce que vous faites à la main, et
+  celui du dépôt dont l'application se sert depuis la voiture.
+- **L'étalonnage est une couche par-dessus les profils**, et non une recopie
+  dedans. Un profil décrit un son ; l'étalonnage décrit la voiture. Les mesures
+  s'appliquent donc d'elles-mêmes à tous les profils, ceux livrés compris, sans
+  jamais écraser ce qui a été réglé — et un profil partagé n'emporte pas les
+  capacités d'une autre voiture, pour la même raison qui a fait sortir le volume
+  général du profil. Sans étalonnage, rien ne change.
+
+  L'écran de configuration annonce les réglages que la mesure remplace. Il n'y a
+  plus de bouton d'adaptation, ni de question « appliquer ou pas ».
+
+- **Le volume général est une préférence de l'appareil**, et non plus un réglage
+  du profil. Il vivait dans la section de mixage, ce qui produisait trois effets
+  tous fautifs : passer de Route à Sport en roulant faisait sauter le niveau, un
+  profil partagé emportait le volume réglé pour une autre voiture, et
+  réinitialiser la section de mixage remettait le son au niveau d'usine alors
+  qu'on voulait seulement retrouver un caractère. Il est désormais rangé à côté
+  du profil choisi, survit au changement de profil, ne voyage ni par lien ni par
+  fichier, et se règle toujours depuis l'écran de conduite.
+
+  Le niveau déjà réglé est conservé : à la première ouverture, la préférence
+  prend la valeur du profil actif.
+
+  Techniquement, il quitte aussi le calcul du mixage pour devenir un gain de
+  sortie, appliqué en amont du limiteur — ce qui préserve la marge au-delà de 1.
+  Les gains affichés à l'écran de télémétrie décrivent donc l'équilibre entre les
+  couches, sans que le volume les déplace tous ensemble.
+
+- **Le volume fait entendre l'effort.** Les fondus étant à puissance constante,
+  ils changeaient la couleur du son et jamais son niveau : mesuré, ralenti,
+  croisière, reprise douce et reprise franche tenaient dans 1,3 dB, et lever le
+  pied franchement était même 2,3 dB plus fort qu'écraser. Trois réglages de
+  relief s'appliquent désormais par-dessus — la charge, le régime, le ralenti —
+  et l'étendue passe de 5,3 à 16,5 dB sur le profil Route, dans le bon ordre.
+- La compensation des prises « pied levé », enregistrées plus doucement, passe
+  dans le gain de chaque couche là où son déficit se mesure — 9,6 dB pour la
+  basse, 6,5 pour la haute — au lieu d'un facteur commun qui surcompensait l'une
+  de 2,8 dB et l'autre de 5,9. « Gain pied levé » devient un curseur de goût.
+- **La boîte de vitesses regarde l'évolution de la vitesse, et non plus
+  seulement le régime.** Trois comportements en découlent, tous réglables :
+  - **elle monte les rapports quand on tient une vitesse**, comme une boîte
+    automatique. Elle restait figée sur un palier, faute d'un régime qui monte :
+    50 km/h tenus laissaient la deuxième à 3034 tr/min sur le profil Route, où
+    la quatrième tourne à 1532. La sixième s'engage désormais dès 90 km/h ;
+  - **elle descend pour aider à ralentir** dès que la décélération est soutenue,
+    au lieu d'attendre que le régime soit tombé. Un lever de pied et un freinage
+    donnaient exactement les mêmes vitesses de rétrogradage ;
+  - **le rétrogradage forcé répond à une demande franche**, c'est-à-dire à une
+    montée de charge, et non à son niveau. Faute de pédale dans une voiture
+    électrique la charge est déduite de l'accélération : le seuil se franchissait
+    dès 3,6 km/h par seconde, si bien que remettre délicatement les gaz suffisait
+    à faire descendre la boîte.
+- **Trois réglages nouveaux** dans la transmission : « Croisière au-dessus de »,
+  « Monter après » et « Descendre en freinant à ».
+- **Les deux profils livrés sont remis d'aplomb** pour la boîte nouvelle, et le
+  guide de création produit les trois valeurs selon le tempérament demandé — un
+  profil calme croise bas et monte tôt, un profil sportif garde ses rapports et
+  descend franc au freinage. L'aperçu du guide annonce le rapport de croisière et
+  son régime.
+
+### Retiré
+
+- Le réglage **« Zone morte »** du signal de vitesse. Il n'existait que pour
+  masquer le bruit d'une pente estimée sur deux points ; l'ajustement sur toute
+  la fenêtre moyenne ce bruit au lieu de le seuiller. Mesuré, deux variantes qui
+  le conservaient sous une forme correcte — soustractive, ou pondérée par la
+  qualité de l'ajustement — amputaient les reprises douces de 25 à 69 % : elles
+  ont été écartées. Le tremblement du GPS à l'arrêt, ce que la zone morte
+  protégeait réellement, est traité en ne cherchant pas de pente quand le
+  véhicule est immobile. Les profils enregistrés perdent le champ sans rien
+  d'autre : le format ne change pas de forme.
+
 ### Corrigé
+
+- **L'effort agissait à l'envers**, d'un facteur 38. Le banc du son en direct
+  coupait le démarreur, au motif que le dynamomètre tient l'arbre : or engager le
+  dynamomètre sur un moteur arrêté le fait tourner sans jamais l'allumer. Ce
+  qu'on entendait n'était donc pas une combustion mais du pompage d'air — et le
+  pompage est plus bruyant papillon fermé qu'ouvert, d'où le sens inversé.
+
+  Le démarreur lance maintenant le moteur une seconde avant que le dynamomètre ne
+  prenne le relais. Mesuré à 800 tr/min tenus : la crête passe de 0,343 à 0,634
+  quand l'effort va de 0,1 à 1. Le sens est rétabli, mais l'ampleur reste faible
+  et la brillance ne monte pas — cela reste à juger à l'oreille.
+
+- **Les collecteurs du V8 ne mesuraient pas ce qu'ils devaient.** David :
+  « y'a des fréquences parasites par dessus, qu'on dirait synchro sur le côté
+  rugueux mais plus aiguës — on les a pas du tout en 4 cyl ». Il avait raison sur
+  la différence de structure : le V8 étage la longueur de collecteur d'un
+  cylindre à l'autre, le quatre cylindres non.
+
+  Mais l'étagement était faux : la longueur du tube primaire de l'échappement
+  avait été prise pour celle du collecteur de chaque cylindre. On posait 29, 31,
+  33 et 35 pouces là où les fichiers de référence descendent de 6,79 à 1,97 —
+  cinq à dix fois trop long, et croissant là où il faut décroître. Quatre
+  résonances fausses, que le quatre cylindres n'avait pas puisqu'il n'étage rien.
+
+- **La liste du relecteur dit la durée de chaque trajet.** Elle n'affichait que
+  la date et le nombre de fichiers ; il fallait ouvrir une session pour savoir si
+  elle durait deux minutes ou une heure — c'est-à-dire charger celle qu'on était
+  en train de choisir. La durée s'annonce comme une **borne basse** — « plus de
+  15 min » —, lue sur le seul nombre de tranches, la capture découpant toutes les
+  cinq minutes. Une session sans capture, comme celles des 8, 9 et 10 septembre,
+  affiche « journal seul » plutôt qu'une durée inventée.
+
+- **Du code mort a été retiré** après le retrait du panneau de traces : des
+  règles de style que plus aucun élément ne portait, la lecture de traces en
+  fichier que seul son propre test appelait, et deux commentaires qui décrivaient
+  encore le geste supprimé.
+
+- **Le README décrivait trois gestes qui n'existent plus.** Il annonçait encore
+  des traces « exportables en un fichier et réimportables ailleurs », et un
+  trajet réel qui « s'enregistre une fois depuis l'écran Télémétrie » — le
+  panneau qui portait ces trois gestes a été retiré avec le relecteur. Le texte
+  dit maintenant ce qui se passe : l'étalonnage embarqué produit seul les traces
+  locales, la capture du trajet remonte toute seule, et c'est le relecteur qui
+  sert à revoir un trajet. Le rejeu, lui, reste bien une source de vitesse.
+
+- **Le profil mesuré n'était servi par personne.** L'application demandait
+  `/mesure-voiture/profil-voiture.json` ; nginx n'avait pas d'emplacement pour ce
+  chemin, le volume n'était pas monté dans le conteneur du site, et le dossier
+  n'existait pas sur le serveur. La requête tombait sur la règle générale, dont
+  le `try_files … /index.html` répond **200 avec la page d'accueil** : le code
+  voyait une réponse valable, échouait à la lire, et rendait la même absence
+  qu'un serveur sans mesure. Le bandeau de proposition ne pouvait donc pas
+  apparaître, et rien à l'écran ne le disait. Sortie du 11 septembre 2026.
+
+  Le dossier s'appelait d'abord `profils/`, à une lettre de `profiles/` qui est
+  la bibliothèque de profils. Deux dossiers voisins à ce point se confondent à
+  la première manipulation : il a été renommé **`mesure-voiture/`** avant
+  d'exister. Les deux ne contiennent pas la même chose — l'un ne porte qu'une
+  couche de mesure, l'autre les profils qu'on peut choisir — et n'ont pas les
+  mêmes droits.
+
+- **Le rétrogradage forcé rendait le rapport qu'il venait de prendre.** Sa cible
+  vaut `redlineRpm × 0,55` — 3 575 tours sur le V8 — quand le seuil de montée
+  immédiate de la quatrième à pleine demande vaut 3 514 : elle passait au-dessus
+  de sa propre porte de sortie. Mesuré le 11 septembre à 118 km/h : 6→4, puis
+  4→5 quatre dixièmes plus tard, puis 5→6, pour une reprise d'une seconde et
+  demie. Le rapport visé est maintenant choisi pour se garder, et le pied au
+  plancher le retient tant qu'il y reste — comme une automatique. Là où aucun
+  rapport ne se garderait, la boîte descend quand même : une boîte muette serait
+  un défaut pire.
+
+- **Le claquement de passage était trop fort à la montée.** Il perd trente pour
+  cent ; le rétrogradage garde le sien, au niveau près. Les deux réglages
+  bougent ensemble, l'amplitude de descente étant le produit des deux.
+
+- **Le cumul des mesures d'une voiture donne le même résultat qu'un recalcul.**
+  Il n'en donnait pas : la vitesse pratiquée est un centile, qui **baisse**
+  quand un trajet s'allonge, et le cumul par extrêmes gardait la valeur qu'une
+  tranche courte avait rendue. Mesuré : 150 km/h contre 40 pour un même trajet,
+  sur la grandeur qui fixe la vitesse plausible.
+
+- **Un trajet n'est plus compté douze fois.** Le garde de remplacement le
+  cherchait dans la fenêtre des vingt derniers : un trajet qui n'y était pas —
+  arrivé en retard, ou sans horodatage lisible — était recompté à chaque tranche
+  déposée. Mesuré : trente-deux trajets là où il y en avait vingt et un.
+
+- **La boîte remonte les rapports après un arrêt.** Relevé en roulant le
+  11 septembre 2026 : après quarante-quatre minutes de stationnement, la
+  deuxième a tenu de 22 à 108 km/h jusqu'au rupteur, et pas un rapport n'a été
+  passé sur les cinquante et un kilomètres du trajet.
+
+  Deux défauts qui se composaient. Le conditionneur prêtait une décélération de
+  0,19 à 0,39 m/s² à une voiture immobile — vitesse à 0,000 km/h d'un bout à
+  l'autre — parce que la pente gardait sa dernière valeur faute de mesure
+  neuve. Et le compteur de ralentissement de la boîte avalait ces valeurs sans
+  plafond : mesuré à 2 706 secondes pour un seuil de 0,35, il aurait fallu
+  vingt-deux minutes d'accélération continue pour le rendre, si bien que
+  l'inhibition de montée ne retombait jamais.
+
+- **Le motif d'un rejet de position se lit sous les cadrans**, avec la précision
+  réellement annoncée. Il existait déjà, mais rangé sous les réglages, là où
+  personne ne regarde en conduisant.
+
+- **Le bouton du son ne ment plus quand l'application est au repos.** Il
+  annonçait « Son actif » alors que « P » avait coupé la cadence et le mixage.
+
+- **« P » coupe vraiment le son.** Il n'arrêtait que la boucle d'affichage,
+  alors que la banque d'échantillons est cadencée par l'horloge du fil audio :
+  celle-ci continuait de battre à soixante hertz, et le silence demandé était
+  défait au tour suivant. Le ralenti s'entendait toujours, la boîte tournait et
+  le journal s'incrémentait pendant que l'écran affichait « P ».
+
+- **« D » ne peut plus installer deux cadences.** Le démarrage passait par la
+  boucle d'affichage sans regarder si l'horloge du fil audio tournait déjà : le
+  pas de temps était alors compté deux fois, et tout ce qui s'intègre dessus —
+  compteurs de la boîte, durée d'un passage, lissage de la charge — avançait
+  deux fois trop vite. L'ordre était sûr tant que le démarrage avait lieu au
+  chargement de la page ; il ne l'est plus depuis que c'est un bouton.
+
+- **La commande de boîte changée à la manette se voit à l'écran.** Elle
+  s'adressait à la boîte sans passer par l'état que l'écran lit : « AUTO »
+  restait allumé pendant que la boîte était en manuelle.
+
+- **Le repos ne perd plus le mode de conduite enregistré.** Remettre « route »
+  au parking l'écrivait dans les préférences, si bien que le mode déduit du
+  profil disparaissait dès le deuxième trajet.
+
+- **Le rapport est inscrit au journal à l'instant où il change.** Le relevé
+  périodique le portait toutes les dix secondes : il prouvait qu'un passage
+  avait eu lieu, jamais quand ni combien. Le relecteur s'en sert quand il est
+  là, et mesure alors la durée d'un enchaînement au lieu de l'encadrer.
+- **Un relevé de l'accéléromètre en télémétrie.** Cadence réelle, présence de
+  l'accélération sans la gravité, amplitude observée : de quoi savoir, en
+  roulant, si la voiture peut mesurer l'accélération au lieu de la déduire d'une
+  vitesse GPS qui n'arrive qu'une fois par seconde.
+
+- **Un relecteur, pour revoir un trajet au lieu de le raconter de mémoire.** Il
+  vit sur une page à part, `/relecteur.html`, et déroule une session enregistrée
+  comme un lecteur vidéo : lecture, pause, déplacement libre, vitesse réglable
+  jusqu'à vingt fois.
+
+  Les sessions se listent depuis le serveur, la plus récente en tête, et leurs
+  tranches se recollent toutes seules. Il lit indifféremment les fichiers en
+  clair et compressés, et les deux natures : le journal des essais passés — ceux
+  des 8, 9 et 10 septembre restent relisibles — comme la capture continue.
+
+  **Ce qui est deviné se voit.** Un journal ne porte le régime, le rapport et la
+  charge qu'une fois toutes les dix secondes : entre deux relevés, les valeurs
+  affichées sont interpolées, et l'écran dit à quelle distance se trouve le
+  relevé le plus proche. Le rapport, lui, n'est jamais interpolé — entre la
+  troisième et la quatrième il n'y a pas de trois et demi.
+
+  Une **carte** montre le trajet et le véhicule qui le suit. Un clic sur le tracé
+  emmène la timeline à cet endroit ; un déplacement de la timeline déplace le
+  véhicule. Elle demande Leaflet et les tuiles d'OpenStreetMap — la première
+  dépendance d'interface du projet, acceptée pour ce seul écran. La page étant
+  séparée, **l'application de conduite ne grossit pas d'un octet** : elle reste
+  à 307 ko quand le relecteur en pèse 162 dans son propre paquet.
+
+  La **timeline est marquée** des faits du journal — arrêts, redémarrages du
+  suivi, salves de positions rejetées, coupures du son, changements de
+  configuration —, groupés pour qu'une rafale ne couvre pas la barre.
+
+  Un bouton **copie le repère** de l'instant affiché : une ligne lisible, puis
+  l'état complet avec les coordonnées. C'est le geste qui sert le but du lot —
+  David colle le repère, et la conversation part du bon moment.
+
+  La timeline marque aussi les **rapports enchaînés**, déduits des relevés et
+  non lus dans un fichier. Ce qui est mesuré et ce qui est déduit se
+  distinguent : à un relevé toutes les dix secondes, voir la deuxième puis la
+  quatrième prouve deux passages sans dire s'ils se sont suivis. Le critère
+  devient alors la densité — plus d'un rapport franchi par relevé, c'est que la
+  boîte a bougé plusieurs fois entre deux regards. Sur l'essai du 10 septembre,
+  neuf moments ressortent, dont les allers-retours deuxième-quatrième relevés
+  entre 290 et 310 secondes.
+
+  Sous la barre, un **relief de vingt-huit pixels** trace l'accélération en une
+  courbe continue, verte au-dessus de l'axe et rouge en dessous : le même tracé
+  découpé à zéro, pour que la couleur change sans que le trait se coupe. Chaque
+  colonne garde l'extrême de ce qu'elle couvre — une moyenne effacerait le
+  freinage bref, qui est justement ce qu'on cherche — et un trou
+  d'enregistrement coupe le trait plutôt que de se laisser traverser. Les **passages de rapport** s'y posent en chevrons sur l'axe, vers le
+  haut pour une montée et vers le bas pour un rétrogradage : les lire sur la
+  même ligne que l'effort montre d'un coup un rétrogradage en pleine
+  accélération, ou une montée en freinant.
+
+  Sous le rapport, une **jauge de charge** montre ce que le moteur croit qu'on
+  demande — l'équivalent d'une position d'accélérateur. Elle est calculée et
+  jamais mesurée, la voiture ne disant pas ce que fait le pied : d'où une barre
+  plutôt qu'un cadran, qui suggérerait un instrument dont il n'existe pas
+  d'équivalent à bord.
+
+  L'instant se lit sur **les cadrans de la voiture** — le même composant, pour
+  que relire un trajet soit revoir ce qu'on avait sous les yeux. La carte occupe
+  tout ce que l'écran laisse, un bouton **garde la vue centrée** sur le
+  véhicule, et le survol d'une marque de la timeline dit ce qu'elle est,
+  combien de fois et quand.
+
+  Vérifié sur l'essai du 10 septembre 2026 rapatrié du serveur : 218 relevés,
+  2 111 positions, 36 minutes, le tracé de l'A31 sur la carte, et le véhicule
+  qui reste au pixel près au centre tant que le suivi est actif.
+
+
+- **La capture d'un trajet démarre toute seule.** Elle se déclenche au démarrage
+  du GPS, dès lors que la remontée est au dernier cran, et s'arrête avec lui. Il
+  n'y a plus rien à penser avant de partir.
+
+  Le mécanisme précédent demandait d'appuyer sur un bouton. Le 10 septembre
+  2026, un essai de trente-six minutes n'a laissé **aucune trace** : le journal
+  est remonté en huit tranches, la trace n'existait pas. La remontée automatique
+  des traces était pourtant en place depuis des jours — `core/upload/consent.ts`
+  les classe au dernier cran, et l'accord était donné, puisque le journal portait
+  les positions. Le transport marchait ; c'est le geste qui manquait.
+
+  Elle enregistre, à la cadence de l'appareil, **ce que la source livre** —
+  vitesse brute, précision, origine — et **ce que la chaîne en fait** au même
+  instant — vitesse conditionnée, accélération, régime, rapport, charge. La
+  sortie n'est pas là pour le rejeu, qui la recalculerait : elle permet de
+  comparer ce que la chaîne a produit ce jour-là à ce qu'elle produit
+  aujourd'hui, et rien d'autre dans ce projet ne montre les régressions.
+
+  Chaque tranche réécrit un **en-tête** qui décrit la session : profil, moteur,
+  boîte, version de l'application, et le profil assemblé en entier. Quatre
+  kilo-octets sur trois cents, pour qu'une tranche isolée se lise seule. Un
+  changement de configuration en cours de route s'inscrit, daté — et le journal
+  reçoit le même fait, son genre `profile` étant déclaré depuis le premier jour
+  sans que rien ne l'émette.
+
+  Chaque relevé garde aussi **l'horodatage brut de la source**, sans conversion :
+  c'est la seule façon de retrouver la cadence réelle de l'appareil, et l'unité
+  elle-même est une information — le navigateur de la Tesla compte en
+  microsecondes, ce qui a coûté une semaine de diagnostic.
+
+  Les tranches partent par la file de remontée déjà écrite, toutes les cinq
+  minutes, et **ce qui reste part après quinze secondes à l'arrêt**. La dernière
+  tranche n'a pas cinq minutes devant elle, et personne n'arrête l'application :
+  David « sort de la voiture, et quand il s'éloigne elle s'éteint ». Un arrêt qui
+  dure est le dernier moment où l'on est encore là pour envoyer — le temps de se
+  garer suffit, un feu rouge n'y suffit pas, et le déclencheur ne tire qu'une
+  fois par arrêt pour qu'un embouteillage ne produise pas un fichier par quart de
+  minute.
+
+  Il compte sur l'horloge murale et non sur le temps de session : le pas de la
+  boucle est plafonné à un quart de seconde, si bien qu'une page en arrière-plan
+  voit son temps avancer quatre fois moins vite que le monde. Rien n'est gardé dans le téléphone : trente-six minutes à dix relevés
+  par seconde font vingt-deux mille lignes, et le stockage local ne les
+  absorberait pas trajet après trajet.
+
+- **Un témoin sur l'écran de conduite dit si la session sera récupérable.** Vert :
+  la capture tourne et les tranches partent. Orange : ça se rattrapera tout
+  seul — pas de réseau, ou un GPS qui rejette beaucoup. Rouge : c'est perdu —
+  compte refusé, GPS mort, écriture impossible. Absent quand l'envoi est coupé.
+
+  **La frontière entre orange et rouge est la récupérabilité**, et non la gravité
+  ressentie : un réseau absent depuis dix minutes reste orange, parce que tout
+  partira ; un mot de passe refusé est rouge même si l'application tourne
+  parfaitement. Un seul témoin, qui prend le pire des états — une rangée de
+  voyants sur un écran qu'on lit en conduisant est une rangée qu'on ne lit pas.
+  Il ne clignote pas : sa couleur porte le sens.
+
+  Le détail se lit sur l'écran de télémétrie, en toutes lettres, avec ce qui a
+  été retenu et ce qui est parti.
+
+- **Changer de moteur change enfin la façon de conduire.** Les seuils de passage
+  étaient en tours absolus, si bien que la boîte ignorait le moteur qu'elle avait
+  devant elle : mesuré au banc, un moteur de moto qui monte à 11 000 tr/min
+  passait ses rapports au même endroit qu'un V8 qui s'arrête à 6 500, et un gros
+  bloc à 5 500 tapait son rupteur **avant d'avoir le droit de monter**.
+
+  Ils se déduisent maintenant du rupteur et d'un **tempérament** — route ou
+  sport —, comme la descente le faisait déjà : l'asymétrie était dans le code
+  depuis le début. Le tempérament se choisit sous les cadrans de l'écran de
+  conduite, à côté de la commande automatique ou manuelle, et il est retenu par
+  l'appareil. Au premier lancement, il se déduit du profil actif — imposer
+  « route » ferait conduire un profil Sport comme un profil Route sans que rien
+  ne le dise.
+
+  Les deux tempéraments disent enfin explicitement ce que les profils livrés
+  faisaient sans le dire : **Route monte de plus en plus tôt** — on cherche le
+  rapport long — et **Sport de plus en plus tard** — on garde le régime. Leurs
+  courbes sont les seuils de ces profils divisés par leur rupteur, donc rien ne
+  change sur les moteurs livrés.
+
+  **Cinq curseurs quittent l'écran de réglage.** Et un rapport ajouté reçoit
+  désormais un seuil cohérent avec ses voisins : la courbe s'étale sur la boîte
+  qu'elle trouve, là où une table absolue faisait hériter le nouveau rapport du
+  seuil de son prédécesseur.
+
+- **Les traces enregistrées en voiture se rejouent enfin.** Même cause que
+  l'accélération : le rejeu comparait des horodatages en microsecondes à son
+  temps écoulé en millisecondes, et attendait donc mille fois trop longtemps
+  entre deux mesures — les deux traces du 9 septembre 2026 annonçaient 60 700 et
+  73 700 secondes, et ne se déroulaient pas. Elles annoncent maintenant 60,7 et
+  73,7 secondes, et se rejouent en temps réel.
+
+  Cela rend au projet son outil de mise au point le plus utile : un trajet réel,
+  avec la cadence de la voiture, sa quantification au kilomètre-heure et ses
+  paliers, rejoué autant de fois qu'on veut au bureau. C'est le seul signal réel
+  dont le projet dispose pour éprouver la boîte sans rouler.
+
+  La détection d'unité, commune au conditionnement et au rejeu, vit désormais
+  dans une pièce à part : le seuil doit être le même des deux côtés, et ce dépôt
+  a déjà payé deux fois la même erreur — deux mécanismes qui décrivent le même
+  fait avec des valeurs qui finissent par diverger.
+
+- **L'accélération était mille fois trop petite.** Le navigateur de la Tesla
+  horodate ses positions en **microsecondes**, là où la norme du web dit
+  millisecondes ; le code divisait par mille en croyant convertir. L'accélération
+  étant une pente, donc une division par une durée, elle sortait à 0,0028 m/s²
+  pour une vraie valeur de 2,78 — sous le seuil d'arrondi partout où on la
+  regardait.
+
+  Relevé sur le journal de l'essai du 9 septembre 2026, rapatrié depuis le NAS :
+  l'accélération est négligeable dans **476 relevés sur 480**, et la charge, qui
+  s'en déduit, est figée à 0,50 dans la même proportion. Le défaut était même
+  écrit dans le nom du fichier de trace déposé — `…_test2_60700s.json` annonce
+  60 700 secondes pour un trajet de soixante.
+
+  Ce que cela expliquait d'un coup : le relief de charge plat, donc l'effort
+  inaudible ; les garde-fous de la boîte inertes, faute d'atteindre leur seuil de
+  −0,05 m/s² ; la croisière qui se croyait éternelle, donc les rapports qui
+  montaient pendant un ralentissement — quatre cas dans le journal, dont un
+  3ᵉ → 5ᵉ à 64 km/h. La vitesse **affichée**, elle, était juste : seule sa
+  dérivée était morte.
+
+  Le conditionnement déduit maintenant l'échelle du plus petit écart strictement
+  positif entre deux mesures, et ramène l'horodatage en millisecondes. Le seuil
+  ne peut pas nuire : si le plus petit écart entre deux positions dépassait
+  vraiment dix secondes, l'accélération serait inexploitable de toute façon.
+  Rejouées dans le code corrigé, les deux traces du même essai rendent une
+  accélération exploitable sur 83 % et 70 % de leurs mesures, de médiane
+  0,36 m/s² et d'étendue −1,39 à +3,37 m/s².
+
+  Deux relevés bornent au passage ce qu'on peut attendre du signal de cette
+  voiture : la cadence réelle est de **dix** positions par seconde, et non trente
+  comme annoncé, et la vitesse est **quantifiée au kilomètre-heure entier**.
+
+- **Le passage de rapport s'entend aussi sur les moteurs en synthèse.** David,
+  après un essai sur le NAS : « ça ne marche pas pour les moteurs en synthèse,
+  juste ceux qui sont enregistrés — je parle de tout le toutim, du claquement au
+  passage en particulier ».
+
+  Trois pièces sur quatre étaient logées du mauvais côté. Le clac de la boîte et
+  la pétarade étaient joués par le moteur à échantillons, dont la garde exige une
+  banque chargée : un profil en synthèse n'en charge pas, et ouvre de surcroît
+  son propre contexte audio. La coupure de couple, elle, vit dans le mixage des
+  couches, qui n'est jamais appelé quand le synthé tourne — l'effort transmis au
+  moteur simulé restait donc entier pendant tout le passage. Seul le mouvement de
+  régime — plongée, coup de gaz, engagement — passait, parce qu'il est calculé
+  dans le moteur et transmis tel quel.
+
+  Les deux bruits deviennent des pièces autonomes, jouées sur le graphe qui sonne,
+  quel qu'il soit : c'est le même son des deux côtés, pas deux sons qui se
+  ressemblent. Sur le graphe du synthé ils entrent après le silencieux et la
+  résonance d'échappement — un choc de carter ne traverse pas la ligne
+  d'échappement, et l'y faire passer le noierait sous quinze décibels de
+  résonance à 500 Hz. La coupure de couple s'applique désormais à l'effort
+  transmis au moteur simulé, avec la même forme que pour les couches.
+
+  Le compteur « Clacs de boîte » de la télémétrie reste unique et monte quelle
+  que soit l'origine : c'est un compte, pas un son, et c'est lui qui permet de
+  distinguer un défaut de déclenchement d'un défaut de niveau.
+
+- **Le coup de gaz ne se produit plus quand on a levé le pied.** David : « je
+  crois que le rapport passe automatiquement au moment du coup de gaz, même si
+  j'ai commencé à ralentir juste avant. »
+
+  Deux effets se cumulaient. Le blocage des montées demandait six dixièmes de
+  seconde de ralentissement avéré pour agir ; il en demande un tiers. Et surtout,
+  un passage décidé légitimement dure lui-même six dixièmes de seconde : il
+  s'engage quand même, et son coup de gaz tombe alors que la voiture ralentit
+  déjà. En montée, celui-ci suit donc l'effort du moment — pied levé, il ne
+  reste que la chute. Au rétrogradage il reste entier : c'est là qu'il est le
+  geste du conducteur, et l'on rétrograde précisément pied levé.
+
+- **La boîte ne monte plus un rapport pendant qu'on ralentit.** David, en
+  laissant décélérer : « parfois le simu passe une vitesse supérieure au lieu de
+  laisser ralentir et de finalement rétrograder ; et comme le son du moteur est
+  faible en décélération, on entend le claquement fort ».
+
+  La bande de croisière juge sur la dérive de la vitesse mesurée sur trois
+  secondes — robuste au bruit, mais lente. Quand on lève le pied après une
+  longue croisière, la stabilité est déjà acquise et la dérive met plus d'une
+  seconde à voir le ralentissement : assez pour laisser passer un rapport de
+  plus. Reproduit au banc — un passage du quatrième au cinquième une seconde
+  après le lever de pied, sur une perte de 0,5 km/h par seconde.
+
+  L'accélération instantanée le sait tout de suite mais elle est bruitée à un
+  dixième de m/s². Elle est donc cumulée dans un compteur qui monte pendant
+  qu'on ralentit et redescend deux fois plus vite sinon : une croisière qui
+  tremble autour de zéro ne l'atteint jamais, un vrai ralentissement le
+  franchit en un tiers de seconde.
+
+  **Et surtout, le seuil de montée suit la demande et non la charge.** C'est
+  David qui a vu la cause : « les rapports montent plus tôt quand on accélère
+  moins, et plus tard après un kickdown ; je pense que ça a un lien ». Les deux
+  viennent du même décalage de seize cents tours.
+
+  Ce décalage attend l'**intention** du conducteur — sur une vraie automatique,
+  la position de la pédale. Faute de pédale, la charge se déduit de
+  l'accélération, donc du **résultat**. En côte, pied au plancher, l'accélération
+  est faible : la charge tombe, le seuil descend de huit cents tours et la boîte
+  monte tôt, l'inverse de ce qu'il faudrait. Et au lever de pied, la charge
+  s'effondre en une demi-seconde, si bien que le seuil passe sous le régime sans
+  que le moteur ait bougé.
+
+  La demande monte instantanément avec la charge et n'en redescend qu'en trois
+  secondes : une accélération franche garde ses rapports longs quelques secondes
+  après qu'on a relâché, et le seuil ne peut plus tomber que d'environ cinq cent
+  trente tours par seconde. Relevé sur le profil Route, quatrième à 4000 tr/min
+  puis lever de pied : plus aucun passage dans les trois secondes qui suivent.
+
+  Quatre gardes avaient été posées en aval avant d'en arriver là ; trois
+  dépendaient du moment où l'accélération mesurée devient franchement négative,
+  or elle est lissée quand la charge ne l'est presque pas. La quatrième freinait
+  la descente du seuil : la demande la remplace, en disant pourquoi il ne doit
+  pas descendre.
+
+  **Et le passage immédiat ne vaut plus qu'en accélérant.** « Accélération
+  jusqu'à 4800 tr/min en 4e, arrêt de l'accélération, le simu passe la 5 et la
+  6. » Le seuil de montée se décale de seize cents tours avec la charge : pied
+  au plancher il est haut, et il s'effondre en une demi-seconde quand on
+  relâche, bien plus vite que le régime ne descend. La marge de dépassement — qui
+  court-circuite la temporisation — se trouvait franchie non parce que le moteur
+  montait, mais parce que la barre était tombée. Deux rapports passaient
+  d'affilée, chacun voyant son propre seuil effondré, et sans laisser aux gardes
+  précédentes le temps d'agir. S'y ajoute un blocage immédiat au-delà d'un demi
+  m/s² de décélération, où le cumul n'apporte plus aucune certitude : la traînée
+  du simulateur en donne déjà 1,4 à cent kilomètres à l'heure.
+
+  **Cela vaut aussi pour la montée au régime**, et c'était le gros du reproche.
+  « Si j'arrête d'accélérer juste avant que la boîte ne monte un rapport, elle le
+  monte quand même. » Le franchissement du seuil de régime lance un compte à
+  rebours de quelques dixièmes de seconde, que plus rien n'annulait : reproduit
+  au banc — le seuil franchi, le pied levé dans la foulée, et le passage se
+  produit une demi-seconde plus tard. Le compte est désormais abandonné et non
+  suspendu, donc reprendre les gaz repart d'un compte neuf.
 
 - **Les deux modes de banc qui imitent un GPS fournissaient une pédale que la
   voiture n'a pas.** La charge se déduit de l'accélération quand la position de
@@ -2063,150 +2316,6 @@ Toutes les évolutions notables du projet. Format
   l'application, et un enregistrement lancé ailleurs s'annonce dans un bandeau
   qui l'arrête d'un geste, sans perdre la trace.
 
-### Ajouté
-
-- Quatre lignes dans « Qualité du signal » de l'écran Télémétrie :
-  l'**origine de la vitesse** — lue du navigateur ou déduite de deux positions —,
-  les **positions reçues**, les **vitesses produites** et les **rejets** par
-  motif. Le drapeau qui distingue une vitesse déduite d'une vitesse lue existait
-  depuis le premier jour et n'était affiché nulle part : c'est ce qui a rendu
-  invisible pendant une semaine le défaut du repli ci-dessus. Une source qui
-  reçoit des positions sans en tirer aucune vitesse donne le même écran qu'une
-  source muette ; ces comptes distinguent les deux.
-- **Les positions imprécises sont écartées**, par un réglage nouveau —
-  *Précision GPS acceptée*, dans « Signal de vitesse ». La précision annoncée
-  avec chaque position était transmise depuis le premier jour et ne servait à
-  rien : un point à 200 mètres près entrait dans le calcul comme un point à 5
-  mètres. Une position écartée n'est ni une mesure ni la référence de la
-  mesure suivante, et son rejet se compte à l'écran.
-
-  Le seuil est livré à **250 mètres, volontairement large** : les valeurs de la
-  voiture ne sont pas mesurées, et un seuil trop serré rejetterait des mesures
-  saines pour faire taire le GPS — le défaut qu'on vient de corriger deux fois.
-  Une position dont la précision n'est pas renseignée n'est jamais rejetée : un
-  champ absent n'est pas un mauvais chiffre.
-- Deux lignes de plus dans « Qualité du signal » : la **précision annoncée**
-  avec la dernière position, et les **douze dernières**. C'est ce relevé qui
-  servira à resserrer le seuil ci-dessus, sur des chiffres et non sur une
-  intuition.
-- **Une section « Appareil »** sur l'écran Télémétrie : largeur et hauteur
-  utiles de la page en pixels CSS, taille d'écran annoncée, densité de pixels,
-  réponse de l'API de maintien d'écran allumé, et état de l'autorisation de
-  géolocalisation **relevé au chargement** — plus tard, il vaudrait « accordée »
-  dans tous les cas et ne dirait plus si la voiture la retient d'une session à
-  l'autre. Le zoom du navigateur de bord n'est pas réglable et sa valeur par
-  défaut a changé : la mise en page ne peut se caler que sur un relevé.
-
-### Ajouté
-
-- **Un tableau de bord à cadrans** sur l'écran de conduite : compteur de vitesse,
-  compte-tours avec sa zone de rupteur, rapport engagé au centre. L'écran a deux
-  visages et l'on passe de l'un à l'autre — les cadrans pour conduire, les
-  chiffres pour régler, car un écart de cent tours ne se voit pas sur une
-  aiguille. Le mouvement d'une aiguille **est** la valeur : il ne relevait pas de
-  la règle qui interdit les animations.
-
-  Un **paysage** défile derrière les cadrans, coupé par défaut. Celui-là est de
-  l'agrément assumé, et la règle a été levée pour lui seul. Mesuré avant de le
-  promettre, sur la même trace rejouée : l'écart de durée d'image entre décor
-  coupé et décor actif est de 0,2 ms, plus petit que l'écart de passe à passe du
-  même état (1,8 ms), et aucune image ne dépasse 33 ms dans les deux cas.
-
-  L'échelle du compteur est fixe à 180 km/h. La déduire de la voiture donnait
-  304 km/h sur Route : l'aiguille aurait passé sa vie dans le coin inférieur
-  gauche. Un compteur se gradue pour ce qu'on roule.
-- **Un mode simplifié** de l'écran de configuration : deux curseurs globaux et le
-  nombre de rapports, le détail des cinquante réglages attendant derrière une
-  bascule « avancé ». Aucun réglage n'est supprimé.
-
-  Le curseur **calme ↔ sportif** commande onze valeurs du moteur et de la boîte ;
-  le curseur **pépère ↔ nerveux** commande la réactivité du signal, ce qui n'est
-  pas la même chose — une voiture calme peut être vive. Le milieu de ce second
-  curseur est exactement le réglage qui a servi jusqu'ici.
-
-  Le tempérament n'est pas stocké : il se **déduit** des réglages. Les lois du
-  guide de création sont devenues inversibles, si bien qu'un profil réglé à la
-  main se lit quand même sur les curseurs, à un dix-millième près. Le guide passe
-  désormais par ces mêmes lois — quatre-vingt-seize lignes de règles dupliquées
-  ont disparu.
-
-  Un mouvement de curseur global écrase les réglages détaillés, mais **se
-  rattrape** : l'état d'avant est pris au premier mouvement et gardé jusqu'à
-  usage.
-- **Le nombre de rapports se règle**, de trois à huit. Il était déjà modifiable
-  par la saisie d'une liste, mais les tables de seuils et de temporisations ne
-  suivaient pas : un rapport ajouté héritait du seuil de son prédécesseur et
-  d'une temporisation étrangère au profil. Le premier et le dernier rapport sont
-  désormais conservés, le pont avec eux, donc le régime en dernier rapport à
-  110 km/h ne bouge pas — 2355 tr/min sur Route, quel que soit le nombre.
-- **Un écran d'étalonnage** : un protocole guidé en six étapes — ville, route,
-  autoroute, accélération franche, décélération pied levé, freinage franc — qui
-  mesure la vraie voiture et propose onze réglages en regard de ceux du profil.
-  Chaque étape juge si elle a bien été faite : une « accélération franche » qui
-  n'atteint pas le critère est refusée, et la raison est dite, plutôt que de
-  donner une charge fausse.
-
-  **Elle propose, elle n'applique pas** : chaque valeur se recopie séparément,
-  jamais en bloc, et le profil sait revenir à ce qu'il était.
-- **Le moteur tremble.** Un tremblement lent s'ajoute au régime, d'amplitude
-  décroissante avec le régime et avec la charge — un moteur se stabilise en
-  poussant, il tremble au ralenti et à vide. Il ne touche pas la boîte : le
-  moteur sort désormais deux régimes, le net qui pilote les seuils de passage et
-  le **régime entendu** qui porte le tremblement et ne sert qu'aux hauteurs de
-  lecture.
-- **Deux couches d'une même famille jouent légèrement désaccordées**, ce qui
-  produit le battement lent d'un moteur réel. Mesuré : le désaccord ne déplace
-  aucun gain, au bit près, et ne peut pas sortir une couche de son domaine
-  jouable.
-- **Le serveur accepte le dépôt d'une trace.** Le navigateur de la voiture refuse
-  tout téléchargement : rien ne sortait d'une session d'enregistrement, alors que
-  les traces ne servent qu'ailleurs. Un dossier `traces/` est servi en lecture
-  comme les profils, et en écriture pour la seule méthode qui dépose un fichier —
-  ni suppression, ni création de dossier. L'écriture exige l'authentification en
-  toutes circonstances, y compris quand celle du site reste désactivée.
-- **Une trace se dépose sur le serveur depuis la voiture.** C'est le seul moyen
-  de l'en sortir : le navigateur de bord refuse tout téléchargement, alors que
-  les traces naissent en roulant et ne servent qu'ailleurs.
-
-  L'application s'annonce avec un **compte du fichier `htpasswd`** — un nom et un
-  mot de passe — réglé une fois à l'écran de configuration et rangé hors du
-  profil. Elle est obligée de le faire elle-même : le navigateur ne demande
-  l'authentification que sur une navigation, jamais sur une requête lancée par
-  une page, si bien qu'un dépôt aurait échoué en silence.
-
-  Le compte déjà créé fonctionne, mais un second dédié au dépôt vaut mieux : il
-  vit en clair dans le navigateur de la voiture, et il ne donnerait pas accès au
-  site entier si l'authentification générale était activée un jour.
-
-  Le champ dit que la saisie est retenue, et sa longueur : l'écran de
-  configuration n'a pas de bouton d'enregistrement — tout s'y applique à la
-  frappe — mais pour un champ masqué, rien ne le montrait.
-
-  Le nom du fichier dit la date, l'enregistrement et sa durée, et il se relit par
-  la fonction d'import. Chaque échec dit lequel il est — compte absent, refus
-  d'authentification, droit d'écriture manquant, hors couverture, déjà déposée — parce
-  qu'ils ne se corrigent pas au même endroit. Une trace n'est jamais perdue au
-  profit d'un dépôt raté.
-
-### Modifié
-
-- **Le fichier de mots de passe accepte plusieurs entrées.** `npm run htpasswd`
-  écrasait le fichier : créer un second identifiant effaçait le premier. Il
-  ajoute désormais une ligne, et remplace celle d'un nom déjà présent. C'est ce
-  qui permet d'en avoir deux — le vôtre pour ce que vous faites à la main, et
-  celui du dépôt dont l'application se sert depuis la voiture.
-- **L'étalonnage est une couche par-dessus les profils**, et non une recopie
-  dedans. Un profil décrit un son ; l'étalonnage décrit la voiture. Les mesures
-  s'appliquent donc d'elles-mêmes à tous les profils, ceux livrés compris, sans
-  jamais écraser ce qui a été réglé — et un profil partagé n'emporte pas les
-  capacités d'une autre voiture, pour la même raison qui a fait sortir le volume
-  général du profil. Sans étalonnage, rien ne change.
-
-  L'écran de configuration annonce les réglages que la mesure remplace. Il n'y a
-  plus de bouton d'adaptation, ni de question « appliquer ou pas ».
-
-### Corrigé
-
 - **Une borne de décélération n'est plus proposée sans étape qui ralentisse.**
   Avec la seule reprise enregistrée — une accélération pure, sans freinage — la
   plus forte décélération relevée valait presque zéro, et la borne proposée
@@ -2223,27 +2332,6 @@ Toutes les évolutions notables du projet. Format
   valeurs que personne n'avait choisies. La réinitialisation, elle, cherchait
   déjà le bon profil par son identifiant : les deux chemins disent enfin la même
   chose.
-
-### Modifié
-
-- **Le volume général est une préférence de l'appareil**, et non plus un réglage
-  du profil. Il vivait dans la section de mixage, ce qui produisait trois effets
-  tous fautifs : passer de Route à Sport en roulant faisait sauter le niveau, un
-  profil partagé emportait le volume réglé pour une autre voiture, et
-  réinitialiser la section de mixage remettait le son au niveau d'usine alors
-  qu'on voulait seulement retrouver un caractère. Il est désormais rangé à côté
-  du profil choisi, survit au changement de profil, ne voyage ni par lien ni par
-  fichier, et se règle toujours depuis l'écran de conduite.
-
-  Le niveau déjà réglé est conservé : à la première ouverture, la préférence
-  prend la valeur du profil actif.
-
-  Techniquement, il quitte aussi le calcul du mixage pour devenir un gain de
-  sortie, appliqué en amont du limiteur — ce qui préserve la marge au-delà de 1.
-  Les gains affichés à l'écran de télémétrie décrivent donc l'équilibre entre les
-  couches, sans que le volume les déplace tous ensemble.
-
-### Corrigé
 
 - **Le bouton marche/arrêt n'est plus hors écran sur un téléphone.** La barre du
   haut alignait ses six boutons sur une seule ligne quoi qu'il arrive, et ce qui
@@ -2291,79 +2379,6 @@ Toutes les évolutions notables du projet. Format
   image, soit près de cent cinquante par seconde. Tous les réglages faits au
   simulateur portaient donc sur une fenêtre de cent millisecondes, pas sur celle
   qui était affichée.
-
-### Ajouté
-
-- Trois lignes dans « Qualité du signal » de l'écran Télémétrie : la **cadence
-  typique** des mesures — la médiane, car une seule interruption rend une
-  moyenne illisible — et le **nombre de mesures** qui servent à estimer la
-  pente. C'est ce chiffre qui a permis de trouver le défaut ci-dessus.
-- Une **seconde pile Portainer**, sur l'étiquette `develop`, pour essayer en
-  voiture ce qui n'est pas encore sorti sans toucher à l'application qui sert au
-  quotidien : `docker/docker-compose.develop.yml`, et la marche à suivre dans le
-  README — port, proxy inversé, et ce que les deux piles ne partagent pas.
-- Process de développement écrit : `CLAUDE.md` (langue, git flow, contrôle
-  qualité, workflow par défaut, release), `CONTEXT.md` (glossaire du projet) et
-  `docs/agents/` (configuration des skills de backlog).
-- Backlog par lot dans `.backlog/`.
-- **211 tests sur le cœur de l'application**, avec Vitest : conditionnement du
-  signal, moteur, boîte de vitesses, mixage, analyse d'échantillon, simulateur,
-  rejeu de trace, profils et partage. 94,6 % des lignes de `src/core/`
-  couvertes. Les tests tournent sous Node, sans navigateur, en une seconde.
-- ESLint, et les commandes `npm run lint`, `npm test`, `npm run test:watch` et
-  `npm run coverage`.
-- Chaîne d'intégration : types, style, tests et construction du paquet sur
-  chaque PR vers `develop` et `main`.
-- Publication de l'image Docker depuis `develop` (étiquette `develop`) en plus
-  de `main` (`latest`), et depuis un tag de version.
-
-### Retiré
-
-- Le réglage **« Zone morte »** du signal de vitesse. Il n'existait que pour
-  masquer le bruit d'une pente estimée sur deux points ; l'ajustement sur toute
-  la fenêtre moyenne ce bruit au lieu de le seuiller. Mesuré, deux variantes qui
-  le conservaient sous une forme correcte — soustractive, ou pondérée par la
-  qualité de l'ajustement — amputaient les reprises douces de 25 à 69 % : elles
-  ont été écartées. Le tremblement du GPS à l'arrêt, ce que la zone morte
-  protégeait réellement, est traité en ne cherchant pas de pente quand le
-  véhicule est immobile. Les profils enregistrés perdent le champ sans rien
-  d'autre : le format ne change pas de forme.
-
-### Modifié
-
-- **Le volume fait entendre l'effort.** Les fondus étant à puissance constante,
-  ils changeaient la couleur du son et jamais son niveau : mesuré, ralenti,
-  croisière, reprise douce et reprise franche tenaient dans 1,3 dB, et lever le
-  pied franchement était même 2,3 dB plus fort qu'écraser. Trois réglages de
-  relief s'appliquent désormais par-dessus — la charge, le régime, le ralenti —
-  et l'étendue passe de 5,3 à 16,5 dB sur le profil Route, dans le bon ordre.
-- La compensation des prises « pied levé », enregistrées plus doucement, passe
-  dans le gain de chaque couche là où son déficit se mesure — 9,6 dB pour la
-  basse, 6,5 pour la haute — au lieu d'un facteur commun qui surcompensait l'une
-  de 2,8 dB et l'autre de 5,9. « Gain pied levé » devient un curseur de goût.
-- **La boîte de vitesses regarde l'évolution de la vitesse, et non plus
-  seulement le régime.** Trois comportements en découlent, tous réglables :
-  - **elle monte les rapports quand on tient une vitesse**, comme une boîte
-    automatique. Elle restait figée sur un palier, faute d'un régime qui monte :
-    50 km/h tenus laissaient la deuxième à 3034 tr/min sur le profil Route, où
-    la quatrième tourne à 1532. La sixième s'engage désormais dès 90 km/h ;
-  - **elle descend pour aider à ralentir** dès que la décélération est soutenue,
-    au lieu d'attendre que le régime soit tombé. Un lever de pied et un freinage
-    donnaient exactement les mêmes vitesses de rétrogradage ;
-  - **le rétrogradage forcé répond à une demande franche**, c'est-à-dire à une
-    montée de charge, et non à son niveau. Faute de pédale dans une voiture
-    électrique la charge est déduite de l'accélération : le seuil se franchissait
-    dès 3,6 km/h par seconde, si bien que remettre délicatement les gaz suffisait
-    à faire descendre la boîte.
-- **Trois réglages nouveaux** dans la transmission : « Croisière au-dessus de »,
-  « Monter après » et « Descendre en freinant à ».
-- **Les deux profils livrés sont remis d'aplomb** pour la boîte nouvelle, et le
-  guide de création produit les trois valeurs selon le tempérament demandé — un
-  profil calme croise bas et monte tôt, un profil sportif garde ses rapports et
-  descend franc au freinage. L'aperçu du guide annonce le rapport de croisière et
-  son régime.
-
-### Corrigé
 
 - **La boîte gardait le dernier rapport jusqu'à l'arrêt quand on ralentissait
   doucement**, puis passait tous les rapports au premier freinage franc. La bande
@@ -2423,6 +2438,19 @@ Toutes les évolutions notables du projet. Format
   qu'annonçait le README. C'est « Descente sous » qui le fait — mesuré, et
   désormais tenu par un test.
 
+### Sécurité
+
+- **Les quatre dossiers du serveur ne se lisent plus sans mot de passe.**
+  L'écriture était protégée depuis le début, la lecture ne l'était pas : qui
+  connaissait l'adresse du site — publique, puisque la voiture n'est pas sur le
+  réseau local — pouvait lister les trajets et les télécharger, positions
+  comprises dès le cran étendu du journal. David : « c'est accessible de
+  l'extérieur, bien sûr ; ferme tout en utilisant le mot de passe du dépôt ».
+
+  L'application s'annonce désormais pour lire la bibliothèque de profils et pour
+  vérifier qu'une trace n'est pas déjà déposée. **Sur un appareil sans compte de
+  dépôt, la bibliothèque est vide** ; le partage par lien ne passe pas par le
+  serveur et fonctionne toujours.
 
 ## [0.1.0] — 2026-08-29
 

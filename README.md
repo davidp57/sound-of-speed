@@ -2505,6 +2505,11 @@ essai.
 
 ## État du projet
 
+**La version 0.2.0, du 12 septembre 2026**, est la première à sortir depuis le
+29 août : elle emporte les lots 10 à 46. Ce qu'elle change à l'usage est décrit
+dans [ses notes de version](docs/releases/v0.2.0.md), et le détail dans le
+[CHANGELOG](CHANGELOG.md).
+
 | Lot | Contenu | État |
 |---|---|---|
 | 0 | Squelette, boucle, écrans, simulateur clavier | fait |
