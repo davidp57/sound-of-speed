@@ -1,4 +1,4 @@
-# CLAUDE.md — Speed
+# CLAUDE.md — Sound of Speed
 
 Instructions pour Claude Code, et pour tout agent qui travaille sur ce dépôt. Ce
 fichier est la **source de vérité du process** : langue, git flow, contrôle
@@ -38,7 +38,7 @@ pour le README, les commentaires, le CHANGELOG et les messages de commit :
 
 ## Le projet en une page
 
-Speed mesure la vitesse au GPS, en calcule un régime moteur et un rapport de
+Sound of Speed mesure la vitesse au GPS, en calcule un régime moteur et un rapport de
 boîte, et joue le son correspondant à partir d'enregistrements réels. Il donne
 un son de moteur à une voiture qui n'en fait pas.
 
