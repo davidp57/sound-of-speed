@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Relecteur — Speed</title>
+    <meta name="theme-color" content="#0d0f12" />
+    <meta name="description" content="Revoir un trajet enregistré : timeline, carte, relevés." />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+
+    <!--
+      Page à part, et non un onglet de l'application.
+
+      Le relecteur ne sert qu'au bureau. L'application de conduite doit se
+      charger hors réseau sur un téléphone : sa carte, sa bibliothèque de
+      cartographie et son code de lecture n'ont rien à y faire. Une entrée
+      séparée les met dans leur propre paquet, tiré seulement ici.
+    -->
+  </head>
+  <body>
+    <div id="relecteur"></div>
+    <script type="module" src="/src/relecteur/main.ts"></script>
+  </body>
+</html>

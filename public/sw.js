@@ -14,7 +14,7 @@
  * autonomes.
  */
 
-const VERSION = 'v2'
+const VERSION = 'v3'
 const SHELL = `speed-shell-${VERSION}`
 const ASSETS = `speed-assets-${VERSION}`
 // Les échantillons ne dépendent pas de la version du code : les garder dans un
@@ -32,6 +32,10 @@ self.addEventListener('install', (event) => {
           '/',
           '/index.html',
           '/manifest.webmanifest',
+          // Le silence qui maintient la session audio du système. Sans lui dans
+          // le cache, une application installée perdrait le son en arrière-plan
+          // dès qu'elle est hors réseau — c'est-à-dire là où elle sert.
+          '/silence.mp3',
           // Les icônes portent des noms fixes, donc énumérables ici. Elles
           // n'apparaissent pas dans le relevé des ressources chargées par la
           // page — le navigateur récupère les favicons hors de ce circuit — et
@@ -40,6 +44,16 @@ self.addEventListener('install', (event) => {
           '/icons/icon-512.png',
           '/icons/icon-maskable-512.png',
           '/icons/apple-touch-icon.png',
+          // La réponse d'échappement par défaut du son synthétisé. Sans elle, un
+          // profil « généré en direct » sonnerait sans corps hors réseau —
+          // c'est-à-dire dans la voiture, là où il sert. Les autres réponses se
+          // chargent à la demande : on ne les choisit qu'au bureau.
+          '/impulse/smooth_39.wav',
+          // Le cœur d'engine-sim, pour la même raison : sans lui le mode
+          // synthèse ne démarre pas du tout hors réseau. Cent cinquante-six
+          // kilo-octets, à côté des mégaoctets d'une banque d'échantillons.
+          '/sonde/probe.mjs',
+          '/sonde/probe.wasm',
         ]),
       )
       // Un fichier manquant ne doit pas empêcher l'installation.
@@ -82,12 +96,24 @@ self.addEventListener('fetch', (event) => {
   // qui référence les ressources empreintes, donc elle seule fait basculer sur
   // une nouvelle version. Hors ligne, la copie en cache prend le relais.
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request, SHELL, '/index.html'))
+    // Deux pages, deux replis. Sans cette distinction, ouvrir le relecteur hors
+    // réseau afficherait l'application de conduite — ce qui se lit comme un
+    // bug, alors que c'est un repli.
+    const repli = url.pathname.startsWith('/relecteur') ? '/relecteur.html' : '/index.html'
+    event.respondWith(networkFirst(request, SHELL, repli))
     return
   }
 
   if (url.pathname.startsWith('/audio/')) {
-    event.respondWith(cacheFirst(request, AUDIO))
+    // Un listage de banques n'est pas un échantillon : il se termine par une
+    // barre, il change dès qu'on dépose un dossier, et le garder d'abord
+    // figerait la découverte — le serveur le déclare d'ailleurs `no-store`, ce
+    // que `cacheFirst` ne regarde même pas. Le réseau d'abord, la copie en
+    // filet pour que la liste s'affiche encore hors réseau.
+    const listing = url.pathname.endsWith('/')
+    event.respondWith(
+      listing ? networkFirst(request, AUDIO, null) : cacheFirst(request, AUDIO),
+    )
     return
   }
 
@@ -153,6 +179,10 @@ async function networkFirst(request, cacheName, fallback) {
  * que de découvrir sur la route qu'une couche manque.
  *
  * `STATUS` répond ce qui est déjà là, pour pouvoir l'afficher.
+ *
+ * `FORGET_AUDIO` libère les échantillons des banques dont on ne se sert plus.
+ * Le message porte celles à **garder**, pas celle à effacer : on ne peut pas se
+ * tromper de sens, et une banque oubliée du message se retéléchargerait au pire.
  */
 self.addEventListener('message', (event) => {
   const data = event.data
@@ -164,6 +194,10 @@ self.addEventListener('message', (event) => {
 
   if (data.type === 'STATUS' && Array.isArray(data.urls)) {
     event.waitUntil(status(data.urls, event.source))
+  }
+
+  if (data.type === 'FORGET_AUDIO' && Array.isArray(data.keep)) {
+    event.waitUntil(forgetAudio(data.keep, event.source))
   }
 })
 
@@ -191,6 +225,38 @@ async function precache(urls, client, cacheName) {
   if (cacheName === AUDIO) {
     client?.postMessage({ type: 'PRECACHE_DONE', done, failed, total: urls.length })
   }
+}
+
+/**
+ * Vide du cache des échantillons ce qui n'appartient à aucune banque gardée.
+ *
+ * Les échantillons y restent indéfiniment, par construction : leur cache ne
+ * dépend pas de la version du code, ce qui évite de retélécharger plusieurs
+ * mégaoctets à chaque mise à jour. Essayer trois banques en laisse donc trois
+ * sur un téléphone, et rien ne les enlevait.
+ */
+async function forgetAudio(keep, client) {
+  const cache = await caches.open(AUDIO)
+  const kept = new Set(keep)
+  let removed = 0
+  let bytes = 0
+
+  for (const request of await cache.keys()) {
+    const path = new URL(request.url).pathname
+    if (!path.startsWith('/audio/')) continue
+    // /audio/<banque>/<fichier> — le nom voyage encodé dans l'adresse.
+    const bank = decodeURIComponent(path.split('/')[2] ?? '')
+    if (bank === '' || kept.has(bank)) continue
+
+    const hit = await lookup(cache, request)
+    if (hit) {
+      const length = hit.headers.get('content-length')
+      bytes += length ? Number(length) : (await hit.clone().arrayBuffer()).byteLength
+    }
+    if (await cache.delete(request)) removed += 1
+  }
+
+  client?.postMessage({ type: 'FORGET_DONE', removed, bytes })
 }
 
 async function status(urls, client) {

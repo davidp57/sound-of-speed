@@ -1,5 +1,6 @@
+import { applySportiness, gearRatiosFor } from './character'
 import { createDefaultProfile } from './defaults'
-import { deepCopy, newId } from './store'
+import { captureOrigin, deepCopy, newId } from './store'
 import type { Profile } from './schema'
 
 /**
@@ -50,35 +51,25 @@ const CRUISE_RPM_FRACTION: Record<Temperament, number> = {
   sportif: 0.52,
 }
 
-/** Régimes de passage, en fraction du rupteur : du premier rapport au dernier. */
-const UPSHIFT_RANGE: Record<Temperament, [number, number]> = {
-  calme: [0.42, 0.5],
-  equilibre: [0.55, 0.66],
-  sportif: [0.68, 0.82],
-}
-
-/** Écart entre pied levé et pied au plancher, en fraction du rupteur. */
-const LOAD_SPREAD: Record<Temperament, number> = {
-  calme: 0.2,
-  equilibre: 0.28,
-  sportif: 0.34,
-}
-
 const K = 1 / 3.6 / (2 * Math.PI) // km/h → tours de roue par seconde, à rayon 1 m
 
 export function buildProfile(choices: WizardChoices, template: Profile): Profile {
+  const profil = build(choices, template)
+  // Le profil porte ses propres valeurs d'origine : c'est à elles que
+  // « réinitialiser » doit le ramener. Sans cela il ne pouvait revenir qu'aux
+  // valeurs du profil livré « Sport », ce qui vidait la fonction de son sens
+  // sur un profil qu'on vient de fabriquer et qu'on tâtonne.
+  return { ...profil, origin: captureOrigin(profil) }
+}
+
+function build(choices: WizardChoices, template: Profile): Profile {
   const base = createDefaultProfile()
   const engine = ENGINES[choices.engine]
   const count = Math.max(2, Math.min(9, Math.round(choices.gearCount)))
 
-  // Rapports répartis géométriquement entre un premier court et un dernier long.
-  // Une progression géométrique donne des écarts de régime égaux d'un rapport au
-  // suivant, ce qui est le propre d'une boîte bien étagée.
-  const first = 3.6
-  const last = 0.72
-  const gearRatios = Array.from({ length: count }, (_, i) =>
-    Number((first * (last / first) ** (i / (count - 1))).toFixed(3)),
-  )
+  // Rapports répartis géométriquement entre un premier court et un dernier long,
+  // par la loi partagée avec le mode simplifié.
+  const gearRatios = gearRatiosFor(count, 3.6, 0.72)
 
   const wheelRadiusM = template.drivetrain.wheelRadiusM
   const cruiseKmh = CRUISE[choices.usage]
@@ -89,22 +80,15 @@ export function buildProfile(choices: WizardChoices, template: Profile): Profile
   const wheelRps = (cruiseKmh * K) / wheelRadiusM
   const finalDrive = Number((cruiseRpm / (wheelRps * 60 * topGear)).toFixed(3))
 
-  const [from, to] = UPSHIFT_RANGE[choices.temperament]
-  const upshiftRpm = Array.from({ length: Math.max(1, count - 1) }, (_, i) => {
-    const t = count > 2 ? i / (count - 2) : 0
-    return Math.round(engine.redline * (from + (to - from) * t))
-  })
-
-  // Temporisations volontairement inégales : identiques, la boîte sonne comme un
-  // métronome. Plus courtes sur un tempérament vif.
-  const baseDelay = choices.temperament === 'sportif' ? 0.22 : choices.temperament === 'calme' ? 0.45 : 0.32
-  const shiftDelaysS = Array.from({ length: count }, (_, i) =>
-    Number((baseDelay * (i % 2 === 0 ? 1 : 1.7)).toFixed(2)),
-  )
-
   const sportiness = choices.temperament === 'sportif' ? 1 : choices.temperament === 'calme' ? 0 : 0.5
 
-  return {
+  // Le tempérament est appliqué en dernier, par la loi partagée avec le mode
+  // simplifié : le guide et le curseur global doivent dire la même chose du même
+  // tempérament, sans quoi créer un profil « vif » puis effleurer le curseur le
+  // déplacerait sans que personne l'ait demandé. Ce qui reste écrit ici est ce
+  // que le curseur ne touche pas — la mécanique du moteur choisi, l'étagement,
+  // le pont, le mixage.
+  return applySportiness({
     ...base,
     id: newId(),
     name: choices.name.trim() || 'Nouveau profil',
@@ -117,52 +101,45 @@ export function buildProfile(choices: WizardChoices, template: Profile): Profile
       idleRpm: engine.idle,
       redlineRpm: engine.redline,
       softLimitRpm: Math.round(engine.redline * 0.97),
-      inertia: 1.4 - 0.5 * sportiness,
-      freeRevRate: Math.round(engine.redline * (0.9 + 0.5 * sportiness)),
       engineBraking: Math.round(engine.redline * 0.6),
+      // Un moteur de sport a un ralenti plus instable, et il tremble plus vite.
+      flutterRpm: Math.round(20 + 15 * sportiness),
+      flutterHz: Number((5.5 + 1.5 * sportiness).toFixed(1)),
     },
     drivetrain: {
       ...base.drivetrain,
       gearRatios,
       finalDrive,
       wheelRadiusM,
-      shiftTimeMs: Math.round(140 - 60 * sportiness),
-      upshiftRpm,
-      upshiftLoadSpreadRpm: Math.round(engine.redline * LOAD_SPREAD[choices.temperament]),
       upshiftJitterRpm: Math.round(engine.redline * 0.02),
       minUpshiftRpm: Math.round(engine.redline * 0.34),
       downshiftAtRedlineRatio: 0.28,
       firstGearLaunchOnly: true,
       launchUpshiftKmh: choices.usage === 'ville' ? 5 : 8,
-      shiftDelaysS,
     },
     mix: {
       ...base.mix,
       crossfadeLowRpm: Math.round(engine.redline * 0.4),
       crossfadeHighRpm: Math.round(engine.redline * 0.8),
       fullLoadAccelMs2: 2.5 - 0.6 * sportiness,
-      offLoadGain: 3.2 - 0.6 * sportiness,
+      // Neutre : la compensation des prises plus douces vit dans le gain de
+      // chaque couche, reprises du profil courant avec les échantillons.
+      offLoadGain: 1,
       loadContrast: 0.6 + 0.2 * sportiness,
+      // Un tempérament sportif exagère l'effort et rugit plus haut dans les
+      // tours ; un calme reste discret. Sans ce relief, les fondus étant à
+      // puissance constante, accélérer ne s'entendrait pas du tout.
+      loadReliefDb: Number((3 + 3 * sportiness).toFixed(1)),
+      rpmReliefDb: Number((2 + 3 * sportiness).toFixed(1)),
+      idleLevelDb: Number((-3 - 4 * sportiness).toFixed(1)),
+      // Un moteur de sport a des cylindres plus inégaux et deux lignes
+      // d'échappement : le battement entre couches y est plus large.
+      layerDetuneCents: Math.round(6 + 8 * sportiness),
+      // Indépendant du tempérament : c'est la durée des enregistrements qui
+      // fixe la cadence utile, pas le caractère de la voiture.
+      layerRefreshS: 6,
     },
-    feel: {
-      kickdown: {
-        ...base.feel.kickdown,
-        targetRpmFraction: 0.5 + 0.15 * sportiness,
-        maxGears: choices.temperament === 'sportif' ? 3 : 2,
-      },
-      backfire: {
-        ...base.feel.backfire,
-        enabled: choices.temperament !== 'calme',
-        minRpm: Math.round(engine.redline * 0.5),
-        intensity: 0.2 + 0.35 * sportiness,
-        count: choices.temperament === 'sportif' ? 5 : 3,
-      },
-      shiftJolt: {
-        ...base.feel.shiftJolt,
-        depth: 0.25 + 0.4 * sportiness,
-      },
-    },
-  }
+  }, sportiness)
 }
 
 /**
@@ -171,6 +148,24 @@ export function buildProfile(choices: WizardChoices, template: Profile): Profile
  * Un aperçu chiffré vaut mieux qu'une promesse : il permet de juger avant de
  * créer, et de comprendre ce que chaque choix a changé.
  */
+/**
+ * Rapport le plus long qui tourne encore au-dessus du plancher de croisière.
+ *
+ * C'est exactement là que la montée en croisière s'arrête : elle grimpe d'un
+ * rapport tant que le suivant reste au-dessus du plancher, et le régime décroît
+ * avec l'index du rapport. Le calcul donne donc le même résultat que la boîte,
+ * sans avoir à la faire tourner.
+ */
+function cruiseGearAt(profile: Profile, kmh: number): number {
+  const { gearRatios, finalDrive, wheelRadiusM, cruiseMinRpm } = profile.drivetrain
+  let chosen = 0
+  for (let gear = 0; gear < gearRatios.length; gear += 1) {
+    const rpm = ((kmh * K) / wheelRadiusM) * 60 * (gearRatios[gear] ?? 1) * finalDrive
+    if (rpm >= cruiseMinRpm) chosen = gear
+  }
+  return chosen
+}
+
 export function describeProfile(profile: Profile): string[] {
   const { drivetrain, engine } = profile
   const count = drivetrain.gearRatios.length
@@ -178,18 +173,28 @@ export function describeProfile(profile: Profile): string[] {
   const rpmAt = (kmh: number, ratio: number) =>
     ((kmh * K) / drivetrain.wheelRadiusM) * 60 * ratio * drivetrain.finalDrive
 
+  // Le régime de croisière vient en premier : c'est celui qu'on entendra le
+  // plus souvent, la boîte montant d'elle-même dès que la vitesse se tient.
+  const croisiere = cruiseGearAt(profile, 90)
   const lines = [
     `${count} rapports, rupteur à ${engine.redlineRpm} tr/min.`,
+    `À 90 km/h, allure tenue : ${croisiere + 1}e rapport à ` +
+      `${Math.round(rpmAt(90, drivetrain.gearRatios[croisiere] ?? 1))} tr/min.`,
     `À 90 km/h en dernier rapport : ${Math.round(rpmAt(90, top))} tr/min.`,
     `À 130 km/h : ${Math.round(rpmAt(130, top))} tr/min.`,
   ]
 
-  const first = drivetrain.upshiftRpm[0]
-  const second = drivetrain.gearRatios[1]
-  if (first !== undefined && second !== undefined) {
-    const kmh = (first / (drivetrain.finalDrive * (drivetrain.gearRatios[1] ?? 1))) /
-      ((K / drivetrain.wheelRadiusM) * 60)
-    lines.push(`Passage 2 → 3 vers ${Math.round(Math.abs(kmh))} km/h à charge moyenne.`)
+  // Premier passage commandé par le régime. Quand la première n'est qu'une
+  // amorce de lancement, son seuil ne sert jamais : le premier passage qu'on
+  // entend est 2 → 3. Le libellé et le calcul portent sur le même rapport —
+  // ils annonçaient « 2 → 3 » en prenant le seuil de la première, donc une
+  // vitesse qui ne correspondait à aucun passage réel.
+  const gear = drivetrain.firstGearLaunchOnly ? 1 : 0
+  const threshold = drivetrain.upshiftRpm[gear]
+  const ratio = drivetrain.gearRatios[gear]
+  if (threshold !== undefined && ratio !== undefined) {
+    const kmh = threshold / (60 * ratio * drivetrain.finalDrive) / (K / drivetrain.wheelRadiusM)
+    lines.push(`Passage ${gear + 1} → ${gear + 2} vers ${Math.round(kmh)} km/h à charge moyenne.`)
   }
   return lines
 }

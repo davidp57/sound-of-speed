@@ -11,16 +11,97 @@ import { SpeedSource, type SpeedSample } from './source'
  * 2. Le GPS produit des aberrations — un saut de position sous un pont donne une
  *    vitesse de 400 km/h. Tout ce qui dépasse le plausible est rejeté plutôt que
  *    lissé, sinon le lissage étale l'aberration sur plusieurs secondes.
+ * 3. Une position s'accompagne de sa propre incertitude. À trois cents mètres
+ *    près, elle ne dit plus rien d'exploitable — mais le seuil de rejet est un
+ *    réglage, large par défaut : trop serré, il ferait taire la source.
  */
 
 /** Rayon terrestre moyen, en mètres. */
 const EARTH_RADIUS_M = 6_371_000
 /** Intervalle minimal entre deux positions pour en dériver une vitesse, en secondes. */
 const MIN_DELTA_S = 0.15
+/**
+ * Nombre de précisions conservées pour l'affichage.
+ *
+ * Douze, parce que le GPS de la voiture livre une position toutes les quelques
+ * dizaines de millisecondes : ce n'est pas un historique, c'est de quoi lire un
+ * ordre de grandeur d'un coup d'œil en roulant.
+ */
+const RECENT_ACCURACY = 12
+/**
+ * Âge maximal d'une position déjà connue du système, en millisecondes.
+ *
+ * Zéro l'interdisait : la source refusait la position que le récepteur venait
+ * d'acquérir pour une autre application, et un démarrage à froid attendait un
+ * point neuf — plusieurs minutes sous un bâtiment. C'est ce qu'a montré l'essai
+ * du 8 septembre 2026 : la version de production obtenait un signal, celle
+ * d'intégration lancée juste après ne le voyait pas.
+ *
+ * Dix secondes, parce que le risque est du même ordre : une position de dix
+ * secondes annonce une vitesse de dix secondes. Prise garé, elle dit zéro et
+ * c'est vrai ; prise en roulant, elle est proche de l'allure du moment, et le
+ * lissage la rattrape en une seconde. Une minute, en revanche, ferait démarrer
+ * à une vitesse qui n'a plus rien à voir.
+ */
+const MAX_CACHED_AGE_MS = 10_000
 
 export interface GeolocationSourceOptions {
   /** Au-delà, la mesure est considérée comme aberrante et rejetée. */
   maxPlausibleKmh: number
+  /** Au-delà, la position est trop floue pour en tirer une vitesse. */
+  maxAccuracyM: number
+}
+
+/**
+ * Ce que la source attend d'un fournisseur de positions.
+ *
+ * C'est la partie de `navigator.geolocation` qu'elle emploie, et rien de plus.
+ * L'écrire comme une dépendance plutôt que comme un appel en dur permet de faire
+ * lire à **ce module-ci**, sans branche conditionnelle, des positions fabriquées
+ * par le banc : les deux derniers défauts relevés en roulant — la source qui se
+ * tait, le plafond de plausibilité — vivaient précisément ici, là où un
+ * simulateur qui émet des vitesses toutes faites ne passe jamais.
+ */
+export interface PositionProvider {
+  watchPosition(
+    onPosition: (position: GeolocationPosition) => void,
+    onError: (error: GeolocationPositionError) => void,
+    options?: PositionOptions,
+  ): number
+  clearWatch(id: number): void
+}
+
+/**
+ * Ce que la source a vu passer. Remonté à l'écran de télémétrie.
+ *
+ * Sans ces comptes, une source qui reçoit des positions et ne produit aucune
+ * vitesse est indiscernable d'une source qui ne reçoit rien : les deux donnent
+ * une vitesse figée et un écran muet. C'est exactement ce qui a rendu invisible
+ * pendant une semaine le défaut du repli — l'écart entre `received` et `emitted`
+ * l'aurait montré du premier coup d'œil.
+ */
+export interface GeolocationStats {
+  /** Positions reçues du navigateur. */
+  received: number
+  /** Vitesses effectivement produites. */
+  emitted: number
+  /**
+   * Précision annoncée avec la dernière position reçue, en mètres.
+   *
+   * Relevée même quand la position est rejetée : c'est la mauvaise valeur qu'on
+   * cherche à voir. `null` quand le navigateur ne renseigne pas le champ.
+   */
+  lastAccuracyM: number | null
+  /** Les dernières précisions reçues, de la plus ancienne à la plus récente. */
+  recentAccuracyM: number[]
+  rejected: {
+    /** Au-delà du plausible : une erreur, pas une vitesse. */
+    implausible: number
+    /** Deux positions trop rapprochées pour en tirer une vitesse. */
+    tooClose: number
+    /** Précision annoncée au-delà du seuil : la position n'est pas exploitée. */
+    inaccurate: number
+  }
 }
 
 export class GeolocationSource extends SpeedSource {
@@ -28,8 +109,47 @@ export class GeolocationSource extends SpeedSource {
   readonly label = 'GPS'
 
   private watchId: number | null = null
+  /**
+   * Position de référence pour le calcul par distance.
+   *
+   * Elle est **gardée** tant qu'aucune vitesse n'en a été tirée. La remplacer à
+   * chaque position, comme on le faisait, empêchait l'écart de jamais atteindre
+   * le minimum exploitable : au-delà de six positions par seconde, plus une
+   * seule vitesse n'était produite, et le suivi ne repartait plus.
+   */
   private previous: GeolocationPosition | null = null
-  private lastKmh = 0
+
+  /**
+   * Dernière position connue, hors du flux des mesures.
+   *
+   * Elle n'est **pas** ajoutée à `SpeedSample`, et ce n'est pas un détail. Le
+   * flux des mesures est recopié tel quel par l'enregistreur de traces, et une
+   * trace s'exporte en fichier et se dépose sur le serveur **sans accord
+   * particulier** : y faire entrer des coordonnées les ferait sortir par une
+   * porte déjà ouverte. Une donnée de déplacement ne voyage donc pas dans le
+   * canal général — elle se lit ici, explicitement, par qui en a le droit.
+   *
+   * L'invariant des sources n'en souffre pas : il porte sur le **chiffre de
+   * vitesse**, que rien en aval ne doit pouvoir rattacher à une source. Les
+   * comptes de `stats` sont déjà exposés de cette façon.
+   */
+  lastPosition: { latitude: number; longitude: number; at: number } | null = null
+
+  readonly stats: GeolocationStats = {
+    received: 0,
+    emitted: 0,
+    lastAccuracyM: null,
+    recentAccuracyM: [],
+    rejected: { implausible: 0, tooClose: 0, inaccurate: 0 },
+  }
+
+  /**
+   * Le fournisseur employé, ou `null` pour celui du navigateur.
+   *
+   * Il est lu à chaque démarrage et non retenu à la construction : le banc se
+   * branche et se débranche pendant que l'application tourne.
+   */
+  private provider: PositionProvider | null = null
 
   constructor(private options: GeolocationSourceOptions) {
     super()
@@ -39,31 +159,78 @@ export class GeolocationSource extends SpeedSource {
     this.options = options
   }
 
+  /** Branche un fournisseur de positions, ou rend la main au navigateur. */
+  setProvider(provider: PositionProvider | null): void {
+    const wasWatching = this.watchId !== null
+    if (wasWatching) this.stop()
+    this.provider = provider
+    if (wasWatching) this.start()
+  }
+
+  private currentProvider(): PositionProvider | null {
+    if (this.provider) return this.provider
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) return null
+    return navigator.geolocation
+  }
+
   start(): void {
     if (this.watchId !== null) return
-    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+    const provider = this.currentProvider()
+    if (!provider) {
       this.setStatus('unsupported')
       return
     }
 
     this.setStatus('starting')
-    this.watchId = navigator.geolocation.watchPosition(
+    this.watchId = provider.watchPosition(
       (position) => this.handlePosition(position),
       (error) => this.handleError(error),
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
+      { enableHighAccuracy: true, maximumAge: MAX_CACHED_AGE_MS, timeout: 15_000 },
     )
+  }
+
+  /**
+   * Remet les comptes à zéro, sans toucher au suivi.
+   *
+   * Ils disent ce que la source a reçu et ce qu'elle en a tiré **depuis le
+   * démarrage du suivi** : après une relance demandée à la main, les garder
+   * ferait lire ensemble deux suivis, et la seule question qu'on se pose alors —
+   * est-ce que celui-ci reçoit quelque chose ? — n'aurait plus de réponse
+   * lisible.
+   */
+  resetStats(): void {
+    this.stats.received = 0
+    this.stats.emitted = 0
+    this.stats.lastAccuracyM = null
+    this.stats.recentAccuracyM = []
+    this.stats.rejected.implausible = 0
+    this.stats.rejected.tooClose = 0
+    this.stats.rejected.inaccurate = 0
   }
 
   stop(): void {
     if (this.watchId !== null) {
-      navigator.geolocation.clearWatch(this.watchId)
+      this.currentProvider()?.clearWatch(this.watchId)
       this.watchId = null
     }
     this.previous = null
+    this.lastPosition = null
     this.setStatus('idle')
   }
 
   private handlePosition(position: GeolocationPosition): void {
+    this.stats.received += 1
+
+    const accuracyM = this.recordAccuracy(position)
+    if (accuracyM !== null && accuracyM > this.options.maxAccuracyM) {
+      // Le filtre est en tête, avant tout usage : une position trop floue n'est
+      // ni une mesure ni une référence. La garder comme référence reviendrait à
+      // faire calculer la vitesse suivante depuis un point douteux — le rejet
+      // se contenterait alors de changer de nom.
+      this.stats.rejected.inaccurate += 1
+      return
+    }
+
     const reported = position.coords.speed
     const hasReported = typeof reported === 'number' && Number.isFinite(reported) && reported >= 0
 
@@ -73,31 +240,66 @@ export class GeolocationSource extends SpeedSource {
     if (hasReported) {
       kmh = reported * 3.6
       derived = false
+      this.previous = position
     } else {
       const fallback = this.speedFromPositions(this.previous, position)
       if (fallback === null) {
-        this.previous = position
+        // La référence est **conservée** : c'est en la gardant que l'écart finit
+        // par atteindre le minimum exploitable. Une position isolée ne sert donc
+        // qu'à devenir référence quand il n'y en a pas encore.
+        this.stats.rejected.tooClose += 1
+        if (!this.previous) this.previous = position
         return
       }
       kmh = fallback
       derived = true
+      this.previous = position
     }
-
-    this.previous = position
 
     if (!Number.isFinite(kmh) || kmh > this.options.maxPlausibleKmh) {
-      // Aberration : on garde la dernière valeur saine plutôt que de propager le saut.
-      kmh = this.lastKmh
+      // Une mesure au-delà du plausible n'est pas une vitesse, c'est une erreur :
+      // on n'en tire rien du tout. La remplacer par la dernière valeur saine puis
+      // l'émettre, comme on le faisait, la faisait passer pour une mesure — la
+      // vitesse se figeait sans que rien ne le signale, et le chien de garde ne
+      // voyait aucun silence dont il aurait pu se saisir. C'est la règle que le
+      // conditionnement du signal applique déjà de son côté.
+      this.stats.rejected.implausible += 1
+      return
     }
-    this.lastKmh = kmh
 
+    this.lastPosition = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      at: position.timestamp,
+    }
+    this.stats.emitted += 1
     this.setStatus('active')
     this.emit({
       kmh,
       at: position.timestamp,
-      accuracyM: position.coords.accuracy ?? null,
+      accuracyM,
       derived,
     } satisfies SpeedSample)
+  }
+
+  /**
+   * Note la précision annoncée, et la rend telle qu'elle sera comparée au seuil.
+   *
+   * Une précision absente ou absurde vaut « inconnue » et non « mauvaise » :
+   * tous les navigateurs ne renseignent pas le champ, et filtrer sur son absence
+   * refuserait toutes les positions d'un appareil qui se tait.
+   */
+  private recordAccuracy(position: GeolocationPosition): number | null {
+    const reported = position.coords.accuracy
+    const known = typeof reported === 'number' && Number.isFinite(reported) && reported >= 0
+    this.stats.lastAccuracyM = known ? reported : null
+    if (known) {
+      this.stats.recentAccuracyM.push(reported)
+      if (this.stats.recentAccuracyM.length > RECENT_ACCURACY) {
+        this.stats.recentAccuracyM.shift()
+      }
+    }
+    return known ? reported : null
   }
 
   private speedFromPositions(
@@ -117,7 +319,9 @@ export class GeolocationSource extends SpeedSource {
     } else {
       this.setStatus('unavailable', error.message)
     }
-    this.lastKmh = 0
+    // La référence est abandonnée : après une interruption, l'écart avec la
+    // prochaine position ne décrit plus un déplacement continu.
+    this.previous = null
   }
 }
 

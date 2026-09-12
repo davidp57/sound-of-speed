@@ -1,0 +1,15 @@
+diff --git a/include/gas_system.h b/include/gas_system.h
+index 29f674d..14389a1 100644
+--- a/include/gas_system.h
++++ b/include/gas_system.h
+@@ -10,6 +10,10 @@
+ class GasSystem {
+     public:
+         struct Mix {
++            // gcc refuse l'initialisation par agregat d'un type dont
++            // les membres ont un initialiseur par defaut. Un
++            // constructeur declare rend '= {}' legal.
++            Mix() {}
+             double p_fuel = 0.0;
+             double p_inert = 1.0;
+             double p_o2 = 0.0;

@@ -1,31 +1,50 @@
 {
   "name": "speed",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:mobile": "cross-env HTTPS=1 vite",
+    "relecteur": "cross-env SPEED_DATA=//Salon/docker/speed vite",
     "build": "vue-tsc -b && vite build",
+    "build:profileur": "esbuild src/profileur/main.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist-profileur/profileur.js",
+    "profileur": "npm run build:profileur && node dist-profileur/profileur.js",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "banque": "node scripts/banque.mjs",
     "transcode": "node scripts/transcode.mjs",
     "deploy": "node scripts/deploy.mjs",
     "icons": "node scripts/icons.mjs",
-    "htpasswd": "node scripts/htpasswd.mjs"
+    "silence": "node scripts/silence.mjs",
+    "htpasswd": "node scripts/htpasswd.mjs",
+    "analyse-son": "node scripts/analyse-son/index.mjs"
   },
   "dependencies": {
+    "@types/leaflet": "^1.9.22",
+    "leaflet": "^1.9.4",
     "qrcode-generator": "^2.0.4",
     "vue": "^3.5.13"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.20.1",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-vue": "^5.2.1",
+    "@vitest/coverage-v8": "^4.1.11",
     "bcryptjs": "^3.0.3",
     "cross-env": "^10.1.0",
+    "eslint": "^10.9.1",
+    "eslint-plugin-vue": "^10.10.0",
+    "globals": "^17.12.0",
     "typescript": "~5.7.2",
+    "typescript-eslint": "^8.69.0",
     "vite": "^6.0.7",
+    "vitest": "^4.1.11",
     "vue-tsc": "^2.2.0"
   },
   "allowScripts": {

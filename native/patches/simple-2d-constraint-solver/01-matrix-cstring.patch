@@ -1,0 +1,12 @@
+diff --git a/src/matrix.cpp b/src/matrix.cpp
+index 27de101..be73dc3 100644
+--- a/src/matrix.cpp
++++ b/src/matrix.cpp
+@@ -1,6 +1,7 @@
+ #include "../include/matrix.h"
+ 
+ #include <algorithm>
++#include <cstring>
+ #include <assert.h>
+ 
+ atg_scs::Matrix::Matrix() {

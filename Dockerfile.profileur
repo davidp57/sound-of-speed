@@ -1,0 +1,44 @@
+# Le profileur : ce que le serveur fait des traces déposées.
+#
+# Image publiée sur le registre de conteneurs GitHub par le workflow
+# .github/workflows/docker.yml, à côté de celle de l'application. Les deux
+# viennent du même dépôt et du même commit, ce qui garantit qu'elles calculent
+# la même chose — c'est la raison d'être de ce service en Node plutôt qu'ailleurs.
+#
+# Il ne sert rien et n'ouvre aucun port : il lit un dossier, écrit un fichier, et
+# recommence. C'est nginx, à côté, qui sert ce fichier à l'application.
+
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+# On ne construit pas l'application : seul le service nous intéresse. Il est
+# assemblé en un fichier — le point d'entrée et le cœur qu'il importe — que Node
+# exécute tel quel.
+#
+# Assemblé plutôt que compilé fichier par fichier : le dépôt écrit ses imports
+# sans extension, ce que Node refuse, et les réécrire tous pour un seul service
+# serait payer cher une contrainte qui ne concerne que lui.
+RUN npm run build:profileur
+
+FROM node:22-alpine
+WORKDIR /app
+
+# Aucune dépendance de production : le service n'importe que le cœur du projet
+# et la bibliothèque standard de Node. Rien à installer, donc rien à tenir à jour.
+COPY --from=build /app/dist-profileur ./
+
+# Les deux dossiers sont montés depuis le NAS. Les valeurs par défaut valent
+# pour la pile telle que le README la décrit ; l'une et l'autre se changent sans
+# reconstruire l'image.
+ENV SPEED_TRACES=/data/traces
+ENV SPEED_PROFILES=/data/mesure-voiture
+ENV SPEED_SCAN_MS=5000
+
+# Le service n'a pas de port à écouter : sa santé est qu'il tourne encore.
+# Node sort en erreur sur une exception non rattrapée, et Docker le relance.
+CMD ["node", "profileur.js"]

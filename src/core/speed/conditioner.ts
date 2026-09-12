@@ -1,16 +1,19 @@
 import type { SpeedPreset } from '../preset/schema'
 import type { SpeedSample } from './source'
+import { detectTimeScale } from './timescale'
 
 /**
  * Conditionnement du signal de vitesse.
  *
- * C'est la pièce la plus importante du projet, et celle qu'on sous-estime : le
- * GPS ne livre qu'une mesure par seconde. Piloter directement un son avec ce
- * signal donne un escalier — la hauteur saute d'un cran chaque seconde. Trois
- * traitements se combinent ici pour en tirer une courbe continue et jouable :
+ * C'est la pièce la plus importante du projet, et celle qu'on sous-estime.
+ * Piloter directement un son avec le signal brut donne un escalier — la hauteur
+ * saute d'un cran à chaque mesure. Trois traitements se combinent ici pour en
+ * tirer une courbe continue et jouable :
  *
- * 1. Une pente d'accélération, calculée sur une fenêtre glissante d'environ une
- *    seconde, avec une zone morte qui absorbe le tremblement du GPS à l'arrêt.
+ * 1. Une pente d'accélération, ajustée aux moindres carrés sur toutes les
+ *    mesures de la fenêtre glissante réglée — une seconde par défaut. Cette
+ *    fenêtre décide aussi du temps qu'une pente met à s'oublier : plus elle est
+ *    longue, plus le signal est lisse et plus il traîne après une rupture.
  * 2. Une extrapolation entre deux mesures : tant que la suivante n'est pas
  *    arrivée, la vitesse continue sur sa lancée au lieu de rester figée.
  * 3. Un ressort amorti critique, intégré à pas fixe, qui rattrape la cible sans
@@ -18,14 +21,27 @@ import type { SpeedSample } from './source'
  *
  * Le pas d'intégration est fixe et découplé de la fréquence d'affichage : à 30
  * comme à 120 images par seconde, le comportement est identique.
+ *
+ * **La cadence des mesures n'est pas connue d'avance.** Une version antérieure
+ * la supposait d'un hertz, et le disait dans son code. Relevé dans une Tesla,
+ * le GPS livre une position toutes les quelques dizaines de millisecondes dès
+ * que la voiture roule, et s'espace à plusieurs secondes à l'arrêt. Tout ce qui
+ * suit est donc écrit en durées, jamais en nombre de mesures.
  */
 
 /** Pas d'intégration du ressort, en secondes. */
 const SOLVER_STEP_S = 0.02
 /** Au-delà, on considère qu'il y a eu une pause (onglet en arrière-plan). */
 const MAX_FRAME_S = 0.25
-/** Nombre d'échantillons conservés pour le calcul de pente. */
-const HISTORY_SIZE = 16
+/**
+ * Plafond du nombre de mesures conservées.
+ *
+ * L'historique est borné en **temps**, pas en nombre : c'est la fenêtre réglée
+ * qui décide. Ce plafond n'est qu'un garde-fou mémoire pour une source
+ * pathologiquement bavarde — à cinquante hertz, une fenêtre d'une seconde n'en
+ * garde qu'une cinquantaine.
+ */
+const MAX_HISTORY = 512
 /** Vitesse en deçà de laquelle on considère le véhicule à l'arrêt, en km/h. */
 const STANDSTILL_KMH = 0.8
 
@@ -36,12 +52,28 @@ export interface ConditionedSpeed {
   accelMs2: number
   /** Dernière vitesse brute reçue, en km/h. Pour l'écran de télémétrie. */
   rawKmh: number
+  /**
+   * Vrai si la dernière mesure a été déduite de deux positions plutôt que lue.
+   *
+   * Le drapeau existe depuis le premier jour dans `SpeedSample` et n'était
+   * affiché nulle part. C'est ce qui a rendu invisible pendant une semaine un
+   * défaut du repli par distance : rien ne disait par lequel des deux chemins la
+   * vitesse arrivait.
+   */
+  derived: boolean
   /** Pente estimée sur la fenêtre glissante, en km/h par seconde. */
   slopeKmhS: number
   /** Temps écoulé depuis la dernière mesure, en millisecondes. */
   sinceLastSampleMs: number
   /** Intervalles entre les dernières mesures, en millisecondes. Diagnostic. */
   recentGapsMs: number[]
+  /**
+   * Nombre de mesures qui ont servi à la pente.
+   *
+   * Affiché parce que c'est ce chiffre qui a permis de trouver que la cadence du
+   * GPS n'était pas celle qu'on croyait.
+   */
+  slopeSamples: number
   atStandstill: boolean
 }
 
@@ -53,8 +85,14 @@ interface HistoryEntry {
 export class SpeedConditioner {
   private history: HistoryEntry[] = []
   private gaps: number[] = []
+  /** Écarts bruts, avant normalisation : c'est sur eux que l'échelle se lit. */
+  private rawGaps: number[] = []
+  private lastRawAt = 0
+  /** Diviseur qui ramène l'horodatage en millisecondes. Voir `normalizeAt`. */
+  private timeScale = 1
 
   private rawKmh = 0
+  private derived = false
   private slopeKmhS = 0
   private targetKmh = 0
   private smoothedKmh = 0
@@ -67,12 +105,27 @@ export class SpeedConditioner {
    *
    * L'horodatage fourni avec une position n'est pas partout dans la même base
    * que `Date.now()` : certains navigateurs embarqués le comptent depuis le
-   * chargement de la page. Les écarts entre mesures restent justes — le suivi de
-   * vitesse ne s'en ressent pas — mais la différence avec l'heure courante donne
-   * alors un nombre absurde. On ne s'y fie donc que pour des différences entre
-   * deux mesures, jamais pour dater une mesure.
+   * chargement de la page, et la différence avec l'heure courante donne alors un
+   * nombre absurde. On ne s'y fie donc que pour des différences entre deux
+   * mesures, jamais pour dater une mesure.
+   *
+   * Et l'**unité** n'est pas partout la même non plus : ce commentaire affirmait
+   * que « les écarts entre mesures restent justes », ce que l'essai du
+   * 9 septembre 2026 a démenti — le navigateur de la Tesla compte en
+   * microsecondes. Les écarts sont justes entre eux, pas dans l'unité annoncée.
+   * C'est `normalizeAt` qui les ramène en millisecondes.
    */
   private lastSampleReceivedAt = 0
+  /**
+   * Heure à laquelle on a commencé à attendre une mesure.
+   *
+   * Sans elle, le silence de la source valait zéro tant qu'aucune mesure
+   * n'était **jamais** arrivée, et le chien de garde, qui se déclenche sur ce
+   * silence, ne relançait donc jamais un suivi qui n'avait pas démarré. Relevé
+   * en roulant le 8 septembre 2026 : départ d'un parking souterrain, aucun
+   * point acquis, et le suivi ne repartait plus une fois dehors.
+   */
+  private waitingSince = 0
   private carry = 0
 
   constructor(private preset: SpeedPreset) {}
@@ -81,10 +134,20 @@ export class SpeedConditioner {
     this.preset = preset
   }
 
+  /**
+   * Remet le conditionnement à zéro, et rouvre l'attente d'une mesure.
+   *
+   * L'attente repart d'ici, et non de la première mesure : c'est ce qui permet
+   * au chien de garde de voir un suivi qui n'a jamais démarré.
+   */
   reset(): void {
+    this.waitingSince = Date.now()
     this.history = []
     this.gaps = []
+    this.rawGaps = []
+    this.lastRawAt = 0
     this.rawKmh = 0
+    this.derived = false
     this.slopeKmhS = 0
     this.targetKmh = 0
     this.smoothedKmh = 0
@@ -95,51 +158,191 @@ export class SpeedConditioner {
     this.carry = 0
   }
 
-  /** Absorbe une mesure brute. Peut être appelé à n'importe quelle fréquence. */
+  /**
+   * Absorbe une mesure brute. Peut être appelé à n'importe quelle fréquence.
+   *
+   * Une mesure au-delà de la vitesse plausible n'est pas une vitesse, c'est une
+   * erreur : on n'en tire rien du tout. La ramener au plafond, comme on le
+   * faisait, revenait à la croire à moitié — une valeur absurde reçue à 90 km/h
+   * faisait monter la vitesse conditionnée vers le plafond, donc le moteur au
+   * rupteur, sur une seule mesure fausse.
+   *
+   * Le plafond lui-même reste accepté : c'est la borne du plausible, pas celle
+   * de l'aberrant.
+   */
   push(sample: SpeedSample): void {
     if (!Number.isFinite(sample.kmh)) return
+    if (sample.kmh > this.preset.maxPlausibleKmh) return
 
-    const kmh = clamp(sample.kmh, 0, this.preset.maxPlausibleKmh)
+    // Une vitesse négative n'a pas de sens mais ne dit rien d'aberrant sur la
+    // mesure : on la ramène à l'arrêt.
+    const kmh = Math.max(0, sample.kmh)
+
+    const at = this.normalizeAt(sample.at)
 
     if (this.lastSampleAt > 0) {
-      const gap = sample.at - this.lastSampleAt
+      const gap = at - this.lastSampleAt
       if (gap > 0) {
         this.gaps.push(Math.round(gap))
         if (this.gaps.length > 6) this.gaps.shift()
       }
     }
-    this.lastSampleAt = sample.at
+    this.lastSampleAt = at
     this.lastSampleReceivedAt = Date.now()
     this.rawKmh = kmh
+    this.derived = sample.derived
     this.targetKmh = kmh
 
-    this.history.push({ at: sample.at, kmh })
-    if (this.history.length > HISTORY_SIZE) this.history.shift()
+    this.history.push({ at, kmh })
+    this.prune(at)
 
-    this.slopeKmhS = this.estimateSlope(sample.at, kmh)
+    this.slopeKmhS = this.estimateSlope(at)
   }
 
   /**
-   * Pente sur la fenêtre glissante.
+   * Ramène l'horodatage d'une mesure en millisecondes.
    *
-   * On compare la mesure courante à la plus récente qui soit assez ancienne :
-   * comparer à la précédente donnerait une pente dominée par le bruit. La zone
-   * morte retire un écart fixe avant de diviser, ce qui annule la pente quand la
-   * variation n'est que du tremblement de mesure.
+   * **Le navigateur de la Tesla horodate ses positions en microsecondes**, là
+   * où la norme du web dit millisecondes. Relevé sur les traces de l'essai du
+   * 9 septembre 2026 : soixante secondes de trajet s'y annonçaient longues de
+   * 60 700 « secondes », et le nom du fichier déposé le disait. L'accélération
+   * étant une pente, donc une division par une durée, elle sortait mille fois
+   * trop petite — 0,0028 m/s² pour une vraie valeur de 2,78. Toute la chaîne en
+   * aval travaillait alors sur zéro : charge figée à un demi, garde-fous de la
+   * boîte inertes, relief de charge plat.
+   *
+   * Le critère de détection vit dans `timescale.ts`, partagé avec le rejeu :
+   * le seuil doit être le même des deux côtés.
+   *
+   * Changer d'échelle vide l'historique : les points déjà rangés ne sont plus
+   * comparables aux suivants, et une pente calculée à cheval sur les deux
+   * échelles serait fausse des deux façons à la fois.
    */
-  private estimateSlope(at: number, kmh: number): number {
-    const oldest = this.history.find((entry) => at - entry.at >= this.preset.accelWindowMs)
-    const reference = oldest ?? this.history[0]
-    if (!reference) return this.slopeKmhS
+  private normalizeAt(rawAt: number): number {
+    if (this.lastRawAt > 0) {
+      const gap = rawAt - this.lastRawAt
+      if (gap > 0) {
+        this.rawGaps.push(gap)
+        if (this.rawGaps.length > 6) this.rawGaps.shift()
+      }
+    }
+    this.lastRawAt = rawAt
 
-    const seconds = (at - reference.at) / 1000
-    if (seconds <= 0.15) return this.slopeKmhS
+    if (this.rawGaps.length > 0) {
+      const scale = detectTimeScale(this.rawGaps)
+      if (scale !== this.timeScale) {
+        this.timeScale = scale
+        this.history = []
+        this.gaps = []
+        this.lastSampleAt = 0
+      }
+    }
 
-    const delta = kmh - reference.kmh
-    const deadband = this.preset.accelDeadbandKmh
-    const attenuation = clamp((Math.abs(delta) - deadband) / Math.max(deadband, 0.001), 0, 1)
-    const slope = (delta * attenuation) / seconds
+    return rawAt / this.timeScale
+  }
 
+  /**
+   * Élague l'historique : on garde les mesures de la fenêtre réglée.
+   *
+   * Bornée en durée, et non en nombre de mesures. Le bornage en nombre — seize
+   * entrées — reposait sur une cadence d'un hertz : à trente millisecondes il
+   * ramenait la fenêtre utilisable à une demi-seconde quelle que fût la valeur
+   * réglée, et le réglage ne commandait plus rien.
+   *
+   * Les deux dernières mesures sont gardées quoi qu'il arrive : à cadence lente,
+   * la précédente peut être plus vieille que la fenêtre, et il faut bien deux
+   * points pour une pente.
+   */
+  private prune(at: number): void {
+    const windowMs = Math.max(0, this.preset.accelWindowMs)
+    while (this.history.length > 2) {
+      const oldest = this.history[0]
+      if (!oldest || at - oldest.at <= windowMs) break
+      this.history.shift()
+    }
+    while (this.history.length > MAX_HISTORY) this.history.shift()
+  }
+
+  /**
+   * Pente sur la fenêtre glissante, par les moindres carrés.
+   *
+   * Toutes les mesures de la fenêtre servent, et non deux d'entre elles. C'est
+   * ce qui permet de se passer d'une zone morte : le bruit de mesure se moyenne
+   * au lieu d'être seuillé.
+   *
+   * La zone morte qui existait ici retirait un écart fixe en km/h **avant** de
+   * diviser par la durée. Un seuil en vitesse divisé par une durée variable
+   * donne un seuil d'accélération variable : mesuré, à une cadence de trente
+   * millisecondes, elle annulait purement et simplement toute accélération sous
+   * 0,58 m/s². Une reprise de 110 à 150 en vingt secondes était vue comme une
+   * vitesse tenue — d'où un son de croisière là où le moteur travaillait.
+   *
+   * Mesuré sur l'estimateur retenu, avec un bruit de mesure de ±1 km/h : la
+   * pente est juste à toutes les cadences (0,35 m/s² lue 0,35 ; 2,0 lue 2,00),
+   * et son écart-type tombe de 0,22 m/s² à un hertz à 0,09 à trente
+   * millisecondes. Plus le GPS parle, plus l'estimation est sûre — l'inverse du
+   * comportement précédent.
+   *
+   * À l'arrêt on ne cherche pas de pente. Un véhicule immobile n'accélère pas,
+   * et c'est là que le GPS tremble le plus : à ±3 km/h de tremblement, la
+   * régression laisse encore passer 0,6 m/s². Le seuil porte sur les mesures
+   * elles-mêmes, pas sur la vitesse lissée, et il suffit qu'**une** mesure de la
+   * fenêtre dépasse le seuil pour qu'on estime à nouveau : sinon un démarrage
+   * franc serait manqué le temps que la vitesse lissée monte.
+   *
+   * L'accélération rendue emploie l'autre critère — la vitesse lissée —, et ce
+   * n'est pas une incohérence : celle-là s'aligne sur `atStandstill`, pour que
+   * les deux sorties ne se contredisent jamais. Ici c'est la réactivité qui
+   * prime, là-bas la cohérence. Ne pas unifier les deux sans mesurer ce qu'un
+   * démarrage franc y perd.
+   */
+  /**
+   * Vrai dès qu'**une** mesure de la fenêtre dépasse le seuil d'arrêt.
+   *
+   * Le seuil porte sur les mesures et non sur la vitesse lissée : celle-ci met
+   * un instant à monter, et un démarrage franc serait vu immobile le temps que
+   * le ressort la rattrape. C'est le seul critère d'arrêt du fichier, employé
+   * par l'estimation de pente comme par l'accélération qu'on rend.
+   */
+  private measuresShowMotion(): boolean {
+    for (const point of this.history) {
+      if (point.kmh >= STANDSTILL_KMH) return true
+    }
+    return false
+  }
+
+  private estimateSlope(at: number): number {
+    const points = this.history
+    const n = points.length
+    if (n < 2) return 0
+
+    if (!this.measuresShowMotion()) return 0
+
+    // Abscisses relatives à la mesure courante, en secondes : les horodatages
+    // bruts sont de grands nombres, et leur carré perdrait de la précision.
+    let sx = 0
+    let sy = 0
+    let sxx = 0
+    let sxy = 0
+    for (const point of points) {
+      const x = (point.at - at) / 1000
+      sx += x
+      sy += point.kmh
+      sxx += x * x
+      sxy += x * point.kmh
+    }
+
+    const spread = n * sxx - sx * sx
+    // Toutes les mesures au même instant : aucune pente n'est définie.
+    if (!(Math.abs(spread) > 1e-9)) return this.slopeKmhS
+
+    const oldest = points[0]
+    // Une fenêtre trop courte donne une pente dominée par le bruit. Au
+    // démarrage, à cadence rapide, il faut quelques dizaines de mesures avant
+    // que la fenêtre soit assez large.
+    if (oldest && (at - oldest.at) / 1000 <= 0.15) return this.slopeKmhS
+
+    const slope = (n * sxy - sx * sy) / spread
     return Number.isFinite(slope) ? slope : 0
   }
 
@@ -147,8 +350,11 @@ export class SpeedConditioner {
   tick(dt: number): ConditionedSpeed {
     const step = clamp(dt, 0, MAX_FRAME_S)
     const now = Date.now()
-    const sinceLastSampleMs =
-      this.lastSampleReceivedAt > 0 ? now - this.lastSampleReceivedAt : 0
+    // Le silence court depuis la dernière mesure, ou depuis l'ouverture de
+    // l'attente quand il n'y en a jamais eu. Zéro dirait « on vient d'en
+    // recevoir une », ce qui est faux et fait taire tout ce qui surveille.
+    const waitingFrom = this.lastSampleReceivedAt > 0 ? this.lastSampleReceivedAt : this.waitingSince
+    const sinceLastSampleMs = waitingFrom > 0 ? now - waitingFrom : 0
 
     // Extrapolation : entre deux mesures, la cible suit la pente estimée. Sans
     // cela la vitesse reste plate une seconde puis saute d'un coup.
@@ -162,11 +368,47 @@ export class SpeedConditioner {
 
     this.integrate(step)
 
-    this.accelMs2 = clamp(
-      this.springRate / 3.6,
-      this.preset.minAccelMs2,
-      this.preset.maxAccelMs2,
-    )
+    // L'accélération rendue est la **pente estimée**, et non la vitesse de la
+    // masse du ressort.
+    //
+    // Les deux mesurent la même chose et l'une est bien meilleure que l'autre.
+    // Le ressort a pour métier de rattraper une cible qui saute à chaque mesure,
+    // sans la dépasser : sa vitesse porte donc tout le bruit du GPS, et le
+    // retard qui va avec. Mesuré sur une vitesse parfaitement tenue à la cadence
+    // rapide, avec un bruit de mesure de ±1 km/h : 0,83 m/s² d'écart-type et des
+    // pointes à 2,2 pour la vitesse du ressort, 0,10 et 0,4 pour la pente. Sur
+    // une reprise établie à 2 m/s², le ressort lit 1,96 et la pente 2,00.
+    //
+    // Ce n'est pas cosmétique : cette valeur décide la charge, donc le fondu
+    // entre les couches, et elle décide les passages de la boîte. À 0,83 m/s²
+    // de bruit, la boîte changeait de rapport une dizaine de fois par minute sur
+    // une vitesse tenue, et jusqu'à quarante-trois fois avec le curseur de
+    // réactivité au maximum.
+    //
+    // La pente était déjà calculée ici, et ne servait qu'à l'extrapolation.
+    // Une voiture immobile n'accélère pas, et cela vaut aussi quand plus aucune
+    // mesure n'arrive : la pente garde alors la dernière valeur estimée, et la
+    // chaîne entière la reçoit comme une vérité du moment.
+    //
+    // Relevé en roulant le 11 septembre 2026 : quarante-quatre minutes de
+    // stationnement, vitesse conditionnée à 0,000 km/h d'un bout à l'autre, et
+    // une décélération annoncée entre 0,19 et 0,39 m/s² pendant tout ce temps.
+    // La boîte en a nourri son compteur de ralentissement jusqu'à ne plus
+    // pouvoir monter un seul rapport du trajet. La garde posée sur l'estimation
+    // ne suffisait pas : elle ne protège que le calcul, pas la valeur retenue.
+    //
+    // Le critère est ici celui de la vitesse lissée, et non celui des mesures
+    // qu'emploie l'estimation de pente. Les deux coexistent exprès : la pente
+    // doit repartir dès qu'**une** mesure bouge, sans quoi un démarrage franc
+    // serait manqué le temps que le ressort monte ; l'accélération qu'on rend,
+    // elle, s'aligne sur `atStandstill` ci-dessous, qui se lit sur la même
+    // vitesse lissée. Les deux sorties du conditionnement disent alors la même
+    // chose, et aucun consommateur ne peut voir « à l'arrêt » et « en
+    // décélération » au même instant.
+    this.accelMs2 =
+      this.smoothedKmh < STANDSTILL_KMH
+        ? 0
+        : clamp(this.slopeKmhS / 3.6, this.preset.minAccelMs2, this.preset.maxAccelMs2)
 
     this.guardAgainstNaN()
 
@@ -174,9 +416,11 @@ export class SpeedConditioner {
       kmh: this.smoothedKmh,
       accelMs2: this.accelMs2,
       rawKmh: this.rawKmh,
+      derived: this.derived,
       slopeKmhS: this.slopeKmhS,
       sinceLastSampleMs,
       recentGapsMs: [...this.gaps],
+      slopeSamples: this.history.length,
       atStandstill: this.smoothedKmh < STANDSTILL_KMH,
     }
   }

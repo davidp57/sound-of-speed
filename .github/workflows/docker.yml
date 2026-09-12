@@ -3,12 +3,24 @@
 # Le NAS n'a alors plus rien à construire ni à recevoir : Portainer tire une
 # image déjà prête. Mettre à jour tient en un « git push » suivi d'un bouton
 # dans l'interface de Portainer.
+#
+# Deux images sortent de ce dépôt, du même commit : l'application, servie par
+# nginx, et le profileur, qui relit les traces déposées sur le serveur. Les deux
+# partagent le cœur du projet, et c'est pourquoi elles doivent venir du même
+# commit — un seul calcul, pas deux qui divergent.
+#
+# Trois étiquettes, trois usages :
+#   latest    la production, poussée depuis `main` seulement
+#   develop   l'intégration, pour essayer sur le NAS avant de sortir une version
+#   vX.Y.Z    une version figée, poussée par le tag correspondant
+# Une pile Portainer qui tire `develop` sur un autre port permet de vérifier un
+# lot en conditions réelles sans toucher à celle qui sert dans la voiture.
 
 name: Image Docker
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     tags: ['v*']
   workflow_dispatch:
 
@@ -34,6 +46,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
@@ -50,7 +64,20 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
             type=ref,event=tag
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+
+      - id: meta-profileur
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE }}-profileur
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=semver,pattern={{major}}.{{minor}}
             type=sha,format=short
 
       - uses: docker/build-push-action@v6
@@ -59,8 +86,26 @@ jobs:
           # Les deux architectures que l'on rencontre sur un NAS. La
           # construction reste native grâce à BUILDPLATFORM dans le Dockerfile.
           platforms: linux/amd64,linux/arm64
+          # Aucune image publiée ne porte les écrans de banc, pas même
+          # l'image d'intégration : c'est elle qu'on essaie dans la voiture, et
+          # elle démarrait sur le simulateur au lieu du GPS. Le banc reste en
+          # développement, où il a sa place.
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Le profileur : même dépôt, même commit, une image à part. Il ne sert
+      # rien et n'ouvre aucun port ; c'est nginx, à côté, qui sert ce qu'il
+      # écrit.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.profileur
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-profileur.outputs.tags }}
+          labels: ${{ steps.meta-profileur.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

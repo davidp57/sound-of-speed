@@ -1,6 +1,9 @@
 import type { LayerPreset, Profile } from '../preset/schema'
 import type { EngineState } from '../engine/engine'
 import { computeMix } from './mix'
+import { REFRESH_FADE_S, equalPowerCurves, nextRefreshDelayS } from './refresh'
+import { buildOutputChain, saturationCurve } from './output-chain'
+import { type EventTarget } from './events'
 
 /**
  * Moteur audio à échantillons.
@@ -22,6 +25,14 @@ const GAIN_GLIDE_S = 0.02
 const RATE_GLIDE_S = 0.03
 /** Période de la surveillance du contexte et du média, en millisecondes. */
 const WATCHDOG_MS = 2000
+/**
+ * Adresse du silence qui maintient la session audio.
+ *
+ * Un fichier servi, produit par `npm run silence` et versionné avec son script.
+ * Il est hors de `public/audio/`, qui n'est pas versionné : cette arborescence
+ * est celle des échantillons, déposés dans un volume du NAS.
+ */
+const SILENCE_URL = '/silence.mp3'
 /** Durée du fondu appliqué aux boucles mal raccordées, en secondes. */
 const SEAM_FADE_S = 0.03
 /** Fondu, bien plus court, quand le point de bouclage a pu être aligné. */
@@ -66,16 +77,65 @@ export interface AudioStatus {
    * traîner derrière l'affichage, avant de soupçonner le calcul.
    */
   outputLatencyMs: number
-  /** Le média silencieux qui maintient la session tourne-t-il ? */
+  /** Le maintien de session est-il demandé ? */
   keepAlive: boolean
+  /** Le média de maintien joue-t-il réellement, à cet instant ? */
+  keepAlivePlaying: boolean
+  /**
+   * Ce que le navigateur a refusé, s'il a refusé.
+   *
+   * Un refus de lecture était avalé, donc invisible : on ne pouvait pas
+   * distinguer « le maintien ne suffit pas » de « le maintien n'a jamais
+   * démarré ». Vide quand tout va bien.
+   */
+  keepAliveError: string
+  /**
+   * Nombre de fois qu'il a fallu relancer le contexte depuis l'activation.
+   *
+   * Zéro dit que le système ne l'a jamais suspendu — et donc que la
+   * surveillance périodique ne sert à rien, ce qu'on veut savoir.
+   */
+  contextResumes: number
   /** Nombre de salves de pétarade déclenchées depuis l'activation. */
   backfires: number
+  /** Nombre de clacs de boîte joués. Diagnostic, comme les pétarades. */
+  clacks: number
+  /**
+   * Nombre de sources d'échantillon en cours de lecture.
+   *
+   * Une par couche, brièvement deux pendant un renouvellement de position. Ce
+   * compte est la seule façon de voir qu'un fondu ne s'est pas refermé.
+   */
+  activeSources: number
+  /** Nombre de renouvellements de position depuis l'activation. */
+  layerRefreshes: number
+}
+
+/**
+ * Une source en cours de lecture, avec le gain qui la fait entrer ou sortir.
+ *
+ * Ce gain de fondu est distinct du gain de la couche : le mixage continue de
+ * poser le sien sans rien savoir du renouvellement de position.
+ */
+interface LayerVoice {
+  source: AudioBufferSourceNode
+  fade: GainNode
 }
 
 interface LoadedLayer {
   key: string
-  source: AudioBufferSourceNode
+  buffer: AudioBuffer
+  /** La voix qui joue, ou celle qui monte pendant un fondu. */
+  current: LayerVoice
+  /** La voix qui s'efface, le temps du fondu. Nulle le reste du temps. */
+  outgoing: LayerVoice | null
+  /** Instant, sur l'horloge audio, où la voix sortante peut être démontée. */
+  outgoingUntil: number
   gain: GainNode
+  /** Instant du prochain renouvellement de position. */
+  nextRefreshAt: number
+  /** Dernière vitesse de lecture posée : une voix neuve démarre avec elle. */
+  rate: number
 }
 
 /**
@@ -111,7 +171,18 @@ export class AudioEngine {
   private bus: GainNode | null = null
   private highpass: BiquadFilterNode | null = null
   private shaper: WaveShaperNode | null = null
+  /** Volume général, retenu ici pour survivre à la reconstruction du bus. */
+  private masterVolume = 1
   private limiter: DynamicsCompressorNode | null = null
+  /**
+   * Gain de rattrapage, dernier étage de la chaîne — et **le seul point où un
+   * son bref peut entrer sans être écrasé.**
+   *
+   * Le saturateur aplatit tout ce qui dépasse sa courbe, et le limiteur, déjà en
+   * train de comprimer le moteur, applique la même réduction à ce qui arrive en
+   * plus. Un événement injecté avant eux disparaît donc exactement quand le
+   * moteur est fort, c'est-à-dire au moment où l'on en a besoin.
+   */
   private makeup: GainNode | null = null
   private watchdog: ReturnType<typeof setInterval> | null = null
   private analyser: AnalyserNode | null = null
@@ -138,7 +209,13 @@ export class AudioEngine {
     baseLatencyMs: 0,
     outputLatencyMs: 0,
     keepAlive: false,
+    keepAlivePlaying: false,
+    keepAliveError: '',
+    contextResumes: 0,
     backfires: 0,
+    clacks: 0,
+    activeSources: 0,
+    layerRefreshes: 0,
   }
 
   /** Appelé à chaque battement de l'horloge audio, quand elle est en place. */
@@ -177,36 +254,45 @@ export class AudioEngine {
     await this.load(profile)
   }
 
-  /** Chaîne de sortie, commune à toutes les couches. */
+  /**
+   * Volume général.
+   *
+   * Appliqué sur le bus commun, donc **en amont** du limiteur : c'est ce qui
+   * permet de le pousser au-delà de un sans écrêter, le limiteur ramenant les
+   * crêtes. Le mettre après aurait supprimé cette marge, qui est justement ce
+   * dont on a besoin quand le relief est fort.
+   *
+   * Il n'entre pas dans le calcul du mixage. Ce n'est pas une règle de mixage
+   * mais un niveau de sortie : les gains affichés à l'écran de télémétrie
+   * décrivent donc l'équilibre entre les couches, sans que le volume les
+   * déplace tous ensemble.
+   */
+  setMasterVolume(volume: number): void {
+    this.masterVolume = Number.isFinite(volume) && volume >= 0 ? volume : 1
+    if (this.bus && this.context) {
+      this.bus.gain.setTargetAtTime(this.masterVolume, this.context.currentTime, GAIN_GLIDE_S)
+    }
+  }
+
+  /**
+   * Chaîne de sortie, commune à toutes les couches.
+   *
+   * Les nœuds et leurs réglages vivent dans `output-chain.ts`, pour que le banc
+   * de mesure hors ligne puisse construire la même chaîne plutôt qu'une copie.
+   */
   private buildBus(context: AudioContext): void {
-    this.bus = context.createGain()
-    this.highpass = context.createBiquadFilter()
-    this.shaper = context.createWaveShaper()
-    this.limiter = context.createDynamicsCompressor()
+    const chain = buildOutputChain(context, { volume: this.masterVolume })
+    this.bus = chain.input
+    this.highpass = chain.highpass
+    this.shaper = chain.shaper
+    this.limiter = chain.limiter
+    this.makeup = chain.makeup
+
     this.analyser = context.createAnalyser()
     this.analyser.fftSize = 1024
     this.scope = new Float32Array(this.analyser.fftSize)
 
-    this.highpass.type = 'highpass'
-    this.highpass.Q.value = 0.7
-    this.shaper.oversample = '4x'
-
-    // Rapport élevé et attaque courte : ce n'est pas un compresseur d'effet, il
-    // est là pour empêcher la somme des couches de saturer en sortie.
-    this.limiter.knee.value = 3
-    this.limiter.ratio.value = 12
-    this.limiter.attack.value = 0.002
-    this.limiter.release.value = 0.12
-
-    this.bus.connect(this.highpass)
-    this.highpass.connect(this.shaper)
-    this.shaper.connect(this.limiter)
-    this.makeup = context.createGain()
-    // Le limiteur ramène les crêtes bien en dessous du plafond ; ce gain rend le
-    // niveau perdu, sans risque d'écrêtage puisqu'il vient après lui.
-    this.makeup.gain.value = 1.8
-    this.limiter.connect(this.makeup)
-    this.makeup.connect(this.analyser)
+    chain.output.connect(this.analyser)
     this.analyser.connect(context.destination)
   }
 
@@ -244,41 +330,114 @@ export class AudioEngine {
     if (enabled) this.startKeepAlive()
     else {
       this.status.keepAlive = false
-      this.keepAlive?.pause()
+      this.status.keepAliveError = ''
+      const media = this.keepAlive
       this.keepAlive = null
+      this.status.keepAlivePlaying = false
+      media?.pause()
+      // Retiré du document, et pas seulement arrêté : laisser traîner un lecteur
+      // muet embrouillerait le diagnostic suivant.
+      media?.remove()
     }
     this.readLatency()
   }
 
+  /**
+   * Le média de maintien, construit comme un lecteur véritable.
+   *
+   * Chaque détail de cette construction a une raison, apprise en comparant avec
+   * une application qui, elle, tient le son quand le navigateur de la voiture
+   * est réduit :
+   *
+   * - **inséré dans le document**, et non simplement construit. Un élément
+   *   détaché joue, mais rien ne garantit qu'un navigateur ancien le compte
+   *   comme une lecture — et c'est de ce décompte que dépend le droit de
+   *   continuer en arrière-plan ;
+   * - **un fichier servi**, et non une adresse `blob:` fabriquée en mémoire. La
+   *   pile média du navigateur de la Tesla, un Chromium ancien, ne la traitait
+   *   pas comme une lecture véritable ;
+   * - **long**, deux minutes plutôt que quatre secondes : chaque passage de
+   *   boucle est une occasion de perdre la lecture ;
+   * - **`volume = 1`**, bien que le contenu soit déjà silencieux. Baisser le
+   *   volume ferait passer le lecteur pour inactif auprès de certains systèmes,
+   *   qui libéreraient la session — précisément ce qu'il sert à empêcher.
+   */
   private startKeepAlive(): void {
-    const audio = new Audio(silentWavUrl(4))
+    // Un seul média à la fois. Le chemin qui y menait deux fois est réel :
+    // basculer le réglage avant d'activer le son en crée un — le moteur ignore
+    // encore qu'il en faut un — puis `activate()` en crée un second. Détachés
+    // du document, les doublons passaient inaperçus ; insérés, ils
+    // embrouilleraient exactement le diagnostic que ce média sert à établir.
+    if (this.keepAlive) return
+
+    const audio = document.createElement('audio')
+    const source = document.createElement('source')
+    source.type = 'audio/mpeg'
+    source.src = SILENCE_URL
+    audio.appendChild(source)
     audio.loop = true
-    // Le contenu est déjà silencieux : baisser en plus le volume ferait passer
-    // le lecteur pour inactif auprès de certains systèmes, qui libéreraient la
-    // session audio en arrière-plan — précisément ce qu'il sert à empêcher.
     audio.volume = 1
+    audio.preload = 'auto'
     audio.setAttribute('playsinline', '')
+    audio.style.display = 'none'
+
+    // Un refus du navigateur était jusqu'ici avalé, donc invisible : on ne
+    // pouvait pas distinguer « le maintien ne suffit pas » de « le maintien n'a
+    // jamais démarré ». Personne n'ouvrira une console au volant, la raison
+    // remonte donc jusqu'à l'écran de télémétrie.
+    audio.addEventListener('error', () => {
+      const code = audio.error?.code
+      this.status.keepAliveError = code
+        ? `Média refusé par le navigateur (code ${code}).`
+        : 'Média refusé par le navigateur.'
+    })
     // Certains navigateurs suspendent un média sorti de l'écran : on le relance.
     audio.addEventListener('pause', () => {
-      if (this.status.keepAlive) void audio.play().catch(() => undefined)
+      if (this.status.keepAlive) this.playKeepAlive(audio)
     })
-    void audio.play().catch(() => undefined)
+    audio.addEventListener('playing', () => {
+      this.status.keepAliveError = ''
+    })
+
+    document.body.appendChild(audio)
+    this.playKeepAlive(audio)
     this.keepAlive = audio
     this.status.keepAlive = true
 
     // Surveillance permanente, et non seulement au retour au premier plan.
     // Certains navigateurs embarqués suspendent le contexte sans prévenir et
-    // sans repasser par un changement de visibilité : on ne peut compter que sur
-    // une vérification régulière, qui coûte presque rien.
+    // sans repasser par un changement de visibilité.
+    //
+    // Elle est conservée mais **comptée** : un minuteur est de toute façon gelé
+    // quand la page l'est, donc son utilité réelle est douteuse. Le compteur
+    // tranchera — s'il reste à zéro en voiture, cette surveillance partira.
     if (this.watchdog === null) {
       this.watchdog = setInterval(() => {
         const context = this.context
         if (!context) return
-        if (context.state === 'suspended') void context.resume().catch(() => undefined)
+        if (context.state === 'suspended') this.resumeContext(context)
         const media = this.keepAlive
-        if (media && media.paused) void media.play().catch(() => undefined)
+        if (media && media.paused) this.playKeepAlive(media)
       }, WATCHDOG_MS)
     }
+  }
+
+  /** Relance le média, en retenant le refus éventuel. */
+  private playKeepAlive(audio: HTMLAudioElement): void {
+    void audio.play().then(
+      () => {
+        this.status.keepAliveError = ''
+      },
+      (error: unknown) => {
+        this.status.keepAliveError = describePlayFailure(error)
+      },
+    )
+  }
+
+  /** Relance le contexte, en comptant combien de fois il a fallu le faire. */
+  private resumeContext(context: AudioContext): void {
+    this.status.contextResumes += 1
+    void context.resume().catch(() => undefined)
   }
 
   private async startClock(context: AudioContext): Promise<void> {
@@ -350,20 +509,27 @@ export class AudioEngine {
 
     this.disposeLayers()
 
+    const now = context.currentTime
     for (const { layer, buffer, repaired } of decoded) {
-      const source = context.createBufferSource()
       const gain = context.createGain()
-      source.buffer = buffer
-      source.loop = true
       gain.gain.value = 0
-      source.connect(gain)
       if (this.bus) gain.connect(this.bus)
       // Départ à une position aléatoire : sans cela, deux couches issues du même
       // enregistrement restent en phase et se renforcent en peigne.
-      source.start(0, Math.random() * buffer.duration)
-      this.layers.push({ key: layer.key, source, gain })
+      const current = this.startVoice(buffer, Math.random() * buffer.duration, 1, 1, gain)
+      this.layers.push({
+        key: layer.key,
+        buffer,
+        current,
+        outgoing: null,
+        outgoingUntil: 0,
+        gain,
+        nextRefreshAt: now + nextRefreshDelayS(profile.mix.layerRefreshS, Math.random()),
+        rate: 1,
+      })
       if (repaired) this.status.repaired.push(layer.key)
     }
+    this.status.activeSources = this.layers.length
 
     this.status.phase = 'ready'
     this.status.contextState = context.state
@@ -385,8 +551,14 @@ export class AudioEngine {
       const node = this.layers.find((layer) => layer.key === entry.key)
       if (!node) continue
       node.gain.gain.setTargetAtTime(entry.gain, now, GAIN_GLIDE_S)
-      node.source.playbackRate.setTargetAtTime(entry.rate, now, RATE_GLIDE_S)
+      node.rate = entry.rate
+      node.current.source.playbackRate.setTargetAtTime(entry.rate, now, RATE_GLIDE_S)
+      // La voix qui s'efface suit la même vitesse : un fondu entre deux hauteurs
+      // s'entendrait comme un glissando.
+      node.outgoing?.source.playbackRate.setTargetAtTime(entry.rate, now, RATE_GLIDE_S)
     }
+
+    this.refreshLayers(profile.mix.layerRefreshS, now)
 
     if (this.highpass) this.highpass.frequency.setTargetAtTime(profile.mix.highpassHz, now, 0.1)
     if (this.limiter) {
@@ -425,6 +597,13 @@ export class AudioEngine {
     }
     this.status.outputLevel = Math.sqrt(sum / scope.length)
     this.status.outputPeak = peak
+    // Relevé au même rythme que le niveau : un média qui s'arrête en
+    // arrière-plan doit se voir dès le retour à l'écran, pas au prochain
+    // changement d'état.
+    this.status.keepAlivePlaying = this.keepAlive !== null && !this.keepAlive.paused
+    // Idem pour l'état du contexte : il n'était relevé qu'aux transitions, donc
+    // une suspension par le système ne s'y voyait qu'au retour au premier plan.
+    if (this.context) this.status.contextState = this.context.state
   }
 
   /**
@@ -443,10 +622,43 @@ export class AudioEngine {
     const readState = (): AudioContextState => context.state
     if (readState() !== 'suspended') return false
 
+    this.status.contextResumes += 1
     await context.resume().catch(() => undefined)
     const state = readState()
     this.status.contextState = state
     return state === 'running'
+  }
+
+  /**
+   * Le clac de la boîte quand le rapport s'engage.
+   *
+   * Rien à voir avec la pétarade, et c'est tout l'objet : celle-ci est un
+   * souffle grave de 260 à 680 Hz avec une queue de cinquante à cent vingt
+   * millisecondes — un bruit d'échappement. Le clac est un **choc mécanique** :
+   * attaque en une milliseconde, extinction en quelques dizaines, et de
+   * l'énergie sur toute la hauteur du spectre.
+   *
+   * **Il doit percer un son gras, donc passer au-dessus de lui.** La première
+   * version ne le faisait pas : mesurée en reproduisant les filtres de Web
+   * Audio, sa crête arrivait 15,6 dB **sous** celles du moteur au réglage
+   * livré, et encore 8 dB sous au maximum du curseur. Trois causes cumulées —
+   * un passe-bande étroit qui jetait l'essentiel de l'énergie, un gain appliqué
+   * après cette perte, et une queue de trente millisecondes trop longue pour un
+   * choc, qui étale au lieu de crêter. Le clac ne manquait pas d'être
+   * déclenché : il était inaudible.
+   */
+  /**
+   * Compte un bruit d'événement, quel que soit le graphe qui l'a joué.
+   *
+   * Les deux origines de son ont leur propre contexte, mais un seul compteur :
+   * il est lu par l'écran de télémétrie, où il sert à distinguer un défaut de
+   * déclenchement d'un défaut de niveau. C'est ce compteur qui a tranché la
+   * question du clac inaudible, et il doit continuer à monter même quand le son
+   * sort du moteur simulé.
+   */
+  noteEvent(kind: 'clack' | 'backfire'): void {
+    if (kind === 'clack') this.status.clacks += 1
+    else this.status.backfires += 1
   }
 
   /**
@@ -458,41 +670,24 @@ export class AudioEngine {
    * suffisent, et cela évite de dépendre d'un enregistrement que la banque
    * sonore ne contient pas.
    */
-  backfire(intensity: number, count: number): void {
+
+  /**
+   * Où brancher un bruit bref, ou `null` si le contexte n'est pas ouvert.
+   *
+   * Sur le gain de rattrapage, dernier étage de la chaîne : le saturateur
+   * aplatit tout ce qui dépasse sa courbe, et le limiteur, déjà en train de
+   * comprimer le moteur, applique la même réduction à ce qui arrive en plus.
+   *
+   * **La banque n'a pas à être chargée.** Ces bruits ne dépendent que du
+   * contexte, et l'exiger les rendait muets sur les profils en synthèse.
+   */
+  eventTarget(): EventTarget | null {
     const context = this.context
-    if (!context || this.status.phase !== 'ready' || !this.bus) return
-
-    this.status.backfires += 1
-    const now = context.currentTime
-    for (let i = 0; i < count; i += 1) {
-      // Les claquements ne sont jamais réguliers : c'est ce qui les distingue
-      // d'un crépitement mécanique.
-      const at = now + Math.random() * 0.28 + i * 0.045
-      const duration = 0.05 + Math.random() * 0.07
-
-      const source = context.createBufferSource()
-      source.buffer = this.noise ?? (this.noise = makeNoise(context))
-      source.playbackRate.value = 0.7 + Math.random() * 0.6
-      source.loop = true
-
-      const band = context.createBiquadFilter()
-      band.type = 'bandpass'
-      band.frequency.value = 260 + Math.random() * 420
-      band.Q.value = 1.4
-
-      const gain = context.createGain()
-      const peak = intensity * (0.5 + Math.random() * 0.5)
-      gain.gain.setValueAtTime(0.0001, at)
-      gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), at + 0.004)
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + duration)
-
-      source.connect(band)
-      band.connect(gain)
-      gain.connect(this.bus)
-      source.start(at)
-      source.stop(at + duration + 0.02)
-    }
+    const destination = this.makeup ?? this.limiter ?? this.bus
+    if (!context || !destination) return null
+    return { context, destination, noise: this.noise ?? (this.noise = makeNoise(context)) }
   }
+
 
   /**
    * Coupe le son sans démonter le contexte : les couches restent chargées.
@@ -506,6 +701,32 @@ export class AudioEngine {
     const now = this.context.currentTime
     for (const layer of this.layers) layer.gain.gain.setTargetAtTime(0, now, GAIN_GLIDE_S)
     this.measureOutput()
+  }
+
+  /**
+   * Démonte les couches, en gardant le contexte ouvert.
+   *
+   * Sert quand le profil passe à une origine de son qui ne joue pas la banque :
+   * les lectures s'arrêtent pour de bon, au lieu de tourner à gain nul.
+   *
+   * Le contexte, lui, reste ouvert. Le fermer obligerait à en rouvrir un au
+   * retour, or un contexte neuf naît suspendu et son réveil demande un geste de
+   * l'utilisateur — geste qui n'existe pas quand on revient d'un écran de
+   * réglage. Ce qui coûte, ce sont les lectures et les tampons décodés, et c'est
+   * précisément ce qui est libéré ici.
+   */
+  unload(): void {
+    // Un chargement peut être en vol : sans ce jeton, ses couches se
+    // brancheraient après coup sur une banque qu'on vient d'abandonner.
+    this.loadToken += 1
+    this.disposeLayers()
+    this.status.phase = 'idle'
+    this.status.loaded = 0
+    this.status.total = 0
+    this.status.error = ''
+    this.status.repaired = []
+    this.status.outputLevel = 0
+    this.status.outputPeak = 0
   }
 
   async dispose(): Promise<void> {
@@ -526,17 +747,99 @@ export class AudioEngine {
     this.status.contextState = 'none'
   }
 
+  /** Monte une source sur le gain d'une couche et la lance à la position voulue. */
+  private startVoice(
+    buffer: AudioBuffer,
+    offset: number,
+    rate: number,
+    fadeValue: number,
+    gain: GainNode,
+  ): LayerVoice {
+    const context = this.context
+    if (!context) throw new Error('Contexte absent')
+    const source = context.createBufferSource()
+    const fade = context.createGain()
+    source.buffer = buffer
+    source.loop = true
+    source.playbackRate.value = rate
+    fade.gain.value = fadeValue
+    source.connect(fade)
+    fade.connect(gain)
+    source.start(0, offset)
+    return { source, fade }
+  }
+
+  /**
+   * Reprend la lecture ailleurs dans l'enregistrement, quand l'heure est venue.
+   *
+   * Sans cela chaque couche repasse indéfiniment par la même tranche : la boucle
+   * la plus courte se referme toutes les quatre secondes à vitesse de lecture
+   * réelle, et l'oreille apprend le motif en quelques tours.
+   *
+   * Le fondu est à puissance constante parce que les deux positions sont
+   * décorrélées : leurs énergies s'ajoutent, pas leurs amplitudes. Un fondu
+   * linéaire creuserait de 1,8 dB au passage. Voir `refresh.ts` pour les
+   * mesures.
+   */
+  private refreshLayers(intervalS: number, now: number): void {
+    for (const layer of this.layers) {
+      if (layer.outgoing && now >= layer.outgoingUntil) {
+        this.disposeVoice(layer.outgoing)
+        layer.outgoing = null
+      }
+
+      if (!(intervalS > 0)) {
+        // Réglage remis à zéro en cours de route : on laisse la voix courante
+        // jouer, et on repartira d'une échéance neuve si le réglage revient.
+        layer.nextRefreshAt = now
+        continue
+      }
+      if (now < layer.nextRefreshAt) continue
+      layer.nextRefreshAt = now + nextRefreshDelayS(intervalS, Math.random())
+      // Un fondu encore ouvert veut dire que l'intervalle est descendu sous sa
+      // durée. On saute ce tour plutôt que d'empiler trois sources sur une couche.
+      if (layer.outgoing) continue
+
+      const curves = equalPowerCurves()
+      const incoming = this.startVoice(
+        layer.buffer,
+        Math.random() * layer.buffer.duration,
+        layer.rate,
+        0,
+        layer.gain,
+      )
+      layer.current.fade.gain.setValueCurveAtTime(curves.outgoing, now, REFRESH_FADE_S)
+      incoming.fade.gain.setValueCurveAtTime(curves.incoming, now, REFRESH_FADE_S)
+      layer.current.source.stop(now + REFRESH_FADE_S)
+      layer.outgoing = layer.current
+      layer.outgoingUntil = now + REFRESH_FADE_S
+      layer.current = incoming
+      this.status.layerRefreshes += 1
+    }
+    this.status.activeSources = this.layers.reduce(
+      (count, layer) => count + (layer.outgoing ? 2 : 1),
+      0,
+    )
+  }
+
+  private disposeVoice(voice: LayerVoice): void {
+    try {
+      voice.source.stop()
+    } catch {
+      // Déjà arrêtée : sans conséquence.
+    }
+    voice.source.disconnect()
+    voice.fade.disconnect()
+  }
+
   private disposeLayers(): void {
     for (const layer of this.layers) {
-      try {
-        layer.source.stop()
-      } catch {
-        // Déjà arrêtée : sans conséquence.
-      }
-      layer.source.disconnect()
+      this.disposeVoice(layer.current)
+      if (layer.outgoing) this.disposeVoice(layer.outgoing)
       layer.gain.disconnect()
     }
     this.layers = []
+    this.status.activeSources = 0
   }
 
   private fail(message: string): void {
@@ -697,42 +1000,23 @@ function makeNoise(context: AudioContext): AudioBuffer {
   return buffer
 }
 
-/** Courbe de saturation douce. À 0, la courbe est droite et n'altère rien. */
-function saturationCurve(drive: number): Float32Array {
-  const amount = Math.max(0, Math.min(1, drive)) * 4
-  const size = 1024
-  const curve = new Float32Array(size)
-  const norm = amount > 0 ? Math.tanh(amount) : 1
-  for (let i = 0; i < size; i += 1) {
-    const x = (i / (size - 1)) * 2 - 1
-    curve[i] = amount > 0 ? Math.tanh(x * amount) / norm : x
+/**
+ * Traduit un refus de lecture en une phrase lisible sans console.
+ *
+ * `NotAllowedError` est le cas courant : le navigateur exige un geste de
+ * l'utilisateur, ou refuse un second lecteur. C'est exactement ce qu'on
+ * soupçonnait sans pouvoir le vérifier.
+ */
+function describePlayFailure(error: unknown): string {
+  if (!(error instanceof Error)) return 'Lecture du média de maintien refusée.'
+  switch (error.name) {
+    case 'NotAllowedError':
+      return 'Média refusé : le navigateur exige un geste, ou n’accepte qu’un lecteur.'
+    case 'NotSupportedError':
+      return 'Média refusé : format non pris en charge par ce navigateur.'
+    case 'AbortError':
+      return 'Lecture du média interrompue par le système.'
+    default:
+      return `Média refusé (${error.name}).`
   }
-  return curve
-}
-
-/** Fabrique une piste silencieuse, sans avoir à embarquer de fichier. */
-function silentWavUrl(seconds: number): string {
-  const sampleRate = 8000
-  const frames = sampleRate * seconds
-  const bytes = 44 + frames * 2
-  const view = new DataView(new ArrayBuffer(bytes))
-
-  const ascii = (offset: number, text: string) => {
-    for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i))
-  }
-
-  ascii(0, 'RIFF')
-  view.setUint32(4, bytes - 8, true)
-  ascii(8, 'WAVEfmt ')
-  view.setUint32(16, 16, true)
-  view.setUint16(20, 1, true)
-  view.setUint16(22, 1, true)
-  view.setUint32(24, sampleRate, true)
-  view.setUint32(28, sampleRate * 2, true)
-  view.setUint16(32, 2, true)
-  view.setUint16(34, 16, true)
-  ascii(36, 'data')
-  view.setUint32(40, frames * 2, true)
-
-  return URL.createObjectURL(new Blob([view.buffer], { type: 'audio/wav' }))
 }

@@ -1,4 +1,6 @@
 import { deepCopy, newId } from './store'
+import { soundSourceOf } from './schema'
+import { withSevenGears } from './seven-gears'
 import type { Profile } from './schema'
 
 /**
@@ -47,7 +49,20 @@ export async function decodeProfile(token: string): Promise<Profile> {
     throw new Error('Ce lien ne contient pas de profil.')
   }
   // L'identifiant est renouvelé : un profil reçu ne doit pas écraser le sien.
-  return { ...(parsed as { p: Profile }).p, id: newId() }
+  // L'origine du son est repliée ici plutôt qu'à la lecture : un lien émis avant
+  // l'arrivée du champ rendrait sinon un profil sans origine, là où son type en
+  // annonce une.
+  const reçu = (parsed as { p: Profile }).p
+  return {
+    ...reçu,
+    id: newId(),
+    soundSource: soundSourceOf(reçu),
+    // Un lien émis avant le 11 septembre 2026 porte la boîte de route à six
+    // rapports : elle reçoit sa septième comme si elle venait du stockage.
+    // Seule cette reprise-là est faite ici — un lien ancien à qui il manquerait
+    // d'autres champs récents reste rendu tel quel, comme il l'a toujours été.
+    drivetrain: withSevenGears(reçu.drivetrain),
+  }
 }
 
 /** Adresse complète, prête à être envoyée ou transformée en code. */
@@ -68,7 +83,10 @@ export function isComfortable(url: string): boolean {
  */
 export function isReachableOrigin(origin: string): boolean {
   try {
-    const host = new URL(origin).hostname
+    // Les crochets d'une adresse IPv6 font partie du nom d'hôte rendu :
+    // `[::1]`, et non `::1`. La comparaison ne se produisait donc jamais, et
+    // l'avertissement manquait précisément là où il servait.
+    const host = new URL(origin).hostname.replace(/^\[|\]$/g, '')
     if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false
     // Adresses de réseau local : joignables du wifi de la maison, pas au-delà.
     return !/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)
@@ -81,6 +99,18 @@ export function isReachableOrigin(origin: string): boolean {
 function stripForSharing(profile: Profile): Profile {
   const copy = deepCopy(profile)
   copy.favorite = false
+  // Les valeurs d'origine doubleraient la longueur du lien, déjà surveillée, et
+  // le destinataire n'a que faire de l'état initial d'un profil qui n'est pas le
+  // sien. Elles suivent en revanche dans un fichier exporté, où la taille
+  // n'importe pas.
+  delete copy.origin
+  // Le volume général a quitté le profil : c'est une préférence de l'appareil.
+  // Un profil venu d'une version antérieure peut encore le porter, et il ne doit
+  // surtout pas voyager — le destinataire hériterait d'un niveau réglé pour une
+  // autre voiture, d'autres haut-parleurs, une autre habitude. À la différence de
+  // l'export en fichier, l'encodage d'un lien ne repasse pas par la reprise des
+  // profils : la suppression se fait donc ici.
+  delete (copy.mix as { masterGain?: unknown }).masterGain
   return copy
 }
 
