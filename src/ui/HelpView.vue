@@ -8,6 +8,18 @@
  * que de décrire l'interface écran par écran.
  */
 defineEmits<{ close: [] }>()
+
+/**
+ * L'adresse du code source, et la version servie à cette page.
+ *
+ * Ce n'est pas une politesse : l'AGPL-3.0 demande, à sa section 13, que celui
+ * qui fait tourner le programme comme service en offre la source aux gens qui
+ * s'en servent à distance. Un lien dans l'interface est la façon que la licence
+ * cite elle-même. La version l'accompagne parce qu'une offre de source qui ne
+ * dit pas de quelle version elle parle n'en est pas vraiment une.
+ */
+const sourceUrl = 'https://github.com/davidp57/sound-of-speed'
+const appVersion = __APP_VERSION__
 </script>
 
 <template>
@@ -130,6 +142,22 @@ defineEmits<{ close: [] }>()
         couche sonore. C'est là qu'il faut regarder quand quelque chose cloche.
       </p>
 
+      <h2>Code source et licence</h2>
+      <p>
+        Cette application est un logiciel libre, sous licence AGPL-3.0. Son code
+        est public : vous pouvez le lire, le modifier, et l'installer sur votre
+        propre serveur.
+      </p>
+      <p>
+        <a :href="sourceUrl" target="_blank" rel="noopener">{{ sourceUrl }}</a>
+        <span class="version">version {{ appVersion }}</span>
+      </p>
+      <p>
+        Le son de démonstration livré avec l'application est un moteur
+        <b>simulé</b>, pas l'enregistrement d'une vraie voiture. Pour un son
+        enregistré, il faut déposer sa propre banque d'échantillons.
+      </p>
+
       <p class="foot">
         Vous pouvez revenir ici à tout moment par le bouton <b>?</b>, en haut.
       </p>
@@ -199,6 +227,12 @@ code {
   color: var(--muted);
   font-size: 0.9rem;
   margin-top: 2rem;
+}
+
+.version {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-left: 0.6rem;
 }
 
 .start {

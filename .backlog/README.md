@@ -59,7 +59,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [ATELIER](ATELIER/spec.md) — l'atelier fabrique les moteurs, la voiture les reçoit : un chemin du bureau au volant, et deux effets sonores qui restent réglables | ⬜ |
 | [PLATEFORME](PLATEFORME/spec.md) — Speed devient un service qu'on déploie, qu'on partage et qu'on fait vivre : le **cadre**, découpé le 12 septembre 2026 en cinq lots d'exécution | ⬜ cadre |
 | [PLATEFORME/banques-libres](PLATEFORME/banques-libres.md) — relevé : aucune banque libre n'est à la fois redistribuable et au bon format ; engine-sim reste la voie pour l'image publique | ✅ |
-| [OUVRIR](OUVRIR/spec.md) — 1/5 · le dépôt devient forkable et le conteneur fait du bruit tout seul : AGPL-3.0, banque de démonstration, de quoi contribuer et déployer | ⬜ |
+| [OUVRIR](OUVRIR/spec.md) — 1/5 · le dépôt devient forkable et le conteneur fait du bruit tout seul : AGPL-3.0, banque de démonstration, de quoi contribuer et déployer | ✅ |
 | [SERVEUR](SERVEUR/spec.md) — 2/5 · un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | ⬜ |
 | [MIGRER](MIGRER/spec.md) — 3/5 · les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | ⬜ |
 | [RETENTION](RETENTION/spec.md) — 4/5 · analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte ; effacer devient possible | ⬜ |

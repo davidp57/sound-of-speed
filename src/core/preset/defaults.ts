@@ -1,4 +1,8 @@
 import { DEFAULT_RENDERING, type SynthRendering } from '../synth/rendering'
+// Le profil de la banque de démonstration, repris tel quel du fichier que le
+// générateur produit : ses gains et ses ancrages sont mesurés prise par prise.
+import DEMO from './demo-profile.json'
+import { clampEngineDefinition } from './engine-definition'
 import type { EngineDefinition, Profile } from './schema'
 
 /**
@@ -349,8 +353,54 @@ export function createV8Profile(): Profile {
   return { ...createRoadProfile(), id: 'v8', name: 'V8' }
 }
 
+/**
+ * Le profil de la banque de démonstration.
+ *
+ * C'est le seul profil livré qui **sonne à coup sûr** : sa banque est dans le
+ * dépôt et dans l'image, là où celle du V8 est déposée à la main sur le serveur.
+ * Chez qui découvre le projet, le V8 désigne donc une banque absente et se tait ;
+ * la démonstration, elle, joue.
+ *
+ * Son moteur est **simulé** — produit au banc par `scripts/generate-bank/` — et
+ * l'aide le dit à l'écran. Une prise sur une vraie voiture appartient à qui l'a
+ * faite, et le projet ne redistribue que ce qu'il a le droit de redistribuer.
+ *
+ * Ses valeurs viennent du fichier produit par le générateur, repris tel quel :
+ * les gains et les ancrages y sont **mesurés**, prise par prise, et les
+ * réécrire à la main reviendrait à les inventer.
+ */
+export function createDemoProfile(): Profile {
+  const base = createRoadProfile()
+  return {
+    ...base,
+    id: 'demo',
+    name: DEMO.name,
+    favorite: true,
+    soundSource: 'prerendered',
+    sampleDir: DEMO.sampleDir,
+    engine: { ...base.engine, ...DEMO.engine },
+    mix: { ...base.mix, ...DEMO.mix },
+    layers: DEMO.layers.map((couche) => ({ ...couche })),
+    engineDefinition: clampEngineDefinition({
+      ...(base.engineDefinition ?? {}),
+      ...DEMO.engineDefinition,
+    }),
+  } as Profile
+}
+
+/**
+ * La démonstration d'abord, et c'est ce qui décide du premier son.
+ *
+ * Au tout premier lancement, le profil actif est le premier de cette liste. Le
+ * mettre en tête est donc la différence entre une application qui joue et une
+ * application muette chez quelqu'un qui n'a encore rien déposé.
+ *
+ * Cela ne change rien pour une installation déjà en service : les profils
+ * enregistrés sont relus tels quels, et la restauration des profils d'usine ne
+ * se déclenche que sur demande.
+ */
 export function createFactoryProfiles(): Profile[] {
-  return [createV8Profile()]
+  return [createDemoProfile(), createV8Profile()]
 }
 
 /**
@@ -363,7 +413,7 @@ export function createFactoryProfiles(): Profile[] {
  * personne n'avait choisies.
  */
 export function knownFactoryProfiles(): Profile[] {
-  return [createV8Profile(), createRoadProfile(), createDefaultProfile()]
+  return [createDemoProfile(), createV8Profile(), createRoadProfile(), createDefaultProfile()]
 }
 
 export function createDefaultProfile(): Profile {

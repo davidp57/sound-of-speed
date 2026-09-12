@@ -55,14 +55,18 @@ describe('profils livrés', () => {
     // qu'on entend, et non d'après une façon de conduire.
     const profiles = createFactoryProfiles()
 
-    expect(profiles.map((p) => p.id)).toEqual(['v8'])
-    expect(profiles.map((p) => p.name)).toEqual(['V8'])
+    // La démonstration est **première**, et ce n'est pas un détail de rangement :
+    // au tout premier lancement, le profil actif est le premier de cette liste.
+    // Le V8 désigne une banque déposée sur le serveur, que celui qui découvre le
+    // projet n'a pas ; la démonstration, elle, est livrée avec l'application.
+    expect(profiles.map((p) => p.id)).toEqual(['demo', 'v8'])
+    expect(profiles[0]!.sampleDir).toBe('demo')
   })
 
   it('livre le calibrage de la route, et non celui de Sport', () => {
     // Rupteur à 6 500, celui du GM LS livré, et des rapports placés sur les
     // vitesses qu'on pratique vraiment. Le nerf se prend au tempérament.
-    const v8 = createFactoryProfiles()[0]!
+    const v8 = createFactoryProfiles().find((p) => p.id === 'v8')!
     expect(v8.engine.redlineRpm).toBe(createRoadProfile().engine.redlineRpm)
     expect(v8.drivetrain.finalDrive).toBe(createRoadProfile().drivetrain.finalDrive)
   })
@@ -70,7 +74,12 @@ describe('profils livrés', () => {
   it('garde les anciens calibrages accessibles, pour la reprise', () => {
     // Un profil « Route » ou « Sport » enregistré doit garder sa base à lui,
     // sinon il se voit complété avec les valeurs d'un autre.
-    expect(knownFactoryProfiles().map((p) => p.id)).toEqual(['v8', 'route', 'procar'])
+    //
+    // La démonstration y figure aussi, et pas seulement pour la forme :
+    // réinitialiser une de ses sections cherche ici son profil d'origine. Sans
+    // elle, on lui rendrait les valeurs du V8 — un mixage réglé sur une tout
+    // autre banque.
+    expect(knownFactoryProfiles().map((p) => p.id)).toEqual(['demo', 'v8', 'route', 'procar'])
   })
 
   it('les fait sonner par échantillons, et décrit quand même leur moteur', () => {
@@ -79,10 +88,16 @@ describe('profils livrés', () => {
     // malgré tout : basculer un profil en direct doit donner un son, pas un
     // formulaire de vingt-sept nombres à remplir avant d'entendre quoi que ce
     // soit. Les deux profils imitent un V8, comme leur banque.
-    for (const profile of createFactoryProfiles()) {
-      expect(profile.soundSource).toBe('recorded')
-      expect(profile.engineDefinition).toEqual(GM_LS_V8)
-    }
+    const v8 = createFactoryProfiles().find((p) => p.id === 'v8')!
+    expect(v8.soundSource).toBe('recorded')
+    expect(v8.engineDefinition).toEqual(GM_LS_V8)
+
+    // La démonstration, elle, se déclare pour ce qu'elle est : une banque
+    // produite au banc, donc « générée à l'avance ». Elle décrit un quatre
+    // cylindres et non le V8 livré.
+    const demo = createFactoryProfiles().find((p) => p.id === 'demo')!
+    expect(demo.soundSource).toBe('prerendered')
+    expect(demo.engine.cylinders).toBe(4)
   })
 
   it('rend des copies neuves à chaque appel', () => {

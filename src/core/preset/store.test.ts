@@ -91,16 +91,17 @@ describe('loadProfiles', () => {
   it('rend les profils d’usine quand le stockage est vide', () => {
     const profiles = loadProfiles()
 
-    // Un seul profil livré depuis le 10 septembre 2026 : le V8. Les deux
-    // d'avant ne différaient que par leurs seuils de passage, qui ont déménagé
-    // vers le tempérament.
-    expect(profiles.map((p) => p.id)).toEqual(['v8'])
+    // Deux profils livrés : la démonstration, dont la banque vient avec
+    // l'application, et le V8, dont la banque se dépose sur le serveur. La
+    // démonstration est première, donc c'est elle qui sonne au premier
+    // lancement de quelqu'un qui n'a encore rien déposé.
+    expect(profiles.map((p) => p.id)).toEqual(['demo', 'v8'])
   })
 
   it('rend les profils d’usine quand le stockage est illisible', () => {
     install(fakeStorage({ failReads: true }))
 
-    expect(loadProfiles().map((p) => p.id)).toEqual(['v8'])
+    expect(loadProfiles().map((p) => p.id)).toEqual(['demo', 'v8'])
   })
 
   it('relit un profil enregistré à l’identique', () => {
@@ -386,7 +387,7 @@ describe('profils d’usine et duplication', () => {
   it('repère un profil livré absent de la liste', () => {
     const manquants = missingFactoryProfiles([createRoadProfile()])
 
-    expect(manquants.map((p) => p.id)).toEqual(['v8'])
+    expect(manquants.map((p) => p.id)).toEqual(['demo', 'v8'])
   })
 
   it('n’en repère aucun quand ils sont tous là', () => {
