@@ -75,6 +75,12 @@ jobs:
           # exactement ce qu'on vérifie plus bas.
           mkdir -p /tmp/pile/{audio,profiles,traces,journal,mesures,mesure-voiture}
 
+          # Le serveur écrit dans quatre de ces dossiers sous son propre compte,
+          # qui n'est pas celui qui vient de les créer : sans cette ouverture, un
+          # dépôt ne rend pas 403 mais **500**, et le contrat désignerait la
+          # mauvaise cause. C'est une pile jetable, à l'intérieur d'un runner.
+          chmod -R 777 /tmp/pile
+
           # Un compte, sans quoi les quatre dossiers de dépôt rendent 500 : nginx
           # exige son fichier de mots de passe dès qu'il demande un compte.
           #

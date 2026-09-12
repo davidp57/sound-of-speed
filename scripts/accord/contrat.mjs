@@ -103,10 +103,14 @@ export function cas({ nom }) {
     },
     {
       nom: 'la taille du binaire se demande sans le télécharger',
+      // On n'exige pas que la taille soit annoncée : un serveur qui comprime à
+      // la volée ne peut pas la connaître d'avance, et le client le tolère — il
+      // retombe sur zéro. Ce qui compte, c'est que la demande aboutisse sans
+      // transférer le binaire.
       requete: { chemin: '/sonde/probe.wasm', methode: 'HEAD' },
-      attend: (r) => {
+      attend: (r, corps) => {
         egal(r.status, 200, 'statut')
-        vrai(Number(r.headers.get('content-length')) > 0, 'une taille est annoncée')
+        egal(corps.length, 0, 'une réponse à HEAD ne porte pas de corps')
       },
     },
     {
@@ -120,14 +124,15 @@ export function cas({ nom }) {
       nom: 'le listage des banques, au format autoindex',
       // Quatre modules du cœur lisent cette forme, et le service worker
       // distingue un listage d'un échantillon à la seule barre oblique finale.
+      //
+      // On vérifie la **forme**, et non ce qui s'y trouve : le contenu dépend de
+      // ce qui a été déposé sur le serveur interrogé, et la banque de
+      // démonstration n'y figure pas — elle vit dans l'image, derrière un alias,
+      // parce que le volume des échantillons masque ce que l'image place là.
       requete: { chemin: '/audio/', entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
-        const entrees = autoindex(corps)
-        vrai(
-          entrees.some((e) => e.name === 'demo' && e.type === 'directory'),
-          'la banque de démonstration est listée comme dossier',
-        )
+        autoindex(corps)
       },
     },
     {

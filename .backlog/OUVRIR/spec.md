@@ -112,6 +112,27 @@ Une démonstration rangée dans `audio/demo/` aurait donc été invisible dès q
 pile tourne avec son volume, c'est-à-dire toujours. Elle est rangée ailleurs dans
 l'image, et nginx la ramène sous `/audio/demo/` par un alias.
 
+## Ce que le contrat a trouvé après coup
+
+**La banque de démonstration n'est pas découvrable.** Relevé le 12 septembre 2026
+par le jeu de requêtes du lot SERVEUR, à sa première exécution contre un vrai
+conteneur.
+
+L'application énumère les banques en listant le dossier des échantillons. Or la
+démonstration n'est pas dedans : le volume masque ce que l'image y place, elle
+vit donc ailleurs et revient par un alias. Elle **joue** — le profil d'usine la
+désigne par son nom — mais elle n'apparaît dans aucune liste, et on ne peut donc
+pas l'attribuer à un autre profil depuis l'écran de réglage.
+
+Deux moitiés, dont une est corrigée :
+
+- **Lister ses prises** rendait 403, l'alias ayant perdu le listage du bloc
+  parent. Corrigé dans le même mouvement.
+- **La voir parmi les banques** ne peut pas venir du serveur : aucun listage ne
+  fusionne deux sources. C'est à l'application de savoir qu'une banque est
+  **livrée** avec elle, au lieu de n'attendre que ce qui est déposé. Reste à
+  faire.
+
 ## Ce qui n'a pas pu être vérifié
 
 **Rien n'a été essayé dans un conteneur** : Docker n'est pas installé sur le
