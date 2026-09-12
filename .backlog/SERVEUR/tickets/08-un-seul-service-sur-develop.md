@@ -31,13 +31,15 @@ savoir avant la bascule que de l'entendre en roulant.
       aurait cassé la production : elle tourne encore sur l'ancien serveur, dont
       le profil mesuré est écrit par ce service-là
 - [x] Les migrations sont jouées au démarrage du conteneur, sans intervention
-- [ ] 🧑 La pile d'intégration tourne à son adresse, et la production est
-      intacte — la pile est écrite et l'image publiée ; la coller dans Portainer
-      revient à David
-- [ ] Le débit et la latence de `/audio/` sont **mesurés sur le NAS**, comparés à
-      nginx, et le chiffre est écrit — pas « ça marche »
-- [x] L'application se charge hors réseau après une première visite, depuis le
-      nouveau serveur
+- [x] La pile tourne à son adresse, et la production est intacte. **Vérifié sur
+      le NAS le 12 septembre 2026**, en 0.2.12 : l'image démarre sur
+      l'architecture du NAS, Portainer la tire, le proxy inversé la sert. Elle a
+      pris le port de la pile d'intégration, arrêtée — le serveur fait le travail
+      de ses deux conteneurs
+- [x] Le débit et la latence de `/audio/` sont **mesurés sur le NAS**, comparés
+      à nginx, et les chiffres sont écrits plus bas — pas « ça marche »
+- [ ] 🧑 L'application se charge hors réseau après une première visite, depuis le
+      nouveau serveur — demande de couper le réseau après une visite, donc David
 - [x] Le test d'accord passe **en entier** contre la pile d'intégration
 
 ## Ce qui est livré
@@ -86,3 +88,30 @@ Un second contrôle a été ajouté dans la foulée : il lit ce que le paquet as
 importe vraiment et exige que chacun soit déclaré en production. Il dit la même
 chose que la construction d'image, en une seconde et sans Docker — et il a été
 vu refuser la régression avant d'être gardé.
+
+## La mesure, prise sur le NAS le 12 septembre 2026
+
+Depuis le poste de David, sur le même fichier de 1,5 Mo servi par les deux piles,
+vingt tirages chacune.
+
+| | nginx | serveur |
+|---|---|---|
+| Débit médian | **43,4 Mo/s** | **44,9 Mo/s** |
+| Un échantillon entier | 34,7 ms | 34,1 ms |
+| Une plage de 64 Kio | 18,5 ms — code 206 | 19,5 ms — code 206 |
+| Le listage des banques | 19,1 ms | 18,5 ms |
+| La page d'accueil | 18,7 ms | 18,8 ms |
+
+**Équivalents.** L'écart reste sous 4 % dans les deux sens, ce qui est le bruit
+de la mesure. La promesse faite à l'ouverture du lot — « c'est faisable
+proprement, ça ne se décrète pas » — est tenue, et elle est désormais chiffrée.
+
+**Une fausse alerte, vérifiée plutôt qu'écartée.** Une première série donnait un
+minimum à 0,5 Mo/s côté serveur, quatre-vingt-dix fois sous sa médiane. Repris en
+vingt requêtes d'affilée, c'est **nginx** qui a montré la même lenteur, au premier
+appel et à lui seul : c'est le cache disque du NAS qui se remplit, et les deux le
+subissent. Le serveur neuf n'a eu aucune requête sous 10 Mo/s sur cette série.
+
+Les plages d'octets sont honorées — code 206, et non 200. C'est le correctif du
+ticket 04, celui que la documentation du cadre ne garantissait pas et qu'il avait
+fallu mesurer pour découvrir cassé.
