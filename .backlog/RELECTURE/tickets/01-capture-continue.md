@@ -34,7 +34,7 @@ garde pour renvoyer.
       régime, le rapport et la charge calculés au même instant.
 - [x] Un changement de profil en cours de session apparaît comme un événement
       daté.
-- [ ] Une coupure du GPS puis sa reprise laissent une seule session, avec un
+- [x] Une coupure du GPS puis sa reprise laissent une seule session, avec un
       trou.
 - [x] La capture porte l'identifiant de session du journal, pour qu'on puisse
       apparier les deux.
@@ -44,3 +44,5 @@ garde pour renvoyer.
       quand on s'en éloigne.
 
 Critères relus le 12 septembre 2026, sur les tests nommés de la capture, du consentement et du dépôt à l'arrêt. Deux restent ouverts : le dépôt après coupure du réseau demande la route, et **le trou laissé par une perte de fix GPS n'est pas inscrit dans la capture** — le journal le marque, la capture non, si bien qu'une relecture ne montre pas où le signal a manqué.
+
+Le dernier critère a été établi le 12 septembre 2026 après vérification, et non par du code : une relance du suivi est inscrite dans le journal, le relecteur lit le journal comme la capture et la marque sur sa timeline, et là où la source n'a rien émis la valeur s'affiche comme interpolée. Le trou se voit donc déjà. Une première lecture avait conclu qu'il fallait aussi l'inscrire dans la capture : le critère ne le demande pas, et l'écrire aurait été corriger un défaut qui n'existe pas.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { listSessions, loadSession } from './read'
+import { atLeastDurationMs, listSessions, loadSession } from './read'
 import { gzip } from '../upload/compress'
 
 const CREDENTIALS = { user: 'depot', password: 'motdepasse' }
@@ -119,5 +119,39 @@ describe('le chargement d’une session', () => {
 
     expect(session.events).toHaveLength(1)
     expect(failures).toEqual(['a_002.jsonl (404)'])
+  })
+})
+
+describe('durée annoncée dans la liste', () => {
+  function session(captures: number, journaux = 1) {
+    const files = [
+      ...Array.from({ length: journaux }, (_, i) => ({
+        name: `j_${i}.jsonl`,
+        kind: 'journal' as const,
+      })),
+      ...Array.from({ length: captures }, (_, i) => ({
+        name: `c_${i}.jsonl`,
+        kind: 'capture' as const,
+      })),
+    ]
+    return { key: 'k', id: 'k', startedAt: 0, files }
+  }
+
+  it('rend une borne basse, et non une estimation', () => {
+    // Quatre tranches : trois intervalles pleins de cinq minutes, la quatrième
+    // pouvant être partielle.
+    expect(atLeastDurationMs(session(4))).toBe(15 * 60 * 1000)
+  })
+
+  it('ne promet rien au-delà de la première tranche', () => {
+    expect(atLeastDurationMs(session(1))).toBe(0)
+  })
+
+  it('ne compte pas les tranches de journal, qui découpent à la taille', () => {
+    expect(atLeastDurationMs(session(2, 9))).toBe(5 * 60 * 1000)
+  })
+
+  it('se tait sur une session sans capture', () => {
+    expect(atLeastDurationMs(session(0, 3))).toBeNull()
   })
 })

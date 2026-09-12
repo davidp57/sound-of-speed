@@ -35,7 +35,7 @@ mesuré.
 
 - [x] Le code du relecteur n'est pas téléchargé tant qu'on n'ouvre pas son
       adresse.
-- [ ] La liste montre les sessions du serveur, la plus récente en tête, avec
+- [x] La liste montre les sessions du serveur, la plus récente en tête, avec
       leur date et leur durée.
 - [x] Les tranches d'une même session sont recollées dans le bon ordre.
 - [x] Lecture, pause et déplacement fonctionnent, et l'affichage suit.
@@ -46,3 +46,5 @@ mesuré.
 - [x] Une valeur interpolée est visiblement distinguée d'une valeur mesurée.
 
 Critères établis le 12 septembre 2026, sur les tests du recollage des tranches, de l'ordre des rangs et de l'interpolation annoncée. Un reste ouvert : **la liste des sessions n'affiche pas leur durée**, qui n'est connue qu'après chargement.
+
+La durée a été ajoutée le 12 septembre 2026. Elle s'annonce comme une borne basse — « plus de 15 min » —, lue sur le seul nombre de tranches : la capture découpe toutes les cinq minutes, et une durée exacte demanderait de charger la session qu'on est en train de choisir. Quatre tests couvrent le calcul, dont le cas d'une session sans capture, qui n'affiche pas de durée inventée. L'affichage lui-même n'a pas pu être vu : il demande une session sur le serveur.

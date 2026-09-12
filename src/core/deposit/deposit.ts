@@ -33,7 +33,14 @@ export function depositName(trace: Trace): string {
   return `${stamp(trace.startedAt)}_${label}_${seconds}s.json`
 }
 
-/** Corps du fichier : celui que la fonction d'import sait relire. */
+/**
+ * Corps du fichier déposé.
+ *
+ * Le format garde son enveloppe `{ version, traces }` bien que plus rien ne le
+ * relise dans l'application : la lecture de traces en fichier a été retirée avec
+ * le panneau de l'écran Télémétrie. Ce qui est déposé là est lu à la main, au
+ * bureau, et une enveloppe versionnée reste ce qui permettra de le relire.
+ */
 export function traceBody(trace: Trace): string {
   return tracesToFile([trace])
 }

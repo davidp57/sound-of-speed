@@ -141,6 +141,19 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **La liste du relecteur dit la durée de chaque trajet.** Elle n'affichait que
+  la date et le nombre de fichiers ; il fallait ouvrir une session pour savoir si
+  elle durait deux minutes ou une heure — c'est-à-dire charger celle qu'on était
+  en train de choisir. La durée s'annonce comme une **borne basse** — « plus de
+  15 min » —, lue sur le seul nombre de tranches, la capture découpant toutes les
+  cinq minutes. Une session sans capture, comme celles des 8, 9 et 10 septembre,
+  affiche « journal seul » plutôt qu'une durée inventée.
+
+- **Du code mort a été retiré** après le retrait du panneau de traces : des
+  règles de style que plus aucun élément ne portait, la lecture de traces en
+  fichier que seul son propre test appelait, et deux commentaires qui décrivaient
+  encore le geste supprimé.
+
 - **Le README décrivait trois gestes qui n'existent plus.** Il annonçait encore
   des traces « exportables en un fichier et réimportables ailleurs », et un
   trajet réel qui « s'enregistre une fois depuis l'écran Télémétrie » — le

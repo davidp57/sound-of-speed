@@ -4,10 +4,16 @@ import { timeScaleOfSamples } from './timescale'
 /**
  * Rejeu d'une trace enregistrée.
  *
- * C'est l'outil de mise au point le plus utile du projet : un trajet réel se
- * capture une fois en voiture, puis se rejoue autant de fois qu'on veut sur un
- * poste fixe, à l'identique. Régler le lissage ou les seuils de passage de
- * rapport devient reproductible, au lieu de dépendre d'un aller-retour sur route.
+ * Rejouer un trajet réel autant de fois qu'on veut, à l'identique, rend
+ * reproductible le réglage du lissage et des seuils de passage, au lieu de le
+ * faire dépendre d'un aller-retour sur route.
+ *
+ * **D'où viennent les traces qu'il rejoue.** De l'étalonnage embarqué, qui les
+ * enregistre étape par étape et les garde dans le stockage local. Le panneau de
+ * l'écran Télémétrie qui permettait d'en enregistrer à la main, de les exporter
+ * et de les réimporter a été retiré avec l'arrivée du relecteur : la capture du
+ * trajet remonte désormais toute seule au serveur, et c'est le relecteur qui
+ * sert à revoir un trajet.
  */
 
 export interface Trace {
