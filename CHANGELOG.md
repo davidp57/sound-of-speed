@@ -6,6 +6,12 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+## [0.2.1] — 2026-09-12
+
+Le projet change de nom, et rien d'autre : aucun comportement, aucun réglage,
+aucun son ne bouge. Les notes de version sont dans
+[`docs/releases/v0.2.1.md`](docs/releases/v0.2.1.md).
+
 ### Modifié
 
 - **Le projet s'appelle Sound of Speed.** « Speed » désignait à la fois

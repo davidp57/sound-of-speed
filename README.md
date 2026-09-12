@@ -2513,6 +2513,10 @@ essai.
 dans [ses notes de version](docs/releases/v0.2.0.md), et le détail dans le
 [CHANGELOG](CHANGELOG.md).
 
+**La 0.2.1, le même jour**, ne porte que le changement de nom du projet :
+[ses notes](docs/releases/v0.2.1.md) disent ce qui suit le nom et ce qui ne le
+suit pas.
+
 | Lot | Contenu | État |
 |---|---|---|
 | 0 | Squelette, boucle, écrans, simulateur clavier | fait |
