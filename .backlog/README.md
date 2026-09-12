@@ -58,6 +58,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [REMISE-A-ZERO](REMISE-A-ZERO/spec.md) — tout remettre comme au premier jour, en un bouton : seize clés de stockage, et trois questions de périmètre à trancher | ⬜ |
 | [ATELIER](ATELIER/spec.md) — l'atelier fabrique les moteurs, la voiture les reçoit : un chemin du bureau au volant, et deux effets sonores qui restent réglables | ⬜ |
 | [PLATEFORME](PLATEFORME/spec.md) — Speed devient un service qu'on déploie, qu'on partage et qu'on fait vivre : un serveur TypeScript, une base, des comptes, une licence | ⬜ |
+| [PLATEFORME/banques-libres](PLATEFORME/banques-libres.md) — relevé : aucune banque libre n'est à la fois redistribuable et au bon format ; engine-sim reste la voie pour l'image publique | ✅ |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
