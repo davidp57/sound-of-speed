@@ -2,7 +2,7 @@
   "name": "sound-of-speed",
   "private": true,
   "license": "AGPL-3.0-only",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,6 +16,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "accord": "node scripts/accord/accord.mjs",
     "coverage": "vitest run --coverage",
     "banque": "node scripts/banque.mjs",
     "transcode": "node scripts/transcode.mjs",
