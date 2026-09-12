@@ -8,6 +8,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un jeu de requêtes décrit ce que le serveur doit rendre**, et se rejoue
+  contre n'importe quelle adresse : `npm run accord -- <adresse>`. C'est le seul
+  contrôle qui regarde une réponse HTTP — les mille cent dix-huit tests du dépôt
+  tournent sur les sources et n'en voient aucune. Il enferme ce qu'une réécriture
+  du serveur casserait sans bruit : la forme du listage que quatre modules du
+  cœur lisent, les deux types MIME sans lesquels le moteur simulé ne démarre pas,
+  le vrai 404 qu'un chemin de données absent doit rendre, et les codes de refus
+  que la voiture ne rejoue pas. Il tourne à chaque pull request, contre l'image
+  que cette pull request construit.
+
 - **Le projet est sous licence AGPL-3.0**, et le dépôt devient forkable. Un
   fichier `LICENSE`, le champ dans `package.json`, une section du README qui dit
   ce que la licence implique, et un `CONTRIBUTING.md`. L'écran d'aide porte un

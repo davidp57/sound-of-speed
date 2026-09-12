@@ -1,6 +1,6 @@
 # 01 — Le contrat avec le client est figé avant qu'on touche au serveur
 
-**Statut :** ⬜ prêt
+**Statut :** 🔄 en cours — livré, reste à voir la CI le rejouer contre l'image
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -36,13 +36,13 @@ sans bruit :
 
 ## Critères d'acceptation
 
-- [ ] Le jeu de requêtes couvre les vingt-deux appels relevés : lectures
+- [x] Le jeu de requêtes couvre les vingt-deux appels relevés : lectures
       publiques, listages, lectures authentifiées, dépôts, et les deux types MIME
-- [ ] Il vérifie les **codes** attendus, et pas seulement le succès : le refus
+- [x] Il vérifie les **codes** attendus, et pas seulement le succès : le refus
       non rejouable, la charge refusée, le dossier absent
-- [ ] Il vérifie qu'un chemin de données absent rend un vrai 404, et non la page
+- [x] Il vérifie qu'un chemin de données absent rend un vrai 404, et non la page
       d'application
-- [ ] Il se lance contre une adresse quelconque, donc contre les deux serveurs
-- [ ] Il tourne dans l'intégration continue, contre l'image d'aujourd'hui
-- [ ] Un contributeur comprend, en le lisant, ce que le serveur doit rendre —
+- [x] Il se lance contre une adresse quelconque, donc contre les deux serveurs
+- [x] Il tourne dans l'intégration continue, contre l'image d'aujourd'hui
+- [x] Un contributeur comprend, en le lisant, ce que le serveur doit rendre —
       c'est la seule description exécutable de ce contrat
