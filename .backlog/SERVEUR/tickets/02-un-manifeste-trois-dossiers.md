@@ -1,6 +1,6 @@
 # 02 — Un manifeste, trois dossiers, et une frontière qui tient toute seule
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait le 12 septembre 2026
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -26,13 +26,35 @@ recommence pas à cette échelle.
 
 ## Critères d'acceptation
 
-- [ ] Un seul manifeste à la racine ; le cœur, l'interface et le serveur sont
+- [x] Un seul manifeste à la racine ; le cœur, l'interface et le serveur sont
       trois dossiers de sources
-- [ ] Une seule installation, une seule commande de test, une seule intégration
-- [ ] Le contrôle qualité passe à l'identique, sans qu'aucun test ait eu à
+- [x] Une seule installation, une seule commande de test, une seule intégration
+- [x] Le contrôle qualité passe à l'identique, sans qu'aucun test ait eu à
       changer de sens
-- [ ] Un contrôle automatique refuse qu'une pièce de serveur soit importée depuis
+- [x] Un contrôle automatique refuse qu'une pièce de serveur soit importée depuis
       l'interface ou depuis le cœur, sur le modèle de celui qui garde déjà le
       cœur de toute dépendance à Vue
-- [ ] Ce contrôle **échoue** quand on écrit exprès l'import qu'il doit interdire
+- [x] Ce contrôle **échoue** quand on écrit exprès l'import qu'il doit interdire
       — un garde qu'on n'a pas vu refuser ne garde rien
+
+## Ce que la réalisation a précisé
+
+**Le manifeste unique existait déjà.** Une seule installation, une seule commande
+de test, une seule intégration : le dépôt le faisait pour le profileur depuis sa
+naissance. Ce qui manquait, c'était la **place** du serveur et la **frontière**.
+
+**Le profileur est la première pièce de `src/server/`.** Il y était déjà par
+nature — il tourne sous Node, il importe cinq modules du cœur, et son fichier de
+construction dit que c'est sa raison d'être. Il ne déménage pas, il rentre chez
+lui.
+
+**Trois frontières plutôt qu'une.** L'invariant connu — le cœur n'importe pas
+Vue — en appelait deux autres dès que le serveur prenait sa place : le cœur ne
+doit pas dépendre du serveur, puisqu'il est partagé ; et l'interface non plus,
+sous peine d'embarquer un moteur de base de données dans le paquet qu'un
+téléphone télécharge.
+
+**Le garde est vérifié par neuf tests** qui écrivent exprès l'import interdit, au
+chemin où il est interdit, et exigent le refus. Trois d'entre eux font l'inverse
+et exigent que les imports légitimes passent — sans eux, une règle trop large
+paraîtrait bonne en interdisant tout.

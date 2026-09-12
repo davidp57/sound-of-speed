@@ -8,6 +8,15 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Les trois zones du code ne se mélangent plus par règle, et non par
+  consigne.** Le cœur, l'interface et le serveur ont chacun leurs frontières :
+  le cœur n'importe ni Vue, ni un écran, ni le serveur ; l'interface n'importe
+  pas le serveur ; le serveur n'affiche rien. `npm run lint` refuse ces imports
+  et dit pourquoi, et neuf tests vérifient qu'il les refuse **réellement** — une
+  règle qu'on n'a jamais vue refuser quoi que ce soit n'est pas un garde. Le plus
+  ancien de ces invariants tenait depuis des mois sur un `grep` lancé à la main.
+  Le service qui profile la voiture devient la première pièce de `src/server/`.
+
 - **Un jeu de requêtes décrit ce que le serveur doit rendre**, et se rejoue
   contre n'importe quelle adresse : `npm run accord -- <adresse>`. C'est le seul
   contrôle qui regarde une réponse HTTP — les mille cent dix-huit tests du dépôt

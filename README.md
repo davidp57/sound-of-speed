@@ -2124,6 +2124,7 @@ src/
       analyze.ts         mesure d'un échantillon : ancrage, raccord, timbre
     preset/              schéma d'un profil, valeurs par défaut, persistance
   ui/                    les trois écrans
+  server/                ce qui tourne sur la machine qui sert
   state.ts               assemblage et télémétrie
 public/sw.js             service worker
 public/icons/            icônes, produites par npm run icons
@@ -2136,6 +2137,17 @@ scripts/                 compression FLAC, déploiement
 Chaque module de `core/` a son fichier de tests à côté de lui —
 `conditioner.test.ts` auprès de `conditioner.ts`. Il n'y a pas de dossier de
 tests à part : ce qui décrit un module vit avec lui.
+
+**Les trois zones ne se mélangent pas.** Le cœur n'importe ni Vue, ni un écran,
+ni le serveur — c'est ce qui le rend testable sans navigateur, et ses tests
+tournent sous Node en une seconde. L'interface n'importe pas le serveur : elle
+serait embarquée dans le paquet qu'un téléphone télécharge, et une application
+qui doit se charger hors réseau ne transporte pas un moteur de base de données.
+Le serveur, lui, n'affiche rien.
+
+Ce n'est pas une consigne mais une règle : `npm run lint` refuse ces imports et
+dit pourquoi, et un test vérifie qu'il les refuse réellement. La règle a
+remplacé, le 12 septembre 2026, un `grep` qu'on lançait à la main.
 
 Les trois sources de vitesse exposent la même interface, donc rien en aval ne
 sait d'où vient le chiffre : on développe au clavier, on met au point en rejouant

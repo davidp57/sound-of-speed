@@ -61,14 +61,72 @@ export default ts.config(
   },
   {
     // Ce qui tourne sous Node, pas dans le navigateur : les scripts
-    // d'outillage, et le service qui profile la voiture sur le serveur.
+    // d'outillage, et le serveur.
     files: [
       'scripts/**/*.mjs',
       'native/**/*.mjs',
-      'src/profileur/**/*.ts',
+      'src/server/**/*.ts',
       '*.config.ts',
       '*.config.js',
     ],
     languageOptions: { globals: { ...globals.node } },
+  },
+
+  /**
+   * Les trois zones, et ce qu'elles n'ont pas le droit de faire.
+   *
+   * `src/core/` est le calcul, partagé entre le navigateur et le serveur.
+   * `src/ui/` est l'affichage. `src/server/` est ce qui tourne sur la machine
+   * qui sert. Le partage n'est pas une commodité : dix mille neuf cents des
+   * dix-neuf mille lignes du cœur servent aux deux côtés, parce que les deux
+   * doivent calculer la même chose.
+   *
+   * **Pourquoi une règle plutôt qu'une consigne.** L'invariant « le cœur
+   * n'importe jamais Vue » tenait depuis le début du projet par un `grep` qu'on
+   * lançait à la main, cité dans les instructions du dépôt. Il a tenu — mais
+   * rien ne le tenait, et les deux frontières qui arrivent avec le serveur sont
+   * moins visibles : rien ne saute aux yeux quand une page importe une pièce de
+   * base de données, jusqu'au jour où la voiture la télécharge.
+   */
+  {
+    files: ['src/core/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [
+        {
+          group: ['vue', 'vue/*', '**/ui/**', '**/*.vue'],
+          message:
+            "Le cœur n'importe jamais Vue ni l'interface : c'est ce qui le rend testable sans navigateur, et ses mille cent tests tournent sous Node pour cette raison.",
+        },
+        {
+          group: ['**/server/**'],
+          message:
+            'Le cœur est partagé entre le navigateur et le serveur : il ne peut pas dépendre du serveur, sinon la voiture télécharge la base de données.',
+        },
+      ] }],
+    },
+  },
+  {
+    files: ['src/ui/**/*.ts', 'src/ui/**/*.vue', 'src/*.ts', 'src/*.vue'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [
+        {
+          group: ['**/server/**'],
+          message:
+            "L'interface ne peut pas importer une pièce de serveur : elle serait embarquée dans le paquet que le téléphone télécharge, et une application qui doit se charger hors réseau ne transporte pas un moteur de base de données.",
+        },
+      ] }],
+    },
+  },
+  {
+    files: ['src/server/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [
+        {
+          group: ['vue', 'vue/*', '**/ui/**', '**/*.vue'],
+          message:
+            "Le serveur n'affiche rien : il n'a aucune raison d'importer Vue ni un écran.",
+        },
+      ] }],
+    },
   },
 )

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { gzipSync } from 'node:zlib'
 
 import { rebuild, updateWith, type Folder } from './profileur'
-import { emptyAggregate, PROCEDURE_VERSION } from '../core/calibration/aggregate'
+import { emptyAggregate, PROCEDURE_VERSION } from '../../core/calibration/aggregate'
 
 /**
  * Tests du profileur.

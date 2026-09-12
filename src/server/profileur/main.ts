@@ -2,7 +2,7 @@ import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { rebuild, updateWith, type Folder, type ProfileResult } from './profileur'
-import { PROCEDURE_VERSION, emptyAggregate, type CarAggregate } from '../core/calibration/aggregate'
+import { PROCEDURE_VERSION, emptyAggregate, type CarAggregate } from '../../core/calibration/aggregate'
 
 /**
  * Le service qui profile la voiture, sur le serveur.
