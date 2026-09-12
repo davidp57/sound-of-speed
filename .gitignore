@@ -48,3 +48,10 @@ a.out.wasm
 # Fichiers de verrouillage d'Excel, créés à l'ouverture d'un classeur
 ~$*
 dist-profileur/
+
+# Bases de données locales, créées en développement ou par un test qui n'a pas
+# pu faire son ménage. Ce qui compte est versionné à côté : le schéma et ses
+# migrations.
+*.db
+*.db-shm
+*.db-wal
