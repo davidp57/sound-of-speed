@@ -111,10 +111,17 @@ Configuration) et l'aide.
 
 ### Trois invariants à ne pas casser
 
-1. **`core/` n'importe jamais Vue.** Vérifiable :
-   `grep -rn "from 'vue'" src/core/` doit rester vide. C'est ce qui rend le
-   cœur testable sans navigateur — les 211 tests de `core/` tournent sous Node,
-   en une seconde.
+1. **Les trois zones ne se mélangent pas.** `core/` est le calcul, partagé entre
+   le navigateur et le serveur ; `ui/` est l'affichage ; `server/` est ce qui
+   tourne sur la machine qui sert. Le cœur n'importe ni Vue, ni un écran, ni le
+   serveur — c'est ce qui le rend testable sans navigateur ; l'interface
+   n'importe pas le serveur, sinon la voiture téléchargerait un moteur de base
+   de données ; et le serveur n'importe pas d'écran.
+
+   **Ce n'est plus une consigne mais une règle** : `npm run lint` refuse ces
+   imports, et `src/core/frontieres.test.ts` vérifie qu'il les refuse
+   réellement. Cet invariant a tenu des mois sur un `grep` lancé à la main ; il
+   a tenu, mais rien ne le tenait.
 2. **Les sources de vitesse passent toutes par `SpeedSource`**
    (`core/speed/source.ts`). Simulateur, GPS et rejeu sont interchangeables et
    rien en aval ne sait d'où vient le chiffre — aucune branche conditionnelle

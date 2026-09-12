@@ -1,16 +1,16 @@
 import { gunzipSync } from 'node:zlib'
 
-import { groupBySession, type SliceRef } from '../core/upload/slice-name'
-import { traceFromCapture } from '../core/calibration/from-capture'
-import { coverageOf, type Coverage } from '../core/calibration/coverage'
+import { groupBySession, type SliceRef } from '../../core/upload/slice-name'
+import { traceFromCapture } from '../../core/calibration/from-capture'
+import { coverageOf, type Coverage } from '../../core/calibration/coverage'
 import {
   digestOf,
   emptyAggregate,
   needsRebuild,
   withTrip,
   type CarAggregate,
-} from '../core/calibration/aggregate'
-import type { CaptureLine } from '../core/capture/capture'
+} from '../../core/calibration/aggregate'
+import type { CaptureLine } from '../../core/capture/capture'
 
 /**
  * Le profileur : ce que le serveur fait des traces déposées.

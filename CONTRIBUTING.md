@@ -19,8 +19,11 @@ Le projet a des choix arrêtés qui surprennent si on ne les connaît pas :
 - **Aucune animation.** Les valeurs changent, rien ne bouge pour le plaisir :
   l'écran se lit en conduisant. Une aiguille de cadran ne relève pas de cette
   règle — son mouvement *est* la valeur.
-- **`src/core/` n'importe jamais Vue.** C'est ce qui rend le cœur testable sans
-  navigateur. Vérifiable : `grep -rn "from 'vue'" src/core/` doit rester vide.
+- **Trois zones qui ne se mélangent pas.** `src/core/` est le calcul, partagé
+  entre le navigateur et le serveur ; `src/ui/` est l'affichage ; `src/server/`
+  est ce qui tourne sur la machine qui sert. Le cœur n'importe ni Vue ni un
+  écran, l'interface n'importe pas le serveur, le serveur n'importe pas d'écran.
+  `npm run lint` le refuse, et vous dira pourquoi.
 - **Un correctif de son ou de signal se justifie par une mesure**, pas par un
   raisonnement. Un niveau, un écart, un saut d'énergie. « Ça sonne mieux » n'est
   pas un argument recevable tout seul — mais « je l'entends » est un point de

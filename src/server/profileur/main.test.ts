@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { tick } from './main'
-import { emptyAggregate } from '../core/calibration/aggregate'
+import { emptyAggregate } from '../../core/calibration/aggregate'
 import type { Folder } from './profileur'
 
 /**
