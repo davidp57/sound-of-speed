@@ -1,6 +1,6 @@
 # 02 — Les moteurs et les boîtes ont leur place sur le serveur
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait le 12 septembre 2026
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -30,10 +30,27 @@ pouvoir vider le stockage du navigateur sans rien perdre.
 
 ## Critères d'acceptation
 
-- [ ] Régler un moteur dans la voiture le fait apparaître sur le serveur, sans
+- [x] Régler un moteur dans la voiture le fait apparaître sur le serveur, sans
       geste supplémentaire
-- [ ] Idem pour une boîte
-- [ ] Le listage a la même forme que celui des profils
-- [ ] Un dépôt fait hors réseau part au retour du réseau
-- [ ] Déposer deux fois le même nom remplace, sans créer de doublon
-- [ ] Le test d'accord couvre les deux nouveaux emplacements
+- [x] Idem pour une boîte
+- [x] Le listage a la même forme que celui des profils
+- [x] Un dépôt fait hors réseau part au retour du réseau
+- [x] Déposer deux fois le même nom remplace, sans créer de doublon
+- [x] Le test d'accord couvre les deux nouveaux emplacements
+
+## Ce qui a été corrigé en chemin
+
+**La date de modification d'un profil ne bougeait jamais.** La colonne existait,
+l'écriture ne la refaisait pas : un profil redéposé gardait la date de son
+premier dépôt. Le ticket 04 arbitre « le plus récent gagne » — il aurait arbitré
+sur une valeur figée, et le profil réglé dans la voiture serait passé pour
+ancien. Corrigé pour les profils comme pour les deux registres neufs.
+
+**La règle de nommage vivait à un seul endroit désormais.** Les moteurs devaient
+la partager avec les profils ; la recopier, c'était la faire diverger un jour.
+
+## La mesure
+
+Trente-cinq cas sur trente-cinq contre le serveur neuf, les huit cas neufs
+compris. Le serveur de fichiers ne se voit pas demander la part `entites` : ce
+registre est né avec la base, et la question n'a pas de sens pour lui.

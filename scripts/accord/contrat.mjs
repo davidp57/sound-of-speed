@@ -41,6 +41,10 @@ export function cas({ nom }) {
   const tranche = `${nom}.jsonl.gz`
   const releve = `${nom}-sonde.json`
   const contenuProfil = JSON.stringify({ name: 'Accord', sampleDir: 'demo', layers: [] })
+  const moteur = `${nom}-moteur.json`
+  const boite = `${nom}-boite.json`
+  const contenuMoteur = JSON.stringify({ version: 1, engine: { id: nom, name: 'Accord' } })
+  const contenuBoite = JSON.stringify({ version: 1, gearbox: { id: nom, name: 'Accord' } })
 
   return [
     // --- L'application elle-même ------------------------------------------
@@ -247,6 +251,82 @@ export function cas({ nom }) {
         compte: true,
       },
       attend: (r) => vrai(r.ok, `un code de succès, reçu ${r.status}`),
+    },
+
+    // --- Les moteurs et les boîtes -----------------------------------------
+    //
+    // Deux registres que le serveur de fichiers n'a jamais servis : ils sont nés
+    // avec la base. La part est donc à part, et l'ancien serveur ne se la voit
+    // pas demander — non pour lui épargner un échec, mais parce que la
+    // question n'a pas de sens pour lui.
+    {
+      nom: 'le registre des moteurs refuse sans compte',
+      part: 'entites',
+      requete: { chemin: '/engines/', entetes: { Accept: 'application/json' } },
+      attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
+    },
+    {
+      nom: 'un moteur se dépose avec un compte',
+      part: 'entites',
+      requete: { chemin: `/engines/${moteur}`, methode: 'PUT', corps: contenuMoteur, compte: true },
+      attend: (r) => vrai(r.ok, `un code de succès, reçu ${r.status}`),
+    },
+    {
+      nom: 'le moteur déposé se relit tel quel',
+      part: 'entites',
+      requete: { chemin: `/engines/${moteur}`, compte: true },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        egal(corps.toString('utf8'), contenuMoteur, 'le contenu rendu')
+      },
+    },
+    {
+      nom: 'le moteur déposé apparaît au listage, dans la forme des profils',
+      part: 'entites',
+      requete: { chemin: '/engines/', compte: true, entetes: { Accept: 'application/json' } },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        const entrees = autoindex(corps)
+        vrai(
+          entrees.some((e) => e.name === moteur && e.type === 'file'),
+          'le moteur déposé est listé comme fichier',
+        )
+      },
+    },
+    {
+      nom: 'déposer deux fois le même moteur remplace',
+      part: 'entites',
+      requete: { chemin: `/engines/${moteur}`, methode: 'PUT', corps: contenuMoteur, compte: true },
+      attend: (r) => vrai(r.ok, `un code de succès, reçu ${r.status}`),
+    },
+    {
+      nom: 'un moteur absent rend un vrai 404',
+      part: 'entites',
+      requete: { chemin: '/engines/rien-du-tout.json', compte: true },
+      attend: (r) => egal(r.status, 404, 'statut'),
+    },
+    {
+      nom: 'une boîte se dépose et se relit, comme un moteur',
+      part: 'entites',
+      requete: { chemin: `/gearboxes/${boite}`, methode: 'PUT', corps: contenuBoite, compte: true },
+      attend: (r) => vrai(r.ok, `un code de succès, reçu ${r.status}`),
+    },
+    {
+      nom: 'la boîte déposée apparaît au listage des boîtes, et pas à celui des moteurs',
+      part: 'entites',
+      requete: { chemin: '/gearboxes/', compte: true, entetes: { Accept: 'application/json' } },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        const entrees = autoindex(corps)
+        vrai(
+          entrees.some((e) => e.name === boite && e.type === 'file'),
+          'la boîte déposée est listée comme fichier',
+        )
+        vrai(
+          !entrees.some((e) => e.name === moteur),
+          'le moteur ne se retrouve pas dans le registre des boîtes',
+        )
+      },
     },
 
     // --- Ce que la voiture dépose en roulant -------------------------------

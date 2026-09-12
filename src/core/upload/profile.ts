@@ -1,6 +1,6 @@
 import type { Profile } from '../preset/schema'
 import { toFile } from '../preset/store'
-import { slug } from './put'
+import { entityFileName } from './entity'
 
 /**
  * Un profil qui remonte dans la bibliothèque partagée.
@@ -27,11 +27,9 @@ export const PROFILE_FOLDER = '/profiles/'
  * profils portant le même nom ne se recouvrent donc pas.
  */
 export function profileFileName(profile: Profile): string {
-  const label = slug(profile.name) || 'profil'
-  const tail = slug(profile.id).slice(-6) || 'x'
-  // Les profils d'usine portent un identifiant qui est déjà leur nom : sans
-  // cette garde, le fichier du profil Route s'appelait « route-route.json ».
-  return label.endsWith(tail) ? `${label}.json` : `${label}-${tail}.json`
+  // La règle est partagée avec les moteurs et les boîtes, qui remontent de la
+  // même façon : la recopier ici la ferait diverger un jour.
+  return entityFileName(profile, 'profil')
 }
 
 /**

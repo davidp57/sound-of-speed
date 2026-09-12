@@ -56,5 +56,20 @@ services:
       # sont refusés — ce qui est le comportement sûr. Commentez cette ligne si
       # vous n'en avez pas encore : le reste de l'application marche sans.
       - ${SPEED_DATA:-/volume1/docker/sound-of-speed-serveur}/htpasswd:/data/htpasswd:ro
+      # Les anciens dossiers du serveur de fichiers, **en lecture seule**.
+      #
+      # À décommenter le temps de la reprise, avec la variable SPEED_REPRISE
+      # ci-dessous, puis à retirer une fois le décompte vérifié dans le journal
+      # du conteneur. Le « :ro » n'est pas décoratif : c'est lui qui garantit
+      # qu'une reprise ne peut rien abîmer à la source, et non une intention
+      # écrite dans le code.
+      # - /volume1/docker/sound-of-speed:/ancien:ro
     environment:
       SPEED_HTPASSWD: /data/htpasswd
+      # Le dossier à reprendre. Sans elle, le serveur ne cherche rien.
+      #
+      # La reprise se joue au démarrage, comme les migrations, et n'écrit rien
+      # de ce que la base porte déjà : la relancer ne fait pas de doublon. Le
+      # décompte s'imprime dans le journal du conteneur — c'est là qu'on lit ce
+      # qui est entré, ce qui était déjà là, et ce qui a été écarté.
+      # SPEED_REPRISE: /ancien

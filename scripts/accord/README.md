@@ -26,7 +26,9 @@ ce qu'on cherche à ne pas avoir.
 ## Ce qu'il enferme, et qui ne se devine pas
 
 Tiré d'un relevé de tous les appels réseau du dépôt : vingt-deux requêtes
-distinctes, dont quatre contraintes dont la rupture ne s'entend pas.
+distinctes, dont quatre contraintes dont la rupture ne s'entend pas. S'y ajoutent
+depuis les moteurs et les boîtes, qui n'ont jamais existé sur le serveur de
+fichiers — trente-cinq cas en tout.
 
 | Ce qui est vérifié | Ce que ça casse si on le perd |
 |---|---|
@@ -46,6 +48,18 @@ se contredire. Les fichiers déposés portent une marque propre à l'exécution.
 **Les cas qui demandent un compte sont sautés** quand aucun n'est donné, et le
 résumé le dit. Un jeu qui se déclarerait vert en ayant tout sauté serait un jeu
 qui ment.
+
+## Quatre parts, et une seule qu'on n'adresse pas à l'ancien serveur
+
+`--part` en joue une ou plusieurs, séparées par des virgules : `publique` (ce qui
+se sert sans compte), `profils` (la bibliothèque), `depots` (ce que la voiture
+envoie en roulant), `entites` (les moteurs et les boîtes).
+
+Sans `--part`, tout est joué — c'est ce que fait l'intégration continue contre le
+serveur neuf, dans son conteneur comme hors de lui. Le serveur de fichiers, lui,
+ne se voit pas demander `entites` : ce registre est né avec la base, et la
+question n'a pas de sens pour lui. C'est la seule exclusion, et elle disparaîtra
+avec lui.
 
 ## Où il tourne
 

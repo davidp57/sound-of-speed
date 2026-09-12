@@ -5,9 +5,9 @@
  * de requêtes de `scripts/accord/` en est le juge, et il décrit le contrat mieux
  * que ce commentaire ne le ferait.
  *
- * **Ce qu'il ne fait pas encore** : le profil mesuré de la vraie voiture est
- * toujours écrit par un service à côté, qui relit un dossier toutes les cinq
- * secondes. Il rejoint le serveur au ticket suivant.
+ * Il porte aussi ce que nginx ne rendait pas : les moteurs et les boîtes, qui
+ * n'avaient nulle part où aller tant qu'un profil était le seul objet qu'on
+ * pouvait déposer.
  */
 
 import { readdirSync } from 'node:fs'
@@ -17,6 +17,7 @@ import { Hono } from 'hono'
 import { SOLO_ACCOUNT_ID, type Base } from './base/base'
 import { coupleDe, type Comptes } from './comptes'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
+import { ecrireEntite, estUnRegistre, lireEntite, listerEntites } from './entites'
 import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
@@ -53,7 +54,15 @@ const CACHE_RESSOURCES = 'public, immutable, max-age=31536000'
  * n'existe pas », qui est une situation normale, de « le serveur est cassé ».
  * Le cas est connu et contourné côté client, qui classe la réponse « illisible ».
  */
-const DONNEES = ['/profiles/', '/traces/', '/journal/', '/mesures/', '/mesure-voiture/']
+const DONNEES = [
+  '/profiles/',
+  '/engines/',
+  '/gearboxes/',
+  '/traces/',
+  '/journal/',
+  '/mesures/',
+  '/mesure-voiture/',
+]
 
 export function creerServeur(options: OptionsDuServeur): Hono {
   const app = new Hono()
@@ -96,6 +105,51 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       }
 
       const contenu = await lireProfil(base, compte, nom)
+      if (contenu === null) return c.notFound()
+      return c.text(contenu, 200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+      })
+    })
+
+    // --- Les moteurs et les boîtes ------------------------------------------
+    //
+    // Deux registres de même forme, et la même forme que les profils : un profil
+    // ne porte plus de valeurs, il désigne un moteur et une boîte. Les trois se
+    // déposent donc et se relisent de la même façon.
+    app.on(['GET', 'PUT'], '/:registre{engines|gearboxes}/*', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      const chemin = new URL(c.req.url).pathname
+      const [, registre = '', ...reste] = chemin.split('/')
+      if (!estUnRegistre(registre)) return c.notFound()
+
+      const nomBrut = reste.join('/')
+      if (nomBrut === '') {
+        if (c.req.method !== 'GET') return c.text('', 405)
+        // Jamais en cache : un moteur corrigé doit apparaître tout de suite.
+        return c.json(await listerEntites(base, registre, compte), 200, {
+          'Cache-Control': 'no-store',
+        })
+      }
+
+      let nom: string
+      try {
+        nom = decodeURIComponent(nomBrut)
+      } catch {
+        return c.notFound()
+      }
+
+      if (c.req.method === 'PUT') {
+        const ecrit = await ecrireEntite(base, registre, compte, nom, await c.req.text())
+        // Une charge qu'on ne sait pas relire n'est pas une panne du serveur :
+        // c'est le seul autre code que le client ne rejoue pas.
+        if (ecrit === 'illisible') return c.text('entité illisible', 413)
+        return c.text('', 201)
+      }
+
+      const contenu = await lireEntite(base, registre, compte, nom)
       if (contenu === null) return c.notFound()
       return c.text(contenu, 200, {
         'Content-Type': 'application/json; charset=utf-8',

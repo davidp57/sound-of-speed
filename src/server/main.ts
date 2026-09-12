@@ -13,6 +13,7 @@ import { serve } from '@hono/node-server'
 import { SOLO_ACCOUNT_ID, ouvrirBase } from './base/base'
 import { lireComptes } from './comptes'
 import { reprendreTout } from './profil-mesure'
+import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { creerServeur } from './serveur'
 
 const port = Number(process.env['SPEED_PORT'] ?? 8088)
@@ -21,9 +22,35 @@ const echantillons = process.env['SPEED_AUDIO']
 const fichierDeBase = process.env['SPEED_DB'] ?? 'donnees/speed.db'
 const migrations = process.env['SPEED_MIGRATIONS'] ?? 'src/server/base/migrations'
 const fichierDeComptes = process.env['SPEED_HTPASSWD']
+const anciensDossiers = process.env['SPEED_REPRISE']
 
 const { base, fermer } = await ouvrirBase({ fichier: fichierDeBase, migrations })
 console.log(`base ouverte et à jour : ${fichierDeBase}`)
+
+// La reprise des anciens dossiers, quand on lui en désigne un.
+//
+// **Avant le rattrapage du profil mesuré**, et pas après : le cumul se refait
+// sur ce que la base contient, et le refaire avant d'avoir versé les traces
+// obligerait à redémarrer une seconde fois pour rien.
+//
+// Elle se joue au démarrage, comme les migrations, parce qu'il n'y a pas d'autre
+// endroit commode : lancer une commande à la main dans un conteneur, depuis
+// Portainer, ne l'est pas. Elle ne fait rien quand tout est déjà entré, donc la
+// laisser branchée ne casse rien — elle relit seulement un dossier pour rien.
+if (anciensDossiers !== undefined) {
+  try {
+    console.log(
+      formaterDecompte(
+        anciensDossiers,
+        await reprendreLesDossiers(base, SOLO_ACCOUNT_ID, anciensDossiers),
+      ),
+    )
+  } catch (erreur) {
+    // Un dossier absent ou illisible ne doit pas empêcher le serveur de servir :
+    // la voiture, elle, a besoin de lui tout de suite.
+    console.error(`reprise des anciens dossiers : ${String(erreur)}`)
+  }
+}
 
 // Rattrapage : une trace déposée pendant que le serveur était arrêté n'a
 // déclenché aucune reprise, et serait perdue pour la mesure. Le profileur décide

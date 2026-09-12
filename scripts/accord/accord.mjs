@@ -55,12 +55,15 @@ function entetesDe(requete) {
 }
 
 /**
- * Trois parts, parce qu'un serveur se reprend en plusieurs fois.
+ * Quatre parts, parce qu'un serveur se reprend en plusieurs fois.
  *
  * `publique` est ce qui se sert sans compte : l'application, ses ressources, les
  * échantillons, et les 404 qu'un chemin de données absent doit rendre.
  * `profils` est la bibliothèque. `depots` est ce que la voiture envoie en
- * roulant — traces, journal, relevés.
+ * roulant — traces, journal, relevés. `entites` est le registre des moteurs et
+ * des boîtes, qui n'a jamais existé sur le serveur de fichiers : la demander à
+ * l'ancien n'aurait pas de sens, et c'est la seule part qu'il ne se voit pas
+ * demander.
  *
  * Pendant la réécriture, le serveur neuf tient ces parts l'une après l'autre, et
  * pouvoir le dire évite le seul mauvais réflexe possible : retirer d'un jeu de
