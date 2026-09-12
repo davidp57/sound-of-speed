@@ -43,7 +43,7 @@ boîte, et joue le son correspondant à partir d'enregistrements réels. Il donn
 un son de moteur à une voiture qui n'en fait pas.
 
 **Pas de serveur, pas de compte, pas de base de données.** Tout tourne dans le
-navigateur du téléphone ; les profils vivent dans le stockage local, s'exportent
+navigateur de la voiture ; les profils vivent dans le stockage local, s'exportent
 en fichier et se partagent par URL. L'application est installable et fonctionne
 hors réseau.
 
