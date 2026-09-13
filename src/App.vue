@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import AccountView from './ui/AccountView.vue'
 import ConfigView from './ui/ConfigView.vue'
@@ -9,6 +9,7 @@ import TelemetryView from './ui/TelemetryView.vue'
 import CalibrationPanel from './ui/CalibrationPanel.vue'
 import SynthView from './ui/SynthView.vue'
 import BenchView from './ui/BenchView.vue'
+import type { Role } from './core/identity/roles'
 import {
   applyUpdate,
   offlineStatus,
@@ -17,6 +18,7 @@ import {
   setBrake,
   importFromUrl,
   liaison,
+  ouvertPar,
   setThrottle,
   shiftDown,
   shiftUp,
@@ -182,11 +184,18 @@ function onFullscreenChange(): void {
   if (!document.fullscreenElement && immersive.value) immersive.value = false
 }
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'drive', label: 'Conduite' },
-  { id: 'telemetry', label: 'Télémétrie' },
-  { id: 'config', label: 'Configuration' },
-  { id: 'calibration', label: 'Étalonnage' },
+/**
+ * Les onglets, et le rôle que chacun demande.
+ *
+ * Un rôle absent veut dire **toujours ouvert** — c'est le cas du compte, et
+ * c'est délibéré : on s'y relie, on s'y connecte, on y reprend ce qu'on a
+ * perdu. Le fermer serait une impasse dont on ne sortirait pas.
+ */
+const TABS: { id: Tab; label: string; role?: Role }[] = [
+  { id: 'drive', label: 'Conduite', role: 'conduite' },
+  { id: 'telemetry', label: 'Télémétrie', role: 'conduite' },
+  { id: 'config', label: 'Configuration', role: 'conduite' },
+  { id: 'calibration', label: 'Étalonnage', role: 'conduite' },
   // L'identité vit dans son propre écran depuis le 13 septembre 2026 : donner un
   // code, en recevoir un, et bientôt se faire un vrai compte. Ce n'est pas un
   // réglage de conduite, et la section qu'il occupait dans Configuration se
@@ -195,9 +204,36 @@ const TABS: { id: Tab; label: string }[] = [
   // Les deux écrans de banc, absents de la production. Ils ont leur propre page
   // depuis le 8 septembre 2026 : leurs commandes vivaient sous les cadrans de
   // l'écran de conduite, où elles prenaient la place de ce qu'on lit en roulant.
-  ...(synthAvailable ? [{ id: 'synth' as Tab, label: 'Synthèse' }] : []),
-  ...(simulatorAvailable ? [{ id: 'bench' as Tab, label: 'Banc' }] : []),
+  //
+  // Le drapeau de construction qui les cache s'en va au ticket 14, remplacé par
+  // l'appareil : un banc n'a rien à faire sur l'écran d'une voiture, mais il en
+  // a sur un téléphone garé.
+  ...(synthAvailable ? [{ id: 'synth' as Tab, label: 'Synthèse', role: 'synthese' as Role }] : []),
+  ...(simulatorAvailable ? [{ id: 'bench' as Tab, label: 'Banc', role: 'conduite' as Role }] : []),
 ]
+
+/**
+ * Ceux que ce compte ouvre.
+ *
+ * **C'est un confort, pas une protection** : le serveur refuse de son côté ce
+ * qu'un rôle n'ouvre pas, et c'est lui qui compte. Ici, on évite seulement de
+ * proposer un écran qui répondrait non.
+ */
+const onglets = computed(() =>
+  TABS.filter((entree) => entree.role === undefined || ouvertPar(entree.role)),
+)
+
+// Un droit qui expire referme son écran **sans redémarrage** : si c'est celui
+// qu'on regardait, il faut aller ailleurs plutôt que de rester sur une page qui
+// n'a plus le droit d'être là.
+watch(onglets, (ouverts) => {
+  if (!ouverts.some((entree) => entree.id === tab.value)) {
+    tab.value = ouverts[0]?.id ?? 'account'
+  }
+  // Le plein écran est l'écran de conduite sans la barre : le quitter est le
+  // seul moyen de rendre la barre à qui n'a plus le droit d'être là.
+  if (immersive.value && !ouvertPar('conduite')) void toggleImmersive()
+})
 
 /**
  * Commandes clavier du simulateur.
@@ -299,7 +335,7 @@ onBeforeUnmount(() => {
     <header v-if="!immersive" class="bar">
       <nav class="tabs">
         <button
-          v-for="entry in TABS"
+          v-for="entry in onglets"
           :key="entry.id"
           :aria-pressed="tab === entry.id"
           @click="tab = entry.id"
@@ -348,7 +384,9 @@ onBeforeUnmount(() => {
           </svg>
         </button>
         <button class="help-button" title="Aide" @click="helpOpen = true">?</button>
-        <button @click="toggleImmersive()">Plein écran</button>
+        <!-- Le plein écran est l'écran de conduite sans la barre : sans ce
+             rôle-là, il n'y a rien à mettre en plein écran. -->
+        <button v-if="ouvertPar('conduite')" @click="toggleImmersive()">Plein écran</button>
       </div>
     </header>
 
@@ -368,10 +406,12 @@ onBeforeUnmount(() => {
       />
       <TelemetryView v-else-if="tab === 'telemetry'" />
       <CalibrationPanel v-else-if="tab === 'calibration'" />
-      <AccountView v-else-if="tab === 'account'" />
       <SynthView v-else-if="tab === 'synth' && synthAvailable" />
       <BenchView v-else-if="tab === 'bench' && simulatorAvailable" />
-      <ConfigView v-else />
+      <ConfigView v-else-if="tab === 'config'" />
+      <!-- Le compte ferme la liste : c'est le seul écran qu'aucun rôle ne peut
+           refermer, donc le seul qui puisse servir de repli. -->
+      <AccountView v-else />
     </main>
 
     <div v-if="received" class="banner">

@@ -14,6 +14,8 @@ import { readdirSync } from 'node:fs'
 
 import { Hono } from 'hono'
 
+import type { Role } from '../core/identity/roles'
+
 import type { Base } from './base/base'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
 import { DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } from './retention'
@@ -30,6 +32,7 @@ import { archiveDuCompte } from './emporter'
 import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
+import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
 
 export interface OptionsDuServeur {
   /** L'application construite : `dist/`. */
@@ -46,6 +49,13 @@ export interface OptionsDuServeur {
   identite?: Identite
   /** Combien d'épingles un compte peut poser. Réglable par l'environnement. */
   epingles?: number
+  /**
+   * Les rôles offerts à n'importe quel compte.
+   *
+   * Les trois par défaut : tout le monde a tout, rien n'étant encaissé. Le jour
+   * de l'ouverture, c'est **cette valeur** qui change, et rien d'autre.
+   */
+  roles?: readonly Role[]
   /** Les délais de rétention, en jours. Réglables par l'environnement. */
   delais?: Delais
   /**
@@ -127,9 +137,54 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       }
     }
 
-    app.on(['GET', 'PUT'], '/profiles/*', async (c) => {
+    const offerts = options.roles ?? ROLES_OFFERTS_PAR_DEFAUT
+
+    /** Ce que ce compte porte, à cet instant. */
+    const rolesDu = async (compte: string): Promise<Role[]> =>
+      rolesDe(await droitsDuCompte(base, compte, Date.now(), offerts))
+
+    /**
+     * Le compte de cette requête, s'il a le rôle qu'elle demande.
+     *
+     * **C'est le seul contrôle qui protège.** L'écran, lui, cache ce qu'un rôle
+     * n'ouvre pas, mais un navigateur affiche ce qu'il veut et peut appeler ce
+     * qu'il veut : ce qui compte est ici. Rend la réponse à renvoyer quand la
+     * requête n'a pas de compte, ou que son compte n'ouvre pas ce rôle.
+     */
+    const compteAyantDroit = async (entetes: Headers, role: Role): Promise<string | Response> => {
+      const compte = await compteDe(entetes)
+      if (compte === null) return sansCompte()
+      if (!(await rolesDu(compte)).includes(role)) return sansDroit(role)
+      return compte
+    }
+
+    /**
+     * Les rôles du compte, et ce qui est offert à tout le monde.
+     *
+     * L'écran range la réponse et s'en sert hors réseau — d'où les échéances,
+     * qui lui permettent de refermer un droit sans avoir à redemander.
+     */
+    app.get('/api/droits', async (c) => {
       const compte = await compteDe(c.req.raw.headers)
       if (compte === null) return sansCompte()
+
+      const droits = await droitsDuCompte(base, compte, Date.now(), offerts)
+      return c.json(
+        {
+          droits: droits.map(({ role, expireLe }) => ({
+            role,
+            expireLe: expireLe === null ? null : new Date(expireLe).toISOString(),
+          })),
+          offerts,
+        },
+        200,
+        { 'Cache-Control': 'no-store' },
+      )
+    })
+
+    app.on(['GET', 'PUT'], '/profiles/*', async (c) => {
+      const compte = await compteAyantDroit(c.req.raw.headers, 'conduite')
+      if (compte instanceof Response) return compte
 
       const chemin = new URL(c.req.url).pathname
       const nomBrut = chemin.slice('/profiles/'.length)
@@ -169,8 +224,13 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // ne porte plus de valeurs, il désigne un moteur et une boîte. Les trois se
     // déposent donc et se relisent de la même façon.
     app.on(['GET', 'PUT'], '/:registre{engines|gearboxes}/*', async (c) => {
-      const compte = await compteDe(c.req.raw.headers)
-      if (compte === null) return sansCompte()
+      // **Lire n'est pas déposer.** La voiture lit les moteurs qu'elle joue, et
+      // ne les fabrique pas : c'est l'atelier qui dépose. Les deux gestes
+      // passent par la même adresse, et c'est le seul endroit où la méthode
+      // décide du rôle.
+      const role = c.req.method === 'PUT' ? 'atelier' : 'conduite'
+      const compte = await compteAyantDroit(c.req.raw.headers, role)
+      if (compte instanceof Response) return compte
 
       const chemin = new URL(c.req.url).pathname
       const [, registre = '', ...reste] = chemin.split('/')
@@ -215,8 +275,12 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // compte reçoit **404 et non 401** : l'écran ne demandait rien avant, et
     // « pas encore mesuré » est une réponse qu'il sait déjà traiter.
     app.get('/mesure-voiture/profil-voiture.json', async (c) => {
+      // Le rôle manquant se traite comme le compte manquant, et pour la même
+      // raison : l'écran sait déjà se passer de cette mesure, et un refus franc
+      // l'enverrait afficher une panne là où il n'y a rien à voir.
       const compte = await compteDe(c.req.raw.headers)
-      const contenu = compte === null ? null : await lireProfilMesure(base, compte)
+      const ouvert = compte !== null && (await rolesDu(compte)).includes('conduite')
+      const contenu = ouvert && compte !== null ? await lireProfilMesure(base, compte) : null
       // Un 404 franc, et surtout pas la page d'application : le client distingue
       // « pas encore mesuré », qui est normal, de « illisible », qui ne l'est pas.
       if (contenu === null) return c.notFound()
@@ -233,8 +297,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // emploie pour recoller une session : deux règles finiraient par ne plus
     // dire la même chose.
     app.get('/sessions/', async (c) => {
-      const compte = await compteDe(c.req.raw.headers)
-      if (compte === null) return sansCompte()
+      const compte = await compteAyantDroit(c.req.raw.headers, 'conduite')
+      if (compte instanceof Response) return compte
 
       return c.json(await listerSessions(base, compte), 200, { 'Cache-Control': 'no-store' })
     })
@@ -242,8 +306,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // Un fichier, pas quarante-deux : c'est ce qui rend l'effacement acceptable,
     // l'archive longue étant alors chez l'utilisateur et non sur le serveur.
     app.get('/sessions/:cle/archive.zip', async (c) => {
-      const compte = await compteDe(c.req.raw.headers)
-      if (compte === null) return sansCompte()
+      const compte = await compteAyantDroit(c.req.raw.headers, 'conduite')
+      if (compte instanceof Response) return compte
 
       const archive = await archiveDeLaSession(base, compte, c.req.param('cle'))
       if (archive === null) return c.notFound()
@@ -264,6 +328,10 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // à passer par nous pour les relire, et c'est ce qui rend une suppression
     // acceptable. Le navigateur de la voiture, lui, refuse les
     // téléchargements — l'écran le dit, et renvoie vers un poste de travail.
+    //
+    // **Aucun rôle n'est exigé ici**, et c'est délibéré : ce sont ses données,
+    // pas une fonction de l'application. Les lui refuser parce qu'un droit s'est
+    // refermé reviendrait à les retenir.
     app.get('/mon-compte/archive.zip', async (c) => {
       const compte = await compteDe(c.req.raw.headers)
       if (compte === null) return sansCompte()
@@ -285,8 +353,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // efface des données et rien ne rougit. La seule façon de le savoir est de
     // regarder ce verdict d'abord, sur les vraies données.
     app.get('/retention', async (c) => {
-      const compte = await compteDe(c.req.raw.headers)
-      if (compte === null) return sansCompte()
+      const compte = await compteAyantDroit(c.req.raw.headers, 'conduite')
+      if (compte instanceof Response) return compte
 
       const delais = options.delais ?? DELAIS_PAR_DEFAUT
       const verdict = await verdictDuCompte(base, compte, Date.now(), delais)
@@ -296,8 +364,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // Épingler, et décrocher. La borne se voit : un refus dit ce qu'il faut
     // faire — décrocher autre chose, ou emporter le trajet.
     app.on(['PUT', 'DELETE'], '/sessions/:cle/epingle', async (c) => {
-      const compte = await compteDe(c.req.raw.headers)
-      if (compte === null) return sansCompte()
+      const compte = await compteAyantDroit(c.req.raw.headers, 'conduite')
+      if (compte instanceof Response) return compte
 
       const rendu = await epingler(
         base,
@@ -314,8 +382,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     })
 
     app.delete('/sessions/:cle', async (c) => {
-      const compte = await compteDe(c.req.raw.headers)
-      if (compte === null) return sansCompte()
+      const compte = await compteAyantDroit(c.req.raw.headers, 'conduite')
+      if (compte instanceof Response) return compte
 
       // Effacer un trajet déjà parti n'est pas une panne : la voiture rejoue une
       // demande, et la seconde doit répondre comme la première.
@@ -328,8 +396,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // Traces, tranches de journal, relevés de mesure. Trois dossiers, une seule
     // table : ce sont trois fois la même chose, un nom, des octets, une date.
     app.on(['GET', 'PUT'], '/:dossier{traces|journal|mesures}/*', async (c) => {
-      const compte = await compteDe(c.req.raw.headers)
-      if (compte === null) return sansCompte()
+      const compte = await compteAyantDroit(c.req.raw.headers, 'conduite')
+      if (compte instanceof Response) return compte
 
       const chemin = new URL(c.req.url).pathname
       const [, dossier = '', ...reste] = chemin.split('/')
@@ -451,6 +519,17 @@ export function creerServeur(options: OptionsDuServeur): Hono {
  */
 function sansCompte(): Response {
   return new Response('compte requis', { status: 401 })
+}
+
+/**
+ * Le compte existe, et n'ouvre pas ça.
+ *
+ * 403 et non 401 : se reconnecter n'y changerait rien, et le client ne doit pas
+ * rejouer la demande. Le rôle manquant est nommé pour que l'écran puisse le
+ * dire — il n'apprend rien à qui le lit, l'application étant publique.
+ */
+function sansDroit(role: string): Response {
+  return new Response(`rôle requis : ${role}`, { status: 403 })
 }
 
 function cachePour(chemin: string): string | undefined {

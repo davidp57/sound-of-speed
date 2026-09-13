@@ -17,6 +17,7 @@ import { ANCIEN_COMPTE_UNIQUE, semerLAncienCompte } from './heritage'
 import { creerIdentite, secretPersistant } from './identite'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { appliquerLaRegle, DELAIS_PAR_DEFAUT, formaterPassage, type Delais } from './retention'
+import { offertsDeLEnvironnement } from './roles'
 import { creerServeur } from './serveur'
 
 const port = Number(process.env['SPEED_PORT'] ?? 8088)
@@ -31,6 +32,10 @@ const anciensDossiers = process.env['SPEED_REPRISE']
 const adressePublique = process.env['SPEED_URL']?.trim() || undefined
 const secretDIdentite = process.env['SPEED_AUTH_SECRET']
 const epingles = nombreOuRien(process.env['SPEED_EPINGLES'])
+// Les rôles offerts à n'importe quel compte. Absente, les trois : tout le monde
+// a tout, rien n'étant encaissé. Vide, aucun — ce qui ferme tout, et c'est la
+// façon de vérifier la mécanique sur un serveur qui tourne.
+const roles = offertsDeLEnvironnement(process.env['SPEED_ROLES_OFFERTS'])
 const delais: Delais = {
   traces: nombreOuRien(process.env['SPEED_RETENTION_TRACES']) ?? DELAIS_PAR_DEFAUT.traces,
   journal: nombreOuRien(process.env['SPEED_RETENTION_JOURNAL']) ?? DELAIS_PAR_DEFAUT.journal,
@@ -174,6 +179,7 @@ const serveur = serve(
       base,
       identite,
       ...(epingles === undefined ? {} : { epingles }),
+      roles,
       delais,
       ...(echantillons === undefined ? {} : { echantillons }),
     }).fetch,

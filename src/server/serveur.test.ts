@@ -4,6 +4,8 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import type { Role } from '../core/identity/roles'
+
 import { ouvrirBase, type Base } from './base/base'
 import { creerIdentite, type Identite } from './identite'
 import { ecrireDepot } from './depots'
@@ -200,8 +202,8 @@ describe('les trajets, vus du réseau', () => {
 
   afterEach(() => fermer())
 
-  function avecBase() {
-    return creerServeur({ application, base, identite })
+  function avecBase(roles?: readonly Role[]) {
+    return creerServeur({ application, base, identite, ...(roles === undefined ? {} : { roles }) })
   }
 
   it('rend les trajets à qui s’annonce, et refuse les autres', async () => {
@@ -265,5 +267,67 @@ describe('les trajets, vus du réseau', () => {
     const reponse = await avecBase().request('/sessions/rien', NAVIGATION)
 
     expect(reponse.status).toBe(404)
+  })
+
+  /**
+   * Ce que les rôles ouvrent, et ce qu'ils ferment.
+   *
+   * C'est **le seul contrôle qui protège** : l'écran cache ce qu'un rôle n'ouvre
+   * pas, mais un navigateur affiche ce qu'il veut et appelle ce qu'il veut. Ces
+   * vérifications-ci passent donc par le réseau, sans rien cacher du tout.
+   */
+  describe('les rôles', () => {
+    it('ouvre tout à un compte neuf, rien n’étant encaissé', async () => {
+      const reponse = await avecBase().request('/api/droits', { headers: ANNONCE })
+
+      expect(reponse.status).toBe(200)
+      expect(await reponse.json()).toEqual({
+        droits: [
+          { role: 'conduite', expireLe: null },
+          { role: 'atelier', expireLe: null },
+          { role: 'synthese', expireLe: null },
+        ],
+        offerts: ['conduite', 'atelier', 'synthese'],
+      })
+    })
+
+    it('refuse ses trajets à un compte qui n’a plus le rôle', async () => {
+      const ouvert = await avecBase().request('/sessions/', { headers: ANNONCE })
+      const ferme = await avecBase([]).request('/sessions/', { headers: ANNONCE })
+
+      expect(ouvert.status).toBe(200)
+      // 403 et non 401 : le compte est bien là, se reconnecter n'y changerait
+      // rien, et le client ne doit pas rejouer.
+      expect(ferme.status).toBe(403)
+      expect(await ferme.text()).toContain('conduite')
+    })
+
+    it('laisse lire un moteur à la voiture, et refuse qu’elle en dépose un', async () => {
+      // Lire n'est pas déposer : la voiture joue les moteurs, l'atelier les
+      // fabrique. C'est le seul endroit où la méthode décide du rôle.
+      const voiture = avecBase(['conduite'])
+
+      expect((await voiture.request('/engines/', { headers: ANNONCE })).status).toBe(200)
+
+      const depot = await voiture.request('/engines/V8.json', {
+        method: 'PUT',
+        headers: { ...ANNONCE, 'Content-Type': 'application/json' },
+        body: '{"name":"V8"}',
+      })
+      expect(depot.status).toBe(403)
+      expect(await depot.text()).toContain('atelier')
+    })
+
+    it('laisse emporter ses données même quand plus aucun rôle n’est ouvert', async () => {
+      // Ce sont ses données, pas une fonction : les retenir parce qu'un droit
+      // s'est refermé reviendrait à les confisquer.
+      const reponse = await avecBase([]).request('/mon-compte/archive.zip', { headers: ANNONCE })
+
+      expect(reponse.status).toBe(200)
+    })
+
+    it('ne dit rien des droits à qui ne s’annonce pas', async () => {
+      expect((await avecBase().request('/api/droits')).status).toBe(401)
+    })
   })
 })

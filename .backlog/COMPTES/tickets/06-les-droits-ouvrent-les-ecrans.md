@@ -1,6 +1,6 @@
 # 06 — Les rôles ouvrent les écrans, et un droit expiré les referme
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 13 septembre 2026
 
 **Bloqué par :** [02 — Un compte se crée tout seul](02-un-compte-se-cree-tout-seul.md).
 
@@ -61,10 +61,23 @@ ticket la branche.
 
 ## Critères d'acceptation
 
-- [ ] Les écrans ouverts dépendent des rôles du compte, sans reconstruire d'image
-- [ ] Un droit expiré referme ce qu'il ouvrait, sans redémarrage
-- [ ] Le serveur refuse ce que le rôle n'ouvre pas, et pas seulement l'écran
-- [ ] Hors réseau, les rôles connus restent lisibles et expirent
-- [ ] Tout le monde a tout par défaut, et rien n'est encaissé
-- [ ] L'écran du compte reste ouvert quels que soient les rôles
-- [ ] Relire une archive du disque reste possible sans compte
+- [x] Les écrans ouverts dépendent des rôles du compte, sans reconstruire d'image
+- [x] Un droit expiré referme ce qu'il ouvrait, sans redémarrage
+- [x] Le serveur refuse ce que le rôle n'ouvre pas, et pas seulement l'écran
+- [x] Hors réseau, les rôles connus restent lisibles et expirent
+- [x] Tout le monde a tout par défaut, et rien n'est encaissé
+- [x] L'écran du compte reste ouvert quels que soient les rôles
+- [x] Relire une archive du disque reste possible sans compte
+
+## Ce qui a été mesuré
+
+Serveur construit, application construite avec le banc, navigateur réel, base
+SQLite à côté :
+
+| Ce qui a été fait | Ce qu'on a vu |
+|---|---|
+| `SPEED_ROLES_OFFERTS=conduite` | Synthèse disparaît de la barre, Banc reste |
+| `PUT /engines/Essai.json` depuis la page | `403 rôle requis : atelier` ; `GET /engines/` rend 200 |
+| Les trois rôles offerts à nouveau | Synthèse revient |
+| Droit `synthese` daté à trente secondes, page laissée ouverte | L'onglet disparaît à l'heure dite, **une seule navigation** |
+| Même chose en restant **sur** l'écran Synthèse | L'écran bascule sur Conduite, sans rechargement |

@@ -15,6 +15,18 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un compte porte des rôles, et un rôle ouvre des écrans.** `conduite` ouvre la
+  conduite, la télémétrie, les réglages, l'étalonnage et le banc ; `atelier`
+  ouvre le dépôt des moteurs et des boîtes ; `synthese` ouvre le réglage du
+  timbre. Tout le monde a les trois, gratuitement, et rien n'est encaissé : ce
+  qui est offert est une valeur, `SPEED_ROLES_OFFERTS`, et non une règle. Un
+  droit daté referme son écran à l'heure dite, sans rechargement — mesuré dans un
+  navigateur. Le serveur refuse de son côté ce qu'un rôle n'ouvre pas, et c'est
+  le seul refus qui protège : l'écran ne fait que cacher. Hors réseau,
+  l'application s'en tient aux rôles qu'elle avait relevés, pendant trente jours.
+  L'écran du compte, lui, ne se referme jamais, et emporter ses données n'exige
+  aucun rôle.
+
 - **Tenir son compte : changer, emporter, supprimer.** Le mot de passe se change
   depuis l'écran Compte, l'ancien à l'appui. Tout ce que le compte porte
   s'emporte en un fichier — profils, moteurs, boîtes, trajets, journal, relevés
