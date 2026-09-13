@@ -7,48 +7,29 @@
  * encodage d'authentification qui diverge donne un refus qu'on met sur le compte
  * d'un mot de passe faux.
  *
- * **L'authentification est composée ici, et c'est un choix.** Le navigateur ne
- * fournit l'en-tête qu'après l'avoir demandée, et il ne la demande que sur une
- * navigation — jamais sur une requête lancée par une page. Un dépôt aurait donc
- * reçu un refus sans que rien ne s'affiche. L'application s'annonce elle-même,
- * avec un couple nom et mot de passe saisi une fois à l'écran de configuration.
+ * **Il n'y a plus rien à composer pour s'annoncer.** L'appareil a un compte, le
+ * témoin de connexion voyage tout seul — la page et le serveur sont sur la même
+ * origine —, et le serveur en déduit à qui appartient ce qui arrive. Le couple
+ * nom et mot de passe qu'il fallait saisir à l'écran de configuration a disparu
+ * avec le mot de passe partagé.
  *
  * `fetch` est injecté pour que tout ceci se vérifie sans réseau ni serveur.
  */
 
-export interface DepositCredentials {
-  user: string
-  password: string
-}
-
 /**
  * Pourquoi cela n'est pas parti.
  *
- * La distinction n'est pas cosmétique : `no-credentials` se corrige à l'écran de
- * configuration, `refused` veut dire que le compte ne correspond pas à celui du
- * serveur, et `network` qu'on est hors couverture — ce qui arrive en roulant et
- * n'est **pas** une erreur. Seul ce dernier cas justifie de garder pour plus
- * tard.
+ * La distinction n'est pas cosmétique : `refused` veut dire que cet appareil n'a
+ * plus de compte reconnu — il faudra en reprendre un, et rejouer l'envoi n'y
+ * changerait rien —, et `network` qu'on est hors couverture, ce qui arrive en
+ * roulant et n'est **pas** une erreur. Seul ce dernier cas justifie de garder
+ * pour plus tard.
  */
-export type PutFailure = 'no-credentials' | 'refused' | 'network'
+export type PutFailure = 'refused' | 'network'
 
 export type PutOutcome =
   | { ok: true; bytes: number }
   | { ok: false; reason: PutFailure; detail: string; retry: boolean }
-
-export function hasCredentials(credentials: DepositCredentials): boolean {
-  return credentials.user.trim() !== '' && credentials.password !== ''
-}
-
-/**
- * En-tête d'authentification.
- *
- * Séparé pour être vérifiable : une erreur d'encodage ici donnerait un refus
- * qu'on mettrait sur le compte d'un mot de passe faux.
- */
-export function authHeader(credentials: DepositCredentials): string {
-  return `Basic ${base64(`${credentials.user}:${credentials.password}`)}`
-}
 
 /**
  * Dépose un fichier, et dit précisément ce qui a échoué.
@@ -80,29 +61,13 @@ export async function putFile(
    * mémoire pour rien.
    */
   body: string | Blob,
-  credentials: DepositCredentials,
   options: PutOptions = {},
 ): Promise<PutOutcome> {
   const { epingle = false, fetchImpl = fetch } = options
-  if (!hasCredentials(credentials)) {
-    return {
-      ok: false,
-      reason: 'no-credentials',
-      detail: "Aucun compte de dépôt : il se règle à l'écran de configuration.",
-      // Rien ne sert de réessayer tout de suite : il manque un réglage, pas du
-      // réseau. Mais ce qui attend est gardé, sans quoi un oubli de saisie
-      // coûterait le fichier.
-      retry: true,
-    }
-  }
 
   try {
     const adresse = folder + encodeURIComponent(name) + (epingle ? '?reprise=1' : '')
-    const response = await fetchImpl(adresse, {
-      method: 'PUT',
-      headers: { Authorization: authHeader(credentials) },
-      body,
-    })
+    const response = await fetchImpl(adresse, { method: 'PUT', body })
     if (response.ok) return { ok: true, bytes: byteLength(body) }
     if (response.status === 401 || response.status === 403) {
       return {
@@ -110,10 +75,10 @@ export async function putFile(
         reason: 'refused',
         detail:
           response.status === 401
-            ? 'Refusé : le nom ou le mot de passe ne correspond pas au fichier du serveur.'
-            : "Le serveur s'est laissé convaincre mais n'a pas le droit d'écrire dans le dossier.",
-        // Le même envoi échouera de la même façon tant que le compte n'aura pas
-        // changé. Réessayer en boucle ne ferait que masquer le message.
+            ? "Refusé : cet appareil n'a plus de compte reconnu par le serveur."
+            : "Le serveur reconnaît cet appareil mais lui refuse l'écriture ici.",
+        // Le même envoi échouera de la même façon tant que l'appareil n'aura pas
+        // repris un compte. Réessayer en boucle ne ferait que masquer le message.
         retry: false,
       }
     }
@@ -156,17 +121,4 @@ export function stamp(at: number): string {
 /** Taille du corps en octets, et non en caractères — un accent en vaut deux. */
 export function byteLength(body: string | Blob): number {
   return typeof body === 'string' ? new TextEncoder().encode(body).length : body.size
-}
-
-/**
- * Base 64 d'une chaîne qui peut contenir des accents.
- *
- * `btoa` ne prend que des octets : un mot de passe contenant un caractère hors
- * ASCII le ferait échouer, et l'échec ressemblerait à un refus du serveur.
- */
-function base64(text: string): string {
-  const bytes = new TextEncoder().encode(text)
-  let binary = ''
-  for (const byte of bytes) binary += String.fromCharCode(byte)
-  return btoa(binary)
 }

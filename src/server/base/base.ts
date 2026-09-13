@@ -35,9 +35,6 @@ import { migrate } from 'drizzle-orm/libsql/migrator'
 import { accounts } from './schema'
 import * as schema from './schema'
 
-/** Le compte unique, tant que l'identité n'est pas ouverte. */
-export const SOLO_ACCOUNT_ID = 'solo'
-
 export type Base = ReturnType<typeof drizzle<typeof schema>>
 
 /** La base, et de quoi la refermer. */
@@ -59,23 +56,22 @@ export interface OuvertureOptions {
   fichier: string
   /** Dossier des migrations produites par `npm run base:migrations`. */
   migrations: string
-  /** Nom du compte semé au premier démarrage. */
-  nomDuCompte?: string
 }
 
 /**
  * Ouvre la base, joue ce qui manque, et rend de quoi l'interroger.
  *
  * **Sans effet au second appel.** Les migrations déjà jouées sont reconnues à
- * leur empreinte, et le compte n'est semé que s'il n'existe pas. Relancer le
- * serveur deux fois de suite ne change donc rien à la base — ce qui est la seule
- * façon d'accepter qu'elle se migre toute seule au démarrage.
+ * leur empreinte. Relancer le serveur deux fois de suite ne change donc rien à la
+ * base — ce qui est la seule façon d'accepter qu'elle se migre toute seule au
+ * démarrage.
+ *
+ * **Aucun compte n'est semé ici.** Il n'y en avait qu'un, écrit en dur, tant que
+ * l'identité n'était pas ouverte ; maintenant c'est le premier appareil qui se
+ * présente qui crée le sien. Ce que l'ancien portait lui revient — voir
+ * `heritage.ts`.
  */
-export async function ouvrirBase({
-  fichier,
-  migrations,
-  nomDuCompte = 'Moi',
-}: OuvertureOptions): Promise<BaseOuverte> {
+export async function ouvrirBase({ fichier, migrations }: OuvertureOptions): Promise<BaseOuverte> {
   // Le dossier d'accueil, quand la base vit dans un volume qu'on vient de
   // monter. Le pilote ne crée pas l'arborescence, il échoue.
   if (!fichier.includes(':memory:')) mkdirSync(dirname(fichier), { recursive: true })
@@ -90,7 +86,6 @@ export async function ouvrirBase({
 
   const base = drizzle({ client, schema })
   await migrate(base, { migrationsFolder: migrations })
-  await semerLeCompteUnique(base, nomDuCompte)
 
   return { base, fermer: () => client.close() }
 }
@@ -111,21 +106,14 @@ function adresseDe(fichier: string): string {
 }
 
 /**
- * Sème le compte unique, s'il n'y est pas.
+ * Les comptes de cette base.
  *
- * Rien ne demande de se connecter dans ce lot, et rien ne doit changer pour qui
- * utilise déjà l'application. Mais tout ce qui est rangé appartient à un compte
- * dès maintenant : le jour où l'identité s'ouvre, il n'y aura pas de données
- * orphelines à rattacher après coup.
+ * Tout ce qui passe sur les données — le ménage de rétention, le rattrapage du
+ * profil mesuré — travaille **compte par compte**, et il y en a maintenant
+ * plusieurs. Ce qui se faisait sur un compte écrit en dur se fait donc sur cette
+ * liste ; une base sans aucun compte rend une liste vide, et rien ne tourne, ce
+ * qui est exact.
  */
-async function semerLeCompteUnique(base: Base, nom: string): Promise<void> {
-  await base
-    .insert(accounts)
-    // La date de dernière écriture est posée ici, alors que la date de création
-    // vient du défaut de la colonne : cette colonne-là n'en a pas, SQLite ne
-    // sachant pas ajouter à une table peuplée une colonne dont le défaut se
-    // calcule. Sans cette ligne, le compte semé serait le seul à ne pas la
-    // porter.
-    .values({ id: SOLO_ACCOUNT_ID, name: nom, updatedAt: new Date() })
-    .onConflictDoNothing()
+export async function listerLesComptes(base: Base): Promise<string[]> {
+  return (await base.select({ id: accounts.id }).from(accounts)).map((compte) => compte.id)
 }

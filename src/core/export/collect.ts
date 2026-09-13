@@ -17,7 +17,6 @@
  * l'écran qui l'appelle.
  */
 
-import { authHeader, hasCredentials, type DepositCredentials } from '../upload/put'
 import type { ZipEntry } from './zip'
 
 /**
@@ -61,22 +60,16 @@ export type ArchiveProgress = (done: number, total: number, current: string) => 
  * ralentit tout au lieu d'accélérer.
  */
 export async function collectArchive(
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
   onProgress?: ArchiveProgress,
 ): Promise<ArchiveResult> {
-  if (!hasCredentials(credentials)) {
-    return { entries: [], failures: ['aucun compte de dépôt saisi'], bytes: 0 }
-  }
-  const headers = { Authorization: authHeader(credentials) }
-
   const listes: { folder: string; names: string[] }[] = []
   const failures: string[] = []
 
   for (const folder of ARCHIVE_FOLDERS) {
     try {
       const response = await fetchImpl(folder, {
-        headers: { ...headers, Accept: 'application/json' },
+        headers: { Accept: 'application/json' },
       })
       // Un dossier absent n'est pas une anomalie : ils naissent au premier
       // dépôt, et personne n'a forcément déposé de trace.
@@ -119,7 +112,7 @@ export async function collectArchive(
     const lus = await Promise.all(
       names.map(async (name) => {
         try {
-          const response = await fetchImpl(folder + encodeURIComponent(name), { headers })
+          const response = await fetchImpl(folder + encodeURIComponent(name))
           if (!response.ok) {
             failures.push(`${folder}${name} (${response.status})`)
             return null

@@ -36,18 +36,33 @@ function installer(stockage: ReturnType<typeof fauxStockage>): void {
   })
 }
 
-/** Un serveur qui rend un compte anonyme, et qui note ce qu'on lui a demandé. */
-function serveurQuiDonneUnCompte(compte: Record<string, unknown> = {}) {
+/**
+ * Un serveur d'essai.
+ *
+ * `sessionOuverte` dit ce que `/get-session` répond : `null` pour un navigateur
+ * qui n'ouvre aucune session — la réponse est alors `null` en JSON, comme celle
+ * du vrai serveur.
+ */
+function serveurQuiDonneUnCompte(
+  options: { compte?: Record<string, unknown>; sessionOuverte?: boolean } = {},
+) {
+  const { compte = {}, sessionOuverte = false } = options
   const appels: string[] = []
   const demandes: RequestInit[] = []
+  const utilisateur = { id: 'c-42', name: 'Cet appareil', isAnonymous: true, ...compte }
+
   const fetchImpl = vi.fn(async (adresse: string | URL | Request, init?: RequestInit) => {
-    appels.push(String(adresse))
+    const chemin = String(adresse)
+    appels.push(chemin)
     demandes.push(init ?? {})
-    return new Response(
-      JSON.stringify({ user: { id: 'c-42', name: 'Cet appareil', isAnonymous: true, ...compte } }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
-    )
+    const charge =
+      chemin.includes('get-session') && !sessionOuverte ? null : { user: utilisateur }
+    return new Response(JSON.stringify(charge), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }) as unknown as typeof fetch
+
   return { fetchImpl, appels, demandes }
 }
 
@@ -72,7 +87,10 @@ describe('obtenir un compte', () => {
     const rendu = await ensureIdentity({ fetchImpl, now: () => 1_800_000_000_000 })
 
     expect(rendu.state).toBe('obtenue')
-    expect(appels[0]).toContain('/api/auth/sign-in/anonymous')
+    // Le serveur est interrogé d'abord : c'est lui qui sait ce que ce navigateur
+    // porte déjà.
+    expect(appels[0]).toContain('/api/auth/get-session')
+    expect(appels[1]).toContain('/api/auth/sign-in/anonymous')
     expect(loadIdentity()).toEqual({
       id: 'c-42',
       name: 'Cet appareil',
@@ -86,20 +104,21 @@ describe('obtenir un compte', () => {
     // c'est exactement ce que le navigateur envoie quand on ne lui donne pas de
     // corps. Un test qui construisait sa requête à la main passait en vert ; la
     // page, elle, n'obtenait aucun compte.
-    const { fetchImpl, demandes } = serveurQuiDonneUnCompte()
+    const { fetchImpl, appels, demandes } = serveurQuiDonneUnCompte()
 
     await ensureIdentity({ fetchImpl })
 
-    const entetes = demandes[0]?.headers as Record<string, string> | undefined
+    const rang = appels.findIndex((appel) => appel.includes('sign-in/anonymous'))
+    const entetes = demandes[rang]?.headers as Record<string, string> | undefined
     expect(entetes?.['Content-Type']).toBe('application/json')
-    expect(demandes[0]?.body).toBe('{}')
+    expect(demandes[rang]?.body).toBe('{}')
   })
 
-  it('n’en redemande pas un quand il en a déjà un', async () => {
+  it('n’en redemande pas un quand le serveur en ouvre déjà un', async () => {
     // Sans cela, un appareil se referait un compte à chaque ouverture et
     // perdrait à chaque fois ce que le précédent portait.
     saveIdentity(GARDEE)
-    const { fetchImpl, appels } = serveurQuiDonneUnCompte()
+    const { fetchImpl, appels } = serveurQuiDonneUnCompte({ sessionOuverte: true })
 
     const rendu = await ensureIdentity({ fetchImpl })
 
@@ -107,15 +126,43 @@ describe('obtenir un compte', () => {
     expect(appels.some((appel) => appel.includes('sign-in/anonymous'))).toBe(false)
   })
 
-  it('prolonge la session de celui qu’il garde', async () => {
-    // Un compte anonyme n'a pas de mot de passe : sa session perdue ne se
-    // reprend pas. Chaque passage repousse l'échéance.
+  it('demande au serveur avant tout, même avec une identité gardée', async () => {
+    // Ce passage prolonge la session — un compte anonyme dont le témoin expire
+    // ne se reprend pas — et c'est lui qui dit la vérité : le témoin est fermé au
+    // code de la page, seul le serveur sait ce que ce navigateur porte.
     saveIdentity(GARDEE)
-    const { fetchImpl, appels } = serveurQuiDonneUnCompte()
+    const { fetchImpl, appels } = serveurQuiDonneUnCompte({ sessionOuverte: true })
 
     await ensureIdentity({ fetchImpl })
 
     expect(appels[0]).toContain('/api/auth/get-session')
+  })
+
+  it('adopte la session du serveur quand le stockage local a été vidé', async () => {
+    // Le cas mesuré dans un navigateur : le stockage vidé, le témoin resté. En
+    // demandant un compte sans regarder, la bibliothèque répondait « un compte
+    // anonyme ne peut pas se reconnecter », et l'application n'obtenait plus
+    // jamais d'identité.
+    const { fetchImpl, appels } = serveurQuiDonneUnCompte({ sessionOuverte: true })
+
+    const rendu = await ensureIdentity({ fetchImpl })
+
+    expect(rendu.state).toBe('gardee')
+    expect(appels.some((appel) => appel.includes('sign-in/anonymous'))).toBe(false)
+    expect(loadIdentity()?.id).toBe('c-42')
+  })
+
+  it('reprend un compte neuf quand le serveur ne connaît plus l’ancien', async () => {
+    // Un compte anonyme n'a pas de mot de passe : ce que l'appareil portait ne
+    // se reprend pas. Le seul geste utile est d'en recommencer un, et l'écran
+    // doit pouvoir le dire — d'où un état à part.
+    saveIdentity(GARDEE)
+    const { fetchImpl } = serveurQuiDonneUnCompte()
+
+    const rendu = await ensureIdentity({ fetchImpl })
+
+    expect(rendu.state).toBe('reprise')
+    expect(loadIdentity()?.id).toBe('c-42')
   })
 })
 
@@ -156,13 +203,25 @@ describe('le démarrage n’attend pas', () => {
   it('rend la main tout de suite, même si le serveur ne répond jamais', () => {
     // Le critère central du ticket, et le seul qui ne se rattrape pas. Un
     // serveur qui ne répond jamais est le cas ordinaire dans un tunnel.
-    const fetchImpl = vi.fn(() => new Promise<Response>(() => {})) as unknown as typeof fetch
+    //
+    // **Vérifié par l'ordre, et non par une horloge.** Une première version
+    // mesurait « moins de cinquante millisecondes » ; elle a échoué une fois sur
+    // une machine chargée, ce qui ne disait rien du code. Ici, la requête part
+    // puis le démarrage se termine — et si `startIdentity` attendait, la seconde
+    // étape ne serait jamais atteinte.
+    const etapes: string[] = []
+    const fetchImpl = vi.fn(
+      () =>
+        new Promise<Response>(() => {
+          etapes.push('requête partie')
+        }),
+    ) as unknown as typeof fetch
 
-    const debut = performance.now()
-    startIdentity({ fetchImpl })
-    const ecoule = performance.now() - debut
+    const rendu = startIdentity({ fetchImpl })
+    etapes.push('démarrage terminé')
 
-    expect(ecoule).toBeLessThan(50)
+    expect(rendu).toBeUndefined()
+    expect(etapes).toEqual(['requête partie', 'démarrage terminé'])
   })
 
   it('ne laisse pas remonter une panne', async () => {

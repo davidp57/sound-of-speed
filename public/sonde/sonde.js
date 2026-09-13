@@ -51,7 +51,7 @@
  * navigateur. On lui nomme donc les objets globaux utilisés, plutôt que
  * d'exclure le fichier de la vérification — elle a déjà servi ici.
  */
-/* global document, window, navigator, performance, setTimeout, localStorage, fetch, btoa, TextEncoder */
+/* global document, window, navigator, performance, setTimeout, fetch */
 
 /** Seuil de décision du lot, fixé avant la mesure. */
 const THRESHOLD = 3
@@ -498,30 +498,6 @@ async function copyReport() {
 /** Dossier servi en écriture pour les relevés. Voir `docker/nginx.conf`. */
 const DEPOSIT_FOLDER = '/mesures/'
 
-/** Là où l'application range le compte de dépôt. Voir `core/preset/store.ts`. */
-const CREDENTIALS_KEY = 'speed.deposit.v1'
-
-function credentials() {
-  try {
-    const raw = localStorage.getItem(CREDENTIALS_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    const user = typeof parsed?.user === 'string' ? parsed.user : ''
-    const password = typeof parsed?.password === 'string' ? parsed.password : ''
-    return user.trim() && password ? { user, password } : null
-  } catch {
-    return null
-  }
-}
-
-/** Base 64 d'une chaîne qui peut contenir des accents : `btoa` ne prend que des octets. */
-function base64(text) {
-  const bytes = new TextEncoder().encode(text)
-  let binary = ''
-  for (const byte of bytes) binary += String.fromCharCode(byte)
-  return btoa(binary)
-}
-
 /**
  * Le relevé en JSON, qui se relit par une machine.
  *
@@ -558,21 +534,24 @@ function depositName() {
   return `${stamp}_sonde_${usingStub ? 'bouchon' : mobile}.json`
 }
 
+/**
+ * Dépose le relevé sous le compte de cet appareil.
+ *
+ * **Il n'y a rien à lire ni à composer.** Cette page est servie par le même
+ * serveur que l'application, donc le témoin de connexion part avec la requête
+ * tout seul. Elle lisait auparavant le compte de dépôt dans le stockage du
+ * navigateur et fabriquait son propre en-tête ; ce compte n'existe plus.
+ *
+ * Si l'application n'a jamais été ouverte sur cet appareil, il n'y a pas encore
+ * de compte, et le serveur refuse — c'est ce que dit alors le message.
+ */
 async function depositReport() {
-  const account = credentials()
-  if (!account) {
-    elements.depositNote.textContent =
-      "Aucun compte de dépôt : il se règle à l'écran de configuration de l'application, sur ce même serveur."
-    return
-  }
-
   const name = depositName()
   elements.deposit.disabled = true
   elements.depositNote.textContent = 'Dépôt en cours…'
   try {
     const response = await fetch(DEPOSIT_FOLDER + encodeURIComponent(name), {
       method: 'PUT',
-      headers: { Authorization: `Basic ${base64(`${account.user}:${account.password}`)}` },
       body: JSON.stringify(reportPayload(), null, 2),
     })
     if (response.ok) {
@@ -580,8 +559,8 @@ async function depositReport() {
     } else if (response.status === 401 || response.status === 403) {
       elements.depositNote.textContent =
         response.status === 401
-          ? 'Refusé : le nom ou le mot de passe ne correspond pas au fichier du serveur.'
-          : "Le serveur s'est laissé convaincre mais n'a pas le droit d'écrire dans le dossier."
+          ? "Refusé : cet appareil n'a pas de compte. Ouvrez l'application sur ce serveur une fois, puis revenez."
+          : "Le serveur reconnaît cet appareil mais lui refuse l'écriture ici."
     } else {
       elements.depositNote.textContent = `Le serveur a répondu ${response.status}.`
     }

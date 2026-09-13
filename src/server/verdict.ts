@@ -21,7 +21,7 @@
  * ```
  */
 
-import { SOLO_ACCOUNT_ID, ouvrirBase } from './base/base'
+import { listerLesComptes, ouvrirBase } from './base/base'
 import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
 import { DELAIS_PAR_DEFAUT, formaterVerdict, verdictDuCompte, type Delais } from './retention'
@@ -45,19 +45,27 @@ try {
   const datees = await remplirLesDatesDEnregistrement(base)
   if (datees > 0) console.log(`date du trajet donnée à ${datees} dépôts`)
 
-  // Le même rattrapage qu'au démarrage : sans lui, tout serait « pas encore
-  // analysé » et le verdict ne dirait rien de ce que la règle fera vraiment.
-  const aVoir = await tracesNonAnalysees(base, SOLO_ACCOUNT_ID)
-  if (aVoir > 0) {
-    const rattrape = await reprendreTout(base, SOLO_ACCOUNT_ID)
-    console.log(`profil mesuré : ${aVoir} tranches regardées`)
-    if (rattrape.skipped.length > 0) {
-      console.log(`tranches illisibles, écartées : ${rattrape.skipped.length}`)
-    }
-  }
+  // Compte par compte, comme le ménage du serveur : les délais s'appliquent
+  // séparément, et la borne d'épingles est par compte.
+  const comptes = await listerLesComptes(base)
+  if (comptes.length === 0) console.log('cette base ne porte aucun compte.')
 
-  console.log('')
-  console.log(formaterVerdict(await verdictDuCompte(base, SOLO_ACCOUNT_ID, Date.now(), delais), delais))
+  for (const compte of comptes) {
+    // Le même rattrapage qu'au démarrage : sans lui, tout serait « pas encore
+    // analysé » et le verdict ne dirait rien de ce que la règle fera vraiment.
+    const aVoir = await tracesNonAnalysees(base, compte)
+    if (aVoir > 0) {
+      const rattrape = await reprendreTout(base, compte)
+      console.log(`profil mesuré de ${compte} : ${aVoir} tranches regardées`)
+      if (rattrape.skipped.length > 0) {
+        console.log(`tranches illisibles, écartées : ${rattrape.skipped.length}`)
+      }
+    }
+
+    console.log('')
+    if (comptes.length > 1) console.log(`— compte ${compte}`)
+    console.log(formaterVerdict(await verdictDuCompte(base, compte, Date.now(), delais), delais))
+  }
 } finally {
   fermer()
 }

@@ -11,7 +11,8 @@ import { join } from 'node:path'
 import { sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
+import { ouvrirBase, type Base } from './base/base'
+import { ANCIEN_COMPTE_UNIQUE as COMPTE, semerLAncienCompte } from './heritage'
 import { accounts, authIdentities, authSessions } from './base/schema'
 import { creerIdentite, secretPersistant, type Identite } from './identite'
 import { creerServeur } from './serveur'
@@ -35,6 +36,10 @@ beforeEach(async () => {
   const ouverte = await ouvrirBase({ fichier: join(dossier, 'speed.db'), migrations: MIGRATIONS })
   base = ouverte.base
   aFermer = ouverte.fermer
+  // Le compte d'avant l'identité, celui qui n'a pas d'adresse. Il est semé ici
+  // parce que ces vérifications portent justement sur ce que la bibliothèque
+  // fait d'un compte sans courriel.
+  await semerLAncienCompte(base)
   identite = creerIdentite({ base, secret: SECRET, adresse: 'http://essai' })
 })
 
@@ -90,9 +95,9 @@ describe('la bibliothèque d’identité, montée sur la base', () => {
     await inscrire('range@exemple.fr')
 
     const comptes = await base.select().from(accounts)
-    expect(comptes.map((compte) => compte.email)).toEqual(
-      expect.arrayContaining([null, 'range@exemple.fr']),
-    )
+    // Le compte d'avant l'identité n'est plus là : le premier compte réel en a
+    // hérité, et il s'efface — voir `heritage.ts`.
+    expect(comptes.map((compte) => compte.email)).toEqual(['range@exemple.fr'])
 
     const tables = await base.all<{ name: string }>(
       sql`select name from sqlite_master where type = 'table'`,
@@ -122,13 +127,13 @@ describe('la bibliothèque d’identité, montée sur la base', () => {
     // une session — sans quoi on ne pourrait pas monter dans la voiture sans
     // rien saisir, ce qui est tout le propos du lot.
     const contexte = await identite.$context
-    const compte = await contexte.internalAdapter.findUserById(SOLO_ACCOUNT_ID)
+    const compte = await contexte.internalAdapter.findUserById(COMPTE)
     expect(compte?.email ?? null).toBeNull()
 
-    const session = await contexte.internalAdapter.createSession(SOLO_ACCOUNT_ID, false)
+    const session = await contexte.internalAdapter.createSession(COMPTE, false)
     const relue = await contexte.internalAdapter.findSession(session.token)
 
-    expect(relue?.session.userId).toBe(SOLO_ACCOUNT_ID)
+    expect(relue?.session.userId).toBe(COMPTE)
   })
 
   it('ne répond pas la page d’application sous son chemin', async () => {

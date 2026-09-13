@@ -147,16 +147,15 @@ import {
   loadDriveMode,
   saveDriveMode,
   fromFile,
-  loadDepositCredentials,
   loadInheritedVolume,
   loadMasterVolume,
   loadSelectedId,
   storedRealCar,
   saveRealCar,
   newId,
+  oublierLeCompteDeDepot,
   saveAdvancedMode,
   saveProfiles,
-  saveDepositCredentials,
   saveMasterVolume,
   saveSelectedId,
 } from './core/preset/store'
@@ -1026,7 +1025,7 @@ function depositJournalIfDue(nowMs: number): void {
   if (!slice) return
 
   journalBusy = true
-  void depositSlice(slice, depositCredentials.value)
+  void depositSlice(slice)
     .then((outcome) => {
       if (outcome.ok) {
         journalError.value = ''
@@ -1074,7 +1073,7 @@ export const captureError = ref('')
  * Le motif et non le message : c'est lui qui décide de la couleur du témoin, et
  * un message se réécrit sans qu'on y pense.
  */
-export const captureFailure = ref<'no-credentials' | 'refused' | 'network' | ''>('')
+export const captureFailure = ref<'refused' | 'network' | ''>('')
 /**
  * Vrai quand la capture tourne.
  *
@@ -1232,7 +1231,7 @@ function depositCaptureIfDue(nowMs: number, force = false): void {
   if (!slice) return
 
   captureBusy = true
-  void depositCaptureSlice(slice, depositCredentials.value)
+  void depositCaptureSlice(slice)
     .then((outcome) => {
       if (outcome.ok) {
         captureError.value = ''
@@ -1289,19 +1288,6 @@ function flushUploadsIfDue(): void {
   void flushUploads(now)
 }
 
-/**
- * Dépôt d'une trace sur le serveur.
- *
- * Le navigateur de la voiture refuse tout téléchargement : c'est par là que les
- * traces en sortent. Le compte est une préférence de l'appareil, comme le volume.
- */
-export const depositCredentials = ref(loadDepositCredentials())
-
-export function setDepositCredentials(user: string, password: string): void {
-  depositCredentials.value = { user, password }
-  saveDepositCredentials(depositCredentials.value)
-}
-
 // --- La remontée automatique ---------------------------------------------
 
 /**
@@ -1345,13 +1331,18 @@ let flushing = false
  */
 export async function flushUploads(nowMs: number, force = false): Promise<void> {
   if (flushing || uploadConsent.value === 'none') return
+  // **Rien ne part tant que cet appareil n'a pas de compte.** Un dépôt envoyé
+  // avant recevrait 401, que le client ne rejoue pas — et ce qu'on essayait de
+  // sauver serait perdu pour de bon. La file garde, et repart au retour du
+  // réseau, en même temps que l'identité s'obtient.
+  if (identity.value === null) return
   if (force) uploads.retryNow()
   if (!uploads.ready(nowMs)) return
 
   flushing = true
   try {
     await uploads.flush(nowMs, (item) =>
-      putFile(item.folder, item.name, item.body, depositCredentials.value, {
+      putFile(item.folder, item.name, item.body, {
         epingle: item.epingle === true,
       }),
     )
@@ -1512,9 +1503,9 @@ export async function rapatrierAuLancement(): Promise<void> {
   let change = false
 
   for (const dossier of [PROFILE_FOLDER, ENGINE_FOLDER, GEARBOX_FOLDER]) {
-    const entrees = await listerDistant(dossier, depositCredentials.value)
+    const entrees = await listerDistant(dossier)
     for (const { name, quand } of aRapatrier(dossier, entrees, vu, enAttente)) {
-      const texte = await lireDistant(dossier, name, depositCredentials.value)
+      const texte = await lireDistant(dossier, name)
       if (texte === null) continue
       if (!appliquerLeRapatrie(dossier, texte)) continue
       vu[cle(dossier, name)] = quand
@@ -1596,10 +1587,13 @@ export const identityState = ref<IdentityOutcome['state'] | 'inconnue'>('inconnu
 function prendreIdentite(rendu: IdentityOutcome | undefined): void {
   if (rendu === undefined) return
   identityState.value = rendu.state
-  if (rendu.state === 'obtenue' || rendu.state === 'gardee') identity.value = rendu.identity
+  if (rendu.state !== 'sans-reseau' && rendu.state !== 'refusee') identity.value = rendu.identity
 }
 
 if (typeof window !== 'undefined') {
+  // Le mot de passe partagé n'ouvre plus rien : le laisser en clair dans ce
+  // navigateur serait une négligence gratuite.
+  oublierLeCompteDeDepot()
   // Sans `await`, et ce n'est pas une négligence : voir `startIdentity`.
   startIdentity({}, prendreIdentite)
   // Un appareil qui a démarré dans un tunnel prend son compte au retour du
@@ -2293,7 +2287,7 @@ export async function captureSynthSound(): Promise<string> {
   const fichier = toWav([extrait.samples], extrait.sampleRate)
   const secondes = (extrait.samples.length / extrait.sampleRate).toFixed(0)
 
-  const issue = await putFile('/mesures/', nom, fichier, depositCredentials.value)
+  const issue = await putFile('/mesures/', nom, fichier)
   if (issue.ok) return `${secondes} s déposées dans mesures/${nom}.`
 
   // Le dépôt n'existe que sur le serveur : au poste de travail, sous le serveur
@@ -2342,7 +2336,6 @@ export const archiveProgress = ref('')
 export async function exportServerData(): Promise<string> {
   archiveProgress.value = 'Listage…'
   const { entries, failures, bytes } = await collectArchive(
-    depositCredentials.value,
     fetch,
     (done, total) => {
       archiveProgress.value = `${done}/${total}`
@@ -2964,7 +2957,7 @@ export const libraryLoading = ref(false)
 export async function refreshLibrary(): Promise<void> {
   libraryLoading.value = true
   try {
-    library.value = await fetchLibrary(depositCredentials.value)
+    library.value = await fetchLibrary()
   } finally {
     libraryLoading.value = false
   }

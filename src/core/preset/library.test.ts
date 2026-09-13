@@ -13,7 +13,6 @@ import { createRoadProfile } from './defaults'
  * comprises.
  */
 
-const CREDENTIALS = { user: 'depot', password: 'motdepasse' }
 
 /** Un `fetch` de comptoir : retient les appels et répond selon le chemin. */
 function reseau(fichiers: Record<string, string>) {
@@ -28,37 +27,38 @@ function reseau(fichiers: Record<string, string>) {
 }
 
 describe('la bibliothèque du serveur', () => {
-  it('s’annonce en listant le dossier et en lisant un profil', async () => {
+  it('ne compose aucune authentification, ni en listant ni en lisant', async () => {
     const profil = toFile({ ...createRoadProfile(), name: 'Déposé' })
     const { impl, appels } = reseau({
       '/profiles/': JSON.stringify([{ name: 'depose.json', type: 'file' }]),
       '/profiles/depose.json': profil,
     })
 
-    const entrees = await fetchLibrary(CREDENTIALS, impl)
+    const entrees = await fetchLibrary(impl)
 
     expect(entrees).toHaveLength(1)
     expect(entrees[0]?.profile.name).toBe('Déposé')
-    // Les deux requêtes portent l'en-tête : lister sans lire ne servirait à rien.
+    // Deux requêtes, et aucune ne s'annonce : le témoin de connexion voyage
+    // tout seul, la page et le serveur étant sur la même origine.
     expect(appels).toHaveLength(2)
     for (const appel of appels) {
-      expect(appel.headers['Authorization']).toMatch(/^Basic /)
+      expect(appel.headers['Authorization']).toBeUndefined()
     }
   })
 
-  it('ne demande rien au serveur sans compte saisi', async () => {
+  it('interroge le serveur même quand il n’y a rien à lister', async () => {
+    // Le cas « pas de compte saisi » a disparu avec le mot de passe partagé :
+    // c'est le serveur qui dit ce qu'il connaît de cet appareil.
     const { impl, appels } = reseau({ '/profiles/': '[]' })
 
-    // Le serveur répondrait 401 : l'appel coûterait un aller-retour pour une
-    // liste vide.
-    expect(await fetchLibrary({ user: '', password: '' }, impl)).toEqual([])
-    expect(appels).toHaveLength(0)
+    expect(await fetchLibrary(impl)).toEqual([])
+    expect(appels).toHaveLength(1)
   })
 
   it('rend une liste vide quand le dossier est refusé', async () => {
     const impl = (() => Promise.resolve(new Response('', { status: 401 }))) as unknown as typeof fetch
 
-    expect(await fetchLibrary(CREDENTIALS, impl)).toEqual([])
+    expect(await fetchLibrary(impl)).toEqual([])
   })
 
   it('n’est pas emportée par un fichier illisible', async () => {
@@ -71,7 +71,7 @@ describe('la bibliothèque du serveur', () => {
       '/profiles/bon.json': profil,
     })
 
-    const entrees = await fetchLibrary(CREDENTIALS, impl)
+    const entrees = await fetchLibrary(impl)
 
     expect(entrees).toHaveLength(1)
     expect(entrees[0]?.file).toBe('bon.json')

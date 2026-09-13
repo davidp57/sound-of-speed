@@ -1,4 +1,3 @@
-import { authHeader, hasCredentials, type DepositCredentials } from './put'
 
 /**
  * Ce que la base rend à la voiture au lancement.
@@ -115,14 +114,11 @@ export function aRapatrier(
  */
 export async function listerDistant(
   folder: string,
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<EntreeDistante[]> {
-  if (!hasCredentials(credentials)) return []
-
   try {
     const reponse = await fetchImpl(folder, {
-      headers: { Accept: 'application/json', Authorization: authHeader(credentials) },
+      headers: { Accept: 'application/json' },
     })
     if (!reponse.ok) return []
     const lu: unknown = await reponse.json()
@@ -136,14 +132,10 @@ export async function listerDistant(
 export async function lireDistant(
   folder: string,
   name: string,
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string | null> {
-  if (!hasCredentials(credentials)) return null
-
   try {
     const reponse = await fetchImpl(folder + encodeURIComponent(name), {
-      headers: { Authorization: authHeader(credentials) },
     })
     if (!reponse.ok) return null
     return await reponse.text()

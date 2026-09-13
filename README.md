@@ -617,9 +617,10 @@ local —, si bien que qui la connaissait pouvait lister les trajets et les
 télécharger, positions comprises dès le cran étendu du journal. Fermé le
 6 septembre 2026.
 
-Conséquence à connaître : **la bibliothèque de profils est vide sur un appareil
-où le compte de dépôt n'est pas saisi.** Le partage par lien, lui, ne passe pas
-par le serveur et fonctionne toujours.
+Conséquence à connaître : **la bibliothèque de profils est celle du compte de cet
+appareil.** Un poste qui n'a jamais servi a le sien, vide, tant qu'on ne l'a pas
+relié à celui de la voiture. Le partage par lien, lui, ne passe pas par le serveur
+et fonctionne toujours.
 
 Aucun n'accepte la suppression : l'application ne peut pas effacer ce qu'elle a
 déposé. C'est voulu pour le journal — un témoin qui peut effacer ses notes est un
@@ -853,8 +854,15 @@ l'application continue de fonctionner normalement.
 
 ### Un ou deux comptes ?
 
-L'application s'annonce elle-même, avec **un nom et un mot de passe** du fichier
-`htpasswd` — pas autre chose. Elle est obligée de le faire : le navigateur ne
+> **Cette section décrit l'ancienne pile, celle qui tourne derrière nginx.**
+> L'application, elle, ne s'annonce plus avec un mot de passe partagé : chaque
+> appareil a son propre compte, créé tout seul au premier lancement. Elle ne sait
+> donc plus déposer sur cette pile-là, et il faut passer au serveur TypeScript —
+> voir « Le serveur TypeScript » plus bas. Le fichier `htpasswd` reste utile tant
+> que nginx sert.
+
+L'application s'annonçait elle-même, avec **un nom et un mot de passe** du
+fichier `htpasswd` — pas autre chose. Elle y était obligée : le navigateur ne
 fournit l'authentification qu'après l'avoir demandée, et il ne la demande que sur
 une **navigation**, jamais sur une requête lancée par une page. Un dépôt
 recevrait donc un refus sans que rien ne s'affiche.
@@ -881,18 +889,13 @@ une entrée sans écraser les autres.
 
 ### Déposer depuis la voiture
 
-Une fois le compte créé et le fichier déposé sur le NAS :
+**Il n'y a plus rien à saisir.** L'appareil a reçu son compte au premier
+lancement, et c'est lui qui ouvre les dépôts : capture du trajet, journal, relevés
+de mesure, profils — dès que la remontée est acceptée —, et la page de mesure
+`/sonde/`, qui dépose son relevé du même bouton, sur le même compte.
 
-1. écran **Configuration**, champ **Compte de dépôt** : saisir le nom et le mot
-   de passe. Il n'y a pas de bouton d'enregistrement — comme tous les réglages de
-   cet écran, cela se retient à la frappe, et la mention à côté du champ le
-   confirme. C'est rangé hors du profil : cela ne voyage donc pas avec un profil
-   partagé, et il n'y aurait aucun sens à envoyer à quelqu'un un son accompagné
-   du droit d'écrire sur son NAS ;
-2. c'est tout. Le même compte sert à tout ce qui remonte tout seul — capture du
-   trajet, journal, relevés de mesure, profils — dès que la remontée est
-   acceptée, et à la page de mesure `/sonde/`, qui dépose son relevé du même
-   bouton.
+Le champ « Compte de dépôt » a disparu de l'écran de configuration, et la clé qui
+gardait son mot de passe en clair dans le navigateur est effacée au chargement.
 
 Il n'y a plus de bouton pour déposer un trajet : **la capture part d'elle-même**,
 par tranches, pendant qu'on roule. Voir « La capture du trajet » plus bas.
@@ -902,8 +905,7 @@ parce qu'ils ne se corrigent pas au même endroit :
 
 | Message | Ce qu'il faut faire |
 |---|---|
-| Aucun compte de dépôt | le régler à l'écran de configuration |
-| Refusé | le nom ou le mot de passe ne correspond pas au fichier du serveur |
+| Refusé | cet appareil n'a plus de compte reconnu : rouvrir l'application avec du réseau |
 | Le serveur n'a pas le droit d'écrire | les permissions du dossier, côté DSM |
 | Pas de réseau | rien : ce qui attend partira à son retour |
 
@@ -983,10 +985,10 @@ Ce qu'il faut préparer, et rien d'autre :
 
 - **un dossier de données**, avec un sous-dossier `audio/` si vous avez des
   banques enregistrées à déposer. Il doit exister avant de démarrer — Docker ne
-  crée pas un point de montage absent, il refuse de démarrer le conteneur ;
-- **un fichier de mots de passe** au format htpasswd, si vous voulez que les
-  dépôts soient protégés. Sans lui, ils sont refusés, ce qui est le comportement
-  sûr ; le reste de l'application marche.
+  crée pas un point de montage absent, il refuse de démarrer le conteneur.
+
+Et rien d'autre : **plus de fichier de mots de passe**. Chaque appareil reçoit son
+compte au premier lancement, et c'est lui qui ouvre les dépôts.
 
 La base **se crée toute seule** au premier démarrage et se met à jour à chaque
 suivant. Il n'y a pas d'étape de migration à lancer à la main, et relancer le
@@ -1134,9 +1136,16 @@ là, sinon au retour du réseau. C'est l'exigence qui commande tout le reste : u
 voiture qui attendrait une réponse avant d'afficher ses cadrans serait
 inutilisable là où elle roule.
 
-Le mot de passe partagé reste pour l'instant le seul contrôle d'accès aux dépôts :
-la voiture dépose comme avant, le relecteur lit comme avant. Déposer **avec son
-compte** est l'étape suivante.
+**La voiture dépose avec son compte**, et le mot de passe partagé a disparu : le
+témoin de connexion voyage tout seul, la page et le serveur étant sur la même
+origine. Le champ « Compte de dépôt » a quitté l'écran de configuration, et la
+clé qui gardait son mot de passe en clair est effacée au chargement.
+
+**Ce que la base portait avant l'identité a changé de mains.** Tout appartenait à
+un compte écrit en dur ; le premier appareil qui se présente en hérite — profils,
+moteurs, boîtes, trajets, profil mesuré — et ce compte-là s'efface. Cela n'arrive
+qu'une fois, et il n'y a rien à mémoriser pour s'en assurer : après l'héritage, il
+ne reste rien à transmettre. Le journal du conteneur dit ce qui est passé.
 
 **Deux appareils font deux comptes** tant que rien ne les relie, et c'est le
 comportement attendu : rien ne distingue « le second appareil de quelqu'un » du
@@ -1155,10 +1164,11 @@ Trois tables s'ajoutent, préfixées `auth_`, et aucune ne s'appelle « compte �
 ce que la bibliothèque nomme *account* est un moyen de prouver qui on est, pas
 une personne.
 
-**Ce que la voiture charge en plus : 2 431 octets**, soit 0,55 % — 445 576 avant
-l'identité, 448 007 avec. C'est le code qui demande un compte et le range, et rien
-d'autre : la bibliothèque, elle, ne quitte pas le serveur, et l'application lui
-parle en deux requêtes plutôt qu'en embarquant son client. Le conteneur, lui,
+**Ce que la voiture charge : 394 octets de moins qu'avant.** 445 576 octets avant
+l'identité, 445 182 avec — l'identité complète pèse **moins** que le mot de passe
+partagé qu'elle remplace, le code d'authentification retiré compensant celui qui
+demande un compte. La bibliothèque, elle, ne quitte pas le serveur : l'application
+lui parle en deux requêtes plutôt qu'en embarquant son client. Le conteneur, lui,
 grossit — elle y est installée comme dépendance de production.
 
 | Variable | Défaut | Ce qu'elle règle |
@@ -1197,7 +1207,7 @@ profil déposé seul désignait un moteur que personne d'autre ne possédait.
 | Les moteurs et les boîtes n'allaient nulle part | ils remontent comme les profils |
 | Les réglages ne vivaient que dans le navigateur de la voiture | ils vivent aussi en base, et en redescendent |
 | Un service qui relit un dossier toutes les cinq secondes | le serveur sait qu'une trace arrive, puisqu'il l'écrit |
-| Un mot de passe partagé | le même, pour l'instant — les comptes viendront |
+| Un mot de passe partagé | **un compte par appareil**, créé tout seul |
 
 Les échantillons, eux, restent dans un volume : ce sont des fichiers, ils pèsent,
 et une image qui les contiendrait se redistribuerait avec eux.
@@ -2131,9 +2141,9 @@ coordonnées. C'est ce qu'on colle dans une conversation pour désigner un momen
 précis.
 
 **Où l'ouvrir.** En production, à l'adresse de l'application suivie de
-`/relecteur.html`. Il lit le serveur avec le compte de dépôt réglé sur
-l'appareil : depuis un poste qui n'en a pas encore, il faut le saisir une fois à
-l'écran de configuration de l'application.
+`/relecteur.html`. Il lit le serveur sous le compte de **cet** appareil : ouvert
+sur un poste qui n'a jamais servi, il ne voit rien — c'est normal, et il le dit.
+Relier ce poste au compte de la voiture est ce qui le remplira.
 
 En développement, les dossiers du serveur n'existent pas et il faut les lui
 donner :
@@ -2213,8 +2223,8 @@ tous les fichiers et les rend en un seul paquet compressé, nommé à la seconde
 pour que deux récupérations du même jour ne se recouvrent pas.
 
 Il se fait **depuis un téléphone ou un ordinateur**, pas depuis la voiture, qui
-refuse les téléchargements. Le compte de dépôt sert aussi à lire : sans lui,
-aucune requête ne part et l'écran le dit.
+refuse les téléchargements. Ce qu'il ramasse est ce que porte le compte de cet
+appareil : un poste qui n'a pas été relié à celui de la voiture n'en ramasse rien.
 
 Le paquet part **incomplet plutôt que pas du tout**. Un dossier refusé, un
 fichier illisible : les autres sont emportés quand même, et le message nomme ce

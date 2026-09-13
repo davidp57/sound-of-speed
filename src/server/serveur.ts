@@ -14,8 +14,7 @@ import { readdirSync } from 'node:fs'
 
 import { Hono } from 'hono'
 
-import { SOLO_ACCOUNT_ID, type Base } from './base/base'
-import { coupleDe, type Comptes } from './comptes'
+import type { Base } from './base/base'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
 import { DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } from './retention'
 import {
@@ -36,17 +35,14 @@ export interface OptionsDuServeur {
   application: string
   /** La base, quand il y en a une. Sans elle, les dossiers de données ne sont pas servis. */
   base?: Base
-  /** Les comptes qui ouvrent les dossiers protégés. */
-  comptes?: Comptes
   /**
-   * L'identité, quand elle est montée.
+   * L'identité. Sans elle, rien de ce qui appartient à un compte n'est servi.
    *
-   * Rien n'en dépend encore : elle répond sous son chemin, et tout le reste du
-   * serveur se comporte comme avant qu'elle existe.
+   * C'est elle qui dit **à qui** appartient ce qu'on lit et ce qu'on écrit :
+   * chaque requête porte son témoin de connexion, et le compte s'en déduit. Le
+   * mot de passe partagé qui ouvrait ces dossiers a disparu avec elle.
    */
   identite?: Identite
-  /** À qui appartient ce qu'on range, tant que l'identité n'est pas ouverte. */
-  compte?: string
   /** Combien d'épingles un compte peut poser. Réglable par l'environnement. */
   epingles?: number
   /** Les délais de rétention, en jours. Réglables par l'environnement. */
@@ -107,13 +103,31 @@ export function creerServeur(options: OptionsDuServeur): Hono {
   // Servie depuis la base quand il y en a une. Sans base, ce serveur ne sait pas
   // encore répondre ici et laisse le repli faire son travail — c'est l'état des
   // tickets précédents, où ces dossiers restaient servis par l'ancien chemin.
-  if (options.base !== undefined) {
+  if (options.base !== undefined && options.identite !== undefined) {
     const base = options.base
-    const compte = options.compte ?? SOLO_ACCOUNT_ID
+    const identite = options.identite
+
+    /**
+     * À qui appartient cette requête ?
+     *
+     * Rend le compte de la session, ou `null` quand il n'y en a pas. Le témoin
+     * voyage tout seul — la page et le serveur sont sur la même origine —, il
+     * n'y a donc rien à saisir ni à composer.
+     */
+    const compteDe = async (entetes: Headers): Promise<string | null> => {
+      try {
+        const session = await identite.api.getSession({ headers: entetes })
+        return session?.user.id ?? null
+      } catch {
+        // Une session illisible n'est pas une panne du serveur : c'est une
+        // requête sans compte, et elle se traite comme telle.
+        return null
+      }
+    }
 
     app.on(['GET', 'PUT'], '/profiles/*', async (c) => {
-      const refus = refuser(c.req.raw.headers, options.comptes)
-      if (refus !== null) return refus
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
 
       const chemin = new URL(c.req.url).pathname
       const nomBrut = chemin.slice('/profiles/'.length)
@@ -153,8 +167,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // ne porte plus de valeurs, il désigne un moteur et une boîte. Les trois se
     // déposent donc et se relisent de la même façon.
     app.on(['GET', 'PUT'], '/:registre{engines|gearboxes}/*', async (c) => {
-      const refus = refuser(c.req.raw.headers, options.comptes)
-      if (refus !== null) return refus
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
 
       const chemin = new URL(c.req.url).pathname
       const [, registre = '', ...reste] = chemin.split('/')
@@ -194,11 +208,13 @@ export function creerServeur(options: OptionsDuServeur): Hono {
 
     // --- Ce que le serveur a appris de la vraie voiture ---------------------
     //
-    // En lecture seule, et sans compte : c'est le serveur qui l'écrit, et
-    // l'écran qui le propose le lit sans en demander un — il n'en a jamais
-    // demandé.
+    // En lecture seule : c'est le serveur qui l'écrit, et l'écran qui le propose
+    // le lit. Il appartient à un compte comme le reste, mais une requête sans
+    // compte reçoit **404 et non 401** : l'écran ne demandait rien avant, et
+    // « pas encore mesuré » est une réponse qu'il sait déjà traiter.
     app.get('/mesure-voiture/profil-voiture.json', async (c) => {
-      const contenu = await lireProfilMesure(base, compte)
+      const compte = await compteDe(c.req.raw.headers)
+      const contenu = compte === null ? null : await lireProfilMesure(base, compte)
       // Un 404 franc, et surtout pas la page d'application : le client distingue
       // « pas encore mesuré », qui est normal, de « illisible », qui ne l'est pas.
       if (contenu === null) return c.notFound()
@@ -215,8 +231,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // emploie pour recoller une session : deux règles finiraient par ne plus
     // dire la même chose.
     app.get('/sessions/', async (c) => {
-      const refus = refuser(c.req.raw.headers, options.comptes)
-      if (refus !== null) return refus
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
 
       return c.json(await listerSessions(base, compte), 200, { 'Cache-Control': 'no-store' })
     })
@@ -224,8 +240,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // Un fichier, pas quarante-deux : c'est ce qui rend l'effacement acceptable,
     // l'archive longue étant alors chez l'utilisateur et non sur le serveur.
     app.get('/sessions/:cle/archive.zip', async (c) => {
-      const refus = refuser(c.req.raw.headers, options.comptes)
-      if (refus !== null) return refus
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
 
       const archive = await archiveDeLaSession(base, compte, c.req.param('cle'))
       if (archive === null) return c.notFound()
@@ -246,8 +262,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // efface des données et rien ne rougit. La seule façon de le savoir est de
     // regarder ce verdict d'abord, sur les vraies données.
     app.get('/retention', async (c) => {
-      const refus = refuser(c.req.raw.headers, options.comptes)
-      if (refus !== null) return refus
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
 
       const delais = options.delais ?? DELAIS_PAR_DEFAUT
       const verdict = await verdictDuCompte(base, compte, Date.now(), delais)
@@ -257,8 +273,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // Épingler, et décrocher. La borne se voit : un refus dit ce qu'il faut
     // faire — décrocher autre chose, ou emporter le trajet.
     app.on(['PUT', 'DELETE'], '/sessions/:cle/epingle', async (c) => {
-      const refus = refuser(c.req.raw.headers, options.comptes)
-      if (refus !== null) return refus
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
 
       const rendu = await epingler(
         base,
@@ -275,8 +291,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     })
 
     app.delete('/sessions/:cle', async (c) => {
-      const refus = refuser(c.req.raw.headers, options.comptes)
-      if (refus !== null) return refus
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
 
       // Effacer un trajet déjà parti n'est pas une panne : la voiture rejoue une
       // demande, et la seconde doit répondre comme la première.
@@ -289,8 +305,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // Traces, tranches de journal, relevés de mesure. Trois dossiers, une seule
     // table : ce sont trois fois la même chose, un nom, des octets, une date.
     app.on(['GET', 'PUT'], '/:dossier{traces|journal|mesures}/*', async (c) => {
-      const refus = refuser(c.req.raw.headers, options.comptes)
-      if (refus !== null) return refus
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
 
       const chemin = new URL(c.req.url).pathname
       const [, dossier = '', ...reste] = chemin.split('/')
@@ -399,27 +415,19 @@ export function creerServeur(options: OptionsDuServeur): Hono {
 }
 
 /**
- * Refuse, et **dit lequel des deux refus c'est**.
+ * Le refus, quand la requête ne porte pas de compte.
  *
- * 401 quand le compte manque ou ne correspond pas ; 403 quand un compte existe
- * mais que rien n'est configuré pour l'accepter. Le client ne rejoue ni l'un ni
- * l'autre — c'est toute la différence avec un code de panne, qu'il rejouerait
- * indéfiniment.
+ * **401 et pas un code de panne**, et la distinction engage tout le reste : le
+ * client ne rejoue ni 401 ni 403, alors qu'il rejoue indéfiniment tout code qui
+ * ressemble à une panne passagère. Une session expirée rendue en 500 ferait
+ * rejouer un dépôt toutes les minutes, pour un envoi qui ne passera jamais.
+ *
+ * Pas d'en-tête `WWW-Authenticate` : il n'y a plus de mot de passe à demander, et
+ * en mettre un ferait surgir la fenêtre du navigateur pour une saisie qui
+ * n'ouvrirait rien.
  */
-function refuser(entetes: Headers, comptes: Comptes | undefined): Response | null {
-  if (comptes === undefined || !comptes.configure) {
-    return new Response('aucun compte configuré', { status: 403 })
-  }
-
-  const couple = coupleDe(entetes.get('authorization'))
-  if (couple === null || !comptes.verifie(couple.utilisateur, couple.motDePasse)) {
-    return new Response('compte requis', {
-      status: 401,
-      headers: { 'WWW-Authenticate': 'Basic realm="Sound of Speed"' },
-    })
-  }
-
-  return null
+function sansCompte(): Response {
+  return new Response('compte requis', { status: 401 })
 }
 
 function cachePour(chemin: string): string | undefined {

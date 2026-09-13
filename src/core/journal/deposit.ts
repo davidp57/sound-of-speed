@@ -1,4 +1,3 @@
-import type { DepositCredentials } from '../upload/put'
 import { putSlice, type SliceOutcome } from '../upload/slice-put'
 import type { JournalSlice } from './journal'
 
@@ -20,8 +19,7 @@ export type { SliceOutcome } from '../upload/slice-put'
 
 export function depositSlice(
   slice: JournalSlice,
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<SliceOutcome> {
-  return putSlice(FOLDER, slice, credentials, fetchImpl)
+  return putSlice(FOLDER, slice, fetchImpl)
 }

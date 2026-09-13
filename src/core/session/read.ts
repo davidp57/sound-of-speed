@@ -1,4 +1,3 @@
-import { authHeader, hasCredentials, type DepositCredentials } from '../upload/put'
 import { gunzip } from '../upload/compress'
 import { SLICE_AFTER_MS } from '../upload/slicing'
 import { buildSession, type Session, type SessionFile } from './model'
@@ -61,11 +60,9 @@ export interface SessionEntry {
  * ne connaît pas encore les trajets, il n'y a simplement rien à montrer.
  */
 export async function listSessions(
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<SessionEntry[]> {
-  if (!hasCredentials(credentials)) return []
-  const headers = { Accept: 'application/json', Authorization: authHeader(credentials) }
+  const headers = { Accept: 'application/json' }
 
   let listing: unknown
   try {
@@ -138,11 +135,9 @@ export function atLeastDurationMs(entry: SessionEntry): number | null {
  */
 export async function loadSession(
   entry: SessionEntry,
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
   onProgress?: (done: number, total: number) => void,
 ): Promise<{ session: Session; failures: string[] }> {
-  const headers = { Authorization: authHeader(credentials) }
   const failures: string[] = []
   let done = 0
 
@@ -153,7 +148,7 @@ export async function loadSession(
     entry.files.map(async (file): Promise<SessionFile | null> => {
       const folder = file.kind === 'journal' ? '/journal/' : '/traces/'
       try {
-        const response = await fetchImpl(folder + encodeURIComponent(file.name), { headers })
+        const response = await fetchImpl(folder + encodeURIComponent(file.name))
         if (!response.ok) {
           failures.push(`${file.name} (${response.status})`)
           return null

@@ -7,7 +7,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { PROCEDURE_VERSION } from '../core/calibration/aggregate'
 
-import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
+import { ouvrirBase, type Base } from './base/base'
+import { ANCIEN_COMPTE_UNIQUE as COMPTE, semerLAncienCompte } from './heritage'
 import { deposits } from './base/schema'
 import { ecrireDepot, type Dossier, type Exemption } from './depots'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
@@ -32,6 +33,10 @@ beforeEach(async () => {
   const ouverte = await ouvrirBase({ fichier: join(dossier, 'speed.db'), migrations: MIGRATIONS })
   base = ouverte.base
   fermer = ouverte.fermer
+  // Le compte d'avant l'identité sert ici de propriétaire : ces modules prennent
+  // un compte en paramètre, et n'importe lequel ferait l'affaire. Il n'est plus
+  // semé à l'ouverture de la base — c'est le premier appareil qui crée le sien.
+  await semerLAncienCompte(base)
 })
 
 afterEach(() => {
@@ -54,7 +59,7 @@ async function trajet(
 
   for (const ou of options.dossiers ?? ['traces']) {
     const nom = `${cle}_001.jsonl.gz`
-    await ecrireDepot(base, SOLO_ACCOUNT_ID, ou, nom, Buffer.from('x'), options.exemption)
+    await ecrireDepot(base, COMPTE, ou, nom, Buffer.from('x'), options.exemption)
   }
 
   if (options.analyse !== false) {
@@ -69,7 +74,7 @@ describe('le verdict sur la base', () => {
     const vieux = await trajet(40)
     await trajet(2)
 
-    const verdict = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const verdict = await verdictDuCompte(base, COMPTE, MAINTENANT)
 
     expect(verdict.aEffacer.map((t) => t.cle)).toEqual([vieux])
     expect(verdict.octets).toBe(1)
@@ -78,7 +83,7 @@ describe('le verdict sur la base', () => {
   it('retient ce qui n’a pas été analysé, et le dit', async () => {
     await trajet(400, { analyse: false })
 
-    const verdict = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const verdict = await verdictDuCompte(base, COMPTE, MAINTENANT)
 
     expect(verdict.aEffacer).toEqual([])
     expect(verdict.retenus[0]!.raison).toBe('pas encore analysé')
@@ -87,7 +92,7 @@ describe('le verdict sur la base', () => {
   it('n’efface rien — c’est tout l’intérêt de ce verdict', async () => {
     await trajet(400)
 
-    await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    await verdictDuCompte(base, COMPTE, MAINTENANT)
 
     expect(await base.select().from(deposits)).toHaveLength(1)
   })
@@ -99,7 +104,7 @@ describe('le verdict sur la base', () => {
     await trajet(300, { exemption: 'archive' })
     await trajet(200, { dossiers: ['journal'], exemption: 'archive' })
 
-    const verdict = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const verdict = await verdictDuCompte(base, COMPTE, MAINTENANT)
 
     expect(verdict.aEffacer).toEqual([])
     expect(verdict.retenus.map((t) => t.raison)).toEqual(['archivé', 'archivé'])
@@ -108,14 +113,14 @@ describe('le verdict sur la base', () => {
   it('nomme le dépôt seul plutôt que de le taire', async () => {
     await ecrireDepot(
       base,
-      SOLO_ACCOUNT_ID,
+      COMPTE,
       'traces',
       'traces.json',
       Buffer.from('x'),
       'archive',
     )
 
-    const verdict = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const verdict = await verdictDuCompte(base, COMPTE, MAINTENANT)
 
     expect(verdict.retenus[0]!.isole).toBe(true)
     expect(verdict.retenus[0]!.cle).toBe('depot:traces:traces.json')
@@ -125,13 +130,13 @@ describe('le verdict sur la base', () => {
     // Les quatre-vingt-quatorze dépôts repris portent tous la date de la reprise.
     // S'y fier retiendrait pendant un mois des trajets vieux de six.
     const nom = '2026-01-05-08-00-00_vieux_001.jsonl.gz'
-    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', nom, Buffer.from('x'))
+    await ecrireDepot(base, COMPTE, 'traces', nom, Buffer.from('x'))
     await base.update(deposits).set({
       analyzedProcedure: PROCEDURE_VERSION,
       depositedAt: Math.floor(MAINTENANT / 1000),
     })
 
-    const verdict = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const verdict = await verdictDuCompte(base, COMPTE, MAINTENANT)
 
     expect(verdict.aEffacer.map((t) => t.cle)).toEqual(['2026-01-05-08-00-00_vieux'])
   })
@@ -140,7 +145,7 @@ describe('le verdict sur la base', () => {
     const journalSeul = await trajet(20, { dossiers: ['journal'], id: 'seul' })
     const avecTrace = await trajet(20, { dossiers: ['traces', 'journal'], id: 'trace' })
 
-    const verdict = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const verdict = await verdictDuCompte(base, COMPTE, MAINTENANT)
 
     expect(verdict.aEffacer.map((t) => t.cle)).toEqual([journalSeul])
     expect(verdict.retenus.map((t) => t.cle)).toEqual([avecTrace])
@@ -149,7 +154,7 @@ describe('le verdict sur la base', () => {
   it('suit les délais qu’on lui donne', async () => {
     await trajet(10)
 
-    const verdict = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT, {
+    const verdict = await verdictDuCompte(base, COMPTE, MAINTENANT, {
       traces: 7,
       journal: 3,
     })
@@ -215,9 +220,9 @@ describe('le passage qui efface', () => {
     // qu'on a relue.
     const vieux = await trajet(40)
     const recent = await trajet(2)
-    const annonce = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const annonce = await verdictDuCompte(base, COMPTE, MAINTENANT)
 
-    const passage = await appliquerLaRegle(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const passage = await appliquerLaRegle(base, COMPTE, MAINTENANT)
 
     expect(annonce.aEffacer.map((t) => t.cle)).toEqual([vieux])
     expect(passage.trajets).toBe(1)
@@ -229,7 +234,7 @@ describe('le passage qui efface', () => {
   it('n’efface rien sur une base entièrement archivée, et reste discret', async () => {
     await trajet(300, { exemption: 'archive' })
 
-    const passage = await appliquerLaRegle(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const passage = await appliquerLaRegle(base, COMPTE, MAINTENANT)
 
     expect(passage.trajets).toBe(0)
     expect(formaterPassage(passage)).toBeNull()
@@ -240,15 +245,15 @@ describe('le passage qui efface', () => {
     // Ce que les trajets ont montré est déjà cumulé. Il faut le vérifier avant
     // et après un passage qui efface, pas le supposer.
     const nom = '2026-01-05-08-00-00_vieux_001.jsonl.gz'
-    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', nom, uneTranche())
-    await reprendreApresDepot(base, SOLO_ACCOUNT_ID, nom)
-    const avant = await lireProfilMesure(base, SOLO_ACCOUNT_ID)
+    await ecrireDepot(base, COMPTE, 'traces', nom, uneTranche())
+    await reprendreApresDepot(base, COMPTE, nom)
+    const avant = await lireProfilMesure(base, COMPTE)
 
-    const passage = await appliquerLaRegle(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const passage = await appliquerLaRegle(base, COMPTE, MAINTENANT)
 
     expect(passage.trajets).toBe(1)
     expect(await base.select().from(deposits)).toHaveLength(0)
-    expect(await lireProfilMesure(base, SOLO_ACCOUNT_ID)).toBe(avant)
+    expect(await lireProfilMesure(base, COMPTE)).toBe(avant)
   })
 })
 
@@ -280,7 +285,7 @@ describe('le verdict écrit pour être lu', () => {
     await trajet(40, { id: 'part' })
     await trajet(300, { exemption: 'archive', id: 'garde' })
 
-    const verdict = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const verdict = await verdictDuCompte(base, COMPTE, MAINTENANT)
     const texte = formaterVerdict(verdict, DELAIS_PAR_DEFAUT)
 
     expect(texte).toContain('30 jours')
@@ -291,10 +296,10 @@ describe('le verdict écrit pour être lu', () => {
   it('nomme les dépôts seuls plutôt que de les taire', async () => {
     // Ils ne se rangent nulle part, et c'est précisément pour ça qu'il faut les
     // voir : rien d'autre ne les montre.
-    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', 'traces.json', Buffer.from('x'), 'archive')
+    await ecrireDepot(base, COMPTE, 'traces', 'traces.json', Buffer.from('x'), 'archive')
 
     const texte = formaterVerdict(
-      await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT),
+      await verdictDuCompte(base, COMPTE, MAINTENANT),
       DELAIS_PAR_DEFAUT,
     )
 

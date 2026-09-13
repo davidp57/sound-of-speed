@@ -33,6 +33,7 @@ import { anonymous } from 'better-auth/plugins'
 
 import type { Base } from './base/base'
 import { accounts, authIdentities, authSessions, authVerifications } from './base/schema'
+import { faireHeriter, formaterHeritage } from './heritage'
 
 /** Le préfixe sous lequel la bibliothèque répond. */
 export const CHEMIN_IDENTITE = '/api/auth'
@@ -147,6 +148,35 @@ export function creerIdentite({ base, secret, adresse }: OptionsDIdentite) {
       fields: { userId: 'accountId', accountId: 'providerAccountId' },
     },
     verification: { modelName: 'auth_verifications' },
+
+    databaseHooks: {
+      user: {
+        create: {
+          /**
+           * Le premier compte qui se présente hérite de ce que portait le compte
+           * d'avant l'identité.
+           *
+           * **Ici, et pas au démarrage du serveur** : il faut un héritier, et
+           * l'héritier n'existe qu'au moment où un appareil se présente. Le
+           * compte vient d'être créé, donc il est vide — aucun conflit possible
+           * avec ce qu'on lui verse.
+           *
+           * Un héritage qui échoue ne doit pas empêcher le compte d'exister :
+           * l'appareil pourrait alors ne jamais en obtenir un, et l'application
+           * resterait sans identité pour une raison qui ne la regarde pas. Le
+           * compte d'avant, lui, est toujours là au démarrage suivant.
+           */
+          after: async (compte) => {
+            try {
+              const heritage = await faireHeriter(base, compte.id)
+              if (heritage !== null) console.log(formaterHeritage(heritage, compte.id))
+            } catch (erreur) {
+              console.error(`héritage du compte d'avant : ${String(erreur)}`)
+            }
+          },
+        },
+      },
+    },
   })
 }
 

@@ -140,7 +140,6 @@ jobs:
           SPEED_PORT=8099 \
           SPEED_DB=/tmp/serveur-neuf/speed.db \
           SPEED_AUDIO=/tmp/pile/audio \
-          SPEED_HTPASSWD=/tmp/pile/htpasswd \
           node dist-serveur/serveur.js &
           for _ in $(seq 30); do
             curl -fsS -o /dev/null http://localhost:8099/ && break
@@ -149,7 +148,9 @@ jobs:
           # Le contrat **en entier**, comme contre le serveur en service : depuis
           # que les dépôts de la voiture passent en base, les deux serveurs
           # doivent être indiscernables. Plus aucune part n'est exclue.
-          node scripts/accord/accord.mjs http://localhost:8099 --compte essai:essai
+          # Plus de compte à fournir : le jeu prend le sien au serveur, comme un
+          # navigateur qui ouvre l'application pour la première fois.
+          node scripts/accord/accord.mjs http://localhost:8099
 
       - name: Construire l'image du serveur
         uses: docker/build-push-action@v6
@@ -171,13 +172,13 @@ jobs:
           set -euo pipefail
 
           # Un dossier de données vide, comme chez qui vient d'installer la pile.
+          # Rien d'autre à préparer : plus de fichier de mots de passe, chaque
+          # appareil ayant son compte.
           mkdir -p /tmp/serveur/audio
-          cp /tmp/pile/htpasswd /tmp/serveur/htpasswd
           chmod -R 777 /tmp/serveur
 
           docker run -d --name serveur -p 8100:80 \
             -v /tmp/serveur:/data \
-            -e SPEED_HTPASSWD=/data/htpasswd \
             sound-of-speed-serveur:essai
 
           for _ in $(seq 60); do
@@ -189,21 +190,29 @@ jobs:
           test -f /tmp/serveur/speed.db
 
           echo "--- et le contrat est tenu, depuis l'image"
-          node scripts/accord/accord.mjs http://localhost:8100 --compte essai:essai
+          node scripts/accord/accord.mjs http://localhost:8100
 
       - name: La base survit au remplacement du conteneur
         # La promesse du ticket 03, qui n'avait jamais pu être vérifiée faute de
         # conteneur qui porte cette base.
         run: |
           set -euo pipefail
-          avant=$(curl -s -u essai:essai http://localhost:8100/profiles/ | wc -c)
-          curl -fsS -u essai:essai -X PUT --data '{"name":"Survivant"}' \
+          # Un appareil se présente et garde son témoin. C'est lui qui ouvre les
+          # dépôts, et il devra encore les ouvrir après le remplacement du
+          # conteneur : le secret qui signe ce témoin vit dans le volume, donc il
+          # survit lui aussi. Ce contrôle le vérifie du même coup.
+          temoin=$(curl -s -D - -o /dev/null -X POST -H 'Content-Type: application/json' \
+            -d '{}' http://localhost:8100/api/auth/sign-in/anonymous \
+            | grep -i '^set-cookie:' | cut -d' ' -f2 | cut -d';' -f1)
+          test -n "$temoin"
+
+          avant=$(curl -s -H "Cookie: $temoin" http://localhost:8100/profiles/ | wc -c)
+          curl -fsS -H "Cookie: $temoin" -X PUT --data '{"name":"Survivant"}' \
             http://localhost:8100/profiles/survivant.json
 
           docker rm -f serveur
           docker run -d --name serveur-bis -p 8101:80 \
             -v /tmp/serveur:/data \
-            -e SPEED_HTPASSWD=/data/htpasswd \
             sound-of-speed-serveur:essai
           for _ in $(seq 60); do
             curl -fsS -o /dev/null http://localhost:8101/ && break
@@ -211,7 +220,7 @@ jobs:
           done
 
           echo "--- le profil déposé avant le remplacement est toujours là"
-          curl -fsS -u essai:essai http://localhost:8101/profiles/survivant.json \
+          curl -fsS -H "Cookie: $temoin" http://localhost:8101/profiles/survivant.json \
             | grep -q Survivant
           echo "(taille du listage avant dépôt : $avant octets)"
 

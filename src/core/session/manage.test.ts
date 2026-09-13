@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import { deleteTrip, downloadTrip, pinTrip, retentionVerdict } from './manage'
 
-const CREDENTIALS = { user: 'depot', password: 'motdepasse' }
 
 describe('effacer un trajet', () => {
   it('demande l’effacement du trajet désigné, en s’annonçant', async () => {
@@ -15,15 +14,16 @@ describe('effacer un trajet', () => {
       vu = {
         url: String(url),
         method: init?.method,
-        auth: (init?.headers as Record<string, string>)['Authorization'],
+        auth: (init?.headers as Record<string, string> | undefined)?.['Authorization'],
       }
       return Response.json({ efface: 3 })
     }) as unknown as typeof fetch
 
-    expect(await deleteTrip('2026-09-11-06-24-01_da2m', CREDENTIALS, impl)).toBe(3)
+    expect(await deleteTrip('2026-09-11-06-24-01_da2m', impl)).toBe(3)
     expect(vu.url).toBe('/sessions/2026-09-11-06-24-01_da2m')
     expect(vu.method).toBe('DELETE')
-    expect(vu.auth).toBe(`Basic ${btoa('depot:motdepasse')}`)
+    // Rien à composer : le témoin de connexion voyage avec la requête.
+    expect(vu.auth).toBeUndefined()
   })
 
   it('échappe la clé d’un dépôt seul, qui porte des deux-points', async () => {
@@ -34,14 +34,14 @@ describe('effacer un trajet', () => {
       return Response.json({ efface: 1 })
     }) as unknown as typeof fetch
 
-    await deleteTrip('depot:traces:essai du samedi.jsonl', CREDENTIALS, impl)
+    await deleteTrip('depot:traces:essai du samedi.jsonl', impl)
 
     expect(url).toBe('/sessions/depot%3Atraces%3Aessai%20du%20samedi.jsonl')
   })
 
   it('rend zéro sur un trajet déjà parti, et non une erreur', async () => {
     const impl = (async () => Response.json({ efface: 0 })) as unknown as typeof fetch
-    expect(await deleteTrip('k', CREDENTIALS, impl)).toBe(0)
+    expect(await deleteTrip('k', impl)).toBe(0)
   })
 
   it('rend null quand le serveur n’a pas répondu', async () => {
@@ -50,18 +50,21 @@ describe('effacer un trajet', () => {
       throw new Error('hors réseau')
     }) as unknown as typeof fetch
 
-    expect(await deleteTrip('k', CREDENTIALS, impl)).toBeNull()
+    expect(await deleteTrip('k', impl)).toBeNull()
   })
 
-  it('ne demande rien sans compte', async () => {
-    let appele = false
-    const impl = (async () => {
-      appele = true
-      return Response.json({})
+  it('demande l’effacement sans rien composer pour s’annoncer', async () => {
+    // Le témoin de connexion voyage tout seul. Ce qui était « pas de compte
+    // saisi, on ne demande rien » devient une requête ordinaire, que le serveur
+    // refuse s'il ne reconnaît pas l'appareil.
+    let entetes: Record<string, string> | undefined
+    const impl = (async (_url: string, init?: RequestInit) => {
+      entetes = init?.headers as Record<string, string> | undefined
+      return Response.json({ efface: 1 })
     }) as unknown as typeof fetch
 
-    expect(await deleteTrip('k', { user: '', password: '' }, impl)).toBeNull()
-    expect(appele).toBe(false)
+    expect(await deleteTrip('k', impl)).toBe(1)
+    expect(entetes?.['Authorization']).toBeUndefined()
   })
 })
 
@@ -77,7 +80,7 @@ describe('emporter un trajet', () => {
       })
     }) as unknown as typeof fetch
 
-    const rendu = await downloadTrip('2026-09-11-06-24-01_da2m', CREDENTIALS, impl)
+    const rendu = await downloadTrip('2026-09-11-06-24-01_da2m', impl)
 
     expect(url).toBe('/sessions/2026-09-11-06-24-01_da2m/archive.zip')
     expect(rendu?.filename).toBe('trajet-2026-09-11-06-24-01.zip')
@@ -87,13 +90,13 @@ describe('emporter un trajet', () => {
   it('se rabat sur un nom quelconque si le serveur n’en propose pas', async () => {
     const impl = (async () => new Response(new Blob(['PK']))) as unknown as typeof fetch
 
-    expect((await downloadTrip('k', CREDENTIALS, impl))?.filename).toBe('trajet.zip')
+    expect((await downloadTrip('k', impl))?.filename).toBe('trajet.zip')
   })
 
   it('rend null quand le trajet n’est plus là', async () => {
     const impl = (async () => new Response('', { status: 404 })) as unknown as typeof fetch
 
-    expect(await downloadTrip('k', CREDENTIALS, impl)).toBeNull()
+    expect(await downloadTrip('k', impl)).toBeNull()
   })
 })
 
@@ -105,7 +108,7 @@ describe('épingler un trajet', () => {
       return Response.json({ etat: 'épinglé', epinglees: 3, borne: 20 })
     }) as unknown as typeof fetch
 
-    const rendu = await pinTrip('2026-09-11-06-24-01_da2m', true, CREDENTIALS, impl)
+    const rendu = await pinTrip('2026-09-11-06-24-01_da2m', true, impl)
 
     expect(vu).toEqual({ url: '/sessions/2026-09-11-06-24-01_da2m/epingle', method: 'PUT' })
     expect(rendu).toEqual({ etat: 'épinglé', epinglees: 3, borne: 20 })
@@ -118,7 +121,7 @@ describe('épingler un trajet', () => {
       return Response.json({ etat: 'décroché', epinglees: 2, borne: 20 })
     }) as unknown as typeof fetch
 
-    await pinTrip('k', false, CREDENTIALS, impl)
+    await pinTrip('k', false, impl)
 
     expect(methode).toBe('DELETE')
   })
@@ -129,7 +132,7 @@ describe('épingler un trajet', () => {
         status: 409,
       })) as unknown as typeof fetch
 
-    const rendu = await pinTrip('k', true, CREDENTIALS, impl)
+    const rendu = await pinTrip('k', true, impl)
 
     expect(rendu?.etat).toBe('borne atteinte')
     expect(rendu?.borne).toBe(20)
@@ -151,7 +154,7 @@ describe('le verdict de la règle', () => {
       })
     }) as unknown as typeof fetch
 
-    const verdict = await retentionVerdict(CREDENTIALS, impl)
+    const verdict = await retentionVerdict(impl)
 
     expect(url).toBe('/retention')
     expect(verdict?.retenus[0]?.raison).toBe('archivé')
@@ -161,6 +164,6 @@ describe('le verdict de la règle', () => {
   it('rend null devant un serveur qui ne connaît pas la règle', async () => {
     const impl = (async () => new Response('', { status: 404 })) as unknown as typeof fetch
 
-    expect(await retentionVerdict(CREDENTIALS, impl)).toBeNull()
+    expect(await retentionVerdict(impl)).toBeNull()
   })
 })

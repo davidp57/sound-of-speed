@@ -79,7 +79,6 @@ import {
   forgetUnusedBanks,
   calibrationOverrides,
   calibrationMissing,
-  depositCredentials,
   uploadConsent,
   uploadError,
   uploadPending,
@@ -88,7 +87,6 @@ import {
   journalError,
   retryUploads,
   setUploadConsent,
-  setDepositCredentials,
   synthSupported,
   archiveProgress,
   exportServerData,
@@ -287,6 +285,9 @@ const compteDeLAppareil = computed(() => {
     }
     return 'Cet appareil n’a pas encore de compte : il en prendra un au prochain contact avec le serveur. Rien à saisir, et rien ne l’empêche de rouler en attendant.'
   }
+  if (identityState.value === 'reprise') {
+    return 'Le serveur ne reconnaissait plus le compte de cet appareil : il en a repris un neuf. Ce qui avait été déposé sous l’ancien n’est plus accessible — un compte anonyme n’a pas de mot de passe pour le reprendre.'
+  }
   if (identity.value.anonymous) {
     return 'Cet appareil a son compte, créé tout seul, sans adresse rattachée. Vider les données de ce site depuis les réglages du navigateur en perdrait l’accès — et ce qui a été déposé avec.'
   }
@@ -338,27 +339,6 @@ const enAttente = computed(() => {
   })
 })
 
-function onDeposit(user: string, password: string): void {
-  setDepositCredentials(user, password)
-}
-
-/**
- * Ce que l'écran dit de l'état du mot de passe.
- *
- * L'écran de configuration n'a pas de bouton « enregistrer » — tout s'applique à
- * la frappe, c'est la règle du projet. Pour un curseur cela se voit ; pour un
- * champ masqué, rien ne se voit, et l'on ne sait pas si la saisie a pris. La
- * question a été posée dès le premier usage, ce qui suffit à la trancher.
- *
- * La longueur est dite plutôt que la valeur : elle permet de reconnaître une
- * saisie tronquée ou un collage parti de travers, sans montrer le secret.
- */
-const compteEtat = computed(() => {
-  const { user, password } = depositCredentials.value
-  if (!password) return 'aucun mot de passe'
-  if (!user.trim()) return 'mot de passe retenu, mais il manque le nom'
-  return `retenu — ${password.length} caractères, rien à valider`
-})
 const fileInput = ref<HTMLInputElement | null>(null)
 
 const ROLES: { id: LayerRole; label: string }[] = [
@@ -1201,31 +1181,11 @@ async function rapatrier(): Promise<void> {
         <strong>Le compte de cet appareil.</strong> {{ compteDeLAppareil }}
       </p>
 
-      <div class="deposit">
-        <span class="note">Compte de dépôt</span>
-        <input
-          :value="depositCredentials.user"
-          type="text"
-          placeholder="nom d’utilisateur"
-          @input="onDeposit(($event.target as HTMLInputElement).value, depositCredentials.password)"
-        />
-        <input
-          :value="depositCredentials.password"
-          type="password"
-          placeholder="mot de passe"
-          @input="onDeposit(depositCredentials.user, ($event.target as HTMLInputElement).value)"
-        />
-        <span class="note">{{ compteEtat }}</span>
-      </div>
       <p class="note">
-        Sert à tout ce qui remonte sur le serveur depuis la voiture, dont le
-        navigateur refuse les téléchargements : traces, journal, relevés de
-        mesure et profils. C’est un nom et un mot de passe du
-        fichier <code>htpasswd</code> du serveur, et il reste en clair dans ce
-        navigateur — d’où l’intérêt d’un compte <strong>dédié</strong> au dépôt
-        plutôt que du vôtre : il se révoque seul, et il ne donnerait pas accès au
-        site entier si vous activiez l’authentification générale. Un compte se
-        crée avec <code>npm run htpasswd</code>.
+        Ce compte sert à tout ce qui remonte sur le serveur depuis la voiture,
+        dont le navigateur refuse les téléchargements : traces, journal, relevés
+        de mesure et profils. Il n’y a rien à saisir — l’appareil s’annonce tout
+        seul.
       </p>
 
       <!--

@@ -30,6 +30,8 @@ export interface IdentityOptions {
 export type IdentityOutcome =
   | { state: 'gardee'; identity: LocalIdentity }
   | { state: 'obtenue'; identity: LocalIdentity }
+  /** L'appareil avait un compte, le serveur ne le connaît plus : il en a repris un neuf. */
+  | { state: 'reprise'; identity: LocalIdentity }
   | { state: 'sans-reseau' }
   | { state: 'refusee'; detail: string }
 
@@ -42,12 +44,27 @@ export type IdentityOutcome =
  */
 export async function ensureIdentity(options: IdentityOptions = {}): Promise<IdentityOutcome> {
   const { fetchImpl = fetch, now = Date.now } = options
-
   const gardee = loadIdentity()
-  if (gardee !== null) {
-    await prolonger(fetchImpl)
-    return { state: 'gardee', identity: gardee }
+
+  // **Le serveur d'abord, toujours.** C'est lui qui sait quelle session le
+  // navigateur porte, et lui seul : le témoin de connexion est fermé au code de
+  // la page. Demander un compte sans avoir regardé donnait une erreur quand le
+  // stockage local avait été vidé alors que le témoin, lui, était resté — et
+  // l'application n'obtenait plus jamais d'identité. Mesuré dans un navigateur.
+  const ouverte = await sessionOuverte(fetchImpl)
+  if (ouverte === 'sans-reseau') {
+    return gardee === null ? { state: 'sans-reseau' } : { state: 'gardee', identity: gardee }
   }
+  if (ouverte !== null) {
+    const identity: LocalIdentity = { ...ouverte, obtainedAt: gardee?.obtainedAt ?? now() }
+    saveIdentity(identity)
+    return { state: 'gardee', identity }
+  }
+
+  // Plus de session. Un compte anonyme n'a pas de mot de passe : ce que
+  // l'appareil portait ne se reprend pas, et le seul geste utile est d'en
+  // recommencer un. L'écran le dit — c'est pour cela que `reprise` existe.
+  const repris = gardee !== null
 
   let reponse: Response
   try {
@@ -85,7 +102,7 @@ export async function ensureIdentity(options: IdentityOptions = {}): Promise<Ide
 
   const identity: LocalIdentity = { ...compte, obtainedAt: now() }
   saveIdentity(identity)
-  return { state: 'obtenue', identity }
+  return repris ? { state: 'reprise', identity } : { state: 'obtenue', identity }
 }
 
 /**
@@ -105,17 +122,33 @@ export function startIdentity(
 }
 
 /**
- * Touche le serveur pour prolonger la session.
+ * Quel compte ce navigateur ouvre-t-il, si tant est qu'il en ouvre un ?
  *
- * Sans cela, un appareil qui garde son identité en local perdrait son témoin au
- * bout d'un an sans rouler, et n'aurait aucun moyen de le reprendre — un compte
- * anonyme n'a pas de mot de passe. Chaque passage repousse l'échéance.
+ * Rend le compte de la session, `null` quand il n'y en a pas, et `'sans-reseau'`
+ * quand on n'a pas pu demander — trois réponses qui appellent trois conduites
+ * différentes, et les confondre en coûterait une.
+ *
+ * Ce passage **prolonge** aussi la session : sans lui, un appareil qui garde son
+ * identité en local perdrait son témoin au bout d'un an sans rouler, et un compte
+ * anonyme ne se reprend pas.
  */
-async function prolonger(fetchImpl: typeof fetch): Promise<void> {
+async function sessionOuverte(
+  fetchImpl: typeof fetch,
+): Promise<Omit<LocalIdentity, 'obtainedAt'> | null | 'sans-reseau'> {
+  let reponse: Response
   try {
-    await fetchImpl(`${IDENTITE}/get-session`, { headers: { Accept: 'application/json' } })
+    reponse = await fetchImpl(`${IDENTITE}/get-session`, {
+      headers: { Accept: 'application/json' },
+    })
   } catch {
-    // Hors réseau : la session se prolongera au prochain passage.
+    return 'sans-reseau'
+  }
+
+  if (!reponse.ok) return null
+  try {
+    return compteDe(await reponse.json())
+  } catch {
+    return null
   }
 }
 

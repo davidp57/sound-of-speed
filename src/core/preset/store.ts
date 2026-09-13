@@ -243,47 +243,19 @@ export function loadInheritedVolume(selectedId: string | null): number | null {
 }
 
 /**
- * Compte de dépôt : une préférence de **cet appareil**.
+ * Le compte de dépôt a disparu, et sa clé avec lui.
  *
- * Un nom et un mot de passe, ceux d'une entrée du fichier `htpasswd` du serveur.
- * L'application s'en sert pour s'annoncer quand elle envoie une trace.
- *
- * **Et c'est bien un mot de passe**, pas autre chose. Une version antérieure
- * l'appelait « jeton », ce qui suggérait une nature différente — révocable,
- * limité, moins sensible. Il est haché par le même bcrypt, dans le même fichier,
- * vérifié par la même authentification. Ce qui est vrai, en revanche, est qu'un
- * compte **dédié** au dépôt vaut mieux que le compte personnel : il se révoque
- * seul, et il ne donnerait pas accès au site entier si l'authentification
- * générale était activée un jour.
- *
- * Rangé comme le volume et le mode avancé — hors du profil, donc sans voyager
- * avec un profil partagé. Il n'y aurait aucun sens à envoyer à quelqu'un un son
- * accompagné du droit d'écrire sur notre NAS.
+ * `speed.deposit.v1` portait un nom et un mot de passe saisis à l'écran de
+ * configuration. Depuis que l'appareil a son propre compte, le témoin de
+ * connexion voyage tout seul et il n'y a plus rien à saisir. La clé est effacée
+ * au chargement : y laisser un mot de passe en clair, pour quelque chose qui
+ * n'ouvre plus rien, serait une négligence gratuite.
  */
-export interface DepositCredentials {
-  user: string
-  password: string
-}
-
-export function loadDepositCredentials(): DepositCredentials {
+export function oublierLeCompteDeDepot(): void {
   try {
-    const raw = localStorage.getItem(DEPOSIT_KEY)
-    if (!raw) return { user: '', password: '' }
-    const parsed: unknown = JSON.parse(raw)
-    if (!isRecord(parsed)) return { user: '', password: '' }
-    const user = typeof parsed['user'] === 'string' ? parsed['user'] : ''
-    const password = typeof parsed['password'] === 'string' ? parsed['password'] : ''
-    return { user, password }
+    localStorage.removeItem(DEPOSIT_KEY)
   } catch {
-    return { user: '', password: '' }
-  }
-}
-
-export function saveDepositCredentials(credentials: DepositCredentials): void {
-  try {
-    localStorage.setItem(DEPOSIT_KEY, JSON.stringify(credentials))
-  } catch {
-    // Le dépôt de la session en cours marche quand même ; il faudra ressaisir.
+    // Stockage fermé : il n'y a rien à effacer que l'on puisse atteindre.
   }
 }
 

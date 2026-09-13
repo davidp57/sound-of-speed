@@ -5,8 +5,8 @@ qui se rejoue contre n'importe quelle adresse.
 
 ```bash
 npm run accord -- http://localhost:8088
-npm run accord -- http://localhost:8088 --compte essai:essai
-npm run accord -- http://localhost:8088 --compte essai:essai --verbeux
+npm run accord -- http://localhost:8088 --verbeux
+npm run accord -- http://localhost:8088 --compte essai:essai   # ancien serveur
 ```
 
 Il rend 0 quand tout passe, 1 sinon, et dit pour chaque échec ce qu'il attendait.
@@ -50,9 +50,14 @@ Un cas qui a besoin d'un profil le dépose, puis le relit. Rien ne dépend de ce
 qui traîne sur le serveur interrogé, et le jeu se rejoue deux fois de suite sans
 se contredire. Les fichiers déposés portent une marque propre à l'exécution.
 
-**Les cas qui demandent un compte sont sautés** quand aucun n'est donné, et le
-résumé le dit. Un jeu qui se déclarerait vert en ayant tout sauté serait un jeu
-qui ment.
+**Le jeu prend son compte tout seul**, comme un navigateur qui ouvre
+l'application pour la première fois : plus rien à saisir, et plus aucun cas sauté
+faute d'identifiants. Un serveur qui ne sait pas en donner fait échouer le jeu au
+premier cas, ce qui est exactement ce qu'on veut savoir.
+
+`--compte` ne sert plus qu'à une chose : l'**ancien** serveur, celui qui sert
+encore la production derrière nginx, ne connaît que le mot de passe partagé.
+L'option force alors l'ancienne façon de s'annoncer, et elle partira avec lui.
 
 ## Cinq parts, et deux qu'on n'adresse pas à l'ancien serveur
 

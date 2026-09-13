@@ -12,7 +12,6 @@
  */
 
 import type { Delais, Verdict } from '../retention/regle'
-import { authHeader, hasCredentials, type DepositCredentials } from '../upload/put'
 
 /** L'adresse d'un trajet. La clé porte des deux-points quand le dépôt est seul. */
 function tripUrl(key: string): string {
@@ -28,15 +27,11 @@ function tripUrl(key: string): string {
  */
 export async function deleteTrip(
   key: string,
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<number | null> {
-  if (!hasCredentials(credentials)) return null
-
   try {
     const response = await fetchImpl(tripUrl(key), {
       method: 'DELETE',
-      headers: { Authorization: authHeader(credentials) },
     })
     if (!response.ok) return null
     const rendu = (await response.json()) as { efface?: number }
@@ -49,23 +44,19 @@ export async function deleteTrip(
 /**
  * Tire l'archive d'un trajet, avec son nom.
  *
- * Passe par une requête plutôt que par un lien : les dossiers ne se lisent pas
- * sans mot de passe, et le navigateur ne compose l'en-tête d'annonce que sur une
- * navigation — un lien aurait reçu un refus sans que rien ne s'affiche.
+ * Passe par une requête plutôt que par un lien : le serveur ne rend un trajet
+ * qu'au compte qui le porte, et un lien ouvert dans un onglet neuf ne porterait
+ * pas forcément ce qu'il faut pour l'obtenir.
  *
  * Le nom vient du serveur, qui le compose sur la date du trajet. Le recomposer
  * ici donnerait deux façons de nommer la même chose.
  */
 export async function downloadTrip(
   key: string,
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ blob: Blob; filename: string } | null> {
-  if (!hasCredentials(credentials)) return null
-
   try {
     const response = await fetchImpl(`${tripUrl(key)}/archive.zip`, {
-      headers: { Authorization: authHeader(credentials) },
     })
     if (!response.ok) return null
     return {
@@ -100,15 +91,11 @@ export interface Epinglage {
 export async function pinTrip(
   key: string,
   wanted: boolean,
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<Epinglage | null> {
-  if (!hasCredentials(credentials)) return null
-
   try {
     const response = await fetchImpl(`${tripUrl(key)}/epingle`, {
       method: wanted ? 'PUT' : 'DELETE',
-      headers: { Authorization: authHeader(credentials) },
     })
     // 409 porte le refus **et** son décompte : c'est une réponse à lire, pas un
     // échec à taire.
@@ -125,14 +112,11 @@ export async function pinTrip(
  * Lu et non recalculé ici : la règle qu'on relit doit être celle qui efface.
  */
 export async function retentionVerdict(
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<(Verdict & { delais: Delais }) | null> {
-  if (!hasCredentials(credentials)) return null
-
   try {
     const response = await fetchImpl('/retention', {
-      headers: { Accept: 'application/json', Authorization: authHeader(credentials) },
+      headers: { Accept: 'application/json' },
     })
     if (!response.ok) return null
     return (await response.json()) as Verdict & { delais: Delais }

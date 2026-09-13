@@ -389,8 +389,9 @@ ni par fichier, ni avec un profil.
 _Éviter_ : consentement (le mot du droit, pas celui de l'écran), option.
 
 **Dépôt** (_deposit_, `putFile`) :
-L'écriture d'un fichier sur le serveur, toujours authentifiée. Un dossier par
-nature : `journal/`, `traces/`, `mesures/`, `profiles/`.
+L'écriture d'un fichier sur le serveur, toujours sous le **compte de l'appareil**
+— le témoin de connexion voyage tout seul, il n'y a rien à composer. Un dossier
+par nature : `journal/`, `traces/`, `mesures/`, `profiles/`.
 _Attention_ : le dépôt **manuel** d'une trace, depuis l'écran de télémétrie, ne
 dépend pas de l'accord — ce qu'on fait soi-même n'a pas à être autorisé d'avance.
 
@@ -461,6 +462,14 @@ La personne. Il se crée tout seul au premier lancement et reste **anonyme** tan
 que ça suffit ; l'adresse se rattache le jour où elle sert. C'est lui que
 désignent les `account_id` de toutes les autres tables, et lui que la
 bibliothèque d'identité appelle un *user*.
+
+**Héritage** (_heritage_, `faireHeriter`) :
+Le passage au premier compte réel de tout ce que portait le compte d'avant
+l'identité. Une seule fois, et rien à mémoriser pour s'en assurer : le compte
+d'avant s'efface, donc il ne reste rien à transmettre au suivant.
+_Éviter_ : migration (qui désigne ici le déplacement des données du navigateur
+vers la base, lot MIGRER), reprise (qui désigne le versement des anciens
+dossiers du NAS).
 
 **Compte anonyme** (_anonymous account_, `accounts.is_anonymous`) :
 Un compte que l'appareil a reçu sans que personne saisisse rien, au premier

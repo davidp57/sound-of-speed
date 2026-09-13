@@ -15,6 +15,27 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **La voiture dépose avec son compte, et le mot de passe partagé disparaît.**
+  Le témoin de connexion voyage tout seul — la page et le serveur sont sur la
+  même origine —, et le serveur en déduit à qui appartient ce qui arrive. Le
+  champ « Compte de dépôt » quitte l'écran de configuration, et la clé qui
+  gardait son mot de passe en clair est effacée au chargement. La page de mesure
+  `/sonde/`, qui composait son propre en-tête, dépose du même coup sans rien
+  lire. Rien ne part tant que l'appareil n'a pas de compte : un dépôt envoyé
+  avant recevrait un refus qu'on ne rejoue pas, et ce qu'on essayait de sauver
+  serait perdu. Le fichier `htpasswd` quitte le serveur TypeScript, sa pile et
+  l'intégration continue ; il reste chez nginx, qui en a toujours besoin. Ce que
+  la voiture charge : **394 octets de moins qu'avant** — l'identité complète pèse
+  moins que le mot de passe qu'elle remplace.
+
+- **Ce que la base portait change de mains.** Tout appartenait à un compte écrit
+  en dur ; le premier appareil qui se présente en hérite — profils, moteurs,
+  boîtes, trajets, profil mesuré — et ce compte-là s'efface. Cela n'arrive
+  qu'une fois, et il n'y a rien à mémoriser pour s'en assurer : après l'héritage,
+  il ne reste rien à transmettre. Le journal du conteneur dit ce qui est passé.
+  Le ménage de rétention et le rattrapage du profil mesuré passent désormais sur
+  tous les comptes, et `npm run verdict` aussi.
+
 - **On monte dans la voiture et ça marche : un compte se crée tout seul.** Au
   premier contact avec le serveur, l'appareil reçoit un compte anonyme — rien à
   saisir, aucun écran d'inscription, aucune adresse. Il est gardé dans le

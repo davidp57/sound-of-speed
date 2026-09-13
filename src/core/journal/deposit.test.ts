@@ -13,7 +13,6 @@ import { Journal } from './journal'
  * est perdu.
  */
 
-const CREDENTIALS = { user: 'depot', password: 'motdepasse' }
 
 function tranche() {
   const journal = new Journal({ sessionId: 'k7bq', startedAt: Date.parse('2026-09-04T14:32:11Z') })
@@ -45,22 +44,23 @@ describe('le dépôt d’une tranche', () => {
     // alourdirait cette liste à chaque sortie.
     const { impl, calls } = fakeFetch(ok())
     const slice = tranche()
-    const outcome = await depositSlice(slice, CREDENTIALS, impl)
+    const outcome = await depositSlice(slice, impl)
 
     expect(outcome.ok).toBe(true)
     expect(calls[0]?.url).toBe(`/journal/${slice.name}.gz`)
     expect(calls[0]?.init?.method).toBe('PUT')
   })
 
-  it('s’annonce elle-même, le navigateur ne le faisant pas', async () => {
-    // Le navigateur ne demande l'authentification que sur une navigation, jamais
-    // sur une requête lancée par une page : sans cet en-tête, le dépôt reçoit un
-    // refus sans que rien ne s'affiche.
+  it('ne compose aucune authentification : le témoin voyage tout seul', async () => {
+    // Il fallait s'annoncer soi-même tant que la porte était un mot de passe
+    // partagé, le navigateur ne le faisant que sur une navigation. L'appareil a
+    // maintenant son compte, et son témoin part avec la requête sans qu'on ait
+    // rien à composer.
     const { impl, calls } = fakeFetch(ok())
-    await depositSlice(tranche(), CREDENTIALS, impl)
+    await depositSlice(tranche(), impl)
 
-    const headers = calls[0]?.init?.headers as Record<string, string>
-    expect(headers.Authorization).toBe(`Basic ${btoa('depot:motdepasse')}`)
+    const headers = calls[0]?.init?.headers as Record<string, string> | undefined
+    expect(headers?.['Authorization']).toBeUndefined()
   })
 
   it('envoie le corps compressé, et il se relit à l’identique', async () => {
@@ -69,7 +69,7 @@ describe('le dépôt d’une tranche', () => {
     // qu'on a.
     const { impl, calls } = fakeFetch(ok())
     const slice = tranche()
-    await depositSlice(slice, CREDENTIALS, impl)
+    await depositSlice(slice, impl)
 
     const body = calls[0]?.init?.body
     expect(body).toBeInstanceOf(Blob)
@@ -86,7 +86,7 @@ describe('le dépôt d’une tranche', () => {
     try {
       const { impl, calls } = fakeFetch(ok())
       const slice = tranche()
-      await depositSlice(slice, CREDENTIALS, impl)
+      await depositSlice(slice, impl)
 
       expect(calls[0]?.url).toBe(`/journal/${slice.name}`)
       expect(calls[0]?.init?.body).toBe(slice.body)
@@ -99,7 +99,7 @@ describe('le dépôt d’une tranche', () => {
     // Le nom est unique par construction — session plus rang, jamais réemployé —
     // et la question coûterait une requête toutes les cinq minutes.
     const { impl, calls } = fakeFetch(ok())
-    await depositSlice(tranche(), CREDENTIALS, impl)
+    await depositSlice(tranche(), impl)
 
     expect(calls).toHaveLength(1)
   })
@@ -109,14 +109,14 @@ describe('chaque échec dit s’il faut réessayer', () => {
   it('garde la tranche quand il n’y a pas de réseau', async () => {
     // Le cas qui arrive en roulant, et qui n'est pas une erreur.
     const { impl } = fakeFetch(new TypeError('Failed to fetch'))
-    const outcome = await depositSlice(tranche(), CREDENTIALS, impl)
+    const outcome = await depositSlice(tranche(), impl)
 
     expect(outcome).toMatchObject({ ok: false, reason: 'network', retry: true })
   })
 
   it('garde la tranche sur une indisponibilité du serveur', async () => {
     const { impl } = fakeFetch(new Response('', { status: 503 }))
-    const outcome = await depositSlice(tranche(), CREDENTIALS, impl)
+    const outcome = await depositSlice(tranche(), impl)
 
     expect(outcome).toMatchObject({ ok: false, reason: 'network', retry: true })
   })
@@ -125,7 +125,7 @@ describe('chaque échec dit s’il faut réessayer', () => {
     // Réessayer avec le même compte donnerait le même refus : insister
     // remplirait le journal de tentatives au lieu d'événements.
     const { impl } = fakeFetch(new Response('', { status: 401 }))
-    const outcome = await depositSlice(tranche(), CREDENTIALS, impl)
+    const outcome = await depositSlice(tranche(), impl)
 
     expect(outcome).toMatchObject({ ok: false, reason: 'refused', retry: false })
   })
@@ -134,18 +134,18 @@ describe('chaque échec dit s’il faut réessayer', () => {
     // Réessayer à l'identique échouerait autant. C'est au plafond de tranche
     // d'éviter ce cas, pas au dépôt de s'entêter.
     const { impl } = fakeFetch(new Response('', { status: 413 }))
-    const outcome = await depositSlice(tranche(), CREDENTIALS, impl)
+    const outcome = await depositSlice(tranche(), impl)
 
     expect(outcome).toMatchObject({ ok: false, reason: 'network', retry: false })
   })
 
-  it('garde la tranche quand aucun compte n’est réglé', async () => {
-    // Le journal d'un trajet ne doit pas être perdu par le seul fait qu'on a
-    // oublié de saisir un compte : la tranche attend qu'il le soit.
+  it('envoie la tranche sans rien attendre d’un réglage', async () => {
+    // Le cas « aucun compte saisi » a disparu avec le mot de passe partagé : la
+    // tranche part, et c'est le serveur qui dira s'il reconnaît cet appareil.
     const { impl, calls } = fakeFetch(ok())
-    const outcome = await depositSlice(tranche(), { user: '  ', password: '' }, impl)
+    const outcome = await depositSlice(tranche(), impl)
 
-    expect(outcome).toMatchObject({ ok: false, reason: 'no-credentials', retry: true })
-    expect(calls).toHaveLength(0)
+    expect(outcome).toMatchObject({ ok: true })
+    expect(calls).toHaveLength(1)
   })
 })

@@ -1,6 +1,5 @@
 import { fromFile } from './store'
 import type { Profile } from './schema'
-import { authHeader, hasCredentials, type DepositCredentials } from '../upload/put'
 
 /**
  * Profils déposés à côté des échantillons, sur le serveur.
@@ -43,13 +42,11 @@ interface AutoIndexEntry {
  * il est facultatif, et son absence n'a rien d'anormal.
  */
 export async function fetchLibrary(
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<LibraryEntry[]> {
   // Sans compte, la question ne se pose même pas : le serveur répondrait 401, et
   // l'appel coûterait un aller-retour pour une liste vide.
-  if (!hasCredentials(credentials)) return []
-  const headers = { Accept: 'application/json', Authorization: authHeader(credentials) }
+  const headers = { Accept: 'application/json' }
 
   let names: string[]
   try {
