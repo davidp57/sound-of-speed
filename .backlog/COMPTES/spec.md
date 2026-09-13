@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** 🔄 en cours — 9/13
+**Statut :** 🔄 en cours — 10/13
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -109,7 +109,7 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 | [12](tickets/12-un-compte-tiers.md) | Un compte tenu ailleurs, et seulement s'il est configuré | 11 |
 | [13](tickets/13-tenir-son-compte.md) ✅ | Tenir son compte : changer, oublier, emporter, supprimer | 11 |
 | [06](tickets/06-les-droits-ouvrent-les-ecrans.md) ✅ | Les rôles ouvrent les écrans, et un droit expiré les referme | 02 |
-| [14](tickets/14-l-appareil-porte-les-fonctions.md) | L'appareil porte les fonctions, et le drapeau de construction s'en va | 06 |
+| [14](tickets/14-l-appareil-porte-les-fonctions.md) ✅ | L'appareil porte les fonctions, et le drapeau de construction s'en va | 06 |
 | [07](tickets/07-hors-reseau-rien-ne-change.md) | Hors réseau, rien ne change : vérifié réseau coupé | 04, 06 |
 | [08](tickets/08-le-poids-charge-par-la-voiture.md) | Le poids chargé par la voiture, mesuré avant et après | 06, 14 |
 

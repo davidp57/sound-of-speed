@@ -528,6 +528,14 @@ _À ne pas confondre_ avec l'**appareil** — voiture, téléphone, poste de tra
 qui est l'autre axe : il dit ce qui a un sens là où l'on est, ne protège rien, et
 reste local.
 
+**Appareil** (_appareil_) :
+Sur quoi l'application tourne : une **voiture**, un **téléphone**, un **poste de
+travail**. C'est le second axe qui ouvre un écran, et il se croise avec le rôle
+par un et. Deviné au premier lancement, corrigeable depuis l'écran du compte, et
+gardé sur cet appareil seul.
+_Attention_ : il ne protège rien et le serveur l'ignore — un navigateur dirait ce
+qu'il veut.
+
 ## Profil effectif
 
 Ce que le moteur, la boîte, le conditionnement et le mixage emploient réellement :

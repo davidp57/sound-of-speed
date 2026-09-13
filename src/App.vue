@@ -9,12 +9,12 @@ import TelemetryView from './ui/TelemetryView.vue'
 import CalibrationPanel from './ui/CalibrationPanel.vue'
 import SynthView from './ui/SynthView.vue'
 import BenchView from './ui/BenchView.vue'
+import type { Appareil } from './core/appareil'
 import type { Role } from './core/identity/roles'
 import {
+  appareil,
   applyUpdate,
   offlineStatus,
-  simulatorAvailable,
-  synthAvailable,
   setBrake,
   importFromUrl,
   liaison,
@@ -185,43 +185,51 @@ function onFullscreenChange(): void {
 }
 
 /**
- * Les onglets, et le rôle que chacun demande.
+ * Les onglets, sur **deux axes** : le rôle que chacun demande, et les appareils
+ * sur lesquels il a un sens.
  *
- * Un rôle absent veut dire **toujours ouvert** — c'est le cas du compte, et
- * c'est délibéré : on s'y relie, on s'y connecte, on y reprend ce qu'on a
- * perdu. Le fermer serait une impasse dont on ne sortirait pas.
+ * Un rôle absent veut dire toujours ouvert — c'est le cas du compte, et c'est
+ * délibéré : on s'y relie, on s'y connecte, on y reprend ce qu'on a perdu, et on
+ * y corrige l'appareil. Un `sur` absent veut dire partout.
+ *
+ * Ce que la voiture ne montre pas, et pourquoi : l'**étalonnage** se fait tout
+ * seul depuis les traces, son panneau manuel est un reste ; le **banc** et la
+ * **synthèse** sont des écrans qu'on regarde à l'arrêt, un moteur à la main.
  */
-const TABS: { id: Tab; label: string; role?: Role }[] = [
+const TABS: { id: Tab; label: string; role?: Role; sur?: readonly Appareil[] }[] = [
   { id: 'drive', label: 'Conduite', role: 'conduite' },
   { id: 'telemetry', label: 'Télémétrie', role: 'conduite' },
   { id: 'config', label: 'Configuration', role: 'conduite' },
-  { id: 'calibration', label: 'Étalonnage', role: 'conduite' },
+  { id: 'calibration', label: 'Étalonnage', role: 'conduite', sur: ['telephone', 'poste'] },
   // L'identité vit dans son propre écran depuis le 13 septembre 2026 : donner un
   // code, en recevoir un, et bientôt se faire un vrai compte. Ce n'est pas un
   // réglage de conduite, et la section qu'il occupait dans Configuration se
   // perdait au milieu du reste.
   { id: 'account', label: 'Compte' },
-  // Les deux écrans de banc, absents de la production. Ils ont leur propre page
-  // depuis le 8 septembre 2026 : leurs commandes vivaient sous les cadrans de
-  // l'écran de conduite, où elles prenaient la place de ce qu'on lit en roulant.
-  //
-  // Le drapeau de construction qui les cache s'en va au ticket 14, remplacé par
-  // l'appareil : un banc n'a rien à faire sur l'écran d'une voiture, mais il en
-  // a sur un téléphone garé.
-  ...(synthAvailable ? [{ id: 'synth' as Tab, label: 'Synthèse', role: 'synthese' as Role }] : []),
-  ...(simulatorAvailable ? [{ id: 'bench' as Tab, label: 'Banc', role: 'conduite' as Role }] : []),
+  // Les deux écrans de banc. Ils ont leur propre page depuis le 8 septembre
+  // 2026 : leurs commandes vivaient sous les cadrans de l'écran de conduite, où
+  // elles prenaient la place de ce qu'on lit en roulant.
+  { id: 'synth', label: 'Synthèse', role: 'synthese', sur: ['poste'] },
+  { id: 'bench', label: 'Banc', role: 'conduite', sur: ['telephone', 'poste'] },
 ]
 
 /**
- * Ceux que ce compte ouvre.
+ * Ceux que ce compte ouvre, ici.
  *
  * **C'est un confort, pas une protection** : le serveur refuse de son côté ce
- * qu'un rôle n'ouvre pas, et c'est lui qui compte. Ici, on évite seulement de
- * proposer un écran qui répondrait non.
+ * qu'un rôle n'ouvre pas, et c'est lui qui compte. L'appareil, lui, ne protège
+ * rien du tout et n'a pas à le faire — il range l'écran.
  */
 const onglets = computed(() =>
-  TABS.filter((entree) => entree.role === undefined || ouvertPar(entree.role)),
+  TABS.filter(
+    (entree) =>
+      (entree.role === undefined || ouvertPar(entree.role)) &&
+      (entree.sur === undefined || entree.sur.includes(appareil.value)),
+  ),
 )
+
+/** De quoi vérifier qu'un écran a le droit d'être rendu, et pas seulement listé. */
+const ouverts = computed(() => new Set(onglets.value.map((entree) => entree.id)))
 
 // Un droit qui expire referme son écran **sans redémarrage** : si c'est celui
 // qu'on regardait, il faut aller ailleurs plutôt que de rester sur une page qui
@@ -406,8 +414,8 @@ onBeforeUnmount(() => {
       />
       <TelemetryView v-else-if="tab === 'telemetry'" />
       <CalibrationPanel v-else-if="tab === 'calibration'" />
-      <SynthView v-else-if="tab === 'synth' && synthAvailable" />
-      <BenchView v-else-if="tab === 'bench' && simulatorAvailable" />
+      <SynthView v-else-if="tab === 'synth' && ouverts.has('synth')" />
+      <BenchView v-else-if="tab === 'bench' && ouverts.has('bench')" />
       <ConfigView v-else-if="tab === 'config'" />
       <!-- Le compte ferme la liste : c'est le seul écran qu'aucun rôle ne peut
            refermer, donc le seul qui puisse servir de repli. -->

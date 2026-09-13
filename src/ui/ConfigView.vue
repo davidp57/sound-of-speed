@@ -120,13 +120,15 @@ import {
  * sur ce qu'on entend. La rangée entière disparaît quand il ne reste que le
  * GPS : un seul bouton qu'on ne peut pas désactiver n'est pas un choix.
  */
-const SOURCES: { id: SourceKind; label: string }[] = simulatorAvailable
-  ? [
-      { id: 'simulator', label: 'Simulateur' },
-      { id: 'geolocation', label: 'GPS' },
-      { id: 'replay', label: 'Rejeu' },
-    ]
-  : [{ id: 'geolocation', label: 'GPS' }]
+const SOURCES = computed<{ id: SourceKind; label: string }[]>(() =>
+  simulatorAvailable.value
+    ? [
+        { id: 'simulator', label: 'Simulateur' },
+        { id: 'geolocation', label: 'GPS' },
+        { id: 'replay', label: 'Rejeu' },
+      ]
+    : [{ id: 'geolocation', label: 'GPS' }],
+)
 
 /**
  * Écran de configuration.
