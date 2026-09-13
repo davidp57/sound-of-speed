@@ -32,9 +32,11 @@ Le fichier `htpasswd` cesse d'être la porte des dépôts.
 - **Hors réseau, la file continue de remplir.** Un dépôt qui ne part pas parce
   qu'il n'y a pas de réseau n'est pas un dépôt refusé : la distinction existe
   déjà dans le code, elle ne doit pas se perdre.
-- **Ce qui reste de `htpasswd`.** Le serveur sait le lire, le README l'explique,
-  et `npm run htpasswd` le fabrique. S'il ne sert plus à rien, il part —
-  documentation comprise. S'il garde un rôle, il faut dire lequel.
+- **`htpasswd` part s'il ne sert plus à rien — et ça se vérifie.** Six endroits
+  le connaissent : `comptes.ts`, l'option du serveur, `npm run htpasswd`,
+  `scripts/accord/htpasswd-essai.mjs`, la pile Docker et le README. Il faut
+  passer les six en revue avant de le retirer, pas seulement le premier : un
+  fichier de mots de passe à moitié retiré est une porte qu'on croit fermée.
 
 ## Critères d'acceptation
 
@@ -45,4 +47,5 @@ Le fichier `htpasswd` cesse d'être la porte des dépôts.
 - [ ] Hors réseau, la file garde et repart au retour, comme avant
 - [ ] La sonde autonome dépose encore, ou son cas est tranché et écrit
 - [ ] Le jeu `accord` est à jour et passe, dans le conteneur comme hors de lui
-- [ ] Le sort de `htpasswd` est décidé, et la documentation suit
+- [ ] Les six endroits qui connaissent `htpasswd` sont passés en revue ; s'il ne
+      sert plus, il part partout, documentation et pile Docker comprises

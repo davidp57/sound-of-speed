@@ -19,10 +19,16 @@ réglages, les profils et les trajets.
   laisserait un compte orphelin derrière, et ferait deux propriétaires pour un
   même profil mesuré. C'est le compte anonyme qui gagne une adresse, pas
   l'inverse.
-- **Le second appareil a déjà un compte anonyme à lui** (ticket 02), avec
-  peut-être des réglages faits dessus. Se connecter sur cet appareil-là pose la
-  question de ce qu'on fait de ce qu'il portait : abandonner, fusionner, ou
-  demander. À trancher, et à écrire.
+- **On ne devine pas qu'un appareil est le second d'un compte.** Rien ne
+  distingue « le second appareil de quelqu'un » de « le premier appareil de
+  quelqu'un d'autre », et c'est insoluble : un appareil neuf crée donc toujours
+  son compte anonyme. C'est la **connexion** qui relie, et elle est un geste
+  explicite — on saisit une adresse.
+
+  Ce qui reste à trancher n'est pas l'identification, c'est ce qu'on fait de ce
+  que cet appareil portait **avant** de se connecter : l'abandonner, le verser au
+  compte rejoint, ou demander. Le cas courant est un appareil neuf qui ne porte
+  que des valeurs d'usine, où la question ne se pose pas.
 - **Celui qui déploie chez lui ne donne aucune adresse.** Le rattachement est
   facultatif et le reste : aucune configuration de service tiers ne doit devenir
   nécessaire pour que l'application marche.
@@ -37,7 +43,8 @@ réglages, les profils et les trajets.
 - [ ] Rattacher une adresse à un compte anonyme conserve tout ce qu'il porte —
       profils, moteurs, boîtes, trajets, profil mesuré
 - [ ] Se connecter depuis un second appareil y ramène ces mêmes réglages
-- [ ] Ce que devient le compte anonyme du second appareil est décidé et écrit
+- [ ] Ce que devient ce qu'un appareil portait avant de se connecter est décidé
+      et écrit ; le cas de l'appareil neuf, qui ne porte rien, ne demande rien
 - [ ] Celui qui déploie chez lui n'a aucune adresse à donner ni service tiers à
       configurer
 - [ ] Hors réseau, l'écran dit qu'on ne peut pas se connecter maintenant

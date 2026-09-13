@@ -18,11 +18,11 @@ l'exigence qui commande tout le lot.
 - **Jamais d'appel au serveur en préalable au démarrage.** C'est une décision
   d'architecture, pas une option de la bibliothèque. Une voiture qui attendrait
   une réponse avant d'afficher ses cadrans serait inutilisable là où elle roule.
-- **Le compte survit au redémarrage du navigateur**, et il vit avec les autres
-  préférences d'appareil. Il rejoint donc les clés que
-  [REMISE-A-ZERO](../../REMISE-A-ZERO/spec.md) remet à zéro — et ce lot doit dire
-  ce que « remettre à zéro » veut dire pour une identité : oublier l'appareil, ou
-  oublier le compte.
+- **Le compte survit au redémarrage du navigateur.** Il vit dans le stockage
+  local, avec les préférences d'appareil, mais il n'en est pas une :
+  [REMISE-A-ZERO](../../REMISE-A-ZERO/spec.md) remet les **réglages** à leurs
+  valeurs d'usine et ne touche ni aux données ni à l'identité. Un bouton qui
+  déconnecterait en remettant le volume à zéro serait un piège.
 - **Un compte anonyme n'a rien à récupérer.** Vider le stockage local d'un
   appareil qui n'a rattaché aucune adresse, c'est perdre l'accès à ce qu'il avait
   déposé. Le dire à l'écran vaut mieux que le découvrir.
@@ -39,4 +39,4 @@ l'exigence qui commande tout le lot.
 - [ ] L'identité survit à une fermeture du navigateur
 - [ ] Hors réseau au premier lancement, l'application marche et prend son compte
       au retour du réseau
-- [ ] Ce que la remise à zéro fait de l'identité est décidé et écrit
+- [ ] La remise à zéro des réglages ne déconnecte pas et ne perd pas l'identité

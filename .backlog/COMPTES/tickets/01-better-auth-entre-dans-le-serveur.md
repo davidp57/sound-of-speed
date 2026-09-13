@@ -15,11 +15,30 @@ lire, avant que quoi que ce soit en dépende.
 
 ## Ce à quoi il faut faire attention
 
-- **Elle apporte ses propres tables.** `user`, `session`, `account`,
-  `verification` — et la base porte déjà `accounts`, avec des clés étrangères
-  depuis les profils, les moteurs, les boîtes, les dépôts et le profil mesuré.
-  Deux tables de comptes qui coexistent, c'est deux vérités : il faut décider
-  laquelle fait foi, et l'écrire. La réponse se prend à l'essai, pas d'avance.
+- **Une seule table d'identité, et c'est `accounts`.** La bibliothèque apporte
+  ses modèles — `user`, `session`, `account`, `verification` — mais elle sait se
+  poser sur des tables existantes : `modelName` désigne la table, `fields`
+  désigne les colonnes, et l'adaptateur Drizzle accepte `provider: "sqlite"`
+  (vérifié dans sa documentation le 13 septembre 2026). On l'accroche donc à
+  `accounts`, qui porte déjà `id`, `name`, `email` et `createdAt`, et à qui
+  pendent six tables par clé étrangère.
+
+  **Pourquoi ce sens-là.** Renommer notre table pour adopter la sienne coûterait
+  six recréations de tables — SQLite ne déplace pas une clé étrangère, il refait
+  la table, c'est le motif `__new_deposits` de la migration 0002. La mapper coûte
+  trois colonnes à ajouter et un fichier de configuration. Si l'essai dément la
+  promesse, cela se dit **ici** et pas trois tickets plus loin.
+
+- **Deux mots « compte » qui ne veulent pas dire la même chose.** Ce que la
+  bibliothèque appelle `account` n'est pas un compte d'utilisateur : c'est le
+  lien vers un fournisseur d'identité. Laisser ce nom à côté de notre `accounts`
+  garantit la confusion. Ses tables prennent donc des noms qui ne s'y trompent
+  pas, et `CONTEXT.md` dit lequel est lequel.
+
+- **Un compte anonyme n'a pas d'adresse**, et la bibliothèque attend souvent un
+  courriel non vide sur un utilisateur. Notre colonne est facultative et le
+  restera : c'est la condition pour qu'on monte dans la voiture sans rien saisir.
+  Comment elle s'en accommode se vérifie ici, pas au ticket 02.
 - **Les migrations sont versionnées ici.** Ce que la bibliothèque veut créer doit
   entrer par le même chemin que le reste — `drizzle-kit generate`, un fichier SQL
   numéroté, joué au démarrage. Une bibliothèque qui crée ses tables toute seule
@@ -39,7 +58,10 @@ lire, avant que quoi que ce soit en dépende.
 - [ ] Le serveur démarre avec la bibliothèque montée, et la base se migre par le
       chemin habituel
 - [ ] Une session se crée et se relit, vérifiée par un test
-- [ ] La table des comptes qui fait foi est décidée, et la décision est écrite
-      dans la spec
+- [ ] La bibliothèque est accrochée à `accounts` : aucune seconde table
+      d'identité, et les six clés étrangères existantes sont intactes
+- [ ] Un compte sans adresse est accepté
+- [ ] Les tables de la bibliothèque portent des noms qui ne se confondent pas
+      avec le nôtre, et `CONTEXT.md` le dit
 - [ ] Le jeu `accord` passe sans modification, dans le conteneur comme hors de lui
 - [ ] Le poids ajouté au paquet du client est mesuré et noté

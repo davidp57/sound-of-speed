@@ -107,8 +107,19 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 | [07](tickets/07-hors-reseau-rien-ne-change.md) | Hors réseau, rien ne change : vérifié réseau coupé | 04, 06 |
 | [08](tickets/08-le-poids-charge-par-la-voiture.md) | Le poids chargé par la voiture, mesuré avant et après | 06 |
 
-**Ce que le découpage laisse ouvert**, et qui se tranchera dans les tickets
-plutôt qu'ici : quelle table de comptes fait foi une fois la bibliothèque montée
-(01), ce que la remise à zéro fait d'une identité (02), ce qu'on fait du compte
-anonyme d'un second appareil qui se connecte (05), et le sort du fichier
-`htpasswd` (04).
+**Quatre points tranchés par David le 13 septembre 2026**, à l'ouverture du
+découpage :
+
+1. **Une seule table d'identité, et c'est `accounts`** : la bibliothèque s'y
+   accroche par `modelName` et `fields` plutôt que d'imposer la sienne. Six
+   tables y pendent par clé étrangère, et SQLite ne déplace pas une clé
+   étrangère — il refait la table.
+2. **La remise à zéro ne touche pas l'identité.** Ce bouton remet les *réglages*
+   de l'application de la voiture à leurs valeurs d'usine ; il n'efface ni les
+   données ni les comptes.
+3. **Un second appareil ne se devine pas.** Rien ne distingue « le second
+   appareil de quelqu'un » du « premier appareil de quelqu'un d'autre » : un
+   appareil neuf crée toujours son compte anonyme, et c'est la connexion, geste
+   explicite, qui relie. Reste à décider ce qu'on fait de ce qu'il portait avant.
+4. **`htpasswd` part s'il ne sert plus à rien**, et les six endroits qui le
+   connaissent se vérifient avant de le retirer.
