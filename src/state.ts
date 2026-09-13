@@ -81,8 +81,10 @@ import {
 import {
   rattacherUneAdresse,
   seConnecter,
+  supprimerSonCompte,
   type Connexion,
   type Rattachement,
+  type Suppression,
 } from './core/identity/compte'
 import { lireLienDansUrl, type CodeDeLiaison } from './core/identity/lien'
 import { loadIdentity, saveIdentity, type LocalIdentity } from './core/identity/store'
@@ -1706,6 +1708,26 @@ export async function seConnecterAUnCompte(
   saveDejaVu({})
   liaison.value = { etat: 'reliee', ancien: rendu.ancien }
   await rapatrier()
+  return rendu
+}
+
+/**
+ * Supprime le compte de cet appareil, et tout ce qu'il porte sur le serveur.
+ *
+ * **Ce qui est en local reste en local.** Les profils, les moteurs et les
+ * réglages de ce navigateur ne sont pas effacés : ils appartiennent à
+ * l'appareil, et la remise à zéro des réglages est un autre bouton. Ce qui part
+ * est ce que le serveur gardait, et le compte qui le désignait.
+ */
+export async function supprimerLeCompte(motDePasse = ''): Promise<Suppression> {
+  const rendu = await supprimerSonCompte(motDePasse)
+  if (rendu.state !== 'supprime') return rendu
+
+  identity.value = null
+  identityState.value = 'inconnue'
+  liaison.value = null
+  // Le registre de ce qu'on a déjà vu parlait d'un compte qui n'existe plus.
+  saveDejaVu({})
   return rendu
 }
 

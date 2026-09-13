@@ -11,11 +11,17 @@
  * tomberait au moment où l'on veut juste rouler. L'onglet existe, on y va quand
  * on veut.
  */
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import qrcode from 'qrcode-generator'
 
 import { demanderUnCode } from '../core/identity/client'
+import {
+  ARCHIVE_DU_COMPTE,
+  changerLeMotDePasse,
+  possibilitesDuServeur,
+  type PossibilitesDuServeur,
+} from '../core/identity/compte'
 import { lienDeLiaison } from '../core/identity/lien'
 import { isReachableOrigin } from '../core/preset/share'
 import {
@@ -25,6 +31,7 @@ import {
   rattacherSonAdresse,
   rejoindreUnCompte,
   seConnecterAUnCompte,
+  supprimerLeCompte,
 } from '../state'
 
 /**
@@ -235,6 +242,97 @@ async function onSaisirLeCode(): Promise<void> {
   }
 }
 
+/**
+ * Ce que ce serveur-ci sait faire.
+ *
+ * Demandé une fois à l'ouverture de l'écran : ce qui n'est pas configuré ne doit
+ * pas apparaître, et un bouton qui mène à une erreur est pire que pas de bouton.
+ */
+const possibilites = ref<PossibilitesDuServeur>({ relaisCourriel: false, fournisseurs: [] })
+
+onMounted(() => {
+  void possibilitesDuServeur().then((rendu) => {
+    possibilites.value = rendu
+  })
+})
+
+/**
+ * Tenir son compte : changer le mot de passe, emporter, supprimer.
+ */
+const ancienMotDePasse = ref('')
+const nouveauMotDePasse = ref('')
+const noteDeTenue = ref('')
+const tenueEnCours = ref(false)
+
+async function onChangerLeMotDePasse(): Promise<void> {
+  if (tenueEnCours.value || nouveauMotDePasse.value.length < MOT_DE_PASSE_MINIMUM) return
+  tenueEnCours.value = true
+  noteDeTenue.value = ''
+  try {
+    const rendu = await changerLeMotDePasse(ancienMotDePasse.value, nouveauMotDePasse.value)
+    if (rendu.state === 'sans-reseau') {
+      noteDeTenue.value = 'Sans réseau, on ne change pas de mot de passe : il vit sur le serveur.'
+      return
+    }
+    if (rendu.state === 'refusee') {
+      noteDeTenue.value = rendu.detail
+      return
+    }
+    ancienMotDePasse.value = ''
+    nouveauMotDePasse.value = ''
+    noteDeTenue.value = 'Mot de passe changé.'
+  } finally {
+    tenueEnCours.value = false
+  }
+}
+
+/**
+ * Le navigateur de la voiture refuse les téléchargements.
+ *
+ * C'est un fait constaté, et la raison d'être de la remontée au serveur. On ne
+ * sait pas le deviner d'avance ; ce qu'on peut faire est de le dire, et de
+ * renvoyer vers un poste de travail plutôt que de laisser un bouton sans effet.
+ */
+const lienDArchive = ARCHIVE_DU_COMPTE
+
+/**
+ * Supprimer, en deux temps.
+ *
+ * Un premier clic demande confirmation, un second agit — c'est déjà le motif de
+ * la réinitialisation par section dans l'écran de configuration. Effacer des
+ * mois de trajets mérite une seconde d'hésitation, et un dialogue du système
+ * serait plus lourd que le geste.
+ */
+const suppressionEnAttente = ref(false)
+const motDePasseDeSuppression = ref('')
+
+async function onSupprimer(): Promise<void> {
+  if (!suppressionEnAttente.value) {
+    suppressionEnAttente.value = true
+    return
+  }
+  if (tenueEnCours.value) return
+  tenueEnCours.value = true
+  noteDeTenue.value = ''
+  try {
+    const rendu = await supprimerLeCompte(motDePasseDeSuppression.value)
+    if (rendu.state === 'sans-reseau') {
+      noteDeTenue.value = 'Sans réseau, on ne supprime rien : le compte vit sur le serveur.'
+      return
+    }
+    if (rendu.state === 'refusee') {
+      noteDeTenue.value = rendu.detail
+      return
+    }
+    suppressionEnAttente.value = false
+    motDePasseDeSuppression.value = ''
+    noteDeTenue.value =
+      'Compte supprimé. Cet appareil en prendra un neuf, vide, au prochain contact avec le serveur. Ce qui est réglé ici, sur cet appareil, n’a pas bougé.'
+  } finally {
+    tenueEnCours.value = false
+  }
+}
+
 onUnmounted(() => {
   masquerLeCode()
 })
@@ -372,6 +470,83 @@ onUnmounted(() => {
       Tant qu’il n’y en a pas, un mot de passe perdu l’est pour de bon.
     </p>
     <p v-if="noteDuCompte" class="note">{{ noteDuCompte }}</p>
+
+    <!--
+      Tenir son compte. Trois gestes de nature différente, dans l'ordre où on les
+      fait : on change un mot de passe parce qu'on garde le compte, on emporte
+      parce qu'on va peut-être le quitter, on supprime parce qu'on le quitte.
+    -->
+    <template v-if="identity?.anonymous === false">
+      <h3>Changer le mot de passe</h3>
+      <div class="choices">
+        <input
+          v-model="ancienMotDePasse"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Mot de passe actuel"
+        />
+        <input
+          v-model="nouveauMotDePasse"
+          type="password"
+          autocomplete="new-password"
+          :placeholder="`Nouveau mot de passe (${MOT_DE_PASSE_MINIMUM} caractères au moins)`"
+        />
+        <button
+          :disabled="nouveauMotDePasse.length < MOT_DE_PASSE_MINIMUM || tenueEnCours"
+          @click="onChangerLeMotDePasse()"
+        >
+          Changer
+        </button>
+      </div>
+      <p v-if="!possibilites.relaisCourriel" class="note">
+        <strong>Pas de « j’ai oublié » sur ce serveur</strong> : aucun relais de
+        courriel n’y est configuré, et rien ne peut donc vous renvoyer votre mot
+        de passe. Le ranger dans un gestionnaire de mots de passe est le seul
+        filet.
+      </p>
+    </template>
+
+    <h3>Emporter ses données</h3>
+    <p class="note">
+      Un fichier avec tout ce que ce compte porte sur le serveur : profils,
+      moteurs, boîtes, trajets, journal, relevés de mesure et profil mesuré, dans
+      les mêmes dossiers qu’ici. Il se reverse tel quel dans une installation
+      neuve.
+    </p>
+    <div class="choices">
+      <a class="bouton" :href="lienDArchive" download>Emporter (fichier .zip)</a>
+    </div>
+    <p class="note">
+      <strong>Depuis un poste de travail.</strong> Le navigateur de la voiture
+      refuse les téléchargements — c’est ce qui a fait naître la remontée au
+      serveur —, et ce lien n’y donnera rien.
+    </p>
+
+    <h3>Supprimer ce compte</h3>
+    <p class="note">
+      Tout part avec lui : les profils, les moteurs, les boîtes, les trajets, le
+      journal, les relevés et le profil mesuré déposés sur le serveur.
+      <strong>C’est sans retour.</strong> Ce qui est réglé sur cet appareil, lui,
+      ne bouge pas — c’est un autre bouton, dans l’écran de configuration.
+    </p>
+    <div class="choices">
+      <input
+        v-if="identity?.anonymous === false"
+        v-model="motDePasseDeSuppression"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Mot de passe, pour confirmer"
+      />
+      <button :disabled="tenueEnCours" @click="onSupprimer()">
+        {{ suppressionEnAttente ? 'Confirmer la suppression' : 'Supprimer ce compte…' }}
+      </button>
+      <button v-if="suppressionEnAttente" @click="suppressionEnAttente = false">Annuler</button>
+    </div>
+    <p v-if="suppressionEnAttente" class="note warn">
+      Un second clic efface tout ce que ce compte porte sur le serveur.
+    </p>
+
+    <p v-if="noteDeTenue" class="note">{{ noteDeTenue }}</p>
   </section>
 </template>
 
@@ -429,6 +604,18 @@ input {
   font: inherit;
   min-width: 16rem;
   flex: 1 1 16rem;
+}
+
+/* Un lien qui se comporte comme un bouton : c'est un téléchargement, donc un
+   lien, mais rien ne le distingue à l'usage des boutons voisins. */
+.bouton {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  text-decoration: none;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  color: inherit;
 }
 
 .share {

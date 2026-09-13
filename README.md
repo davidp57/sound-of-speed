@@ -230,8 +230,9 @@ main.
 
 **Compte** — tout ce qui touche à l'identité, et nulle part ailleurs : ce que
 porte cet appareil, **donner un code** pour qu'un autre appareil ouvre le même
-compte, **recopier un code** venu d'un autre, et **une adresse avec un mot de
-passe** pour le jour où l'on n'a plus aucun appareil.
+compte, **recopier un code** venu d'un autre, **une adresse avec un mot de
+passe** pour le jour où l'on n'a plus aucun appareil, et de quoi **tenir son
+compte** : changer son mot de passe, emporter ses données, le supprimer.
 
 Il est apparu le 13 septembre 2026, quand la section du compte a quitté
 **Configuration** : le chemin normal va de la voiture au poste de travail, et
@@ -1222,6 +1223,22 @@ relais à configurer, et celui qui déploie chez lui n'en fournira pas. Ce que c
 coûte est dit à l'écran : tant qu'il n'y a pas de relais, un mot de passe perdu
 l'est pour de bon.
 
+**Tenir son compte.** Le mot de passe se change, l'ancien à l'appui. Tout ce que
+le compte porte s'**emporte en un fichier** — profils, moteurs, boîtes, trajets,
+journal, relevés et profil mesuré, dans les mêmes dossiers qu'ici, donc reversable
+tel quel dans une installation neuve. Et le compte se **supprime**, en deux
+temps : tout ce qu'il porte sur le serveur part avec lui, sans retour. Ce qui est
+réglé sur l'appareil, lui, ne bouge pas — c'est un autre bouton, dans l'écran de
+configuration.
+
+Deux réserves, dites à l'écran plutôt que découvertes :
+
+- **Emporter demande un poste de travail.** Le navigateur de la voiture refuse
+  les téléchargements — c'est ce qui a fait naître la remontée au serveur.
+- **« J'ai oublié » n'existe pas sans relais de courriel.** L'écran le dit au lieu
+  d'afficher un lien qui ne mène nulle part. Le serveur annonce ce qu'il sait
+  faire, et l'écran n'offre rien d'autre.
+
 **Elle se pose sur la table `accounts`**, celle qui existe déjà et à qui pendaient déjà
 six autres tables. L'inverse — adopter la table qu'elle apporte — aurait obligé
 à recréer chacune de ces tables, SQLite ne sachant pas déplacer une clé étrangère.
@@ -1254,12 +1271,13 @@ sur le site, c'est cette adresse-là qu'il lui faut.
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
-compte. Un jeu de cinquante-deux requêtes le vérifie à chaque intégration — voir
+compte. Un jeu de cinquante-cinq requêtes le vérifie à chaque intégration — voir
 [`scripts/accord/`](scripts/accord/README.md).
 
 S'y ajoutent `/api/auth/liaison/`, sous lequel la voiture demande un code et un
-second appareil s'y relie, et `/api/auth/compte/`, qui rattache une adresse et
-rouvre un compte ailleurs. Ce sont deux routes **de la bibliothèque
+second appareil s'y relie, `/api/auth/compte/`, qui rattache une adresse, rouvre
+un compte ailleurs et le supprime, et `/mon-compte/archive.zip`, qui rend en un
+fichier tout ce qu'un compte porte. Ce sont deux routes **de la bibliothèque
 d'identité** — un greffon, et non deux routes à côté : le témoin de connexion est
 signé avec le secret du serveur, et seule la bibliothèque sait le poser. En
 prime, ces deux routes exigent un en-tête `Origin`, que tout navigateur envoie et
@@ -3023,7 +3041,7 @@ suit pas.
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
-| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 7 tickets sur 12** |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 8 tickets sur 12** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

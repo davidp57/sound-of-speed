@@ -23,7 +23,7 @@
  */
 
 import { createAuthEndpoint, getSessionFromCtx, sessionMiddleware } from 'better-auth/api'
-import { setSessionCookie } from 'better-auth/cookies'
+import { deleteSessionCookie, setSessionCookie } from 'better-auth/cookies'
 import { and, eq, ne } from 'drizzle-orm'
 import * as z from 'zod'
 
@@ -183,6 +183,77 @@ export function compte({ base }: { base: Base }) {
             user: { id: trouve.user.id, name: trouve.user.name, email, isAnonymous: false },
             ancien,
           })
+        },
+      ),
+
+      /**
+       * Ce que ce serveur-ci sait faire, pour que l'écran n'offre rien d'autre.
+       *
+       * **Ce qui n'est pas configuré ne doit pas apparaître.** Celui qui déploie
+       * chez lui n'a ni relais de courriel ni fournisseur tiers à inscrire, et
+       * son écran ne doit pas montrer un bouton qui mène à une erreur.
+       */
+      possibilitesDuServeur: createAuthEndpoint(
+        '/compte/possibilites',
+        { method: 'GET' },
+        async (contexte) =>
+          contexte.json({
+            // Rien n'envoie de courriel aujourd'hui. Le jour où un relais sera
+            // configuré, c'est ici que l'écran l'apprendra — et « j'ai oublié »
+            // apparaîtra tout seul.
+            relaisCourriel: false,
+            // Les comptes tenus ailleurs viennent au ticket 12.
+            fournisseurs: [] as string[],
+          }),
+      ),
+
+      /**
+       * Supprimer son compte, et tout ce qu'il porte.
+       *
+       * La cascade de la base fait le travail : profils, moteurs, boîtes,
+       * dépôts, profil mesuré, droits, sessions et preuves partent avec la
+       * ligne. Ce qui manquait était le geste, et ce qui l'entoure.
+       *
+       * **Le mot de passe est exigé quand le compte en a un.** Sans lui, un
+       * appareil laissé déverrouillé suffirait à tout effacer ; avec un compte
+       * anonyme, il n'y a rien à exiger — le témoin est la seule preuve qui
+       * existe, et c'est déjà celle qui ouvre tout le reste.
+       */
+      supprimerSonCompte: createAuthEndpoint(
+        '/compte/supprimer',
+        {
+          method: 'POST',
+          use: [sessionMiddleware],
+          body: z.object({ motDePasse: z.string().optional() }),
+        },
+        async (contexte) => {
+          const moi = contexte.context.session.user.id
+          const trouve = await contexte.context.internalAdapter.findUserByEmail(
+            contexte.context.session.user.email,
+            { includeAccounts: true },
+          )
+          const preuve = trouve?.accounts.find(
+            (candidate) => candidate.providerId === PREUVE_PAR_MOT_DE_PASSE,
+          )
+
+          if (preuve?.password) {
+            const donne = contexte.body.motDePasse ?? ''
+            const bon =
+              donne !== '' &&
+              (await contexte.context.password.verify({ hash: preuve.password, password: donne }))
+            if (!bon) {
+              throw contexte.error('UNAUTHORIZED', {
+                message: 'Ce mot de passe n’est pas celui de ce compte.',
+              })
+            }
+          }
+
+          await base.delete(accounts).where(eq(accounts.id, moi))
+          // Le témoin ne vaut plus rien : le laisser ferait croire à l'appareil
+          // qu'il est connecté jusqu'à ce qu'il pose une question au serveur.
+          deleteSessionCookie(contexte)
+
+          return contexte.json({ supprime: true })
         },
       ),
     },
