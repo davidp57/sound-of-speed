@@ -28,7 +28,9 @@ Toutes les évolutions notables du projet. Format
   sans adresse est accepté, ce qui est la condition pour monter dans la voiture
   sans rien saisir. Le secret qui signe les connexions s'écrit tout seul au
   premier démarrage, à côté du fichier de base : celui qui déploie chez lui n'a
-  rien à fournir. Le paquet que charge la voiture n'a pas bougé d'un
+  rien à fournir. `SPEED_URL` dit l'adresse publique de la pile quand on la
+  connaît — derrière un proxy inversé, le conteneur ne voit qu'un port local et
+  ne peut pas la deviner. Le paquet que charge la voiture n'a pas bougé d'un
   octet — 445 576 avant, 445 576 après.
 
 - **Une commande dit ce que la règle emporterait, sur une copie de la base.**

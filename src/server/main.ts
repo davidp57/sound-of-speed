@@ -26,7 +26,10 @@ const fichierDeBase = process.env['SPEED_DB'] ?? 'donnees/speed.db'
 const migrations = process.env['SPEED_MIGRATIONS'] ?? 'src/server/base/migrations'
 const fichierDeComptes = process.env['SPEED_HTPASSWD']
 const anciensDossiers = process.env['SPEED_REPRISE']
-const adressePublique = process.env['SPEED_URL']
+// Vide vaut absente : une variable déclarée sans valeur dans l'écran d'une pile
+// est ce qu'on obtient le plus souvent, et une adresse vide ferait pire que pas
+// d'adresse du tout.
+const adressePublique = process.env['SPEED_URL']?.trim() || undefined
 const secretDIdentite = process.env['SPEED_AUTH_SECRET']
 const epingles = nombreOuRien(process.env['SPEED_EPINGLES'])
 const delais: Delais = {

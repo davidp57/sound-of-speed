@@ -1142,11 +1142,17 @@ installée comme dépendance de production.
 | Variable | Défaut | Ce qu'elle règle |
 |---|---|---|
 | `SPEED_AUTH_SECRET` | tiré au sort | De quoi signer les témoins de connexion. Sans elle, le premier démarrage en écrit un dans `identite.secret`, à côté du fichier de base, et s'en sert ensuite. |
-| `SPEED_URL` | déduite de la requête | L'adresse publique du serveur. Sans elle, la bibliothèque la déduit de chaque requête et le dit au démarrage ; c'est sans conséquence tant qu'aucun fournisseur d'identité tiers n'a de retour à faire. |
+| `SPEED_URL` | déduite de la requête | L'adresse **publique** de la pile, celle que le proxy inversé expose — `https://speed.<votre-nom>.synology.me` en production, `https://speed-dev.<votre-nom>.synology.me` en intégration. Sans elle, la bibliothèque la déduit de chaque requête et le signale à chaque démarrage. |
 
 **Celui qui déploie chez lui n'a donc rien à fournir.** Le secret se crée tout
 seul, dans le volume de données : il survit au remplacement du conteneur, ce qui
 est la condition pour qu'une connexion survive à une mise à jour.
+
+`SPEED_URL` n'est pas obligatoire non plus, mais elle se renseigne dans l'écran
+de la pile dès qu'on sait sous quel nom on atteindra le serveur : **derrière un
+proxy inversé, l'adresse publique ne se devine pas** depuis le conteneur, qui ne
+voit qu'un port local. Le jour où un fournisseur d'identité tiers doit revenir
+sur le site, c'est cette adresse-là qu'il lui faut.
 
 ### Ce qui change, vu de l'application
 
