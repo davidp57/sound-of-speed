@@ -207,6 +207,43 @@ export async function possibilitesDuServeur(
   }
 }
 
+/** Ce qu'un compte porte déjà comme preuves de qui le tient. */
+export interface PreuvesDuCompte {
+  /** Un mot de passe est rattaché à ce compte. */
+  motDePasse: boolean
+  /** Les comptes tenus ailleurs déjà rattachés à celui-ci. */
+  fournisseurs: Fournisseur[]
+}
+
+/**
+ * Ce que **ce compte-ci** porte, et non ce que le serveur propose.
+ *
+ * Rend `null` quand on ne sait pas : hors réseau, ou sans compte. L'écran s'en
+ * sert pour ne rien affirmer — proposer de s'approprier un compte qui l'est
+ * déjà est aussi faux que réclamer son mot de passe à un compte qui n'en a pas.
+ */
+export async function preuvesDuCompte(
+  options: IdentityOptions = {},
+): Promise<PreuvesDuCompte | null> {
+  const { fetchImpl = fetch } = options
+
+  try {
+    const reponse = await fetchImpl(`${IDENTITE}/compte/preuves`, {
+      headers: { Accept: 'application/json' },
+    })
+    if (!reponse.ok) return null
+    const dit = await messageDe(reponse)
+    return {
+      motDePasse: dit['motDePasse'] === true,
+      fournisseurs: Array.isArray(dit['fournisseurs'])
+        ? dit['fournisseurs'].filter(estUnFournisseur)
+        : [],
+    }
+  } catch {
+    return null
+  }
+}
+
 /**
  * Un fournisseur n'est retenu que s'il porte les deux champs.
  *

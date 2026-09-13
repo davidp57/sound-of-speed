@@ -30,6 +30,15 @@ export interface LocalIdentity {
    * est rattaché **sans réseau**, ce qui est la situation ordinaire.
    */
   email?: string
+  /**
+   * Le portrait que le fournisseur d'un compte tenu ailleurs a rendu.
+   *
+   * Absent partout ailleurs : rien d'autre n'en fournit. Gardé ici pour que
+   * l'écran l'affiche sans redemander, comme l'adresse — mais l'image, elle,
+   * vient d'un serveur qui n'est pas le nôtre, et ne s'affichera pas hors
+   * réseau. L'écran retombe alors sur l'initiale.
+   */
+  image?: string
   /** Quand cet appareil a obtenu son compte, en millisecondes. */
   obtainedAt: number
 }
@@ -83,6 +92,7 @@ function estUneIdentite(valeur: unknown): valeur is LocalIdentity {
     typeof entree['name'] === 'string' &&
     typeof entree['anonymous'] === 'boolean' &&
     typeof entree['obtainedAt'] === 'number' &&
-    (entree['email'] === undefined || typeof entree['email'] === 'string')
+    (entree['email'] === undefined || typeof entree['email'] === 'string') &&
+    (entree['image'] === undefined || typeof entree['image'] === 'string')
   )
 }

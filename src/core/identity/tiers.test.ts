@@ -22,7 +22,7 @@ import { saveIdentity, type LocalIdentity } from './store'
 
 const ICI: LocalIdentity = {
   id: 'compte-d-ici',
-  name: 'Appareil du 13/09/2026',
+  name: 'houle-paisible-47',
   anonymous: true,
   obtainedAt: 1_700_000_000_000,
 }

@@ -29,7 +29,7 @@ import * as z from 'zod'
 
 import { estAnonyme, reglerLAncien } from './abandon'
 import type { Base } from './base/base'
-import { accounts } from './base/schema'
+import { accounts, authIdentities } from './base/schema'
 import { nomDuFournisseur } from './tiers'
 
 /** Le préfixe sous lequel ce greffon répond, sous celui de l'identité. */
@@ -216,6 +216,44 @@ export function compte({ base }: { base: Base }) {
               nom: nomDuFournisseur(fournisseur.id),
             })),
           }),
+      ),
+
+      /**
+       * Ce que **ce compte-ci** porte déjà comme preuves.
+       *
+       * `/compte/possibilites` dit ce que le serveur sait faire ; celle-ci dit
+       * ce qui est déjà rattaché. L'écran a besoin des deux, et confondre les
+       * deux lui a fait demander son mot de passe à un compte tenu ailleurs,
+       * qui n'en a pas.
+       *
+       * **Le mot de passe se dit par oui ou par non**, et les comptes tenus
+       * ailleurs par le nom de leur fournisseur. Rien d'autre ne sort : ni
+       * empreinte, ni jeton, ni identifiant chez le fournisseur.
+       */
+      preuvesDuCompte: createAuthEndpoint(
+        '/compte/preuves',
+        { method: 'GET', use: [sessionMiddleware] },
+        async (contexte) => {
+          const portees = await base
+            .select({ providerId: authIdentities.providerId, password: authIdentities.password })
+            .from(authIdentities)
+            .where(eq(authIdentities.accountId, contexte.context.session.user.id))
+
+          return contexte.json({
+            motDePasse: portees.some(
+              (preuve) =>
+                preuve.providerId === PREUVE_PAR_MOT_DE_PASSE &&
+                preuve.password !== null &&
+                preuve.password !== '',
+            ),
+            fournisseurs: portees
+              .filter((preuve) => preuve.providerId !== PREUVE_PAR_MOT_DE_PASSE)
+              .map((preuve) => ({
+                id: preuve.providerId,
+                nom: nomDuFournisseur(preuve.providerId),
+              })),
+          })
+        },
       ),
 
       /**
