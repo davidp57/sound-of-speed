@@ -1374,6 +1374,28 @@ profil déposé seul désignait un moteur que personne d'autre ne possédait.
 Les échantillons, eux, restent dans un volume : ce sont des fichiers, ils pèsent,
 et une image qui les contiendrait se redistribuerait avec eux.
 
+### Ce que la voiture charge au démarrage
+
+**142 kilo-octets**, mesurés dans un navigateur en relevant ce que le réseau
+transfère — et non ce que la construction annonce.
+
+| État | Ce que la voiture tire |
+|---|---|
+| Avant le 13 septembre 2026 | 459 ko |
+| Les trois écrans d'atelier chargés à la demande | 423 ko |
+| Les réponses compressées | **142 ko** |
+
+**Le serveur compresse ce qui se compresse**, comme nginx le faisait avant lui :
+les types textuels au-delà d'un kilo-octet. Jamais les échantillons — du FLAC
+est déjà compressé —, et jamais une plage d'octets, le client demandant alors
+les octets d'un fichier et non d'un flux. Le serveur qui a remplacé nginx ne le
+faisait plus : la voiture tirait 310 ko de JavaScript là où gzip en fait 99.
+
+**Trois écrans se chargent à la demande** : l'étalonnage, le banc et la
+synthèse, qu'une voiture n'ouvre jamais. Les autres arrivent d'emblée, et c'est
+délibéré — ils s'ouvrent au volant, donc les différer déplacerait leur
+téléchargement là où il n'y a pas de réseau.
+
 ### Ce qui n'a pas encore été mesuré
 
 **Le débit des échantillons sur le disque d'un NAS.** Le serveur sert les mêmes
