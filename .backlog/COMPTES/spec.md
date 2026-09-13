@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** 🔄 en cours — 2/8
+**Statut :** 🔄 en cours — 2/9
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -92,7 +92,8 @@ perdre d'argent, pas d'en gagner.
 
 ## Les tickets
 
-Découpés le 13 septembre 2026. Un seul démarre tout de suite : la bibliothèque
+Découpés le 13 septembre 2026, et repris le soir même — voir les décisions
+ci-dessous. Un seul démarre tout de suite : la bibliothèque
 doit exister avant qu'on parle d'identité. Les deux derniers vérifient — hors
 réseau, et le poids — ce que les six premiers promettent chacun de leur côté.
 
@@ -102,7 +103,8 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 | [02](tickets/02-un-compte-se-cree-tout-seul.md) ✅ | Un compte se crée tout seul, et l'application démarre sans lui | 01 |
 | [03](tickets/03-ce-que-porte-solo-change-de-mains.md) | Ce que porte `solo` devient celui du premier compte | 02 |
 | [04](tickets/04-la-voiture-depose-avec-son-compte.md) | La voiture dépose avec son compte, et le mot de passe partagé s'efface | 02, 03 |
-| [05](tickets/05-rattacher-une-adresse-ne-perd-rien.md) | Rattacher une adresse conserve tout ce que le compte portait | 02 |
+| [05](tickets/05-relier-un-appareil-par-un-code.md) | Relier un second appareil en scannant un code | 02 |
+| [09](tickets/09-reprendre-son-compte.md) 🧑 | Reprendre son compte quand on a tout perdu | 05 |
 | [06](tickets/06-les-droits-ouvrent-les-ecrans.md) | Les droits ouvrent les écrans, et un droit expiré les referme | 02 |
 | [07](tickets/07-hors-reseau-rien-ne-change.md) | Hors réseau, rien ne change : vérifié réseau coupé | 04, 06 |
 | [08](tickets/08-le-poids-charge-par-la-voiture.md) | Le poids chargé par la voiture, mesuré avant et après | 06 |
@@ -123,3 +125,36 @@ découpage :
    explicite, qui relie. Reste à décider ce qu'on fait de ce qu'il portait avant.
 4. **`htpasswd` part s'il ne sert plus à rien**, et les six endroits qui le
    connaissent se vérifient avant de le retirer.
+
+**Cinq points de plus, tranchés le soir du 13 septembre 2026**, après quatre
+questions de David sur ce que l'identité recouvre vraiment :
+
+5. **Le code à scanner passe devant l'adresse.** Le découpage initial n'avait
+   retenu que « on saisit une adresse », alors que
+   [REFONTE](../REFONTE/spec.md) portait déjà les récits 36 et 37 : *rattacher un
+   appareil en scannant un code affiché par un autre, parce que taper un jeton sur
+   l'écran d'une voiture est pénible*, et *en saisissant un code court quand
+   l'appareil n'a pas de caméra*. Relier deux appareils qu'on possède et reprendre
+   un compte perdu sont **deux besoins distincts** : ils font désormais deux
+   tickets, le 05 et le 09, dans cet ordre.
+6. **Rien ne s'affiche au premier lancement.** Une fenêtre proposant de saisir une
+   adresse ou de scanner un code au premier démarrage serait l'écran d'inscription
+   que ce lot supprime — et elle tomberait au moment où l'on veut juste rouler.
+   Les deux voies vivent dans l'écran de configuration ; une bannière escamotable
+   les rappelle une fois.
+7. **Le compte anonyme sert de jeton.** L'adresse que la bibliothèque lui fabrique
+   sous `.invalid` plus un mot de passe posé par le serveur font un identifiant
+   complet, sans envoyer le moindre courriel. Vérifié sur le vrai serveur.
+8. **Un compte, une voiture — limite assumée.** `measured_cars` a `account_id`
+   pour clé primaire : **un seul profil mesuré par compte**. Un téléphone dans la
+   même voiture ne pose rien, un poste de bureau non plus. Deux voitures sous un
+   même compte mélangeraient leurs cumuls, et rendraient une reprise et un
+   freinage moyens qui ne décrivent ni l'une ni l'autre. On n'y touche pas ici :
+   le rendre multi-voitures toucherait le profil mesuré, l'étalonnage et les
+   écrans, ce qui n'a rien à faire dans un lot sur l'identité.
+9. **Ce qui identifie un appareil n'est pas l'appareil.** Il n'y a ni identifiant
+   de navigateur ni empreinte : l'identifiant est produit par le serveur, et ce
+   qui « reconnaît » l'appareil, c'est son navigateur qui se souvient — un témoin
+   de connexion fermé au code de la page, valable un an, et une entrée de stockage
+   local qui n'ouvre rien. Deux navigateurs sur la même machine font donc deux
+   comptes.
