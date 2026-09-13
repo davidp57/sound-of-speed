@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** 🔄 en cours — 5/12
+**Statut :** 🔄 en cours — 6/12
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -104,7 +104,7 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 | [03](tickets/03-ce-que-porte-solo-change-de-mains.md) ✅ | Ce que porte `solo` devient celui du premier compte | 02 |
 | [04](tickets/04-la-voiture-depose-avec-son-compte.md) ✅ | La voiture dépose avec son compte, et le mot de passe partagé s'efface | 02, 03 |
 | [05](tickets/05-relier-un-appareil-par-un-code.md) ✅ | Un jeton de liaison, deux rendus : un code à scanner et un code court à taper | 02 |
-| [10](tickets/10-l-ecran-du-compte.md) | L'écran du compte : le lieu unique où tout se passe | 05 |
+| [10](tickets/10-l-ecran-du-compte.md) ✅ | L'écran du compte : le lieu unique où tout se passe | 05 |
 | [11](tickets/11-un-vrai-compte.md) | Un vrai compte : une adresse et un mot de passe, choisis depuis un clavier | 10 |
 | [12](tickets/12-un-compte-tiers.md) | Un compte tenu ailleurs, et seulement s'il est configuré | 11 |
 | [13](tickets/13-tenir-son-compte.md) | Tenir son compte : changer, oublier, emporter, supprimer | 11 |

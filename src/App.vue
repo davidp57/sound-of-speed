@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
+import AccountView from './ui/AccountView.vue'
 import ConfigView from './ui/ConfigView.vue'
 import HelpView from './ui/HelpView.vue'
 import DriveView from './ui/DriveView.vue'
@@ -54,7 +55,7 @@ function toggleSound(): void {
   else void activateAudio()
 }
 
-type Tab = 'drive' | 'telemetry' | 'config' | 'calibration' | 'synth' | 'bench'
+type Tab = 'drive' | 'telemetry' | 'config' | 'calibration' | 'account' | 'synth' | 'bench'
 
 const tab = ref<Tab>('drive')
 
@@ -77,6 +78,15 @@ const immersive = ref(false)
  * chargement, ni de la taire par prudence.
  */
 const HELP_SEEN_KEY = 'speed.helpSeen.v1'
+/**
+ * Combien de fois l'application a été ouverte, et si l'écran du compte a été
+ * signalé.
+ *
+ * Deux clés pour une seule bannière, parce que les deux questions sont
+ * distinctes : quand la montrer, et ne plus jamais la montrer.
+ */
+const OUVERTURES_KEY = 'speed.ouvertures.v1'
+const COMPTE_SIGNALE_KEY = 'speed.compteSignale.v1'
 const helpOpen = ref(false)
 /** Message d'un profil reçu par lien, le temps de l'annoncer. */
 const received = ref('')
@@ -88,6 +98,44 @@ const received = ref('')
  * portait déjà des réglages, ils ne suivent pas, et ce compte-là n'a pas de mot
  * de passe pour y revenir. Le taire le ferait découvrir plus tard.
  */
+/**
+ * Le rappel de l'écran du compte, montré **une fois**, et jamais au premier
+ * lancement.
+ *
+ * Au premier lancement on veut rouler, pas lire : c'est la règle du lot, et
+ * c'est pour cela qu'aucune fenêtre ne demande de choisir quoi que ce soit. À
+ * la deuxième ouverture, en revanche, savoir que ses réglages vivent sur un
+ * compte — et qu'un autre appareil peut le rejoindre — vaut une ligne.
+ */
+const compteASignaler = ref(false)
+
+function signalerLeCompte(): void {
+  try {
+    const ouvertures = Number(localStorage.getItem(OUVERTURES_KEY) ?? '0') + 1
+    localStorage.setItem(OUVERTURES_KEY, String(ouvertures))
+    if (ouvertures >= 2 && localStorage.getItem(COMPTE_SIGNALE_KEY) === null) {
+      compteASignaler.value = true
+    }
+  } catch {
+    // Stockage fermé : on ne signale rien plutôt que de le signaler à chaque
+    // ouverture, ce qui serait le contraire de « une fois ».
+  }
+}
+
+function fermerLeRappel(): void {
+  compteASignaler.value = false
+  try {
+    localStorage.setItem(COMPTE_SIGNALE_KEY, '1')
+  } catch {
+    // Sans conséquence : l'onglet reste là, et le rappel se reposera peut-être.
+  }
+}
+
+function allerAuCompte(): void {
+  tab.value = 'account'
+  fermerLeRappel()
+}
+
 const liaisonVue = ref(false)
 const messageDeLiaison = computed(() => {
   const faite = liaison.value
@@ -139,6 +187,11 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'telemetry', label: 'Télémétrie' },
   { id: 'config', label: 'Configuration' },
   { id: 'calibration', label: 'Étalonnage' },
+  // L'identité vit dans son propre écran depuis le 13 septembre 2026 : donner un
+  // code, en recevoir un, et bientôt se faire un vrai compte. Ce n'est pas un
+  // réglage de conduite, et la section qu'il occupait dans Configuration se
+  // perdait au milieu du reste.
+  { id: 'account', label: 'Compte' },
   // Les deux écrans de banc, absents de la production. Ils ont leur propre page
   // depuis le 8 septembre 2026 : leurs commandes vivaient sous les cadrans de
   // l'écran de conduite, où elles prenaient la place de ce qu'on lit en roulant.
@@ -206,6 +259,7 @@ onMounted(() => {
   } catch {
     helpOpen.value = true
   }
+  signalerLeCompte()
   // Un profil reçu par lien s'installe avant tout le reste, et le signale.
   void importFromUrl().then((name) => {
     if (name) {
@@ -314,6 +368,7 @@ onBeforeUnmount(() => {
       />
       <TelemetryView v-else-if="tab === 'telemetry'" />
       <CalibrationPanel v-else-if="tab === 'calibration'" />
+      <AccountView v-else-if="tab === 'account'" />
       <SynthView v-else-if="tab === 'synth' && synthAvailable" />
       <BenchView v-else-if="tab === 'bench' && simulatorAvailable" />
       <ConfigView v-else />
@@ -322,6 +377,16 @@ onBeforeUnmount(() => {
     <div v-if="received" class="banner">
       <span>{{ received }}</span>
       <button @click="received = ''">Fermer</button>
+    </div>
+
+    <div v-if="compteASignaler && !helpOpen && !messageDeLiaison" class="banner">
+      <span>
+        Vos profils, vos moteurs et vos trajets vivent sur un compte. L’écran
+        <strong>Compte</strong> permet d’y relier un autre appareil — un
+        téléphone, un poste de travail — avec un code.
+      </span>
+      <button @click="allerAuCompte()">Voir</button>
+      <button @click="fermerLeRappel()">Fermer</button>
     </div>
 
     <div v-if="messageDeLiaison" class="banner">

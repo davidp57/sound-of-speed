@@ -15,6 +15,13 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un écran pour le compte.** Ce qui touche à l'identité quitte l'écran de
+  configuration, où il se perdait au milieu des réglages, pour un onglet à lui :
+  ce que porte cet appareil, donner un code, recopier un code venu d'un autre
+  appareil. La place de la connexion par adresse y est prise, et dit qu'elle
+  n'existe pas encore. Un rappel escamotable signale l'écran à la deuxième
+  ouverture, une seule fois — au premier lancement, on veut rouler.
+
 - **Relier un second appareil : un code à scanner, ou huit caractères à taper.**
   L'écran de configuration donne un code ; un téléphone qui le scanne, ou un
   poste de travail où l'on recopie huit caractères, ouvre le même compte —
