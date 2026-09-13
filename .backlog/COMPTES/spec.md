@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** 🔄 en cours — 8/12
+**Statut :** 🔄 en cours — 8/13
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -108,9 +108,10 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 | [11](tickets/11-un-vrai-compte.md) ✅ | Un vrai compte : une adresse et un mot de passe, choisis depuis un clavier | 10 |
 | [12](tickets/12-un-compte-tiers.md) | Un compte tenu ailleurs, et seulement s'il est configuré | 11 |
 | [13](tickets/13-tenir-son-compte.md) ✅ | Tenir son compte : changer, oublier, emporter, supprimer | 11 |
-| [06](tickets/06-les-droits-ouvrent-les-ecrans.md) | Les droits ouvrent les écrans, et un droit expiré les referme | 02 |
+| [06](tickets/06-les-droits-ouvrent-les-ecrans.md) | Les rôles ouvrent les écrans, et un droit expiré les referme | 02 |
+| [14](tickets/14-l-appareil-porte-les-fonctions.md) | L'appareil porte les fonctions, et le drapeau de construction s'en va | 06 |
 | [07](tickets/07-hors-reseau-rien-ne-change.md) | Hors réseau, rien ne change : vérifié réseau coupé | 04, 06 |
-| [08](tickets/08-le-poids-charge-par-la-voiture.md) | Le poids chargé par la voiture, mesuré avant et après | 06 |
+| [08](tickets/08-le-poids-charge-par-la-voiture.md) | Le poids chargé par la voiture, mesuré avant et après | 06, 14 |
 
 Le [ticket 09](tickets/09-reprendre-son-compte.md) est **remplacé** par les
 tickets 10 à 13 : voir l'élargissement ci-dessous.
@@ -212,3 +213,39 @@ données, supprimer son compte.
     courriel quand un relais est configuré. Le navigateur de la voiture refuse
     les téléchargements : sur la voiture, sans relais, l'écran doit le dire au
     lieu de proposer un bouton qui ne fait rien.
+
+## Le recadrage du 13 septembre 2026 : deux axes, pas un
+
+Le ticket 06 allait être écrit sur un seul axe — le compte porte des droits, les
+droits ouvrent les écrans. David l'a arrêté : **ce qu'un écran demande tient sur
+deux axes indépendants**, et ils se croisent par un et.
+
+**L'appareil** dit quelles fonctions ont un sens là où l'on est. En voiture, on
+conduit, on tient son compte simplement et on touche à quelques réglages. Sur un
+téléphone, on ajoute le banc et on ouvre plus de réglages. Sur un poste de
+travail, on ajoute l'atelier et la synthèse.
+
+**Le rôle** dit ce que la personne a le droit d'ouvrir : `conduite` — conduire,
+la télémétrie, les réglages, l'étalonnage, le banc —, `atelier` — fabriquer des
+moteurs —, `synthese` — régler un timbre.
+
+Six points tranchés dans la foulée :
+
+15. **Le rôle se défend, l'appareil non.** Un navigateur peut mentir sur ce
+    qu'il est : l'axe appareil reste un confort d'affichage, local, que le
+    serveur ignore. Le rôle vit dans `rights`, et le serveur refuse ce qu'il
+    n'ouvre pas. Le ticket 06 porte le premier axe, le ticket 14 le second.
+16. **L'appareil se devine et se corrige.** La détection par chaîne d'agent est
+    un pari qui vieillit mal, et un poste posé dans la voiture n'entre dans
+    aucune case : l'écran du compte laisse changer ce choix, qui reste local.
+17. **La télémétrie reste en voiture.** C'est un écran de lecture, pas de
+    réglage, et c'est là qu'on voit ce que le son suit.
+18. **L'étalonnage sort de la voiture.** Il se fait tout seul depuis les traces ;
+    le panneau manuel est un reste, et ATELIER prévoyait déjà son retrait.
+19. **Les rôles se cumulent.** Un compte en porte zéro à trois, une ligne par
+    rôle : c'est la forme de la table, et c'est ce qui permet « atelier sans
+    synthèse ».
+20. **La profondeur des réglages reste à MENAGE-UI.** « Simple », « étendu » et
+    « tout » désignent le tri des cent cinquante-huit réglages de Configuration,
+    qui a son classeur et son lot. Les tickets 06 et 14 ouvrent et ferment des
+    écrans entiers.
