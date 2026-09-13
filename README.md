@@ -1264,7 +1264,19 @@ rien à inscrire, et aucun bouton ne mène à une erreur.
 | `SPEED_OAUTH_APPLE_ID` et `SPEED_OAUTH_APPLE_SECRET` | Se connecter avec son compte Apple. |
 
 Les deux d'un même fournisseur, ou aucune : la moitié d'une paire vaut rien du
-tout. **`SPEED_URL` devient indispensable** dès qu'un fournisseur est configuré :
+tout. Elles se saisissent dans l'écran de la pile Portainer, section
+*Environment variables* — elles sont déjà déclarées dans
+[`docker-compose.serveur.yml`](docker/docker-compose.serveur.yml), ce qui est la
+condition pour qu'elles arrivent au conteneur : Portainer les **remplace** dans
+le fichier de pile, il ne les injecte pas.
+
+**L'adresse de retour à déclarer chez le fournisseur** est
+`<SPEED_URL>/api/auth/callback/<fournisseur>` — par exemple
+`https://speed-dev.<votre-nom>.synology.me/api/auth/callback/google`. Les deux
+piles ayant deux adresses, il faut déclarer les deux chez le fournisseur pour
+pouvoir s'y connecter depuis l'une comme depuis l'autre.
+
+**`SPEED_URL` devient indispensable** dès qu'un fournisseur est configuré :
 il doit revenir sur le site, et derrière un proxy inversé le conteneur ne voit
 qu'un port local. Le serveur le signale au démarrage plutôt que de le laisser
 découvrir au premier retour.

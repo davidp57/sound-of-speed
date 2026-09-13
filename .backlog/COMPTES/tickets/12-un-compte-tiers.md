@@ -114,7 +114,12 @@ ne demandent pas le même effort.
 4. En *Authorized redirect URIs*, ajouter exactement :
    `https://<domaine public>/api/auth/callback/google`.
 5. Reporter l'identifiant et le secret dans `SPEED_OAUTH_GOOGLE_ID` et
-   `SPEED_OAUTH_GOOGLE_SECRET`.
+   `SPEED_OAUTH_GOOGLE_SECRET`, dans l'écran de la pile Portainer, section
+   *Environment variables*.
+
+Les deux piles ayant deux adresses, déclarer **les deux** adresses de retour chez
+Google : celle de l'intégration et celle de la production. Un client OAuth en
+accepte plusieurs, et c'est ce qui évite d'avoir à en créer un second.
 
 ### Apple — adhésion payante, et un secret qui se périme
 
