@@ -4,16 +4,21 @@
  *
  * ```bash
  * npm run accord -- http://localhost:8088
- * npm run accord -- http://localhost:8088 --compte david:secret
  * ```
  *
  * Il ne connaît rien du serveur qu'il interroge : c'est tout l'intérêt. Le même
  * jeu passe contre nginx aujourd'hui et contre son remplaçant demain, et l'écart
  * entre les deux est exactement ce qu'on cherche à ne pas avoir.
  *
- * Les cas qui demandent un compte sont **sautés** quand aucun n'est donné, et
- * dits comme tels. Un jeu qui se déclarerait vert en ayant tout sauté serait un
- * jeu qui ment.
+ * **Il prend son compte tout seul**, comme le ferait un navigateur qui ouvre
+ * l'application pour la première fois : plus rien à saisir, et plus aucun cas
+ * sauté faute d'identifiants. Un serveur qui ne sait pas en donner fait échouer
+ * le jeu au premier cas, ce qui est exactement ce qu'on veut savoir.
+ *
+ * `--compte` reste, et pour une seule raison : l'**ancien** serveur, celui qui
+ * sert encore la production derrière nginx, ne connaît que le mot de passe
+ * partagé. L'option force alors l'ancienne façon de s'annoncer. Elle partira
+ * avec lui.
  */
 
 import { cas, marque } from './contrat.mjs'
@@ -39,18 +44,44 @@ function lireArguments(argv) {
 
 const options = lireArguments(process.argv.slice(2))
 if (options.base === null) {
-  console.error('Usage : npm run accord -- <adresse> [--compte utilisateur:motdepasse] [--verbeux]')
+  console.error(
+    'Usage : npm run accord -- <adresse> [--part publique,profils] [--compte nom:motdepasse] [--verbeux]',
+  )
   process.exit(2)
 }
 
-const identifiants =
-  options.compte ?? process.env['SPEED_COMPTE'] ?? null
+/**
+ * Le témoin de connexion d'un appareil qui vient de se présenter.
+ *
+ * C'est le geste que fait tout navigateur au premier chargement : demander un
+ * compte anonyme. Rien à saisir, rien à configurer sur le serveur d'en face.
+ */
+async function prendreUnCompte(base) {
+  const reponse = await fetch(`${base}/api/auth/sign-in/anonymous`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  })
+  if (!reponse.ok) {
+    console.error(`Ce serveur n'a pas donné de compte : ${reponse.status}.`)
+    process.exit(2)
+  }
+  return (reponse.headers.get('set-cookie') ?? '').split(';')[0] ?? ''
+}
+
+/** Le mot de passe partagé, s'il est demandé : voir l'en-tête de ce fichier. */
+const identifiants = options.compte ?? process.env['SPEED_COMPTE'] ?? null
+
+const temoin = identifiants === null ? await prendreUnCompte(options.base) : null
 
 function entetesDe(requete) {
   const entetes = { ...(requete.entetes ?? {}) }
-  if (requete.compte === true && identifiants !== null) {
-    entetes['Authorization'] = `Basic ${Buffer.from(identifiants, 'utf8').toString('base64')}`
-  }
+  // Les cas qui vérifient le refus ne s'annoncent pas : c'est justement ce
+  // qu'ils mesurent.
+  if (requete.compte !== true) return entetes
+
+  if (identifiants === null) entetes['Cookie'] = temoin
+  else entetes['Authorization'] = `Basic ${Buffer.from(identifiants, 'utf8').toString('base64')}`
   return entetes
 }
 
@@ -81,11 +112,6 @@ const resultats = []
 
 for (const unCas of jeu) {
   const { requete } = unCas
-
-  if (requete.compte === true && identifiants === null) {
-    resultats.push({ nom: unCas.nom, etat: 'sauté', detail: 'aucun compte fourni' })
-    continue
-  }
 
   const adresse = `${options.base}${requete.chemin}`
   const methode = requete.methode ?? 'GET'
