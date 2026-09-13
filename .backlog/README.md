@@ -64,7 +64,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [MIGRER](MIGRER/spec.md) — 3/5 · les réglages quittent le navigateur de la voiture et les dossiers du NAS pour la base | ✅ 4/4 — repris du NAS, remonté du navigateur, et rendu au lancement |
 | [RETENTION](RETENTION/spec.md) — 4/5 · analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte ; 8 tickets | 🧑 8/8 — livré ; verdict lu sur la base de production, il est vide |
 | [IMAGE-ARM64](IMAGE-ARM64/spec.md) — l'image du serveur échoue une fois sur deux en arm64 : QEMU rend une instruction illégale pendant `npm ci` | ⬜ constaté le 13 septembre |
-| [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | 🔄 10/13 — les deux axes ouvrent les écrans, une seule image sert les trois usages ; restent le hors-réseau à vérifier, le poids à mesurer, le compte tiers et « j'ai oublié » (attend un relais) |
+| [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | 🔄 11/14 — les deux axes ouvrent les écrans, une seule image sert les trois usages, le service worker ne garde plus de session ; restent un essai hors réseau en voiture, le poids à mesurer, le compte tiers et « j'ai oublié » (attend un relais) |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,

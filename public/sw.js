@@ -23,6 +23,27 @@ const AUDIO = 'speed-audio'
 
 const CACHES = [SHELL, ASSETS, AUDIO]
 
+/**
+ * Les chemins qui portent des données de compte, et que le cache ne touche pas.
+ *
+ * La même liste que `server/serveur.ts`, où elle sert à ne pas replier la page
+ * d'application sur une requête de données. Ici elle sert à ne rien garder :
+ * ce sont des réponses qui appartiennent à un compte et à un instant.
+ */
+const DONNEES = [
+  '/api/',
+  '/profiles/',
+  '/engines/',
+  '/gearboxes/',
+  '/traces/',
+  '/journal/',
+  '/mesures/',
+  '/mesure-voiture/',
+  '/mon-compte/',
+  '/sessions/',
+  '/retention',
+]
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
@@ -91,6 +112,19 @@ self.addEventListener('fetch', (event) => {
   ) {
     return
   }
+
+  // **Ce qui appartient à un compte ne passe pas par ici.** Le fourre-tout du bas
+  // mettait en cache tout ce qui répondait 200, donc aussi la session, les
+  // droits, les profils et la liste des trajets — que le serveur déclare
+  // pourtant `no-store`. Deux conséquences, et la seconde est la grave : une
+  // liste périmée resservie en croyant bien faire, et **une session resservie
+  // alors qu'elle n'existe plus**. On laisse passer : hors réseau la requête
+  // échoue, et le client sait déjà traiter « sans réseau » — c'est même ce sur
+  // quoi il est bâti.
+  //
+  // Cette liste redit celle de `server/serveur.ts`, qu'un fichier statique ne
+  // peut pas importer ; `sw.test.ts` vérifie que les deux disent la même chose.
+  if (DONNEES.some((prefixe) => url.pathname.startsWith(prefixe))) return
 
   // La page d'entrée doit être cherchée sur le réseau en premier : c'est elle
   // qui référence les ressources empreintes, donc elle seule fait basculer sur

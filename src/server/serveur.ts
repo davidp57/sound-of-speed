@@ -80,8 +80,13 @@ const CACHE_RESSOURCES = 'public, immutable, max-age=31536000'
  * une page HTML avec un code 200 — il ne peut plus distinguer « ce fichier
  * n'existe pas », qui est une situation normale, de « le serveur est cassé ».
  * Le cas est connu et contourné côté client, qui classe la réponse « illisible ».
+ *
+ * **Le service worker tient la même liste**, pour une raison voisine : ce qui
+ * appartient à un compte ne se met pas en cache. Un fichier statique ne peut
+ * pas importer d'ici, donc la liste y est recopiée, et `src/core/sw.test.ts`
+ * vérifie que les deux disent la même chose.
  */
-const DONNEES = [
+export const DONNEES = [
   '/api/',
   '/profiles/',
   '/engines/',

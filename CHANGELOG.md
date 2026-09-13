@@ -8,12 +8,28 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le service worker gardait en cache ce qui appartient à un compte.** Son
+  dernier cas attrapait tout ce qui répondait 200 : la session, les droits, les
+  profils, la liste des trajets — que le serveur déclare pourtant `no-store`.
+  Une liste périmée pouvait être resservie, et surtout **une session pouvait
+  l'être alors qu'elle n'existait plus**. Ce qui appartient à un compte n'est
+  plus intercepté : hors réseau la requête échoue, et l'application sait déjà
+  s'en passer. Le service worker n'avait aucun test alors qu'il est la pièce qui
+  fait démarrer une voiture dans un tunnel ; il en a six.
+
 - **Le titre de l'écran d'aide disait encore « Speed ».** Il avait échappé au
   renommage du 12 septembre. Le nom court du manifeste, lui, reste « Speed » :
   c'est celui qui s'affiche sous l'icône de l'écran d'accueil, et il doit tenir
   en une douzaine de caractères.
 
 ### Ajouté
+
+- **Le journal dit sur quel navigateur il a tourné**, une fois par session : la
+  chaîne d'agent, l'écran, le pointeur, ce qu'on a deviné de l'appareil et ce
+  qui s'applique. Un écart entre les deux derniers dit qu'il a fallu corriger à
+  la main, donc que la détection s'est trompée. Rien n'est écrit sans accord de
+  remontée, et accorder en cours de session l'écrit quand même — c'est
+  justement la session qu'on voudra lire.
 
 - **L'appareil décide de ce qui s'affiche, et le drapeau de construction s'en
   va.** Une voiture ne montre ni le banc, ni l'étalonnage manuel, ni le réglage

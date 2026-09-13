@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   appareilCourant,
   devinerLAppareil,
+  entreeDAppareil,
   lireLAppareilChoisi,
   oublierLAppareilChoisi,
   rangerLAppareilChoisi,
@@ -57,6 +58,34 @@ describe('deviner l’appareil', () => {
 
   it('retombe sur le poste de travail quand rien ne se distingue', () => {
     expect(devinerLAppareil(indices({ agent: '' }))).toBe('poste')
+  })
+})
+
+describe('ce que le journal retient du navigateur', () => {
+  it('porte la chaîne d’agent, l’écran et le pointeur', () => {
+    const entree = entreeDAppareil(
+      { agent: TESLA, largeur: 1200, tactile: true },
+      'voiture',
+      824,
+    )
+
+    expect(entree).toEqual({
+      agent: TESLA,
+      largeur: 1200,
+      hauteur: 824,
+      tactile: true,
+      devine: 'voiture',
+      appareil: 'voiture',
+    })
+  })
+
+  it('garde l’écart entre ce qu’on devine et ce qui s’applique', () => {
+    // C'est le fait qu'on vient chercher : une détection ratée, corrigée à la
+    // main. Les confondre rendrait le journal muet sur la seule question posée.
+    const entree = entreeDAppareil({ agent: BUREAU, largeur: 1920, tactile: false }, 'voiture', 1080)
+
+    expect(entree['devine']).toBe('poste')
+    expect(entree['appareil']).toBe('voiture')
   })
 })
 
