@@ -28,7 +28,12 @@ ce qu'on cherche à ne pas avoir.
 Tiré d'un relevé de tous les appels réseau du dépôt : vingt-deux requêtes
 distinctes, dont quatre contraintes dont la rupture ne s'entend pas. S'y ajoutent
 depuis les moteurs et les boîtes, qui n'ont jamais existé sur le serveur de
-fichiers — trente-cinq cas en tout.
+fichiers, puis les trajets — les lister, les emporter, les épingler, les effacer,
+et lire le verdict de la rétention. Quarante-cinq cas en tout.
+
+L'effacement y sert deux fois : il vérifie le geste, et il **rend la base
+propre** — le jeu déposait jusqu'ici une tranche de plus à chaque passage, sans
+rien pour l'enlever.
 
 | Ce qui est vérifié | Ce que ça casse si on le perd |
 |---|---|

@@ -1107,7 +1107,7 @@ plus un seul.
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
-compte. Un jeu de trente-cinq requêtes le vérifie à chaque intégration — voir
+compte. Un jeu de quarante-cinq requêtes le vérifie à chaque intégration — voir
 [`scripts/accord/`](scripts/accord/README.md).
 
 S'y ajoutent **deux emplacements que le serveur de fichiers n'a jamais rendus** :
