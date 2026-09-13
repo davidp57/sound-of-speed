@@ -49,6 +49,10 @@ a.out.wasm
 ~$*
 dist-profileur/
 
+# Le secret qui signe les connexions, écrit par le serveur à côté de sa base au
+# premier démarrage. Il ne se partage pas, et un dépôt public le rendrait inutile.
+identite.secret
+
 # Bases de données locales, créées en développement ou par un test qui n'a pas
 # pu faire son ménage. Ce qui compte est versionné à côté : le schéma et ses
 # migrations.

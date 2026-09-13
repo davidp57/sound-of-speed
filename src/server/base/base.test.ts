@@ -59,6 +59,9 @@ describe('ouvrir la base', () => {
     expect(await tables(base)).toEqual(
       expect.arrayContaining([
         'accounts',
+        'auth_identities',
+        'auth_sessions',
+        'auth_verifications',
         'deposits',
         'engines',
         'gearboxes',
@@ -179,6 +182,35 @@ describe('ce que le schéma garantit', () => {
 
     expect(await base.select().from(rights)).toHaveLength(0)
     expect(await base.select().from(engines)).toHaveLength(0)
+  })
+
+  it('les tables d’identité n’ont dérangé aucune clé étrangère', async () => {
+    // Ce que l'arrivée de la bibliothèque d'identité ne devait pas coûter :
+    // renommer `accounts` pour adopter sa table aurait obligé à recréer les six
+    // tables qui la désignent, puisque SQLite ne déplace pas une clé étrangère.
+    // Ce contrôle dit que la base est restée cohérente, et que rien ne pend
+    // dans le vide.
+    const base = await ouvrir(chemin())
+
+    expect(await base.all(sql`pragma foreign_key_check`)).toEqual([])
+    expect(await base.all(sql`pragma integrity_check`)).toEqual([{ integrity_check: 'ok' }])
+
+    const attaches = await base.all<{ table: string; cible: string }>(
+      sql`select m.name as "table", f."table" as cible
+          from sqlite_master m join pragma_foreign_key_list(m.name) f
+          where m.type = 'table' and f."table" = 'accounts'
+          order by m.name`,
+    )
+    expect(attaches.map((lien) => lien.table)).toEqual([
+      'auth_identities',
+      'auth_sessions',
+      'deposits',
+      'engines',
+      'gearboxes',
+      'measured_cars',
+      'profiles',
+      'rights',
+    ])
   })
 
   it('un compte ne porte pas deux fois le même droit', async () => {

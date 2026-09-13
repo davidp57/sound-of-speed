@@ -19,7 +19,7 @@ Le cœur reste donc la seule autorité sur la forme d'une entité. La base garde
 contenu tel quel, et n'ouvre en colonnes que ce sur quoi elle trie, filtre ou
 joint : un identifiant, un compte, un nom, une date.
 
-## Les sept tables
+## Les dix tables
 
 | Table | Ce qu'elle porte |
 |---|---|
@@ -28,6 +28,20 @@ joint : un identifiant, un compte, un nom, une date.
 | `engines`, `gearboxes`, `profiles` | les trois groupes de réglages qu'un profil assemble |
 | `deposits` | tout ce qui remonte de la voiture : traces, journal, relevés |
 | `measured_cars` | ce que le serveur a appris de la vraie voiture, un par compte |
+| `auth_sessions` | qui tient le volant en ce moment — **pas** les sessions de conduite |
+| `auth_identities` | les façons de prouver qui on est : un mot de passe, un fournisseur tiers |
+| `auth_verifications` | ce qui attend d'être confirmé ; rien ne s'en sert encore |
+
+**Les trois dernières appartiennent à la bibliothèque d'identité**, et elle seule
+y écrit. Le préfixe `auth_` n'est pas décoratif : ce que cette bibliothèque
+appelle un *account* est un moyen de prouver qui on est, et une *session* y dit
+qui est connecté — deux mots que ce dépôt emploie déjà pour tout autre chose.
+
+**Elle se pose sur `accounts`, et non l'inverse.** Adopter la table qu'elle
+apporte aurait obligé à recréer les six tables qui désignent un compte, SQLite ne
+sachant pas déplacer une clé étrangère : il refait la table, c'est le motif
+`__new_deposits` de la migration 0002. La mapper a coûté trois colonnes et un
+fichier de configuration, et la migration 0006 n'a recréé aucune table.
 
 **Les droits sont là avant d'être utiles.** Tout le monde a tout, rien n'est
 encaissé. Les poser plus tard coûterait une migration de données ; les poser

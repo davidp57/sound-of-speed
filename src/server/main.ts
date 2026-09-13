@@ -14,6 +14,7 @@ import { SOLO_ACCOUNT_ID, ouvrirBase } from './base/base'
 import { lireComptes } from './comptes'
 import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
+import { creerIdentite, secretPersistant } from './identite'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { appliquerLaRegle, DELAIS_PAR_DEFAUT, formaterPassage, type Delais } from './retention'
 import { creerServeur } from './serveur'
@@ -25,6 +26,11 @@ const fichierDeBase = process.env['SPEED_DB'] ?? 'donnees/speed.db'
 const migrations = process.env['SPEED_MIGRATIONS'] ?? 'src/server/base/migrations'
 const fichierDeComptes = process.env['SPEED_HTPASSWD']
 const anciensDossiers = process.env['SPEED_REPRISE']
+// Vide vaut absente : une variable déclarée sans valeur dans l'écran d'une pile
+// est ce qu'on obtient le plus souvent, et une adresse vide ferait pire que pas
+// d'adresse du tout.
+const adressePublique = process.env['SPEED_URL']?.trim() || undefined
+const secretDIdentite = process.env['SPEED_AUTH_SECRET']
 const epingles = nombreOuRien(process.env['SPEED_EPINGLES'])
 const delais: Delais = {
   traces: nombreOuRien(process.env['SPEED_RETENTION_TRACES']) ?? DELAIS_PAR_DEFAUT.traces,
@@ -140,11 +146,21 @@ const minuteurDuMenage = setInterval(() => void menageDeRetention(), UN_JOUR)
 // envoie son signal, et le serveur doit pouvoir rendre la main tout de suite.
 minuteurDuMenage.unref()
 
+// L'identité, montée sur la base qui vient d'être migrée. Son secret vit à côté
+// du fichier de base et se crée au premier démarrage : celui qui déploie chez lui
+// n'a rien à fournir.
+const identite = creerIdentite({
+  base,
+  secret: secretDIdentite ?? secretPersistant(fichierDeBase),
+  ...(adressePublique === undefined ? {} : { adresse: adressePublique }),
+})
+
 const serveur = serve(
   {
     fetch: creerServeur({
       application,
       base,
+      identite,
       comptes: lireComptes(fichierDeComptes),
       ...(epingles === undefined ? {} : { epingles }),
       delais,

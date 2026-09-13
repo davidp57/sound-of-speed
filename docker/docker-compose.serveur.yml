@@ -66,6 +66,17 @@ services:
       # - /volume1/docker/sound-of-speed:/ancien:ro
     environment:
       SPEED_HTPASSWD: /data/htpasswd
+      # L'adresse **publique** de cette pile, celle que le proxy inversé de DSM
+      # expose — pas le port local. Deux piles, deux adresses :
+      # `https://speed.<votre-nom>.synology.me` pour la production,
+      # `https://speed-dev.<votre-nom>.synology.me` pour l'intégration.
+      #
+      # Sans elle, la bibliothèque d'identité déduit son adresse de chaque
+      # requête et le signale à chaque démarrage. C'est sans conséquence
+      # aujourd'hui, mais le jour où un fournisseur d'identité tiers doit
+      # revenir sur le site, c'est cette adresse-là qu'il lui faut — et derrière
+      # un proxy inversé, elle ne se devine pas.
+      SPEED_URL: ${SPEED_URL:-}
       # Le dossier à reprendre. Sans elle, le serveur ne cherche rien.
       #
       # La reprise se joue au démarrage, comme les migrations, et n'écrit rien

@@ -15,6 +15,24 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **La bibliothèque d'identité est montée sur le serveur.** Better Auth, sous
+  licence MIT, branchée sur la base qui existe et répondant sous `/api/auth/` :
+  une session se crée et se relit. Rien n'en dépend encore — la voiture dépose
+  comme avant, le relecteur lit comme avant, le mot de passe partagé reste le
+  seul contrôle d'accès, et le jeu de quarante-cinq requêtes passe sans qu'on y
+  touche. Elle se pose sur la table `accounts`, qui existait déjà : adopter la
+  sienne aurait obligé à recréer les six tables qui désignent un compte, SQLite
+  ne sachant pas déplacer une clé étrangère. Trois tables s'ajoutent, préfixées
+  `auth_`, et aucune ne s'appelle « compte » — ce que cette bibliothèque nomme
+  un *account* est un moyen de prouver qui on est, pas une personne. Un compte
+  sans adresse est accepté, ce qui est la condition pour monter dans la voiture
+  sans rien saisir. Le secret qui signe les connexions s'écrit tout seul au
+  premier démarrage, à côté du fichier de base : celui qui déploie chez lui n'a
+  rien à fournir. `SPEED_URL` dit l'adresse publique de la pile quand on la
+  connaît — derrière un proxy inversé, le conteneur ne voit qu'un port local et
+  ne peut pas la deviner. Le paquet que charge la voiture n'a pas bougé d'un
+  octet — 445 576 avant, 445 576 après.
+
 - **Une commande dit ce que la règle emporterait, sur une copie de la base.**
   `npm run verdict -- copie.db` rend le même verdict que le relecteur, sans
   serveur ni conteneur : de quoi juger les délais sur les vraies données avant
