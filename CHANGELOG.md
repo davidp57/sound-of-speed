@@ -15,6 +15,18 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **On monte dans la voiture et ça marche : un compte se crée tout seul.** Au
+  premier contact avec le serveur, l'appareil reçoit un compte anonyme — rien à
+  saisir, aucun écran d'inscription, aucune adresse. Il est gardé dans le
+  navigateur et resservira à chaque ouverture. **Et l'application démarre sans
+  lui** : elle part de ce qu'elle a en local, fait du son, et se présente au
+  serveur quand elle peut — au démarrage si le réseau est là, sinon à son retour.
+  Deux appareils font deux comptes tant que rien ne les relie. L'écran de
+  configuration dit ce que porte ce compte, et prévient qu'un compte anonyme n'a
+  rien à récupérer : vider les données du site en perdrait l'accès. La remise à
+  zéro des réglages, elle, n'y touche pas. Ce que la voiture charge en plus :
+  2 431 octets, soit 0,55 % — la bibliothèque ne quitte pas le serveur.
+
 - **La bibliothèque d'identité est montée sur le serveur.** Better Auth, sous
   licence MIT, branchée sur la base qui existe et répondant sous `/api/auth/` :
   une session se crée et se relit. Rien n'en dépend encore — la voiture dépose

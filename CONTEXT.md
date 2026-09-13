@@ -462,6 +462,16 @@ que ça suffit ; l'adresse se rattache le jour où elle sert. C'est lui que
 désignent les `account_id` de toutes les autres tables, et lui que la
 bibliothèque d'identité appelle un *user*.
 
+**Compte anonyme** (_anonymous account_, `accounts.is_anonymous`) :
+Un compte que l'appareil a reçu sans que personne saisisse rien, au premier
+contact avec le serveur. **C'est la colonne qui fait foi**, et non l'adresse : la
+bibliothèque d'identité en fabrique une, sous le domaine réservé `.invalid` qui ne
+désigne aucune boîte, parce qu'elle refuse un compte sans courriel. Un compte
+anonyme n'a rien à récupérer — pas de mot de passe, donc rien à reprendre si
+l'appareil perd ce qu'il gardait.
+_Éviter_ : compte temporaire, compte invité (les deux laissent croire qu'il
+expire, or il dure tant qu'on ne l'efface pas).
+
 **Identité** (_auth identity_, `auth_identities`) :
 Une façon de prouver qu'on est le titulaire d'un compte : un mot de passe rangé
 ici, ou un compte tenu chez un tiers. Un compte peut en porter plusieurs.
