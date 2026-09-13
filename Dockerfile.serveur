@@ -26,18 +26,43 @@ COPY . .
 ARG BENCH=""
 RUN BENCH=$BENCH npm run build && npm run build:serveur
 
+# Les dépendances de production, installées **pour l'architecture visée depuis
+# celle du runner**.
+#
+# Le pilote de la base est un binaire livré par plateforme, et npm prend par
+# défaut celui de la machine qui installe. C'est ce qui faisait installer sur
+# l'architecture visée, donc sous émulation — et `npm ci` y mourait d'une
+# instruction illégale rendue par QEMU, plus d'une construction sur deux.
+# `--cpu`, `--os` et `--libc` disent à npm pour qui il installe : l'émulation
+# disparaît au lieu d'être contournée.
+#
+# **`TARGETARCH` ne parle pas la même langue que `--cpu`** : buildx dit `amd64`
+# là où npm attend `x64`. Mesuré : avec `--cpu=amd64`, npm n'installe **aucun**
+# binaire et ne dit rien. D'où la traduction — et le `test -d`, qui n'est pas une
+# ceinture de plus : une image à qui le binaire manque se construit sans erreur
+# et meurt au démarrage, loin de sa cause.
+ARG TARGETARCH
+RUN set -e; \
+    case "$TARGETARCH" in \
+      amd64) CPU=x64 ;; \
+      arm64) CPU=arm64 ;; \
+      *) echo "architecture inconnue : $TARGETARCH" >&2; exit 1 ;; \
+    esac; \
+    npm ci --omit=dev --ignore-scripts --cpu="$CPU" --os=linux --libc=musl; \
+    test -d "node_modules/@libsql/linux-$CPU-musl"; \
+    npm cache clean --force; \
+    mv node_modules /prod_node_modules
+
 # --- Ce qui tourne ----------------------------------------------------------
+#
+# Cet étage-ci est le seul que buildx construit une fois par architecture, donc
+# le seul qui passe sous émulation. Il n'y **exécute** plus rien : que des
+# copies, que QEMU ne touche pas.
 FROM node:22-alpine
 WORKDIR /app
 
-# Les dépendances de production sont installées **ici**, et non copiées depuis
-# l'étape d'assemblage. Le pilote de la base est un binaire, choisi par
-# plateforme au moment de l'installation : celui du runner ne conviendrait pas à
-# un NAS ARM. Cette étape-là tourne donc sur l'architecture visée, ce qui la rend
-# lente sous émulation — c'est le prix d'un pilote natif, et il est payé une fois
-# par construction plutôt qu'à chaque démarrage.
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+COPY package.json ./
+COPY --from=build /prod_node_modules ./node_modules
 
 # L'application construite, le serveur assemblé, et les migrations qu'il joue au
 # démarrage. Celles-ci sont des fichiers SQL versionnés : le serveur les lit, il
