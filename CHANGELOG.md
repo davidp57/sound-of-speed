@@ -15,6 +15,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Tenir son compte : changer, emporter, supprimer.** Le mot de passe se change
+  depuis l'écran Compte, l'ancien à l'appui. Tout ce que le compte porte
+  s'emporte en un fichier — profils, moteurs, boîtes, trajets, journal, relevés
+  et profil mesuré, dans les mêmes dossiers qu'ici, reversables tels quels dans
+  une installation neuve. Et le compte se supprime en deux temps, en emportant
+  tout ce qu'il portait sur le serveur ; ce qui est réglé sur l'appareil ne
+  bouge pas. Deux réserves sont dites à l'écran plutôt que découvertes :
+  emporter demande un poste de travail, le navigateur de la voiture refusant les
+  téléchargements, et « j'ai oublié » n'apparaît pas tant qu'aucun relais de
+  courriel n'est configuré.
+
 - **Une adresse et un mot de passe, pour le jour où l'on n'a plus d'appareil.**
   Dans l'écran Compte, deux gestes distincts : *rattacher* donne une adresse au
   compte de cet appareil — qui **ne change pas d'identifiant**, donc ses profils,

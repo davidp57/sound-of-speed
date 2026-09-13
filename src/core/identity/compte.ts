@@ -13,7 +13,7 @@
  * Mesuré dans un navigateur.
  */
 
-import { saveIdentity, type LocalIdentity } from './store'
+import { forgetIdentity, saveIdentity, type LocalIdentity } from './store'
 import type { IdentityOptions, SortDeLAncien } from './client'
 
 /** Le chemin sous lequel le serveur répond de l'identité. */
@@ -153,3 +153,131 @@ function compteDe(charge: Record<string, unknown>): Omit<LocalIdentity, 'obtaine
     ...(anonymous || typeof email !== 'string' ? {} : { email }),
   }
 }
+
+/**
+ * Tenir son compte : changer son mot de passe, l'emporter, le supprimer.
+ *
+ * Trois gestes de nature différente, et qui se tiennent : on change un mot de
+ * passe parce qu'on garde le compte, on emporte parce qu'on va peut-être le
+ * quitter, on supprime parce qu'on le quitte pour de bon.
+ */
+
+/** Ce que ce serveur-ci sait faire. Ce qu'il ne sait pas ne s'affiche pas. */
+export interface PossibilitesDuServeur {
+  /** Un relais de courriel est configuré : « j'ai oublié » devient possible. */
+  relaisCourriel: boolean
+  /** Les comptes tenus ailleurs, quand il y en a de configurés. */
+  fournisseurs: string[]
+}
+
+/**
+ * Ce que le serveur d'en face sait faire.
+ *
+ * Hors réseau, on ne sait rien : on rend le minimum plutôt que de faire croire
+ * à des possibilités qu'on ne pourra pas honorer.
+ */
+export async function possibilitesDuServeur(
+  options: IdentityOptions = {},
+): Promise<PossibilitesDuServeur> {
+  const { fetchImpl = fetch } = options
+  const rien: PossibilitesDuServeur = { relaisCourriel: false, fournisseurs: [] }
+
+  try {
+    const reponse = await fetchImpl(`${IDENTITE}/compte/possibilites`, {
+      headers: { Accept: 'application/json' },
+    })
+    if (!reponse.ok) return rien
+    const dit = await messageDe(reponse)
+    return {
+      relaisCourriel: dit['relaisCourriel'] === true,
+      fournisseurs: Array.isArray(dit['fournisseurs'])
+        ? dit['fournisseurs'].filter((nom): nom is string => typeof nom === 'string')
+        : [],
+    }
+  } catch {
+    return rien
+  }
+}
+
+export type Changement =
+  | { state: 'change' }
+  | { state: 'sans-reseau' }
+  | { state: 'refusee'; detail: string }
+
+/**
+ * Change le mot de passe, l'ancien à l'appui.
+ *
+ * C'est la route de la bibliothèque, sans rien autour : elle fait exactement ce
+ * qu'il faut, y compris exiger l'ancien mot de passe — sans quoi un appareil
+ * laissé déverrouillé suffirait à verrouiller le compte de quelqu'un d'autre.
+ */
+export async function changerLeMotDePasse(
+  ancien: string,
+  nouveau: string,
+  options: IdentityOptions = {},
+): Promise<Changement> {
+  const { fetchImpl = fetch } = options
+
+  let reponse: Response
+  try {
+    reponse = await fetchImpl(`${IDENTITE}/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ currentPassword: ancien, newPassword: nouveau }),
+    })
+  } catch {
+    return { state: 'sans-reseau' }
+  }
+
+  if (reponse.ok) return { state: 'change' }
+  if (reponse.status === 400 || reponse.status === 401) {
+    return { state: 'refusee', detail: 'Le mot de passe actuel n’est pas celui-là.' }
+  }
+  return { state: 'refusee', detail: `Le serveur a répondu ${reponse.status}.` }
+}
+
+export type Suppression =
+  | { state: 'supprime' }
+  | { state: 'sans-reseau' }
+  | { state: 'refusee'; detail: string }
+
+/**
+ * Supprime le compte, et tout ce qu'il porte.
+ *
+ * Le mot de passe n'est exigé que par les comptes qui en ont un ; le passer à
+ * vide est donc normal pour un compte anonyme, et le serveur tranche.
+ */
+export async function supprimerSonCompte(
+  motDePasse = '',
+  options: IdentityOptions = {},
+): Promise<Suppression> {
+  const { fetchImpl = fetch } = options
+
+  let reponse: Response
+  try {
+    reponse = await fetchImpl(`${IDENTITE}/compte/supprimer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(motDePasse === '' ? {} : { motDePasse }),
+    })
+  } catch {
+    return { state: 'sans-reseau' }
+  }
+
+  if (reponse.ok) {
+    // L'identité gardée ici ne désigne plus rien. La laisser ferait afficher un
+    // compte qui n'existe plus, jusqu'à la prochaine question au serveur.
+    forgetIdentity()
+    return { state: 'supprime' }
+  }
+
+  const dit = await messageDe(reponse)
+  return {
+    state: 'refusee',
+    detail:
+      typeof dit['message'] === 'string' ? dit['message'] : `Le serveur a répondu ${reponse.status}.`,
+  }
+}
+
+/** L'adresse où le navigateur va chercher l'archive du compte. */
+export const ARCHIVE_DU_COMPTE = '/mon-compte/archive.zip'

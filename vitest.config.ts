@@ -24,18 +24,22 @@ export default defineConfig({
     include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     environment: 'node',
     /**
-     * Trente secondes pour un `beforeEach`, au lieu de dix.
+     * Trente secondes, au lieu de dix pour un `beforeEach` et cinq pour un test.
      *
      * Les tests du serveur ouvrent chacun une base dans un dossier temporaire et
      * y jouent les migrations. **Mesuré : vingt-six millisecondes** quand la
-     * machine est libre — ce n'est donc pas le coût du code. Mais les fichiers
-     * de test tournent en parallèle, et sur un poste occupé — un navigateur, un
-     * serveur d'essai, une autre passe de tests — le même hook a dépassé les dix
-     * secondes par défaut, faisant échouer une douzaine de tests de fichiers
+     * machine est libre — ce n'est donc pas le coût du code. Ceux de l'identité
+     * hachent en plus des mots de passe, ce qui est **lent par construction** :
+     * de cent soixante-dix millisecondes à une seconde par test, mesuré.
+     *
+     * Mais les fichiers de test tournent en parallèle, et sur un poste occupé —
+     * un navigateur, un serveur d'essai, une autre passe de tests — les deux
+     * seuils par défaut ont été franchis, faisant échouer des tests de fichiers
      * différents. Un seuil franchi par la charge de la machine ne dit rien du
      * code, et une suite qui rougit au hasard ne sert plus à rien.
      */
     hookTimeout: 30_000,
+    testTimeout: 30_000,
     coverage: {
       provider: 'v8',
       include: ['src/core/**/*.ts'],

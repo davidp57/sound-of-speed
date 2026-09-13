@@ -687,6 +687,46 @@ export function cas({ nom }) {
         vrai((r.headers.get('set-cookie') ?? '') !== '', 'un témoin de connexion est posé')
       },
     },
+    {
+      nom: 'le serveur dit ce qu’il sait faire',
+      part: 'identite',
+      // Ce qui n'est pas configuré ne doit pas apparaître à l'écran : un bouton
+      // qui mène à une erreur est pire que pas de bouton.
+      requete: { chemin: '/api/auth/compte/possibilites', entetes: { Accept: 'application/json' } },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        const dit = JSON.parse(corps.toString('utf8'))
+        vrai(typeof dit.relaisCourriel === 'boolean', 'il dit s’il sait envoyer un courriel')
+        vrai(Array.isArray(dit.fournisseurs), 'il dit quels comptes tiers il accepte')
+      },
+    },
+    {
+      nom: 'emporter refuse sans compte',
+      part: 'identite',
+      requete: { chemin: '/mon-compte/archive.zip' },
+      attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
+    },
+    {
+      nom: 'tout ce qu’un compte porte descend en une archive',
+      part: 'identite',
+      // C'est ce qui rend une suppression acceptable : l'archive part chez son
+      // propriétaire, et non sur le serveur.
+      requete: { chemin: '/mon-compte/archive.zip', compte: true },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        typeParmi(r, ['application/zip'])
+        vrai(
+          (r.headers.get('content-disposition') ?? '').includes('sound-of-speed-'),
+          'le fichier porte un nom daté',
+        )
+        // La signature d'un zip. Un serveur qui rendrait la page d'application
+        // ici donnerait 200 et du HTML.
+        vrai(
+          corps[0] === 0x50 && corps[1] === 0x4b,
+          'le corps est bien une archive zip',
+        )
+      },
+    },
   ]
 }
 

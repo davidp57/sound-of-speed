@@ -16,7 +16,7 @@ import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { ouvrirBase, type Base } from './base/base'
-import { accounts, authIdentities, profiles } from './base/schema'
+import { accounts, authIdentities, deposits, profiles } from './base/schema'
 import { creerIdentite, type Identite } from './identite'
 import { creerServeur } from './serveur'
 
@@ -257,5 +257,108 @@ describe('le compte que l’appareil abandonne', () => {
 
     expect((await seConnecter('intacte@exemple.fr', 'mauvais', ici)).statut).toBe(401)
     expect(await compteDe(ici)).toBe(abandonne)
+  })
+})
+
+describe('tenir son compte', () => {
+  async function supprimer(temoin: string, motDePasse?: string) {
+    const reponse = await serveur().request('/api/auth/compte/supprimer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: temoin },
+      body: JSON.stringify(motDePasse === undefined ? {} : { motDePasse }),
+    })
+    return { statut: reponse.status, entetes: reponse.headers.get('set-cookie') ?? '' }
+  }
+
+  it('dit ce que ce serveur-ci sait faire, et rien de plus', async () => {
+    // Ce qui n'est pas configuré ne doit pas apparaître à l'écran : c'est ici
+    // que l'écran l'apprend.
+    const reponse = await serveur().request('/api/auth/compte/possibilites')
+    const dit = (await reponse.json()) as { relaisCourriel: boolean; fournisseurs: string[] }
+
+    expect(reponse.status).toBe(200)
+    expect(dit.relaisCourriel).toBe(false)
+    expect(dit.fournisseurs).toEqual([])
+  })
+
+  it('supprime le compte et tout ce qu’il portait', async () => {
+    const appareil = await appareilNeuf()
+    const compte = (await compteDe(appareil)) ?? ''
+    await base
+      .insert(profiles)
+      .values({ id: 'p9', accountId: compte, name: 'À perdre', content: '{}' })
+    await base.insert(deposits).values({
+      id: 'd9',
+      accountId: compte,
+      folder: 'traces',
+      name: 't.gz',
+      bytes: 3,
+      content: Buffer.from([1, 2, 3]),
+    })
+
+    expect((await supprimer(appareil)).statut).toBe(200)
+
+    expect(await base.select().from(accounts).where(eq(accounts.id, compte))).toHaveLength(0)
+    // La cascade fait le travail : ce qui pendait au compte part avec lui.
+    expect(await base.select().from(profiles).where(eq(profiles.accountId, compte))).toHaveLength(0)
+    expect(await base.select().from(deposits).where(eq(deposits.accountId, compte))).toHaveLength(0)
+  })
+
+  it('efface le témoin, pour que l’appareil ne se croie pas connecté', async () => {
+    const appareil = await appareilNeuf()
+
+    const rendu = await supprimer(appareil)
+
+    expect(rendu.entetes).not.toBe('')
+    expect(await compteDe(appareil)).toBeNull()
+  })
+
+  it('exige le mot de passe quand le compte en a un', async () => {
+    // Sans cela, un appareil laissé déverrouillé suffirait à tout effacer.
+    const appareil = await appareilNeuf()
+    const compte = (await compteDe(appareil)) ?? ''
+    await rattacher(appareil, 'a-garder@exemple.fr')
+
+    expect((await supprimer(appareil)).statut).toBe(401)
+    expect((await supprimer(appareil, 'ce-n-est-pas-le-bon')).statut).toBe(401)
+    expect(await base.select().from(accounts).where(eq(accounts.id, compte))).toHaveLength(1)
+
+    expect((await supprimer(appareil, MOT_DE_PASSE)).statut).toBe(200)
+    expect(await base.select().from(accounts).where(eq(accounts.id, compte))).toHaveLength(0)
+  })
+
+  it('n’exige rien d’un compte anonyme, qui n’a pas de mot de passe', async () => {
+    // Le témoin est la seule preuve qui existe, et c'est déjà celle qui ouvre
+    // tout le reste.
+    const appareil = await appareilNeuf()
+
+    expect((await supprimer(appareil)).statut).toBe(200)
+  })
+
+  it('change le mot de passe, l’ancien à l’appui', async () => {
+    const appareil = await appareilNeuf()
+    await rattacher(appareil, 'change@exemple.fr')
+
+    const refus = await serveur().request('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: appareil },
+      body: JSON.stringify({ currentPassword: 'pas-le-bon', newPassword: 'un-autre-assez-long' }),
+    })
+    expect(refus.status).not.toBe(200)
+
+    const change = await serveur().request('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: appareil },
+      body: JSON.stringify({ currentPassword: MOT_DE_PASSE, newPassword: 'un-autre-assez-long' }),
+    })
+    expect(change.status).toBe(200)
+
+    // Ce qui compte : c'est le nouveau qui ouvre, et l'ancien qui ne fait plus rien.
+    expect((await seConnecter('change@exemple.fr', MOT_DE_PASSE)).statut).toBe(401)
+    expect((await seConnecter('change@exemple.fr', 'un-autre-assez-long')).statut).toBe(200)
+  })
+
+  it('n’est pas donné à qui n’a pas de compte', async () => {
+    expect((await supprimer('')).statut).toBe(401)
   })
 })

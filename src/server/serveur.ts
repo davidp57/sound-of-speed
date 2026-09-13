@@ -26,6 +26,7 @@ import {
 } from './sessions'
 import { ecrireEntite, estUnRegistre, lireEntite, listerEntites } from './entites'
 import { CHEMIN_IDENTITE, type Identite } from './identite'
+import { archiveDuCompte } from './emporter'
 import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
@@ -79,6 +80,7 @@ const DONNEES = [
   '/journal/',
   '/mesures/',
   '/mesure-voiture/',
+  '/mon-compte/',
   '/sessions/',
   '/retention',
 ]
@@ -246,6 +248,27 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       const archive = await archiveDeLaSession(base, compte, c.req.param('cle'))
       if (archive === null) return c.notFound()
 
+      return new Response(archive.flux, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename="${archive.nom}"`,
+          'Cache-Control': 'no-store',
+        },
+      })
+    })
+
+    // Tout ce qu'un compte porte, en un fichier.
+    //
+    // Ce sont ses réglages, ses trajets et ses mesures : rien ne doit l'obliger
+    // à passer par nous pour les relire, et c'est ce qui rend une suppression
+    // acceptable. Le navigateur de la voiture, lui, refuse les
+    // téléchargements — l'écran le dit, et renvoie vers un poste de travail.
+    app.get('/mon-compte/archive.zip', async (c) => {
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
+
+      const archive = archiveDuCompte(base, compte)
       return new Response(archive.flux, {
         status: 200,
         headers: {
