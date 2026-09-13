@@ -203,13 +203,25 @@ describe('le démarrage n’attend pas', () => {
   it('rend la main tout de suite, même si le serveur ne répond jamais', () => {
     // Le critère central du ticket, et le seul qui ne se rattrape pas. Un
     // serveur qui ne répond jamais est le cas ordinaire dans un tunnel.
-    const fetchImpl = vi.fn(() => new Promise<Response>(() => {})) as unknown as typeof fetch
+    //
+    // **Vérifié par l'ordre, et non par une horloge.** Une première version
+    // mesurait « moins de cinquante millisecondes » ; elle a échoué une fois sur
+    // une machine chargée, ce qui ne disait rien du code. Ici, la requête part
+    // puis le démarrage se termine — et si `startIdentity` attendait, la seconde
+    // étape ne serait jamais atteinte.
+    const etapes: string[] = []
+    const fetchImpl = vi.fn(
+      () =>
+        new Promise<Response>(() => {
+          etapes.push('requête partie')
+        }),
+    ) as unknown as typeof fetch
 
-    const debut = performance.now()
-    startIdentity({ fetchImpl })
-    const ecoule = performance.now() - debut
+    const rendu = startIdentity({ fetchImpl })
+    etapes.push('démarrage terminé')
 
-    expect(ecoule).toBeLessThan(50)
+    expect(rendu).toBeUndefined()
+    expect(etapes).toEqual(['requête partie', 'démarrage terminé'])
   })
 
   it('ne laisse pas remonter une panne', async () => {
