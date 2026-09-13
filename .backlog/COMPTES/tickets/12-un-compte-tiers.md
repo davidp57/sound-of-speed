@@ -1,8 +1,8 @@
 # 12 — Un compte tenu ailleurs, et seulement s'il est configuré
 
-**Statut :** ✅ fait — 13 septembre 2026, pour le code. Reste à obtenir les
-identifiants **de Google** : c'est un dossier à déposer, pas un développement, et
-la marche à suivre est plus bas.
+**Statut :** ✅ fait — 13 septembre 2026, code **et** configuration. Le dossier
+Google est déposé, ses identifiants sont dans la pile du NAS, et David a vérifié
+là-bas que la connexion par Google fonctionne.
 
 **Apple et Tesla sont laissés de côté pour le moment**, décidé par David le
 13 septembre 2026 : seul Google est visé. Rien n'est retiré du code — un

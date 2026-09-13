@@ -3227,7 +3227,7 @@ suit pas.
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
-| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **13 tickets sur 14 ; restent l'essai hors réseau en voiture, les identifiants des fournisseurs et « j'ai oublié »** |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **14 tickets sur 15 ; Google est configuré sur le NAS et vérifié ; restent l'essai hors réseau en voiture et « j'ai oublié »** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
