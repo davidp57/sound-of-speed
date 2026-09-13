@@ -104,7 +104,7 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 | [03](tickets/03-ce-que-porte-solo-change-de-mains.md) | Ce que porte `solo` devient celui du premier compte | 02 |
 | [04](tickets/04-la-voiture-depose-avec-son-compte.md) | La voiture dépose avec son compte, et le mot de passe partagé s'efface | 02, 03 |
 | [05](tickets/05-relier-un-appareil-par-un-code.md) | Relier un second appareil en scannant un code | 02 |
-| [09](tickets/09-reprendre-son-compte.md) 🧑 | Reprendre son compte quand on a tout perdu | 05 |
+| [09](tickets/09-reprendre-son-compte.md) | Reprendre son compte quand on a tout perdu : adresse **et** compte tiers | 05 |
 | [06](tickets/06-les-droits-ouvrent-les-ecrans.md) | Les droits ouvrent les écrans, et un droit expiré les referme | 02 |
 | [07](tickets/07-hors-reseau-rien-ne-change.md) | Hors réseau, rien ne change : vérifié réseau coupé | 04, 06 |
 | [08](tickets/08-le-poids-charge-par-la-voiture.md) | Le poids chargé par la voiture, mesuré avant et après | 06 |
@@ -152,7 +152,14 @@ questions de David sur ce que l'identité recouvre vraiment :
    freinage moyens qui ne décrivent ni l'une ni l'autre. On n'y touche pas ici :
    le rendre multi-voitures toucherait le profil mesuré, l'étalonnage et les
    écrans, ce qui n'a rien à faire dans un lot sur l'identité.
-9. **Ce qui identifie un appareil n'est pas l'appareil.** Il n'y a ni identifiant
+9. **La connexion par compte tiers vient en plus de l'adresse et du mot de
+   passe**, jamais à la place. La recommandation inverse tenait sur une
+   présomption — « personne n'est sans compte tiers » — que David a écartée : il y
+   en a, et d'autres ne veulent pas s'en servir pour se connecter ailleurs. Se
+   connecter avec son compte **Tesla** est à essayer : ça existe, c'est le
+   fournisseur dont le compte correspond à la personne assise dans la voiture, et
+   ce qui reste à vérifier est l'approbation de l'application côté Tesla.
+10. **Ce qui identifie un appareil n'est pas l'appareil.** Il n'y a ni identifiant
    de navigateur ni empreinte : l'identifiant est produit par le serveur, et ce
    qui « reconnaît » l'appareil, c'est son navigateur qui se souvient — un témoin
    de connexion fermé au code de la page, valable un an, et une entrée de stockage

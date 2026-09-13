@@ -1,6 +1,6 @@
 # 09 — Reprendre son compte quand on a tout perdu
 
-**Statut :** 🧑 attend David — la voie tierce est proposée, pas tranchée
+**Statut :** ⬜ prêt — les deux voies, tranché par David le 13 septembre 2026
 
 **Bloqué par :** [05 — Relier un second appareil](05-relier-un-appareil-par-un-code.md).
 
@@ -11,7 +11,13 @@ qu'on a **sous la main**. Il ne peut rien quand on n'en a plus aucun : navigateu
 nettoyé, voiture changée, téléphone perdu. Il faut alors quelque chose qui
 survive à l'appareil.
 
-Deux voies, et aucune n'est obligatoire.
+**Les deux voies, et non l'une ou l'autre.** Tranché par David le 13 septembre
+2026, contre la recommandation inverse : celle-ci tenait sur une présomption —
+« personne n'est sans compte tiers » — qui n'est pas un fait. Beaucoup n'en ont
+aucun, et d'autres ne veulent pas s'en servir pour se connecter ailleurs. Une
+adresse et un mot de passe restent donc la voie qui ne dépend de personne.
+
+Aucune des deux n'est obligatoire pour autant.
 
 ## Ce à quoi il faut faire attention
 
@@ -36,12 +42,14 @@ personne n'a saisi d'adresse.
 
 ### La voie b — continuer avec un compte tiers
 
-**Proposée le 13 septembre 2026, à l'initiative de David, et pas encore
-tranchée.**
+Proposée le 13 septembre 2026 à l'initiative de David, et retenue **en plus** de
+la voie a.
 
-Ce qui la rend intéressante : elle **supprime le besoin d'envoi de courriel**. Un
-compte tiers donne une adresse déjà vérifiée, sans qu'on envoie quoi que ce soit,
-et sans mot de passe à retenir.
+Ce qui la rend intéressante : pour qui s'en sert, elle **évite l'envoi de
+courriel**. Un compte tiers donne une adresse déjà vérifiée, sans qu'on envoie
+quoi que ce soit, et sans mot de passe à retenir. Elle ne dispense pas de la voie
+a : le relais de courriel reste nécessaire à qui choisit une adresse et oublie son
+mot de passe.
 
 Ce qu'elle coûte, et qui est vérifié :
 
@@ -71,15 +79,31 @@ Ce qu'elle coûte, et qui est vérifié :
   [NAVIGATEUR-VOITURE](../../NAVIGATEUR-VOITURE/spec.md) rappelle qu'on n'y a ni
   console ni outils pour diagnostiquer.
 
+### Se connecter avec son compte Tesla, à essayer
+
+**Ça existe.** Le scope `openid` de Tesla permet à ses clients de se connecter à
+des applications tierces avec leurs identifiants, sur
+`https://auth.tesla.com/oauth2/v3/authorize`, en flux `authorization_code` ; le
+scope `user_data` donne le profil. Relevé le 13 septembre 2026 dans la
+documentation de la Fleet API.
+
+Tesla n'est pas dans les fournisseurs livrés par la bibliothèque, mais son greffon
+`generic-oauth` est fait pour brancher un fournisseur arbitraire. C'est donc une
+affaire de configuration, pas de code.
+
+Ce qui n'est **pas** vérifié, et qu'il faut regarder avant de promettre quoi que
+ce soit : l'approbation de l'application côté Tesla, et son coût éventuel — la
+Fleet API n'est pas gratuite pour tous les usages. Idée de David, qui a relevé au
+passage que c'est le fournisseur dont le compte correspond exactement à la
+personne assise dans la voiture où tourne l'application.
+
 ## Ce qui reste à trancher
 
-1. Fait-on la voie b ? Si oui, quels fournisseurs ?
-2. Fait-on les deux, ou la voie b **remplace-t-elle** la voie a — auquel cas il
-   n'y a jamais de courriel à envoyer, ni de relais à configurer, ni de mot de
-   passe oublié à traiter ?
+Quels fournisseurs on branche, au-delà de l'essai Tesla.
 
 ## Critères d'acceptation
 
+- [ ] Les deux voies sont disponibles ; aucune n'est imposée
 - [ ] Une installation sans rien configuré n'affiche aucune des deux voies, et
       garde le code à scanner
 - [ ] La voie configurée rattache le compte **existant** : rien ne se perd, aucun
