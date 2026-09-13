@@ -479,7 +479,7 @@ désigne aucune boîte, parce qu'elle refuse un compte sans courriel. Un compte
 anonyme n'a rien à récupérer — pas de mot de passe, donc rien à reprendre si
 l'appareil perd ce qu'il gardait. Le **code de liaison** n'y change rien : il
 relie un second appareil au même compte anonyme, et les perdre tous les deux le
-perdrait. C'est une vraie adresse qui mettra fin à cet état.
+perdrait. C'est le **rattachement** d'une adresse qui met fin à cet état.
 _Éviter_ : compte temporaire, compte invité (les deux laissent croire qu'il
 expire, or il dure tant qu'on ne l'efface pas).
 
@@ -493,6 +493,15 @@ deux appareils reste anonyme.
 _Éviter_ : appairage, jumelage (qui laissent croire à un lien entre deux
 appareils, alors qu'il n'y a qu'un compte et des appareils qui l'ouvrent),
 invitation (rien n'est envoyé à personne).
+
+**Rattachement** (_link an address_, `rattacherUneAdresse`) :
+Donner une adresse et un mot de passe au compte qu'un appareil porte déjà. Le
+compte **garde son identifiant**, donc tout ce qu'il porte reste en place ; ce
+qui change est son adresse, et le fait qu'il cesse d'être anonyme.
+_Attention_ : à ne pas confondre avec une **inscription**, qui créerait un
+compte neuf et laisserait les réglages sur l'ancien. C'est exactement ce qu'on
+ne veut pas, et c'est pourquoi ce geste a sa propre route.
+_Éviter_ : créer un compte, s'inscrire (il en existe déjà un).
 
 **Identité** (_auth identity_, `auth_identities`) :
 Une façon de prouver qu'on est le titulaire d'un compte : un mot de passe rangé

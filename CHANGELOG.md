@@ -15,6 +15,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Une adresse et un mot de passe, pour le jour où l'on n'a plus d'appareil.**
+  Dans l'écran Compte, deux gestes distincts : *rattacher* donne une adresse au
+  compte de cet appareil — qui **ne change pas d'identifiant**, donc ses profils,
+  ses moteurs, ses boîtes, ses trajets et son profil mesuré ne bougent pas — et
+  *ouvrir un compte qui existe* fait passer cet appareil sur un compte
+  d'ailleurs, en effaçant celui d'ici s'il était vide. Le compte se rouvre alors
+  depuis n'importe quel appareil. Aucun courriel n'est envoyé et l'adresse n'est
+  pas vérifiée : il n'y a pas de relais à configurer, et l'écran dit ce que cela
+  coûte.
+
 - **Un écran pour le compte.** Ce qui touche à l'identité quitte l'écran de
   configuration, où il se perdait au milieu des réglages, pour un onglet à lui :
   ce que porte cet appareil, donner un code, recopier un code venu d'un autre

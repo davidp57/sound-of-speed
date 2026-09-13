@@ -1,6 +1,6 @@
 # 11 — Un vrai compte : une adresse et un mot de passe, choisis depuis un clavier
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 13 septembre 2026
 
 **Bloqué par :** [10 — L'écran du compte](10-l-ecran-du-compte.md).
 
@@ -38,11 +38,40 @@ du chemin décidé le 13 septembre 2026.
 
 ## Critères d'acceptation
 
-- [ ] Une adresse et un mot de passe se choisissent depuis l'écran du compte
-- [ ] Le compte garde tout ce qu'il portait : profils, moteurs, boîtes, trajets,
+- [x] Une adresse et un mot de passe se choisissent depuis l'écran du compte
+- [x] Le compte garde tout ce qu'il portait : profils, moteurs, boîtes, trajets,
       profil mesuré
-- [ ] Il se rouvre depuis un appareil neuf, sans code de liaison
-- [ ] Un compte qui a une adresse n'est plus marqué anonyme, et l'écran cesse
+- [x] Il se rouvre depuis un appareil neuf, sans code de liaison
+- [x] Un compte qui a une adresse n'est plus marqué anonyme, et l'écran cesse
       d'avertir
-- [ ] Afficher un code de liaison ne change pas le mot de passe choisi
-- [ ] Aucun courriel n'est envoyé, aucun relais n'est nécessaire
+- [x] Afficher un code de liaison ne change pas le mot de passe choisi
+- [x] Aucun courriel n'est envoyé, aucun relais n'est nécessaire
+
+## Ce qui a été fait, et ce qui a été mesuré
+
+Un greffon `src/server/compte.ts`, à côté de celui de la liaison, avec deux
+routes : rattacher une adresse au compte de la session, et ouvrir ici un compte
+qui existe ailleurs.
+
+**La connexion est une route à nous, et ce n'est pas un caprice.** Elle doit
+régler dans le même passage le sort du compte que l'appareil abandonne — la
+preuve qu'il le possède étant son témoin, qui disparaît avec la connexion. La
+première version faisait deux appels : abandonner, puis `sign-in/email` de la
+bibliothèque. **Mesuré dans un navigateur : ça ne marche pas.** Effacer le compte
+d'ici invalide sa session, et la connexion qui suit n'installe plus de témoin —
+l'appareil se retrouvait connecté selon la réponse, et sans session selon le
+serveur. Les deux dans le même endpoint, et le problème disparaît. `sign-in/email`
+reste en place et fonctionne ; elle ignore simplement ce qu'est un compte
+abandonné.
+
+**Ce que le sort de l'ancien compte a gagné :** il est refusé tant que le mot de
+passe n'est pas reconnu. Rien n'est effacé sur une connexion qui rate, ce qui
+était le défaut de la version en deux appels.
+
+**Mesuré bout en bout dans le navigateur** : un profil déposé au volant, l'adresse
+rattachée, puis un appareil neuf qui ouvre le compte par son adresse — même
+identifiant de compte, session installée, `/profiles/` à 200, et le profil
+redescendu.
+
+**Le sort de l'ancien compte vit désormais dans `abandon.ts`** : les deux gestes
+qui y mènent — un code de liaison, une connexion — le partagent.

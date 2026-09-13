@@ -165,12 +165,17 @@ function compteDe(charge: unknown): Omit<LocalIdentity, 'obtainedAt'> | null {
   const id = champs['id']
   if (typeof id !== 'string' || id === '') return null
 
+  const anonymous = champs['isAnonymous'] !== false
+  const email = champs['email']
   return {
     id,
     name: typeof champs['name'] === 'string' ? champs['name'] : '',
     // Absent vaut anonyme : la seule façon d'arriver ici sans l'avoir demandé
     // est la création d'un compte qui n'a rien saisi.
-    anonymous: champs['isAnonymous'] !== false,
+    anonymous,
+    // L'adresse d'un compte anonyme est fabriquée sous `.invalid` : la garder
+    // ferait croire à une adresse là où il n'y en a pas.
+    ...(anonymous || typeof email !== 'string' ? {} : { email }),
   }
 }
 

@@ -33,6 +33,7 @@ import { anonymous } from 'better-auth/plugins'
 
 import type { Base } from './base/base'
 import { accounts, authIdentities, authSessions, authVerifications } from './base/schema'
+import { compte } from './compte'
 import { faireHeriter, formaterHeritage } from './heritage'
 import { liaison } from './liaison'
 
@@ -125,6 +126,10 @@ export function creerIdentite({ base, secret, adresse }: OptionsDIdentite) {
       // à côté : le témoin de connexion est signé avec le secret du serveur, et
       // seule la bibliothèque sait le poser — voir `liaison.ts`.
       liaison({ base }),
+
+      // Se faire un vrai compte : une adresse et un mot de passe choisis, sur
+      // le compte qui existe déjà — voir `compte.ts`.
+      compte({ base }),
     ],
 
     session: {

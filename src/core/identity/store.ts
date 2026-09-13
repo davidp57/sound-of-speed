@@ -21,6 +21,15 @@ export interface LocalIdentity {
   name: string
   /** Vrai tant qu'aucune adresse n'y est rattachée. */
   anonymous: boolean
+  /**
+   * L'adresse du compte, quand il en a une **vraie**.
+   *
+   * Absente d'un compte anonyme : celle que la bibliothèque lui fabrique sous
+   * `.invalid` ne désigne aucune boîte, et l'afficher ferait croire à une
+   * adresse. Elle est gardée ici pour que l'écran puisse dire à qui le compte
+   * est rattaché **sans réseau**, ce qui est la situation ordinaire.
+   */
+  email?: string
   /** Quand cet appareil a obtenu son compte, en millisecondes. */
   obtainedAt: number
 }
@@ -73,6 +82,7 @@ function estUneIdentite(valeur: unknown): valeur is LocalIdentity {
     entree['id'] !== '' &&
     typeof entree['name'] === 'string' &&
     typeof entree['anonymous'] === 'boolean' &&
-    typeof entree['obtainedAt'] === 'number'
+    typeof entree['obtainedAt'] === 'number' &&
+    (entree['email'] === undefined || typeof entree['email'] === 'string')
   )
 }

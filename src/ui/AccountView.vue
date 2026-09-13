@@ -18,7 +18,14 @@ import qrcode from 'qrcode-generator'
 import { demanderUnCode } from '../core/identity/client'
 import { lienDeLiaison } from '../core/identity/lien'
 import { isReachableOrigin } from '../core/preset/share'
-import { identity, identityState, liaison, rejoindreUnCompte } from '../state'
+import {
+  identity,
+  identityState,
+  liaison,
+  rattacherSonAdresse,
+  rejoindreUnCompte,
+  seConnecterAUnCompte,
+} from '../state'
 
 /**
  * Ce que l'écran dit du compte de cet appareil.
@@ -42,8 +49,73 @@ const compteDeLAppareil = computed(() => {
   if (identity.value.anonymous) {
     return 'Cet appareil a son compte, créé tout seul, sans adresse rattachée. Vider les données de ce site depuis les réglages du navigateur en perdrait l’accès — et ce qui a été déposé avec.'
   }
-  return `Cet appareil ouvre le compte « ${identity.value.name} ».`
+  const adresse = identity.value.email
+  return adresse === undefined
+    ? `Cet appareil ouvre le compte « ${identity.value.name} ».`
+    : `Ce compte est rattaché à ${adresse}. Il se rouvre depuis n’importe quel appareil, avec son mot de passe.`
 })
+
+/**
+ * Une adresse et un mot de passe, pour le jour où l'on n'a plus d'appareil.
+ *
+ * Deux gestes que l'écran distingue, parce que tout les sépare : **rattacher**
+ * garde le compte de cet appareil et lui donne une adresse ; **se connecter**
+ * ouvre un compte qui existe ailleurs, et abandonne celui d'ici.
+ */
+const adresse = ref('')
+const motDePasse = ref('')
+const noteDuCompte = ref('')
+const enCours = ref(false)
+
+/** Ce que la bibliothèque exige, et ce que l'écran annonce avant de refuser. */
+const MOT_DE_PASSE_MINIMUM = 8
+
+const saisieComplete = computed(
+  () => adresse.value.includes('@') && motDePasse.value.length >= MOT_DE_PASSE_MINIMUM,
+)
+
+async function onRattacher(): Promise<void> {
+  if (enCours.value || !saisieComplete.value) return
+  enCours.value = true
+  noteDuCompte.value = ''
+  try {
+    const rendu = await rattacherSonAdresse(adresse.value, motDePasse.value)
+    if (rendu.state === 'sans-reseau') {
+      noteDuCompte.value = 'Sans réseau, on ne peut pas rattacher une adresse : elle se range sur le serveur.'
+      return
+    }
+    if (rendu.state === 'refusee') {
+      noteDuCompte.value = rendu.detail
+      return
+    }
+    motDePasse.value = ''
+    noteDuCompte.value = `Ce compte est maintenant celui de ${rendu.email}. Rien n’a bougé de ce qu’il portait.`
+  } finally {
+    enCours.value = false
+  }
+}
+
+async function onSeConnecter(): Promise<void> {
+  if (enCours.value || !saisieComplete.value) return
+  enCours.value = true
+  noteDuCompte.value = ''
+  try {
+    const rendu = await seConnecterAUnCompte(adresse.value, motDePasse.value)
+    if (rendu.state === 'sans-reseau') {
+      noteDuCompte.value = 'Sans réseau, on ne peut pas se connecter : le mot de passe se vérifie sur le serveur.'
+      return
+    }
+    if (rendu.state === 'refusee') {
+      noteDuCompte.value = rendu.detail
+      return
+    }
+    motDePasse.value = ''
+    adresse.value = ''
+    masquerLeCode()
+  } finally {
+    enCours.value = false
+  }
+}
 
 /**
  * Donner un code : un code à scanner, ou huit caractères à taper.
@@ -243,18 +315,63 @@ onUnmounted(() => {
     <p v-if="noteDeLiaison" class="note">{{ noteDeLiaison }}</p>
 
     <!--
-      La place de la seconde voie est prise dès maintenant, et le champ est
-      inerte : ce qui la remplira est le ticket 11. Un écran qui n'aurait pas
-      prévu la place serait à refaire, et un champ actif qui ne mène nulle part
-      serait pire que pas de champ du tout.
+      Une adresse et un mot de passe : la voie qui survit à l'appareil. Les deux
+      boutons partagent les mêmes champs parce que la saisie est la même ; ce
+      qu'ils font, lui, n'a rien de commun, et les phrases le disent.
     -->
-    <h3>Se connecter avec une adresse</h3>
+    <h3>Une adresse et un mot de passe</h3>
     <p class="note">
-      Pas encore : aucun compte n’a d’adresse aujourd’hui. Ce qui existe est le
-      code ci-dessus, qui relie les appareils qu’on a sous la main. Une adresse
-      et un mot de passe viendront pour le jour où l’on n’a plus aucun appareil —
-      navigateur nettoyé, téléphone perdu, voiture changée.
+      Le code ci-dessus relie les appareils qu’on a <strong>sous la main</strong>.
+      Une adresse sert au jour où l’on n’en a plus aucun : navigateur nettoyé,
+      téléphone perdu, voiture changée. C’est le moment de la saisir sur un vrai
+      clavier — pas au volant.
     </p>
+    <div class="choices">
+      <input
+        v-model="adresse"
+        type="email"
+        inputmode="email"
+        autocomplete="username"
+        spellcheck="false"
+        placeholder="Adresse"
+      />
+      <input
+        v-model="motDePasse"
+        type="password"
+        autocomplete="current-password"
+        :placeholder="`Mot de passe (${MOT_DE_PASSE_MINIMUM} caractères au moins)`"
+      />
+    </div>
+    <div class="choices">
+      <button
+        v-if="identity?.anonymous !== false"
+        :disabled="!saisieComplete || enCours"
+        @click="onRattacher()"
+      >
+        Rattacher au compte d’ici
+      </button>
+      <button :disabled="!saisieComplete || enCours" @click="onSeConnecter()">
+        Ouvrir un compte qui existe
+      </button>
+    </div>
+    <p v-if="identity?.anonymous !== false" class="note">
+      <strong>Rattacher</strong> donne cette adresse au compte de cet appareil :
+      ses profils, ses moteurs et ses trajets ne bougent pas.
+      <strong>Ouvrir un compte qui existe</strong> fait l’inverse — cet appareil
+      rejoint un compte d’ailleurs, et celui qu’il porte aujourd’hui est effacé
+      s’il est vide, gardé sinon.
+    </p>
+    <p v-else class="note">
+      Ce compte a déjà son adresse. <strong>Ouvrir un compte qui existe</strong>
+      fait passer cet appareil sur un autre compte ; celui d’ici est gardé, et se
+      rouvre avec son adresse.
+    </p>
+    <p class="note">
+      Aucun courriel n’est envoyé, et l’adresse n’est pas vérifiée : il n’y a pas
+      de relais à configurer, et celui qui déploie chez lui n’en fournira pas.
+      Tant qu’il n’y en a pas, un mot de passe perdu l’est pour de bon.
+    </p>
+    <p v-if="noteDuCompte" class="note">{{ noteDuCompte }}</p>
   </section>
 </template>
 

@@ -23,6 +23,19 @@ export default defineConfig({
     // de toute la banque produite et qui se vérifie sans rien faire tourner.
     include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     environment: 'node',
+    /**
+     * Trente secondes pour un `beforeEach`, au lieu de dix.
+     *
+     * Les tests du serveur ouvrent chacun une base dans un dossier temporaire et
+     * y jouent les migrations. **Mesuré : vingt-six millisecondes** quand la
+     * machine est libre — ce n'est donc pas le coût du code. Mais les fichiers
+     * de test tournent en parallèle, et sur un poste occupé — un navigateur, un
+     * serveur d'essai, une autre passe de tests — le même hook a dépassé les dix
+     * secondes par défaut, faisant échouer une douzaine de tests de fichiers
+     * différents. Un seuil franchi par la charge de la machine ne dit rien du
+     * code, et une suite qui rougit au hasard ne sert plus à rien.
+     */
+    hookTimeout: 30_000,
     coverage: {
       provider: 'v8',
       include: ['src/core/**/*.ts'],
