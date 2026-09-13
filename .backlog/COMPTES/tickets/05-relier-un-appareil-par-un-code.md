@@ -1,6 +1,6 @@
 # 05 — Relier un second appareil en scannant un code
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 13 septembre 2026
 
 **Bloqué par :** [02 — Un compte se crée tout seul](02-un-compte-se-cree-tout-seul.md).
 
@@ -56,12 +56,45 @@ qui en fait le chemin normal, et c'est pour cela qu'il vient avant tout le reste
 
 ## Critères d'acceptation
 
-- [ ] L'écran de configuration affiche un code qui relie un second appareil
-- [ ] Le second appareil ouvre le même compte : mêmes profils, moteurs, boîtes,
+- [x] L'écran de configuration affiche un code qui relie un second appareil
+- [x] Le second appareil ouvre le même compte : mêmes profils, moteurs, boîtes,
       trajets et profil mesuré
-- [ ] Le compte anonyme que le second appareil portait est effacé s'il est vide,
+- [x] Le compte anonyme que le second appareil portait est effacé s'il est vide,
       gardé et annoncé sinon
-- [ ] Un compte qui a reçu un mot de passe n'est plus marqué anonyme
-- [ ] Aucun service tiers, aucune adresse, aucun envoi de courriel
-- [ ] Le code ne reste pas affiché, et l'écran dit ce qu'il donne à qui le voit
-- [ ] Hors réseau, l'écran dit qu'on ne peut pas relier maintenant
+- [x] Un compte qui a reçu un mot de passe n'est plus marqué anonyme
+- [x] Aucun service tiers, aucune adresse, aucun envoi de courriel
+- [x] Le code ne reste pas affiché, et l'écran dit ce qu'il donne à qui le voit
+- [x] Hors réseau, l'écran dit qu'on ne peut pas relier maintenant
+
+## Ce qui a été fait, et ce qui a été mesuré
+
+Le serveur répond sous `/api/liaison/` : `code` pose un mot de passe sur le
+compte de la session et rend le couple, `relier` ouvre ce compte ailleurs et
+règle le sort de celui que l'appareil portait. Le couple voyage dans le fragment
+d'un lien (`src/core/identity/lien.ts`), à l'image du partage de profil.
+
+**Une deuxième demande remplace le mot de passe**, ce qui périme le code
+précédent : la preuve « credential » est effacée avant d'en reposer une, la
+bibliothèque refusant de remplacer un mot de passe existant. Vérifié contre le
+serveur local : le premier code rend 401, le second 200.
+
+**Mesuré, et pas seulement testé.** Le scénario complet a été joué contre le
+vrai serveur — deux témoins de connexion distincts, un profil déposé par le
+premier et listé par le second — puis dans le navigateur : le fragment disparaît
+de l'adresse, la bannière annonce l'arrivée, et le rapatriement des profils et
+des moteurs part tout de suite.
+
+**Le rapatriement ignore le cran d'accord**, et c'est délibéré : l'accord dit ce
+qui **part** de la voiture — position, trajets, journal —, pas ce qui redescend
+du compte qu'on vient de rejoindre. Sans cela, relier un appareil dont l'accord
+est à « rien n'est envoyé », qui est le défaut, n'aurait rien ramené.
+
+**La bannière escamotable qui rappelle les deux voies** attend le
+[ticket 09](09-reprendre-son-compte.md) : la seconde voie — l'adresse — n'existe
+pas encore, et une bannière qui n'annoncerait qu'un chemin déjà visible dans
+l'écran de configuration n'apprendrait rien. Ce qui est en place est le message
+d'arrivée, sur l'appareil qui vient de se relier.
+
+**Pour le ticket 09 :** le mot de passe posé ici est **remplacé** à chaque
+demande de code. Le jour où l'on choisit son mot de passe, cette règle ne peut
+plus valoir telle quelle — afficher un code effacerait le mot de passe choisi.

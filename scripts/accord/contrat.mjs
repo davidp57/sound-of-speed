@@ -558,6 +558,59 @@ export function cas({ nom }) {
         )
       },
     },
+    // --- Relier un second appareil ----------------------------------------
+    //
+    // Le code de liaison est le dernier cas joué, et ce n'est pas un hasard : il
+    // pose un mot de passe sur le compte du jeu, qui cesse alors d'être anonyme.
+    // Rien en aval n'en dépend, mais le mettre plus haut ferait porter cette
+    // conséquence à tout ce qui suit.
+    {
+      nom: 'le code de liaison refuse sans compte',
+      part: 'identite',
+      // Un code donné sans compte donnerait un compte à qui le demande.
+      requete: { chemin: '/api/liaison/code', methode: 'POST', corps: '{}' },
+      attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
+    },
+    {
+      nom: 'un code de liaison porte de quoi rouvrir le compte ailleurs',
+      part: 'identite',
+      requete: {
+        chemin: '/api/liaison/code',
+        methode: 'POST',
+        corps: '{}',
+        entetes: { 'Content-Type': 'application/json' },
+        compte: true,
+      },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        const couple = JSON.parse(corps.toString('utf8'))
+        vrai(typeof couple.email === 'string' && couple.email !== '', 'une adresse')
+        vrai(typeof couple.motDePasse === 'string' && couple.motDePasse.length > 20, 'un mot de passe')
+        // Ce qui ouvre un compte n'a rien à faire dans un cache partagé.
+        vrai(
+          (r.headers.get('cache-control') ?? '').includes('no-store'),
+          'le code n’est jamais mis en cache',
+        )
+      },
+    },
+    {
+      nom: 'un code qui ne vaut rien n’ouvre rien',
+      part: 'identite',
+      // Le cas ordinaire : un écran photographié la semaine dernière, dont le
+      // mot de passe a été remplacé depuis. Tout autre code qu'un refus ferait
+      // rejouer l'appareil.
+      requete: {
+        chemin: '/api/liaison/relier',
+        methode: 'POST',
+        corps: JSON.stringify({
+          email: `${nom}@anonymous.placeholder.invalid`,
+          motDePasse: 'ce-mot-de-passe-n-ouvre-rien',
+        }),
+        entetes: { 'Content-Type': 'application/json' },
+        compte: true,
+      },
+      attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
+    },
   ]
 }
 

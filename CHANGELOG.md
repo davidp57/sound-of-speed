@@ -15,6 +15,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Relier un second appareil en scannant un code.** L'écran de configuration
+  affiche un code ; un téléphone ou un poste de travail qui le scanne ouvre le
+  même compte — mêmes profils, mêmes moteurs, mêmes boîtes, mêmes trajets, même
+  profil mesuré. Sans adresse, sans mot de passe à retenir, sans service tiers :
+  le compte anonyme a déjà une adresse fabriquée sous `.invalid`, et le serveur
+  lui pose un mot de passe au moment de la demande. Ce qui ouvre le compte
+  voyage dans le fragment du lien, jamais transmis au serveur. Le code s'efface
+  au bout de deux minutes, et en afficher un neuf périme le précédent. Le compte
+  que l'appareil portait avant est effacé s'il était vide, gardé et annoncé
+  sinon. Hors réseau, l'écran dit qu'on ne peut pas relier maintenant.
+
 - **La voiture dépose avec son compte, et le mot de passe partagé disparaît.**
   Le témoin de connexion voyage tout seul — la page et le serveur sont sur la
   même origine —, et le serveur en déduit à qui appartient ce qui arrive. Le

@@ -1149,13 +1149,39 @@ ne reste rien à transmettre. Le journal du conteneur dit ce qui est passé.
 
 **Deux appareils font deux comptes** tant que rien ne les relie, et c'est le
 comportement attendu : rien ne distingue « le second appareil de quelqu'un » du
-« premier appareil de quelqu'un d'autre ». Les réunir demandera une adresse, donc
-un geste explicite.
+« premier appareil de quelqu'un d'autre ». Les réunir demande un geste explicite,
+et ce geste est un code à scanner.
+
+**Relier un second appareil : un code, et rien d'autre.** L'écran de
+configuration affiche un code ; un téléphone ou un poste de travail qui le scanne
+ouvre le **même compte** — mêmes profils, mêmes moteurs, mêmes boîtes, mêmes
+trajets, même profil mesuré. Aucune adresse à saisir, aucun mot de passe à
+retenir, aucun service tiers.
+
+Ce que le code porte est un lien vers l'application, et ce qui ouvre le compte
+vit dans son **fragment** — la partie qui suit le `#`, qui n'est jamais transmise
+au serveur ni inscrite dans ses journaux. Le compte anonyme a déjà tout ce qu'il
+faut : la bibliothèque lui a fabriqué une adresse sous le domaine réservé
+`.invalid`, qui ne désigne aucune boîte, et le serveur lui pose un mot de passe
+au moment où l'on demande un code.
+
+Trois conséquences, toutes assumées :
+
+- **Qui photographie l'écran ouvre le compte.** Ce qui est en jeu est une
+  bibliothèque de réglages, pas de l'argent. Le code s'efface au bout de deux
+  minutes, l'écran le dit, et **afficher un code neuf périme le précédent** — le
+  mot de passe est remplacé, pas ajouté.
+- **Le compte que l'appareil portait avant** est effacé s'il était vide, gardé
+  sinon — et l'écran le dit, parce qu'un compte anonyme gardé n'a pas de mot de
+  passe pour y revenir.
+- **Hors réseau, on ne relie pas** : le code vient du serveur. L'écran le dit au
+  lieu de faire attendre.
 
 **Un compte anonyme n'a rien à récupérer**, et l'écran de configuration le dit :
 vider les données du site depuis les réglages du navigateur perd l'accès à ce
-compte, et à ce qui a été déposé avec. Rattacher une adresse est ce qui met fin à
-ce risque. La remise à zéro des réglages, elle, n'y touche pas.
+compte, et à ce qui a été déposé avec. Afficher un code de liaison y met fin — le
+compte a dès lors un mot de passe, donc il se rouvre ailleurs — et rattacher une
+adresse le fera aussi. La remise à zéro des réglages, elle, n'y touche pas.
 
 **Elle se pose sur la table `accounts`**, celle qui existe déjà et à qui pendaient déjà
 six autres tables. L'inverse — adopter la table qu'elle apporte — aurait obligé
@@ -1189,8 +1215,11 @@ sur le site, c'est cette adresse-là qu'il lui faut.
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
-compte. Un jeu de quarante-cinq requêtes le vérifie à chaque intégration — voir
+compte. Un jeu de quarante-huit requêtes le vérifie à chaque intégration — voir
 [`scripts/accord/`](scripts/accord/README.md).
+
+S'y ajoute `/api/liaison/`, sous lequel la voiture demande un code et un second
+appareil s'y relie.
 
 S'y ajoutent **deux emplacements que le serveur de fichiers n'a jamais rendus** :
 `/engines/` et `/gearboxes/`. Un moteur ou une boîte réglé au volant y remonte
@@ -2950,7 +2979,7 @@ suit pas.
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
-| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | spécifié |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 5 tickets sur 9** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

@@ -32,6 +32,12 @@ Aucune des deux n'est obligatoire pour autant.
   usage unique —, donc un relais à configurer. Chez David, celui du NAS.
 - **Sans adresse, on ne reprend rien**, et l'écran le dit déjà. C'est accepté par
   David le 13 septembre 2026 : « sinon on est fichu ».
+- **Le code de liaison remplace le mot de passe à chaque demande.** C'est ce qui
+  périme le code précédent au ticket 05, et c'est bon tant que personne n'a
+  choisi son mot de passe. Dès que la voie a existe, afficher un code effacerait
+  ce choix : il faudra soit un jeton à usage unique pour la liaison, soit ne
+  remplacer que le mot de passe que le serveur avait lui-même posé. À trancher
+  ici, pas ailleurs.
 
 ### La voie a — une adresse et un mot de passe
 
