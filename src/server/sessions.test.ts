@@ -9,7 +9,9 @@ import { PROCEDURE_VERSION } from '../core/calibration/aggregate'
 import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
 import { deposits } from './base/schema'
 import { ecrireDepot } from './depots'
-import { effacerSession, lireSession, listerSessions } from './sessions'
+import { readZip } from '../core/archive/zip'
+
+import { archiveDeLaSession, effacerSession, lireSession, listerSessions } from './sessions'
 
 const MIGRATIONS = 'src/server/base/migrations'
 
@@ -160,5 +162,74 @@ describe('effacer un trajet', () => {
 
     expect(await effacerSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')).toBe(0)
     expect(await lireSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')).toBeNull()
+  })
+})
+
+describe('emporter un trajet', () => {
+  async function archive(cle: string): Promise<{ nom: string; octets: Uint8Array }> {
+    const rendu = await archiveDeLaSession(base, SOLO_ACCOUNT_ID, cle)
+    expect(rendu).not.toBeNull()
+    return {
+      nom: rendu!.nom,
+      octets: new Uint8Array(await new Response(rendu!.flux).arrayBuffer()),
+    }
+  }
+
+  it('rend un fichier, pas quarante-deux', async () => {
+    await deposer('traces', '2026-09-11-06-24-01_da2m_001.jsonl.gz', 'trace une')
+    await deposer('traces', '2026-09-11-06-24-01_da2m_002.jsonl.gz', 'trace deux')
+    await deposer('journal', '2026-09-11-06-24-01_da2m_001.jsonl.gz', 'journal un')
+
+    const { entries } = await readZip((await archive('2026-09-11-06-24-01_da2m')).octets)
+
+    expect(entries.map((entree) => entree.name)).toEqual([
+      'journal/2026-09-11-06-24-01_da2m_001.jsonl.gz',
+      'traces/2026-09-11-06-24-01_da2m_001.jsonl.gz',
+      'traces/2026-09-11-06-24-01_da2m_002.jsonl.gz',
+    ])
+  })
+
+  it('rend les octets déposés, tranche par tranche', async () => {
+    // Ce qui ressort doit être exactement ce qui était monté : une tranche
+    // altérée ne se décompresse pas, et le relecteur ne peut plus rien en faire.
+    await deposer('traces', '2026-09-11-06-24-01_da2m_001.jsonl.gz', 'des octets précis')
+
+    const { entries } = await readZip((await archive('2026-09-11-06-24-01_da2m')).octets)
+
+    expect(new TextDecoder().decode(entries[0]!.bytes)).toBe('des octets précis')
+  })
+
+  it('ne mélange pas une trace et un journal de même nom', async () => {
+    // Ils portent le même nom dans deux dossiers. À plat, l'un écraserait
+    // l'autre à l'extraction.
+    await deposer('traces', '2026-09-11-06-24-01_da2m_001.jsonl.gz', 'la trace')
+    await deposer('journal', '2026-09-11-06-24-01_da2m_001.jsonl.gz', 'le journal')
+
+    const { entries } = await readZip((await archive('2026-09-11-06-24-01_da2m')).octets)
+    const lus = Object.fromEntries(
+      entries.map((entree) => [entree.name, new TextDecoder().decode(entree.bytes)]),
+    )
+
+    expect(lus['traces/2026-09-11-06-24-01_da2m_001.jsonl.gz']).toBe('la trace')
+    expect(lus['journal/2026-09-11-06-24-01_da2m_001.jsonl.gz']).toBe('le journal')
+  })
+
+  it('nomme l’archive par la date du trajet', async () => {
+    await deposer('traces', '2026-09-11-06-24-01_da2m_001.jsonl.gz')
+
+    expect((await archive('2026-09-11-06-24-01_da2m')).nom).toBe('trajet-2026-09-11-06-24-01.zip')
+  })
+
+  it('rend une archive valide pour une session d’une seule tranche', async () => {
+    await deposer('traces', '2026-09-11-06-24-01_da2m_001.jsonl.gz', 'seule')
+
+    const { entries, failures } = await readZip((await archive('2026-09-11-06-24-01_da2m')).octets)
+
+    expect(failures).toEqual([])
+    expect(entries).toHaveLength(1)
+  })
+
+  it('rend rien sur un trajet qui n’existe pas', async () => {
+    expect(await archiveDeLaSession(base, SOLO_ACCOUNT_ID, 'inconnu')).toBeNull()
   })
 })

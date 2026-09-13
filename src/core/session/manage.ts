@@ -44,3 +44,41 @@ export async function deleteTrip(
     return null
   }
 }
+
+/**
+ * Tire l'archive d'un trajet, avec son nom.
+ *
+ * Passe par une requête plutôt que par un lien : les dossiers ne se lisent pas
+ * sans mot de passe, et le navigateur ne compose l'en-tête d'annonce que sur une
+ * navigation — un lien aurait reçu un refus sans que rien ne s'affiche.
+ *
+ * Le nom vient du serveur, qui le compose sur la date du trajet. Le recomposer
+ * ici donnerait deux façons de nommer la même chose.
+ */
+export async function downloadTrip(
+  key: string,
+  credentials: DepositCredentials,
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ blob: Blob; filename: string } | null> {
+  if (!hasCredentials(credentials)) return null
+
+  try {
+    const response = await fetchImpl(`${tripUrl(key)}/archive.zip`, {
+      headers: { Authorization: authHeader(credentials) },
+    })
+    if (!response.ok) return null
+    return {
+      blob: await response.blob(),
+      filename: nomPropose(response.headers.get('content-disposition')) ?? 'trajet.zip',
+    }
+  } catch {
+    return null
+  }
+}
+
+/** Le nom que le serveur propose, tel que l'en-tête le porte. */
+function nomPropose(disposition: string | null): string | null {
+  if (disposition === null) return null
+  const trouve = /filename="([^"]+)"/.exec(disposition)
+  return trouve === null ? null : (trouve[1] ?? null)
+}

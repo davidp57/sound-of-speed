@@ -10,7 +10,7 @@ import {
   loadSession,
   type SessionEntry,
 } from '../core/session/read'
-import { deleteTrip } from '../core/session/manage'
+import { deleteTrip, downloadTrip } from '../core/session/manage'
 import { stateAt, trackAt, type Session } from '../core/session/model'
 import { findGearChanges, findShiftBursts, recordedShifts } from '../core/session/shifts'
 import { accelProfile, profileRuns } from '../core/session/profile'
@@ -602,6 +602,37 @@ async function effacer(entry: SessionEntry): Promise<void> {
 }
 
 /**
+ * Emporte un trajet sur le disque.
+ *
+ * C'est la porte de sortie qui rend l'effacement acceptable : l'archive longue
+ * est chez l'utilisateur, pas sur le serveur. Elle descend par une requête et
+ * non par un lien, le dossier n'étant pas lisible sans mot de passe.
+ */
+async function telecharger(entry: SessionEntry): Promise<void> {
+  busy.value = true
+  geste.value = ''
+  try {
+    const archive = await downloadTrip(entry.key, credentials)
+    if (archive === null) {
+      geste.value = `L’archive du trajet du ${stamp(entry.startedAt)} n’a pas pu être tirée.`
+      return
+    }
+
+    const adresse = URL.createObjectURL(archive.blob)
+    const lien = document.createElement('a')
+    lien.href = adresse
+    lien.download = archive.filename
+    lien.click()
+    // L'adresse d'objet tient la mémoire tant qu'on ne la rend pas.
+    URL.revokeObjectURL(adresse)
+
+    geste.value = `${archive.filename} — ${poids(archive.blob.size)}.`
+  } finally {
+    busy.value = false
+  }
+}
+
+/**
  * La carte suit-elle le véhicule ?
  *
  * Active par défaut : on ouvre un trajet pour le voir se dérouler, pas pour
@@ -722,6 +753,7 @@ void refresh()
             <td>{{ etat(entry) }}</td>
             <td class="actions">
               <button :disabled="busy" @click="chosen = entry.key">Ouvrir</button>
+              <button :disabled="busy" @click="telecharger(entry)">Télécharger</button>
               <button :disabled="busy" @click="demanderEffacement(entry)">Effacer</button>
             </td>
           </tr>

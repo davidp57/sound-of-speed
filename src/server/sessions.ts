@@ -17,12 +17,13 @@
 
 import { and, eq, inArray } from 'drizzle-orm'
 
+import { zipStream, type ZipEntry } from '../core/archive/zip'
 import { PROCEDURE_VERSION } from '../core/calibration/aggregate'
 import { sessionKeyOf } from '../core/session/model'
 
 import type { Base } from './base/base'
 import { deposits } from './base/schema'
-import type { Dossier, Exemption } from './depots'
+import { lireDepot, type Dossier, type Exemption } from './depots'
 
 /** Ce qu'une tranche apporte à son trajet. */
 export interface TrancheDeSession {
@@ -169,4 +170,60 @@ export async function effacerSession(base: Base, compte: string, cle: string): P
   }
 
   return session.tranches.length
+}
+
+/**
+ * Un trajet en une archive, prête à descendre.
+ *
+ * **Un fichier, pas quarante-deux.** La plus grosse session de la base porte
+ * vingt-deux tranches de trace et vingt de journal ; rendre quarante-deux
+ * téléchargements n'est pas une porte de sortie.
+ *
+ * Les tranches y entrent **telles qu'elles ont été déposées** : elles sont déjà
+ * compressées, et ce qui ressort doit être exactement ce qui était monté.
+ *
+ * En flux, et lues une par une : une session lourde n'a pas à tenir en mémoire
+ * entière, et rien ne dit que le mégaoctet d'aujourd'hui restera la limite.
+ */
+export async function archiveDeLaSession(
+  base: Base,
+  compte: string,
+  cle: string,
+): Promise<{ nom: string; flux: ReadableStream<Uint8Array> } | null> {
+  const session = await lireSession(base, compte, cle)
+  if (session === null) return null
+
+  const tranches = session.tranches
+  const enregistreLe = session.enregistreLe
+
+  async function* entrees(): AsyncGenerator<ZipEntry> {
+    for (const tranche of tranches) {
+      const octets = await lireDepot(base, compte, tranche.dossier, tranche.nom)
+      // Une tranche disparue entre le listage et la lecture : l'archive porte ce
+      // qui reste, et le rang manquant se voit — c'est déjà ce que fait le
+      // chargement depuis le serveur.
+      if (octets === null) continue
+      yield {
+        // Le dossier d'origine est conservé : une tranche de trace et une
+        // tranche de journal portent le même nom, et les mettre à plat en
+        // écraserait une.
+        name: `${tranche.dossier}/${tranche.nom}`,
+        bytes: new Uint8Array(octets),
+        at: enregistreLe,
+      }
+    }
+  }
+
+  return { nom: nomDArchive(session), flux: zipStream(entrees()) }
+}
+
+/**
+ * Le nom du fichier qui descend.
+ *
+ * La date du trajet, et non celle du téléchargement : c'est ce qu'on cherchera
+ * dans un dossier six mois plus tard.
+ */
+function nomDArchive(session: SessionEnBase): string {
+  const quand = new Date(session.enregistreLe).toISOString().slice(0, 19).replace(/[:T]/g, '-')
+  return `trajet-${quand}.zip`
 }

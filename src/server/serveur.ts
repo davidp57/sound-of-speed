@@ -17,7 +17,7 @@ import { Hono } from 'hono'
 import { SOLO_ACCOUNT_ID, type Base } from './base/base'
 import { coupleDe, type Comptes } from './comptes'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
-import { effacerSession, listerSessions } from './sessions'
+import { archiveDeLaSession, effacerSession, listerSessions } from './sessions'
 import { ecrireEntite, estUnRegistre, lireEntite, listerEntites } from './entites'
 import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
@@ -186,6 +186,25 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       if (refus !== null) return refus
 
       return c.json(await listerSessions(base, compte), 200, { 'Cache-Control': 'no-store' })
+    })
+
+    // Un fichier, pas quarante-deux : c'est ce qui rend l'effacement acceptable,
+    // l'archive longue étant alors chez l'utilisateur et non sur le serveur.
+    app.get('/sessions/:cle/archive.zip', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      const archive = await archiveDeLaSession(base, compte, c.req.param('cle'))
+      if (archive === null) return c.notFound()
+
+      return new Response(archive.flux, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename="${archive.nom}"`,
+          'Cache-Control': 'no-store',
+        },
+      })
     })
 
     app.delete('/sessions/:cle', async (c) => {

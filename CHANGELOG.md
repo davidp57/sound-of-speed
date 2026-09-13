@@ -15,6 +15,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un trajet s'emporte en un fichier.** Le relecteur en rend une archive zip
+  unique — la plus grosse session de la base porte quarante-deux tranches, et
+  quarante-deux téléchargements ne seraient pas une porte de sortie. Les
+  tranches y entrent telles qu'elles ont été déposées, sous leur dossier
+  d'origine et sans être recomprimées : ce qui ressort est exactement ce qui
+  était monté. Le découpage est conservé, donc la trace des tranches manquantes
+  aussi. L'archive porte la date du trajet, pas celle du téléchargement.
+
 - **Le relecteur montre les trajets du serveur, et sait en effacer un.** Une
   liste devant laquelle on voit ce que chaque trajet pèse, ce dont il est fait et
   ce qui le retient — archivé, épinglé, ou pas encore analysé. Effacer emporte le

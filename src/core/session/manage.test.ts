@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { deleteTrip } from './manage'
+import { deleteTrip, downloadTrip } from './manage'
 
 const CREDENTIALS = { user: 'depot', password: 'motdepasse' }
 
@@ -62,5 +62,37 @@ describe('effacer un trajet', () => {
 
     expect(await deleteTrip('k', { user: '', password: '' }, impl)).toBeNull()
     expect(appele).toBe(false)
+  })
+})
+
+describe('emporter un trajet', () => {
+  it('demande l’archive et rend le nom que le serveur propose', async () => {
+    // Le recomposer ici donnerait deux façons de nommer la même chose, et elles
+    // finiraient par ne plus dire la même date.
+    let url = ''
+    const impl = (async (adresse: string) => {
+      url = String(adresse)
+      return new Response(new Blob(['PK']), {
+        headers: { 'Content-Disposition': 'attachment; filename="trajet-2026-09-11-06-24-01.zip"' },
+      })
+    }) as unknown as typeof fetch
+
+    const rendu = await downloadTrip('2026-09-11-06-24-01_da2m', CREDENTIALS, impl)
+
+    expect(url).toBe('/sessions/2026-09-11-06-24-01_da2m/archive.zip')
+    expect(rendu?.filename).toBe('trajet-2026-09-11-06-24-01.zip')
+    expect(await rendu?.blob.text()).toBe('PK')
+  })
+
+  it('se rabat sur un nom quelconque si le serveur n’en propose pas', async () => {
+    const impl = (async () => new Response(new Blob(['PK']))) as unknown as typeof fetch
+
+    expect((await downloadTrip('k', CREDENTIALS, impl))?.filename).toBe('trajet.zip')
+  })
+
+  it('rend null quand le trajet n’est plus là', async () => {
+    const impl = (async () => new Response('', { status: 404 })) as unknown as typeof fetch
+
+    expect(await downloadTrip('k', CREDENTIALS, impl)).toBeNull()
   })
 })
