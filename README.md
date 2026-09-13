@@ -521,16 +521,16 @@ Mesuré au banc, en croisière tenue à 110 km/h :
 Un quart de la charge pleine du profil Route en pointe, sur une vitesse qui ne
 bouge pas : voilà ce que le premier mode cache.
 
-**Le simulateur n'existe dans aucune image publiée.** Dans une voiture il n'a
-aucun sens, et il n'y serait qu'un moyen de se tromper sur ce qu'on entend. Ni
-`:latest` ni `:develop` ne le proposent, et la source au démarrage est donc le
-GPS partout.
+**Le simulateur n'apparaît pas sur l'écran d'une voiture.** Il n'y a aucun sens,
+et il n'y serait qu'un moyen de se tromper sur ce qu'on entend. C'est l'appareil
+qui le décide depuis le 13 septembre 2026 — voir « Deux axes pour ouvrir un
+écran » — et non plus la construction : une seule image sert les trois usages.
 
-L'image `:develop` l'a porté jusqu'au 10 septembre 2026, avec l'écran de réglage
-de la synthèse. C'est elle qu'on essaie en roulant, et elle démarrait sur le
-simulateur : sur l'essai de ce soir-là, trente-six secondes de simulateur avant
-la première position. Le banc reste en développement, où l'on règle un son garé,
-et `BENCH=1` permet de le mettre dans une image construite à la main.
+**La source au démarrage est le GPS partout**, sauf en développement. L'image
+d'essai a démarré sur le simulateur jusqu'au 10 septembre 2026 : sur l'essai de
+ce soir-là, trente-six secondes de simulateur avant la première position. Le
+faire dépendre de l'appareil rejouerait ce défaut le jour où une voiture serait
+prise pour un poste de travail.
 
 Autres commandes :
 
@@ -1268,7 +1268,16 @@ proxy inversé, l'adresse publique ne se devine pas** depuis le conteneur, qui n
 voit qu'un port local. Le jour où un fournisseur d'identité tiers doit revenir
 sur le site, c'est cette adresse-là qu'il lui faut.
 
-### Ce qu'un compte ouvre
+### Deux axes pour ouvrir un écran
+
+Ce qu'un écran demande tient sur deux axes, et ils se croisent par un **et** : le
+**rôle** — ce que la personne a le droit d'ouvrir — et l'**appareil** — ce qui a
+un sens là où l'on est.
+
+Le rôle se défend, l'appareil non : un navigateur peut mentir sur ce qu'il est,
+donc l'appareil ne fait que ranger l'écran, et le serveur l'ignore.
+
+#### Les rôles
 
 Un compte porte des **rôles**, et un rôle ouvre des écrans. Ils se cumulent : un
 compte en porte zéro à trois.
@@ -1300,6 +1309,35 @@ est offert à tout le monde. Un appareil qui n'a jamais rien pu relever n'interd
 rien : ce qui protège est le refus du serveur, pas l'écran. Cette copie est
 contournable par qui veut — le code est public — et c'est assumé : l'objectif est
 de ne pas perdre d'argent, pas d'en gagner.
+
+#### L'appareil
+
+Une voiture, un téléphone, un poste de travail. Une **seule image** sert les
+trois : le drapeau de construction qui cachait le banc a disparu le
+13 septembre 2026.
+
+| | voiture | téléphone | poste |
+|---|---|---|---|
+| Conduite | ✅ | ✅ | ✅ |
+| Télémétrie | ✅ | ✅ | ✅ |
+| Configuration | ✅ | ✅ | ✅ |
+| Compte | ✅ | ✅ | ✅ |
+| Étalonnage | ❌ | ✅ | ✅ |
+| Banc (simulateur) | ❌ | ✅ | ✅ |
+| Synthèse (timbre) | ❌ | ❌ | ✅ |
+
+L'étalonnage se fait tout seul depuis les traces ; son panneau manuel est un
+reste. Le banc et la synthèse sont des écrans qu'on regarde à l'arrêt, un moteur
+à la main. Et la rangée des sources de vitesse disparaît en voiture : il n'y
+reste que le GPS, et un seul bouton qu'on ne peut pas désactiver n'est pas un
+choix.
+
+**L'appareil se devine, et se corrige** depuis l'écran du compte ; le choix reste
+sur cet appareil et survit à une réouverture. Le marqueur qui reconnaît le
+navigateur de la voiture **reste à confirmer** : rien ici ne l'a mesuré sur la
+vraie voiture, le journal qu'elle dépose ne portant pas sa chaîne d'agent. C'est
+précisément pourquoi la correction existe — une détection ratée coûte un réglage,
+pas un écran perdu.
 
 ### Ce qui change, vu de l'application
 
@@ -3074,7 +3112,7 @@ suit pas.
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
-| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 9 tickets sur 13** |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 10 tickets sur 13** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

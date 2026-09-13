@@ -143,20 +143,8 @@ const serverFolders: Plugin = {
  */
 const useHttps = process.env['HTTPS'] === '1'
 
-/**
- * Les écrans de banc dans une image construite.
- *
- * Ils sont toujours là en développement, et `BENCH=1` permet de les mettre dans
- * une image construite à la main. **Aucune image publiée ne l'active** : ni la
- * production, ni l'intégration. Un simulateur de vitesse dans une voiture n'est
- * qu'un moyen de se tromper sur ce qu'on entend — et l'application démarrait sur
- * lui plutôt que sur le GPS, ce qu'on a mesuré sur l'essai du 10 septembre 2026 :
- * trente-six secondes de simulateur avant la première position.
- */
-const bench = process.env['BENCH'] === '1'
-
 export default defineConfig({
-  define: { __APP_VERSION__: JSON.stringify(version), __BENCH__: JSON.stringify(bench) },
+  define: { __APP_VERSION__: JSON.stringify(version) },
   plugins: [vue(), watchVersion, audioListing, serverFolders, ...(useHttps ? [basicSsl()] : [])],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

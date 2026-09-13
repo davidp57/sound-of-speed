@@ -15,6 +15,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **L'appareil décide de ce qui s'affiche, et le drapeau de construction s'en
+  va.** Une voiture ne montre ni le banc, ni l'étalonnage manuel, ni le réglage
+  du timbre ; un téléphone ajoute le banc et l'étalonnage ; un poste de travail a
+  tout. La rangée des sources de vitesse disparaît en voiture, où il n'y a que le
+  GPS. **Une seule image sert les trois usages** — `BENCH=1` n'existe plus. C'est
+  le second axe : il range l'écran, il ne protège rien, et le serveur l'ignore.
+  L'appareil se devine au premier lancement et se corrige depuis l'écran du
+  compte ; le marqueur qui reconnaît le navigateur de la voiture reste à
+  confirmer en roulant, et c'est pour cela que la correction existe.
+
 - **Un compte porte des rôles, et un rôle ouvre des écrans.** `conduite` ouvre la
   conduite, la télémétrie, les réglages, l'étalonnage et le banc ; `atelier`
   ouvre le dépôt des moteurs et des boîtes ; `synthese` ouvre le réglage du

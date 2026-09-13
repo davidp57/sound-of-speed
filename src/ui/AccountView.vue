@@ -22,9 +22,12 @@ import {
   possibilitesDuServeur,
   type PossibilitesDuServeur,
 } from '../core/identity/compte'
+import { APPAREILS, lireLAppareilChoisi, NOMS_DAPPAREIL, type Appareil } from '../core/appareil'
 import { lienDeLiaison } from '../core/identity/lien'
 import { isReachableOrigin } from '../core/preset/share'
 import {
+  appareil,
+  choisirLAppareil,
   identity,
   identityState,
   liaison,
@@ -33,6 +36,31 @@ import {
   seConnecterAUnCompte,
   supprimerLeCompte,
 } from '../state'
+
+/**
+ * Ce que chaque appareil ouvre, dit en une ligne.
+ *
+ * Assez pour choisir sans se tromper : ce qui distingue les trois est ce qu'on
+ * y fait, pas ce qu'ils sont.
+ */
+const CE_QUE_LAPPAREIL_OUVRE: Record<Appareil, string> = {
+  voiture: 'conduire, la télémétrie et les réglages — ni banc, ni étalonnage manuel',
+  telephone: 'tout cela, plus le banc de simulation et l’étalonnage',
+  poste: 'tout, y compris le réglage du timbre',
+}
+
+/**
+ * L'appareil a-t-il été corrigé à la main, ou deviné ?
+ *
+ * Le dire évite une question sans réponse le jour où la détection se trompe :
+ * on saura si ce qui s'affiche vient du navigateur ou d'un choix.
+ */
+const appareilCorrige = ref(lireLAppareilChoisi() !== null)
+
+function corrigerLAppareil(lequel: Appareil): void {
+  choisirLAppareil(lequel)
+  appareilCorrige.value = true
+}
 
 /**
  * Ce que l'écran dit du compte de cet appareil.
@@ -350,6 +378,31 @@ onUnmounted(() => {
       navigateur refuse les téléchargements : traces, journal, relevés de mesure,
       profils, moteurs et boîtes. Il n’y a rien à saisir — l’appareil s’annonce
       tout seul.
+    </p>
+
+    <!--
+      L'appareil : le second axe. Il ne protège rien — c'est le compte qui porte
+      les droits —, il range l'écran selon ce qu'on fait là où l'on est.
+    -->
+    <h3>Cet appareil</h3>
+    <p class="note">
+      Ce qui s’affiche dépend d’où l’on est : un banc de simulation n’a rien à
+      faire sur l’écran d’une voiture qui roule. On devine, et si c’est faux, on
+      corrige ici — le choix reste sur cet appareil.
+    </p>
+    <div class="choices">
+      <button
+        v-for="lequel in APPAREILS"
+        :key="lequel"
+        :aria-pressed="appareil === lequel"
+        @click="corrigerLAppareil(lequel)"
+      >
+        {{ NOMS_DAPPAREIL[lequel] }}
+      </button>
+    </div>
+    <p class="note">
+      <strong>{{ NOMS_DAPPAREIL[appareil] }}</strong> — {{ CE_QUE_LAPPAREIL_OUVRE[appareil] }}.
+      <template v-if="!appareilCorrige">Deviné d’après ce navigateur.</template>
     </p>
 
     <!--

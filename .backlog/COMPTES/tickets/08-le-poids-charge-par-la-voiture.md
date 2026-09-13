@@ -29,6 +29,25 @@ Le chiffre avant, le chiffre après, et ce qu'on en conclut.
   négligeable, l'écrire et s'arrêter là est une conclusion valable — et c'est
   celle qu'il faudra assumer.
 
+## Le relevé de départ, pris au ticket 14
+
+Trois constructions, le paquet `index` de l'application :
+
+| Construction | Brut | Compressé |
+|---|---|---|
+| `develop`, sans le banc | 341,33 ko | 111,06 ko |
+| `BENCH=1`, avec le banc | 341,46 ko | 111,09 ko |
+| Après le ticket 14, une seule image | 343,63 ko | 111,88 ko |
+
+**Le fait qui compte est la deuxième ligne.** Mettre le banc dans l'image coûtait
+130 octets — parce que `App.vue` importait déjà `SynthView` et `BenchView` de
+façon statique, quel que soit le drapeau : ils étaient **déjà** dans le paquet
+que la voiture tirait. Le drapeau ne cachait que des onglets.
+
+Donc le « avant » n'est pas 341 contre 343 : c'est un paquet qui contient déjà
+tout ce qu'on croyait exclu. Ce que le découpage peut rendre est l'ensemble de
+ces écrans, pas les deux kilo-octets du croisement des deux axes.
+
 ## Critères d'acceptation
 
 - [ ] Le poids tiré au démarrage par la voiture est mesuré avant le découpage

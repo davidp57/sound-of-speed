@@ -1,6 +1,6 @@
 # 14 — L'appareil porte les fonctions, et le drapeau de construction s'en va
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 13 septembre 2026
 
 **Bloqué par :** [06 — Les rôles ouvrent les écrans](06-les-droits-ouvrent-les-ecrans.md),
 qui pose l'autre axe et le croisement.
@@ -54,8 +54,25 @@ les trois usages.
 
 ## Critères d'acceptation
 
-- [ ] L'appareil est deviné, et le choix se corrige depuis l'écran du compte
-- [ ] Le choix corrigé survit à une réouverture, et reste local à cet appareil
-- [ ] Les écrans suivent le tableau ci-dessus, croisés avec les rôles
-- [ ] `__BENCH__` a disparu, et une seule image sert les trois usages
-- [ ] Le banc et la synthèse n'apparaissent pas sur l'écran de la voiture
+- [x] L'appareil est deviné, et le choix se corrige depuis l'écran du compte
+- [x] Le choix corrigé survit à une réouverture, et reste local à cet appareil
+- [x] Les écrans suivent le tableau ci-dessus, croisés avec les rôles
+- [x] `__BENCH__` a disparu, et une seule image sert les trois usages
+- [x] Le banc et la synthèse n'apparaissent pas sur l'écran de la voiture
+
+## Ce qui a été mesuré
+
+Application construite **sans** `BENCH`, servie par le serveur construit,
+navigateur réel :
+
+| Ce qui a été fait | Ce qu'on a vu |
+|---|---|
+| Premier chargement, agent d'un poste Windows | Sept onglets, Synthèse et Banc compris — en production |
+| « Voiture » choisi dans l'écran du compte | Quatre onglets : Conduite, Télémétrie, Configuration, Compte |
+| Rechargement | Le choix tient ; la rangée des sources de vitesse reste absente |
+| Simulateur actif, puis « Voiture » choisi | La source repasse au GPS toute seule |
+
+**Ce qui n'a pas pu être vérifié :** le marqueur qui reconnaît le navigateur de
+la voiture. Le journal que la voiture dépose ne porte pas sa chaîne d'agent, et
+le volume du NAS n'a pas de base à interroger. Un premier lancement en voiture le
+dira ; en attendant, la correction manuelle est le filet.

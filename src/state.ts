@@ -86,6 +86,7 @@ import {
   type Rattachement,
   type Suppression,
 } from './core/identity/compte'
+import { appareilCourant, rangerLAppareilChoisi, type Appareil } from './core/appareil'
 import { lireLienDansUrl, type CodeDeLiaison } from './core/identity/lien'
 import {
   prochaineEcheance,
@@ -497,19 +498,31 @@ const offline = new Offline()
 /**
  * Les écrans de banc — simulateur de vitesse, réglage de la synthèse.
  *
- * Ils sont là en développement, et dans l'image `:develop`, jamais en
- * production. C'est l'arbitrage du 8 septembre 2026, qui reprend celui du
- * 4 septembre en lui laissant une porte : un banc n'a rien à faire dans la
- * voiture qui sert au quotidien, mais la pile d'essai **est** dans la voiture,
- * et c'est là, garé, qu'un timbre se règle et qu'un défaut de son se cerne.
+ * Ils ne dépendent plus de la construction mais de l'**appareil**, depuis le
+ * 13 septembre 2026 : une seule image sert les trois usages, et c'est l'écran
+ * de la voiture qui ne les montre pas. L'arbitrage du 8 septembre tient, et il
+ * tient mieux — un banc n'a rien à faire dans la voiture qui roule, mais il en a
+ * sur le téléphone de celui qui règle son son, garé.
  *
  * Ce qu'on y gagne s'est déjà vu : « le simulateur fonctionne encore, repasser
  * au GPS rebloque aussitôt » est la phrase qui a orienté le diagnostic du GPS
  * muet du 4 septembre.
  */
-const benchAvailable = import.meta.env.DEV || __BENCH__
+/**
+ * Sur quoi tourne-t-on, et ce que ça ouvre.
+ *
+ * Deviné au démarrage, corrigeable depuis l'écran du compte. **Il ne protège
+ * rien** : c'est l'autre axe, les rôles, que le serveur fait respecter.
+ */
+export const appareil = ref<Appareil>(appareilCourant())
 
-export const simulatorAvailable = benchAvailable
+/** Range le choix et l'applique tout de suite : les écrans suivent. */
+export function choisirLAppareil(choisi: Appareil): void {
+  rangerLAppareilChoisi(choisi)
+  appareil.value = choisi
+}
+
+export const simulatorAvailable = computed(() => appareil.value !== 'voiture')
 
 /**
  * Ce que le banc fabrique, quand le simulateur est la source.
@@ -525,7 +538,15 @@ export type SimulationMode = 'perfect' | 'measured' | 'positions'
 export const simulationMode = ref<SimulationMode>('perfect')
 export const benchOptions = ref<BenchOptions>({ ...DEFAULT_BENCH })
 
-export const sourceKind = ref<SourceKind>(simulatorAvailable ? 'simulator' : 'geolocation')
+/**
+ * La source au démarrage : le GPS, sauf en développement.
+ *
+ * **Et surtout pas le simulateur en production.** Le 10 septembre 2026, l'image
+ * d'essai démarrait dessus : trente-six secondes de simulateur avant la première
+ * position, en roulant. Le faire dépendre de l'appareil rejouerait ce défaut le
+ * jour où une voiture serait prise pour un poste de travail.
+ */
+export const sourceKind = ref<SourceKind>(import.meta.env.DEV ? 'simulator' : 'geolocation')
 export const sourceStatus = ref<SourceStatus>('idle')
 export const sourceDetail = ref<string>('')
 export const isRunning = ref(false)
@@ -702,11 +723,11 @@ export const isMuted = ref(false)
  *
  * Ce qui est réservé au banc, c'est l'**écran de réglage** — on ne règle pas un
  * timbre en conduisant —, pas la synthèse elle-même : tout l'enjeu du lot est
- * justement de savoir ce qu'elle coûte dans la voiture. L'image `:develop` le
- * porte depuis le 8 septembre 2026, pour régler garé ce qui sonnait faux en
- * roulant.
+ * justement de savoir ce qu'elle coûte dans la voiture. Régler un timbre demande
+ * un écran, une souris et du temps : c'est un travail de poste de travail, et
+ * l'écran ne s'ouvre que là.
  */
-export const synthAvailable = benchAvailable
+export const synthAvailable = computed(() => appareil.value === 'poste')
 /**
  * Ce navigateur sait-il faire tourner le moteur simulé ?
  *
@@ -2820,8 +2841,15 @@ export function setMuted(value: boolean): void {
   mediaSession.setPlaying(!value)
 }
 
+// Corriger l'appareil en « voiture » alors qu'on roulait au simulateur
+// laisserait une source que l'écran ne propose plus, et qui ne vient pas du GPS.
+// On rend la main au GPS plutôt que de garder une vitesse inventée.
+watch(simulatorAvailable, (possible) => {
+  if (!possible && sourceKind.value === 'simulator') setSource('geolocation')
+})
+
 export function setSource(kind: SourceKind): void {
-  if (kind === 'simulator' && !simulatorAvailable) return
+  if (kind === 'simulator' && !simulatorAvailable.value) return
   if (kind === sourceKind.value) return
   const wasRunning = isRunning.value
   currentSource().stop()
