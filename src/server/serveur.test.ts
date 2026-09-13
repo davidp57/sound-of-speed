@@ -4,7 +4,8 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
+import { ouvrirBase, type Base } from './base/base'
+import { creerIdentite, type Identite } from './identite'
 import { ecrireDepot } from './depots'
 import { creerServeur } from './serveur'
 
@@ -169,15 +170,15 @@ describe('ce qui sort avec un fichier', () => {
  * refus mal codé ne se voient qu'ici.
  */
 describe('les trajets, vus du réseau', () => {
-  const COMPTES = {
-    configure: true,
-    verifie: (utilisateur: string, motDePasse: string) =>
-      utilisateur === 'depot' && motDePasse === 'motdepasse',
-  }
-  const ANNONCE = { Authorization: `Basic ${Buffer.from('depot:motdepasse').toString('base64')}` }
+  const SECRET = 'Zk7pQ2vX9mL4tR8wY1nB6jH3sD5gF0aC-essai-serveur'
 
   let base: Base
   let fermer: () => void
+  let identite: Identite
+  /** Le témoin de connexion de l'appareil d'essai, tel qu'un navigateur le renvoie. */
+  let ANNONCE: Record<string, string>
+  /** Le compte de cet appareil : c'est la session qui le désigne, plus un réglage. */
+  let COMPTE: string
 
   beforeEach(async () => {
     const ouverte = await ouvrirBase({
@@ -186,18 +187,27 @@ describe('les trajets, vus du réseau', () => {
     })
     base = ouverte.base
     fermer = ouverte.fermer
+    identite = creerIdentite({ base, secret: SECRET, adresse: 'http://essai' })
+
+    const creation = await avecBase().request('/api/auth/sign-in/anonymous', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+    ANNONCE = { Cookie: (creation.headers.get('set-cookie') ?? '').split(';')[0] ?? '' }
+    COMPTE = ((await creation.json()) as { user: { id: string } }).user.id
   })
 
   afterEach(() => fermer())
 
   function avecBase() {
-    return creerServeur({ application, base, comptes: COMPTES, compte: SOLO_ACCOUNT_ID })
+    return creerServeur({ application, base, identite })
   }
 
   it('rend les trajets à qui s’annonce, et refuse les autres', async () => {
     await ecrireDepot(
       base,
-      SOLO_ACCOUNT_ID,
+      COMPTE,
       'traces',
       '2026-09-11-06-24-01_da2m_001.jsonl.gz',
       Buffer.from('x'),
@@ -216,7 +226,7 @@ describe('les trajets, vus du réseau', () => {
   it('efface un trajet désigné, et le second appel n’est pas une panne', async () => {
     await ecrireDepot(
       base,
-      SOLO_ACCOUNT_ID,
+      COMPTE,
       'traces',
       '2026-09-11-06-24-01_da2m_001.jsonl.gz',
       Buffer.from('x'),
@@ -239,7 +249,7 @@ describe('les trajets, vus du réseau', () => {
   it('efface un dépôt seul, dont la clé porte des deux-points', async () => {
     // Deux traces anciennes portent un nom libre. Une clé mal échappée efface
     // ailleurs, ou n'efface rien.
-    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', 'traces.json', Buffer.from('x'))
+    await ecrireDepot(base, COMPTE, 'traces', 'traces.json', Buffer.from('x'))
 
     const reponse = await avecBase().request(
       `/sessions/${encodeURIComponent('depot:traces:traces.json')}`,

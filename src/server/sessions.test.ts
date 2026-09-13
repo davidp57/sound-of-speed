@@ -6,7 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { PROCEDURE_VERSION } from '../core/calibration/aggregate'
 
-import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
+import { ouvrirBase, type Base } from './base/base'
+import { ANCIEN_COMPTE_UNIQUE as COMPTE, semerLAncienCompte } from './heritage'
 import { deposits } from './base/schema'
 import { ecrireDepot } from './depots'
 import { gzipSync } from 'node:zlib'
@@ -33,6 +34,10 @@ beforeEach(async () => {
   const ouverte = await ouvrirBase({ fichier: join(dossier, 'speed.db'), migrations: MIGRATIONS })
   base = ouverte.base
   fermer = ouverte.fermer
+  // Le compte d'avant l'identité sert ici de propriétaire : ces modules prennent
+  // un compte en paramètre, et n'importe lequel ferait l'affaire. Il n'est plus
+  // semé à l'ouverture de la base — c'est le premier appareil qui crée le sien.
+  await semerLAncienCompte(base)
 })
 
 afterEach(() => {
@@ -49,7 +54,7 @@ async function deposer(
   nom: string,
   octets = 'x',
 ): Promise<void> {
-  await ecrireDepot(base, SOLO_ACCOUNT_ID, dossierDeDepot, nom, Buffer.from(octets))
+  await ecrireDepot(base, COMPTE, dossierDeDepot, nom, Buffer.from(octets))
 }
 
 describe('les dépôts vus comme des trajets', () => {
@@ -60,7 +65,7 @@ describe('les dépôts vus comme des trajets', () => {
     await deposer('traces', '2026-09-11-06-24-01_da2m_002.jsonl.gz')
     await deposer('journal', '2026-09-11-06-24-01_da2m_001.jsonl.gz')
 
-    const sessions = await listerSessions(base, SOLO_ACCOUNT_ID)
+    const sessions = await listerSessions(base, COMPTE)
 
     expect(sessions).toHaveLength(1)
     expect(sessions[0]!.traces).toBe(2)
@@ -72,14 +77,14 @@ describe('les dépôts vus comme des trajets', () => {
     await deposer('traces', '2026-09-11-06-24-01_da2m_001.jsonl.gz')
     await deposer('traces', '2026-09-12-08-00-00_da2m_001.jsonl.gz')
 
-    expect(await listerSessions(base, SOLO_ACCOUNT_ID)).toHaveLength(2)
+    expect(await listerSessions(base, COMPTE)).toHaveLength(2)
   })
 
   it('rend le plus récent en tête', async () => {
     await deposer('traces', '2026-09-11-06-24-01_da2m_001.jsonl.gz')
     await deposer('traces', '2026-09-12-08-00-00_zzzz_001.jsonl.gz')
 
-    const sessions = await listerSessions(base, SOLO_ACCOUNT_ID)
+    const sessions = await listerSessions(base, COMPTE)
 
     expect(sessions[0]!.cle).toBe('2026-09-12-08-00-00_zzzz')
   })
@@ -89,16 +94,16 @@ describe('les dépôts vus comme des trajets', () => {
     // cette porte, rien ne pourrait jamais les enlever.
     await deposer('traces', 'essai-du-samedi.jsonl')
 
-    const [session] = await listerSessions(base, SOLO_ACCOUNT_ID)
+    const [session] = await listerSessions(base, COMPTE)
 
     expect(session!.isole).toBe(true)
     expect(session!.cle).toBe('depot:traces:essai-du-samedi.jsonl')
   })
 
   it('ne compte pas les relevés, qui ne font pas de trajet', async () => {
-    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'mesures', 'releve.json', Buffer.from('{}'))
+    await ecrireDepot(base, COMPTE, 'mesures', 'releve.json', Buffer.from('{}'))
 
-    expect(await listerSessions(base, SOLO_ACCOUNT_ID)).toHaveLength(0)
+    expect(await listerSessions(base, COMPTE)).toHaveLength(0)
   })
 
   it('retient le titre le plus fort quand les tranches n’en portent pas le même', async () => {
@@ -107,7 +112,7 @@ describe('les dépôts vus comme des trajets', () => {
     // qui ne compte pas dans la borne des épingles — l'emporte.
     await ecrireDepot(
       base,
-      SOLO_ACCOUNT_ID,
+      COMPTE,
       'traces',
       '2026-09-11-06-24-01_da2m_001.jsonl.gz',
       Buffer.from('x'),
@@ -115,7 +120,7 @@ describe('les dépôts vus comme des trajets', () => {
     )
     await deposer('journal', '2026-09-11-06-24-01_da2m_001.jsonl.gz')
 
-    const [session] = await listerSessions(base, SOLO_ACCOUNT_ID)
+    const [session] = await listerSessions(base, COMPTE)
 
     expect(session!.exemption).toBe('archive')
   })
@@ -124,11 +129,11 @@ describe('les dépôts vus comme des trajets', () => {
     await deposer('traces', '2026-09-11-06-24-01_da2m_001.jsonl.gz')
     await deposer('journal', '2026-09-11-06-24-01_da2m_001.jsonl.gz')
 
-    expect((await listerSessions(base, SOLO_ACCOUNT_ID))[0]!.aVoir).toBe(1)
+    expect((await listerSessions(base, COMPTE))[0]!.aVoir).toBe(1)
 
     await base.update(deposits).set({ analyzedProcedure: PROCEDURE_VERSION })
 
-    expect((await listerSessions(base, SOLO_ACCOUNT_ID))[0]!.aVoir).toBe(0)
+    expect((await listerSessions(base, COMPTE))[0]!.aVoir).toBe(0)
   })
 })
 
@@ -138,7 +143,7 @@ describe('effacer un trajet', () => {
     await deposer('traces', '2026-09-11-06-24-01_da2m_002.jsonl.gz')
     await deposer('journal', '2026-09-11-06-24-01_da2m_001.jsonl.gz')
 
-    expect(await effacerSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')).toBe(3)
+    expect(await effacerSession(base, COMPTE, '2026-09-11-06-24-01_da2m')).toBe(3)
 
     expect(await base.select().from(deposits)).toHaveLength(0)
   })
@@ -147,9 +152,9 @@ describe('effacer un trajet', () => {
     await deposer('traces', '2026-09-11-06-24-01_da2m_001.jsonl.gz')
     await deposer('traces', '2026-09-12-08-00-00_zzzz_001.jsonl.gz')
 
-    await effacerSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')
+    await effacerSession(base, COMPTE, '2026-09-11-06-24-01_da2m')
 
-    expect((await listerSessions(base, SOLO_ACCOUNT_ID)).map((s) => s.cle)).toEqual([
+    expect((await listerSessions(base, COMPTE)).map((s) => s.cle)).toEqual([
       '2026-09-12-08-00-00_zzzz',
     ])
   })
@@ -157,7 +162,7 @@ describe('effacer un trajet', () => {
   it('efface un dépôt isolé', async () => {
     await deposer('traces', 'essai-du-samedi.jsonl')
 
-    expect(await effacerSession(base, SOLO_ACCOUNT_ID, 'depot:traces:essai-du-samedi.jsonl')).toBe(1)
+    expect(await effacerSession(base, COMPTE, 'depot:traces:essai-du-samedi.jsonl')).toBe(1)
 
     expect(await base.select().from(deposits)).toHaveLength(0)
   })
@@ -167,16 +172,16 @@ describe('effacer un trajet', () => {
     // première, et zéro tranche effacée est une réponse.
     await deposer('traces', '2026-09-11-06-24-01_da2m_001.jsonl.gz')
 
-    await effacerSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')
+    await effacerSession(base, COMPTE, '2026-09-11-06-24-01_da2m')
 
-    expect(await effacerSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')).toBe(0)
-    expect(await lireSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')).toBeNull()
+    expect(await effacerSession(base, COMPTE, '2026-09-11-06-24-01_da2m')).toBe(0)
+    expect(await lireSession(base, COMPTE, '2026-09-11-06-24-01_da2m')).toBeNull()
   })
 })
 
 describe('emporter un trajet', () => {
   async function archive(cle: string): Promise<{ nom: string; octets: Uint8Array }> {
-    const rendu = await archiveDeLaSession(base, SOLO_ACCOUNT_ID, cle)
+    const rendu = await archiveDeLaSession(base, COMPTE, cle)
     expect(rendu).not.toBeNull()
     return {
       nom: rendu!.nom,
@@ -239,7 +244,7 @@ describe('emporter un trajet', () => {
   })
 
   it('rend rien sur un trajet qui n’existe pas', async () => {
-    expect(await archiveDeLaSession(base, SOLO_ACCOUNT_ID, 'inconnu')).toBeNull()
+    expect(await archiveDeLaSession(base, COMPTE, 'inconnu')).toBeNull()
   })
 })
 
@@ -252,17 +257,17 @@ describe('le parcours complet', () => {
 `
     await ecrireDepot(
       base,
-      SOLO_ACCOUNT_ID,
+      COMPTE,
       'traces',
       '2026-09-11-06-24-01_da2m_001.jsonl.gz',
       Buffer.from(gzipSync(Buffer.from(releve))),
     )
 
-    const archive = await archiveDeLaSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')
+    const archive = await archiveDeLaSession(base, COMPTE, '2026-09-11-06-24-01_da2m')
     const octets = new Uint8Array(await new Response(archive!.flux).arrayBuffer())
 
-    expect(await effacerSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')).toBe(1)
-    expect(await listerSessions(base, SOLO_ACCOUNT_ID)).toHaveLength(0)
+    expect(await effacerSession(base, COMPTE, '2026-09-11-06-24-01_da2m')).toBe(1)
+    expect(await listerSessions(base, COMPTE)).toHaveLength(0)
 
     const { session, failures } = await sessionFromArchive(octets)
 
@@ -281,7 +286,7 @@ describe('épingler un trajet', () => {
     await deposer('traces', `${DA2M}_001.jsonl.gz`)
     await deposer('journal', `${DA2M}_001.jsonl.gz`)
 
-    expect((await epingler(base, SOLO_ACCOUNT_ID, DA2M, true)).etat).toBe('épinglé')
+    expect((await epingler(base, COMPTE, DA2M, true)).etat).toBe('épinglé')
 
     const lignes = await base.select().from(deposits)
     expect(lignes.map((ligne) => ligne.exemption)).toEqual(['epingle', 'epingle'])
@@ -289,21 +294,21 @@ describe('épingler un trajet', () => {
 
   it('décroche', async () => {
     await deposer('traces', `${DA2M}_001.jsonl.gz`)
-    await epingler(base, SOLO_ACCOUNT_ID, DA2M, true)
+    await epingler(base, COMPTE, DA2M, true)
 
-    expect((await epingler(base, SOLO_ACCOUNT_ID, DA2M, false)).etat).toBe('décroché')
-    expect((await lireSession(base, SOLO_ACCOUNT_ID, DA2M))!.exemption).toBeNull()
+    expect((await epingler(base, COMPTE, DA2M, false)).etat).toBe('décroché')
+    expect((await lireSession(base, COMPTE, DA2M))!.exemption).toBeNull()
   })
 
   it('garde l’épingle quand la voiture redépose la même tranche', async () => {
     // La voiture rejoue un envoi sous le même nom ; le redéposer ne doit pas
     // retirer une épingle posée à la main.
     await deposer('traces', `${DA2M}_001.jsonl.gz`)
-    await epingler(base, SOLO_ACCOUNT_ID, DA2M, true)
+    await epingler(base, COMPTE, DA2M, true)
 
     await deposer('traces', `${DA2M}_001.jsonl.gz`, 'les mêmes octets, rejoués')
 
-    expect((await lireSession(base, SOLO_ACCOUNT_ID, DA2M))!.exemption).toBe('epingle')
+    expect((await lireSession(base, COMPTE, DA2M))!.exemption).toBe('epingle')
   })
 
   it('refuse au-delà de la borne, et dit où l’on en est', async () => {
@@ -311,21 +316,21 @@ describe('épingler un trajet', () => {
     // donc vérifiée ici plutôt que par l'usage.
     await deposer('traces', '2026-09-11-06-24-01_aaaa_001.jsonl.gz')
     await deposer('traces', '2026-09-12-06-24-01_bbbb_001.jsonl.gz')
-    await epingler(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_aaaa', true, 1)
+    await epingler(base, COMPTE, '2026-09-11-06-24-01_aaaa', true, 1)
 
-    const refus = await epingler(base, SOLO_ACCOUNT_ID, '2026-09-12-06-24-01_bbbb', true, 1)
+    const refus = await epingler(base, COMPTE, '2026-09-12-06-24-01_bbbb', true, 1)
 
     expect(refus).toEqual({ etat: 'borne atteinte', epinglees: 1, borne: 1 })
     expect(
-      (await lireSession(base, SOLO_ACCOUNT_ID, '2026-09-12-06-24-01_bbbb'))!.exemption,
+      (await lireSession(base, COMPTE, '2026-09-12-06-24-01_bbbb'))!.exemption,
     ).toBeNull()
   })
 
   it('laisse réépingler ce qui l’est déjà, même borne atteinte', async () => {
     await deposer('traces', `${DA2M}_001.jsonl.gz`)
-    await epingler(base, SOLO_ACCOUNT_ID, DA2M, true, 1)
+    await epingler(base, COMPTE, DA2M, true, 1)
 
-    expect((await epingler(base, SOLO_ACCOUNT_ID, DA2M, true, 1)).etat).toBe('épinglé')
+    expect((await epingler(base, COMPTE, DA2M, true, 1)).etat).toBe('épinglé')
   })
 
   it('ne compte pas les archives dans la borne', async () => {
@@ -333,7 +338,7 @@ describe('épingler un trajet', () => {
     // faire entrer dans le compte remplirait la borne avant la première épingle.
     await ecrireDepot(
       base,
-      SOLO_ACCOUNT_ID,
+      COMPTE,
       'traces',
       '2026-09-01-06-24-01_vieux_001.jsonl.gz',
       Buffer.from('x'),
@@ -341,24 +346,24 @@ describe('épingler un trajet', () => {
     )
     await deposer('traces', `${DA2M}_001.jsonl.gz`)
 
-    expect((await epingler(base, SOLO_ACCOUNT_ID, DA2M, true, 1)).etat).toBe('épinglé')
+    expect((await epingler(base, COMPTE, DA2M, true, 1)).etat).toBe('épinglé')
   })
 
   it('ne pose pas d’épingle sur une archive, qui retient déjà', async () => {
     await ecrireDepot(
       base,
-      SOLO_ACCOUNT_ID,
+      COMPTE,
       'traces',
       `${DA2M}_001.jsonl.gz`,
       Buffer.from('x'),
       'archive',
     )
 
-    expect((await epingler(base, SOLO_ACCOUNT_ID, DA2M, true)).etat).toBe('archivé')
-    expect((await lireSession(base, SOLO_ACCOUNT_ID, DA2M))!.exemption).toBe('archive')
+    expect((await epingler(base, COMPTE, DA2M, true)).etat).toBe('archivé')
+    expect((await lireSession(base, COMPTE, DA2M))!.exemption).toBe('archive')
   })
 
   it('dit qu’un trajet inconnu est inconnu', async () => {
-    expect((await epingler(base, SOLO_ACCOUNT_ID, 'nulle-part', true)).etat).toBe('inconnu')
+    expect((await epingler(base, COMPTE, 'nulle-part', true)).etat).toBe('inconnu')
   })
 })

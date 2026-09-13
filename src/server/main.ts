@@ -10,10 +10,10 @@
 
 import { serve } from '@hono/node-server'
 
-import { SOLO_ACCOUNT_ID, ouvrirBase } from './base/base'
-import { lireComptes } from './comptes'
+import { listerLesComptes, ouvrirBase } from './base/base'
 import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
+import { ANCIEN_COMPTE_UNIQUE, semerLAncienCompte } from './heritage'
 import { creerIdentite, secretPersistant } from './identite'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { appliquerLaRegle, DELAIS_PAR_DEFAUT, formaterPassage, type Delais } from './retention'
@@ -24,7 +24,6 @@ const application = process.env['SPEED_APP'] ?? 'dist'
 const echantillons = process.env['SPEED_AUDIO']
 const fichierDeBase = process.env['SPEED_DB'] ?? 'donnees/speed.db'
 const migrations = process.env['SPEED_MIGRATIONS'] ?? 'src/server/base/migrations'
-const fichierDeComptes = process.env['SPEED_HTPASSWD']
 const anciensDossiers = process.env['SPEED_REPRISE']
 // Vide vaut absente : une variable déclarée sans valeur dans l'écran d'une pile
 // est ce qu'on obtient le plus souvent, et une adresse vide ferait pire que pas
@@ -77,10 +76,15 @@ try {
 // laisser branchée ne casse rien — elle relit seulement un dossier pour rien.
 if (anciensDossiers !== undefined) {
   try {
+    // Ce qu'on verse appartient au **compte d'avant l'identité**, et à lui seul :
+    // au moment où la reprise tourne, aucun appareil ne s'est peut-être encore
+    // présenté, et il faut bien un propriétaire. Le premier compte réel en
+    // héritera — voir `heritage.ts`.
+    await semerLAncienCompte(base)
     console.log(
       formaterDecompte(
         anciensDossiers,
-        await reprendreLesDossiers(base, SOLO_ACCOUNT_ID, anciensDossiers),
+        await reprendreLesDossiers(base, ANCIEN_COMPTE_UNIQUE, anciensDossiers),
       ),
     )
   } catch (erreur) {
@@ -95,18 +99,22 @@ if (anciensDossiers !== undefined) {
 // lui-même s'il doit tout relire — un procédé corrigé rend l'ancien cumul sans
 // valeur — donc ceci ne coûte rien quand il n'y a rien à rattraper.
 try {
-  // Le décompte encadre le rattrapage : il dit le travail avant, et doit valoir
-  // zéro après. Un procédé corrigé remet toutes les traces à voir d'un coup —
-  // c'est ce chiffre-là qui le montre, plutôt qu'un silence.
-  const aVoir = await tracesNonAnalysees(base, SOLO_ACCOUNT_ID)
-  const rattrape = await reprendreTout(base, SOLO_ACCOUNT_ID)
-  if (aVoir > 0) {
-    console.log(
-      `profil mesuré : ${aVoir} tranches à regarder, ${await tracesNonAnalysees(base, SOLO_ACCOUNT_ID)} restantes`,
-    )
-  }
-  if (rattrape.skipped.length > 0) {
-    console.warn(`tranches illisibles, écartées : ${rattrape.skipped.join(', ')}`)
+  // Compte par compte, depuis que l'identité est ouverte : le rattrapage se
+  // faisait sur un compte écrit en dur, il se fait sur tous ceux qui existent.
+  for (const compte of await listerLesComptes(base)) {
+    // Le décompte encadre le rattrapage : il dit le travail avant, et doit valoir
+    // zéro après. Un procédé corrigé remet toutes les traces à voir d'un coup —
+    // c'est ce chiffre-là qui le montre, plutôt qu'un silence.
+    const aVoir = await tracesNonAnalysees(base, compte)
+    const rattrape = await reprendreTout(base, compte)
+    if (aVoir > 0) {
+      console.log(
+        `profil mesuré de ${compte} : ${aVoir} tranches à regarder, ${await tracesNonAnalysees(base, compte)} restantes`,
+      )
+    }
+    if (rattrape.skipped.length > 0) {
+      console.warn(`tranches illisibles, écartées : ${rattrape.skipped.join(', ')}`)
+    }
   }
 } catch (erreur) {
   // Un rattrapage qui échoue ne doit pas empêcher le serveur de servir : la
@@ -131,8 +139,12 @@ try {
  */
 async function menageDeRetention(): Promise<void> {
   try {
-    const ligne = formaterPassage(await appliquerLaRegle(base, SOLO_ACCOUNT_ID, Date.now(), delais))
-    if (ligne !== null) console.log(ligne)
+    // Chaque compte a ses trajets et ses délais s'appliquent séparément : un
+    // passage global n'aurait pas de sens, la borne d'épingles étant par compte.
+    for (const compte of await listerLesComptes(base)) {
+      const ligne = formaterPassage(await appliquerLaRegle(base, compte, Date.now(), delais))
+      if (ligne !== null) console.log(ligne)
+    }
   } catch (erreur) {
     console.error(`rétention : ${String(erreur)}`)
   }
@@ -161,7 +173,6 @@ const serveur = serve(
       application,
       base,
       identite,
-      comptes: lireComptes(fichierDeComptes),
       ...(epingles === undefined ? {} : { epingles }),
       delais,
       ...(echantillons === undefined ? {} : { echantillons }),

@@ -5,7 +5,8 @@ import { join } from 'node:path'
 import { sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base'
+import { ouvrirBase, type Base } from './base'
+import { ANCIEN_COMPTE_UNIQUE as COMPTE, semerLAncienCompte } from '../heritage'
 import { accounts, deposits, engines, profiles, rights } from './schema'
 
 const MIGRATIONS = 'src/server/base/migrations'
@@ -40,6 +41,7 @@ function chemin() {
 async function ouvrir(fichier: string): Promise<Base> {
   const { base, fermer } = await ouvrirBase({ fichier, migrations: MIGRATIONS })
   aFermer.push(fermer)
+  await semerLAncienCompte(base)
   return base
 }
 
@@ -77,7 +79,7 @@ describe('ouvrir la base', () => {
 
     const comptes = await base.select().from(accounts)
     expect(comptes).toHaveLength(1)
-    expect(comptes[0]?.id).toBe(SOLO_ACCOUNT_ID)
+    expect(comptes[0]?.id).toBe(COMPTE)
   })
 
   it('ne change rien au second appel', async () => {
@@ -101,7 +103,7 @@ describe('ouvrir la base', () => {
     const premiere = await ouvrir(fichier)
     await premiere.insert(engines).values({
       id: 'moteur-1',
-      accountId: SOLO_ACCOUNT_ID,
+      accountId: COMPTE,
       name: 'V8',
       content: { sampleDir: 'demo' },
     })
@@ -121,7 +123,7 @@ describe('ce que le schéma garantit', () => {
     // quand elle rejoue un envoi qu'elle croit perdu.
     const base = await ouvrir(chemin())
     const commun = {
-      accountId: SOLO_ACCOUNT_ID,
+      accountId: COMPTE,
       folder: 'traces',
       name: 'sortie.jsonl.gz',
     }
@@ -141,7 +143,7 @@ describe('ce que le schéma garantit', () => {
     const base = await ouvrir(chemin())
     await base.insert(deposits).values({
       id: 'b',
-      accountId: SOLO_ACCOUNT_ID,
+      accountId: COMPTE,
       folder: 'traces',
       name: 'autre.jsonl.gz',
       content: Buffer.from('x'),
@@ -159,7 +161,7 @@ describe('ce que le schéma garantit', () => {
 
     await base.insert(profiles).values({
       id: 'p1',
-      accountId: SOLO_ACCOUNT_ID,
+      accountId: COMPTE,
       name: 'Reçu d’ailleurs',
       engineId: 'un-moteur-de-chez-quelquun-dautre',
       content: {},
@@ -170,10 +172,10 @@ describe('ce que le schéma garantit', () => {
 
   it('ce qui appartient à un compte s’en va avec lui', async () => {
     const base = await ouvrir(chemin())
-    await base.insert(rights).values({ id: 'd1', accountId: SOLO_ACCOUNT_ID, scope: 'atelier' })
+    await base.insert(rights).values({ id: 'd1', accountId: COMPTE, scope: 'atelier' })
     await base.insert(engines).values({
       id: 'm1',
-      accountId: SOLO_ACCOUNT_ID,
+      accountId: COMPTE,
       name: 'V8',
       content: {},
     })
@@ -215,10 +217,10 @@ describe('ce que le schéma garantit', () => {
 
   it('un compte ne porte pas deux fois le même droit', async () => {
     const base = await ouvrir(chemin())
-    await base.insert(rights).values({ id: 'd1', accountId: SOLO_ACCOUNT_ID, scope: 'atelier' })
+    await base.insert(rights).values({ id: 'd1', accountId: COMPTE, scope: 'atelier' })
 
     await expect(
-      base.insert(rights).values({ id: 'd2', accountId: SOLO_ACCOUNT_ID, scope: 'atelier' }),
+      base.insert(rights).values({ id: 'd2', accountId: COMPTE, scope: 'atelier' }),
     ).rejects.toThrow()
   })
 })
