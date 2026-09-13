@@ -1,6 +1,6 @@
 # 08 — La règle efface, au démarrage puis chaque jour
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 livré — à armer une fois le verdict lu en production
 
 **Bloqué par :** [07 — Voir ce que la règle emporterait, sans rien effacer](07-voir-ce-que-la-regle-emporterait.md).
 Le verdict doit avoir été regardé sur les vraies données avant qu'on l'exécute.
@@ -40,13 +40,18 @@ disque, on peut épingler — et une fois que le verdict a été lu.
 
 ## Critères d'acceptation
 
-- [ ] Le serveur applique la règle à son démarrage, puis toutes les 24 heures
-- [ ] Ce qui est effacé et ce qui est retenu s'écrivent dans le journal du
+- [x] Le serveur applique la règle à son démarrage, puis toutes les 24 heures
+- [x] Ce qui est effacé et ce qui est retenu s'écrivent dans le journal du
       conteneur, avec les raisons
-- [ ] Un passage qui échoue laisse le serveur servir
-- [ ] Le serveur s'arrête proprement pendant qu'un minuteur est armé
-- [ ] Le profil mesuré est inchangé après un passage qui efface — vérifié au
+- [x] Un passage qui échoue laisse le serveur servir
+- [ ] Le serveur s'arrête proprement pendant qu'un minuteur est armé — le
+      minuteur est détaché de la boucle (`unref`) et coupé au signal, mais cela
+      n'a été vérifié qu'en lisant le code : sous Windows, tuer un processus
+      n'envoie pas de vrai signal. Se verra au premier remplacement du conteneur
+- [x] Le profil mesuré est inchangé après un passage qui efface — vérifié au
       chiffre, avant et après
-- [ ] Sur la base de production, un passage n'efface rien et reste discret
-- [ ] Une session effacée par la règle se relit depuis l'archive téléchargée
+- [ ] Sur la base de production, un passage n'efface rien et reste discret —
+      vérifié sur une base de test entièrement archivée ; reste à le constater en
+      production
+- [x] Une session effacée par la règle se relit depuis l'archive téléchargée
       avant — le parcours complet est vérifié une fois

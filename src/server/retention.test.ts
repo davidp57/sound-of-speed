@@ -1,4 +1,5 @@
 import { mkdtempSync, rmSync } from 'node:fs'
+import { gzipSync } from 'node:zlib'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -9,7 +10,8 @@ import { PROCEDURE_VERSION } from '../core/calibration/aggregate'
 import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
 import { deposits } from './base/schema'
 import { ecrireDepot, type Dossier, type Exemption } from './depots'
-import { formaterPassage, verdictDuCompte, DELAIS_PAR_DEFAUT } from './retention'
+import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
+import { appliquerLaRegle, formaterPassage, verdictDuCompte, DELAIS_PAR_DEFAUT } from './retention'
 
 const MIGRATIONS = 'src/server/base/migrations'
 const JOUR = 24 * 60 * 60 * 1000
@@ -198,3 +200,70 @@ describe('ce qu’un passage écrit dans le journal du conteneur', () => {
     expect(ligne).toContain('1 archivé')
   })
 })
+
+describe('le passage qui efface', () => {
+  it('emporte ce que le verdict annonçait, et rien de plus', async () => {
+    // Le verdict et l'exécution partagent la même décision : deux règles
+    // écrites deux fois divergeraient, et celle qui efface ne serait pas celle
+    // qu'on a relue.
+    const vieux = await trajet(40)
+    const recent = await trajet(2)
+    const annonce = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+
+    const passage = await appliquerLaRegle(base, SOLO_ACCOUNT_ID, MAINTENANT)
+
+    expect(annonce.aEffacer.map((t) => t.cle)).toEqual([vieux])
+    expect(passage.trajets).toBe(1)
+    expect(passage.tranches).toBe(1)
+    const restants = await base.select().from(deposits)
+    expect(restants.map((ligne) => ligne.name)).toEqual([`${recent}_001.jsonl.gz`])
+  })
+
+  it('n’efface rien sur une base entièrement archivée, et reste discret', async () => {
+    await trajet(300, { exemption: 'archive' })
+
+    const passage = await appliquerLaRegle(base, SOLO_ACCOUNT_ID, MAINTENANT)
+
+    expect(passage.trajets).toBe(0)
+    expect(formaterPassage(passage)).toBeNull()
+    expect(await base.select().from(deposits)).toHaveLength(1)
+  })
+
+  it('laisse le profil mesuré au chiffre près', async () => {
+    // Ce que les trajets ont montré est déjà cumulé. Il faut le vérifier avant
+    // et après un passage qui efface, pas le supposer.
+    const nom = '2026-01-05-08-00-00_vieux_001.jsonl.gz'
+    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', nom, uneTranche())
+    await reprendreApresDepot(base, SOLO_ACCOUNT_ID, nom)
+    const avant = await lireProfilMesure(base, SOLO_ACCOUNT_ID)
+
+    const passage = await appliquerLaRegle(base, SOLO_ACCOUNT_ID, MAINTENANT)
+
+    expect(passage.trajets).toBe(1)
+    expect(await base.select().from(deposits)).toHaveLength(0)
+    expect(await lireProfilMesure(base, SOLO_ACCOUNT_ID)).toBe(avant)
+  })
+})
+
+/** Une tranche de capture, assez fournie pour que le profileur en tire un trajet. */
+function uneTranche(): Buffer {
+  const lignes = [JSON.stringify({ sessionId: 'vieux', startedAt: 1_757_000_000_000, profile: 'V8' })]
+  for (let i = 0; i < 300; i += 1) {
+    const kmh = Math.min(110, i * 0.4)
+    lignes.push(
+      JSON.stringify({
+        at: i * 100,
+        src: i * 100,
+        kmh,
+        acc: 5,
+        der: false,
+        out: kmh,
+        ms2: 0.9,
+        rpm: 1500 + kmh * 20,
+        gear: 3,
+        load: 0.7,
+      }),
+    )
+  }
+  return Buffer.from(gzipSync(Buffer.from(`${lignes.join('\n')}\n`)))
+}

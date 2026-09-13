@@ -1,6 +1,6 @@
 # RETENTION — analyser puis oublier, sauf ce qu'on épingle
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 livré — reste à lire le verdict sur la base de production
 **Branche :** `feature/retention`
 **Version visée :** 0.4
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -192,20 +192,20 @@ autant.
 
 ## Critères d'acceptation
 
-- [ ] Une trace arrivée est analysée et cumulée dans le profil mesuré sans
+- [x] Une trace arrivée est analysée et cumulée dans le profil mesuré sans
       intervention, et son dépôt porte l'état de cette analyse
-- [ ] Une session non exemptée disparaît passé le délai, **entière**, et le délai
+- [x] Une session non exemptée disparaît passé le délai, **entière**, et le délai
       est réglable
-- [ ] Une session que le profileur n'a pas encore traitée ne s'efface pas, quelle
+- [x] Une session que le profileur n'a pas encore traitée ne s'efface pas, quelle
       que soit sa date
-- [ ] L'effacement se fonde sur la date d'enregistrement, pas sur la date de
+- [x] L'effacement se fonde sur la date d'enregistrement, pas sur la date de
       dépôt ; les 94 dépôts repris portent la bonne
-- [ ] Épingler exempte de l'effacement, dans une limite bornée et annoncée ;
+- [x] Épingler exempte de l'effacement, dans une limite bornée et annoncée ;
       l'archive de reprise exempte sans être bornée
-- [ ] Le journal suit sa propre règle, plus courte, et ne s'épingle pas
-- [ ] Télécharger rend une archive que le relecteur rouvre depuis le disque
-- [ ] Une session s'efface à la demande, sans attendre le délai
-- [ ] Ce qui va être effacé est montré avant de l'être
+- [x] Le journal suit sa propre règle, plus courte, et ne s'épingle pas
+- [x] Télécharger rend une archive que le relecteur rouvre depuis le disque
+- [x] Une session s'efface à la demande, sans attendre le délai
+- [x] Ce qui va être effacé est montré avant de l'être
 - [ ] Le profil mesuré ne grossit pas avec le nombre de trajets — mesuré, et le
       plafond annoncé
 

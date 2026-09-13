@@ -15,6 +15,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le serveur fait le ménage : la règle efface.** Au démarrage, comme les
+  migrations et la reprise, puis toutes les vingt-quatre heures — un serveur qui
+  ne redémarre pas pendant trois mois ne doit pas cesser de faire le ménage pour
+  autant. Un trajet part entier, tranches de trace et de journal ensemble, et
+  chaque passage s'écrit dans le journal du conteneur : ce qui est parti, ce qui
+  a été retenu et pourquoi. C'est le seul endroit où l'on verra ce qui a disparu.
+  Un passage qui n'efface rien reste discret, et un passage qui échoue laisse le
+  serveur servir. Le profil mesuré ne bouge pas : ce que les trajets ont montré
+  est déjà cumulé.
+
 - **Le relecteur montre ce que la règle de rétention emporterait, sans rien
   effacer.** Quels trajets partiraient, à quelle date, combien d'octets, et pour
   chacun de ceux qui restent, la raison qui le retient : épinglé, archivé, trop

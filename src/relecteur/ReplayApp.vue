@@ -589,6 +589,7 @@ async function effacer(entry: SessionEntry): Promise<void> {
       parties === 0
         ? 'Ce trajet était déjà parti.'
         : `Trajet du ${stamp(entry.startedAt)} effacé : ${parties} tranche${parties > 1 ? 's' : ''}.`
+    oublierLeVerdict()
     // Celui qu'on lisait vient de disparaître : le garder à l'écran ferait
     // relire un trajet qui n'existe plus.
     if (chosen.value === entry.key) {
@@ -610,6 +611,17 @@ async function effacer(entry: SessionEntry): Promise<void> {
  * rougit.
  */
 const verdict = ref<Awaited<ReturnType<typeof retentionVerdict>>>(null)
+
+/**
+ * Le verdict vieillit dès qu'on touche à un trajet.
+ *
+ * Un verdict périmé qui nomme encore un trajet qu'on vient d'effacer se lit
+ * comme un effacement qui n'a pas pris. On l'efface plutôt que de le recalculer
+ * sans qu'on l'ait demandé : c'est un regard qu'on porte, pas un compteur.
+ */
+function oublierLeVerdict(): void {
+  verdict.value = null
+}
 
 async function voirLaRegle(): Promise<void> {
   busy.value = true
@@ -656,6 +668,7 @@ async function basculerEpingle(entry: SessionEntry): Promise<void> {
     }
 
     epingles.value = { epinglees: rendu.epinglees, borne: rendu.borne }
+    oublierLeVerdict()
     if (rendu.etat === 'borne atteinte') {
       geste.value = `Borne atteinte : ${rendu.borne} trajets épinglés. Décrochez-en un, ou téléchargez celui-ci pour le garder hors du serveur.`
       return

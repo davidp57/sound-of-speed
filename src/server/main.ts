@@ -15,7 +15,7 @@ import { lireComptes } from './comptes'
 import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
-import { DELAIS_PAR_DEFAUT, type Delais } from './retention'
+import { appliquerLaRegle, DELAIS_PAR_DEFAUT, formaterPassage, type Delais } from './retention'
 import { creerServeur } from './serveur'
 
 const port = Number(process.env['SPEED_PORT'] ?? 8088)
@@ -108,6 +108,38 @@ try {
   console.error(`rattrapage du profil mesuré : ${String(erreur)}`)
 }
 
+/**
+ * Le ménage : ce que la règle emporte, elle l'emporte.
+ *
+ * **Au démarrage d'abord**, comme les migrations et la reprise — c'est le motif
+ * déjà posé ici. **Puis toutes les vingt-quatre heures**, parce qu'un serveur
+ * qui ne redémarre pas pendant trois mois ne doit pas cesser de faire le ménage
+ * pour autant.
+ *
+ * Un passage qui échoue ne fait pas tomber le serveur : la voiture a besoin de
+ * lui tout de suite, et le ménage se reprendra au passage suivant.
+ *
+ * Le journal du conteneur est le seul endroit où l'on verra ce qui a disparu,
+ * puisque après coup il n'y a plus rien à regarder. Un passage qui n'efface rien
+ * est le cas normal, et il se tait.
+ */
+async function menageDeRetention(): Promise<void> {
+  try {
+    const ligne = formaterPassage(await appliquerLaRegle(base, SOLO_ACCOUNT_ID, Date.now(), delais))
+    if (ligne !== null) console.log(ligne)
+  } catch (erreur) {
+    console.error(`rétention : ${String(erreur)}`)
+  }
+}
+
+await menageDeRetention()
+
+const UN_JOUR = 24 * 60 * 60 * 1000
+const minuteurDuMenage = setInterval(() => void menageDeRetention(), UN_JOUR)
+// Le minuteur ne doit pas retenir le processus : un conteneur qu'on remplace
+// envoie son signal, et le serveur doit pouvoir rendre la main tout de suite.
+minuteurDuMenage.unref()
+
 const serveur = serve(
   {
     fetch: creerServeur({
@@ -131,6 +163,7 @@ const serveur = serve(
 // pas refermée.
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
+    clearInterval(minuteurDuMenage)
     serveur.close(() => {
       fermer()
       process.exit(0)
