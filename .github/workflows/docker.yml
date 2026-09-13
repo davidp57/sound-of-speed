@@ -114,10 +114,11 @@ jobs:
         # Le seul contrôle qui regarde ce que le **serveur** rend. Les tests du
         # dépôt tournent sur les sources et n'en voient rien.
         #
-        # Toutes les parts sauf `entites` : le registre des moteurs et des boîtes
-        # est né avec la base, ce serveur-ci n'a jamais eu à le rendre. Ce n'est
-        # pas un cas qu'on lui épargne, c'est une question qui ne se pose pas
-        # pour lui.
+        # Toutes les parts sauf `entites` et `trajets` : le registre des moteurs
+        # et des boîtes est né avec la base, et regrouper des tranches en trajets
+        # suppose la même chose. Ce serveur-ci n'a jamais eu à rendre ni l'un ni
+        # l'autre. Ce ne sont pas des cas qu'on lui épargne, ce sont des
+        # questions qui ne se posent pas pour lui.
         run: |
           node scripts/accord/accord.mjs http://localhost:8088             --compte essai:essai --part publique,profils,depots
 

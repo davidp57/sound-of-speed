@@ -54,17 +54,19 @@ se contredire. Les fichiers déposés portent une marque propre à l'exécution.
 résumé le dit. Un jeu qui se déclarerait vert en ayant tout sauté serait un jeu
 qui ment.
 
-## Quatre parts, et une seule qu'on n'adresse pas à l'ancien serveur
+## Cinq parts, et deux qu'on n'adresse pas à l'ancien serveur
 
 `--part` en joue une ou plusieurs, séparées par des virgules : `publique` (ce qui
 se sert sans compte), `profils` (la bibliothèque), `depots` (ce que la voiture
-envoie en roulant), `entites` (les moteurs et les boîtes).
+envoie en roulant), `entites` (les moteurs et les boîtes), `trajets` (les
+sessions : les lister, les emporter, les épingler, les effacer, et le verdict de
+la rétention).
 
 Sans `--part`, tout est joué — c'est ce que fait l'intégration continue contre le
 serveur neuf, dans son conteneur comme hors de lui. Le serveur de fichiers, lui,
-ne se voit pas demander `entites` : ce registre est né avec la base, et la
-question n'a pas de sens pour lui. C'est la seule exclusion, et elle disparaîtra
-avec lui.
+ne se voit demander ni `entites` ni `trajets` : l'un est né avec la base, l'autre
+suppose de savoir regrouper des tranches en trajets. La question n'a pas de sens
+pour lui, et ces deux exclusions disparaîtront avec lui.
 
 ## Où il tourne
 

@@ -417,9 +417,13 @@ export function cas({ nom }) {
       attend: (r) => vrai(r.ok, `un code de succès, reçu ${r.status}`),
     },
     // --- Les trajets, et ce qu'on en fait ----------------------------------
+    //
+    // Une part à eux : le serveur de fichiers ne sait pas regrouper des tranches
+    // en trajets, et ne le saura jamais. La question n'a pas de sens pour lui,
+    // comme celle des moteurs et des boîtes.
     {
       nom: 'une tranche au nom de session se dépose',
-      part: 'depots',
+      part: 'trajets',
       requete: {
         chemin: `/traces/${trancheDeSession}`,
         methode: 'PUT',
@@ -431,13 +435,13 @@ export function cas({ nom }) {
     },
     {
       nom: 'les trajets refusent sans compte',
-      part: 'depots',
+      part: 'trajets',
       requete: { chemin: '/sessions/', entetes: { Accept: 'application/json' } },
       attend: (r) => vrai(r.status === 401 || r.status === 403, `un refus, reçu ${r.status}`),
     },
     {
       nom: 'le trajet réunit ses tranches, avec son poids et ce qui le retient',
-      part: 'depots',
+      part: 'trajets',
       requete: { chemin: '/sessions/', compte: true, entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
@@ -457,7 +461,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'un trajet s’emporte en une archive zip',
-      part: 'depots',
+      part: 'trajets',
       requete: { chemin: `/sessions/${encodeURIComponent(session)}/archive.zip`, compte: true },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
@@ -472,7 +476,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'un trajet s’épingle, et la borne s’annonce',
-      part: 'depots',
+      part: 'trajets',
       requete: {
         chemin: `/sessions/${encodeURIComponent(session)}/epingle`,
         methode: 'PUT',
@@ -487,7 +491,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'la règle rend son verdict, et retient ce qui est épinglé',
-      part: 'depots',
+      part: 'trajets',
       requete: { chemin: '/retention', compte: true, entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
@@ -501,7 +505,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'un trajet s’efface, et le rejouer n’est pas une panne',
-      part: 'depots',
+      part: 'trajets',
       // Le ménage de ce jeu de requêtes, autant que sa vérification : sans
       // effacement, chaque passage laisserait un trajet de plus en base.
       requete: {
@@ -516,7 +520,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'effacer deux fois rend zéro, et non une erreur',
-      part: 'depots',
+      part: 'trajets',
       requete: {
         chemin: `/sessions/${encodeURIComponent(session)}`,
         methode: 'DELETE',
@@ -529,7 +533,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'un dépôt seul s’efface, sa clé portant des deux-points',
-      part: 'depots',
+      part: 'trajets',
       // Les deux traces anciennes de la base sont de cette forme. Une clé mal
       // échappée efface ailleurs, ou n'efface rien.
       requete: {
