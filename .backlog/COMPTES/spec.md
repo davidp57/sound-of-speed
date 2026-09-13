@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** 🔄 en cours — 2/9
+**Statut :** 🔄 en cours — 4/9
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -101,8 +101,8 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 |---|---|---|
 | [01](tickets/01-better-auth-entre-dans-le-serveur.md) ✅ | Better Auth entre dans le serveur, sans rien casser | — |
 | [02](tickets/02-un-compte-se-cree-tout-seul.md) ✅ | Un compte se crée tout seul, et l'application démarre sans lui | 01 |
-| [03](tickets/03-ce-que-porte-solo-change-de-mains.md) | Ce que porte `solo` devient celui du premier compte | 02 |
-| [04](tickets/04-la-voiture-depose-avec-son-compte.md) | La voiture dépose avec son compte, et le mot de passe partagé s'efface | 02, 03 |
+| [03](tickets/03-ce-que-porte-solo-change-de-mains.md) ✅ | Ce que porte `solo` devient celui du premier compte | 02 |
+| [04](tickets/04-la-voiture-depose-avec-son-compte.md) ✅ | La voiture dépose avec son compte, et le mot de passe partagé s'efface | 02, 03 |
 | [05](tickets/05-relier-un-appareil-par-un-code.md) | Relier un second appareil en scannant un code | 02 |
 | [09](tickets/09-reprendre-son-compte.md) | Reprendre son compte quand on a tout perdu : adresse **et** compte tiers | 05 |
 | [06](tickets/06-les-droits-ouvrent-les-ecrans.md) | Les droits ouvrent les écrans, et un droit expiré les referme | 02 |

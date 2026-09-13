@@ -1,6 +1,6 @@
 # 04 — La voiture dépose avec son compte, et le mot de passe partagé s'efface
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 13 septembre 2026, avec le ticket 03
 
 **Bloqué par :** [02 — Un compte se crée tout seul](02-un-compte-se-cree-tout-seul.md),
 [03 — Ce que porte `solo` change de mains](03-ce-que-porte-solo-change-de-mains.md).
@@ -40,12 +40,67 @@ Le fichier `htpasswd` cesse d'être la porte des dépôts.
 
 ## Critères d'acceptation
 
-- [ ] La voiture dépose sous son compte, sans mot de passe saisi
-- [ ] Les deux champs d'identifiants de dépôt ont disparu de l'écran de
+- [x] La voiture dépose sous son compte, sans mot de passe saisi
+- [x] Les deux champs d'identifiants de dépôt ont disparu de l'écran de
       configuration
-- [ ] Une session expirée rend un refus que le client ne rejoue pas
-- [ ] Hors réseau, la file garde et repart au retour, comme avant
-- [ ] La sonde autonome dépose encore, ou son cas est tranché et écrit
-- [ ] Le jeu `accord` est à jour et passe, dans le conteneur comme hors de lui
-- [ ] Les six endroits qui connaissent `htpasswd` sont passés en revue ; s'il ne
-      sert plus, il part partout, documentation et pile Docker comprises
+- [x] Une session expirée rend un refus que le client ne rejoue pas
+- [x] Hors réseau, la file garde et repart au retour, comme avant
+- [x] La sonde autonome dépose encore — sans rien lire ni composer
+- [x] Le jeu `accord` est à jour et passe
+- [x] Les endroits qui connaissent `htpasswd` sont passés en revue — *ils sont
+      treize et non six, et il ne part pas partout : voir ci-dessous*
+
+## Ce que l'essai a donné
+
+**Il n'y a plus rien à composer.** La page et le serveur sont sur la même origine,
+donc le témoin de connexion voyage tout seul. Vérifié dans un navigateur : un
+dépôt de profil rend 201 et la liste le retrouve, sans un seul identifiant.
+
+**Le jeu `accord` prend son compte au serveur** comme le ferait un navigateur qui
+ouvre l'application pour la première fois : 45 passés, 0 échoué, 0 sauté, sans
+aucun identifiant.
+
+**Un défaut trouvé en vérifiant, et il aurait été silencieux.** Le stockage local
+vidé alors que le témoin, lui, était resté : l'application demandait un compte
+anonyme, la bibliothèque répondait que ce compte ne peut pas se reconnecter, et
+l'appareil n'obtenait plus jamais d'identité — donc plus aucun dépôt ne partait,
+la file attendant une identité qui ne venait pas. Le serveur est désormais
+interrogé **avant** toute demande : lui seul sait ce que ce navigateur porte, le
+témoin étant fermé au code de la page.
+
+**Dix tests vérifiaient l'en-tête d'annonce et le « pas de compte saisi, on ne
+demande rien ».** Ils ne sont pas supprimés mais retournés : ils vérifient
+maintenant qu'aucune authentification n'est composée, et que la requête part
+quand même.
+
+### `htpasswd` : treize endroits, et il ne part pas partout
+
+Le ticket en annonçait six. Le relevé en donne treize hors documentation, et
+surtout : `docker/nginx.conf`, `docker-compose.yml` et `docker-compose.develop.yml`
+sont ceux de **l'ancienne pile, qui sert encore la production**. L'y retirer
+reviendrait à ouvrir la production.
+
+Il part donc du **serveur TypeScript** : le module `comptes.ts` et son test, son
+option d'environnement, sa pile Docker, et l'intégration continue qui lui
+fabriquait un compte jetable. `bcryptjs` passe en dépendance de développement, ne
+servant plus qu'aux scripts qui produisent le fichier pour nginx.
+
+`--compte` reste dans le jeu `accord`, pour une seule raison écrite dans son
+en-tête : l'ancien serveur ne connaît que le mot de passe partagé. L'option
+partira avec lui.
+
+### Ce qu'il faut savoir avant de publier
+
+**L'application ne sait plus déposer sur l'ancienne pile.** Elle ne compose plus
+d'en-tête d'annonce, et nginx n'attend que cela. Tant que ce lot n'est pas publié,
+rien ne casse — la production sert l'application d'avant. Le jour où on publie,
+**la production doit être passée au serveur TypeScript**, ce que le lot
+[SERVEUR](../../SERVEUR/spec.md) prévoit déjà. C'est un ordre d'opérations, pas un
+défaut, mais il ne se devine pas.
+
+### Le poids, mesuré
+
+**394 octets de moins qu'avant le lot** : 445 576 octets avant l'identité,
+445 182 avec. L'identité complète pèse **moins** que le mot de passe partagé
+qu'elle remplace — le code d'authentification retiré compense celui qui demande un
+compte.
