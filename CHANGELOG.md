@@ -15,6 +15,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le relecteur rouvre une archive prise sur le disque.** Le trajet se relit
+  comme s'il venait du serveur — la carte, les cadrans, les faits marquants, la
+  barre de temps —, sans compte et sans réseau. C'est ce qui ferme la boucle :
+  tant que le relecteur ne savait relire que le serveur, télécharger ne servait à
+  rien et effacer revenait à perdre. Une archive à qui il manque des tranches se
+  relit quand même, et ce qui manque est nommé ; un fichier qui n'est pas une
+  archive de trajet le dit.
+
 - **Un trajet s'emporte en un fichier.** Le relecteur en rend une archive zip
   unique — la plus grosse session de la base porte quarante-deux tranches, et
   quarante-deux téléchargements ne seraient pas une porte de sortie. Les

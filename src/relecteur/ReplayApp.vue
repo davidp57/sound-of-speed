@@ -11,6 +11,7 @@ import {
   type SessionEntry,
 } from '../core/session/read'
 import { deleteTrip, downloadTrip } from '../core/session/manage'
+import { sessionFromArchive } from '../core/session/archive'
 import { stateAt, trackAt, type Session } from '../core/session/model'
 import { findGearChanges, findShiftBursts, recordedShifts } from '../core/session/shifts'
 import { accelProfile, profileRuns } from '../core/session/profile'
@@ -602,6 +603,45 @@ async function effacer(entry: SessionEntry): Promise<void> {
 }
 
 /**
+ * Rouvre une archive prise sur le disque.
+ *
+ * Sans compte et sans serveur : c'est ce qui ferme la boucle de l'archive. Un
+ * relecteur ouvert ailleurs, qui ne peut rien lister, sait quand même relire un
+ * trajet qu'on lui donne.
+ */
+const fichierArchive = ref<HTMLInputElement | null>(null)
+
+async function ouvrirArchive(evenement: Event): Promise<void> {
+  const fichier = (evenement.target as HTMLInputElement).files?.[0]
+  if (fichier === undefined) return
+
+  stop()
+  stopSound()
+  busy.value = true
+  note.value = `Ouverture de ${fichier.name}…`
+  // Le jeton du chargement en cours : une archive et une session du serveur ne
+  // doivent pas s'écraser l'une l'autre.
+  const jeton = ++pending
+  try {
+    const lu = await sessionFromArchive(new Uint8Array(await fichier.arrayBuffer()))
+    if (jeton !== pending) return
+    chosen.value = ''
+    session.value = lu.session
+    failures.value = lu.failures
+    at.value = 0
+    note.value = `${fichier.name} — relu depuis le disque.`
+    gestion.value = false
+  } catch (erreur) {
+    if (jeton !== pending) return
+    note.value = erreur instanceof Error ? erreur.message : 'Archive illisible.'
+  } finally {
+    if (jeton === pending) busy.value = false
+    // Sans cela, rouvrir le même fichier ne déclencherait rien.
+    ;(evenement.target as HTMLInputElement).value = ''
+  }
+}
+
+/**
  * Emporte un trajet sur le disque.
  *
  * C'est la porte de sortie qui rend l'effacement acceptable : l'archive longue
@@ -709,6 +749,20 @@ void refresh()
         </select>
         <button :disabled="busy" @click="refresh()">Rafraîchir</button>
         <button :aria-pressed="gestion" @click="gestion = !gestion">Trajets</button>
+        <button
+          :disabled="busy"
+          title="Relire une archive téléchargée, sans passer par le serveur"
+          @click="fichierArchive?.click()"
+        >
+          Ouvrir une archive…
+        </button>
+        <input
+          ref="fichierArchive"
+          type="file"
+          accept="application/zip,.zip"
+          hidden
+          @change="ouvrirArchive"
+        />
       </div>
       <span v-if="session" class="muted">
         {{ session.sources.capture > 0 ? 'capture et journal' : 'journal seul' }} —

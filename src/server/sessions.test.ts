@@ -9,6 +9,9 @@ import { PROCEDURE_VERSION } from '../core/calibration/aggregate'
 import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
 import { deposits } from './base/schema'
 import { ecrireDepot } from './depots'
+import { gzipSync } from 'node:zlib'
+
+import { sessionFromArchive } from '../core/session/archive'
 import { readZip } from '../core/archive/zip'
 
 import { archiveDeLaSession, effacerSession, lireSession, listerSessions } from './sessions'
@@ -231,5 +234,35 @@ describe('emporter un trajet', () => {
 
   it('rend rien sur un trajet qui n’existe pas', async () => {
     expect(await archiveDeLaSession(base, SOLO_ACCOUNT_ID, 'inconnu')).toBeNull()
+  })
+})
+
+describe('le parcours complet', () => {
+  it('télécharger, effacer, relire depuis le disque', async () => {
+    // C'est le seul endroit où les trois gestes se vérifient ensemble, et c'est
+    // ce qui rend l'effacement acceptable : ce qui part du serveur se retrouve
+    // à l'identique dans l'archive.
+    const releve = `${JSON.stringify({ at: 1000, kind: 'sample', data: { kmh: 50, rpm: 2000, gear: 3 } })}
+`
+    await ecrireDepot(
+      base,
+      SOLO_ACCOUNT_ID,
+      'traces',
+      '2026-09-11-06-24-01_da2m_001.jsonl.gz',
+      Buffer.from(gzipSync(Buffer.from(releve))),
+    )
+
+    const archive = await archiveDeLaSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')
+    const octets = new Uint8Array(await new Response(archive!.flux).arrayBuffer())
+
+    expect(await effacerSession(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_da2m')).toBe(1)
+    expect(await listerSessions(base, SOLO_ACCOUNT_ID)).toHaveLength(0)
+
+    const { session, failures } = await sessionFromArchive(octets)
+
+    expect(failures).toEqual([])
+    expect(session.id).toBe('da2m')
+    expect(session.startedAt).toBe(Date.UTC(2026, 8, 11, 6, 24, 1))
+    expect(session.states.map((etat) => etat.kmh)).toEqual([50])
   })
 })
