@@ -100,7 +100,21 @@ describe('partir chez un fournisseur', () => {
     const demande = JSON.parse(corps[0] ?? '{}') as Record<string, string>
     expect(demande['provider']).toBe('tesla')
     expect(demande['callbackURL']).toBe('https://speed.exemple.fr/?compte=rattache')
-    expect(demande['errorCallbackURL']).toBe('https://speed.exemple.fr/?compte=refuse')
+    // Le refus dit **lequel** des deux gestes a échoué : les deux partageaient
+    // la même valeur, et l'écran annonçait au rattachement le message de la
+    // connexion.
+    expect(demande['errorCallbackURL']).toBe('https://speed.exemple.fr/?compte=refus-rattachement')
+  })
+
+  it('sépare le refus d’une connexion de celui d’un rattachement', async () => {
+    const { fetchImpl, corps, chemins } = serveur({ url: 'https://tesla.exemple/oauth' })
+
+    await seConnecterAvecUnTiers('tesla', { fetchImpl })
+
+    expect(chemins[0]).toContain('/api/auth/sign-in/social')
+    const demande = JSON.parse(corps[0] ?? '{}') as Record<string, string>
+    expect(demande['callbackURL']).toBe('https://speed.exemple.fr/?compte=connecte')
+    expect(demande['errorCallbackURL']).toBe('https://speed.exemple.fr/?compte=refus-connexion')
   })
 
   it('emmène le navigateur là où le serveur dit', async () => {
