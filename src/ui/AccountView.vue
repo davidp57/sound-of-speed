@@ -2,27 +2,36 @@
 /**
  * L'écran du compte : tout ce qui touche à l'identité, et nulle part ailleurs.
  *
- * **Le chemin normal va de la voiture au poste de travail.** On relie le poste
- * par un code, et c'est là, sur un vrai clavier, qu'on se fabriquera un vrai
- * compte. La voiture n'est pas un endroit où taper une adresse.
+ * **Le parcours est celui de toutes les autres applications**, et c'est voulu :
+ * on se sert de l'application sans rien signer, une invitation discrète propose
+ * de s'approprier le compte, et le jour où on le fait, l'invitation disparaît
+ * pour de bon. Ce qui nous distingue tient en une ligne — le compte existe
+ * **avant** qu'on le demande, parce que la voiture dépose ses trajets dès le
+ * premier démarrage et qu'il faut bien les mettre quelque part.
+ *
+ * **Chaque appareil ne montre que le geste qu'il sait faire.** On n'enregistre
+ * pas un compte au volant : il n'y a ni clavier commode, ni envie de partir chez
+ * un fournisseur pendant qu'on conduit. La voiture donne donc un code, et tout
+ * le reste se fait sur l'appareil qui l'a reçu.
  *
  * **Rien ne s'affiche au premier lancement.** Une fenêtre qui demanderait de
- * choisir au démarrage serait l'écran d'inscription que ce lot supprime, et elle
- * tomberait au moment où l'on veut juste rouler. L'onglet existe, on y va quand
- * on veut.
+ * choisir au démarrage serait l'écran d'inscription que ce lot supprime.
  */
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import qrcode from 'qrcode-generator'
 
+import { APPAREILS, lireLAppareilChoisi, NOMS_DAPPAREIL, type Appareil } from '../core/appareil'
+import { empreinteDeLAdresse, initialeDe, lienDeGravatar } from '../core/identity/avatar'
 import { demanderUnCode } from '../core/identity/client'
 import {
   ARCHIVE_DU_COMPTE,
   changerLeMotDePasse,
   possibilitesDuServeur,
+  preuvesDuCompte,
   type PossibilitesDuServeur,
+  type PreuvesDuCompte,
 } from '../core/identity/compte'
-import { APPAREILS, lireLAppareilChoisi, NOMS_DAPPAREIL, type Appareil } from '../core/appareil'
 import { lienDeLiaison } from '../core/identity/lien'
 import { isReachableOrigin } from '../core/preset/share'
 import {
@@ -64,6 +73,42 @@ function corrigerLAppareil(lequel: Appareil): void {
   appareilCorrige.value = true
 }
 
+/** On n'enregistre pas un compte au volant. Voir l'en-tête de ce fichier. */
+const auVolant = computed(() => appareil.value === 'voiture')
+
+/**
+ * Le compte est-il approprié ?
+ *
+ * Lu sur l'identité gardée ici, donc juste **sans réseau** : ce qui compte est
+ * qu'une preuve ait été rattachée un jour, et cela ne se défait pas.
+ */
+const approprie = computed(() => identity.value?.anonymous === false)
+
+/**
+ * Ce que ce compte-ci porte déjà comme preuves, demandé au serveur.
+ *
+ * Sans cela, l'écran ne sait pas s'il doit réclamer un mot de passe — et il l'a
+ * réclamé à des comptes tenus par Google, qui n'en ont pas. `null` veut dire
+ * qu'on ne sait pas : hors réseau, on ne montre alors que ce qui est sûr.
+ */
+const preuves = ref<PreuvesDuCompte | null>(null)
+
+/** Ce que ce serveur-ci sait faire. Ce qu'il ne sait pas ne s'affiche pas. */
+const possibilites = ref<PossibilitesDuServeur>({ relaisCourriel: false, fournisseurs: [] })
+
+/** Un mot de passe est rattaché : seul cas où l'écran a le droit d'en demander un. */
+const aUnMotDePasse = computed(() => preuves.value?.motDePasse === true)
+
+/** Les fournisseurs proposés par le serveur qui ne sont pas déjà rattachés. */
+const fournisseursARattacher = computed(() => {
+  const deja = new Set((preuves.value?.fournisseurs ?? []).map((tenu) => tenu.id))
+  return possibilites.value.fournisseurs.filter((offert) => !deja.has(offert.id))
+})
+
+async function rafraichirLesPreuves(): Promise<void> {
+  preuves.value = await preuvesDuCompte()
+}
+
 /**
  * Ce que l'écran dit du compte de cet appareil.
  *
@@ -84,20 +129,60 @@ const compteDeLAppareil = computed(() => {
     return 'Le serveur ne reconnaissait plus le compte de cet appareil : il en a repris un neuf. Ce qui avait été déposé sous l’ancien n’est plus accessible — un compte anonyme n’a pas de mot de passe pour le reprendre.'
   }
   if (identity.value.anonymous) {
-    return 'Cet appareil a son compte, créé tout seul, sans adresse rattachée. Vider les données de ce site depuis les réglages du navigateur en perdrait l’accès — et ce qui a été déposé avec.'
+    return 'Ce compte s’est créé tout seul et porte déjà vos réglages et vos trajets. Tant qu’il n’est pas enregistré, vider les données de ce site depuis les réglages du navigateur en perdrait l’accès — et ce qui a été déposé avec.'
   }
-  const adresse = identity.value.email
-  return adresse === undefined
-    ? `Cet appareil ouvre le compte « ${identity.value.name} ».`
-    : `Ce compte est rattaché à ${adresse}. Il se rouvre depuis n’importe quel appareil, avec son mot de passe.`
+  const adresseDuCompte = identity.value.email
+  const tenuAilleurs = (preuves.value?.fournisseurs ?? []).map((tenu) => tenu.nom).join(', ')
+  if (adresseDuCompte === undefined) {
+    return tenuAilleurs === ''
+      ? 'Ce compte est enregistré. Il se rouvre depuis n’importe quel appareil.'
+      : `Ce compte est enregistré avec ${tenuAilleurs}. Il se rouvre depuis n’importe quel appareil.`
+  }
+  return tenuAilleurs === ''
+    ? `Ce compte est enregistré au nom de ${adresseDuCompte}, et se rouvre depuis n’importe quel appareil avec son mot de passe.`
+    : `Ce compte est enregistré au nom de ${adresseDuCompte}, avec ${tenuAilleurs}.`
 })
+
+/** Ce qui s'écrit en gros : l'adresse si elle existe, sinon l'étiquette tirée au sort. */
+const nomAffiche = computed(() => identity.value?.email ?? identity.value?.name ?? '')
+
+/**
+ * Le portrait, et ce qui le remplace.
+ *
+ * Celui du fournisseur d'abord — il vient avec le compte —, Gravatar ensuite,
+ * l'initiale enfin. Dans la voiture, qui est hors réseau, c'est toujours
+ * l'initiale : les deux premiers sont des images servies ailleurs.
+ */
+const portrait = ref('')
+const portraitRefuse = ref(false)
+// Prise sur ce qui est écrit à côté, et non sur le nom du compte : un compte
+// enregistré affiche son adresse, et un portrait marqué « F » sous le nom
+// « david@… » n'a l'air de rien.
+const initiale = computed(() => initialeDe(nomAffiche.value))
+
+async function chercherLePortrait(): Promise<void> {
+  portraitRefuse.value = false
+  portrait.value = ''
+
+  const compte = identity.value
+  if (compte === null) return
+  if (compte.image !== undefined) {
+    portrait.value = compte.image
+    return
+  }
+  if (compte.email === undefined) return
+
+  const empreinte = await empreinteDeLAdresse(compte.email)
+  if (empreinte !== null) portrait.value = lienDeGravatar(empreinte)
+}
 
 /**
  * Une adresse et un mot de passe, pour le jour où l'on n'a plus d'appareil.
  *
- * Deux gestes que l'écran distingue, parce que tout les sépare : **rattacher**
- * garde le compte de cet appareil et lui donne une adresse ; **se connecter**
- * ouvre un compte qui existe ailleurs, et abandonne celui d'ici.
+ * Deux gestes que l'écran sépare, parce que tout les sépare : **enregistrer**
+ * garde le compte de cet appareil et lui donne une adresse ; **ouvrir un compte
+ * qui existe** abandonne celui d'ici, et c'est pourquoi il est rangé plus bas,
+ * derrière un repli.
  */
 const adresse = ref('')
 const motDePasse = ref('')
@@ -118,7 +203,8 @@ async function onRattacher(): Promise<void> {
   try {
     const rendu = await rattacherSonAdresse(adresse.value, motDePasse.value)
     if (rendu.state === 'sans-reseau') {
-      noteDuCompte.value = 'Sans réseau, on ne peut pas rattacher une adresse : elle se range sur le serveur.'
+      noteDuCompte.value =
+        'Sans réseau, on ne peut pas enregistrer ce compte : l’adresse se range sur le serveur.'
       return
     }
     if (rendu.state === 'refusee') {
@@ -127,6 +213,7 @@ async function onRattacher(): Promise<void> {
     }
     motDePasse.value = ''
     noteDuCompte.value = `Ce compte est maintenant celui de ${rendu.email}. Rien n’a bougé de ce qu’il portait.`
+    await rafraichirLesPreuves()
   } finally {
     enCours.value = false
   }
@@ -149,6 +236,7 @@ async function onSeConnecter(): Promise<void> {
     motDePasse.value = ''
     adresse.value = ''
     masquerLeCode()
+    await rafraichirLesPreuves()
   } finally {
     enCours.value = false
   }
@@ -166,23 +254,20 @@ const lienARelier = ref('')
 const qrARelier = ref('')
 const noteDeLiaison = ref('')
 
-/** Ce qu'il reste de validité, en secondes, remis à jour chaque seconde. */
-const resteDuCode = ref(0)
-let compteARebours: ReturnType<typeof setInterval> | null = null
-
-const resteAffiche = computed(() => {
-  const minutes = Math.floor(resteDuCode.value / 60)
-  const secondes = resteDuCode.value % 60
-  return `${minutes}:${String(secondes).padStart(2, '0')}`
-})
+/**
+ * Quand le code cesse de valoir, dit en clair.
+ *
+ * Un compte à rebours à la seconde avait un sens quand le code vivait dix
+ * minutes. Sur vingt-quatre heures, il n'annonce plus rien : l'heure d'échéance
+ * suffit, et ne bouge pas pendant qu'on recopie.
+ */
+const echeanceDuCode = ref('')
 
 function masquerLeCode(): void {
-  if (compteARebours !== null) clearInterval(compteARebours)
-  compteARebours = null
   codeARelier.value = ''
   lienARelier.value = ''
   qrARelier.value = ''
-  resteDuCode.value = 0
+  echeanceDuCode.value = ''
 }
 
 async function onDonnerUnCode(): Promise<void> {
@@ -219,14 +304,11 @@ async function onDonnerUnCode(): Promise<void> {
   code.make()
   qrARelier.value = code.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
 
-  // Le compte à rebours plutôt qu'un effacement muet : un code qui disparaît
-  // pendant qu'on le recopie, sans prévenir, ferait recommencer sans comprendre.
-  const finit = () => Math.max(0, Math.round((demande.expireLe - Date.now()) / 1000))
-  resteDuCode.value = finit()
-  compteARebours = setInterval(() => {
-    resteDuCode.value = finit()
-    if (resteDuCode.value === 0) masquerLeCode()
-  }, 1000)
+  echeanceDuCode.value = new Date(demande.expireLe).toLocaleString('fr-FR', {
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 async function onCopierLeLien(): Promise<void> {
@@ -267,24 +349,26 @@ async function onSaisirLeCode(): Promise<void> {
     }
     codeSaisi.value = ''
     masquerLeCode()
+    await rafraichirLesPreuves()
   } finally {
     saisieEnCours.value = false
   }
 }
 
-/**
- * Ce que ce serveur-ci sait faire.
- *
- * Demandé une fois à l'ouverture de l'écran : ce qui n'est pas configuré ne doit
- * pas apparaître, et un bouton qui mène à une erreur est pire que pas de bouton.
- */
-const possibilites = ref<PossibilitesDuServeur>({ relaisCourriel: false, fournisseurs: [] })
-
 onMounted(() => {
   void possibilitesDuServeur().then((rendu) => {
     possibilites.value = rendu
   })
+  void rafraichirLesPreuves()
+  void chercherLePortrait()
 })
+
+// Le compte peut changer sous l'écran : on rejoint un compte par un code, on en
+// ouvre un autre. Le portrait suit, sans quoi on verrait celui du précédent.
+watch(
+  () => [identity.value?.id, identity.value?.email, identity.value?.image].join('|'),
+  () => void chercherLePortrait(),
+)
 
 /**
  * Les comptes tenus ailleurs.
@@ -405,51 +489,135 @@ onUnmounted(() => {
   <section class="account">
     <h2>Le compte</h2>
 
+    <!--
+      Qui l'on est, en haut et en un coup d'œil : c'est ce que montre n'importe
+      quelle application, et ce que cet écran noyait dans un paragraphe.
+    -->
+    <div class="identite">
+      <img
+        v-if="portrait !== '' && !portraitRefuse"
+        class="portrait"
+        :src="portrait"
+        alt=""
+        referrerpolicy="no-referrer"
+        @error="portraitRefuse = true"
+      />
+      <p v-else class="portrait initiale" aria-hidden="true">{{ initiale }}</p>
+      <div class="qui">
+        <p class="nom">{{ nomAffiche }}</p>
+        <p class="note">{{ compteDeLAppareil }}</p>
+      </div>
+    </div>
+
     <p class="note">
-      <strong>Le compte de cet appareil.</strong> {{ compteDeLAppareil }}
-    </p>
-    <p class="note">
-      Il sert à tout ce qui remonte sur le serveur depuis la voiture, dont le
-      navigateur refuse les téléchargements : traces, journal, relevés de mesure,
-      profils, moteurs et boîtes. Il n’y a rien à saisir — l’appareil s’annonce
-      tout seul.
+      Ce compte porte tout ce qui remonte du volant : traces, journal, relevés de
+      mesure, profils, moteurs et boîtes. Il n’y a jamais rien à saisir pour
+      rouler — l’appareil s’annonce tout seul.
     </p>
 
     <!--
-      L'appareil : le second axe. Il ne protège rien — c'est le compte qui porte
-      les droits —, il range l'écran selon ce qu'on fait là où l'on est.
+      S'approprier le compte. Le bloc disparaît une fois que c'est fait : une
+      application qui continue de proposer de créer un compte qu'on a déjà est
+      une application qui ne sait pas où elle en est.
     -->
-    <h3>Cet appareil</h3>
-    <p class="note">
-      Ce qui s’affiche dépend d’où l’on est : un banc de simulation n’a rien à
-      faire sur l’écran d’une voiture qui roule. On devine, et si c’est faux, on
-      corrige ici — le choix reste sur cet appareil.
-    </p>
-    <div class="choices">
-      <button
-        v-for="lequel in APPAREILS"
-        :key="lequel"
-        :aria-pressed="appareil === lequel"
-        @click="corrigerLAppareil(lequel)"
-      >
-        {{ NOMS_DAPPAREIL[lequel] }}
-      </button>
-    </div>
-    <p class="note">
-      <strong>{{ NOMS_DAPPAREIL[appareil] }}</strong> — {{ CE_QUE_LAPPAREIL_OUVRE[appareil] }}.
-      <template v-if="!appareilCorrige">Deviné d’après ce navigateur.</template>
-    </p>
+    <template v-if="!approprie && identity !== null">
+      <h3>Enregistrer ce compte</h3>
+
+      <template v-if="auVolant">
+        <p class="note">
+          <strong>Pas au volant.</strong> Cela demande un clavier, et parfois un
+          détour par un autre site : ce n’est pas un geste à faire en voiture.
+          Donnez-vous un code ci-dessous, ouvrez l’application sur un ordinateur
+          ou un téléphone, et enregistrez le compte là-bas. Ce sera le même — les
+          mêmes profils, les mêmes trajets.
+        </p>
+      </template>
+
+      <template v-else>
+        <p class="note">
+          Tant qu’il n’est pas enregistré, ce compte ne tient qu’à ce navigateur.
+          L’enregistrer lui donne un chemin de retour : on le rouvre ailleurs, et
+          on ne le perd plus en nettoyant un navigateur.
+        </p>
+
+        <div v-if="fournisseursARattacher.length > 0" class="choices">
+          <button
+            v-for="fournisseur in fournisseursARattacher"
+            :key="fournisseur.id"
+            :disabled="tiersEnCours"
+            @click="onTiers(fournisseur.id, 'rattacher')"
+          >
+            Continuer avec {{ fournisseur.nom }}
+          </button>
+        </div>
+        <p v-if="noteDuTiers" class="note">{{ noteDuTiers }}</p>
+        <p v-if="fournisseursARattacher.length > 0" class="ou">ou</p>
+
+        <div class="choices">
+          <input
+            v-model="adresse"
+            type="email"
+            inputmode="email"
+            autocomplete="username"
+            spellcheck="false"
+            placeholder="Adresse"
+          />
+          <input
+            v-model="motDePasse"
+            type="password"
+            autocomplete="new-password"
+            :placeholder="`Mot de passe (${MOT_DE_PASSE_MINIMUM} caractères au moins)`"
+          />
+          <button :disabled="!saisieComplete || enCours" @click="onRattacher()">
+            Enregistrer ce compte
+          </button>
+        </div>
+        <p class="note">
+          Rien ne bouge de ce que ce compte porte déjà : l’enregistrer lui ajoute
+          une adresse, il ne le remplace pas.
+        </p>
+        <p class="note">
+          Aucun courriel n’est envoyé, et l’adresse n’est pas vérifiée : il n’y a
+          pas de relais à configurer, et celui qui déploie chez lui n’en fournira
+          pas. Tant qu’il n’y en a pas, un mot de passe perdu l’est pour de bon.
+        </p>
+        <p v-if="noteDuCompte" class="note">{{ noteDuCompte }}</p>
+      </template>
+    </template>
+
+    <!--
+      Déjà enregistré : plus d'invitation, seulement ce qui reste à ajouter. Un
+      fournisseur de plus est une preuve de plus, jamais un remplacement.
+    -->
+    <template v-else-if="approprie && fournisseursARattacher.length > 0 && !auVolant">
+      <h3>Ajouter une façon de se reconnecter</h3>
+      <p class="note">
+        <strong>En plus, jamais à la place.</strong> Rattacher l’un de ces
+        comptes ajoute un chemin de retour ; l’adresse et le mot de passe restent
+        le filet, et ne sont pas remplacés.
+      </p>
+      <div class="choices">
+        <button
+          v-for="fournisseur in fournisseursARattacher"
+          :key="fournisseur.id"
+          :disabled="tiersEnCours"
+          @click="onTiers(fournisseur.id, 'rattacher')"
+        >
+          Rattacher {{ fournisseur.nom }}
+        </button>
+      </div>
+      <p v-if="noteDuTiers" class="note">{{ noteDuTiers }}</p>
+    </template>
 
     <!--
       Donner un code. Deux rendus du même jeton : le lien à scanner, et huit
       caractères à recopier sur un appareil sans caméra.
     -->
-    <h3>Relier un autre appareil</h3>
+    <h3>Ouvrir ce compte sur un autre appareil</h3>
     <p class="note">
-      Un téléphone qui scanne le code, ou un poste de travail où l’on recopie
-      huit caractères, ouvre le <strong>même compte</strong> : les mêmes profils,
-      les mêmes moteurs, les mêmes boîtes, les mêmes trajets. Aucune adresse,
-      aucun service tiers.
+      Un téléphone qui scanne le code, ou un ordinateur où l’on recopie huit
+      caractères, ouvre le <strong>même compte</strong> : les mêmes profils, les
+      mêmes moteurs, les mêmes boîtes, les mêmes trajets.
     </p>
     <div class="choices">
       <button :class="{ 'is-active': !!codeARelier }" @click="onDonnerUnCode()">
@@ -460,7 +628,7 @@ onUnmounted(() => {
     <div v-if="codeARelier" class="share">
       <p class="note warn">
         Qui voit ce code ouvre ce compte. Il ne sert qu’<strong>une fois</strong>,
-        et il expire dans <strong>{{ resteAffiche }}</strong>.
+        et il vaut jusqu’à <strong>{{ echeanceDuCode }}</strong>.
       </p>
       <p class="code-court">{{ codeARelier }}</p>
       <p class="note">
@@ -501,100 +669,52 @@ onUnmounted(() => {
     <p v-if="noteDeLiaison" class="note">{{ noteDeLiaison }}</p>
 
     <!--
-      Une adresse et un mot de passe : la voie qui survit à l'appareil. Les deux
-      boutons partagent les mêmes champs parce que la saisie est la même ; ce
-      qu'ils font, lui, n'a rien de commun, et les phrases le disent.
+      L'appareil : le second axe. Il ne protège rien — c'est le compte qui porte
+      les droits —, il range l'écran selon ce qu'on fait là où l'on est.
     -->
-    <h3>Une adresse et un mot de passe</h3>
+    <h3>Cet appareil</h3>
     <p class="note">
-      Le code ci-dessus relie les appareils qu’on a <strong>sous la main</strong>.
-      Une adresse sert au jour où l’on n’en a plus aucun : navigateur nettoyé,
-      téléphone perdu, voiture changée. C’est le moment de la saisir sur un vrai
-      clavier — pas au volant.
+      Ce qui s’affiche dépend d’où l’on est : un banc de simulation n’a rien à
+      faire sur l’écran d’une voiture qui roule. On devine, et si c’est faux, on
+      corrige ici — le choix reste sur cet appareil.
     </p>
-    <div class="choices">
-      <input
-        v-model="adresse"
-        type="email"
-        inputmode="email"
-        autocomplete="username"
-        spellcheck="false"
-        placeholder="Adresse"
-      />
-      <input
-        v-model="motDePasse"
-        type="password"
-        autocomplete="current-password"
-        :placeholder="`Mot de passe (${MOT_DE_PASSE_MINIMUM} caractères au moins)`"
-      />
-    </div>
     <div class="choices">
       <button
-        v-if="identity?.anonymous !== false"
-        :disabled="!saisieComplete || enCours"
-        @click="onRattacher()"
+        v-for="lequel in APPAREILS"
+        :key="lequel"
+        :aria-pressed="appareil === lequel"
+        @click="corrigerLAppareil(lequel)"
       >
-        Rattacher au compte d’ici
-      </button>
-      <button :disabled="!saisieComplete || enCours" @click="onSeConnecter()">
-        Ouvrir un compte qui existe
+        {{ NOMS_DAPPAREIL[lequel] }}
       </button>
     </div>
-    <p v-if="identity?.anonymous !== false" class="note">
-      <strong>Rattacher</strong> donne cette adresse au compte de cet appareil :
-      ses profils, ses moteurs et ses trajets ne bougent pas.
-      <strong>Ouvrir un compte qui existe</strong> fait l’inverse — cet appareil
-      rejoint un compte d’ailleurs, et celui qu’il porte aujourd’hui est effacé
-      s’il est vide, gardé sinon.
-    </p>
-    <p v-else class="note">
-      Ce compte a déjà son adresse. <strong>Ouvrir un compte qui existe</strong>
-      fait passer cet appareil sur un autre compte ; celui d’ici est gardé, et se
-      rouvre avec son adresse.
-    </p>
     <p class="note">
-      Aucun courriel n’est envoyé, et l’adresse n’est pas vérifiée : il n’y a pas
-      de relais à configurer, et celui qui déploie chez lui n’en fournira pas.
-      Tant qu’il n’y en a pas, un mot de passe perdu l’est pour de bon.
+      <strong>{{ NOMS_DAPPAREIL[appareil] }}</strong> — {{ CE_QUE_LAPPAREIL_OUVRE[appareil] }}.
+      <template v-if="!appareilCorrige">Deviné d’après ce navigateur.</template>
     </p>
-    <p v-if="noteDuCompte" class="note">{{ noteDuCompte }}</p>
+
+    <h3>Emporter ses données</h3>
+    <p class="note">
+      Un fichier avec tout ce que ce compte porte sur le serveur : profils,
+      moteurs, boîtes, trajets, journal, relevés de mesure et profil mesuré, dans
+      les mêmes dossiers qu’ici. Il se reverse tel quel dans une installation
+      neuve.
+    </p>
+    <div class="choices">
+      <a class="bouton" :href="lienDArchive" download>Emporter (fichier .zip)</a>
+    </div>
+    <p class="note">
+      <strong>Depuis un poste de travail.</strong> Le navigateur de la voiture
+      refuse les téléchargements — c’est ce qui a fait naître la remontée au
+      serveur —, et ce lien n’y donnera rien.
+    </p>
 
     <!--
-      Un compte tenu ailleurs. La section entière disparaît quand ce serveur n'en
-      a aucun de configuré, ce qui est le cas par défaut : un bouton qui mène à
-      une erreur est pire que pas de bouton.
+      Changer le mot de passe : seulement pour les comptes qui en ont un. Un
+      compte enregistré chez un fournisseur n'en a pas, et le lui demander était
+      un cul-de-sac.
     -->
-    <template v-if="possibilites.fournisseurs.length > 0">
-      <h3>Un compte tenu ailleurs</h3>
-      <p class="note">
-        <strong>En plus de l’adresse, jamais à la place.</strong> Perdre l’accès à
-        l’un de ces comptes ne doit pas faire perdre celui-ci, donc l’adresse et
-        le mot de passe restent le filet.
-      </p>
-      <div v-for="fournisseur in possibilites.fournisseurs" :key="fournisseur.id" class="choices">
-        <span class="fournisseur">{{ fournisseur.nom }}</span>
-        <button :disabled="tiersEnCours" @click="onTiers(fournisseur.id, 'rattacher')">
-          Rattacher au compte d’ici
-        </button>
-        <button :disabled="tiersEnCours" @click="onTiers(fournisseur.id, 'connecter')">
-          Ouvrir le compte qui l’a déjà
-        </button>
-      </div>
-      <p class="note">
-        <strong>Ouvrir</strong> ne marche qu’avec un compte auquel ce fournisseur
-        a <strong>déjà</strong> été rattaché : il n’en crée jamais de nouveau, et
-        c’est voulu — sinon ce bouton, pressé depuis la voiture, fabriquerait un
-        compte vide et laisserait les réglages derrière.
-      </p>
-      <p v-if="noteDuTiers" class="note">{{ noteDuTiers }}</p>
-    </template>
-
-    <!--
-      Tenir son compte. Trois gestes de nature différente, dans l'ordre où on les
-      fait : on change un mot de passe parce qu'on garde le compte, on emporte
-      parce qu'on va peut-être le quitter, on supprime parce qu'on le quitte.
-    -->
-    <template v-if="identity?.anonymous === false">
+    <template v-if="aUnMotDePasse">
       <h3>Changer le mot de passe</h3>
       <div class="choices">
         <input
@@ -624,22 +744,6 @@ onUnmounted(() => {
       </p>
     </template>
 
-    <h3>Emporter ses données</h3>
-    <p class="note">
-      Un fichier avec tout ce que ce compte porte sur le serveur : profils,
-      moteurs, boîtes, trajets, journal, relevés de mesure et profil mesuré, dans
-      les mêmes dossiers qu’ici. Il se reverse tel quel dans une installation
-      neuve.
-    </p>
-    <div class="choices">
-      <a class="bouton" :href="lienDArchive" download>Emporter (fichier .zip)</a>
-    </div>
-    <p class="note">
-      <strong>Depuis un poste de travail.</strong> Le navigateur de la voiture
-      refuse les téléchargements — c’est ce qui a fait naître la remontée au
-      serveur —, et ce lien n’y donnera rien.
-    </p>
-
     <h3>Supprimer ce compte</h3>
     <p class="note">
       Tout part avec lui : les profils, les moteurs, les boîtes, les trajets, le
@@ -649,7 +753,7 @@ onUnmounted(() => {
     </p>
     <div class="choices">
       <input
-        v-if="identity?.anonymous === false"
+        v-if="aUnMotDePasse"
         v-model="motDePasseDeSuppression"
         type="password"
         autocomplete="current-password"
@@ -665,6 +769,56 @@ onUnmounted(() => {
     </p>
 
     <p v-if="noteDeTenue" class="note">{{ noteDeTenue }}</p>
+
+    <!--
+      Ouvrir un autre compte ici : le geste rare, et le seul qui fasse perdre
+      quelque chose. Replié, donc — visible pour qui le cherche, invisible pour
+      qui ne le cherche pas.
+    -->
+    <details class="repli">
+      <summary>Ouvrir un autre compte sur cet appareil</summary>
+      <p class="note">
+        Cet appareil quittera le compte qu’il porte aujourd’hui pour en ouvrir un
+        autre. Le compte quitté est effacé s’il est vide, gardé sinon — et il ne
+        se rouvre que s’il a été enregistré.
+      </p>
+      <div class="choices">
+        <input
+          v-model="adresse"
+          type="email"
+          inputmode="email"
+          autocomplete="username"
+          spellcheck="false"
+          placeholder="Adresse"
+        />
+        <input
+          v-model="motDePasse"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Mot de passe"
+        />
+        <button :disabled="!saisieComplete || enCours" @click="onSeConnecter()">
+          Ouvrir ce compte ici
+        </button>
+      </div>
+      <div v-if="possibilites.fournisseurs.length > 0" class="choices">
+        <button
+          v-for="fournisseur in possibilites.fournisseurs"
+          :key="fournisseur.id"
+          :disabled="tiersEnCours"
+          @click="onTiers(fournisseur.id, 'connecter')"
+        >
+          Ouvrir le compte tenu par {{ fournisseur.nom }}
+        </button>
+      </div>
+      <p class="note">
+        Un compte tenu ailleurs n’ouvre que ce à quoi il a <strong>déjà</strong>
+        été rattaché : il ne crée jamais de compte neuf, sans quoi ce bouton,
+        pressé depuis la voiture, fabriquerait un compte vide et laisserait les
+        réglages derrière.
+      </p>
+      <p v-if="noteDuCompte" class="note">{{ noteDuCompte }}</p>
+    </details>
   </section>
 </template>
 
@@ -700,18 +854,62 @@ h3 {
   color: var(--warn, #e06060);
 }
 
+/* Qui l'on est : un portrait et un nom, comme partout ailleurs. */
+.identite {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0;
+}
+
+.portrait {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.portrait.initiale {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+  opacity: 0.8;
+}
+
+.qui {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.nom {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* La séparation entre les deux façons de s'enregistrer. */
+.ou {
+  margin: 0.25rem 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+
 .choices {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
   margin: 0.25rem 0;
-}
-
-/* Une largeur fixe pour que les deux boutons s'alignent d'une ligne à l'autre. */
-.fournisseur {
-  min-width: 5rem;
-  font-weight: 600;
 }
 
 button {
@@ -740,6 +938,17 @@ input {
   border: 1px solid currentColor;
   border-radius: 4px;
   color: inherit;
+}
+
+/* Le geste rare, rangé : visible pour qui le cherche, discret pour les autres. */
+.repli {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.repli summary {
+  cursor: pointer;
+  color: var(--accent, #e0a020);
 }
 
 .share {

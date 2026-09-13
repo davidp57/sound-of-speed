@@ -7,7 +7,7 @@
  * fois — pourquoi il n'y a pas de son, pourquoi la vitesse reste à zéro — plutôt
  * que de décrire l'interface écran par écran.
  */
-defineEmits<{ close: [] }>()
+defineEmits<{ close: []; compte: [] }>()
 
 /**
  * L'adresse du code source, et la version servie à cette page.
@@ -158,6 +158,24 @@ const appVersion = __APP_VERSION__
         enregistré, il faut déposer sa propre banque d'échantillons.
       </p>
 
+      <h2>Ce compte est le vôtre</h2>
+      <p>
+        Un compte s'est créé tout seul au premier démarrage : c'est lui qui porte
+        vos profils, vos moteurs et vos trajets, et c'est sous lui que la voiture
+        dépose ce qu'elle enregistre. Il n'y a rien eu à saisir, et il n'y a rien
+        à saisir pour rouler.
+      </p>
+      <p>
+        Tant qu'il n'est pas enregistré, il ne tient qu'à ce navigateur.
+        L'enregistrer — avec une adresse, ou un compte que vous avez déjà
+        ailleurs — lui donne un chemin de retour : on le rouvre sur un autre
+        appareil, et on ne le perd plus. Cela se fait dans l'écran
+        <b>Compte</b>, et depuis un ordinateur plutôt qu'au volant.
+      </p>
+      <p>
+        <button class="lien" @click="$emit('compte')">Aller à l'écran Compte</button>
+      </p>
+
       <p class="foot">
         Vous pouvez revenir ici à tout moment par le bouton <b>?</b>, en haut.
       </p>
@@ -233,6 +251,17 @@ code {
   color: var(--muted);
   font-size: 0.9rem;
   margin-left: 0.6rem;
+}
+
+/* Un bouton qui se comporte comme un lien : il mène ailleurs, il n'agit pas. */
+.lien {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .start {
