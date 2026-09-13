@@ -1117,6 +1117,37 @@ jour, sur un volume qui en a plus de deux mille de libres. Il se justifie par
 l'archive qu'il met chez l'utilisateur, et par le jour où les comptes ne seront
 plus un seul.
 
+### L'identité, montée et pas encore utilisée
+
+La bibliothèque qui tiendra les comptes — [Better Auth](https://better-auth.com/),
+sous licence MIT — est **montée sur le serveur**, branchée sur la base qui existe,
+et répond sous `/api/auth/`. Rien n'en dépend encore : la voiture dépose comme
+avant, le relecteur lit comme avant, et le mot de passe partagé reste le seul
+contrôle d'accès. C'est le premier ticket du lot COMPTES, et il ne fait qu'une
+chose : rendre une session qui se crée et se relit.
+
+**Elle se pose sur la table `accounts`**, celle qui existe déjà et à qui pendaient déjà
+six autres tables. L'inverse — adopter la table qu'elle apporte — aurait obligé
+à recréer chacune de ces tables, SQLite ne sachant pas déplacer une clé étrangère.
+Trois tables s'ajoutent, préfixées `auth_`, et aucune ne s'appelle « compte » :
+ce que la bibliothèque nomme *account* est un moyen de prouver qui on est, pas
+une personne.
+
+**Le paquet que charge la voiture n'a pas bougé d'un octet** : 445 576 octets
+avant, 445 576 après. C'est attendu, la bibliothèque n'existant que côté serveur ;
+le chiffre est relevé parce qu'il sera le point de comparaison le jour où un écran
+de connexion entrera dans l'application. Le conteneur, lui, grossit — elle y est
+installée comme dépendance de production.
+
+| Variable | Défaut | Ce qu'elle règle |
+|---|---|---|
+| `SPEED_AUTH_SECRET` | tiré au sort | De quoi signer les témoins de connexion. Sans elle, le premier démarrage en écrit un dans `identite.secret`, à côté du fichier de base, et s'en sert ensuite. |
+| `SPEED_URL` | déduite de la requête | L'adresse publique du serveur. Sans elle, la bibliothèque la déduit de chaque requête et le dit au démarrage ; c'est sans conséquence tant qu'aucun fournisseur d'identité tiers n'a de retour à faire. |
+
+**Celui qui déploie chez lui n'a donc rien à fournir.** Le secret se crée tout
+seul, dans le volume de données : il survit au remplacement du conteneur, ce qui
+est la condition pour qu'une connexion survive à une mise à jour.
+
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
@@ -2977,6 +3008,9 @@ déployez une version modifiée, ce lien doit mener à votre code, pas à celui-
 |---|---|---|
 | Les réponses d'échappement de [`public/impulse/`](public/impulse/LISEZMOI.md) | engine-sim, © 2022 AngeTheGreat | MIT |
 | Les dépendances de production — Vue, `qrcode-generator`, Leaflet | leurs auteurs | MIT |
+| Celles du serveur — Hono, libSQL, Better Auth | leurs auteurs | MIT |
+| Drizzle, l'ORM du serveur | Drizzle Team | Apache-2.0 |
+| `bcryptjs`, pour le fichier de mots de passe | Daniel Wirtz | BSD-3-Clause |
 
 La [banque de démonstration](public/audio/demo/LISEZMOI.md), elle, est produite
 par ce dépôt et suit sa licence.

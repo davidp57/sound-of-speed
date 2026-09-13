@@ -36,11 +36,140 @@ export const accounts = sqliteTable(
     id: text('id').primaryKey(),
     /** Ce qui s'affiche. Jamais vide, même sur un compte anonyme. */
     name: text('name').notNull(),
-    /** Rattachée plus tard, ou jamais : celui qui déploie chez lui n'en donne pas. */
+    /**
+     * Rattachée plus tard, ou jamais : celui qui déploie chez lui n'en donne pas.
+     *
+     * La bibliothèque d'identité la déclare obligatoire de son côté ; la colonne,
+     * elle, reste facultative — et SQLite accepte autant de valeurs absentes
+     * qu'on veut dans un index unique. C'est ce qui laisse coexister les comptes
+     * anonymes sans lever la garantie d'unicité sur ceux qui en ont une.
+     */
     email: text('email'),
-    createdAt: integer('created_at').notNull().default(maintenant),
+    /**
+     * L'adresse a-t-elle été confirmée ?
+     *
+     * Rien ne l'envoie aujourd'hui, et la valeur reste fausse. La colonne existe
+     * parce que la bibliothèque d'identité la lit et l'écrit à chaque passage.
+     */
+    emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
+    /** Une image de compte, quand un fournisseur d'identité en donne une. */
+    image: text('image'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(maintenant),
+    /**
+     * La dernière écriture, telle que la bibliothèque d'identité la pose.
+     *
+     * Facultative, et ce n'est pas un oubli : SQLite refuse d'ajouter à une table
+     * déjà peuplée une colonne obligatoire dont le défaut se calcule. Les lignes
+     * d'avant la reçoivent par un rattrapage dans la migration, et tout ce qui
+     * s'écrit ensuite la porte.
+     */
+    updatedAt: integer('updated_at', { mode: 'timestamp' }),
   },
   (table) => [uniqueIndex('accounts_email').on(table.email)],
+)
+
+/**
+ * Les sessions d'identité — **pas** les sessions de conduite.
+ *
+ * Deux mots identiques pour deux choses sans rapport : une session de conduite
+ * est un trajet, recollé depuis les tranches de `deposits` ; une session
+ * d'identité est ce qui dit qui tient le volant. Le préfixe `auth_` marque les
+ * secondes, et `CONTEXT.md` dit lequel est lequel.
+ *
+ * La table appartient à la bibliothèque d'identité : elle seule y écrit.
+ */
+export const authSessions = sqliteTable(
+  'auth_sessions',
+  {
+    id: text('id').primaryKey(),
+    /**
+     * Le compte à qui cette session appartient.
+     *
+     * La bibliothèque appelle ce champ `userId` ; il est renommé à la
+     * configuration, pour que toutes les tables d'ici désignent un compte de la
+     * même façon.
+     */
+    accountId: text('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    /** Ce que porte le témoin de connexion. */
+    token: text('token').notNull(),
+    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(maintenant),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(maintenant),
+  },
+  (table) => [
+    uniqueIndex('auth_sessions_token').on(table.token),
+    index('auth_sessions_account').on(table.accountId),
+  ],
+)
+
+/**
+ * Le lien entre un compte et une façon de prouver qui on est.
+ *
+ * **Ce n'est pas un compte.** La bibliothèque d'identité appelle cela un
+ * « account », et le mot désigne chez elle le fournisseur d'identité — un mot de
+ * passe rangé ici, ou un compte tenu ailleurs. Garder ce nom à côté de notre
+ * table `accounts` garantirait la confusion, donc il ne le garde pas.
+ *
+ * Un compte peut en porter plusieurs : une adresse avec mot de passe, et un
+ * fournisseur tiers, mènent au même compte.
+ */
+export const authIdentities = sqliteTable(
+  'auth_identities',
+  {
+    id: text('id').primaryKey(),
+    /** Le compte d'ici. La bibliothèque appelle ce champ `userId`. */
+    accountId: text('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    /** Qui prouve : `credential` pour un mot de passe d'ici, sinon le tiers. */
+    providerId: text('provider_id').notNull(),
+    /**
+     * L'identifiant chez ce fournisseur.
+     *
+     * La bibliothèque appelle ce champ `accountId`, ce qui désigne exactement
+     * l'inverse de ce que `account_id` désigne partout ailleurs ici. Il est donc
+     * renommé à la configuration, et c'est le seul renommage qui compte vraiment.
+     */
+    providerAccountId: text('provider_account_id').notNull(),
+    accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    idToken: text('id_token'),
+    accessTokenExpiresAt: integer('access_token_expires_at', { mode: 'timestamp' }),
+    refreshTokenExpiresAt: integer('refresh_token_expires_at', { mode: 'timestamp' }),
+    scope: text('scope'),
+    /** L'empreinte du mot de passe, quand c'en est un. Jamais le mot de passe. */
+    password: text('password'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(maintenant),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(maintenant),
+  },
+  (table) => [
+    index('auth_identities_account').on(table.accountId),
+    uniqueIndex('auth_identities_provider').on(table.providerId, table.providerAccountId),
+  ],
+)
+
+/**
+ * Ce qui attend d'être confirmé : un lien de vérification, un code à usage unique.
+ *
+ * Rien ne s'en sert aujourd'hui — aucun courriel ne part. La table existe parce
+ * que la bibliothèque d'identité la veut, et parce qu'une table absente se
+ * découvre au premier appel qui en a besoin, en production.
+ */
+export const authVerifications = sqliteTable(
+  'auth_verifications',
+  {
+    id: text('id').primaryKey(),
+    identifier: text('identifier').notNull(),
+    value: text('value').notNull(),
+    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(maintenant),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(maintenant),
+  },
+  (table) => [index('auth_verifications_identifier').on(table.identifier)],
 )
 
 /**

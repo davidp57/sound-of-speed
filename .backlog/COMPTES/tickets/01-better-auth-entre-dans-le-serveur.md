@@ -1,6 +1,6 @@
 # 01 — Better Auth entre dans le serveur, sans rien casser
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 13 septembre 2026
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -55,13 +55,72 @@ lire, avant que quoi que ce soit en dépende.
 
 ## Critères d'acceptation
 
-- [ ] Le serveur démarre avec la bibliothèque montée, et la base se migre par le
+- [x] Le serveur démarre avec la bibliothèque montée, et la base se migre par le
       chemin habituel
-- [ ] Une session se crée et se relit, vérifiée par un test
-- [ ] La bibliothèque est accrochée à `accounts` : aucune seconde table
+- [x] Une session se crée et se relit, vérifiée par un test
+- [x] La bibliothèque est accrochée à `accounts` : aucune seconde table
       d'identité, et les six clés étrangères existantes sont intactes
-- [ ] Un compte sans adresse est accepté
-- [ ] Les tables de la bibliothèque portent des noms qui ne se confondent pas
+- [x] Un compte sans adresse est accepté
+- [x] Les tables de la bibliothèque portent des noms qui ne se confondent pas
       avec le nôtre, et `CONTEXT.md` le dit
-- [ ] Le jeu `accord` passe sans modification, dans le conteneur comme hors de lui
-- [ ] Le poids ajouté au paquet du client est mesuré et noté
+- [x] Le jeu `accord` passe sans modification, dans le conteneur comme hors de lui
+- [x] Le poids ajouté au paquet du client est mesuré et noté
+
+## Ce que l'essai a donné
+
+**La promesse tient : la bibliothèque se pose sur `accounts`.** Better Auth 1.7.4,
+adaptateur Drizzle en `provider: "sqlite"`. La migration 0006 n'a recréé aucune
+table — trois `CREATE TABLE` pour les siennes, trois `ALTER TABLE ADD COLUMN` sur
+`accounts`. `pragma foreign_key_check` rend vide et les huit tables qui désignent
+un compte sont vérifiées par un test.
+
+**Ce qu'il a fallu ajouter à `accounts`** : `email_verified`, `image`,
+`updated_at`. Les colonnes qui existaient déjà portaient les bons noms, il n'y a
+donc rien eu à renommer sur cette table — seulement sur les siennes.
+
+**Un accroc, et il est résolu dans la migration** : SQLite refuse d'ajouter à une
+table peuplée une colonne obligatoire dont le défaut se calcule. `updated_at`
+entre donc facultative, avec un `UPDATE` de rattrapage écrit à la main dans le
+fichier de migration, et le semis du compte unique la pose désormais lui-même.
+
+**Trois noms**, pour que les deux sens de « compte » et de « session » ne se
+croisent pas : `auth_sessions`, `auth_identities`, `auth_verifications`. Le
+renommage qui compte est celui du champ que la bibliothèque appelle `accountId`
+— l'identifiant **chez le fournisseur**, soit l'inverse exact de ce que
+`account_id` désigne partout ailleurs ici : il devient `provider_account_id`.
+
+**Un compte sans adresse est accepté.** Le compte semé au démarrage n'en a pas ;
+la bibliothèque le lit et lui ouvre une session. La colonne reste facultative, et
+SQLite accepte autant de valeurs absentes qu'on veut dans un index unique.
+
+**Le jeu `accord` passe en entier, sans modification** : 45 passés, 0 échoué,
+0 sauté, contre le serveur assemblé hors conteneur.
+
+### Le poids, mesuré
+
+**Zéro octet ajouté au paquet du client** — la bibliothèque n'existe que côté
+serveur. Trois des quatre ressources sortent du build **bit pour bit
+identiques**, empreinte comprise ; la quatrième n'a changé que parce qu'elle
+embarque le numéro de version, et sa taille est la même. Le relevé, qui servira
+de point de comparaison le jour où un écran de connexion entrera dans
+l'application :
+
+| Ce que la voiture charge | Brut | Comprimé |
+|---|---|---|
+| `index.html` | 1 184 o | 0,52 ko |
+| `assets/index-*.js` | 299 763 o | 99,41 ko |
+| `assets/style-*.js` | 119 566 o | 43,95 ko |
+| `assets/index-*.css` | 23 018 o | 4,43 ko |
+| `assets/style-*.css` | 2 045 o | 0,84 ko |
+| **Total** | **445 576 o** | **149,15 ko** |
+
+Le relecteur n'y est pas : la voiture ne le charge pas. Le conteneur, lui,
+grossit — la bibliothèque est une dépendance de production installée dans
+l'image — et ce n'est pas ce que ce chiffre mesure.
+
+### Ce qui reste à surveiller
+
+**L'avertissement au démarrage** : sans `SPEED_URL`, la bibliothèque signale
+qu'elle déduira son adresse de chaque requête. C'est sans conséquence tant
+qu'aucun fournisseur d'identité tiers n'a de retour à faire, et la variable est
+documentée. Le jour où l'on branche un tiers, ce n'est plus un avertissement.

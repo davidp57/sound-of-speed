@@ -119,5 +119,13 @@ function adresseDe(fichier: string): string {
  * orphelines à rattacher après coup.
  */
 async function semerLeCompteUnique(base: Base, nom: string): Promise<void> {
-  await base.insert(accounts).values({ id: SOLO_ACCOUNT_ID, name: nom }).onConflictDoNothing()
+  await base
+    .insert(accounts)
+    // La date de dernière écriture est posée ici, alors que la date de création
+    // vient du défaut de la colonne : cette colonne-là n'en a pas, SQLite ne
+    // sachant pas ajouter à une table peuplée une colonne dont le défaut se
+    // calcule. Sans cette ligne, le compte semé serait le seul à ne pas la
+    // porter.
+    .values({ id: SOLO_ACCOUNT_ID, name: nom, updatedAt: new Date() })
+    .onConflictDoNothing()
 }

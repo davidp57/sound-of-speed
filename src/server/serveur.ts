@@ -26,6 +26,7 @@ import {
   listerSessions,
 } from './sessions'
 import { ecrireEntite, estUnRegistre, lireEntite, listerEntites } from './entites'
+import { CHEMIN_IDENTITE, type Identite } from './identite'
 import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
@@ -37,6 +38,13 @@ export interface OptionsDuServeur {
   base?: Base
   /** Les comptes qui ouvrent les dossiers protégés. */
   comptes?: Comptes
+  /**
+   * L'identité, quand elle est montée.
+   *
+   * Rien n'en dépend encore : elle répond sous son chemin, et tout le reste du
+   * serveur se comporte comme avant qu'elle existe.
+   */
+  identite?: Identite
   /** À qui appartient ce qu'on range, tant que l'identité n'est pas ouverte. */
   compte?: string
   /** Combien d'épingles un compte peut poser. Réglable par l'environnement. */
@@ -67,6 +75,7 @@ const CACHE_RESSOURCES = 'public, immutable, max-age=31536000'
  * Le cas est connu et contourné côté client, qui classe la réponse « illisible ».
  */
 const DONNEES = [
+  '/api/',
   '/profiles/',
   '/engines/',
   '/gearboxes/',
@@ -80,6 +89,18 @@ const DONNEES = [
 
 export function creerServeur(options: OptionsDuServeur): Hono {
   const app = new Hono()
+
+  // --- L'identité -----------------------------------------------------------
+  //
+  // Déclarée en premier, parce que Hono rend la première route qui correspond et
+  // que le repli de l'application, lui, correspond à tout.
+  //
+  // La bibliothèque parle en `Request` et `Response` standard : il n'y a rien à
+  // traduire, et c'est pour cette raison que Hono a été choisi.
+  if (options.identite !== undefined) {
+    const identite = options.identite
+    app.on(['GET', 'POST'], `${CHEMIN_IDENTITE}/*`, (c) => identite.handler(c.req.raw))
+  }
 
   // --- La bibliothèque de profils ------------------------------------------
   //

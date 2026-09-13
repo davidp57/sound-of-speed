@@ -449,6 +449,35 @@ partiraient, et pour chacun de ceux qui restent, la raison qui le retient. Le
 seul moyen de juger un délai, puisqu'un seuil trop court efface des données sans
 que rien ne rougisse.
 
+## L'identité
+
+Le vocabulaire de la bibliothèque qui tient les comptes recoupe celui du projet
+sur deux mots, et ils ne désignent pas la même chose. Les tables de la base
+portent donc un préfixe `auth_`, et les correspondances sont réglées une fois
+pour toutes dans `src/server/identite.ts`.
+
+**Compte** (_account_, `accounts`) :
+La personne. Il se crée tout seul au premier lancement et reste **anonyme** tant
+que ça suffit ; l'adresse se rattache le jour où elle sert. C'est lui que
+désignent les `account_id` de toutes les autres tables, et lui que la
+bibliothèque d'identité appelle un *user*.
+
+**Identité** (_auth identity_, `auth_identities`) :
+Une façon de prouver qu'on est le titulaire d'un compte : un mot de passe rangé
+ici, ou un compte tenu chez un tiers. Un compte peut en porter plusieurs.
+_Attention_ : c'est ce que la bibliothèque d'identité appelle un *account*, et
+c'est exactement pour éviter cette collision que la table ne porte pas ce nom.
+
+**Session d'identité** (_auth session_, `auth_sessions`) :
+Ce qui dit qui tient le volant, et jusqu'à quand.
+_Attention_ : à ne pas confondre avec une **session de conduite**, qui est un
+trajet — voir la section « La rétention ». Les deux mots n'ont aucun rapport, et
+seul le préfixe les distingue dans la base.
+
+**Droit** (_right_, `rights`) :
+Ce qu'un compte ouvre, et jusqu'à quand. Un droit sans échéance ne se périme pas,
+et c'est ce que tout le monde porte aujourd'hui : rien n'est encaissé.
+
 ## Profil effectif
 
 Ce que le moteur, la boîte, le conditionnement et le mixage emploient réellement :
