@@ -519,6 +519,15 @@ seul le préfixe les distingue dans la base.
 Ce qu'un compte ouvre, et jusqu'à quand. Un droit sans échéance ne se périme pas,
 et c'est ce que tout le monde porte aujourd'hui : rien n'est encaissé.
 
+**Rôle** (_role_) :
+Ce qu'un droit ouvre : `conduite`, `atelier` ou `synthese`. Ils se cumulent — un
+compte en porte zéro à trois — et le serveur refuse ce qu'ils n'ouvrent pas.
+_Attention_ : `conduite` et non `user`, la bibliothèque d'identité appelant déjà
+`user` ce que ce dépôt appelle un **compte**.
+_À ne pas confondre_ avec l'**appareil** — voiture, téléphone, poste de travail —,
+qui est l'autre axe : il dit ce qui a un sens là où l'on est, ne protège rien, et
+reste local.
+
 ## Profil effectif
 
 Ce que le moteur, la boîte, le conditionnement et le mixage emploient réellement :

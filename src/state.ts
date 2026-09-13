@@ -87,6 +87,12 @@ import {
   type Suppression,
 } from './core/identity/compte'
 import { lireLienDansUrl, type CodeDeLiaison } from './core/identity/lien'
+import {
+  prochaineEcheance,
+  rolesOuverts as calculerLesRoles,
+  type Role,
+} from './core/identity/roles'
+import { lireLaCopie, oublierLaCopie, releverLesRoles } from './core/identity/roles-client'
 import { loadIdentity, saveIdentity, type LocalIdentity } from './core/identity/store'
 import { UploadQueue, type QueuedUpload } from './core/upload/queue'
 import { loadQueue, saveQueue } from './core/upload/store'
@@ -1662,8 +1668,10 @@ export async function rejoindreUnCompte(code: CodeDeLiaison): Promise<void> {
   identity.value = faite.identity
   identityState.value = 'gardee'
   saveDejaVu({})
+  // Le compte a changé : ce qu'on avait retenu de ses rôles parlait de l'autre.
+  oublierLesRoles()
   liaison.value = { etat: 'reliee', ancien: faite.ancien }
-  await rapatrier()
+  await Promise.all([rapatrier(), releverLesRolesDuCompte()])
 }
 
 /**
@@ -1706,8 +1714,9 @@ export async function seConnecterAUnCompte(
   identity.value = rendu.identity
   identityState.value = 'gardee'
   saveDejaVu({})
+  oublierLesRoles()
   liaison.value = { etat: 'reliee', ancien: rendu.ancien }
-  await rapatrier()
+  await Promise.all([rapatrier(), releverLesRolesDuCompte()])
   return rendu
 }
 
@@ -1728,7 +1737,83 @@ export async function supprimerLeCompte(motDePasse = ''): Promise<Suppression> {
   liaison.value = null
   // Le registre de ce qu'on a déjà vu parlait d'un compte qui n'existe plus.
   saveDejaVu({})
+  oublierLesRoles()
   return rendu
+}
+
+// --- Ce que ce compte ouvre -------------------------------------------------
+//
+// **Les rôles cachent, ils ne protègent pas.** Un navigateur affiche ce qu'il
+// veut ; ce qui refuse est le serveur. Ici, on évite seulement de proposer un
+// écran qui répondrait non — et, hors réseau, on s'en tient à ce qu'on avait.
+
+/** Ce que le serveur a accordé au dernier relevé, ou rien si on n'a jamais pu. */
+const copieDesRoles = ref(typeof window === 'undefined' ? null : lireLaCopie())
+
+/**
+ * L'instant auquel les rôles sont jugés.
+ *
+ * Il n'avance qu'aux échéances, et c'est ce qui referme un droit **sans
+ * redémarrage** : la copie ne change pas, l'heure si.
+ */
+const instantDesRoles = ref(Date.now())
+
+/** Les rôles ouverts à cet instant. Tout est ouvert tant qu'on ne sait rien. */
+export const roles = computed<Role[]>(() =>
+  calculerLesRoles(copieDesRoles.value, instantDesRoles.value),
+)
+
+/** Ce que l'écran demande : cet onglet, ce bouton, ce panneau. */
+export function ouvertPar(role: Role): boolean {
+  return roles.value.includes(role)
+}
+
+let reveilDesRoles: ReturnType<typeof setTimeout> | null = null
+
+/**
+ * Se réveiller quand le prochain droit se referme, et pas avant.
+ *
+ * Scruter l'heure à la seconde pour un événement qui arrive une fois par an
+ * serait payer cher un cas rare ; et ne pas se réveiller du tout laisserait un
+ * écran ouvert jusqu'au prochain démarrage, ce que le lot interdit.
+ */
+function programmerLaFermeture(): void {
+  if (reveilDesRoles !== null) clearTimeout(reveilDesRoles)
+  reveilDesRoles = null
+
+  const quand = prochaineEcheance(copieDesRoles.value, Date.now())
+  if (quand === null) return
+
+  // Une seconde après l'échéance, pour ne pas se réveiller juste avant. Et
+  // jamais au-delà de ce qu'un minuteur sait attendre — il déborde à vingt-quatre
+  // jours, et un débordement se déclenche aussitôt : on se rendort alors.
+  const delai = Math.min(Math.max(quand - Date.now() + 1000, 0), 2 ** 31 - 1)
+  reveilDesRoles = setTimeout(() => {
+    instantDesRoles.value = Date.now()
+    programmerLaFermeture()
+  }, delai)
+}
+
+/**
+ * Redemande au serveur ce que ce compte ouvre.
+ *
+ * Sans réseau, on garde ce qu'on avait : c'est la situation ordinaire, et ce
+ * n'est pas une panne.
+ */
+async function releverLesRolesDuCompte(): Promise<void> {
+  const copie = await releverLesRoles()
+  if (copie === null) return
+  copieDesRoles.value = copie
+  instantDesRoles.value = Date.now()
+  programmerLaFermeture()
+}
+
+/** Un autre compte n'a pas les mêmes rôles : ce qu'on avait retenu ne vaut plus. */
+function oublierLesRoles(): void {
+  oublierLaCopie()
+  copieDesRoles.value = null
+  instantDesRoles.value = Date.now()
+  programmerLaFermeture()
 }
 
 if (typeof window !== 'undefined') {
@@ -1736,8 +1821,14 @@ if (typeof window !== 'undefined') {
   // navigateur serait une négligence gratuite.
   oublierLeCompteDeDepot()
   // Sans `await`, et ce n'est pas une négligence : voir `startIdentity`.
+  programmerLaFermeture()
   startIdentity({}, (rendu) => {
     prendreIdentite(rendu)
+    // Les rôles après le compte, et jamais avant : sans compte, le serveur n'a
+    // rien à en dire.
+    if (rendu?.state !== 'sans-reseau' && rendu?.state !== 'refusee') {
+      void releverLesRolesDuCompte()
+    }
     // La liaison vient après, et non à la place : l'appareil qui scanne s'est
     // d'abord créé son compte anonyme, comme tout appareil neuf, et c'est ce
     // compte-là que le serveur efface ou garde selon ce qu'il porte.
@@ -1747,6 +1838,7 @@ if (typeof window !== 'undefined') {
   // réseau, comme la file d'envoi part au même moment.
   window.addEventListener('online', () => {
     if (identity.value === null) startIdentity({}, prendreIdentite)
+    else void releverLesRolesDuCompte()
   })
 }
 

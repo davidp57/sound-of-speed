@@ -1268,6 +1268,39 @@ proxy inversé, l'adresse publique ne se devine pas** depuis le conteneur, qui n
 voit qu'un port local. Le jour où un fournisseur d'identité tiers doit revenir
 sur le site, c'est cette adresse-là qu'il lui faut.
 
+### Ce qu'un compte ouvre
+
+Un compte porte des **rôles**, et un rôle ouvre des écrans. Ils se cumulent : un
+compte en porte zéro à trois.
+
+| Rôle | Ce qu'il ouvre |
+|---|---|
+| `conduite` | conduire, la télémétrie, les réglages, l'étalonnage, le banc |
+| `atelier` | fabriquer des moteurs et des boîtes — déposer sur `/engines/` et `/gearboxes/` |
+| `synthese` | régler un timbre |
+
+**Tout le monde a tout, et rien n'est encaissé.** Ce qui est offert à n'importe
+quel compte est une valeur, pas une règle :
+
+| Variable | Défaut | Ce qu'elle règle |
+|---|---|---|
+| `SPEED_ROLES_OFFERTS` | les trois | Les rôles accordés à tout compte, séparés par des virgules. Vide, aucun : plus rien ne s'ouvre que l'écran du compte, ce qui est la façon de vérifier la mécanique. |
+
+Ce qu'un compte porte **en propre** vit dans la table des droits, avec une
+échéance facultative : un droit sans échéance ne se périme pas, un droit daté se
+referme tout seul à l'heure dite, sans que la page soit rechargée.
+
+**L'écran du compte ne se referme jamais**, quels que soient les rôles : c'est là
+qu'on se relie, qu'on se connecte et qu'on reprend un compte perdu. Emporter ses
+données n'exige aucun rôle non plus — ce sont ses données, pas une fonction.
+
+**Hors réseau, les rôles sont ceux qu'on avait.** L'application en garde une copie
+dans le navigateur, qui vaut trente jours ; passé ce délai elle retombe sur ce qui
+est offert à tout le monde. Un appareil qui n'a jamais rien pu relever n'interdit
+rien : ce qui protège est le refus du serveur, pas l'écran. Cette copie est
+contournable par qui veut — le code est public — et c'est assumé : l'objectif est
+de ne pas perdre d'argent, pas d'en gagner.
+
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
@@ -3041,7 +3074,7 @@ suit pas.
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
-| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 8 tickets sur 12** |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 9 tickets sur 13** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
