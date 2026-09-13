@@ -1,6 +1,6 @@
 # 06 — Épingler une session, dans une limite annoncée
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** [05 — Le dépôt sait s'il a été analysé, et de quelle exemption il relève](05-l-etat-d-analyse-et-les-deux-exemptions.md),
 qui pose les deux natures d'exemption.
@@ -35,9 +35,10 @@ serveur, là où le reste se règle déjà.
 
 ## Critères d'acceptation
 
-- [ ] On épingle et on désépingle une session depuis le relecteur
-- [ ] Une session épinglée le reste après un nouveau dépôt sous le même nom
-- [ ] La borne refuse l'épingle au-delà, avec un message qui dit quoi faire
-- [ ] Les sessions archivées ne comptent pas dans la borne
-- [ ] Le compteur affiche l'état — épinglées sur borne
-- [ ] La borne se règle par l'environnement, et vaut 20 par défaut
+- [x] On épingle et on désépingle une session depuis le relecteur
+- [x] Une session épinglée le reste après un nouveau dépôt sous le même nom
+- [x] La borne refuse l'épingle au-delà, avec un message qui dit quoi faire
+- [x] Les sessions archivées ne comptent pas dans la borne
+- [x] Le compteur affiche l'état — épinglées sur borne
+- [x] La borne se règle par l'environnement — `SPEED_EPINGLES` —, et vaut 20 par
+      défaut

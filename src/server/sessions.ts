@@ -227,3 +227,57 @@ function nomDArchive(session: SessionEnBase): string {
   const quand = new Date(session.enregistreLe).toISOString().slice(0, 19).replace(/[:T]/g, '-')
   return `trajet-${quand}.zip`
 }
+
+/**
+ * Combien d'épingles un compte peut poser, par défaut.
+ *
+ * Sans effet aujourd'hui : il y a un seul compte, et ses quatorze sessions
+ * reprises sont des archives, qui ne comptent pas. La borne existe pour le jour
+ * où les comptes ne sont plus un seul — c'est pourquoi elle est vérifiée par un
+ * test plutôt que par l'usage. Même ordre de grandeur que les vingt trajets que
+ * le profil mesuré garde en détail.
+ */
+export const EPINGLES_PAR_DEFAUT = 20
+
+/** Ce que l'épinglage a donné. */
+export type Epinglage = 'épinglé' | 'décroché' | 'borne atteinte' | 'archivé' | 'inconnu'
+
+/**
+ * Pose ou retire l'épingle sur un trajet entier.
+ *
+ * **Sur le trajet, pas sur une tranche** : on ne choisit pas une tranche de
+ * journal, on garde un trajet.
+ *
+ * **L'archive ne s'épingle pas et ne compte pas.** Elle retient déjà, à un titre
+ * qui n'est pas un choix ; la faire entrer dans la borne remplirait celle-ci
+ * avant la première épingle.
+ */
+export async function epingler(
+  base: Base,
+  compte: string,
+  cle: string,
+  voulu: boolean,
+  borne = EPINGLES_PAR_DEFAUT,
+): Promise<{ etat: Epinglage; epinglees: number; borne: number }> {
+  const sessions = await listerSessions(base, compte)
+  const session = sessions.find((candidate) => candidate.cle === cle)
+  const epinglees = sessions.filter((candidate) => candidate.exemption === 'epingle').length
+
+  if (session === undefined) return { etat: 'inconnu', epinglees, borne }
+  if (session.exemption === 'archive') return { etat: 'archivé', epinglees, borne }
+
+  if (voulu && session.exemption !== 'epingle' && epinglees >= borne) {
+    return { etat: 'borne atteinte', epinglees, borne }
+  }
+
+  const ids = session.tranches.map((tranche) => `${compte}:${tranche.dossier}:${tranche.nom}`)
+  for (let debut = 0; debut < ids.length; debut += 200) {
+    await base
+      .update(deposits)
+      .set({ exemption: voulu ? 'epingle' : null })
+      .where(inArray(deposits.id, ids.slice(debut, debut + 200)))
+  }
+
+  const apres = epinglees + (voulu ? (session.exemption === 'epingle' ? 0 : 1) : -1)
+  return { etat: voulu ? 'épinglé' : 'décroché', epinglees: Math.max(0, apres), borne }
+}

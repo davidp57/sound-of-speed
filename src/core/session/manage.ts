@@ -82,3 +82,38 @@ function nomPropose(disposition: string | null): string | null {
   const trouve = /filename="([^"]+)"/.exec(disposition)
   return trouve === null ? null : (trouve[1] ?? null)
 }
+
+/** Ce que l'épinglage a donné, tel que le serveur le dit. */
+export interface Epinglage {
+  etat: 'épinglé' | 'décroché' | 'borne atteinte' | 'archivé' | 'inconnu'
+  epinglees: number
+  borne: number
+}
+
+/**
+ * Épingle un trajet, ou le décroche.
+ *
+ * Un refus n'est pas une panne : la borne atteinte est une réponse, et elle dit
+ * où l'on en est pour que l'écran puisse proposer quoi faire.
+ */
+export async function pinTrip(
+  key: string,
+  wanted: boolean,
+  credentials: DepositCredentials,
+  fetchImpl: typeof fetch = fetch,
+): Promise<Epinglage | null> {
+  if (!hasCredentials(credentials)) return null
+
+  try {
+    const response = await fetchImpl(`${tripUrl(key)}/epingle`, {
+      method: wanted ? 'PUT' : 'DELETE',
+      headers: { Authorization: authHeader(credentials) },
+    })
+    // 409 porte le refus **et** son décompte : c'est une réponse à lire, pas un
+    // échec à taire.
+    if (!response.ok && response.status !== 409) return null
+    return (await response.json()) as Epinglage
+  } catch {
+    return null
+  }
+}

@@ -17,7 +17,13 @@ import { Hono } from 'hono'
 import { SOLO_ACCOUNT_ID, type Base } from './base/base'
 import { coupleDe, type Comptes } from './comptes'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
-import { archiveDeLaSession, effacerSession, listerSessions } from './sessions'
+import {
+  archiveDeLaSession,
+  effacerSession,
+  epingler,
+  EPINGLES_PAR_DEFAUT,
+  listerSessions,
+} from './sessions'
 import { ecrireEntite, estUnRegistre, lireEntite, listerEntites } from './entites'
 import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
@@ -32,6 +38,8 @@ export interface OptionsDuServeur {
   comptes?: Comptes
   /** À qui appartient ce qu'on range, tant que l'identité n'est pas ouverte. */
   compte?: string
+  /** Combien d'épingles un compte peut poser. Réglable par l'environnement. */
+  epingles?: number
   /**
    * Les échantillons déposés, s'il y en a.
    *
@@ -205,6 +213,26 @@ export function creerServeur(options: OptionsDuServeur): Hono {
           'Cache-Control': 'no-store',
         },
       })
+    })
+
+    // Épingler, et décrocher. La borne se voit : un refus dit ce qu'il faut
+    // faire — décrocher autre chose, ou emporter le trajet.
+    app.on(['PUT', 'DELETE'], '/sessions/:cle/epingle', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      const rendu = await epingler(
+        base,
+        compte,
+        c.req.param('cle'),
+        c.req.method === 'PUT',
+        options.epingles ?? EPINGLES_PAR_DEFAUT,
+      )
+
+      if (rendu.etat === 'inconnu') return c.notFound()
+      // 409 : la demande est comprise, et refusée pour une raison qui ne
+      // changera pas si on la rejoue. Le client ne doit pas réessayer.
+      return c.json(rendu, rendu.etat === 'borne atteinte' ? 409 : 200)
     })
 
     app.delete('/sessions/:cle', async (c) => {

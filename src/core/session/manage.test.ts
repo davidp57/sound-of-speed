@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { deleteTrip, downloadTrip } from './manage'
+import { deleteTrip, downloadTrip, pinTrip } from './manage'
 
 const CREDENTIALS = { user: 'depot', password: 'motdepasse' }
 
@@ -94,5 +94,44 @@ describe('emporter un trajet', () => {
     const impl = (async () => new Response('', { status: 404 })) as unknown as typeof fetch
 
     expect(await downloadTrip('k', CREDENTIALS, impl)).toBeNull()
+  })
+})
+
+describe('épingler un trajet', () => {
+  it('pose l’épingle, et rend où l’on en est de la borne', async () => {
+    let vu = { url: '', method: '' }
+    const impl = (async (url: string, init?: RequestInit) => {
+      vu = { url: String(url), method: init?.method ?? '' }
+      return Response.json({ etat: 'épinglé', epinglees: 3, borne: 20 })
+    }) as unknown as typeof fetch
+
+    const rendu = await pinTrip('2026-09-11-06-24-01_da2m', true, CREDENTIALS, impl)
+
+    expect(vu).toEqual({ url: '/sessions/2026-09-11-06-24-01_da2m/epingle', method: 'PUT' })
+    expect(rendu).toEqual({ etat: 'épinglé', epinglees: 3, borne: 20 })
+  })
+
+  it('décroche par la méthode inverse', async () => {
+    let methode = ''
+    const impl = (async (_url: string, init?: RequestInit) => {
+      methode = init?.method ?? ''
+      return Response.json({ etat: 'décroché', epinglees: 2, borne: 20 })
+    }) as unknown as typeof fetch
+
+    await pinTrip('k', false, CREDENTIALS, impl)
+
+    expect(methode).toBe('DELETE')
+  })
+
+  it('lit le refus de la borne, qui est une réponse et non une panne', async () => {
+    const impl = (async () =>
+      Response.json({ etat: 'borne atteinte', epinglees: 20, borne: 20 }, {
+        status: 409,
+      })) as unknown as typeof fetch
+
+    const rendu = await pinTrip('k', true, CREDENTIALS, impl)
+
+    expect(rendu?.etat).toBe('borne atteinte')
+    expect(rendu?.borne).toBe(20)
   })
 })

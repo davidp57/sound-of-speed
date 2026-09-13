@@ -10,7 +10,7 @@ import {
   loadSession,
   type SessionEntry,
 } from '../core/session/read'
-import { deleteTrip, downloadTrip } from '../core/session/manage'
+import { deleteTrip, downloadTrip, pinTrip } from '../core/session/manage'
 import { sessionFromArchive } from '../core/session/archive'
 import { stateAt, trackAt, type Session } from '../core/session/model'
 import { findGearChanges, findShiftBursts, recordedShifts } from '../core/session/shifts'
@@ -603,6 +603,46 @@ async function effacer(entry: SessionEntry): Promise<void> {
 }
 
 /**
+ * Où l'on en est de la borne d'épingles, tel que le serveur le dit.
+ *
+ * Connu seulement après un premier épinglage : l'afficher d'avance demanderait
+ * une requête de plus pour un chiffre dont on n'a besoin qu'au moment de poser
+ * une épingle.
+ */
+const epingles = ref<{ epinglees: number; borne: number } | null>(null)
+
+/**
+ * Épingle un trajet, ou le décroche.
+ *
+ * L'épingle est un choix — on garde ce trajet —, et le nombre en est borné. Un
+ * refus dit quoi faire : décrocher autre chose, ou emporter le trajet.
+ */
+async function basculerEpingle(entry: SessionEntry): Promise<void> {
+  busy.value = true
+  geste.value = ''
+  try {
+    const rendu = await pinTrip(entry.key, entry.exemption !== 'epingle', credentials)
+    if (rendu === null) {
+      geste.value = 'L’épingle n’a pas pu être posée : le serveur n’a pas répondu.'
+      return
+    }
+
+    epingles.value = { epinglees: rendu.epinglees, borne: rendu.borne }
+    if (rendu.etat === 'borne atteinte') {
+      geste.value = `Borne atteinte : ${rendu.borne} trajets épinglés. Décrochez-en un, ou téléchargez celui-ci pour le garder hors du serveur.`
+      return
+    }
+    if (rendu.etat === 'archivé') {
+      geste.value = 'Ce trajet vient d’une reprise : il est déjà retenu, et l’épingle ne lui sert à rien.'
+      return
+    }
+    await refresh()
+  } finally {
+    busy.value = false
+  }
+}
+
+/**
  * Rouvre une archive prise sur le disque.
  *
  * Sans compte et sans serveur : c'est ce qui ferme la boucle de l'archive. Un
@@ -808,6 +848,19 @@ void refresh()
             <td class="actions">
               <button :disabled="busy" @click="chosen = entry.key">Ouvrir</button>
               <button :disabled="busy" @click="telecharger(entry)">Télécharger</button>
+              <button
+                v-if="entry.exemption !== 'archive'"
+                :disabled="busy"
+                :aria-pressed="entry.exemption === 'epingle'"
+                :title="
+                  entry.exemption === 'epingle'
+                    ? 'Rendre ce trajet effaçable par la règle'
+                    : 'Garder ce trajet malgré la règle'
+                "
+                @click="basculerEpingle(entry)"
+              >
+                {{ entry.exemption === 'epingle' ? '★ Épinglé' : '☆ Épingler' }}
+              </button>
               <button :disabled="busy" @click="demanderEffacement(entry)">Effacer</button>
             </td>
           </tr>
@@ -829,6 +882,10 @@ void refresh()
         </span>
       </p>
       <p v-if="geste" class="note">{{ geste }}</p>
+      <p v-if="epingles" class="note">
+        Épingles : {{ epingles.epinglees }} sur {{ epingles.borne }}. Les trajets archivés, venus
+        d'une reprise, n'y comptent pas.
+      </p>
     </section>
 
     <template v-if="session">

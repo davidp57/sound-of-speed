@@ -24,6 +24,20 @@ const fichierDeBase = process.env['SPEED_DB'] ?? 'donnees/speed.db'
 const migrations = process.env['SPEED_MIGRATIONS'] ?? 'src/server/base/migrations'
 const fichierDeComptes = process.env['SPEED_HTPASSWD']
 const anciensDossiers = process.env['SPEED_REPRISE']
+const epingles = nombreOuRien(process.env['SPEED_EPINGLES'])
+
+/**
+ * Un réglage d'environnement, quand il est lisible.
+ *
+ * Une valeur de travers — une faute de frappe dans l'écran de la pile — vaut
+ * mieux ignorée que prise pour zéro : zéro épingle ou zéro jour d'attente
+ * effacerait tout au premier passage.
+ */
+function nombreOuRien(brut: string | undefined): number | undefined {
+  if (brut === undefined) return undefined
+  const valeur = Number(brut)
+  return Number.isFinite(valeur) && valeur > 0 ? valeur : undefined
+}
 
 const { base, fermer } = await ouvrirBase({ fichier: fichierDeBase, migrations })
 console.log(`base ouverte et à jour : ${fichierDeBase}`)
@@ -95,6 +109,7 @@ const serveur = serve(
       application,
       base,
       comptes: lireComptes(fichierDeComptes),
+      ...(epingles === undefined ? {} : { epingles }),
       ...(echantillons === undefined ? {} : { echantillons }),
     }).fetch,
     port,

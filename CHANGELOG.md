@@ -15,6 +15,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un trajet qu'on veut garder s'épingle.** L'épingle l'exempte de l'effacement
+  automatique, elle porte sur le trajet entier — on ne choisit pas une tranche de
+  journal —, et elle survit à un nouveau dépôt sous le même nom. Leur nombre est
+  borné, la borne se voit, et un refus dit quoi faire : décrocher autre chose, ou
+  emporter le trajet. Vingt par défaut, réglable par `SPEED_EPINGLES`. Les
+  trajets archivés, venus d'une reprise, n'y comptent pas : ce n'est pas un
+  choix, c'est un déménagement.
+
 - **Le relecteur rouvre une archive prise sur le disque.** Le trajet se relit
   comme s'il venait du serveur — la carte, les cadrans, les faits marquants, la
   barre de temps —, sans compte et sans réseau. C'est ce qui ferme la boucle :

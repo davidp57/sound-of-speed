@@ -14,7 +14,13 @@ import { gzipSync } from 'node:zlib'
 import { sessionFromArchive } from '../core/session/archive'
 import { readZip } from '../core/archive/zip'
 
-import { archiveDeLaSession, effacerSession, lireSession, listerSessions } from './sessions'
+import {
+  archiveDeLaSession,
+  effacerSession,
+  epingler,
+  lireSession,
+  listerSessions,
+} from './sessions'
 
 const MIGRATIONS = 'src/server/base/migrations'
 
@@ -264,5 +270,95 @@ describe('le parcours complet', () => {
     expect(session.id).toBe('da2m')
     expect(session.startedAt).toBe(Date.UTC(2026, 8, 11, 6, 24, 1))
     expect(session.states.map((etat) => etat.kmh)).toEqual([50])
+  })
+})
+
+describe('épingler un trajet', () => {
+  const DA2M = '2026-09-11-06-24-01_da2m'
+
+  it('pose l’épingle sur le trajet entier, trace et journal', async () => {
+    // On ne choisit pas une tranche de journal, on garde un trajet.
+    await deposer('traces', `${DA2M}_001.jsonl.gz`)
+    await deposer('journal', `${DA2M}_001.jsonl.gz`)
+
+    expect((await epingler(base, SOLO_ACCOUNT_ID, DA2M, true)).etat).toBe('épinglé')
+
+    const lignes = await base.select().from(deposits)
+    expect(lignes.map((ligne) => ligne.exemption)).toEqual(['epingle', 'epingle'])
+  })
+
+  it('décroche', async () => {
+    await deposer('traces', `${DA2M}_001.jsonl.gz`)
+    await epingler(base, SOLO_ACCOUNT_ID, DA2M, true)
+
+    expect((await epingler(base, SOLO_ACCOUNT_ID, DA2M, false)).etat).toBe('décroché')
+    expect((await lireSession(base, SOLO_ACCOUNT_ID, DA2M))!.exemption).toBeNull()
+  })
+
+  it('garde l’épingle quand la voiture redépose la même tranche', async () => {
+    // La voiture rejoue un envoi sous le même nom ; le redéposer ne doit pas
+    // retirer une épingle posée à la main.
+    await deposer('traces', `${DA2M}_001.jsonl.gz`)
+    await epingler(base, SOLO_ACCOUNT_ID, DA2M, true)
+
+    await deposer('traces', `${DA2M}_001.jsonl.gz`, 'les mêmes octets, rejoués')
+
+    expect((await lireSession(base, SOLO_ACCOUNT_ID, DA2M))!.exemption).toBe('epingle')
+  })
+
+  it('refuse au-delà de la borne, et dit où l’on en est', async () => {
+    // Sans effet aujourd'hui — un seul compte, quatorze sessions archivées —,
+    // donc vérifiée ici plutôt que par l'usage.
+    await deposer('traces', '2026-09-11-06-24-01_aaaa_001.jsonl.gz')
+    await deposer('traces', '2026-09-12-06-24-01_bbbb_001.jsonl.gz')
+    await epingler(base, SOLO_ACCOUNT_ID, '2026-09-11-06-24-01_aaaa', true, 1)
+
+    const refus = await epingler(base, SOLO_ACCOUNT_ID, '2026-09-12-06-24-01_bbbb', true, 1)
+
+    expect(refus).toEqual({ etat: 'borne atteinte', epinglees: 1, borne: 1 })
+    expect(
+      (await lireSession(base, SOLO_ACCOUNT_ID, '2026-09-12-06-24-01_bbbb'))!.exemption,
+    ).toBeNull()
+  })
+
+  it('laisse réépingler ce qui l’est déjà, même borne atteinte', async () => {
+    await deposer('traces', `${DA2M}_001.jsonl.gz`)
+    await epingler(base, SOLO_ACCOUNT_ID, DA2M, true, 1)
+
+    expect((await epingler(base, SOLO_ACCOUNT_ID, DA2M, true, 1)).etat).toBe('épinglé')
+  })
+
+  it('ne compte pas les archives dans la borne', async () => {
+    // Les quatorze sessions reprises sont des archives, pas des choix : les
+    // faire entrer dans le compte remplirait la borne avant la première épingle.
+    await ecrireDepot(
+      base,
+      SOLO_ACCOUNT_ID,
+      'traces',
+      '2026-09-01-06-24-01_vieux_001.jsonl.gz',
+      Buffer.from('x'),
+      'archive',
+    )
+    await deposer('traces', `${DA2M}_001.jsonl.gz`)
+
+    expect((await epingler(base, SOLO_ACCOUNT_ID, DA2M, true, 1)).etat).toBe('épinglé')
+  })
+
+  it('ne pose pas d’épingle sur une archive, qui retient déjà', async () => {
+    await ecrireDepot(
+      base,
+      SOLO_ACCOUNT_ID,
+      'traces',
+      `${DA2M}_001.jsonl.gz`,
+      Buffer.from('x'),
+      'archive',
+    )
+
+    expect((await epingler(base, SOLO_ACCOUNT_ID, DA2M, true)).etat).toBe('archivé')
+    expect((await lireSession(base, SOLO_ACCOUNT_ID, DA2M))!.exemption).toBe('archive')
+  })
+
+  it('dit qu’un trajet inconnu est inconnu', async () => {
+    expect((await epingler(base, SOLO_ACCOUNT_ID, 'nulle-part', true)).etat).toBe('inconnu')
   })
 })
