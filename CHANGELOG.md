@@ -6,7 +6,60 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Modifié
+
+- **L'écran du compte suit le parcours de toutes les autres applications.** On
+  se sert de Sound of Speed sans rien signer, un bandeau discret propose
+  d'enregistrer le compte, et le jour où c'est fait, l'invitation disparaît —
+  au lieu de rester affichée à côté d'un compte qui l'était déjà. En haut de
+  l'écran, un **portrait et un nom** disent qui l'on est ; le portrait vient du
+  fournisseur d'un compte tenu ailleurs, sinon de Gravatar, sinon c'est
+  l'initiale. Ce qui fait perdre quelque chose — ouvrir ici un autre compte —
+  est rangé en bas, replié.
+
+  **Chaque appareil ne montre que le geste qu'il sait faire.** Dans la voiture,
+  l'écran ne propose plus d'enregistrer le compte : il n'y a ni clavier commode,
+  ni envie de partir chez un fournisseur en conduisant. Il y donne un code, et
+  renvoie à l'appareil qui le recevra.
+
+- **Le bandeau qui signale le compte revient au lieu de se montrer une seule
+  fois.** Il ne s'affichait qu'à la deuxième ouverture, puis plus jamais —
+  exactement au moment où l'on n'a encore rien à perdre. Il repasse maintenant
+  toutes les dix ouvertures, et seulement tant que le compte n'est pas
+  enregistré.
+
+- **Le code qui ouvre le compte sur un autre appareil vaut vingt-quatre heures**,
+  au lieu de dix minutes. Le code s'affiche dans la voiture et se saisit au
+  bureau : dix minutes supposaient qu'on aille de l'une à l'autre sans s'arrêter,
+  et le regénérer demandait de retourner dans une voiture éteinte. L'écran dit
+  désormais jusqu'à quand il vaut, plutôt que de décompter les secondes. Ce qui
+  protège reste l'usage unique et la limitation de débit — quatorze mille quatre
+  cents tentatives possibles sur vingt-quatre heures, contre six cent cinquante
+  milliards de combinaisons.
+
+- **Un compte créé tout seul porte une étiquette qu'on retient** —
+  `houle-paisible-47`, `orme-diurne-19` — au lieu de la date du jour, que tous
+  les comptes ouverts le même jour partageaient. Un nom, un adjectif et deux
+  chiffres, tirés dans un vocabulaire français sans accent, dont les adjectifs ne
+  s'accordent pas en genre : c'est ce qui permet de tirer les deux mots
+  séparément sans jamais produire de faute. C'est une étiquette et non une clé —
+  elle n'ouvre rien.
+
+- **L'aide du premier lancement finit sur le compte** : elle dit qu'il s'est créé
+  tout seul, qu'il porte déjà les réglages et les trajets, et ce que
+  l'enregistrer apporte. Un bouton mène à l'écran Compte. Le formulaire, lui,
+  reste à un seul endroit.
+
 ### Corrigé
+
+- **L'écran réclamait un mot de passe aux comptes qui n'en ont pas.** Un compte
+  enregistré chez un fournisseur — Google, Tesla — n'a pas de mot de passe : le
+  champ « Mot de passe, pour confirmer » de la suppression et le bloc « Changer
+  le mot de passe » s'affichaient quand même, et menaient à un cul-de-sac. Le
+  serveur, lui, était juste depuis le début : il n'exige un mot de passe que
+  d'un compte qui en porte un. L'écran le sait maintenant, par une route qui dit
+  **ce que ce compte-ci porte** — un mot de passe, quels fournisseurs — là où il
+  ne savait que ce que le serveur propose.
 
 - **L'image du serveur ne se construisait plus pour le NAS.** `npm ci` tournait
   sous émulation pour l'architecture arm64 et y mourait d'une instruction

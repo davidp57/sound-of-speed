@@ -1,8 +1,18 @@
 # 12 — Un compte tenu ailleurs, et seulement s'il est configuré
 
-**Statut :** ✅ fait — 13 septembre 2026, pour le code. Les identifiants des
-trois fournisseurs restent à obtenir : c'est un dossier à déposer, pas un
-développement, et la marche à suivre est plus bas.
+**Statut :** ✅ fait — 13 septembre 2026, pour le code. Reste à obtenir les
+identifiants **de Google** : c'est un dossier à déposer, pas un développement, et
+la marche à suivre est plus bas.
+
+**Apple et Tesla sont laissés de côté pour le moment**, décidé par David le
+13 septembre 2026 : seul Google est visé. Rien n'est retiré du code — un
+fournisseur ne se monte que si ses deux variables d'environnement sont là, donc
+ne pas les inscrire suffit à ne pas le voir. Le jour où l'on veut Tesla, c'est
+deux variables et rien d'autre.
+
+**Tesla est à essayer en premier** — écrit plus bas, et resté vrai sur le fond :
+c'est le fournisseur dont le compte correspond à la personne assise dans la
+voiture. Ce n'est simplement plus l'ordre de marche d'aujourd'hui.
 
 **Bloqué par :** [11 — Un vrai compte](11-un-vrai-compte.md).
 
