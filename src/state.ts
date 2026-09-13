@@ -1587,7 +1587,7 @@ export const identityState = ref<IdentityOutcome['state'] | 'inconnue'>('inconnu
 function prendreIdentite(rendu: IdentityOutcome | undefined): void {
   if (rendu === undefined) return
   identityState.value = rendu.state
-  if (rendu.state === 'obtenue' || rendu.state === 'gardee') identity.value = rendu.identity
+  if (rendu.state !== 'sans-reseau' && rendu.state !== 'refusee') identity.value = rendu.identity
 }
 
 if (typeof window !== 'undefined') {
