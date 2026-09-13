@@ -15,6 +15,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un dépôt sait s'il a été analysé, et de quelle exemption il relève.** Le
+  profileur marque ce qu'il a regardé, et il marque aussi ce dont il n'y avait
+  rien à tirer : sans cette marque, rien ne distinguerait « trop court pour
+  montrer quoi que ce soit » de « on n'a pas encore regardé », et la règle
+  d'effacement confondrait les deux. La marque porte le numéro du procédé, donc
+  elle ne vaut plus rien dès qu'il change — le démarrage annonce alors ce qu'il
+  reste à revoir. Et l'exemption d'effacement se dédouble : l'**épingle** est un
+  choix, l'**archive** est un fait, posé par la reprise sur ce qui vient d'un
+  ancien serveur. Les quatre-vingt-quatorze dépôts repris deviennent des
+  archives.
+
 - **Un dépôt sait quand le trajet a eu lieu.** Il portait la date de son arrivée
   sur le serveur, qui ment dès que le dépôt est différé : une trace enregistrée
   hors réseau et remontée trois jours plus tard, ou les quatre-vingt-quatorze

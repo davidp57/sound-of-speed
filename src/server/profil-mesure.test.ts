@@ -7,7 +7,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
 import { ecrireDepot } from './depots'
-import { dossierDesTraces, lireProfilMesure, reprendreApresDepot, reprendreTout } from './profil-mesure'
+import {
+  dossierDesTraces,
+  lireProfilMesure,
+  reprendreApresDepot,
+  reprendreTout,
+  tracesNonAnalysees,
+} from './profil-mesure'
+import { deposits } from './base/schema'
+import { PROCEDURE_VERSION } from '../core/calibration/aggregate'
 
 const MIGRATIONS = 'src/server/base/migrations'
 
@@ -145,5 +153,72 @@ describe('la reprise du profil mesuré', () => {
 
     expect(resultat.skipped).toContain('2026-09-12-19-01-00_cassee_001.jsonl.gz')
     expect(await lireProfilMesure(base, SOLO_ACCOUNT_ID)).not.toBeNull()
+  })
+})
+
+describe('la marque d’analyse', () => {
+  it('se pose sur les tranches que le dépôt fait regarder', async () => {
+    await deposer('2026-09-12-19-00-00_a_001.jsonl.gz', uneTranche('a'))
+
+    await reprendreApresDepot(base, SOLO_ACCOUNT_ID, '2026-09-12-19-00-00_a_001.jsonl.gz')
+
+    const [ligne] = await base.select().from(deposits)
+    expect(ligne!.analyzedProcedure).toBe(PROCEDURE_VERSION)
+    expect(await tracesNonAnalysees(base, SOLO_ACCOUNT_ID)).toBe(0)
+  })
+
+  it('marque aussi ce dont il n’y avait rien à tirer', async () => {
+    // Une session trop courte a été **regardée** : elle ne montre rien, et elle
+    // est effaçable. C'est une session jamais soumise au profileur qui ne l'est
+    // pas — les six départs avortés de la base sont du premier cas.
+    await deposer('2026-09-12-19-00-00_court_001.jsonl.gz', Buffer.from('x'))
+
+    await reprendreTout(base, SOLO_ACCOUNT_ID)
+
+    const [ligne] = await base.select().from(deposits)
+    expect(ligne!.analyzedProcedure).toBe(PROCEDURE_VERSION)
+  })
+
+  it('marque au rattrapage du démarrage ce qui est arrivé serveur arrêté', async () => {
+    // Rien n'a déclenché de reprise pour cette trace-là : elle est entrée
+    // pendant que le serveur ne tournait pas.
+    await deposer('2026-09-12-19-00-00_a_001.jsonl.gz', uneTranche('a'))
+    await base.update(deposits).set({ analyzedProcedure: null })
+
+    expect(await tracesNonAnalysees(base, SOLO_ACCOUNT_ID)).toBe(1)
+    await reprendreTout(base, SOLO_ACCOUNT_ID)
+
+    expect(await tracesNonAnalysees(base, SOLO_ACCOUNT_ID)).toBe(0)
+  })
+
+  it('ne vaut plus rien quand le procédé du profileur a changé', async () => {
+    // Le décompte le dit : ce qui a été vu par un procédé qui ne vaut plus est à
+    // revoir, exactement comme ce qui n'a jamais été vu.
+    await deposer('2026-09-12-19-00-00_a_001.jsonl.gz', uneTranche('a'))
+    await reprendreApresDepot(base, SOLO_ACCOUNT_ID, '2026-09-12-19-00-00_a_001.jsonl.gz')
+
+    await base.update(deposits).set({ analyzedProcedure: PROCEDURE_VERSION - 1 })
+
+    expect(await tracesNonAnalysees(base, SOLO_ACCOUNT_ID)).toBe(1)
+  })
+
+  it('repart à zéro quand la tranche est redéposée', async () => {
+    // La voiture rejoue un envoi : ce n'est plus la même tranche, et la marque de
+    // l'ancienne ne dit plus rien de celle-ci.
+    await deposer('2026-09-12-19-00-00_a_001.jsonl.gz', uneTranche('a'))
+    await reprendreApresDepot(base, SOLO_ACCOUNT_ID, '2026-09-12-19-00-00_a_001.jsonl.gz')
+
+    await deposer('2026-09-12-19-00-00_a_001.jsonl.gz', uneTranche('a', 400))
+
+    expect(await tracesNonAnalysees(base, SOLO_ACCOUNT_ID)).toBe(1)
+  })
+
+  it('ne touche pas le journal, qui ne passe pas par le profileur', async () => {
+    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'journal', '2026-09-12-19-00-00_a_001.jsonl', Buffer.from('x'))
+
+    await reprendreTout(base, SOLO_ACCOUNT_ID)
+
+    const [ligne] = await base.select().from(deposits)
+    expect(ligne!.analyzedProcedure).toBeNull()
   })
 })

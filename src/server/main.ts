@@ -13,7 +13,7 @@ import { serve } from '@hono/node-server'
 import { SOLO_ACCOUNT_ID, ouvrirBase } from './base/base'
 import { lireComptes } from './comptes'
 import { remplirLesDatesDEnregistrement } from './depots'
-import { reprendreTout } from './profil-mesure'
+import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { creerServeur } from './serveur'
 
@@ -70,7 +70,16 @@ if (anciensDossiers !== undefined) {
 // lui-même s'il doit tout relire — un procédé corrigé rend l'ancien cumul sans
 // valeur — donc ceci ne coûte rien quand il n'y a rien à rattraper.
 try {
+  // Le décompte encadre le rattrapage : il dit le travail avant, et doit valoir
+  // zéro après. Un procédé corrigé remet toutes les traces à voir d'un coup —
+  // c'est ce chiffre-là qui le montre, plutôt qu'un silence.
+  const aVoir = await tracesNonAnalysees(base, SOLO_ACCOUNT_ID)
   const rattrape = await reprendreTout(base, SOLO_ACCOUNT_ID)
+  if (aVoir > 0) {
+    console.log(
+      `profil mesuré : ${aVoir} tranches à regarder, ${await tracesNonAnalysees(base, SOLO_ACCOUNT_ID)} restantes`,
+    )
+  }
   if (rattrape.skipped.length > 0) {
     console.warn(`tranches illisibles, écartées : ${rattrape.skipped.join(', ')}`)
   }

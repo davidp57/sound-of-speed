@@ -203,10 +203,10 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       if (c.req.method === 'PUT') {
         const octets = Buffer.from(await c.req.arrayBuffer())
         // `?reprise=1` dit « ceci n'est pas un dépôt du jour, c'est un
-        // déménagement » : le fichier entre épinglé, comme ceux que la reprise
+        // déménagement » : le fichier entre archivé, comme ceux que la reprise
         // des anciens dossiers verse elle-même.
-        const epingle = c.req.query('reprise') === '1'
-        const ecrit = await ecrireDepot(base, compte, dossier, nom, octets, epingle)
+        const exemption = c.req.query('reprise') === '1' ? ('archive' as const) : undefined
+        const ecrit = await ecrireDepot(base, compte, dossier, nom, octets, exemption)
         // 413, parce que le client ne rejoue pas ce code. Une charge refusée par
         // un code de panne ferait réessayer la voiture indéfiniment, pour un
         // envoi qui ne passera jamais.

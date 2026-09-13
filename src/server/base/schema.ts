@@ -157,9 +157,9 @@ export const profiles = sqliteTable(
  * décide de décompresser au nom du fichier, jamais au type que le serveur
  * annonce.
  *
- * `pinned` existe avant la règle de rétention qui lui donnera son sens : une
- * trace épinglée échappe à l'effacement. Les traces reprises d'un ancien serveur
- * entreront épinglées, sans quoi la reprise les perdrait un mois plus tard.
+ * Trois colonnes servent la règle de rétention : la date du trajet, qui décide
+ * de l'ancienneté ; la marque d'analyse, sans laquelle on effacerait ce qu'on
+ * n'a pas encore lu ; et l'exemption, qui dit ce qu'on garde et à quel titre.
  */
 export const deposits = sqliteTable(
   'deposits',
@@ -199,8 +199,34 @@ export const deposits = sqliteTable(
      * dépôt à défaut, et le rattrapage du démarrage s'en charge.
      */
     recordedAt: integer('recorded_at'),
-    /** Exempté de l'effacement. Voir le lot RETENTION. */
-    pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
+    /**
+     * Le procédé du profileur qui a regardé ce dépôt, ou rien.
+     *
+     * Sans cette marque, rien ne distingue « il n'y avait rien à en tirer » de
+     * « on n'a pas encore regardé », et la règle de rétention effacerait les
+     * deux. Une session que le profileur a écartée parce qu'elle est trop courte
+     * **a été regardée** : elle porte la marque, et elle est effaçable.
+     *
+     * C'est le numéro du procédé, et non un simple oui : le profileur relit tout
+     * quand son procédé change, parce que l'ancien cumul ne vaut plus rien — une
+     * marque posée par l'ancien ne dit plus la vérité.
+     *
+     * Le journal n'est jamais analysé : il ne passe pas par le profileur, et sa
+     * règle d'effacement est ailleurs.
+     */
+    analyzedProcedure: integer('analyzed_procedure'),
+    /**
+     * Ce qui exempte ce dépôt de l'effacement, ou rien.
+     *
+     * Deux natures, et les confondre coûterait cher. **L'épingle** est un choix :
+     * on garde ce trajet, et le nombre d'épingles est borné. **L'archive** est un
+     * fait : ces trajets viennent d'un ancien serveur, la reprise les a
+     * déménagés, et les effacer un mois plus tard reviendrait à les avoir
+     * déplacés pour les perdre. Une seule nature obligerait soit à retirer leur
+     * exemption aux quatre-vingt-quatorze dépôts repris, soit à laisser la borne
+     * sans effet.
+     */
+    exemption: text('exemption', { enum: ['epingle', 'archive'] }),
   },
   (table) => [
     // Déposer deux fois le même nom remplace, comme le faisait le dépôt de

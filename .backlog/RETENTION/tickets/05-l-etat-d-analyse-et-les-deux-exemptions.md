@@ -1,6 +1,6 @@
 # 05 — Le dépôt sait s'il a été analysé, et de quelle exemption il relève
 
-**Statut :** ⬜ prêt
+**Statut :** 🔄 en cours — reste la liste du relecteur
 
 **Bloqué par :** [04 — Le dépôt sait quand le trajet a eu lieu](04-la-date-du-trajet-en-base.md).
 Même table, et la migration de 04 doit être passée avant qu'une seconde y touche.

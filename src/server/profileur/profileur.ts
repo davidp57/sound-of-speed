@@ -43,6 +43,15 @@ export interface ProfileResult {
   coverage: Coverage
   /** Ce qui n'a pas pu être lu, nommé. Une tranche perdue n'arrête pas le reste. */
   skipped: string[]
+  /**
+   * Les tranches que ce passage a regardées, quoi qu'il en ait tiré.
+   *
+   * Regardé n'est pas mesuré : une tranche illisible, une session trop courte
+   * dont rien ne sort, un nom libre que le regroupement ne voit pas — toutes ont
+   * été **vues**, et c'est ce que l'appelant a besoin de savoir pour ne pas
+   * garder à jamais ce dont il n'y avait rien à tirer.
+   */
+  seen: string[]
 }
 
 /**
@@ -53,7 +62,11 @@ export interface ProfileResult {
  * cumulées sans retour possible.
  */
 export async function rebuild(folder: Folder): Promise<ProfileResult> {
-  const sessions = groupBySession(await folder.list())
+  // Tout le dossier a été vu, y compris ce que le regroupement ne reconnaît pas :
+  // deux traces anciennes portent un nom libre, et « rien à en tirer » est une
+  // réponse.
+  const seen = await folder.list()
+  const sessions = groupBySession(seen)
   let aggregate = emptyAggregate()
   const skipped: string[] = []
 
@@ -63,7 +76,7 @@ export async function rebuild(folder: Folder): Promise<ProfileResult> {
     aggregate = withTrip(aggregate, digest)
   }
 
-  return { aggregate, coverage: coverageOf(aggregate), skipped }
+  return { aggregate, coverage: coverageOf(aggregate), skipped, seen }
 }
 
 /**
@@ -84,15 +97,16 @@ export async function updateWith(
   const sessions = groupBySession(await folder.list())
   const session = sessions.find((slices) => slices.some((slice) => slice.name === sliceName))
   if (session === undefined) {
-    return { aggregate, coverage: coverageOf(aggregate), skipped: [sliceName] }
+    return { aggregate, coverage: coverageOf(aggregate), skipped: [sliceName], seen: [] }
   }
 
+  const seen = session.map((slice) => slice.name)
   const skipped: string[] = []
   const digest = await readSession(folder, session, skipped)
-  if (digest === null) return { aggregate, coverage: coverageOf(aggregate), skipped }
+  if (digest === null) return { aggregate, coverage: coverageOf(aggregate), skipped, seen }
 
   const next = withTrip(aggregate, digest)
-  return { aggregate: next, coverage: coverageOf(next), skipped }
+  return { aggregate: next, coverage: coverageOf(next), skipped, seen }
 }
 
 /**
