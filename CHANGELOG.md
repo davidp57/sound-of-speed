@@ -45,6 +45,9 @@ Toutes les évolutions notables du projet. Format
   monté : celui qui déploie chez lui n'a rien à inscrire, et aucun bouton ne mène
   à une erreur. Les identifiants restent à obtenir auprès des trois — un dossier,
   pas du code ; la marche à suivre, et ce que Tesla exige, sont dans le ticket.
+  Les six variables sont déclarées dans la pile du serveur : Portainer les
+  **remplace** dans le fichier de pile, il ne les injecte pas, donc une variable
+  saisie mais absente du fichier n'arriverait jamais au conteneur.
 
   La voiture charge **1 342 octets de plus** pour cela, mesuré compressé : la
   bibliothèque ne quitte pas le serveur, et l'application lui parle par deux

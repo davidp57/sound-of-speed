@@ -74,6 +74,27 @@ services:
       # revenir sur le site, c'est cette adresse-là qu'il lui faut — et derrière
       # un proxy inversé, elle ne se devine pas.
       SPEED_URL: ${SPEED_URL:-}
+      # Les comptes tenus ailleurs — Tesla, Google, Apple.
+      #
+      # **Les deux d'un fournisseur, ou aucune.** La moitié d'une paire ne monte
+      # rien, et une variable laissée vide vaut absente : c'est ce qu'on obtient
+      # ici quand on ne la saisit pas dans l'écran de la pile, et c'est voulu.
+      #
+      # Elles sont **déclarées ici même quand on ne s'en sert pas** : une
+      # variable saisie dans Portainer et absente de ce bloc n'arrive jamais au
+      # conteneur — Portainer la remplace dans ce fichier, il ne l'injecte pas.
+      #
+      # Ce qu'il faut faire chez chacun des trois pour obtenir ces identifiants
+      # est décrit dans `.backlog/COMPTES/tickets/12-un-compte-tiers.md`. Et
+      # SPEED_URL cesse d'être facultative dès qu'il y en a un : le fournisseur
+      # doit revenir sur le site, et l'adresse de retour qu'on déclare chez lui
+      # est `<SPEED_URL>/api/auth/callback/<fournisseur>`.
+      SPEED_OAUTH_TESLA_ID: ${SPEED_OAUTH_TESLA_ID:-}
+      SPEED_OAUTH_TESLA_SECRET: ${SPEED_OAUTH_TESLA_SECRET:-}
+      SPEED_OAUTH_GOOGLE_ID: ${SPEED_OAUTH_GOOGLE_ID:-}
+      SPEED_OAUTH_GOOGLE_SECRET: ${SPEED_OAUTH_GOOGLE_SECRET:-}
+      SPEED_OAUTH_APPLE_ID: ${SPEED_OAUTH_APPLE_ID:-}
+      SPEED_OAUTH_APPLE_SECRET: ${SPEED_OAUTH_APPLE_SECRET:-}
       # Le dossier à reprendre. Sans elle, le serveur ne cherche rien.
       #
       # La reprise se joue au démarrage, comme les migrations, et n'écrit rien
