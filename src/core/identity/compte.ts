@@ -162,12 +162,20 @@ function compteDe(charge: Record<string, unknown>): Omit<LocalIdentity, 'obtaine
  * quitter, on supprime parce qu'on le quitte pour de bon.
  */
 
+/** Un compte tenu ailleurs, tel que l'écran doit le présenter. */
+export interface Fournisseur {
+  /** L'identifiant que les routes du serveur attendent. */
+  id: string
+  /** Ce qui s'écrit sur le bouton. */
+  nom: string
+}
+
 /** Ce que ce serveur-ci sait faire. Ce qu'il ne sait pas ne s'affiche pas. */
 export interface PossibilitesDuServeur {
   /** Un relais de courriel est configuré : « j'ai oublié » devient possible. */
   relaisCourriel: boolean
-  /** Les comptes tenus ailleurs, quand il y en a de configurés. */
-  fournisseurs: string[]
+  /** Les comptes tenus ailleurs, quand il y en a de montés. */
+  fournisseurs: Fournisseur[]
 }
 
 /**
@@ -191,12 +199,29 @@ export async function possibilitesDuServeur(
     return {
       relaisCourriel: dit['relaisCourriel'] === true,
       fournisseurs: Array.isArray(dit['fournisseurs'])
-        ? dit['fournisseurs'].filter((nom): nom is string => typeof nom === 'string')
+        ? dit['fournisseurs'].filter(estUnFournisseur)
         : [],
     }
   } catch {
     return rien
   }
+}
+
+/**
+ * Un fournisseur n'est retenu que s'il porte les deux champs.
+ *
+ * Le serveur est celui d'en face et non forcément de la même version : une
+ * entrée qu'on ne sait pas afficher vaut mieux écartée qu'affichée en « undefined ».
+ */
+function estUnFournisseur(valeur: unknown): valeur is Fournisseur {
+  if (typeof valeur !== 'object' || valeur === null) return false
+  const entree = valeur as Record<string, unknown>
+  return (
+    typeof entree['id'] === 'string' &&
+    entree['id'] !== '' &&
+    typeof entree['nom'] === 'string' &&
+    entree['nom'] !== ''
+  )
 }
 
 export type Changement =

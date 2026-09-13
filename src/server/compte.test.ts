@@ -19,6 +19,7 @@ import { ouvrirBase, type Base } from './base/base'
 import { accounts, authIdentities, deposits, profiles } from './base/schema'
 import { creerIdentite, type Identite } from './identite'
 import { creerServeur } from './serveur'
+import { comptesTenusAilleurs } from './tiers'
 
 const MIGRATIONS = 'src/server/base/migrations'
 const SECRET = 'Zk7pQ2vX9mL4tR8wY1nB6jH3sD5gF0aC-essai-compte'
@@ -360,5 +361,115 @@ describe('tenir son compte', () => {
 
   it('n’est pas donné à qui n’a pas de compte', async () => {
     expect((await supprimer('')).statut).toBe(401)
+  })
+})
+
+describe('un compte tenu ailleurs', () => {
+  /** Un serveur dont l'environnement déclare Google, et lui seul. */
+  function serveurAvecGoogle() {
+    return creerServeur({
+      application: dossier,
+      base,
+      identite: creerIdentite({
+        base,
+        secret: SECRET,
+        adresse: 'http://essai',
+        tiers: comptesTenusAilleurs({
+          SPEED_OAUTH_GOOGLE_ID: 'google-client',
+          SPEED_OAUTH_GOOGLE_SECRET: 'google-secret',
+        }),
+      }),
+    })
+  }
+
+  it('n’apparaît que s’il est configuré', async () => {
+    // Le critère du ticket : celui qui déploie chez lui n'inscrit aucune
+    // variable, et son écran ne montre aucun bouton.
+    const sans = await serveur().request('/api/auth/compte/possibilites')
+    expect(((await sans.json()) as { fournisseurs: unknown[] }).fournisseurs).toEqual([])
+
+    const avec = await serveurAvecGoogle().request('/api/auth/compte/possibilites')
+    const dit = (await avec.json()) as { fournisseurs: { id: string; nom: string }[] }
+
+    expect(dit.fournisseurs).toEqual([{ id: 'google', nom: 'Google' }])
+  })
+
+  it('cesse de rendre son compte anonyme dès qu’il y est rattaché', async () => {
+    // `is_anonymous` ne dit pas « sans nom » mais « rien ne permet d'y revenir ».
+    // Le laisser vrai ferait effacer, au passage d'un autre appareil, un compte
+    // encore vide mais désormais joignable.
+    const appareil = await appareilNeuf()
+    const compte = (await compteDe(appareil)) ?? ''
+    expect((await base.select().from(accounts).where(eq(accounts.id, compte)))[0]?.isAnonymous).toBe(
+      true,
+    )
+
+    // Ce que la bibliothèque écrit au retour d'un fournisseur : une preuve de
+    // plus sur le compte qui existe. On l'écrit ici directement, l'aller-retour
+    // chez Google n'étant pas rejouable dans un test.
+    await identite.$context.then((contexte) =>
+      contexte.internalAdapter.linkAccount({
+        userId: compte,
+        providerId: 'google',
+        accountId: 'un-identifiant-chez-google',
+      }),
+    )
+
+    expect((await base.select().from(accounts).where(eq(accounts.id, compte)))[0]?.isAnonymous).toBe(
+      false,
+    )
+  })
+})
+
+describe('régler le compte abandonné après un aller-retour', () => {
+  async function regler(temoin: string, ancien: string) {
+    const reponse = await serveur().request('/api/auth/compte/regler-l-ancien', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: temoin },
+      body: JSON.stringify({ ancien }),
+    })
+    if (!reponse.ok) return { statut: reponse.status }
+    return { statut: reponse.status, ...((await reponse.json()) as { ancien: string }) }
+  }
+
+  it('efface un compte anonyme et vide', async () => {
+    // Le cas ordinaire : l'appareil s'était créé un compte au démarrage, il vient
+    // d'en rejoindre un autre, et celui-là ne porte rien.
+    const abandonne = (await compteDe(await appareilNeuf())) ?? ''
+    const desormais = await appareilNeuf()
+
+    expect(await regler(desormais, abandonne)).toEqual({ statut: 200, ancien: 'efface' })
+    expect(await base.select().from(accounts).where(eq(accounts.id, abandonne))).toHaveLength(0)
+  })
+
+  it('garde un compte qui porte quelque chose, et le dit', async () => {
+    // C'est ce mot-là que l'écran annonce : des réglages restent derrière, sur un
+    // compte auquel plus rien ne ramène.
+    const appareil = await appareilNeuf()
+    const abandonne = (await compteDe(appareil)) ?? ''
+    await base
+      .insert(profiles)
+      .values({ id: 'p12', accountId: abandonne, name: 'Resté là', content: '{}' })
+    const desormais = await appareilNeuf()
+
+    expect(await regler(desormais, abandonne)).toEqual({ statut: 200, ancien: 'garde' })
+    expect(await base.select().from(accounts).where(eq(accounts.id, abandonne))).toHaveLength(1)
+  })
+
+  it('ne touche pas au compte de celui qui appelle', async () => {
+    // Un rattachement revient sur le même compte : l'appareil ne doit pas
+    // s'effacer lui-même en croyant régler un ancien.
+    const appareil = await appareilNeuf()
+    const moi = (await compteDe(appareil)) ?? ''
+
+    expect(await regler(appareil, moi)).toEqual({ statut: 200, ancien: 'aucun' })
+    expect(await base.select().from(accounts).where(eq(accounts.id, moi))).toHaveLength(1)
+  })
+
+  it('n’est pas donné à qui n’a pas de compte', async () => {
+    const abandonne = (await compteDe(await appareilNeuf())) ?? ''
+
+    expect((await regler('', abandonne)).statut).toBe(401)
+    expect(await base.select().from(accounts).where(eq(accounts.id, abandonne))).toHaveLength(1)
   })
 })

@@ -32,6 +32,24 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Se connecter avec un compte tenu ailleurs** — Tesla, Google ou Apple —, **en
+  plus de l'adresse et du mot de passe, jamais à la place** : perdre l'accès à
+  son fournisseur ne doit pas faire perdre le compte. Les mêmes deux gestes
+  qu'avec une adresse — rattacher une preuve de plus au compte d'ici, ou rouvrir
+  celui auquel ce fournisseur a déjà été rattaché. **Il ne crée jamais de
+  compte** : sinon ce bouton, pressé depuis la voiture, en fabriquerait un neuf
+  et vide et laisserait les réglages derrière.
+
+  **Ce qui n'est pas configuré n'apparaît pas.** Un fournisseur demande deux
+  variables d'environnement, et l'écran ne montre que ce qui est réellement
+  monté : celui qui déploie chez lui n'a rien à inscrire, et aucun bouton ne mène
+  à une erreur. Les identifiants restent à obtenir auprès des trois — un dossier,
+  pas du code ; la marche à suivre, et ce que Tesla exige, sont dans le ticket.
+
+  La voiture charge **1 342 octets de plus** pour cela, mesuré compressé : la
+  bibliothèque ne quitte pas le serveur, et l'application lui parle par deux
+  requêtes.
+
 - **Les trois écrans qu'une voiture n'ouvre jamais se chargent à la demande** —
   étalonnage, banc, synthèse. Trente-sept kilo-octets de moins au démarrage. Les
   autres restent chargés d'emblée, et c'est délibéré : ils s'ouvrent au volant,

@@ -30,6 +30,7 @@ import * as z from 'zod'
 import { estAnonyme, reglerLAncien } from './abandon'
 import type { Base } from './base/base'
 import { accounts } from './base/schema'
+import { nomDuFournisseur } from './tiers'
 
 /** Le préfixe sous lequel ce greffon répond, sous celui de l'identité. */
 export const CHEMIN_COMPTE = '/api/auth/compte'
@@ -37,8 +38,8 @@ export const CHEMIN_COMPTE = '/api/auth/compte'
 /**
  * La preuve « adresse et mot de passe », telle que la bibliothèque la nomme.
  *
- * Les autres valeurs de cette colonne sont des fournisseurs tiers, qui viendront
- * au ticket 12.
+ * Les autres valeurs de cette colonne sont des comptes tenus ailleurs — voir
+ * `tiers.ts`.
  */
 const PREUVE_PAR_MOT_DE_PASSE = 'credential'
 
@@ -202,8 +203,52 @@ export function compte({ base }: { base: Base }) {
             // configuré, c'est ici que l'écran l'apprendra — et « j'ai oublié »
             // apparaîtra tout seul.
             relaisCourriel: false,
-            // Les comptes tenus ailleurs viennent au ticket 12.
-            fournisseurs: [] as string[],
+            /**
+             * Les comptes tenus ailleurs, lus **dans ce qui est monté**.
+             *
+             * Et non dans ce que l'environnement demandait : un fournisseur
+             * monté sur un document de découverte est écarté quand ce document
+             * ne répond pas, et l'annoncer quand même donnerait le bouton qui
+             * mène à une erreur que ce ticket interdit.
+             */
+            fournisseurs: contexte.context.socialProviders.map((fournisseur) => ({
+              id: fournisseur.id,
+              nom: nomDuFournisseur(fournisseur.id),
+            })),
+          }),
+      ),
+
+      /**
+       * Ce que devient le compte abandonné, quand l'abandon passe par un tiers.
+       *
+       * **Une route à part, et c'est l'aller-retour qui l'impose.** Se connecter
+       * par adresse règle les deux dans le même passage — voir `/compte/connexion`
+       * plus haut. Une connexion par un compte tenu ailleurs, elle, quitte le
+       * site : le navigateur part chez le fournisseur, revient sur une route de
+       * la bibliothèque, et à ce moment-là plus rien ne sait d'où il venait. Le
+       * seul à s'en souvenir est l'appareil, qui avait rangé son identifiant
+       * avant de partir.
+       *
+       * **Ce qu'on accepte d'un appareil sur parole est borné par `reglerLAncien`** :
+       * il n'efface qu'un compte anonyme et **vide**, jamais celui qui appelle.
+       * Reste donc, à qui devinerait un identifiant de trente-deux caractères, la
+       * possibilité d'effacer un compte qui ne porte rien. C'est assumé, et dit
+       * ici plutôt que tu.
+       */
+      reglerLeCompteAbandonne: createAuthEndpoint(
+        '/compte/regler-l-ancien',
+        {
+          method: 'POST',
+          use: [sessionMiddleware],
+          body: z.object({ ancien: z.string() }),
+        },
+        async (contexte) =>
+          contexte.json({
+            ancien: await reglerLAncien(
+              base,
+              contexte.body.ancien,
+              contexte.context.session.user.id,
+            ),
           }),
       ),
 
@@ -263,6 +308,14 @@ export function compte({ base }: { base: Base }) {
       // borne ses propres routes de connexion ; celle-ci est à nous, donc à
       // nous de la borner. Elle ne s'applique qu'en production.
       { pathMatcher: (chemin: string) => chemin === '/compte/connexion', window: 60, max: 10 },
+      // Un identifiant de compte se devine aussi mal qu'un mot de passe, et ce
+      // que cette route peut effacer ne vaut rien — mais rien n'oblige à laisser
+      // essayer vite.
+      {
+        pathMatcher: (chemin: string) => chemin === '/compte/regler-l-ancien',
+        window: 60,
+        max: 10,
+      },
     ],
   }
 }

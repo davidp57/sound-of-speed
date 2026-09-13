@@ -28,14 +28,17 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { betterAuth } from 'better-auth'
+import { eq } from 'drizzle-orm'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { anonymous } from 'better-auth/plugins'
+import { genericOAuth } from 'better-auth/plugins/generic-oauth'
 
 import type { Base } from './base/base'
 import { accounts, authIdentities, authSessions, authVerifications } from './base/schema'
 import { compte } from './compte'
 import { faireHeriter, formaterHeritage } from './heritage'
 import { liaison } from './liaison'
+import { comptesTenusAilleurs, type ComptesTenusAilleurs } from './tiers'
 
 /** Le préfixe sous lequel la bibliothèque répond. */
 export const CHEMIN_IDENTITE = '/api/auth'
@@ -50,8 +53,19 @@ export interface OptionsDIdentite {
    *
    * Absente, la bibliothèque la déduit de la requête. C'est ce qu'on veut pour
    * une installation chez soi, qui ne sait pas sous quel nom on l'atteindra.
+   *
+   * **Elle cesse d'être facultative dès qu'un compte tenu ailleurs est
+   * configuré** : le fournisseur doit revenir sur le site, et derrière un proxy
+   * inversé le conteneur ne voit qu'un port local.
    */
   adresse?: string
+  /**
+   * Les comptes tenus ailleurs, tels que l'environnement les déclare.
+   *
+   * Absents, aucun : c'est le cas de celui qui déploie chez lui, et de tous les
+   * tests qui n'en parlent pas.
+   */
+  tiers?: ComptesTenusAilleurs
 }
 
 export type Identite = ReturnType<typeof creerIdentite>
@@ -77,7 +91,9 @@ const SESSION_MAPPEE = {
  * l'export TypeScript : c'est ce que l'adaptateur cherche. Les champs, eux, sont
  * désignés par la clé de l'objet Drizzle.
  */
-export function creerIdentite({ base, secret, adresse }: OptionsDIdentite) {
+export function creerIdentite({ base, secret, adresse, tiers }: OptionsDIdentite) {
+  const ailleurs = tiers ?? comptesTenusAilleurs({})
+
   return betterAuth({
     secret,
     ...(adresse === undefined ? {} : { baseURL: adresse }),
@@ -97,6 +113,10 @@ export function creerIdentite({ base, secret, adresse }: OptionsDIdentite) {
     // l'exige : un compte reste anonyme tant que ça suffit, et c'est le lot
     // COMPTES qui ouvre ce chemin-là.
     emailAndPassword: { enabled: true },
+
+    // Les comptes tenus ailleurs que la bibliothèque connaît déjà. Vide tant que
+    // rien n'est configuré, ce qui est le cas par défaut — voir `tiers.ts`.
+    socialProviders: ailleurs.integres,
 
     plugins: [
       anonymous({
@@ -130,6 +150,14 @@ export function creerIdentite({ base, secret, adresse }: OptionsDIdentite) {
       // Se faire un vrai compte : une adresse et un mot de passe choisis, sur
       // le compte qui existe déjà — voir `compte.ts`.
       compte({ base }),
+
+      // Les comptes tenus ailleurs qui se montent sur un document de découverte,
+      // Tesla pour l'instant. Le greffon ne se charge que s'il y en a : il fait
+      // un appel réseau par fournisseur au démarrage, et un serveur qui démarre
+      // avant son réseau n'a pas à le payer pour rien.
+      ...(ailleurs.generiques.length === 0
+        ? []
+        : [genericOAuth({ config: ailleurs.generiques })]),
     ],
 
     session: {
@@ -157,10 +185,77 @@ export function creerIdentite({ base, secret, adresse }: OptionsDIdentite) {
       // l'identifiant **chez le fournisseur**, soit l'inverse exact de ce que
       // `accountId` désigne partout ailleurs ici.
       fields: { userId: 'accountId', accountId: 'providerAccountId' },
+
+      accountLinking: {
+        /**
+         * **Le rattachement se demande, il ne se devine pas.**
+         *
+         * Par défaut, la bibliothèque relie d'elle-même un compte tenu ailleurs
+         * à un compte d'ici qui porte la même adresse. Ici ce serait un piège :
+         * le rattachement est un geste qu'on fait depuis l'écran du compte, en
+         * étant déjà connecté, et une connexion à un fournisseur jamais
+         * rattaché doit échouer plutôt que d'ouvrir le compte de quelqu'un.
+         */
+        disableImplicitLinking: true,
+        /**
+         * **L'adresse du fournisseur n'a aucune raison d'être celle d'ici.**
+         *
+         * Un compte anonyme porte une adresse fabriquée sous `.invalid` : elle
+         * ne correspondra jamais à celle d'un compte Google ou Tesla, et exiger
+         * qu'elles soient égales interdirait le rattachement dans le seul cas
+         * qui compte. Ce que cette option ouvre d'ordinaire — un rattachement
+         * fait sur la foi d'une adresse — est fermé par la ligne du dessus : il
+         * faut être connecté pour rattacher, et la session est la preuve.
+         *
+         * L'adresse du compte, elle, ne bouge pas : la bibliothèque ne la
+         * change jamais au rattachement.
+         */
+        allowDifferentEmails: true,
+      },
     },
     verification: { modelName: 'auth_verifications' },
 
     databaseHooks: {
+      account: {
+        create: {
+          /**
+           * Une preuve de plus, c'est un compte qui cesse d'être anonyme.
+           *
+           * `is_anonymous` ne dit pas « sans nom » mais « s'est créé tout seul,
+           * et rien ne permet d'y revenir ». Dès qu'un compte tenu ailleurs y
+           * est rattaché, il y a un chemin de retour — et le laisser anonyme
+           * aurait une conséquence bien réelle : `reglerLAncien` efface les
+           * comptes anonymes qui ne portent rien, donc un compte relié à Tesla
+           * mais encore vide disparaîtrait au premier appareil qui rejoint
+           * autre chose.
+           *
+           * Le rattachement d'une adresse, lui, le fait déjà de son côté — voir
+           * `compte.ts` —, et le refaire ici ne coûte qu'une écriture pour rien.
+           */
+          after: async (preuve) => {
+            // `userId`, et surtout pas `accountId` : dans le vocabulaire de la
+            // bibliothèque, `accountId` est l'identifiant **chez le
+            // fournisseur**. C'est le renommage qui piège, et il est déjà
+            // signalé plus bas.
+            const compteVise = preuve.userId
+            try {
+              // Écrit dans la table plutôt que par la bibliothèque : le contexte
+              // d'appel qu'elle passe à ce crochet vaut `null` dès que la preuve
+              // se pose hors d'une requête, et on ne veut pas d'un anonymat qui
+              // se lève seulement quand la pile a la bonne forme.
+              await base
+                .update(accounts)
+                .set({ isAnonymous: false })
+                .where(eq(accounts.id, compteVise))
+            } catch (erreur) {
+              // Un compte resté marqué anonyme reste utilisable : ce qui est en
+              // jeu est son effacement au passage d'un autre appareil, pas son
+              // fonctionnement. Faire échouer le rattachement coûterait plus.
+              console.error(`fin de l'anonymat du compte ${compteVise} : ${String(erreur)}`)
+            }
+          },
+        },
+      },
       user: {
         create: {
           /**
