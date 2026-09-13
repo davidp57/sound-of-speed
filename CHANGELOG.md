@@ -8,6 +8,22 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **L'image du serveur ne se construisait plus pour le NAS.** `npm ci` tournait
+  sous émulation pour l'architecture arm64 et y mourait d'une instruction
+  illégale rendue par QEMU — les deux dernières publications ont échoué là.
+
+  La raison invoquée pour installer sous émulation était que le pilote de la base
+  est un binaire choisi d'après la machine qui installe. C'est faux : npm sait
+  installer pour une autre plateforme. Avec `--cpu`, `--os` et `--libc`,
+  l'installation se fait nativement sur le runner, et l'étage émulé ne fait plus
+  que des copies — que QEMU ne touche pas. Mesuré : `--cpu=arm64 --libc=musl`
+  retient bien `@libsql/linux-arm64-musl`.
+
+  Un piège trouvé au passage : buildx nomme l'architecture `amd64`, npm attend
+  `x64`, et avec `amd64` npm n'installe **aucun** binaire sans rien dire. La
+  traduction est explicite, et la construction s'arrête maintenant si le binaire
+  attendu manque, plutôt que de publier une image qui meurt au démarrage.
+
 - **Le serveur ne compressait plus rien.** nginx le faisait ; le serveur qui l'a
   remplacé ne le faisait plus, et personne ne l'avait vu. La voiture tirait
   **310 ko de JavaScript là où gzip en fait 99**. Les types textuels se
