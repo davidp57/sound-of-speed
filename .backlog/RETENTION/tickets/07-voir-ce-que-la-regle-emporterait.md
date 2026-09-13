@@ -1,6 +1,6 @@
 # 07 — Voir ce que la règle emporterait, sans rien effacer
 
-**Statut :** ✅ fait — reste à lire le verdict sur la base de production
+**Statut :** ✅ fait — verdict lu sur la base de production le 13 septembre 2026
 
 **Bloqué par :** [04 — Le dépôt sait quand le trajet a eu lieu](04-la-date-du-trajet-en-base.md),
 [05 — Le dépôt sait s'il a été analysé, et de quelle exemption il relève](05-l-etat-d-analyse-et-les-deux-exemptions.md),
@@ -49,8 +49,8 @@ sessions ont les deux, six n'ont que la trace, quatre n'ont que le journal.
 - **Les deux traces sans session ne se rangent nulle part.** Elles sont
   archivées, donc retenues, mais le verdict doit les nommer plutôt que de les
   taire.
-- **Sur la base d'aujourd'hui, le verdict doit être vide.** Les 14 sessions sont
-  archivées. Un verdict non vide sur ces données-là signale un défaut, pas un
+- **Sur la base d'aujourd'hui, le verdict doit être vide.** Les 12 trajets sont
+  archivés. Un verdict non vide sur ces données-là signale un défaut, pas un
   seuil à discuter.
 - **Les délais se mesurent sur la date d'enregistrement**, jamais sur la date de
   dépôt — c'est le sens du ticket 04.
@@ -64,7 +64,8 @@ sessions ont les deux, six n'ont que la trace, quatre n'ont que le journal.
       seul suit le délai court
 - [x] Les délais se règlent par l'environnement — `SPEED_RETENTION_TRACES` et
       `SPEED_RETENTION_JOURNAL` —, et valent 30 et 14 jours par défaut
-- [ ] Le verdict est vide sur la base de production, et les deux traces sans
-      session y sont nommées comme retenues — vérifié sur une base de test
-      entièrement archivée ; reste à le lire en production, devant le relecteur
+- [x] Le verdict est vide sur la base de production, et les deux traces sans
+      session y sont nommées comme retenues — **lu le 13 septembre 2026** sur une
+      copie de la base du NAS, avec `npm run verdict` : « Rien ne partirait.
+      12 trajets retenus : 12 archivé », les deux dépôts au nom libre nommés
 - [x] Rien n'est supprimé par ce ticket, et un test le vérifie

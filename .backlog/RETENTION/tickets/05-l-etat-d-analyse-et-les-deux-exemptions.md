@@ -30,7 +30,7 @@ leur retirer leur exemption, soit à laisser la borne sans effet.
 
 - **Écarté n'est pas « pas analysé ».** Une session trop courte que le profileur
   refuse a été regardée : elle ne montre rien, et elle est effaçable. Une session
-  jamais soumise au profileur ne l'est pas. Les six départs avortés de la base
+  jamais soumise au profileur ne l'est pas. Les quatre départs avortés de la base
   sont du premier cas.
 - **Une tranche illisible ne bloque pas sa session.** Le profileur écarte la
   tranche et nomme ce qu'il a laissé ; la session reste analysée.

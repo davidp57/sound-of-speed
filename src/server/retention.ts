@@ -102,3 +102,55 @@ export function formaterPassage(passage: Passage): string | null {
     (retenus === '' ? '' : ` ; retenus : ${retenus}`)
   )
 }
+
+/**
+ * Le verdict, écrit pour être lu par quelqu'un.
+ *
+ * Les trajets qui partiraient, du plus ancien au plus récent, puis ce qui retient
+ * les autres. On nomme ce qui part et on compte ce qui reste : c'est l'inverse
+ * du journal d'un passage, où ce qui est parti n'existe plus.
+ */
+export function formaterVerdict(verdict: Verdict, delais: Delais): string {
+  const lignes = [
+    `Délais : ${delais.traces} jours pour un trajet à trace, ${delais.journal} pour un journal seul.`,
+    '',
+  ]
+
+  if (verdict.aEffacer.length === 0) {
+    lignes.push('Rien ne partirait.')
+  } else {
+    lignes.push(
+      `${verdict.aEffacer.length} trajets partiraient, ${Math.round(verdict.octets / 1024)} Kio :`,
+    )
+    for (const trajet of verdict.aEffacer) {
+      lignes.push(
+        `  ${new Date(trajet.enregistreLe).toISOString().slice(0, 16).replace('T', ' ')}` +
+          ` — ${trajet.tranches} tranches, ${Math.round(trajet.octets / 1024)} Kio` +
+          ` — ${trajet.cle}${trajet.isole ? ' (dépôt seul)' : ''}`,
+      )
+    }
+  }
+
+  const raisons = new Map<string, number>()
+  for (const retenu of verdict.retenus) {
+    raisons.set(retenu.raison, (raisons.get(retenu.raison) ?? 0) + 1)
+  }
+
+  lignes.push('')
+  lignes.push(
+    verdict.retenus.length === 0
+      ? 'Aucun trajet retenu.'
+      : `${verdict.retenus.length} trajets retenus : ` +
+          [...raisons].map(([raison, combien]) => `${combien} ${raison}`).join(', ') +
+          '.',
+  )
+
+  // Les dépôts seuls ne se rangent nulle part : le verdict les nomme plutôt que
+  // de les taire.
+  const seuls = verdict.retenus.filter((retenu) => retenu.isole)
+  for (const seul of seuls) {
+    lignes.push(`  dépôt seul, retenu (${seul.raison}) : ${seul.cle}`)
+  }
+
+  return lignes.join('\n')
+}

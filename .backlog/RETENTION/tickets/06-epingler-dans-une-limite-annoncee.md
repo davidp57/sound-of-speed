@@ -19,11 +19,11 @@ serveur, là où le reste se règle déjà.
 
 ## Ce à quoi il faut faire attention
 
-- **L'archive ne compte pas dans la borne.** Les 14 sessions reprises sont des
+- **L'archive ne compte pas dans la borne.** Les 12 trajets repris sont des
   archives, pas des choix ; les faire entrer dans le compte remplirait la borne
   avant la première épingle.
-- **La borne n'a aucun effet aujourd'hui.** Il y a un seul compte et il porte 14
-  sessions archivées. Elle existe pour le jour où les comptes ne sont plus un
+- **La borne n'a aucun effet aujourd'hui.** Il y a un seul compte et il porte 12
+  trajets archivés. Elle existe pour le jour où les comptes ne sont plus un
   seul, et il faut qu'elle soit vérifiée par un test plutôt que par l'usage.
 - **Épingler porte sur la session entière.** Trace et journal ensemble ; on ne
   choisit pas une tranche.

@@ -15,6 +15,11 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Une commande dit ce que la règle emporterait, sur une copie de la base.**
+  `npm run verdict -- copie.db` rend le même verdict que le relecteur, sans
+  serveur ni conteneur : de quoi juger les délais sur les vraies données avant
+  d'armer quoi que ce soit. Elle n'efface rien.
+
 - **Le serveur fait le ménage : la règle efface.** Au démarrage, comme les
   migrations et la reprise, puis toutes les vingt-quatre heures — un serveur qui
   ne redémarre pas pendant trois mois ne doit pas cesser de faire le ménage pour

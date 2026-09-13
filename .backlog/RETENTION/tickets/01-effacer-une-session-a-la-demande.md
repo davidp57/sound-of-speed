@@ -1,6 +1,6 @@
 # 01 — Une session s'efface à la demande
 
-**Statut :** ✅ fait — reste à passer les six départs avortés en production
+**Statut :** ✅ fait — reste à passer les quatre départs avortés en production
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -15,7 +15,7 @@ de tranches, le poids. Un effacement qui surprend est un effacement qu'on
 regrette.
 
 C'est le premier geste de suppression du serveur, et il rend utile tout de suite :
-la base porte six départs avortés d'un kilo-octet que rien ne peut enlever.
+la base porte quatre départs avortés d'un kilo-octet que rien ne peut enlever.
 
 ## Ce à quoi il faut faire attention
 
@@ -42,5 +42,7 @@ la base porte six départs avortés d'un kilo-octet que rien ne peut enlever.
 - [x] Effacer deux fois la même session ne rend pas d'erreur
 - [x] Le profil mesuré est inchangé après l'effacement — vérifié sur son poids et
       sa couverture
-- [ ] Les six départs avortés de la base de production sont partis — le geste
-      appartient à David, devant le relecteur, une fois la version déployée
+- [ ] Les quatre départs avortés de la base de production sont partis — le geste
+      appartient à David, devant le relecteur, une fois la version déployée.
+      « Six » venait d'un décompte qui rangeait les deux dépôts au nom libre
+      parmi les avortés ; ils pèsent 81 et 112 Kio

@@ -1022,7 +1022,7 @@ relire un dossier à chaque démarrage.
 Les traces et le journal repris entrent **archivés** : sans cela, la règle de
 rétention effacerait un mois plus tard ce qu'on vient de déplacer. Archivés et
 non épinglés — l'épingle est un choix, et elle est bornée ; un déménagement n'en
-est pas un, et quatorze sessions reprises rempliraient la borne avant la première
+est pas un, et les douze trajets repris rempliraient la borne avant la première
 épingle.
 
 ### Les réglages quittent le stockage du navigateur
@@ -1092,6 +1092,19 @@ Quatre réglages, par l'environnement de la pile :
 **Le journal d'un trajet qui a une trace suit sa trace**, et part avec elle :
 deux délais stricts couperaient un trajet en deux, et à vingt jours on relirait
 un trajet ayant perdu ses faits marquants.
+
+**Voir le verdict sans rien démarrer.** Le relecteur le montre, mais il lui faut
+un serveur en service. Sur une **copie** du fichier de base, la commande le dit
+en clair :
+
+```powershell
+npm run verdict -- D:\copie-de-speed.db
+```
+
+Sur une copie, et non sur la base en service : elle y joue les migrations, donne
+sa date de trajet à ce qui n'en a pas, et laisse le profileur marquer ce qu'il a
+regardé — ce que fait un démarrage de serveur, moins le ménage. Elle n'efface
+rien.
 
 **Ces trois chiffres sont proposés, pas mesurés.** Aucun contrôle ne dira qu'ils
 sont mauvais : un délai trop court efface des données et rien ne rougit. C'est

@@ -11,7 +11,13 @@ import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
 import { deposits } from './base/schema'
 import { ecrireDepot, type Dossier, type Exemption } from './depots'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
-import { appliquerLaRegle, formaterPassage, verdictDuCompte, DELAIS_PAR_DEFAUT } from './retention'
+import {
+  appliquerLaRegle,
+  formaterPassage,
+  formaterVerdict,
+  verdictDuCompte,
+  DELAIS_PAR_DEFAUT,
+} from './retention'
 
 const MIGRATIONS = 'src/server/base/migrations'
 const JOUR = 24 * 60 * 60 * 1000
@@ -87,8 +93,9 @@ describe('le verdict sur la base', () => {
   })
 
   it('est vide sur une base entièrement archivée, comme celle de production', async () => {
-    // Les quatorze sessions reprises sont des archives. Un verdict non vide sur
-    // ces données-là signalerait un défaut, pas un seuil à discuter.
+    // Les douze trajets repris sont des archives. Un verdict non vide sur ces
+    // données-là signalerait un défaut, pas un seuil à discuter — c'est ce qui a
+    // été lu sur une copie de la base du NAS le 13 septembre 2026.
     await trajet(300, { exemption: 'archive' })
     await trajet(200, { dossiers: ['journal'], exemption: 'archive' })
 
@@ -267,3 +274,31 @@ function uneTranche(): Buffer {
   }
   return Buffer.from(gzipSync(Buffer.from(`${lignes.join('\n')}\n`)))
 }
+
+describe('le verdict écrit pour être lu', () => {
+  it('dit les délais, ce qui part, et ce qui retient le reste', async () => {
+    await trajet(40, { id: 'part' })
+    await trajet(300, { exemption: 'archive', id: 'garde' })
+
+    const verdict = await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT)
+    const texte = formaterVerdict(verdict, DELAIS_PAR_DEFAUT)
+
+    expect(texte).toContain('30 jours')
+    expect(texte).toContain('1 trajets partiraient')
+    expect(texte).toContain('1 trajets retenus : 1 archivé')
+  })
+
+  it('nomme les dépôts seuls plutôt que de les taire', async () => {
+    // Ils ne se rangent nulle part, et c'est précisément pour ça qu'il faut les
+    // voir : rien d'autre ne les montre.
+    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', 'traces.json', Buffer.from('x'), 'archive')
+
+    const texte = formaterVerdict(
+      await verdictDuCompte(base, SOLO_ACCOUNT_ID, MAINTENANT),
+      DELAIS_PAR_DEFAUT,
+    )
+
+    expect(texte).toContain('Rien ne partirait.')
+    expect(texte).toContain('dépôt seul, retenu (archivé) : depot:traces:traces.json')
+  })
+})
