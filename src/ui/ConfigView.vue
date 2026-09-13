@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import NumberField from './components/NumberField.vue'
 import { finalDriveFor, rpmAtSpeed } from '../core/preset/defaults'
@@ -7,6 +7,8 @@ import { ProfileImportError, fromFile, toFile } from '../core/preset/store'
 import type { SampleAnalysis } from '../core/audio/analyze'
 import type { ProfileSection } from '../core/preset/store'
 import { isComfortable, isReachableOrigin, shareUrl } from '../core/preset/share'
+import { demanderUnCode } from '../core/identity/client'
+import { lienDeLiaison } from '../core/identity/lien'
 import qrcode from 'qrcode-generator'
 import {
   buildProfile,
@@ -291,7 +293,82 @@ const compteDeLAppareil = computed(() => {
   if (identity.value.anonymous) {
     return 'Cet appareil a son compte, créé tout seul, sans adresse rattachée. Vider les données de ce site depuis les réglages du navigateur en perdrait l’accès — et ce qui a été déposé avec.'
   }
-  return `Cet appareil est rattaché à ${identity.value.name}.`
+  // Plus anonyme : un code de liaison lui a posé un mot de passe, ou une adresse
+  // s'y est rattachée. Dans les deux cas le compte se rouvre ailleurs, et la
+  // mise en garde sur les données du site n'a plus lieu d'être.
+  return `Cet appareil ouvre le compte « ${identity.value.name} ».`
+})
+
+/**
+ * Relier un second appareil, en lui faisant scanner un code.
+ *
+ * Le code porte un lien vers cette application, et le lien porte de quoi ouvrir
+ * ce compte — le tout dans le fragment, qui ne part jamais au serveur. C'est le
+ * motif du partage de profil ; ici ce qui voyage ouvre un compte, d'où le délai
+ * et l'avertissement.
+ */
+const lienARelier = ref('')
+const qrARelier = ref('')
+const noteDeLiaison = ref('')
+
+/** Deux minutes : le temps de scanner, pas celui d'oublier l'écran allumé. */
+const DUREE_DU_CODE_MS = 120_000
+let effacementDuCode: ReturnType<typeof setTimeout> | null = null
+
+function masquerLeCode(): void {
+  if (effacementDuCode !== null) clearTimeout(effacementDuCode)
+  effacementDuCode = null
+  lienARelier.value = ''
+  qrARelier.value = ''
+}
+
+async function onRelier(): Promise<void> {
+  if (lienARelier.value !== '') {
+    masquerLeCode()
+    return
+  }
+
+  noteDeLiaison.value = ''
+  const demande = await demanderUnCode()
+  if (demande.state === 'sans-reseau') {
+    // Hors réseau on ne relie pas : le code vient du serveur. Le dire vaut mieux
+    // que faire attendre devant un bouton qui ne répond pas.
+    noteDeLiaison.value =
+      'Sans réseau, il n’y a pas de code à afficher : il vient du serveur. À refaire une fois rentré.'
+    return
+  }
+  if (demande.state === 'refusee') {
+    noteDeLiaison.value = demande.detail
+    return
+  }
+
+  const url = lienDeLiaison(window.location.origin, demande.couple)
+  lienARelier.value = url
+  if (!isReachableOrigin(window.location.origin)) {
+    noteDeLiaison.value =
+      'Ce lien porte l’adresse à laquelle vous consultez l’application, qui n’est joignable que d’ici. Pour relier un appareil qui n’est pas sur ce réseau, refaire l’opération depuis l’adresse publique du serveur.'
+  }
+
+  // Correction moyenne : assez robuste pour un écran, sans gonfler le code.
+  const code = qrcode(0, 'M')
+  code.addData(url)
+  code.make()
+  qrARelier.value = code.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
+
+  effacementDuCode = setTimeout(masquerLeCode, DUREE_DU_CODE_MS)
+}
+
+async function onCopierLeLienDeLiaison(): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(lienARelier.value)
+    noteDeLiaison.value = 'Lien copié.'
+  } catch {
+    noteDeLiaison.value = 'Copie refusée par le navigateur : sélectionner le lien à la main.'
+  }
+}
+
+onUnmounted(() => {
+  masquerLeCode()
 })
 
 /** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
@@ -1187,6 +1264,37 @@ async function rapatrier(): Promise<void> {
         de mesure et profils. Il n’y a rien à saisir — l’appareil s’annonce tout
         seul.
       </p>
+
+      <!--
+        Relier un second appareil. Le geste vit ici, et nulle part au premier
+        lancement : une fenêtre qui demanderait de choisir au démarrage serait
+        l'écran d'inscription que ce lot supprime, et elle tomberait au moment
+        où l'on veut juste rouler.
+      -->
+      <div class="choices">
+        <button :class="{ 'is-active': !!lienARelier }" @click="onRelier()">
+          {{ lienARelier ? 'Masquer le code' : 'Relier un appareil…' }}
+        </button>
+      </div>
+      <p class="note">
+        Un téléphone ou un poste de travail qui scanne ce code ouvre le
+        <strong>même compte</strong> : les mêmes profils, les mêmes moteurs, les
+        mêmes boîtes, les mêmes trajets. Rien à saisir, aucune adresse, aucun
+        service tiers.
+      </p>
+      <div v-if="lienARelier" class="share">
+        <p class="note warn">
+          Qui voit ce code ouvre ce compte. Il s’efface tout seul au bout de deux
+          minutes, et afficher un code neuf périme celui-ci.
+        </p>
+        <div class="qr" v-html="qrARelier" />
+        <input :value="lienARelier" readonly @focus="($event.target as HTMLInputElement).select()" />
+        <div class="choices">
+          <button @click="onCopierLeLienDeLiaison()">Copier le lien</button>
+          <button @click="masquerLeCode()">Masquer</button>
+        </div>
+      </div>
+      <p v-if="noteDeLiaison" class="note">{{ noteDeLiaison }}</p>
 
       <!--
         La remontée au serveur. Trois positions, et la troisième est un choix

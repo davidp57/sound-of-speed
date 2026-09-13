@@ -72,7 +72,13 @@ import {
   upsertEngine,
 } from './core/preset/engine-store'
 import { buildZip } from './core/export/zip'
-import { startIdentity, type IdentityOutcome } from './core/identity/client'
+import {
+  relierCetAppareil,
+  startIdentity,
+  type IdentityOutcome,
+  type SortDeLAncien,
+} from './core/identity/client'
+import { lireLienDansUrl, type CoupleDeLiaison } from './core/identity/lien'
 import { loadIdentity, type LocalIdentity } from './core/identity/store'
 import { UploadQueue, type QueuedUpload } from './core/upload/queue'
 import { loadQueue, saveQueue } from './core/upload/store'
@@ -1497,7 +1503,18 @@ let pendantLeRapatriement = false
  */
 export async function rapatrierAuLancement(): Promise<void> {
   if (uploadConsent.value === 'none') return
+  await rapatrier()
+}
 
+/**
+ * Le travail lui-même, sans le garde du consentement.
+ *
+ * Relier un appareil l'appelle directement, et c'est voulu : le consentement dit
+ * ce qui **part** de la voiture — la position, les trajets, le journal. Ce qui
+ * redescend du compte qu'on vient de rejoindre n'est rien d'autre que ses
+ * propres réglages, et les redemander serait demander deux fois le même accord.
+ */
+async function rapatrier(): Promise<void> {
   const vu = loadDejaVu()
   const enAttente = uploads.list().map((item) => cle(item.folder, item.name))
   let change = false
@@ -1590,12 +1607,65 @@ function prendreIdentite(rendu: IdentityOutcome | undefined): void {
   if (rendu.state !== 'sans-reseau' && rendu.state !== 'refusee') identity.value = rendu.identity
 }
 
+/**
+ * Ce que la liaison a donné, quand cet appareil est arrivé par un code scanné.
+ *
+ * Les faits seulement : l'écran en fait une phrase. `ancien` dit ce qu'est
+ * devenu le compte que cet appareil portait avant — effacé s'il était vide,
+ * gardé sinon, et c'est ce dernier cas qu'il faut annoncer.
+ */
+export const liaison = ref<
+  | { etat: 'reliee'; ancien: SortDeLAncien }
+  | { etat: 'refusee'; detail: string }
+  | { etat: 'sans-reseau' }
+  | null
+>(null)
+
+/**
+ * Le code éventuellement scanné, lu **avant tout le reste**.
+ *
+ * La lecture efface le fragment au passage : il ouvre un compte, et il n'a rien
+ * à faire dans la barre d'adresse d'une page qu'on laisse ouverte.
+ */
+const lienScanne = typeof window === 'undefined' ? null : lireLienDansUrl()
+
+/**
+ * Rejoint le compte que le code désigne.
+ *
+ * Le serveur décide du sort du compte que cet appareil portait ; ici on range
+ * la nouvelle identité, on oublie ce qu'on croyait avoir déjà vu — ce registre
+ * parlait de l'autre compte —, et on redescend ce que le nouveau porte.
+ */
+async function appliquerLeLien(couple: CoupleDeLiaison): Promise<void> {
+  const faite = await relierCetAppareil(couple)
+  if (faite.state === 'sans-reseau') {
+    liaison.value = { etat: 'sans-reseau' }
+    return
+  }
+  if (faite.state === 'refusee') {
+    liaison.value = { etat: 'refusee', detail: faite.detail }
+    return
+  }
+
+  identity.value = faite.identity
+  identityState.value = 'gardee'
+  saveDejaVu({})
+  liaison.value = { etat: 'reliee', ancien: faite.ancien }
+  await rapatrier()
+}
+
 if (typeof window !== 'undefined') {
   // Le mot de passe partagé n'ouvre plus rien : le laisser en clair dans ce
   // navigateur serait une négligence gratuite.
   oublierLeCompteDeDepot()
   // Sans `await`, et ce n'est pas une négligence : voir `startIdentity`.
-  startIdentity({}, prendreIdentite)
+  startIdentity({}, (rendu) => {
+    prendreIdentite(rendu)
+    // La liaison vient après, et non à la place : l'appareil qui scanne s'est
+    // d'abord créé son compte anonyme, comme tout appareil neuf, et c'est ce
+    // compte-là que le serveur efface ou garde selon ce qu'il porte.
+    if (lienScanne !== null) void appliquerLeLien(lienScanne)
+  })
   // Un appareil qui a démarré dans un tunnel prend son compte au retour du
   // réseau, comme la file d'envoi part au même moment.
   window.addEventListener('online', () => {

@@ -59,19 +59,28 @@ premier cas, ce qui est exactement ce qu'on veut savoir.
 encore la production derrière nginx, ne connaît que le mot de passe partagé.
 L'option force alors l'ancienne façon de s'annoncer, et elle partira avec lui.
 
-## Cinq parts, et deux qu'on n'adresse pas à l'ancien serveur
+## Six parts, et trois qu'on n'adresse pas à l'ancien serveur
 
 `--part` en joue une ou plusieurs, séparées par des virgules : `publique` (ce qui
 se sert sans compte), `profils` (la bibliothèque), `depots` (ce que la voiture
 envoie en roulant), `entites` (les moteurs et les boîtes), `trajets` (les
 sessions : les lister, les emporter, les épingler, les effacer, et le verdict de
-la rétention).
+la rétention), `identite` (le code qui relie un second appareil).
 
 Sans `--part`, tout est joué — c'est ce que fait l'intégration continue contre le
 serveur neuf, dans son conteneur comme hors de lui. Le serveur de fichiers, lui,
-ne se voit demander ni `entites` ni `trajets` : l'un est né avec la base, l'autre
-suppose de savoir regrouper des tranches en trajets. La question n'a pas de sens
-pour lui, et ces deux exclusions disparaîtront avec lui.
+ne se voit demander ni `entites`, ni `trajets`, ni `identite` : le premier est né
+avec la base, le deuxième suppose de savoir regrouper des tranches en trajets, et
+le troisième n'existe que depuis que les comptes sont là. La question n'a pas de
+sens pour lui, et ces trois exclusions disparaîtront avec lui.
+
+La part `identite` est jouée **en dernier**, et l'ordre compte : demander un code
+pose un mot de passe sur le compte du jeu, qui cesse alors d'être anonyme. Rien
+en aval n'en dépend aujourd'hui, et c'est ce qu'on préserve en le gardant à la
+fin. La **séquence complète** — un second appareil qui scanne et ouvre le même
+compte — n'est pas ici : elle demande deux témoins de connexion, que ce cadre ne
+sait pas tenir. Elle est vérifiée par `src/server/liaison.test.ts`, qui passe par
+le serveur lui-même.
 
 ## Où il tourne
 

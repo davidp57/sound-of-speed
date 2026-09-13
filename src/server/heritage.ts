@@ -78,7 +78,7 @@ export async function faireHeriter(base: Base, heritier: string): Promise<Herita
   const ancien = await base.select().from(accounts).where(eq(accounts.id, ANCIEN_COMPTE_UNIQUE))
   if (ancien.length === 0) return null
 
-  const avant = await decompte(base)
+  const avant = await ceQuePorte(base, ANCIEN_COMPTE_UNIQUE)
 
   // Chaque table à son tour, puis le compte d'avant s'efface. L'ordre compte :
   // effacer le compte d'abord emporterait tout par la cascade, ce qui est
@@ -95,25 +95,32 @@ export async function faireHeriter(base: Base, heritier: string): Promise<Herita
   return avant
 }
 
-/** Ce que le compte d'avant porte, à l'instant. */
-async function decompte(base: Base): Promise<Heritage> {
+/**
+ * Ce qu'un compte porte, à l'instant.
+ *
+ * Sert à deux choses qui se ressemblent plus qu'il n'y paraît : dire ce qui a
+ * changé de mains lors d'un héritage, et savoir si un compte est **vide** —
+ * c'est-à-dire si on peut l'effacer sans rien perdre quand un appareil en
+ * rejoint un autre.
+ */
+export async function ceQuePorte(base: Base, compte: string): Promise<Heritage> {
   const combien = async (table: typeof engines | typeof gearboxes | typeof profiles | typeof rights) =>
     (
       await base
         .select({ n: sql<number>`count(*)` })
         .from(table)
-        .where(eq(table.accountId, ANCIEN_COMPTE_UNIQUE))
+        .where(eq(table.accountId, compte))
     )[0]?.n ?? 0
 
   const lesDepots = await base
     .select({ n: sql<number>`count(*)`, octets: sql<number>`coalesce(sum(${deposits.bytes}), 0)` })
     .from(deposits)
-    .where(eq(deposits.accountId, ANCIEN_COMPTE_UNIQUE))
+    .where(eq(deposits.accountId, compte))
 
   const mesure = await base
     .select({ n: sql<number>`count(*)` })
     .from(measuredCars)
-    .where(eq(measuredCars.accountId, ANCIEN_COMPTE_UNIQUE))
+    .where(eq(measuredCars.accountId, compte))
 
   return {
     profils: await combien(profiles),

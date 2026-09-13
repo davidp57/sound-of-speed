@@ -10,10 +10,14 @@
  * la main tout de suite, et le travail se fait derrière.
  */
 
+import type { CoupleDeLiaison } from './lien'
 import { loadIdentity, saveIdentity, type LocalIdentity } from './store'
 
 /** Le chemin sous lequel le serveur répond de l'identité. */
 const IDENTITE = '/api/auth'
+
+/** Le chemin sous lequel il répond de la liaison entre appareils. */
+const LIAISON = '/api/liaison'
 
 export interface IdentityOptions {
   fetchImpl?: typeof fetch
@@ -167,5 +171,157 @@ function compteDe(charge: unknown): Omit<LocalIdentity, 'obtainedAt'> | null {
     // Absent vaut anonyme : la seule façon d'arriver ici sans l'avoir demandé
     // est la création d'un compte qui n'a rien saisi.
     anonymous: champs['isAnonymous'] !== false,
+  }
+}
+
+
+/**
+ * Relier un second appareil au compte de la voiture.
+ *
+ * Deux gestes symétriques : la voiture **demande un code**, l'autre appareil
+ * **s'y relie**. Le premier se fait depuis l'écran de configuration, le second
+ * en ouvrant le lien que le code porte.
+ *
+ * **Hors réseau, on ne relie pas.** C'est acceptable — on ne relie pas un
+ * appareil en roulant —, mais l'écran doit le dire au lieu d'attendre : c'est
+ * pour cela que `sans-reseau` est une réponse à part entière, et non une erreur.
+ */
+
+export type CodeDemande =
+  | { state: 'pose'; couple: CoupleDeLiaison }
+  | { state: 'sans-reseau' }
+  | { state: 'refusee'; detail: string }
+
+/**
+ * Demande au serveur de quoi faire un code.
+ *
+ * Ce qui revient ouvre le compte : ça ne se range nulle part, ça s'affiche et
+ * ça disparaît.
+ */
+export async function demanderUnCode(options: IdentityOptions = {}): Promise<CodeDemande> {
+  const { fetchImpl = fetch } = options
+
+  let reponse: Response
+  try {
+    reponse = await fetchImpl(`${LIAISON}/code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: '{}',
+    })
+  } catch {
+    return { state: 'sans-reseau' }
+  }
+
+  if (reponse.status === 401) {
+    return {
+      state: 'refusee',
+      detail: "Cet appareil n'a pas encore de compte : il en prendra un au prochain passage.",
+    }
+  }
+  if (!reponse.ok) {
+    return { state: 'refusee', detail: `Le serveur a répondu ${reponse.status}.` }
+  }
+
+  let charge: unknown
+  try {
+    charge = await reponse.json()
+  } catch {
+    return { state: 'refusee', detail: 'Le serveur a répondu autre chose que du JSON.' }
+  }
+
+  const couple = coupleDe(charge)
+  if (couple === null) {
+    return { state: 'refusee', detail: "La réponse ne porte pas de quoi relier." }
+  }
+  return { state: 'pose', couple }
+}
+
+/** Ce qu'est devenu le compte que cet appareil portait avant de se relier. */
+export type SortDeLAncien = 'efface' | 'garde' | 'aucun'
+
+export type LiaisonFaite =
+  | { state: 'reliee'; identity: LocalIdentity; ancien: SortDeLAncien }
+  | { state: 'sans-reseau' }
+  | { state: 'refusee'; detail: string }
+
+/**
+ * Ouvre ici le compte que le code désigne.
+ *
+ * Le serveur décide du sort du compte que cet appareil portait : effacé s'il
+ * était vide, gardé sinon — voir `server/liaison.ts`, où l'ordre est expliqué.
+ * Ici, on range la nouvelle identité et on rend ce qui s'est passé, pour que
+ * l'écran puisse le dire.
+ */
+export async function relierCetAppareil(
+  couple: CoupleDeLiaison,
+  options: IdentityOptions = {},
+): Promise<LiaisonFaite> {
+  const { fetchImpl = fetch, now = Date.now } = options
+
+  let reponse: Response
+  try {
+    reponse = await fetchImpl(`${LIAISON}/relier`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(couple),
+    })
+  } catch {
+    return { state: 'sans-reseau' }
+  }
+
+  if (reponse.status === 401) {
+    return { state: 'refusee', detail: "Ce code n'ouvre plus rien : en afficher un nouveau." }
+  }
+  if (!reponse.ok) {
+    return { state: 'refusee', detail: `Le serveur a répondu ${reponse.status}.` }
+  }
+
+  let charge: unknown
+  try {
+    charge = await reponse.json()
+  } catch {
+    return { state: 'refusee', detail: 'Le serveur a répondu autre chose que du JSON.' }
+  }
+
+  const compte = compteRelie(charge)
+  if (compte === null) {
+    return { state: 'refusee', detail: "La réponse ne porte pas de compte." }
+  }
+
+  const identity: LocalIdentity = { ...compte.identity, obtainedAt: now() }
+  saveIdentity(identity)
+  return { state: 'reliee', identity, ancien: compte.ancien }
+}
+
+function coupleDe(charge: unknown): CoupleDeLiaison | null {
+  if (typeof charge !== 'object' || charge === null) return null
+  const champs = charge as Record<string, unknown>
+  const email = champs['email']
+  const motDePasse = champs['motDePasse']
+  if (typeof email !== 'string' || email === '') return null
+  if (typeof motDePasse !== 'string' || motDePasse === '') return null
+  return { email, motDePasse }
+}
+
+function compteRelie(
+  charge: unknown,
+): { identity: Omit<LocalIdentity, 'obtainedAt'>; ancien: SortDeLAncien } | null {
+  if (typeof charge !== 'object' || charge === null) return null
+  const champs = charge as Record<string, unknown>
+  const compte = champs['compte']
+  if (typeof compte !== 'object' || compte === null) return null
+
+  const decrit = compte as Record<string, unknown>
+  const id = decrit['id']
+  if (typeof id !== 'string' || id === '') return null
+
+  const ancien = champs['ancien']
+  return {
+    identity: {
+      id,
+      name: typeof decrit['name'] === 'string' ? decrit['name'] : '',
+      anonymous: decrit['anonymous'] === true,
+    },
+    ancien: ancien === 'efface' || ancien === 'garde' ? ancien : 'aucun',
   }
 }
