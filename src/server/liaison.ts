@@ -54,18 +54,25 @@ const ALPHABET = '23456789ABCDEFGHJKMNPQRSTVWXYZ'
 const LONGUEUR = 8
 
 /**
- * Dix minutes, et c'est un choix d'usage plutôt que de sécurité.
+ * Vingt-quatre heures, et c'est un choix d'usage plutôt que de sécurité.
  *
- * Le temps d'aller de la voiture au bureau, pas celui d'oublier un écran allumé.
- * Ce qui protège vraiment est l'usage unique, et la limitation de débit ci-après.
+ * **Le code s'affiche dans la voiture et se saisit au bureau.** Dix minutes —
+ * la valeur d'avant — supposaient qu'on aille de l'une à l'autre sans s'arrêter ;
+ * on se gare, on rentre, on allume un ordinateur, et le code est mort. Le
+ * regénérer demande de retourner dans une voiture éteinte.
+ *
+ * Ce qui protège reste l'usage unique et la limitation de débit ci-après, pas
+ * la brièveté : un code qui expire pendant qu'on le recopie ne gêne que celui
+ * qui le possède.
  */
-export const VALIDITE_MS = 10 * 60 * 1000
+export const VALIDITE_MS = 24 * 60 * 60 * 1000
 
 /**
  * Ce qui rend un code court aussi sûr qu'un long : on ne peut pas essayer vite.
  *
- * Dix essais par minute, par adresse. Sur les dix minutes de validité d'un code,
- * cela fait cent tentatives contre six cent cinquante milliards de combinaisons.
+ * Dix essais par minute, par adresse. Sur les vingt-quatre heures de validité
+ * d'un code, cela fait quatorze mille quatre cents tentatives contre six cent
+ * cinquante milliards de combinaisons — une chance sur quarante-cinq millions.
  * Sans cette borne, l'alphabet ne suffirait pas.
  *
  * **Elle ne s'applique qu'en production** : la bibliothèque coupe sa limitation

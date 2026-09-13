@@ -2,6 +2,14 @@
 
 **Statut :** ✅ fait — 13 septembre 2026, sauf « j'ai oublié », qui attend un relais de courriel
 
+**Un défaut d'écran corrigé le même jour**, au ticket
+[16](16-s-approprier-son-compte.md) : le champ « Mot de passe, pour confirmer »
+de la suppression et le bloc « Changer le mot de passe » s'affichaient dès qu'un
+compte n'était plus anonyme, donc aussi pour un compte enregistré chez un
+fournisseur, qui n'a pas de mot de passe à saisir. Le serveur était juste — il
+n'exige un mot de passe que d'un compte qui en porte un ; c'est l'écran qui ne
+savait pas la différence, faute d'une route qui dise ce que ce compte-ci porte.
+
 **Bloqué par :** [11 — Un vrai compte](11-un-vrai-compte.md).
 
 ## Ce qu'il faut obtenir

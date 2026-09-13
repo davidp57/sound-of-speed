@@ -27,6 +27,7 @@ import type { Role } from './core/identity/roles'
 import {
   appareil,
   applyUpdate,
+  identity,
   offlineStatus,
   setBrake,
   importFromUrl,
@@ -114,33 +115,46 @@ const received = ref('')
  * de passe pour y revenir. Le taire le ferait découvrir plus tard.
  */
 /**
- * Le rappel de l'écran du compte, montré **une fois**, et jamais au premier
- * lancement.
+ * Le rappel de l'écran du compte, et jamais au premier lancement.
  *
  * Au premier lancement on veut rouler, pas lire : c'est la règle du lot, et
  * c'est pour cela qu'aucune fenêtre ne demande de choisir quoi que ce soit. À
  * la deuxième ouverture, en revanche, savoir que ses réglages vivent sur un
- * compte — et qu'un autre appareil peut le rejoindre — vaut une ligne.
+ * compte qui ne tient qu'à ce navigateur vaut une ligne.
+ *
+ * **Il revient, au lieu de ne se montrer qu'une fois.** C'est le motif de
+ * toutes les applications qui laissent essayer avant de s'inscrire : une
+ * invitation discrète, qu'on écarte, et qui repasse plus tard tant qu'on n'a
+ * rien fait. Un rappel montré une seule fois, à la deuxième ouverture, tombe
+ * exactement au moment où l'on n'a encore rien à perdre.
  */
 const compteASignaler = ref(false)
+
+/** Assez d'ouvertures pour ne pas insister, assez peu pour ne pas disparaître. */
+const OUVERTURES_ENTRE_DEUX_RAPPELS = 10
+
+/** Le rappel n'a de sens que tant que le compte n'est pas enregistré. */
+const compteAEnregistrer = computed(() => identity.value?.anonymous !== false)
 
 function signalerLeCompte(): void {
   try {
     const ouvertures = Number(localStorage.getItem(OUVERTURES_KEY) ?? '0') + 1
     localStorage.setItem(OUVERTURES_KEY, String(ouvertures))
-    if (ouvertures >= 2 && localStorage.getItem(COMPTE_SIGNALE_KEY) === null) {
-      compteASignaler.value = true
-    }
+    const dernier = Number(localStorage.getItem(COMPTE_SIGNALE_KEY) ?? '0')
+    compteASignaler.value =
+      ouvertures >= 2 && ouvertures - dernier >= OUVERTURES_ENTRE_DEUX_RAPPELS
   } catch {
     // Stockage fermé : on ne signale rien plutôt que de le signaler à chaque
-    // ouverture, ce qui serait le contraire de « une fois ».
+    // ouverture, ce qui serait harceler au lieu de rappeler.
   }
 }
 
 function fermerLeRappel(): void {
   compteASignaler.value = false
   try {
-    localStorage.setItem(COMPTE_SIGNALE_KEY, '1')
+    // Ce qui est rangé est le rang de l'ouverture où l'on a écarté le rappel :
+    // c'est de là qu'on recompte.
+    localStorage.setItem(COMPTE_SIGNALE_KEY, localStorage.getItem(OUVERTURES_KEY) ?? '0')
   } catch {
     // Sans conséquence : l'onglet reste là, et le rappel se reposera peut-être.
   }
@@ -149,6 +163,12 @@ function fermerLeRappel(): void {
 function allerAuCompte(): void {
   tab.value = 'account'
   fermerLeRappel()
+}
+
+/** Depuis l'aide : elle se ferme, et on atterrit sur l'écran du compte. */
+function allerAuCompteDepuisLAide(): void {
+  closeHelp()
+  allerAuCompte()
 }
 
 const liaisonVue = ref(false)
@@ -443,14 +463,17 @@ onBeforeUnmount(() => {
       <button @click="received = ''">Fermer</button>
     </div>
 
-    <div v-if="compteASignaler && !helpOpen && !messageDeLiaison" class="banner">
+    <div
+      v-if="compteASignaler && compteAEnregistrer && !helpOpen && !messageDeLiaison"
+      class="banner"
+    >
       <span>
-        Vos profils, vos moteurs et vos trajets vivent sur un compte. L’écran
-        <strong>Compte</strong> permet d’y relier un autre appareil — un
-        téléphone, un poste de travail — avec un code.
+        Vos profils, vos moteurs et vos trajets vivent sur un compte qui ne tient
+        qu’à ce navigateur. L’écran <strong>Compte</strong> permet de
+        l’enregistrer, ou de l’ouvrir sur un autre appareil.
       </span>
       <button @click="allerAuCompte()">Voir</button>
-      <button @click="fermerLeRappel()">Fermer</button>
+      <button @click="fermerLeRappel()">Plus tard</button>
     </div>
 
     <div v-if="messageDeLiaison" class="banner">
@@ -458,7 +481,7 @@ onBeforeUnmount(() => {
       <button @click="liaisonVue = true">Fermer</button>
     </div>
 
-    <HelpView v-if="helpOpen" @close="closeHelp()" />
+    <HelpView v-if="helpOpen" @close="closeHelp()" @compte="allerAuCompteDepuisLAide()" />
 
   </div>
 </template>

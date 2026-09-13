@@ -319,7 +319,8 @@ describe('relier un second appareil', () => {
 
     const demande = await demanderUnCode({ fetchImpl, now: () => 1_700_000_000_000 })
 
-    expect(demande).toEqual({ state: 'pose', code: CODE, expireLe: 1_700_000_600_000 })
+    // Le repli vaut la validité annoncée par le serveur : vingt-quatre heures.
+    expect(demande).toEqual({ state: 'pose', code: CODE, expireLe: 1_700_086_400_000 })
   })
 
   it('dit qu’on ne relie pas hors réseau, au lieu d’attendre', async () => {
@@ -338,7 +339,7 @@ describe('relier un second appareil', () => {
       'liaison/relier': {
         statut: 200,
         charge: {
-          compte: { id: 'c-voiture', name: 'Appareil du 13/09/2026', anonymous: true },
+          compte: { id: 'c-voiture', name: 'houle-paisible-47', anonymous: true },
           ancien: 'garde',
         },
       },
@@ -351,7 +352,7 @@ describe('relier un second appareil', () => {
       ancien: 'garde',
       identity: {
         id: 'c-voiture',
-        name: 'Appareil du 13/09/2026',
+        name: 'houle-paisible-47',
         anonymous: true,
         obtainedAt: 1_700_000_000_000,
       },

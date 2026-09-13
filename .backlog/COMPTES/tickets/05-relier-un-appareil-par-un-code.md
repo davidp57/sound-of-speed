@@ -45,9 +45,17 @@ la règle « un code neuf périme le précédent » — un jeton s'use, cela suf
 ## Ce à quoi il faut faire attention
 
 - **Un code court se devine, un lien non.** Huit caractères dans un alphabet de
-  trente-deux font mille milliards de combinaisons ; c'est assez pour dix minutes
-  de validité, à condition de **compter les essais** et de refuser au-delà. Sans
-  ce compteur, le calcul ne tient plus.
+  trente font six cent cinquante milliards de combinaisons ; c'est assez, à
+  condition de **compter les essais** et de refuser au-delà. Sans ce compteur, le
+  calcul ne tient plus.
+
+  **La validité est passée de dix minutes à vingt-quatre heures** le 13 septembre
+  2026, au ticket [16](16-s-approprier-son-compte.md). Dix minutes supposaient
+  qu'on aille de la voiture au bureau sans s'arrêter ; on se gare, on rentre, on
+  allume un ordinateur, et regénérer le code demandait de retourner dans une
+  voiture éteinte. Le calcul tient toujours : dix essais par minute font quatorze
+  mille quatre cents tentatives sur vingt-quatre heures, soit une chance sur
+  quarante-cinq millions.
 - **Le jeton s'use.** Une fois qu'un appareil s'en est servi, il ne vaut plus
   rien — c'est ce qui permet de l'afficher sans arrière-pensée, et ce qui rend
   inutile la règle de péremption de la première version.

@@ -64,7 +64,8 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [MIGRER](MIGRER/spec.md) — 3/5 · les réglages quittent le navigateur de la voiture et les dossiers du NAS pour la base | ✅ 4/4 — repris du NAS, remonté du navigateur, et rendu au lancement |
 | [RETENTION](RETENTION/spec.md) — 4/5 · analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte ; 8 tickets | 🧑 8/8 — livré ; verdict lu sur la base de production, il est vide |
 | [IMAGE-ARM64](IMAGE-ARM64/spec.md) — l'image du serveur échouait une fois sur deux en arm64 | ✅ la cause était une prémisse fausse : npm sait installer pour une autre architecture, et plus rien ne s'émule |
-| [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | 🔄 13/14 — les deux axes ouvrent les écrans, le poids est mesuré, et Tesla, Google et Apple se connectent quand ils sont configurés ; restent un essai hors réseau en voiture, les identifiants des trois fournisseurs (un dossier, pas du code) et « j'ai oublié » (attend un relais) |
+| [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | 🔄 14/15 — le parcours d'appropriation est celui des autres applications, les deux axes ouvrent les écrans, et un fournisseur se connecte quand il est configuré ; restent un essai hors réseau en voiture, les identifiants de Google (un dossier, pas du code) et « j'ai oublié » (attend un relais) |
+| [DURCIR](DURCIR/spec.md) — sécuriser le code et les données : ce que les échanges réseau laissent voir, et ce qu'un compte peut atteindre de ce qu'un autre a déposé | ⬜ cadre posé le 13 septembre, pas découpé |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,

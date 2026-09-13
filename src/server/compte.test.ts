@@ -282,6 +282,40 @@ describe('tenir son compte', () => {
     expect(dit.fournisseurs).toEqual([])
   })
 
+  async function preuvesDe(temoin: string) {
+    const reponse = await serveur().request('/api/auth/compte/preuves', {
+      headers: { Cookie: temoin },
+    })
+    if (!reponse.ok) return { statut: reponse.status, motDePasse: false, fournisseurs: [] }
+    const dit = (await reponse.json()) as {
+      motDePasse: boolean
+      fournisseurs: { id: string; nom: string }[]
+    }
+    return { statut: reponse.status, ...dit }
+  }
+
+  it('dit ce que ce compte-ci porte, et non ce que le serveur propose', async () => {
+    // Sans cette différence, l'écran ne sait pas s'il doit proposer de
+    // s'approprier le compte ou montrer qu'il l'est déjà — et il demande son
+    // mot de passe à un compte qui n'en a pas.
+    const appareil = await appareilNeuf()
+
+    const avant = await preuvesDe(appareil)
+    expect(avant.statut).toBe(200)
+    expect(avant.motDePasse).toBe(false)
+    expect(avant.fournisseurs).toEqual([])
+
+    await rattacher(appareil, 'preuve@exemple.fr')
+
+    const apres = await preuvesDe(appareil)
+    expect(apres.motDePasse).toBe(true)
+    expect(apres.fournisseurs).toEqual([])
+  })
+
+  it('ne dit rien de ce qu’un compte porte à qui n’a pas de session', async () => {
+    expect((await preuvesDe('')).statut).toBe(401)
+  })
+
   it('supprime le compte et tout ce qu’il portait', async () => {
     const appareil = await appareilNeuf()
     const compte = (await compteDe(appareil)) ?? ''

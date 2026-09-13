@@ -33,6 +33,8 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { anonymous } from 'better-auth/plugins'
 import { genericOAuth } from 'better-auth/plugins/generic-oauth'
 
+import { tirerUneEtiquette } from '../core/identity/etiquette'
+
 import type { Base } from './base/base'
 import { accounts, authIdentities, authSessions, authVerifications } from './base/schema'
 import { compte } from './compte'
@@ -131,15 +133,15 @@ export function creerIdentite({ base, secret, adresse, tiers }: OptionsDIdentite
          */
         disableDeleteAnonymousUser: true,
         /**
-         * Un nom en français, et daté.
+         * Une étiquette qu'on retient, tirée au sort — voir `etiquette.ts`.
          *
-         * La bibliothèque nomme « Anonymous » ce qu'elle crée, et ce nom
-         * s'afficherait tel quel dans une application qui n'a pas d'autre
-         * langue que le français. La date le rend en plus distinguable : deux
-         * appareils font deux comptes, et une liste de comptes qui disent tous
-         * la même chose ne se lit pas.
+         * La bibliothèque nomme « Anonymous » ce qu'elle crée. Le nom daté qui
+         * a précédé disait le jour et rien d'autre : tous les comptes ouverts
+         * le même jour portaient le même. Celui-ci se reconnaît d'un coup d'œil
+         * et se dit à voix haute, ce qui est tout ce qu'on lui demande — il
+         * n'ouvre rien.
          */
-        generateName: () => `Appareil du ${new Date().toLocaleDateString('fr-FR')}`,
+        generateName: () => tirerUneEtiquette(),
       }),
 
       // Relier un second appareil au même compte. Un greffon et non deux routes

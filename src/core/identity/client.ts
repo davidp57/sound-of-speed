@@ -167,6 +167,7 @@ function compteDe(charge: unknown): Omit<LocalIdentity, 'obtainedAt'> | null {
 
   const anonymous = champs['isAnonymous'] !== false
   const email = champs['email']
+  const image = champs['image']
   return {
     id,
     name: typeof champs['name'] === 'string' ? champs['name'] : '',
@@ -176,6 +177,9 @@ function compteDe(charge: unknown): Omit<LocalIdentity, 'obtainedAt'> | null {
     // L'adresse d'un compte anonyme est fabriquée sous `.invalid` : la garder
     // ferait croire à une adresse là où il n'y en a pas.
     ...(anonymous || typeof email !== 'string' ? {} : { email }),
+    // Le portrait ne vient que d'un compte tenu ailleurs, et seulement s'il en
+    // rend un. Une chaîne vide n'est pas une image.
+    ...(typeof image === 'string' && image !== '' ? { image } : {}),
   }
 }
 
@@ -249,8 +253,8 @@ export async function demanderUnCode(options: IdentityOptions = {}): Promise<Cod
   return { state: 'pose', code, expireLe: Number.isFinite(annonce) ? annonce : now() + VALIDITE_MS }
 }
 
-/** Dix minutes, comme le serveur. Sert de repli quand sa date est illisible. */
-const VALIDITE_MS = 10 * 60 * 1000
+/** Vingt-quatre heures, comme le serveur. Repli quand sa date est illisible. */
+const VALIDITE_MS = 24 * 60 * 60 * 1000
 
 /** Ce qu'est devenu le compte que cet appareil portait avant de se relier. */
 export type SortDeLAncien = 'efface' | 'garde' | 'aucun'

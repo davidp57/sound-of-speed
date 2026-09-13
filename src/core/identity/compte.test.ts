@@ -9,7 +9,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { rattacherUneAdresse, seConnecter } from './compte'
+import { preuvesDuCompte, rattacherUneAdresse, seConnecter } from './compte'
 import { loadIdentity, saveIdentity, type LocalIdentity } from './store'
 
 function fauxStockage() {
@@ -27,7 +27,7 @@ function fauxStockage() {
 
 const GARDEE: LocalIdentity = {
   id: 'c-ici',
-  name: 'Appareil du 13/09/2026',
+  name: 'houle-paisible-47',
   anonymous: true,
   obtainedAt: 1_700_000_000_000,
 }
@@ -122,7 +122,7 @@ describe('se connecter à un compte', () => {
         charge: {
           user: {
             id: 'c-ailleurs',
-            name: 'Appareil du 12/09/2026',
+            name: 'granit-nocturne-12',
             email: 'david@exemple.fr',
             isAnonymous: false,
           },
@@ -141,7 +141,7 @@ describe('se connecter à un compte', () => {
       ancien: 'efface',
       identity: {
         id: 'c-ailleurs',
-        name: 'Appareil du 12/09/2026',
+        name: 'granit-nocturne-12',
         email: 'david@exemple.fr',
         anonymous: false,
         obtainedAt: 1_800_000_000_000,
@@ -194,5 +194,42 @@ describe('se connecter à un compte', () => {
 
     expect(rendu.state).toBe('connectee')
     expect(loadIdentity()?.email).toBeUndefined()
+  })
+})
+
+describe('ce que le compte porte déjà', () => {
+  it('sépare le mot de passe des comptes tenus ailleurs', async () => {
+    const { fetchImpl } = serveur({
+      'compte/preuves': {
+        statut: 200,
+        charge: { motDePasse: true, fournisseurs: [{ id: 'google', nom: 'Google' }] },
+      },
+    })
+
+    expect(await preuvesDuCompte({ fetchImpl })).toEqual({
+      motDePasse: true,
+      fournisseurs: [{ id: 'google', nom: 'Google' }],
+    })
+  })
+
+  it('ne sait rien plutôt que de deviner, hors réseau', async () => {
+    // Le cas courant dans la voiture. Répondre « pas de mot de passe » ferait
+    // proposer de s'approprier un compte qui l'est peut-être déjà.
+    const fetchImpl = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    }) as unknown as typeof fetch
+
+    expect(await preuvesDuCompte({ fetchImpl })).toBeNull()
+  })
+
+  it('écarte un fournisseur qu’il ne saurait pas afficher', async () => {
+    const { fetchImpl } = serveur({
+      'compte/preuves': {
+        statut: 200,
+        charge: { motDePasse: false, fournisseurs: [{ id: 'sans-nom' }, { nom: 'Sans identifiant' }] },
+      },
+    })
+
+    expect(await preuvesDuCompte({ fetchImpl })).toEqual({ motDePasse: false, fournisseurs: [] })
   })
 })

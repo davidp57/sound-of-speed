@@ -58,9 +58,16 @@ Les deux tests demandent désormais un compte **dans la forme que le navigateur
 envoie**, et un troisième vérifie que le client l'envoie bien ainsi.
 
 **Le nom du compte est en français.** La bibliothèque nomme « Anonymous » ce
-qu'elle crée, et ce nom s'affiche. Il devient `Appareil du 13/09/2026` — daté,
-parce que deux appareils font deux comptes et qu'une liste de comptes qui disent
-tous la même chose ne se lit pas.
+qu'elle crée, et ce nom s'affiche.
+
+**Il est devenu une étiquette tirée au sort** le 13 septembre 2026, au
+ticket [16](16-s-approprier-son-compte.md) : `houle-paisible-47`,
+`orme-diurne-19`. Le nom daté qui a précédé — `Appareil du 13/09/2026` — ne
+disait que le jour, et tous les comptes ouverts le même jour le partageaient.
+Le vocabulaire est sans accent, pour que l'étiquette se recopie telle quelle, et
+ses adjectifs ne s'accordent pas en genre : le nom et l'adjectif étant tirés
+séparément, un adjectif accordable produirait une faute un tirage sur deux.
+C'est une étiquette et non une clé — elle n'ouvre rien.
 
 **Le compte anonyme ne s'efface pas au rattachement d'une adresse.** C'était le
 piège : la bibliothèque supprime le compte anonyme après un rattachement, et huit

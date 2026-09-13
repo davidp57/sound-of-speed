@@ -228,17 +228,24 @@ au-delà, chaque mesure était rejetée comme aberrante et la vitesse se figeait
 Les propositions, elles, restent affichées étape par étape et se recopient à la
 main.
 
-**Compte** — tout ce qui touche à l'identité, et nulle part ailleurs : ce que
-porte cet appareil, **donner un code** pour qu'un autre appareil ouvre le même
-compte, **recopier un code** venu d'un autre, **une adresse avec un mot de
-passe** pour le jour où l'on n'a plus aucun appareil, et de quoi **tenir son
-compte** : changer son mot de passe, emporter ses données, le supprimer.
+**Compte** — tout ce qui touche à l'identité, et nulle part ailleurs. En haut,
+qui l'on est : un portrait et un nom. En dessous, **enregistrer ce compte** tant
+qu'il ne l'est pas, **donner un code** pour qu'un autre appareil ouvre le même
+compte, **recopier un code** venu d'un autre, et de quoi **tenir son compte** :
+changer son mot de passe, emporter ses données, le supprimer. Ouvrir un autre
+compte ici est rangé en bas, replié : c'est le geste rare, et le seul qui fasse
+perdre quelque chose.
 
 Il est apparu le 13 septembre 2026, quand la section du compte a quitté
 **Configuration** : le chemin normal va de la voiture au poste de travail, et
-c'est sur le poste, clavier sous les doigts, qu'on se fera un vrai compte. Un
-rappel escamotable signale son existence — **à la deuxième ouverture, une seule
-fois** : au premier lancement on veut rouler, pas lire.
+c'est sur le poste, clavier sous les doigts, qu'on enregistre son compte. Un
+rappel escamotable signale son existence à partir de la deuxième ouverture — au
+premier lancement on veut rouler, pas lire —, et **il repasse tant que le compte
+n'est pas enregistré**, une fois toutes les dix ouvertures. Montré une seule
+fois, il tombait exactement au moment où l'on n'a encore rien à perdre.
+
+L'aide du premier lancement finit sur le même sujet : elle dit que ce compte est
+le vôtre, et mène à cet écran.
 
 **Banc** — conduire une vitesse à la main, sans rouler : les deux pédales, le
 curseur d'allure maintenue, et les réglages de ce que la source fabrique
@@ -1142,6 +1149,13 @@ l'appareil reçoit un compte créé tout seul : rien à saisir, aucun écran
 d'inscription, et aucune adresse. Ce compte est gardé dans le navigateur et
 resservira à chaque ouverture.
 
+**Il porte une étiquette qu'on retient** — `houle-paisible-47`, `orme-diurne-19` :
+un nom, un adjectif et deux chiffres, tirés au sort à sa création. C'est une
+étiquette et non une clé : elle n'ouvre rien, elle sert à reconnaître son compte
+quand on en voit le nom. Le vocabulaire est français, sans accent pour que
+l'étiquette se recopie telle quelle, et ses adjectifs ne s'accordent pas en genre
+— sans quoi un tirage sur deux listes produirait des fautes.
+
 **Et l'application démarre sans lui.** Elle part de ce qu'elle a en local, fait
 du son, et se présente au serveur quand elle peut — au démarrage si le réseau est
 là, sinon au retour du réseau. C'est l'exigence qui commande tout le reste : une
@@ -1183,8 +1197,10 @@ Trois conséquences, toutes assumées :
 
 - **Qui voit l'écran ouvre le compte**, jusqu'à ce que le code serve ou qu'il
   expire. Ce qui est en jeu est une bibliothèque de réglages, pas de l'argent. Le
-  code **ne sert qu'une fois**, il expire en dix minutes, et l'écran affiche le
-  temps qui reste.
+  code **ne sert qu'une fois**, il vaut **vingt-quatre heures**, et l'écran dit
+  jusqu'à quand. Dix minutes — la valeur d'avant — supposaient qu'on aille de la
+  voiture au bureau sans s'arrêter ; on se gare, on rentre, on allume un
+  ordinateur, et le code était mort dans une voiture éteinte.
 - **Le compte que l'appareil portait avant** est effacé s'il était vide, gardé
   sinon — et l'écran le dit, parce qu'un compte anonyme gardé n'a pas de mot de
   passe pour y revenir.
@@ -1192,9 +1208,10 @@ Trois conséquences, toutes assumées :
   L'écran le dit au lieu de faire attendre.
 
 **Ce qui protège un code court, c'est qu'on ne peut pas essayer vite.** Dix
-essais par minute et par adresse : sur les dix minutes de validité, cela fait
-cent tentatives contre six cent cinquante milliards de combinaisons. La limite
-ne s'applique qu'en production, la bibliothèque la coupant ailleurs.
+essais par minute et par adresse : sur les vingt-quatre heures de validité, cela
+fait quatorze mille quatre cents tentatives contre six cent cinquante milliards
+de combinaisons — une chance sur quarante-cinq millions. La limite ne s'applique
+qu'en production, la bibliothèque la coupant ailleurs.
 
 **Un compte anonyme n'a rien à récupérer**, et l'écran **Compte** le dit : vider
 les données du site depuis les réglages du navigateur perd l'accès à ce compte,
@@ -1202,28 +1219,50 @@ et à ce qui a été déposé avec. Relier un second appareil n'y change rien �
 compte n'a toujours ni adresse ni mot de passe, et les perdre tous les deux le
 perdrait. La remise à zéro des réglages, elle, n'y touche pas.
 
-**Une adresse et un mot de passe y mettent fin.** On les choisit dans l'écran
-**Compte**, depuis un poste de travail — c'est le moment de saisir sur un vrai
-clavier, pas au volant. Deux gestes que cet écran distingue, et qu'il faut ne pas
-confondre :
+**S'approprier son compte y met fin**, et l'écran **Compte** suit pour cela le
+parcours de n'importe quelle application : on se sert de Sound of Speed sans rien
+signer, un bandeau discret propose d'enregistrer le compte, et le jour où c'est
+fait, l'invitation disparaît. Ce qui nous distingue tient en une ligne — le
+compte existe **avant** qu'on le demande, parce que la voiture dépose ses trajets
+dès le premier démarrage.
 
-- **Rattacher** donne une adresse au compte de cet appareil. Le compte **ne
-  change pas d'identifiant** : ses profils, ses moteurs, ses boîtes, ses trajets
-  et son profil mesuré ne bougent pas d'un pouce. C'est ce qui distingue ce
-  chemin d'une inscription ordinaire, qui créerait un compte neuf et laisserait
-  les réglages sur l'ancien.
-- **Ouvrir un compte qui existe** fait l'inverse : cet appareil rejoint un compte
-  d'ailleurs, et celui qu'il portait est effacé s'il était vide, gardé sinon.
+**Chaque appareil ne montre que le geste qu'il sait faire.** Sur un ordinateur ou
+un téléphone, l'écran propose d'enregistrer le compte : les comptes tenus
+ailleurs en haut, puis une adresse et un mot de passe. **Dans la voiture, il ne
+le propose pas** — il n'y a ni clavier commode, ni envie de partir chez un
+fournisseur en conduisant : l'écran y donne un code, et renvoie à l'appareil qui
+le recevra.
+
+Enregistrer un compte **ne change pas son identifiant** : ses profils, ses
+moteurs, ses boîtes, ses trajets et son profil mesuré ne bougent pas d'un pouce.
+C'est ce qui distingue ce chemin d'une inscription ordinaire, qui créerait un
+compte neuf et laisserait les réglages sur l'ancien.
+
+**Ouvrir un autre compte sur cet appareil** fait l'inverse : cet appareil rejoint
+un compte d'ailleurs, et celui qu'il portait est effacé s'il était vide, gardé
+sinon. C'est le geste rare, et le seul qui fasse perdre quelque chose : il est
+rangé en bas de l'écran, replié.
 
 À partir de là, le compte se rouvre depuis n'importe quel appareil, même quand on
 a perdu tous les siens, et il se range dans un gestionnaire de mots de passe.
+
+**Le portrait, quand il y en a un.** L'écran montre celui que le fournisseur d'un
+compte tenu ailleurs a rendu ; sinon celui que Gravatar propose pour l'adresse du
+compte ; sinon l'initiale de ce qui est écrit à côté. Demander l'image à Gravatar
+envoie l'empreinte de l'adresse à un serveur qui n'est pas le nôtre — c'est pour
+cela qu'on ne le fait que pour un compte qui a une vraie adresse, et jamais pour
+un compte anonyme. Dans la voiture, hors réseau, c'est toujours l'initiale.
 
 **Aucun courriel ne part, et l'adresse n'est pas vérifiée.** Il n'y a pas de
 relais à configurer, et celui qui déploie chez lui n'en fournira pas. Ce que cela
 coûte est dit à l'écran : tant qu'il n'y a pas de relais, un mot de passe perdu
 l'est pour de bon.
 
-**Tenir son compte.** Le mot de passe se change, l'ancien à l'appui. Tout ce que
+**Tenir son compte.** Le mot de passe se change, l'ancien à l'appui — et ce bloc
+n'apparaît que pour les comptes qui **ont** un mot de passe. Un compte enregistré
+chez un fournisseur n'en a pas : le lui demander, comme le faisait l'écran, était
+un cul-de-sac. C'est la même règle pour la suppression, qui ne réclame un mot de
+passe qu'à qui en a un. Tout ce que
 le compte porte s'**emporte en un fichier** — profils, moteurs, boîtes, trajets,
 journal, relevés et profil mesuré, dans les mêmes dossiers qu'ici, donc reversable
 tel quel dans une installation neuve. Et le compte se **supprime**, en deux
@@ -3188,7 +3227,7 @@ suit pas.
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
-| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 10 tickets sur 13** |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **13 tickets sur 14 ; restent l'essai hors réseau en voiture, les identifiants des fournisseurs et « j'ai oublié »** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
