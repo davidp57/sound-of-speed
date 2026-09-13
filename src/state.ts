@@ -72,6 +72,8 @@ import {
   upsertEngine,
 } from './core/preset/engine-store'
 import { buildZip } from './core/export/zip'
+import { startIdentity, type IdentityOutcome } from './core/identity/client'
+import { loadIdentity, type LocalIdentity } from './core/identity/store'
 import { UploadQueue, type QueuedUpload } from './core/upload/queue'
 import { loadQueue, saveQueue } from './core/upload/store'
 import {
@@ -1575,6 +1577,36 @@ function enqueue(item: QueuedUpload, envoyer = true): void {
 // l'attendre coûte moins qu'un essai toutes les trente secondes dans un tunnel.
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => void flushUploads(Date.now(), true))
+}
+
+// --- L'identité de cet appareil --------------------------------------------
+//
+// Elle est lue en local **sans rien attendre**, puis demandée au serveur en
+// arrière-plan si l'appareil n'en a pas encore. C'est l'exigence qui commande
+// tout le lot COMPTES : l'application part de ce qu'elle a, fait du son, et se
+// présente au serveur quand elle peut. Une voiture qui attendrait une réponse
+// avant d'afficher ses cadrans serait inutilisable là où elle roule.
+
+/** Qui est cet appareil, pour autant qu'il le sache sans réseau. */
+export const identity = ref<LocalIdentity | null>(loadIdentity())
+
+/** Ce qu'a donné la dernière tentative, pour que l'écran puisse le dire. */
+export const identityState = ref<IdentityOutcome['state'] | 'inconnue'>('inconnue')
+
+function prendreIdentite(rendu: IdentityOutcome | undefined): void {
+  if (rendu === undefined) return
+  identityState.value = rendu.state
+  if (rendu.state === 'obtenue' || rendu.state === 'gardee') identity.value = rendu.identity
+}
+
+if (typeof window !== 'undefined') {
+  // Sans `await`, et ce n'est pas une négligence : voir `startIdentity`.
+  startIdentity({}, prendreIdentite)
+  // Un appareil qui a démarré dans un tunnel prend son compte au retour du
+  // réseau, comme la file d'envoi part au même moment.
+  window.addEventListener('online', () => {
+    if (identity.value === null) startIdentity({}, prendreIdentite)
+  })
 }
 
 /**

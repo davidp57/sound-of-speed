@@ -1,0 +1,1 @@
+ALTER TABLE `accounts` ADD `is_anonymous` integer DEFAULT false NOT NULL;

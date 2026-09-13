@@ -23,7 +23,7 @@ joint : un identifiant, un compte, un nom, une date.
 
 | Table | Ce qu'elle porte |
 |---|---|
-| `accounts` | les comptes ; l'adresse est facultative et le restera |
+| `accounts` | les comptes ; l'adresse est facultative et le restera, et `is_anonymous` dit lesquels se sont créés tout seuls |
 | `rights` | ce qu'un compte ouvre, et jusqu'à quand |
 | `engines`, `gearboxes`, `profiles` | les trois groupes de réglages qu'un profil assemble |
 | `deposits` | tout ce qui remonte de la voiture : traces, journal, relevés |

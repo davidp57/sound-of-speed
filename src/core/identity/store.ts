@@ -1,0 +1,78 @@
+/**
+ * L'identité de cet appareil, gardée d'une ouverture à l'autre.
+ *
+ * **Elle vit dans le stockage local, et non dans le témoin de connexion.** Le
+ * témoin est fermé au code de la page — c'est ce qui le rend sûr — donc
+ * l'application ne peut rien en lire. Or elle doit savoir qui elle est **avant**
+ * d'avoir parlé au serveur, et parfois sans jamais pouvoir lui parler : la
+ * voiture roule hors réseau.
+ *
+ * Ce qui est rangé ici n'ouvre rien. C'est un nom et un identifiant, de quoi
+ * afficher « ce compte est le vôtre » ; ce qui ouvre, c'est le témoin, et il
+ * reste au navigateur.
+ */
+
+const CLE = 'speed.identity.v1'
+
+export interface LocalIdentity {
+  /** L'identifiant du compte, tel que le serveur l'a donné. */
+  id: string
+  /** Ce qui s'affiche. */
+  name: string
+  /** Vrai tant qu'aucune adresse n'y est rattachée. */
+  anonymous: boolean
+  /** Quand cet appareil a obtenu son compte, en millisecondes. */
+  obtainedAt: number
+}
+
+export function loadIdentity(): LocalIdentity | null {
+  try {
+    const brut = localStorage.getItem(CLE)
+    if (brut === null) return null
+    const lu: unknown = JSON.parse(brut)
+    return estUneIdentite(lu) ? lu : null
+  } catch {
+    // Stockage fermé — navigation privée sur certains navigateurs — ou contenu
+    // abîmé. Dans les deux cas l'appareil se comporte comme s'il n'avait pas
+    // encore de compte, ce qui est récupérable ; lever ici ne le serait pas.
+    return null
+  }
+}
+
+/** Rend faux quand l'écriture a échoué, pour que l'écran puisse le dire. */
+export function saveIdentity(identity: LocalIdentity): boolean {
+  try {
+    localStorage.setItem(CLE, JSON.stringify(identity))
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Efface l'identité de cet appareil.
+ *
+ * **La remise à zéro des réglages n'appelle pas ceci**, et c'est délibéré : ce
+ * bouton remet des réglages à leurs valeurs d'usine, il n'efface ni les données
+ * ni le compte. Un bouton qui déconnecterait en remettant le volume à zéro
+ * serait un piège.
+ */
+export function forgetIdentity(): void {
+  try {
+    localStorage.removeItem(CLE)
+  } catch {
+    // Rien à faire : il n'y avait rien à effacer, ou le stockage est fermé.
+  }
+}
+
+function estUneIdentite(valeur: unknown): valeur is LocalIdentity {
+  if (typeof valeur !== 'object' || valeur === null) return false
+  const entree = valeur as Record<string, unknown>
+  return (
+    typeof entree['id'] === 'string' &&
+    entree['id'] !== '' &&
+    typeof entree['name'] === 'string' &&
+    typeof entree['anonymous'] === 'boolean' &&
+    typeof entree['obtainedAt'] === 'number'
+  )
+}

@@ -50,6 +50,13 @@
       "when": 1789290551331,
       "tag": "0006_l-identite-entre-dans-la-base",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1789292198861,
+      "tag": "0007_un-compte-sait-s-il-est-anonyme",
+      "breakpoints": true
     }
   ]
 }

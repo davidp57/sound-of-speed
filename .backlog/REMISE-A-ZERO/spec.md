@@ -51,6 +51,15 @@ Seize clés, relevées dans le code :
 | `speed.traces.v1` | les traces connues |
 | `speed.uploads.v1` | les dépôts en attente |
 
+**Une dix-septième clé existe depuis le 13 septembre 2026, et ce bouton ne doit
+pas l'effacer** : `speed.identity.v1` porte le compte de cet appareil, arrivé
+avec le lot [COMPTES](../COMPTES/spec.md). Son ticket 02 le tranche : la remise
+à zéro remet des **réglages** à leurs valeurs d'usine, elle ne déconnecte pas.
+Et l'effacer coûterait plus qu'une déconnexion — un compte anonyme n'a pas de
+mot de passe, donc rien à reprendre : ce que l'appareil avait déposé sous ce
+compte deviendrait inaccessible. Un bouton qui ferait cela en remettant le
+volume à zéro serait un piège.
+
 ## Ce qui reste à trancher
 
 Trois questions, et aucune n'a de réponse évidente. Elles sont posées ici

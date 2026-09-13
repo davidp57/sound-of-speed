@@ -29,6 +29,7 @@ import { dirname, join } from 'node:path'
 
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { anonymous } from 'better-auth/plugins'
 
 import type { Base } from './base/base'
 import { accounts, authIdentities, authSessions, authVerifications } from './base/schema'
@@ -51,6 +52,20 @@ export interface OptionsDIdentite {
 }
 
 export type Identite = ReturnType<typeof creerIdentite>
+
+const UN_JOUR_EN_SECONDES = 24 * 60 * 60
+const UN_AN_EN_SECONDES = 365 * UN_JOUR_EN_SECONDES
+
+/**
+ * Où vivent les sessions d'identité, et sous quel nom de champ.
+ *
+ * Toutes les tables d'ici désignent un compte par `accountId` ; la bibliothèque,
+ * elle, dit `userId`.
+ */
+const SESSION_MAPPEE = {
+  modelName: 'auth_sessions',
+  fields: { userId: 'accountId' },
+} as const
 
 /**
  * Monte la bibliothèque sur la base qui existe.
@@ -80,17 +95,50 @@ export function creerIdentite({ base, secret, adresse }: OptionsDIdentite) {
     // COMPTES qui ouvre ce chemin-là.
     emailAndPassword: { enabled: true },
 
+    plugins: [
+      anonymous({
+        /**
+         * **Le compte anonyme ne s'efface pas quand une adresse s'y rattache.**
+         *
+         * Sans ce réglage, la bibliothèque crée un compte neuf au rattachement
+         * et supprime l'ancien. Ici, huit tables pendent à `accounts` en
+         * `ON DELETE CASCADE` : cette suppression emporterait les profils, les
+         * moteurs, les trajets et le profil mesuré de l'appareil — exactement ce
+         * que le rattachement est censé conserver.
+         */
+        disableDeleteAnonymousUser: true,
+        /**
+         * Un nom en français, et daté.
+         *
+         * La bibliothèque nomme « Anonymous » ce qu'elle crée, et ce nom
+         * s'afficherait tel quel dans une application qui n'a pas d'autre
+         * langue que le français. La date le rend en plus distinguable : deux
+         * appareils font deux comptes, et une liste de comptes qui disent tous
+         * la même chose ne se lit pas.
+         */
+        generateName: () => `Appareil du ${new Date().toLocaleDateString('fr-FR')}`,
+      }),
+    ],
+
+    session: {
+      ...SESSION_MAPPEE,
+      /**
+       * Un an, et la session se prolonge à chaque passage.
+       *
+       * Ce n'est pas une session de service bancaire : c'est **l'identité d'un
+       * appareil**, et l'appareil est le navigateur d'une voiture. Une semaine —
+       * le défaut — ferait perdre son compte à qui ne roule pas pendant les
+       * vacances, et le lui ferait perdre sans rien lui dire.
+       */
+      expiresIn: UN_AN_EN_SECONDES,
+      updateAge: UN_JOUR_EN_SECONDES,
+    },
+
     // Aucun courriel ne part d'ici : il n'y a pas de service d'envoi à
     // configurer, et celui qui déploie chez lui n'en fournira pas.
     emailVerification: { sendOnSignUp: false },
 
     user: { modelName: 'accounts' },
-    session: {
-      modelName: 'auth_sessions',
-      // Toutes les tables d'ici désignent un compte par `accountId` ; la
-      // bibliothèque, elle, dit `userId`.
-      fields: { userId: 'accountId' },
-    },
     account: {
       modelName: 'auth_identities',
       // Le renommage qui compte : pour la bibliothèque, `accountId` est

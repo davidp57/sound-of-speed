@@ -103,6 +103,8 @@ import {
   answerMeasuredCar,
   carDecision,
   driveFace,
+  identity,
+  identityState,
   measuredCar,
   measuredOverrides,
   setDriveFace,
@@ -269,6 +271,27 @@ function onBank(event: Event): void {
   // La banque appartient au moteur : elle ne se pose donc pas sur le profil.
   if (name !== '') setSampleDir(name)
 }
+
+/**
+ * Ce que l'écran dit du compte de cet appareil.
+ *
+ * Le cas qui compte est le troisième : **un compte anonyme n'a rien à
+ * récupérer**. Vider les données de ce site depuis le navigateur en perdrait
+ * l'accès, et avec lui ce qui a été déposé sous ce compte. Le dire ici vaut
+ * mieux que le laisser découvrir.
+ */
+const compteDeLAppareil = computed(() => {
+  if (identity.value === null) {
+    if (identityState.value === 'refusee') {
+      return "Le serveur n’a pas donné de compte à cet appareil. Il réessaiera."
+    }
+    return 'Cet appareil n’a pas encore de compte : il en prendra un au prochain contact avec le serveur. Rien à saisir, et rien ne l’empêche de rouler en attendant.'
+  }
+  if (identity.value.anonymous) {
+    return 'Cet appareil a son compte, créé tout seul, sans adresse rattachée. Vider les données de ce site depuis les réglages du navigateur en perdrait l’accès — et ce qui a été déposé avec.'
+  }
+  return `Cet appareil est rattaché à ${identity.value.name}.`
+})
 
 /** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
 /**
@@ -1173,6 +1196,10 @@ async function rapatrier(): Promise<void> {
           recopient à la main.
         </p>
       </div>
+
+      <p class="note">
+        <strong>Le compte de cet appareil.</strong> {{ compteDeLAppareil }}
+      </p>
 
       <div class="deposit">
         <span class="note">Compte de dépôt</span>

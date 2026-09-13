@@ -1117,14 +1117,36 @@ jour, sur un volume qui en a plus de deux mille de libres. Il se justifie par
 l'archive qu'il met chez l'utilisateur, et par le jour où les comptes ne seront
 plus un seul.
 
-### L'identité, montée et pas encore utilisée
+### L'identité : un compte qui se crée tout seul
 
-La bibliothèque qui tiendra les comptes — [Better Auth](https://better-auth.com/),
+La bibliothèque qui tient les comptes — [Better Auth](https://better-auth.com/),
 sous licence MIT — est **montée sur le serveur**, branchée sur la base qui existe,
-et répond sous `/api/auth/`. Rien n'en dépend encore : la voiture dépose comme
-avant, le relecteur lit comme avant, et le mot de passe partagé reste le seul
-contrôle d'accès. C'est le premier ticket du lot COMPTES, et il ne fait qu'une
-chose : rendre une session qui se crée et se relit.
+et répond sous `/api/auth/`.
+
+**On monte dans la voiture et ça marche.** Au premier contact avec le serveur,
+l'appareil reçoit un compte créé tout seul : rien à saisir, aucun écran
+d'inscription, et aucune adresse. Ce compte est gardé dans le navigateur et
+resservira à chaque ouverture.
+
+**Et l'application démarre sans lui.** Elle part de ce qu'elle a en local, fait
+du son, et se présente au serveur quand elle peut — au démarrage si le réseau est
+là, sinon au retour du réseau. C'est l'exigence qui commande tout le reste : une
+voiture qui attendrait une réponse avant d'afficher ses cadrans serait
+inutilisable là où elle roule.
+
+Le mot de passe partagé reste pour l'instant le seul contrôle d'accès aux dépôts :
+la voiture dépose comme avant, le relecteur lit comme avant. Déposer **avec son
+compte** est l'étape suivante.
+
+**Deux appareils font deux comptes** tant que rien ne les relie, et c'est le
+comportement attendu : rien ne distingue « le second appareil de quelqu'un » du
+« premier appareil de quelqu'un d'autre ». Les réunir demandera une adresse, donc
+un geste explicite.
+
+**Un compte anonyme n'a rien à récupérer**, et l'écran de configuration le dit :
+vider les données du site depuis les réglages du navigateur perd l'accès à ce
+compte, et à ce qui a été déposé avec. Rattacher une adresse est ce qui met fin à
+ce risque. La remise à zéro des réglages, elle, n'y touche pas.
 
 **Elle se pose sur la table `accounts`**, celle qui existe déjà et à qui pendaient déjà
 six autres tables. L'inverse — adopter la table qu'elle apporte — aurait obligé
@@ -1133,11 +1155,11 @@ Trois tables s'ajoutent, préfixées `auth_`, et aucune ne s'appelle « compte �
 ce que la bibliothèque nomme *account* est un moyen de prouver qui on est, pas
 une personne.
 
-**Le paquet que charge la voiture n'a pas bougé d'un octet** : 445 576 octets
-avant, 445 576 après. C'est attendu, la bibliothèque n'existant que côté serveur ;
-le chiffre est relevé parce qu'il sera le point de comparaison le jour où un écran
-de connexion entrera dans l'application. Le conteneur, lui, grossit — elle y est
-installée comme dépendance de production.
+**Ce que la voiture charge en plus : 2 431 octets**, soit 0,55 % — 445 576 avant
+l'identité, 448 007 avec. C'est le code qui demande un compte et le range, et rien
+d'autre : la bibliothèque, elle, ne quitte pas le serveur, et l'application lui
+parle en deux requêtes plutôt qu'en embarquant son client. Le conteneur, lui,
+grossit — elle y est installée comme dépendance de production.
 
 | Variable | Défaut | Ce qu'elle règle |
 |---|---|---|

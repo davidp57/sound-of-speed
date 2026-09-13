@@ -143,6 +143,78 @@ describe('la bibliothèque d’identité, montée sur la base', () => {
   })
 })
 
+/**
+ * Demande un compte anonyme **comme le navigateur le fait**.
+ *
+ * Le type et le corps ne sont pas décoratifs : un POST qui annonce une longueur
+ * sans annoncer un type reçoit 415. Une version de ce test qui construisait sa
+ * requête à la main passait en vert pendant que la page, elle, n'obtenait rien.
+ */
+function demanderUnCompteAnonyme(entetes: Record<string, string> = {}) {
+  return serveur().request('/api/auth/sign-in/anonymous', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...entetes },
+    body: '{}',
+  })
+}
+
+describe('le compte anonyme', () => {
+  it('se crée sans que rien soit saisi, et se relit', async () => {
+    const creation = await demanderUnCompteAnonyme()
+    expect(creation.status).toBe(200)
+
+    const temoin = (creation.headers.get('set-cookie') ?? '').split(';')[0] ?? ''
+    const relue = await serveur().request('/api/auth/get-session', { headers: { Cookie: temoin } })
+    const session = (await relue.json()) as { user?: { id?: string; isAnonymous?: boolean } } | null
+
+    expect(session?.user?.isAnonymous).toBe(true)
+  })
+
+  it('se reconnaît à sa colonne, pas à la forme de son adresse', async () => {
+    await demanderUnCompteAnonyme()
+
+    const anonymes = (await base.select().from(accounts)).filter((compte) => compte.isAnonymous)
+    expect(anonymes).toHaveLength(1)
+    // L'adresse est fabriquée parce que la bibliothèque en exige une ; elle l'est
+    // sous un domaine réservé qui ne désigne aucune boîte. Ce qui fait foi reste
+    // la colonne.
+    expect(anonymes[0]?.email).toMatch(/@anonymous\.placeholder\.invalid$/)
+  })
+
+  it('garde son compte un an, et non une semaine', async () => {
+    // Une voiture qui ne roule pas pendant les vacances ne doit pas perdre son
+    // compte, et le perdre sans rien dire.
+    const creation = await demanderUnCompteAnonyme()
+    expect(creation.status).toBe(200)
+
+    const session = (await base.select().from(authSessions))[0]
+    const jours = ((session?.expiresAt?.getTime() ?? 0) - Date.now()) / (24 * 60 * 60 * 1000)
+    expect(jours).toBeGreaterThan(360)
+  })
+
+  it('ne s’efface pas quand une adresse vient s’y rattacher', async () => {
+    // Le piège : la bibliothèque supprime le compte anonyme après un
+    // rattachement. Huit tables pendent à `accounts` en cascade — cette
+    // suppression emporterait tout ce que l'appareil avait déposé.
+    const creation = await demanderUnCompteAnonyme()
+    const temoin = (creation.headers.get('set-cookie') ?? '').split(';')[0] ?? ''
+    const anonyme = (await base.select().from(accounts)).find((compte) => compte.isAnonymous)
+
+    await serveur().request('/api/auth/sign-up/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: temoin },
+      body: JSON.stringify({
+        name: 'Rattaché',
+        email: 'rattache@exemple.fr',
+        password: 'un-mot-de-passe-assez-long',
+      }),
+    })
+
+    const restants = await base.select().from(accounts)
+    expect(restants.map((compte) => compte.id)).toContain(anonyme?.id)
+  })
+})
+
 describe('le secret qui signe les témoins', () => {
   it('se crée au premier démarrage, et ne change plus', () => {
     const fichier = join(dossier, 'speed.db')

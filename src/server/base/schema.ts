@@ -54,6 +54,16 @@ export const accounts = sqliteTable(
     emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
     /** Une image de compte, quand un fournisseur d'identité en donne une. */
     image: text('image'),
+    /**
+     * Ce compte s'est-il créé tout seul, sans que personne saisisse rien ?
+     *
+     * C'est **ici** qu'on lit qu'un compte est anonyme, et non dans son adresse.
+     * La bibliothèque d'identité en fabrique une pour ses comptes anonymes —
+     * elle exige un courriel non vide — et la fabrique sous le domaine réservé
+     * `.invalid`, qui par construction ne désigne aucune boîte. Se fier à la
+     * forme de l'adresse reviendrait à lire une convention là où il y a un fait.
+     */
+    isAnonymous: integer('is_anonymous', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(maintenant),
     /**
      * La dernière écriture, telle que la bibliothèque d'identité la pose.
