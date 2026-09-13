@@ -32,8 +32,10 @@ import {
   identityState,
   liaison,
   rattacherSonAdresse,
+  rattacherUnCompteTenuAilleurs,
   rejoindreUnCompte,
   seConnecterAUnCompte,
+  seConnecterAvecUnCompteTenuAilleurs,
   supprimerLeCompte,
 } from '../state'
 
@@ -285,6 +287,39 @@ onMounted(() => {
 })
 
 /**
+ * Les comptes tenus ailleurs.
+ *
+ * Deux gestes qui se ressemblent à l'écran et que tout sépare, exactement comme
+ * pour une adresse : *rattacher* ajoute une preuve au compte d'ici, *se
+ * connecter* ouvre ici un compte qui existe ailleurs. Dans les deux cas la page
+ * s'en va chez le fournisseur — il n'y a donc rien à afficher après, sauf quand
+ * le départ lui-même a échoué.
+ */
+const noteDuTiers = ref('')
+const tiersEnCours = ref(false)
+
+async function onTiers(fournisseur: string, geste: 'rattacher' | 'connecter'): Promise<void> {
+  if (tiersEnCours.value) return
+  tiersEnCours.value = true
+  noteDuTiers.value = ''
+  try {
+    const rendu =
+      geste === 'rattacher'
+        ? await rattacherUnCompteTenuAilleurs(fournisseur)
+        : await seConnecterAvecUnCompteTenuAilleurs(fournisseur)
+    if (rendu.state === 'sans-reseau') {
+      noteDuTiers.value =
+        'Sans réseau, on ne peut pas passer par un compte tenu ailleurs : il faut aller le lui demander.'
+      return
+    }
+    if (rendu.state === 'refusee') noteDuTiers.value = rendu.detail
+    // `part` ne rend rien à dire : la page est déjà en train de s'en aller.
+  } finally {
+    tiersEnCours.value = false
+  }
+}
+
+/**
  * Tenir son compte : changer le mot de passe, emporter, supprimer.
  */
 const ancienMotDePasse = ref('')
@@ -525,6 +560,36 @@ onUnmounted(() => {
     <p v-if="noteDuCompte" class="note">{{ noteDuCompte }}</p>
 
     <!--
+      Un compte tenu ailleurs. La section entière disparaît quand ce serveur n'en
+      a aucun de configuré, ce qui est le cas par défaut : un bouton qui mène à
+      une erreur est pire que pas de bouton.
+    -->
+    <template v-if="possibilites.fournisseurs.length > 0">
+      <h3>Un compte tenu ailleurs</h3>
+      <p class="note">
+        <strong>En plus de l’adresse, jamais à la place.</strong> Perdre l’accès à
+        l’un de ces comptes ne doit pas faire perdre celui-ci, donc l’adresse et
+        le mot de passe restent le filet.
+      </p>
+      <div v-for="fournisseur in possibilites.fournisseurs" :key="fournisseur.id" class="choices">
+        <span class="fournisseur">{{ fournisseur.nom }}</span>
+        <button :disabled="tiersEnCours" @click="onTiers(fournisseur.id, 'rattacher')">
+          Rattacher au compte d’ici
+        </button>
+        <button :disabled="tiersEnCours" @click="onTiers(fournisseur.id, 'connecter')">
+          Ouvrir le compte qui l’a déjà
+        </button>
+      </div>
+      <p class="note">
+        <strong>Ouvrir</strong> ne marche qu’avec un compte auquel ce fournisseur
+        a <strong>déjà</strong> été rattaché : il n’en crée jamais de nouveau, et
+        c’est voulu — sinon ce bouton, pressé depuis la voiture, fabriquerait un
+        compte vide et laisserait les réglages derrière.
+      </p>
+      <p v-if="noteDuTiers" class="note">{{ noteDuTiers }}</p>
+    </template>
+
+    <!--
       Tenir son compte. Trois gestes de nature différente, dans l'ordre où on les
       fait : on change un mot de passe parce qu'on garde le compte, on emporte
       parce qu'on va peut-être le quitter, on supprime parce qu'on le quitte.
@@ -641,6 +706,12 @@ h3 {
   gap: 0.5rem;
   align-items: center;
   margin: 0.25rem 0;
+}
+
+/* Une largeur fixe pour que les deux boutons s'alignent d'une ligne à l'autre. */
+.fournisseur {
+  min-width: 5rem;
+  font-weight: 600;
 }
 
 button {

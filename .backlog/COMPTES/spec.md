@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** 🔄 en cours — 12/14
+**Statut :** 🔄 en cours — 13/14
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -106,7 +106,7 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 | [05](tickets/05-relier-un-appareil-par-un-code.md) ✅ | Un jeton de liaison, deux rendus : un code à scanner et un code court à taper | 02 |
 | [10](tickets/10-l-ecran-du-compte.md) ✅ | L'écran du compte : le lieu unique où tout se passe | 05 |
 | [11](tickets/11-un-vrai-compte.md) ✅ | Un vrai compte : une adresse et un mot de passe, choisis depuis un clavier | 10 |
-| [12](tickets/12-un-compte-tiers.md) | Un compte tenu ailleurs, et seulement s'il est configuré | 11 |
+| [12](tickets/12-un-compte-tiers.md) ✅ | Un compte tenu ailleurs, et seulement s'il est configuré | 11 |
 | [13](tickets/13-tenir-son-compte.md) ✅ | Tenir son compte : changer, oublier, emporter, supprimer | 11 |
 | [06](tickets/06-les-droits-ouvrent-les-ecrans.md) ✅ | Les rôles ouvrent les écrans, et un droit expiré les referme | 02 |
 | [14](tickets/14-l-appareil-porte-les-fonctions.md) ✅ | L'appareil porte les fonctions, et le drapeau de construction s'en va | 06 |

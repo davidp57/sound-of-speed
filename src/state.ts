@@ -94,6 +94,14 @@ import {
 } from './core/appareil'
 import { lireLienDansUrl, type CodeDeLiaison } from './core/identity/lien'
 import {
+  lireLeRetourDuTiers,
+  rattacherUnTiers,
+  reglerLAncienCompte,
+  reprendreLAncien,
+  seConnecterAvecUnTiers,
+  type Depart,
+} from './core/identity/tiers'
+import {
   prochaineEcheance,
   rolesOuverts as calculerLesRoles,
   type Role,
@@ -1687,6 +1695,8 @@ function prendreIdentite(rendu: IdentityOutcome | undefined): void {
  */
 export const liaison = ref<
   | { etat: 'reliee'; ancien: SortDeLAncien }
+  /** Un compte tenu ailleurs vient d'être rattaché à celui d'ici. */
+  | { etat: 'rattachee-ailleurs' }
   | { etat: 'refusee'; detail: string }
   | { etat: 'sans-reseau' }
   | null
@@ -1699,6 +1709,23 @@ export const liaison = ref<
  * à faire dans la barre d'adresse d'une page qu'on laisse ouverte.
  */
 const lienScanne = typeof window === 'undefined' ? null : lireLienDansUrl()
+
+/**
+ * Ce que dit l'adresse au retour d'un compte tenu ailleurs, s'il y a eu départ.
+ *
+ * Lu ici, avec le code scanné, et pour la même raison : la lecture nettoie
+ * l'adresse, et elle doit avoir lieu une fois, au chargement, avant que quoi que
+ * ce soit d'autre y touche.
+ */
+const retourDuTiers = typeof window === 'undefined' ? null : lireLeRetourDuTiers()
+
+/**
+ * Le compte que cet appareil portait avant de partir chez le fournisseur.
+ *
+ * Repris **et oublié** dès maintenant : il ne vaut que pour ce chargement-ci, et
+ * le laisser traîner le ferait rejouer au rechargement suivant.
+ */
+const compteAvantLeTiers = retourDuTiers === null ? null : reprendreLAncien()
 
 /**
  * Rejoint le compte que le code désigne.
@@ -1775,6 +1802,65 @@ export async function seConnecterAUnCompte(
   liaison.value = { etat: 'reliee', ancien: rendu.ancien }
   await Promise.all([rapatrier(), releverLesRolesDuCompte()])
   return rendu
+}
+
+/**
+ * Ajoute un compte tenu ailleurs à celui de cet appareil.
+ *
+ * Rien ne se met à jour ici : la page part chez le fournisseur et reviendra
+ * neuve. Ce qui revient est traité au chargement suivant, plus bas.
+ */
+export async function rattacherUnCompteTenuAilleurs(fournisseur: string): Promise<Depart> {
+  return rattacherUnTiers(fournisseur)
+}
+
+/** Ouvre ici le compte que ce fournisseur désigne. Même remarque : la page part. */
+export async function seConnecterAvecUnCompteTenuAilleurs(fournisseur: string): Promise<Depart> {
+  return seConnecterAvecUnTiers(fournisseur)
+}
+
+/**
+ * Ce qu'il reste à faire au retour d'un compte tenu ailleurs.
+ *
+ * **Le compte a déjà changé** quand on arrive ici : c'est le serveur qui l'a
+ * fait, pendant l'aller-retour, et `ensureIdentity` vient de le redescendre.
+ * Restent trois choses que lui seul ne pouvait pas faire — dire au serveur quel
+ * compte cet appareil abandonne, oublier ce qu'on croyait savoir de l'autre, et
+ * redescendre ce que le nouveau porte.
+ */
+async function acheverLeRetourDuTiers(): Promise<void> {
+  if (retourDuTiers === 'refuse') {
+    liaison.value = {
+      etat: 'refusee',
+      detail:
+        'Ce compte n’a pas ouvert de session ici. Un compte tenu ailleurs doit d’abord être rattaché depuis cet écran, en étant connecté.',
+    }
+    return
+  }
+  if (retourDuTiers === null) return
+
+  if (retourDuTiers === 'rattache') {
+    // Le compte n'a pas changé : il a seulement une preuve de plus, et il a
+    // cessé d'être anonyme — ce que le serveur vient de dire tout seul, puisque
+    // `ensureIdentity` a redescendu l'identité juste avant. Rien à corriger ici
+    // donc, seulement à l'annoncer : sans cela, on part chez le fournisseur, on
+    // revient, et rien ne dit que ça a marché.
+    liaison.value = { etat: 'rattachee-ailleurs' }
+    return
+  }
+
+  // Le compte a changé pendant l'aller-retour. Ce qu'on croyait savoir de
+  // l'autre ne vaut plus rien, et ce que celui-ci porte n'est pas encore là.
+  const desormais = identity.value?.id
+  const ancien =
+    compteAvantLeTiers === null || compteAvantLeTiers === desormais
+      ? 'aucun'
+      : await reglerLAncienCompte(compteAvantLeTiers)
+
+  saveDejaVu({})
+  oublierLesRoles()
+  liaison.value = { etat: 'reliee', ancien }
+  await Promise.all([rapatrier(), releverLesRolesDuCompte()])
 }
 
 /**
@@ -1890,6 +1976,10 @@ if (typeof window !== 'undefined') {
     // d'abord créé son compte anonyme, comme tout appareil neuf, et c'est ce
     // compte-là que le serveur efface ou garde selon ce qu'il porte.
     if (lienScanne !== null) void rejoindreUnCompte(lienScanne)
+    // Le retour d'un compte tenu ailleurs, au même endroit et pour la même
+    // raison : il faut que l'identité soit redescendue pour savoir sur quel
+    // compte on vient d'atterrir.
+    else if (retourDuTiers !== null) void acheverLeRetourDuTiers()
   })
   // Un appareil qui a démarré dans un tunnel prend son compte au retour du
   // réseau, comme la file d'envoi part au même moment.

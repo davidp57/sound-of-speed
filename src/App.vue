@@ -159,6 +159,9 @@ const messageDeLiaison = computed(() => {
     return 'Sans réseau : cet appareil n’a pas pu rejoindre le compte. Rouvrir le lien une fois connecté.'
   }
   if (faite.etat === 'refusee') return faite.detail
+  if (faite.etat === 'rattachee-ailleurs') {
+    return 'Ce compte tenu ailleurs est rattaché : il rouvrira celui-ci, sur cet appareil comme sur un autre.'
+  }
   if (faite.ancien === 'garde') {
     return 'Cet appareil a rejoint le compte. Ce qu’il portait avant reste sur son ancien compte, qui n’a pas de mot de passe pour y revenir.'
   }

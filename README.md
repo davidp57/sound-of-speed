@@ -1239,6 +1239,48 @@ Deux réserves, dites à l'écran plutôt que découvertes :
   d'afficher un lien qui ne mène nulle part. Le serveur annonce ce qu'il sait
   faire, et l'écran n'offre rien d'autre.
 
+**Un compte tenu ailleurs**, enfin — Tesla, Google ou Apple —, **en plus de
+l'adresse et du mot de passe, jamais à la place.** Perdre l'accès à son
+fournisseur ne doit pas faire perdre le compte. Les mêmes deux gestes qu'avec une
+adresse : **rattacher** ajoute une preuve au compte de cet appareil,
+**ouvrir le compte qui l'a déjà** rejoint celui auquel ce fournisseur a été
+rattaché.
+
+**Il ne crée jamais de compte.** Se connecter avec un fournisseur qui n'a jamais
+été rattaché échoue, et c'est voulu : sinon ce bouton, pressé depuis la voiture,
+fabriquerait un compte neuf et vide et laisserait les réglages derrière. La
+création de compte reste l'affaire du premier lancement, qui n'en demande pas.
+
+**Ce qui n'est pas configuré n'apparaît pas.** Un fournisseur ne se monte que si
+ses deux variables sont là, et l'écran ne montre que ce qui est **réellement
+monté** — un fournisseur dont le document de découverte ne répond pas au
+démarrage est écarté, et son bouton avec lui. Celui qui déploie chez lui n'a donc
+rien à inscrire, et aucun bouton ne mène à une erreur.
+
+| Variable | Ce qu'elle règle |
+|---|---|
+| `SPEED_OAUTH_TESLA_ID` et `SPEED_OAUTH_TESLA_SECRET` | Se connecter avec son compte Tesla. |
+| `SPEED_OAUTH_GOOGLE_ID` et `SPEED_OAUTH_GOOGLE_SECRET` | Se connecter avec son compte Google. |
+| `SPEED_OAUTH_APPLE_ID` et `SPEED_OAUTH_APPLE_SECRET` | Se connecter avec son compte Apple. |
+
+Les deux d'un même fournisseur, ou aucune : la moitié d'une paire vaut rien du
+tout. **`SPEED_URL` devient indispensable** dès qu'un fournisseur est configuré :
+il doit revenir sur le site, et derrière un proxy inversé le conteneur ne voit
+qu'un port local. Le serveur le signale au démarrage plutôt que de le laisser
+découvrir au premier retour.
+
+Ce qu'on demande au fournisseur est `openid email profile` : de quoi savoir qui
+est là, et rien de plus. Aucune portée qui donnerait accès aux données de la
+voiture chez Tesla — ce n'est pas ce que fait cette application, et une portée
+qu'on ne sert pas est une portée qu'on n'a pas à faire approuver.
+
+**Ce qu'il faut pour obtenir ces identifiants** est décrit dans le
+[ticket 12](.backlog/COMPTES/tickets/12-un-compte-tiers.md) — et ce n'est pas la
+même chose chez les trois. Google se fait en cinq minutes et gratuitement ; Apple
+demande une adhésion payante et un secret qui se périme tous les six mois ; Tesla
+demande un dossier avec des informations d'entreprise, une clé publique servie
+sur le domaine, et un enregistrement par région.
+
 **Elle se pose sur la table `accounts`**, celle qui existe déjà et à qui pendaient déjà
 six autres tables. L'inverse — adopter la table qu'elle apporte — aurait obligé
 à recréer chacune de ces tables, SQLite ne sachant pas déplacer une clé étrangère.

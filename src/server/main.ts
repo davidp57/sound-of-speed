@@ -19,6 +19,7 @@ import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { appliquerLaRegle, DELAIS_PAR_DEFAUT, formaterPassage, type Delais } from './retention'
 import { offertsDeLEnvironnement } from './roles'
 import { creerServeur } from './serveur'
+import { comptesTenusAilleurs } from './tiers'
 
 const port = Number(process.env['SPEED_PORT'] ?? 8088)
 const application = process.env['SPEED_APP'] ?? 'dist'
@@ -36,6 +37,9 @@ const epingles = nombreOuRien(process.env['SPEED_EPINGLES'])
 // a tout, rien n'étant encaissé. Vide, aucun — ce qui ferme tout, et c'est la
 // façon de vérifier la mécanique sur un serveur qui tourne.
 const roles = offertsDeLEnvironnement(process.env['SPEED_ROLES_OFFERTS'])
+// Les comptes tenus ailleurs : deux variables par fournisseur, et rien du tout
+// par défaut. Voir `tiers.ts` pour les noms.
+const tiers = comptesTenusAilleurs(process.env)
 const delais: Delais = {
   traces: nombreOuRien(process.env['SPEED_RETENTION_TRACES']) ?? DELAIS_PAR_DEFAUT.traces,
   journal: nombreOuRien(process.env['SPEED_RETENTION_JOURNAL']) ?? DELAIS_PAR_DEFAUT.journal,
@@ -170,7 +174,19 @@ const identite = creerIdentite({
   base,
   secret: secretDIdentite ?? secretPersistant(fichierDeBase),
   ...(adressePublique === undefined ? {} : { adresse: adressePublique }),
+  tiers,
 })
+
+// Un fournisseur doit revenir sur le site, et le conteneur ne voit qu'un port
+// local : sans adresse publique, l'adresse de retour qu'il annoncera sera fausse
+// et la connexion échouera au retour, pas au départ. Le dire au démarrage plutôt
+// que de le laisser découvrir à l'usage.
+const nombreDeTiers = Object.keys(tiers.integres).length + tiers.generiques.length
+if (nombreDeTiers > 0 && adressePublique === undefined) {
+  console.warn(
+    `${nombreDeTiers} compte(s) tenu(s) ailleurs configuré(s) sans SPEED_URL : l'adresse de retour sera déduite de la requête, ce qui est faux derrière un proxy inversé.`,
+  )
+}
 
 const serveur = serve(
   {

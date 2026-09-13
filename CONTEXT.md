@@ -509,6 +509,17 @@ ici, ou un compte tenu chez un tiers. Un compte peut en porter plusieurs.
 _Attention_ : c'est ce que la bibliothèque d'identité appelle un *account*, et
 c'est exactement pour éviter cette collision que la table ne porte pas ce nom.
 
+**Compte tenu ailleurs** (_third-party account_, `server/tiers.ts`) :
+Un compte chez Tesla, Google ou Apple, dont on se sert pour prouver qui on est.
+Il s'**ajoute** à l'adresse et au mot de passe, jamais à leur place : perdre
+l'accès à son fournisseur ne doit pas faire perdre le compte. C'est une
+**identité** de plus sur le compte, et il n'en crée jamais un second — se
+connecter avec un fournisseur jamais rattaché échoue.
+_Attention_ : un fournisseur n'existe que si ses deux variables d'environnement
+sont là, et l'écran ne montre que ce qui est réellement monté.
+_Éviter_ : connexion sociale, SSO (le premier est un anglicisme, le second désigne
+autre chose).
+
 **Session d'identité** (_auth session_, `auth_sessions`) :
 Ce qui dit qui tient le volant, et jusqu'à quand.
 _Attention_ : à ne pas confondre avec une **session de conduite**, qui est un
