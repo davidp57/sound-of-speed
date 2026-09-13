@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import ConfigView from './ui/ConfigView.vue'
 import HelpView from './ui/HelpView.vue'
@@ -15,6 +15,7 @@ import {
   synthAvailable,
   setBrake,
   importFromUrl,
+  liaison,
   setThrottle,
   shiftDown,
   shiftUp,
@@ -79,6 +80,27 @@ const HELP_SEEN_KEY = 'speed.helpSeen.v1'
 const helpOpen = ref(false)
 /** Message d'un profil reçu par lien, le temps de l'annoncer. */
 const received = ref('')
+
+/**
+ * Ce qu'on dit à l'appareil qui vient d'arriver par un code scanné.
+ *
+ * Le cas qui mérite d'être annoncé est le compte **gardé** : cet appareil
+ * portait déjà des réglages, ils ne suivent pas, et ce compte-là n'a pas de mot
+ * de passe pour y revenir. Le taire le ferait découvrir plus tard.
+ */
+const liaisonVue = ref(false)
+const messageDeLiaison = computed(() => {
+  const faite = liaison.value
+  if (liaisonVue.value || faite === null) return ''
+  if (faite.etat === 'sans-reseau') {
+    return 'Sans réseau : cet appareil n’a pas pu rejoindre le compte. Rouvrir le lien une fois connecté.'
+  }
+  if (faite.etat === 'refusee') return faite.detail
+  if (faite.ancien === 'garde') {
+    return 'Cet appareil a rejoint le compte. Ce qu’il portait avant reste sur son ancien compte, qui n’a pas de mot de passe pour y revenir.'
+  }
+  return 'Cet appareil a rejoint le compte : ses profils, ses moteurs et ses boîtes arrivent.'
+})
 
 function markHelpSeen(): void {
   try {
@@ -300,6 +322,11 @@ onBeforeUnmount(() => {
     <div v-if="received" class="banner">
       <span>{{ received }}</span>
       <button @click="received = ''">Fermer</button>
+    </div>
+
+    <div v-if="messageDeLiaison" class="banner">
+      <span>{{ messageDeLiaison }}</span>
+      <button @click="liaisonVue = true">Fermer</button>
     </div>
 
     <HelpView v-if="helpOpen" @close="closeHelp()" />

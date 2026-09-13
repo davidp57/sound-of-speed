@@ -9,7 +9,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ensureIdentity, startIdentity } from './client'
+import { demanderUnCode, ensureIdentity, relierCetAppareil, startIdentity } from './client'
 import { forgetIdentity, loadIdentity, saveIdentity, type LocalIdentity } from './store'
 
 function fauxStockage(options: { echoueEnEcriture?: boolean } = {}) {
@@ -275,6 +275,81 @@ describe('ce qui est gardé', () => {
     forgetIdentity()
 
     expect(loadIdentity()).toBeNull()
+  })
+})
+
+describe('relier un second appareil', () => {
+  const COUPLE = { email: 'a7@anonymous.placeholder.invalid', motDePasse: 'assez-long-pour-un-code' }
+
+  /** Un serveur qui répond ce qu'on lui dit de répondre, et note ce qu'on lui demande. */
+  function serveurDeLiaison(reponses: Record<string, { statut: number; charge?: unknown }>) {
+    const appels: string[] = []
+    const fetchImpl = vi.fn(async (adresse: string | URL | Request) => {
+      const chemin = String(adresse)
+      appels.push(chemin)
+      const cle = Object.keys(reponses).find((motif) => chemin.includes(motif)) ?? ''
+      const reponse = reponses[cle] ?? { statut: 404 }
+      return new Response(JSON.stringify(reponse.charge ?? null), {
+        status: reponse.statut,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }) as unknown as typeof fetch
+    return { fetchImpl, appels }
+  }
+
+  it('demande un code, et le rend tel quel', async () => {
+    const { fetchImpl } = serveurDeLiaison({ 'liaison/code': { statut: 200, charge: COUPLE } })
+
+    expect(await demanderUnCode({ fetchImpl })).toEqual({ state: 'pose', couple: COUPLE })
+  })
+
+  it('dit qu’on ne relie pas hors réseau, au lieu d’attendre', async () => {
+    // On ne relie pas un appareil en roulant, et c'est acceptable ; ce qui ne
+    // l'est pas serait un bouton qui ne répond rien.
+    const fetchImpl = vi.fn(async () => {
+      throw new Error('pas de réseau')
+    }) as unknown as typeof fetch
+
+    expect(await demanderUnCode({ fetchImpl })).toEqual({ state: 'sans-reseau' })
+    expect(await relierCetAppareil(COUPLE, { fetchImpl })).toEqual({ state: 'sans-reseau' })
+  })
+
+  it('range l’identité du compte rejoint, et dit le sort de l’ancien', async () => {
+    const { fetchImpl } = serveurDeLiaison({
+      'liaison/relier': {
+        statut: 200,
+        charge: {
+          compte: { id: 'c-voiture', name: 'Appareil du 13/09/2026', anonymous: false },
+          ancien: 'garde',
+        },
+      },
+    })
+
+    const faite = await relierCetAppareil(COUPLE, { fetchImpl, now: () => 1_700_000_000_000 })
+
+    expect(faite).toEqual({
+      state: 'reliee',
+      ancien: 'garde',
+      identity: {
+        id: 'c-voiture',
+        name: 'Appareil du 13/09/2026',
+        anonymous: false,
+        obtainedAt: 1_700_000_000_000,
+      },
+    })
+    // Ce qui compte autant : l'appareil rouvrira ce compte-là au démarrage
+    // suivant, sans repasser par le code.
+    expect(loadIdentity()?.id).toBe('c-voiture')
+  })
+
+  it('ne garde rien d’un code périmé', async () => {
+    saveIdentity(GARDEE)
+    const { fetchImpl } = serveurDeLiaison({ 'liaison/relier': { statut: 401 } })
+
+    const faite = await relierCetAppareil(COUPLE, { fetchImpl })
+
+    expect(faite.state).toBe('refusee')
+    expect(loadIdentity()).toEqual(GARDEE)
   })
 })
 
