@@ -74,6 +74,18 @@ regroupent par leur nom — `<date>_<jeton>_<NNN>` —, comme le relecteur le fa
 déjà. Effacer tranche par tranche rendrait des sessions à trous, que le
 relecteur afficherait comme des trajets amputés sans le dire.
 
+**Deux traces anciennes n'appartiennent à aucune session** : elles portent un nom
+libre d'avant la convention, et le regroupement ne les voit pas — le profileur
+non plus. Elles sont archivées, donc hors de portée de la règle, mais
+l'effacement à la demande doit accepter un dépôt isolé autant qu'une session,
+sinon rien ne pourra jamais les enlever.
+
+### L'interface vit dans le relecteur
+
+Épingler, télécharger, effacer, lire le verdict de la règle : tout se fait au
+bureau, devant la liste des trajets. L'application de la voiture ne gagne aucun
+écran — on ne trie pas ses archives au volant, et il n'y a pas de téléphone.
+
 ### Deux dates, parce qu'une seule ne suffit pas
 
 Le dépôt porte désormais **la date d'enregistrement**, tirée du nom à l'écriture,
@@ -113,6 +125,13 @@ Il sert au diagnostic d'un défaut qu'on vient de constater, pas à la relecture
 d'un trajet. Son délai est **plus court** que celui des traces, et il ne
 s'épingle pas individuellement : on ne choisit pas une tranche de journal, on
 regarde les dernières.
+
+**Sauf quand il accompagne une trace : il suit alors sa session.** Le relecteur
+réunit trace et journal sous un même trajet et en tire les faits marquants. Deux
+délais stricts couperaient une session en deux — à vingt jours on relirait un
+trajet ayant perdu ses faits marquants. Sur la base de production, deux sessions
+portent les deux, six n'ont que la trace, quatre n'ont que le journal : le cas du
+journal seul est le plus courant, et c'est lui qui prend le délai court.
 
 Les 53 tranches épinglées par la reprise gardent leur archive, comme les traces.
 
@@ -189,3 +208,20 @@ autant.
 - [ ] Ce qui va être effacé est montré avant de l'être
 - [ ] Le profil mesuré ne grossit pas avec le nombre de trajets — mesuré, et le
       plafond annoncé
+
+## Les tickets
+
+Découpés le 13 septembre 2026. Trois démarrent tout de suite ; le seul geste
+irréversible est le dernier, et il arrive après qu'on a pu lire le verdict de la
+règle sur les vraies données.
+
+| | Sujet | Bloqué par |
+|---|---|---|
+| [01](tickets/01-effacer-une-session-a-la-demande.md) | Une session s'efface à la demande | — |
+| [02](tickets/02-telecharger-une-session.md) | Télécharger une session en une archive | — |
+| [03](tickets/03-rouvrir-une-archive-depuis-le-disque.md) | Le relecteur rouvre une archive depuis le disque | 02 |
+| [04](tickets/04-la-date-du-trajet-en-base.md) | Le dépôt sait quand le trajet a eu lieu | — |
+| [05](tickets/05-l-etat-d-analyse-et-les-deux-exemptions.md) | Le dépôt sait s'il a été analysé, et de quelle exemption il relève | 04 |
+| [06](tickets/06-epingler-dans-une-limite-annoncee.md) | Épingler une session, dans une limite annoncée | 05 |
+| [07](tickets/07-voir-ce-que-la-regle-emporterait.md) | Voir ce que la règle emporterait, sans rien effacer | 04, 05, 06 |
+| [08](tickets/08-la-regle-efface.md) | La règle efface, au démarrage puis chaque jour | 07 |
