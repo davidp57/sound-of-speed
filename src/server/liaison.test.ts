@@ -1,5 +1,5 @@
 /**
- * Ce qu'on vérifie ici : un second appareil qui scanne le code de la voiture
+ * Ce qu'on vérifie ici : un second appareil qui reçoit le code de la voiture
  * ouvre **le même compte**, et le compte qu'il portait avant est effacé s'il
  * était vide, gardé sinon.
  *
@@ -17,8 +17,9 @@ import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { ouvrirBase, type Base } from './base/base'
-import { accounts, profiles } from './base/schema'
+import { accounts, authSessions, authVerifications, profiles } from './base/schema'
 import { creerIdentite, type Identite } from './identite'
+import { normaliser } from './liaison'
 import { creerServeur } from './serveur'
 
 const MIGRATIONS = 'src/server/base/migrations'
@@ -67,8 +68,15 @@ async function compteDe(temoin: string): Promise<string | null> {
   return session?.user?.id ?? null
 }
 
-async function demanderUnCode(temoin: string) {
-  return serveur().request('/api/liaison/code', { method: 'POST', headers: { Cookie: temoin } })
+async function demanderUnCode(temoin: string): Promise<{ statut: number; code: string }> {
+  const reponse = await serveur().request('/api/auth/liaison/code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: temoin },
+    body: '{}',
+  })
+  if (!reponse.ok) return { statut: reponse.status, code: '' }
+  const charge = (await reponse.json()) as { code: string }
+  return { statut: reponse.status, code: charge.code }
 }
 
 interface Reliure {
@@ -78,11 +86,11 @@ interface Reliure {
   ancien?: string
 }
 
-async function relier(temoin: string, couple: unknown): Promise<Reliure> {
-  const reponse = await serveur().request('/api/liaison/relier', {
+async function relier(temoin: string, code: string): Promise<Reliure> {
+  const reponse = await serveur().request('/api/auth/liaison/relier', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Cookie: temoin },
-    body: JSON.stringify(couple),
+    body: JSON.stringify({ code }),
   })
   if (!reponse.ok) return { statut: reponse.status, temoin }
   const charge = (await reponse.json()) as {
@@ -98,79 +106,95 @@ async function relier(temoin: string, couple: unknown): Promise<Reliure> {
 }
 
 describe('le code de liaison', () => {
-  it('pose un mot de passe, et le compte cesse d’être anonyme', async () => {
+  it('se lit et se dicte : huit caractères, sans ceux qui se confondent', async () => {
     const voiture = await appareilNeuf()
-    const conduite = await compteDe(voiture)
+    const { statut, code } = await demanderUnCode(voiture)
 
-    const reponse = await demanderUnCode(voiture)
-    const couple = (await reponse.json()) as { email: string; motDePasse: string }
+    expect(statut).toBe(200)
+    // Ni I, ni L, ni O, ni U, ni 0, ni 1 : ce qui se confond sur un écran de
+    // voiture, ou au téléphone.
+    expect(code).toMatch(/^[2-9A-HJKMNP-TV-Z]{4}-[2-9A-HJKMNP-TV-Z]{4}$/)
+  })
 
-    expect(reponse.status).toBe(200)
-    // L'adresse est celle que la bibliothèque a fabriquée : elle ne désigne
-    // aucune boîte, et rien ne part vers elle.
-    expect(couple.email).toMatch(/@anonymous\.placeholder\.invalid$/)
-    expect(couple.motDePasse.length).toBeGreaterThan(20)
+  it('ne laisse pas de quoi ouvrir un compte dans la base', async () => {
+    // Une base qu'on recopie pour la regarder — c'est ce que fait `npm run
+    // verdict` — ne doit pas livrer de quoi entrer chez les gens.
+    const voiture = await appareilNeuf()
+    const { code } = await demanderUnCode(voiture)
 
-    const relu = await base.select().from(accounts).where(eq(accounts.id, conduite ?? ''))
-    // Le drapeau dirait le contraire de la vérité : ce compte est désormais
-    // récupérable ailleurs.
-    expect(relu[0]?.isAnonymous).toBe(false)
+    const rangees = await base.select().from(authVerifications)
+    expect(rangees).toHaveLength(1)
+    expect(rangees[0]?.identifier).not.toContain(code)
+    expect(rangees[0]?.identifier).not.toContain(code.replace('-', ''))
   })
 
   it('n’est pas donné à qui n’a pas de compte', async () => {
-    const reponse = await demanderUnCode('')
-    expect(reponse.status).toBe(401)
+    expect((await demanderUnCode('')).statut).toBe(401)
   })
 
-  it('périme le précédent quand on en demande un autre', async () => {
-    // Un écran photographié la semaine dernière ne doit plus rien ouvrir dès
-    // qu'un nouveau code est affiché.
+  it('ne touche pas au mot de passe du compte', async () => {
+    // Le défaut de la première version, et la raison de celle-ci : la
+    // bibliothèque ne garde qu'une preuve « mot de passe » par compte, donc
+    // afficher un code aurait écrasé celui qu'on choisira au ticket 11.
     const voiture = await appareilNeuf()
-    const premier = (await (await demanderUnCode(voiture)).json()) as {
-      email: string
-      motDePasse: string
-    }
-    const second = (await (await demanderUnCode(voiture)).json()) as {
-      email: string
-      motDePasse: string
-    }
+    await demanderUnCode(voiture)
 
-    expect(second.motDePasse).not.toBe(premier.motDePasse)
-    expect((await relier(await appareilNeuf(), premier)).statut).toBe(401)
-    expect((await relier(await appareilNeuf(), second)).statut).toBe(200)
+    const compte = await compteDe(voiture)
+    const lignes = await base.select().from(accounts).where(eq(accounts.id, compte ?? ''))
+    expect(lignes[0]?.isAnonymous).toBe(true)
   })
 })
 
-describe('l’appareil qui scanne', () => {
+describe('l’appareil qui reçoit le code', () => {
   it('ouvre le même compte que la voiture', async () => {
     const voiture = await appareilNeuf()
     const conduite = await compteDe(voiture)
-    const couple = (await (await demanderUnCode(voiture)).json()) as {
-      email: string
-      motDePasse: string
-    }
+    const { code } = await demanderUnCode(voiture)
 
     const telephone = await appareilNeuf()
-    const reliure = await relier(telephone, couple)
+    const reliure = await relier(telephone, code)
 
     expect(reliure.statut).toBe(200)
     expect(reliure.compte?.id).toBe(conduite)
     // Le témoin rendu doit ouvrir ce compte-là : sans lui, l'appareil aurait
     // relié un compte qu'il ne pourrait plus atteindre.
     expect(await compteDe(reliure.temoin)).toBe(conduite)
-    expect(reliure.compte?.anonymous).toBe(false)
+  })
+
+  it('reçoit une session à lui, et non celle de la voiture', async () => {
+    // Deux appareils qui partageraient une session se déconnecteraient ensemble.
+    const voiture = await appareilNeuf()
+    const { code } = await demanderUnCode(voiture)
+    const telephone = await appareilNeuf()
+
+    const reliure = await relier(telephone, code)
+
+    expect(reliure.temoin).not.toBe(voiture)
+    const compte = await compteDe(voiture)
+    const sessions = await base
+      .select()
+      .from(authSessions)
+      .where(eq(authSessions.accountId, compte ?? ''))
+    expect(sessions).toHaveLength(2)
+  })
+
+  it('accepte le code en minuscules et sans le trait', async () => {
+    const voiture = await appareilNeuf()
+    const { code } = await demanderUnCode(voiture)
+
+    const telephone = await appareilNeuf()
+    const reliure = await relier(telephone, code.replace('-', '').toLowerCase())
+
+    expect(reliure.statut).toBe(200)
   })
 
   it('perd le compte vide qu’il portait', async () => {
     const voiture = await appareilNeuf()
-    const couple = (await (await demanderUnCode(voiture)).json()) as {
-      email: string
-      motDePasse: string
-    }
+    const { code } = await demanderUnCode(voiture)
 
     const telephone = await appareilNeuf()
     const avant = await compteDe(telephone)
-    const reliure = await relier(telephone, couple)
+    const reliure = await relier(telephone, code)
 
     expect(reliure.ancien).toBe('efface')
     expect(await base.select().from(accounts).where(eq(accounts.id, avant ?? ''))).toHaveLength(0)
@@ -178,10 +202,7 @@ describe('l’appareil qui scanne', () => {
 
   it('garde le compte qui portait quelque chose, et le dit', async () => {
     const voiture = await appareilNeuf()
-    const couple = (await (await demanderUnCode(voiture)).json()) as {
-      email: string
-      motDePasse: string
-    }
+    const { code } = await demanderUnCode(voiture)
 
     const telephone = await appareilNeuf()
     const avant = (await compteDe(telephone)) ?? ''
@@ -189,31 +210,66 @@ describe('l’appareil qui scanne', () => {
       .insert(profiles)
       .values({ id: 'p1', accountId: avant, name: 'Réglé au bureau', content: '{}' })
 
-    const reliure = await relier(telephone, couple)
+    const reliure = await relier(telephone, code)
 
     expect(reliure.ancien).toBe('garde')
     expect(await base.select().from(accounts).where(eq(accounts.id, avant))).toHaveLength(1)
   })
+})
 
-  it('refuse un couple qui ne vaut rien, sans toucher à ce qu’il portait', async () => {
+describe('un code qui ne vaut plus rien', () => {
+  it('ne sert qu’une fois', async () => {
+    const voiture = await appareilNeuf()
+    const { code } = await demanderUnCode(voiture)
+
+    expect((await relier(await appareilNeuf(), code)).statut).toBe(200)
+    expect((await relier(await appareilNeuf(), code)).statut).toBe(401)
+  })
+
+  it('expire', async () => {
+    // Le temps n'est pas simulé : on avance la date d'échéance dans la base,
+    // ce qui éprouve la même chose — c'est la bibliothèque qui compare, et
+    // c'est sa comparaison qu'on veut voir refuser.
+    const voiture = await appareilNeuf()
+    const { code } = await demanderUnCode(voiture)
+    await base
+      .update(authVerifications)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(authVerifications.value, (await compteDe(voiture)) ?? ''))
+
+    expect((await relier(await appareilNeuf(), code)).statut).toBe(401)
+  })
+
+  it('refuse un code inventé, sans toucher à ce que l’appareil portait', async () => {
     const telephone = await appareilNeuf()
     const avant = await compteDe(telephone)
 
-    const reliure = await relier(telephone, {
-      email: 'personne@anonymous.placeholder.invalid',
-      motDePasse: 'ce-mot-de-passe-n-ouvre-rien',
-    })
+    const reliure = await relier(telephone, 'ABCD-2345')
 
     expect(reliure.statut).toBe(401)
     expect(await compteDe(telephone)).toBe(avant)
   })
 
-  it('refuse un corps qui ne porte pas de couple', async () => {
-    const reponse = await serveur().request('/api/liaison/relier', {
+  it('refuse un corps qui ne porte pas de code', async () => {
+    const reponse = await serveur().request('/api/auth/liaison/relier', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'a@b.invalid' }),
+      body: JSON.stringify({ rien: 'du tout' }),
     })
     expect(reponse.status).toBe(400)
+  })
+})
+
+describe('ce qu’on accepte à la saisie', () => {
+  it('ignore la casse, les traits et les espaces', () => {
+    expect(normaliser('k7m4pq2r')).toBe('K7M4-PQ2R')
+    expect(normaliser('K7M4-PQ2R')).toBe('K7M4-PQ2R')
+    expect(normaliser(' k7m4 pq2r ')).toBe('K7M4-PQ2R')
+  })
+
+  it('laisse tel quel ce qui n’a pas la bonne longueur', () => {
+    // Sans quoi un code tronqué serait regroupé en un code d'apparence valide,
+    // et l'erreur rendue serait la mauvaise.
+    expect(normaliser('K7M4')).toBe('K7M4')
   })
 })

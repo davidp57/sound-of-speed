@@ -78,7 +78,7 @@ import {
   type IdentityOutcome,
   type SortDeLAncien,
 } from './core/identity/client'
-import { lireLienDansUrl, type CoupleDeLiaison } from './core/identity/lien'
+import { lireLienDansUrl, type CodeDeLiaison } from './core/identity/lien'
 import { loadIdentity, type LocalIdentity } from './core/identity/store'
 import { UploadQueue, type QueuedUpload } from './core/upload/queue'
 import { loadQueue, saveQueue } from './core/upload/store'
@@ -1635,9 +1635,13 @@ const lienScanne = typeof window === 'undefined' ? null : lireLienDansUrl()
  * Le serveur décide du sort du compte que cet appareil portait ; ici on range
  * la nouvelle identité, on oublie ce qu'on croyait avoir déjà vu — ce registre
  * parlait de l'autre compte —, et on redescend ce que le nouveau porte.
+ *
+ * **Les deux chemins passent par ici** : le code scanné, lu dans l'adresse au
+ * démarrage, et le code recopié à la main dans l'écran de configuration. Ce qui
+ * se passe ensuite doit être le même, y compris ce que la bannière annonce.
  */
-async function appliquerLeLien(couple: CoupleDeLiaison): Promise<void> {
-  const faite = await relierCetAppareil(couple)
+export async function rejoindreUnCompte(code: CodeDeLiaison): Promise<void> {
+  const faite = await relierCetAppareil(code)
   if (faite.state === 'sans-reseau') {
     liaison.value = { etat: 'sans-reseau' }
     return
@@ -1664,7 +1668,7 @@ if (typeof window !== 'undefined') {
     // La liaison vient après, et non à la place : l'appareil qui scanne s'est
     // d'abord créé son compte anonyme, comme tout appareil neuf, et c'est ce
     // compte-là que le serveur efface ou garde selon ce qu'il porte.
-    if (lienScanne !== null) void appliquerLeLien(lienScanne)
+    if (lienScanne !== null) void rejoindreUnCompte(lienScanne)
   })
   // Un appareil qui a démarré dans un tunnel prend son compte au retour du
   // réseau, comme la file d'envoi part au même moment.

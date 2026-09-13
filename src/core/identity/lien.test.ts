@@ -1,7 +1,7 @@
 /**
- * Ce qu'on vérifie ici : le code à scanner porte de quoi ouvrir un compte, il
- * le rend intact à l'arrivée, et **le fragment disparaît de l'adresse dès qu'il
- * est lu**.
+ * Ce qu'on vérifie ici : le code à scanner porte le code de liaison, il le rend
+ * intact à l'arrivée, et **le fragment disparaît de l'adresse dès qu'il est
+ * lu**.
  *
  * Ce dernier point est le seul qui ne se rattrape pas : un lien qui ouvre un
  * compte n'a rien à faire dans la barre d'adresse d'une page qu'on laisse
@@ -10,12 +10,9 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { decoderLien, encoderLien, lienDeLiaison, lireLienDansUrl } from './lien'
+import { lienDeLiaison, lireLienDansUrl } from './lien'
 
-const COUPLE = {
-  email: 'afwfxnmq7a@anonymous.placeholder.invalid',
-  motDePasse: 'JDxU1qTt-k3ZGm0Nn8bVw2y7LhSc4pEr',
-}
+const CODE = 'K7M4-PQ2R'
 
 function adresse(hash: string): void {
   Object.defineProperty(globalThis, 'window', {
@@ -34,39 +31,34 @@ beforeEach(() => {
   adresse('')
 })
 
-describe('le code à scanner', () => {
-  it('rend le couple intact', () => {
-    expect(decoderLien(encoderLien(COUPLE))).toEqual(COUPLE)
-  })
-
-  it('tient tout entier dans le fragment', () => {
+describe('le lien à scanner', () => {
+  it('porte le code, dans le fragment', () => {
     // Le fragment n'est jamais transmis au serveur ni inscrit dans ses journaux.
     // C'est ce qui vaut à ce lien d'être un lien plutôt qu'un appel.
-    const url = lienDeLiaison('https://speed.exemple.fr', COUPLE)
+    const url = lienDeLiaison('https://speed.exemple.fr', CODE)
 
-    expect(url.startsWith('https://speed.exemple.fr/#lier=')).toBe(true)
-    expect(url).not.toContain(COUPLE.motDePasse)
-    expect(url).not.toContain('@')
+    expect(url).toBe('https://speed.exemple.fr/#lier=K7M4-PQ2R')
   })
 
-  it('ne rend rien d’un jeton abîmé', () => {
-    expect(decoderLien('ceci-n-est-pas-un-jeton')).toBeNull()
-    expect(decoderLien(encoderLien(COUPLE).slice(4))).toBeNull()
+  it('reste court, donc lisible de loin', () => {
+    // Un code à scanner qui porte peu se lit à bout de bras sur l'écran d'une
+    // voiture. La version d'avant portait cent quatre-vingt-six caractères.
+    expect(lienDeLiaison('https://speed.exemple.fr', CODE).length).toBeLessThan(50)
   })
 })
 
 describe('la lecture de l’adresse', () => {
-  it('rend le couple et efface le fragment', () => {
-    adresse(`#lier=${encoderLien(COUPLE)}`)
+  it('rend le code et efface le fragment', () => {
+    adresse(`#lier=${CODE}`)
 
-    expect(lireLienDansUrl()).toEqual(COUPLE)
+    expect(lireLienDansUrl()).toBe(CODE)
     expect(history.replaceState).toHaveBeenCalledWith(null, '', '/')
   })
 
   it('efface le fragment même quand il ne vaut rien', () => {
     // Sinon un lien mal recopié resterait affiché, et serait rejoué à chaque
     // rechargement de la page.
-    adresse('#lier=abime')
+    adresse('#lier=%%%')
 
     expect(lireLienDansUrl()).toBeNull()
     expect(history.replaceState).toHaveBeenCalled()

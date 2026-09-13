@@ -477,16 +477,19 @@ contact avec le serveur. **C'est la colonne qui fait foi**, et non l'adresse : l
 bibliothèque d'identité en fabrique une, sous le domaine réservé `.invalid` qui ne
 désigne aucune boîte, parce qu'elle refuse un compte sans courriel. Un compte
 anonyme n'a rien à récupérer — pas de mot de passe, donc rien à reprendre si
-l'appareil perd ce qu'il gardait. Afficher un **code de liaison** met fin à cet
-état : le serveur pose un mot de passe, et la colonne repasse à faux.
+l'appareil perd ce qu'il gardait. Le **code de liaison** n'y change rien : il
+relie un second appareil au même compte anonyme, et les perdre tous les deux le
+perdrait. C'est une vraie adresse qui mettra fin à cet état.
 _Éviter_ : compte temporaire, compte invité (les deux laissent croire qu'il
 expire, or il dure tant qu'on ne l'efface pas).
 
 **Code de liaison** (_link code_, `poserUnCodeDeLiaison`) :
-Ce qu'un appareil affiche pour qu'un autre ouvre le **même compte**. C'est un
-lien vers l'application, à scanner ou à suivre, qui porte dans son fragment
-l'adresse du compte et un mot de passe posé par le serveur au moment de la
-demande. Il périme le précédent, et s'efface de l'écran au bout de deux minutes.
+Ce qu'un appareil donne pour qu'un autre ouvre le **même compte**. Huit
+caractères, dans un alphabet où rien ne se confond, à recopier — ou à scanner,
+le lien portant la même valeur dans son fragment. Il ne sert **qu'une fois** et
+expire en dix minutes.
+_Attention_ : il ne touche pas au mot de passe du compte, et un compte relié à
+deux appareils reste anonyme.
 _Éviter_ : appairage, jumelage (qui laissent croire à un lien entre deux
 appareils, alors qu'il n'y a qu'un compte et des appareils qui l'ouvrent),
 invitation (rien n'est envoyé à personne).

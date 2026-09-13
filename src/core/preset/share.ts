@@ -1,4 +1,3 @@
-import { base64UrlDecode, base64UrlEncode } from '../base64url'
 import { deepCopy, newId } from './store'
 import { soundSourceOf } from './schema'
 import { withSevenGears } from './seven-gears'
@@ -136,6 +135,24 @@ async function decompress(bytes: Uint8Array): Promise<string | null> {
   } catch {
     return null
   }
+}
+
+/**
+ * Base 64 adaptée aux adresses : sans `+`, `/` ni `=`, qui y seraient réécrits
+ * par les messageries et les navigateurs.
+ */
+function base64UrlEncode(bytes: Uint8Array): string {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function base64UrlDecode(text: string): Uint8Array {
+  const padded = text.replace(/-/g, '+').replace(/_/g, '/')
+  const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4))
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
 }
 
 /**

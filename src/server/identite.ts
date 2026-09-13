@@ -34,6 +34,7 @@ import { anonymous } from 'better-auth/plugins'
 import type { Base } from './base/base'
 import { accounts, authIdentities, authSessions, authVerifications } from './base/schema'
 import { faireHeriter, formaterHeritage } from './heritage'
+import { liaison } from './liaison'
 
 /** Le préfixe sous lequel la bibliothèque répond. */
 export const CHEMIN_IDENTITE = '/api/auth'
@@ -119,6 +120,11 @@ export function creerIdentite({ base, secret, adresse }: OptionsDIdentite) {
          */
         generateName: () => `Appareil du ${new Date().toLocaleDateString('fr-FR')}`,
       }),
+
+      // Relier un second appareil au même compte. Un greffon et non deux routes
+      // à côté : le témoin de connexion est signé avec le secret du serveur, et
+      // seule la bibliothèque sait le poser — voir `liaison.ts`.
+      liaison({ base }),
     ],
 
     session: {

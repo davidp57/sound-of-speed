@@ -26,7 +26,6 @@ import {
 } from './sessions'
 import { ecrireEntite, estUnRegistre, lireEntite, listerEntites } from './entites'
 import { CHEMIN_IDENTITE, type Identite } from './identite'
-import { CHEMIN_LIAISON, poserUnCodeDeLiaison, relierAuCompte } from './liaison'
 import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
@@ -97,54 +96,6 @@ export function creerServeur(options: OptionsDuServeur): Hono {
   if (options.identite !== undefined) {
     const identite = options.identite
     app.on(['GET', 'POST'], `${CHEMIN_IDENTITE}/*`, (c) => identite.handler(c.req.raw))
-  }
-
-  // --- Relier un second appareil -------------------------------------------
-  //
-  // Deux gestes, et une base est nécessaire aux deux : poser un mot de passe sur
-  // le compte de la voiture, et ouvrir ce compte depuis l'appareil qui a scanné
-  // le code. Le second règle en passant le sort du compte que cet appareil
-  // portait — voir `liaison.ts`, où l'ordre est expliqué.
-  if (options.base !== undefined && options.identite !== undefined) {
-    const base = options.base
-    const identite = options.identite
-
-    app.post(`${CHEMIN_LIAISON}/code`, async (c) => {
-      const pose = await poserUnCodeDeLiaison(base, identite, c.req.raw.headers)
-      if (pose.etat === 'sans-compte') return sansCompte()
-      if (pose.etat === 'sans-adresse') {
-        return c.json({ erreur: 'Ce compte ne peut pas être rouvert ailleurs.' }, 409)
-      }
-      // Jamais en cache : ce qui est rendu ici ouvre un compte.
-      return c.json(pose.couple, 200, { 'Cache-Control': 'no-store' })
-    })
-
-    app.post(`${CHEMIN_LIAISON}/relier`, async (c) => {
-      let corps: unknown
-      try {
-        corps = await c.req.json()
-      } catch {
-        return c.json({ erreur: 'Corps illisible.' }, 400)
-      }
-
-      const couple = coupleDe(corps)
-      if (couple === null) return c.json({ erreur: 'Il manque de quoi relier.' }, 400)
-
-      const liaison = await relierAuCompte(base, identite, c.req.raw.headers, couple)
-      if (liaison.etat === 'refusee') {
-        return c.json({ erreur: 'Ce code n’ouvre plus rien.' }, 401)
-      }
-
-      // Les en-têtes de la bibliothèque portent le témoin de connexion : sans
-      // eux, l'appareil aurait relié un compte qu'il ne pourrait pas rouvrir.
-      const entetes = new Headers(liaison.entetes)
-      entetes.set('Content-Type', 'application/json; charset=utf-8')
-      entetes.set('Cache-Control', 'no-store')
-      return new Response(JSON.stringify({ compte: liaison.compte, ancien: liaison.ancien }), {
-        status: 200,
-        headers: entetes,
-      })
-    })
   }
 
   // --- La bibliothèque de profils ------------------------------------------
@@ -475,17 +426,6 @@ export function creerServeur(options: OptionsDuServeur): Hono {
  * en mettre un ferait surgir la fenêtre du navigateur pour une saisie qui
  * n'ouvrirait rien.
  */
-/** Ce qu'un appareil doit poster pour se relier, ou `null` si ça n'y est pas. */
-function coupleDe(corps: unknown): { email: string; motDePasse: string } | null {
-  if (typeof corps !== 'object' || corps === null) return null
-  const champs = corps as Record<string, unknown>
-  const email = champs['email']
-  const motDePasse = champs['motDePasse']
-  if (typeof email !== 'string' || email === '') return null
-  if (typeof motDePasse !== 'string' || motDePasse === '') return null
-  return { email, motDePasse }
-}
-
 function sansCompte(): Response {
   return new Response('compte requis', { status: 401 })
 }
