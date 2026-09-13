@@ -11,6 +11,7 @@
  * `fetch` est injecté pour que tout ceci se vérifie sans réseau ni serveur.
  */
 
+import type { Delais, Verdict } from '../retention/regle'
 import { authHeader, hasCredentials, type DepositCredentials } from '../upload/put'
 
 /** L'adresse d'un trajet. La clé porte des deux-points quand le dépôt est seul. */
@@ -113,6 +114,28 @@ export async function pinTrip(
     // échec à taire.
     if (!response.ok && response.status !== 409) return null
     return (await response.json()) as Epinglage
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Ce que la règle emporterait, tel que le serveur le calcule.
+ *
+ * Lu et non recalculé ici : la règle qu'on relit doit être celle qui efface.
+ */
+export async function retentionVerdict(
+  credentials: DepositCredentials,
+  fetchImpl: typeof fetch = fetch,
+): Promise<(Verdict & { delais: Delais }) | null> {
+  if (!hasCredentials(credentials)) return null
+
+  try {
+    const response = await fetchImpl('/retention', {
+      headers: { Accept: 'application/json', Authorization: authHeader(credentials) },
+    })
+    if (!response.ok) return null
+    return (await response.json()) as Verdict & { delais: Delais }
   } catch {
     return null
   }

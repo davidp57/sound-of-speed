@@ -15,6 +15,7 @@ import { lireComptes } from './comptes'
 import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
+import { DELAIS_PAR_DEFAUT, type Delais } from './retention'
 import { creerServeur } from './serveur'
 
 const port = Number(process.env['SPEED_PORT'] ?? 8088)
@@ -25,6 +26,10 @@ const migrations = process.env['SPEED_MIGRATIONS'] ?? 'src/server/base/migration
 const fichierDeComptes = process.env['SPEED_HTPASSWD']
 const anciensDossiers = process.env['SPEED_REPRISE']
 const epingles = nombreOuRien(process.env['SPEED_EPINGLES'])
+const delais: Delais = {
+  traces: nombreOuRien(process.env['SPEED_RETENTION_TRACES']) ?? DELAIS_PAR_DEFAUT.traces,
+  journal: nombreOuRien(process.env['SPEED_RETENTION_JOURNAL']) ?? DELAIS_PAR_DEFAUT.journal,
+}
 
 /**
  * Un réglage d'environnement, quand il est lisible.
@@ -110,6 +115,7 @@ const serveur = serve(
       base,
       comptes: lireComptes(fichierDeComptes),
       ...(epingles === undefined ? {} : { epingles }),
+      delais,
       ...(echantillons === undefined ? {} : { echantillons }),
     }).fetch,
     port,

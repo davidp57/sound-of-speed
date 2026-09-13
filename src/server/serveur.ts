@@ -17,6 +17,7 @@ import { Hono } from 'hono'
 import { SOLO_ACCOUNT_ID, type Base } from './base/base'
 import { coupleDe, type Comptes } from './comptes'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
+import { DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } from './retention'
 import {
   archiveDeLaSession,
   effacerSession,
@@ -40,6 +41,8 @@ export interface OptionsDuServeur {
   compte?: string
   /** Combien d'épingles un compte peut poser. Réglable par l'environnement. */
   epingles?: number
+  /** Les délais de rétention, en jours. Réglables par l'environnement. */
+  delais?: Delais
   /**
    * Les échantillons déposés, s'il y en a.
    *
@@ -72,6 +75,7 @@ const DONNEES = [
   '/mesures/',
   '/mesure-voiture/',
   '/sessions/',
+  '/retention',
 ]
 
 export function creerServeur(options: OptionsDuServeur): Hono {
@@ -213,6 +217,20 @@ export function creerServeur(options: OptionsDuServeur): Hono {
           'Cache-Control': 'no-store',
         },
       })
+    })
+
+    // Ce que la règle emporterait, sans rien effacer.
+    //
+    // Aucun contrôle ne dira qu'un délai est trop court : un mauvais seuil
+    // efface des données et rien ne rougit. La seule façon de le savoir est de
+    // regarder ce verdict d'abord, sur les vraies données.
+    app.get('/retention', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      const delais = options.delais ?? DELAIS_PAR_DEFAUT
+      const verdict = await verdictDuCompte(base, compte, Date.now(), delais)
+      return c.json({ ...verdict, delais }, 200, { 'Cache-Control': 'no-store' })
     })
 
     // Épingler, et décrocher. La borne se voit : un refus dit ce qu'il faut

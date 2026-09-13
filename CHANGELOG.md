@@ -15,6 +15,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le relecteur montre ce que la règle de rétention emporterait, sans rien
+  effacer.** Quels trajets partiraient, à quelle date, combien d'octets, et pour
+  chacun de ceux qui restent, la raison qui le retient : épinglé, archivé, trop
+  récent, ou pas encore analysé. Un trajet part quand sa date d'enregistrement
+  dépasse le délai, que le profileur l'a traité, et qu'il n'est ni épinglé ni
+  archivé. Trente jours pour une trace, quatorze pour un journal seul — le
+  journal d'un trajet qui a une trace suit sa trace et part avec elle, sans quoi
+  on relirait un trajet ayant perdu ses faits marquants. Les deux délais se
+  règlent par `SPEED_RETENTION_TRACES` et `SPEED_RETENTION_JOURNAL`.
+
 - **Un trajet qu'on veut garder s'épingle.** L'épingle l'exempte de l'effacement
   automatique, elle porte sur le trajet entier — on ne choisit pas une tranche de
   journal —, et elle survit à un nouveau dépôt sous le même nom. Leur nombre est

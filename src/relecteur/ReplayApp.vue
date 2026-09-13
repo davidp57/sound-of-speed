@@ -10,7 +10,7 @@ import {
   loadSession,
   type SessionEntry,
 } from '../core/session/read'
-import { deleteTrip, downloadTrip, pinTrip } from '../core/session/manage'
+import { deleteTrip, downloadTrip, pinTrip, retentionVerdict } from '../core/session/manage'
 import { sessionFromArchive } from '../core/session/archive'
 import { stateAt, trackAt, type Session } from '../core/session/model'
 import { findGearChanges, findShiftBursts, recordedShifts } from '../core/session/shifts'
@@ -603,6 +603,34 @@ async function effacer(entry: SessionEntry): Promise<void> {
 }
 
 /**
+ * Ce que la règle de rétention emporterait, sans rien effacer.
+ *
+ * On le regarde avant que quoi que ce soit disparaisse : aucun contrôle ne dira
+ * qu'un délai est trop court — un mauvais seuil efface des données et rien ne
+ * rougit.
+ */
+const verdict = ref<Awaited<ReturnType<typeof retentionVerdict>>>(null)
+
+async function voirLaRegle(): Promise<void> {
+  busy.value = true
+  try {
+    verdict.value = await retentionVerdict(credentials)
+    if (verdict.value === null) geste.value = 'La règle de rétention n’a pas répondu.'
+  } finally {
+    busy.value = false
+  }
+}
+
+/** Les raisons de retenir, comptées : « 14 archivés, 2 trop récents ». */
+const raisonsRetenues = computed(() => {
+  const comptes = new Map<string, number>()
+  for (const retenu of verdict.value?.retenus ?? []) {
+    comptes.set(retenu.raison, (comptes.get(retenu.raison) ?? 0) + 1)
+  }
+  return [...comptes].map(([raison, combien]) => `${combien} ${raison}${combien > 1 ? 's' : ''}`)
+})
+
+/**
  * Où l'on en est de la borne d'épingles, tel que le serveur le dit.
  *
  * Connu seulement après un premier épinglage : l'afficher d'avance demanderait
@@ -881,6 +909,39 @@ void refresh()
           <button @click="aEffacer = null">Annuler</button>
         </span>
       </p>
+      <!--
+        Le verdict de la règle : ce qui partirait, et ce qui retient le reste.
+        Il n'efface rien — c'est tout son intérêt.
+      -->
+      <p class="regle">
+        <button :disabled="busy" @click="voirLaRegle()">Ce que la règle emporterait</button>
+        <span v-if="verdict" class="muted">
+          traces : {{ verdict.delais.traces }} jours · journal seul :
+          {{ verdict.delais.journal }} jours
+        </span>
+      </p>
+
+      <template v-if="verdict">
+        <p v-if="verdict.aEffacer.length === 0" class="note">
+          Rien ne partirait aujourd'hui. Ce qui reste :
+          {{ raisonsRetenues.join(', ') || 'aucun trajet' }}.
+        </p>
+        <template v-else>
+          <p class="note">
+            {{ verdict.aEffacer.length }} trajet{{ verdict.aEffacer.length > 1 ? 's' : '' }}
+            partirai{{ verdict.aEffacer.length > 1 ? 'ent' : 't' }}, {{ poids(verdict.octets) }}.
+            Ce qui reste : {{ raisonsRetenues.join(', ') }}.
+          </p>
+          <ul class="verdict">
+            <li v-for="trajet in verdict.aEffacer" :key="trajet.cle">
+              {{ stamp(trajet.enregistreLe) }} — {{ trajet.tranches }} tranche{{
+                trajet.tranches > 1 ? 's' : ''
+              }}, {{ poids(trajet.octets) }}{{ trajet.isole ? ' — dépôt seul' : '' }}
+            </li>
+          </ul>
+        </template>
+      </template>
+
       <p v-if="geste" class="note">{{ geste }}</p>
       <p v-if="epingles" class="note">
         Épingles : {{ epingles.epinglees }} sur {{ epingles.borne }}. Les trajets archivés, venus
@@ -1419,6 +1480,21 @@ select {
   display: flex;
   gap: 0.4rem;
   justify-content: flex-end;
+}
+
+/* La règle, et ses seuils, sur une ligne. */
+.regle {
+  align-items: center;
+  display: flex;
+  gap: 0.6rem;
+  margin: 0.7rem 0 0;
+}
+
+.verdict {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0.3rem 0 0;
+  padding-left: 1.2rem;
 }
 
 /*

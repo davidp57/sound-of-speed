@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { deleteTrip, downloadTrip, pinTrip } from './manage'
+import { deleteTrip, downloadTrip, pinTrip, retentionVerdict } from './manage'
 
 const CREDENTIALS = { user: 'depot', password: 'motdepasse' }
 
@@ -133,5 +133,34 @@ describe('épingler un trajet', () => {
 
     expect(rendu?.etat).toBe('borne atteinte')
     expect(rendu?.borne).toBe(20)
+  })
+})
+
+describe('le verdict de la règle', () => {
+  it('se lit sur le serveur, et n’est pas recalculé ici', async () => {
+    // La règle qu'on relit doit être celle qui efface : deux calculs
+    // divergeraient, et c'est l'autre qui emporterait les trajets.
+    let url = ''
+    const impl = (async (adresse: string) => {
+      url = String(adresse)
+      return Response.json({
+        aEffacer: [],
+        retenus: [{ cle: 'k', raison: 'archivé' }],
+        octets: 0,
+        delais: { traces: 30, journal: 14 },
+      })
+    }) as unknown as typeof fetch
+
+    const verdict = await retentionVerdict(CREDENTIALS, impl)
+
+    expect(url).toBe('/retention')
+    expect(verdict?.retenus[0]?.raison).toBe('archivé')
+    expect(verdict?.delais).toEqual({ traces: 30, journal: 14 })
+  })
+
+  it('rend null devant un serveur qui ne connaît pas la règle', async () => {
+    const impl = (async () => new Response('', { status: 404 })) as unknown as typeof fetch
+
+    expect(await retentionVerdict(CREDENTIALS, impl)).toBeNull()
   })
 })

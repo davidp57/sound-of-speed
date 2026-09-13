@@ -1,6 +1,6 @@
 # 07 — Voir ce que la règle emporterait, sans rien effacer
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — reste à lire le verdict sur la base de production
 
 **Bloqué par :** [04 — Le dépôt sait quand le trajet a eu lieu](04-la-date-du-trajet-en-base.md),
 [05 — Le dépôt sait s'il a été analysé, et de quelle exemption il relève](05-l-etat-d-analyse-et-les-deux-exemptions.md),
@@ -57,13 +57,14 @@ sessions ont les deux, six n'ont que la trace, quatre n'ont que le journal.
 
 ## Critères d'acceptation
 
-- [ ] La règle rend un verdict : sessions à effacer, dates, octets
-- [ ] Chaque session retenue est accompagnée de la raison qui la retient
-- [ ] Une session non analysée est retenue, quelle que soit son ancienneté
-- [ ] Le journal d'une session à trace suit le délai de sa trace ; un journal
+- [x] La règle rend un verdict : sessions à effacer, dates, octets
+- [x] Chaque session retenue est accompagnée de la raison qui la retient
+- [x] Une session non analysée est retenue, quelle que soit son ancienneté
+- [x] Le journal d'une session à trace suit le délai de sa trace ; un journal
       seul suit le délai court
-- [ ] Les délais se règlent par l'environnement, et valent 30 et 14 jours par
-      défaut
+- [x] Les délais se règlent par l'environnement — `SPEED_RETENTION_TRACES` et
+      `SPEED_RETENTION_JOURNAL` —, et valent 30 et 14 jours par défaut
 - [ ] Le verdict est vide sur la base de production, et les deux traces sans
-      session y sont nommées comme retenues
-- [ ] Rien n'est supprimé par ce ticket, et un test le vérifie
+      session y sont nommées comme retenues — vérifié sur une base de test
+      entièrement archivée ; reste à le lire en production, devant le relecteur
+- [x] Rien n'est supprimé par ce ticket, et un test le vérifie
