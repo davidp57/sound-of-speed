@@ -1019,8 +1019,11 @@ entré, ce qui était déjà là, et ce qui a été laissé de côté avec la ra
 fois lu, retirez la variable et le montage — les laisser ne casse rien, mais fait
 relire un dossier à chaque démarrage.
 
-Les traces et le journal repris entrent **épinglés** : sans cela, la règle de
-rétention à venir effacerait un mois plus tard ce qu'on vient de déplacer.
+Les traces et le journal repris entrent **archivés** : sans cela, la règle de
+rétention effacerait un mois plus tard ce qu'on vient de déplacer. Archivés et
+non épinglés — l'épingle est un choix, et elle est bornée ; un déménagement n'en
+est pas un, et les douze trajets repris rempliraient la borne avant la première
+épingle.
 
 ### Les réglages quittent le stockage du navigateur
 
@@ -1028,7 +1031,7 @@ rétention à venir effacerait un mois plus tard ce qu'on vient de déplacer.
 mois part en base : les profils, les moteurs, les boîtes, et les traces qui
 n'étaient jamais remontées. Par petites poignées, pour ne pas faire déborder la
 file de dépôt, et en reprenant où on en était si le navigateur se ferme
-entre-temps. Les traces remontées ainsi entrent épinglées.
+entre-temps. Les traces remontées ainsi entrent archivées.
 
 **À chaque lancement**, la voiture prend ce que la base a de plus récent. Vider
 le stockage du navigateur ne fait donc plus perdre ses réglages, et ce qu'on
@@ -1052,10 +1055,72 @@ réglages décrivent l'appareil, pas le conducteur.
 
 Rien n'est effacé du stockage local par cette reprise.
 
+### La rétention : analyser puis oublier
+
+Le serveur garde ce que les trajets **montrent**, pas les trajets. Une trace est
+mesurée à son arrivée, ce qu'elle apprend entre dans le profil mesuré, et le
+profil, lui, ne grossit pas avec le nombre de trajets. Passé un délai, la trace
+disparaît — sauf si on l'a épinglée, ou si elle vient d'une reprise.
+
+**Un trajet part quand les trois conditions tiennent** : sa date d'enregistrement
+dépasse le délai, le profileur l'a regardé, et il n'est ni épinglé ni archivé.
+
+La date d'enregistrement est celle du **trajet**, lue dans le nom des tranches,
+et non celle de l'arrivée sur le serveur : une trace enregistrée hors réseau et
+remontée trois jours plus tard ne doit pas gagner trois jours de sursis, ni les
+quatre-vingt-quatorze dépôts d'une reprise prétendre dater du soir où elle a
+tourné.
+
+« Regardé » n'est pas « mesuré » : une session trop courte dont le profileur n'a
+rien tiré **a été regardée**, et elle est effaçable. C'est une session jamais
+soumise au profileur qui ne l'est pas — sans quoi une trace arrivée pendant un
+arrêt du serveur serait effacée sans qu'on en ait rien appris.
+
+Le ménage se fait **au démarrage**, comme les migrations et la reprise, puis
+**toutes les vingt-quatre heures**. Chaque passage qui efface s'écrit dans le
+journal du conteneur, avec ce qui est parti et ce qui a été retenu : c'est le
+seul endroit où on le verra, puisque après coup il n'y a plus rien à regarder.
+
+Quatre réglages, par l'environnement de la pile :
+
+| Variable | Défaut | Ce qu'elle règle |
+|---|---|---|
+| `SPEED_RETENTION_TRACES` | 30 jours | Le délai d'un trajet qui a une trace. Un mois pour revoir un trajet qu'on a encore en tête, et pour emporter ce qu'on garde. |
+| `SPEED_RETENTION_JOURNAL` | 14 jours | Le délai d'un journal **seul**. Le temps entre « ça a fait quelque chose de bizarre » et le moment où on va voir. |
+| `SPEED_EPINGLES` | 20 | Combien de trajets un compte peut épingler. |
+
+**Le journal d'un trajet qui a une trace suit sa trace**, et part avec elle :
+deux délais stricts couperaient un trajet en deux, et à vingt jours on relirait
+un trajet ayant perdu ses faits marquants.
+
+**Voir le verdict sans rien démarrer.** Le relecteur le montre, mais il lui faut
+un serveur en service. Sur une **copie** du fichier de base, la commande le dit
+en clair :
+
+```powershell
+npm run verdict -- D:\copie-de-speed.db
+```
+
+Sur une copie, et non sur la base en service : elle y joue les migrations, donne
+sa date de trajet à ce qui n'en a pas, et laisse le profileur marquer ce qu'il a
+regardé — ce que fait un démarrage de serveur, moins le ménage. Elle n'efface
+rien.
+
+**Ces trois chiffres sont proposés, pas mesurés.** Aucun contrôle ne dira qu'ils
+sont mauvais : un délai trop court efface des données et rien ne rougit. C'est
+pourquoi le relecteur montre **ce que la règle emporterait** avant que quoi que
+ce soit disparaisse, et pourquoi ils se règlent sans livrer une version.
+
+Ce lot ne se justifie pas par la place qu'il rend aujourd'hui : une heure de
+conduite pèse 0,87 Mio de trace, soit environ 0,4 Gio par an à une heure par
+jour, sur un volume qui en a plus de deux mille de libres. Il se justifie par
+l'archive qu'il met chez l'utilisateur, et par le jour où les comptes ne seront
+plus un seul.
+
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
-compte. Un jeu de trente-cinq requêtes le vérifie à chaque intégration — voir
+compte. Un jeu de quarante-cinq requêtes le vérifie à chaque intégration — voir
 [`scripts/accord/`](scripts/accord/README.md).
 
 S'y ajoutent **deux emplacements que le serveur de fichiers n'a jamais rendus** :
@@ -1888,6 +1953,32 @@ Il liste les sessions du serveur, la plus récente en tête, et recolle leurs
 tranches tout seul. Il lit les fichiers en clair comme les compressés, le
 journal comme la capture — les essais des 8, 9 et 10 septembre 2026, antérieurs
 à la capture continue, restent relisibles avec leur seul journal.
+
+**La liste des trajets, et ce qu'on en fait.** Le bouton *Trajets* ouvre un
+tableau : la date, la durée annoncée, ce dont le trajet est fait, son poids, et
+ce qui le retient — archivé, épinglé, ou pas encore analysé. Quatre gestes s'y
+prennent, et ils ne se prennent qu'ici : on ne trie pas ses archives au volant.
+
+- **Ouvrir** le trajet, comme depuis la liste déroulante.
+- **Télécharger** : une archive zip unique, portant les tranches telles qu'elles
+  ont été déposées, sous leur dossier d'origine. C'est la porte de sortie qui
+  rend l'effacement acceptable — l'archive longue va chez vous, pas sur le
+  serveur.
+- **Épingler** : le trajet échappe à l'effacement automatique. Leur nombre est
+  borné et le compteur le dit ; les trajets archivés, venus d'une reprise, n'y
+  comptent pas.
+- **Effacer** : le trajet part du serveur tout de suite, entier, après une
+  confirmation qui dit ce qui part. Ce qu'il a montré reste dans le profil
+  mesuré — le cumul ne se défait pas.
+
+Le bouton **Ce que la règle emporterait** rend le verdict de la rétention sans
+rien effacer : quels trajets partiraient, ce qu'ils pèsent, et pour chacun de
+ceux qui restent, la raison qui le retient.
+
+**Ouvrir une archive…** relit un trajet pris sur le disque, sans serveur et sans
+compte. C'est ce qui ferme la boucle : un trajet téléchargé puis effacé se relit
+à l'identique. Une archive à qui il manque des tranches se relit quand même, et
+ce qui manque est nommé.
 
 La **timeline** porte lecture, pause et déplacement libre, jusqu'à vingt fois la
 vitesse réelle. Elle est marquée des faits du journal : arrêts, redémarrages du
@@ -2788,8 +2879,8 @@ suit pas.
 | 46 | Sound of Speed devient un service qu'on déploie, qu'on partage et qu'on fait vivre : un serveur TypeScript à la place de nginx, une base, des comptes, une licence AGPL | **cadre découpé le 12 septembre en cinq lots, 47 à 51** |
 | 47 | Le dépôt devient forkable et le conteneur fait du bruit tout seul : AGPL-3.0, banque de démonstration, de quoi contribuer et déployer | **livré ; reste à essayer dans un conteneur** |
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
-| 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | spécifié |
-| 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | spécifié |
+| 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
+| 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
 | 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | spécifié |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et

@@ -2,7 +2,7 @@
   "name": "sound-of-speed",
   "private": true,
   "license": "AGPL-3.0-only",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -27,7 +27,9 @@
     "silence": "node scripts/silence.mjs",
     "htpasswd": "node scripts/htpasswd.mjs",
     "analyse-son": "node scripts/analyse-son/index.mjs",
-    "build:serveur": "esbuild src/server/main.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist-serveur/serveur.js"
+    "build:serveur": "esbuild src/server/main.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist-serveur/serveur.js",
+    "build:verdict": "esbuild src/server/verdict.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist-serveur/verdict.js",
+    "verdict": "npm run build:verdict && node dist-serveur/verdict.js"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

@@ -1,6 +1,6 @@
 # 05 — Le dépôt sait s'il a été analysé, et de quelle exemption il relève
 
-**Statut :** ⬜ prêt
+**Statut :** 🔄 en cours — reste la liste du relecteur
 
 **Bloqué par :** [04 — Le dépôt sait quand le trajet a eu lieu](04-la-date-du-trajet-en-base.md).
 Même table, et la migration de 04 doit être passée avant qu'une seconde y touche.
@@ -30,7 +30,7 @@ leur retirer leur exemption, soit à laisser la borne sans effet.
 
 - **Écarté n'est pas « pas analysé ».** Une session trop courte que le profileur
   refuse a été regardée : elle ne montre rien, et elle est effaçable. Une session
-  jamais soumise au profileur ne l'est pas. Les six départs avortés de la base
+  jamais soumise au profileur ne l'est pas. Les quatre départs avortés de la base
   sont du premier cas.
 - **Une tranche illisible ne bloque pas sa session.** Le profileur écarte la
   tranche et nomme ce qu'il a laissé ; la session reste analysée.

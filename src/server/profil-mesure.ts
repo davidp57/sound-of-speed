@@ -13,12 +13,17 @@
  * déclencheur ; il ne touche pas à une mesure.
  */
 
-import { eq, and } from 'drizzle-orm'
+import { and, eq, isNull, ne, or } from 'drizzle-orm'
 
-import { emptyAggregate, type CarAggregate } from '../core/calibration/aggregate'
+import {
+  PROCEDURE_VERSION,
+  emptyAggregate,
+  type CarAggregate,
+} from '../core/calibration/aggregate'
 
 import type { Base } from './base/base'
 import { deposits, measuredCars } from './base/schema'
+import { marquerAnalyses } from './depots'
 import { rebuild, updateWith, type Folder, type ProfileResult } from './profileur/profileur'
 
 /** Les traces, vues comme le dossier que le profileur sait lire. */
@@ -87,6 +92,7 @@ export async function reprendreApresDepot(
   const dossier = dossierDesTraces(base, compte)
   const resultat = await updateWith(dossier, await agregatDe(base, compte), nomDeLaTranche)
   await ecrireProfilMesure(base, compte, resultat)
+  await marquerAnalyses(base, compte, resultat.seen, PROCEDURE_VERSION)
   return resultat
 }
 
@@ -101,7 +107,39 @@ export async function reprendreApresDepot(
 export async function reprendreTout(base: Base, compte: string): Promise<ProfileResult> {
   const resultat = await rebuild(dossierDesTraces(base, compte))
   await ecrireProfilMesure(base, compte, resultat)
+  // Le rattrapage marque comme le dépôt : une trace arrivée pendant que le
+  // serveur était arrêté a bien été regardée, et rien ne doit la distinguer des
+  // autres ensuite.
+  await marquerAnalyses(base, compte, resultat.seen, PROCEDURE_VERSION)
   return resultat
+}
+
+/**
+ * Combien de traces attendent encore d'être regardées.
+ *
+ * Le procédé du profileur fait partie de la marque : quand il change, tout
+ * redevient à voir d'un coup, et c'est ce décompte qui le dit plutôt qu'un
+ * silence. Lu avant le rattrapage du démarrage, il annonce le travail ; lu
+ * après, il doit valoir zéro.
+ */
+export async function tracesNonAnalysees(base: Base, compte: string): Promise<number> {
+  const lignes = await base
+    .select({ name: deposits.name })
+    .from(deposits)
+    .where(
+      and(
+        eq(deposits.accountId, compte),
+        eq(deposits.folder, 'traces'),
+        // « Pas encore vue » et « vue par un procédé qui ne vaut plus » se
+        // comptent ensemble : dans les deux cas, il reste à regarder.
+        or(
+          isNull(deposits.analyzedProcedure),
+          ne(deposits.analyzedProcedure, PROCEDURE_VERSION),
+        ),
+      ),
+    )
+
+  return lignes.length
 }
 
 /**

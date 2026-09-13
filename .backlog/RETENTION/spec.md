@@ -1,6 +1,6 @@
 # RETENTION — analyser puis oublier, sauf ce qu'on épingle
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 livré — verdict lu et vide ; reste le déploiement
 **Branche :** `feature/retention`
 **Version visée :** 0.4
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -38,8 +38,16 @@ La base de production a été relevée avant d'écrire les tickets. Elle pèse
 Cinq constats, et quatre d'entre eux changent la conception.
 
 **Un dépôt n'est pas une trace.** Les 41 traces sont **8 sessions**, dont une de
-22 tranches et une de 13 ; les 53 tranches de journal sont 6 sessions. Six des
-huit sessions de trace sont des départs avortés d'une seule tranche de 1 Kio.
+22 tranches et une de 13 ; les 53 tranches de journal sont 6 sessions. Quatre de
+ces sessions sont des départs avortés d'une seule tranche de 1 Kio.
+
+**Douze trajets, et non quatorze.** Relevé sur une copie de la base le
+13 septembre 2026 : 8 sessions de trace et 6 de journal, dont **deux portent les
+deux** — les additionner comptait ces deux-là deux fois. Le compte exact est donc
+4 trajets à trace seule, 4 à journal seul, 2 qui ont les deux, plus les 2 dépôts
+au nom libre : **12**. Les « six départs avortés » d'une version précédente de
+cette spec rangeaient ces deux dépôts anciens parmi les avortés ; ils pèsent
+81 et 112 Kio, ce ne sont pas des départs ratés.
 
 **La date de dépôt n'est pas la date du trajet.** Les 94 dépôts portent tous
 `deposited_at = 2026-09-12T20:32` : la date de la reprise de MIGRER. La date
@@ -115,8 +123,8 @@ rien à en tirer » de « on n'a pas encore regardé », et la règle efface les
   serveur. Elle n'est pas bornée, parce qu'elle n'est pas un choix mais un fait :
   ces trajets ont été déménagés, pas déposés.
 
-Les confondre obligerait soit à trahir la promesse de MIGRER — les 14 sessions
-reprises perdraient leur exemption —, soit à laisser la borne sans effet. Deux
+Les confondre obligerait soit à trahir la promesse de MIGRER — les 12 trajets
+repris perdraient leur exemption —, soit à laisser la borne sans effet. Deux
 natures coûtent un état de plus sur le dépôt et règlent les deux.
 
 ### Le journal a sa propre règle
@@ -151,7 +159,7 @@ effacement qu'on regrette.
 
 Et l'effacement **à la demande** existe aussi : une session qu'on ne veut plus
 part tout de suite, sans attendre le délai. C'est ce qui manque aujourd'hui pour
-les six départs avortés.
+les quatre départs avortés.
 
 ### Les délais se règlent, et ils ont des valeurs par défaut
 
@@ -192,20 +200,20 @@ autant.
 
 ## Critères d'acceptation
 
-- [ ] Une trace arrivée est analysée et cumulée dans le profil mesuré sans
+- [x] Une trace arrivée est analysée et cumulée dans le profil mesuré sans
       intervention, et son dépôt porte l'état de cette analyse
-- [ ] Une session non exemptée disparaît passé le délai, **entière**, et le délai
+- [x] Une session non exemptée disparaît passé le délai, **entière**, et le délai
       est réglable
-- [ ] Une session que le profileur n'a pas encore traitée ne s'efface pas, quelle
+- [x] Une session que le profileur n'a pas encore traitée ne s'efface pas, quelle
       que soit sa date
-- [ ] L'effacement se fonde sur la date d'enregistrement, pas sur la date de
+- [x] L'effacement se fonde sur la date d'enregistrement, pas sur la date de
       dépôt ; les 94 dépôts repris portent la bonne
-- [ ] Épingler exempte de l'effacement, dans une limite bornée et annoncée ;
+- [x] Épingler exempte de l'effacement, dans une limite bornée et annoncée ;
       l'archive de reprise exempte sans être bornée
-- [ ] Le journal suit sa propre règle, plus courte, et ne s'épingle pas
-- [ ] Télécharger rend une archive que le relecteur rouvre depuis le disque
-- [ ] Une session s'efface à la demande, sans attendre le délai
-- [ ] Ce qui va être effacé est montré avant de l'être
+- [x] Le journal suit sa propre règle, plus courte, et ne s'épingle pas
+- [x] Télécharger rend une archive que le relecteur rouvre depuis le disque
+- [x] Une session s'efface à la demande, sans attendre le délai
+- [x] Ce qui va être effacé est montré avant de l'être
 - [ ] Le profil mesuré ne grossit pas avec le nombre de trajets — mesuré, et le
       plafond annoncé
 

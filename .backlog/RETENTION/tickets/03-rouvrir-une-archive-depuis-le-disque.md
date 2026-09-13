@@ -1,6 +1,6 @@
 # 03 — Le relecteur rouvre une archive depuis le disque
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** [02 — Télécharger une session en une archive](02-telecharger-une-session.md),
 qui décide du format à rouvrir.
@@ -33,10 +33,10 @@ que le serveur, télécharger ne sert à rien et effacer revient à perdre.
 
 ## Critères d'acceptation
 
-- [ ] Une archive prise sur le disque s'ouvre et se relit entièrement
-- [ ] Le relecteur sans compte de dépôt sait rouvrir une archive
-- [ ] Une archive à qui il manque des tranches se relit, et ce qui manque est
+- [x] Une archive prise sur le disque s'ouvre et se relit entièrement
+- [x] Le relecteur sans compte de dépôt sait rouvrir une archive
+- [x] Une archive à qui il manque des tranches se relit, et ce qui manque est
       nommé
-- [ ] Un fichier qui n'est pas une archive de session rend un message clair
-- [ ] Le parcours complet est vérifié : une session téléchargée, puis effacée du
+- [x] Un fichier qui n'est pas une archive de session rend un message clair
+- [x] Le parcours complet est vérifié : une session téléchargée, puis effacée du
       serveur, se relit à l'identique depuis le disque

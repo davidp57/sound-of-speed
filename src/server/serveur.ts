@@ -17,6 +17,14 @@ import { Hono } from 'hono'
 import { SOLO_ACCOUNT_ID, type Base } from './base/base'
 import { coupleDe, type Comptes } from './comptes'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
+import { DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } from './retention'
+import {
+  archiveDeLaSession,
+  effacerSession,
+  epingler,
+  EPINGLES_PAR_DEFAUT,
+  listerSessions,
+} from './sessions'
 import { ecrireEntite, estUnRegistre, lireEntite, listerEntites } from './entites'
 import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
@@ -31,6 +39,10 @@ export interface OptionsDuServeur {
   comptes?: Comptes
   /** À qui appartient ce qu'on range, tant que l'identité n'est pas ouverte. */
   compte?: string
+  /** Combien d'épingles un compte peut poser. Réglable par l'environnement. */
+  epingles?: number
+  /** Les délais de rétention, en jours. Réglables par l'environnement. */
+  delais?: Delais
   /**
    * Les échantillons déposés, s'il y en a.
    *
@@ -62,6 +74,8 @@ const DONNEES = [
   '/journal/',
   '/mesures/',
   '/mesure-voiture/',
+  '/sessions/',
+  '/retention',
 ]
 
 export function creerServeur(options: OptionsDuServeur): Hono {
@@ -173,6 +187,82 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       })
     })
 
+    // --- Les trajets, et ce qu'on en fait ----------------------------------
+    //
+    // La base range des tranches ; on n'efface pas une tranche, on efface un
+    // trajet. Le regroupement est celui du cœur, le même que le relecteur
+    // emploie pour recoller une session : deux règles finiraient par ne plus
+    // dire la même chose.
+    app.get('/sessions/', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      return c.json(await listerSessions(base, compte), 200, { 'Cache-Control': 'no-store' })
+    })
+
+    // Un fichier, pas quarante-deux : c'est ce qui rend l'effacement acceptable,
+    // l'archive longue étant alors chez l'utilisateur et non sur le serveur.
+    app.get('/sessions/:cle/archive.zip', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      const archive = await archiveDeLaSession(base, compte, c.req.param('cle'))
+      if (archive === null) return c.notFound()
+
+      return new Response(archive.flux, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename="${archive.nom}"`,
+          'Cache-Control': 'no-store',
+        },
+      })
+    })
+
+    // Ce que la règle emporterait, sans rien effacer.
+    //
+    // Aucun contrôle ne dira qu'un délai est trop court : un mauvais seuil
+    // efface des données et rien ne rougit. La seule façon de le savoir est de
+    // regarder ce verdict d'abord, sur les vraies données.
+    app.get('/retention', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      const delais = options.delais ?? DELAIS_PAR_DEFAUT
+      const verdict = await verdictDuCompte(base, compte, Date.now(), delais)
+      return c.json({ ...verdict, delais }, 200, { 'Cache-Control': 'no-store' })
+    })
+
+    // Épingler, et décrocher. La borne se voit : un refus dit ce qu'il faut
+    // faire — décrocher autre chose, ou emporter le trajet.
+    app.on(['PUT', 'DELETE'], '/sessions/:cle/epingle', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      const rendu = await epingler(
+        base,
+        compte,
+        c.req.param('cle'),
+        c.req.method === 'PUT',
+        options.epingles ?? EPINGLES_PAR_DEFAUT,
+      )
+
+      if (rendu.etat === 'inconnu') return c.notFound()
+      // 409 : la demande est comprise, et refusée pour une raison qui ne
+      // changera pas si on la rejoue. Le client ne doit pas réessayer.
+      return c.json(rendu, rendu.etat === 'borne atteinte' ? 409 : 200)
+    })
+
+    app.delete('/sessions/:cle', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      // Effacer un trajet déjà parti n'est pas une panne : la voiture rejoue une
+      // demande, et la seconde doit répondre comme la première.
+      const efface = await effacerSession(base, compte, c.req.param('cle'))
+      return c.json({ efface }, 200)
+    })
+
     // --- Ce que la voiture envoie en roulant -------------------------------
     //
     // Traces, tranches de journal, relevés de mesure. Trois dossiers, une seule
@@ -203,10 +293,10 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       if (c.req.method === 'PUT') {
         const octets = Buffer.from(await c.req.arrayBuffer())
         // `?reprise=1` dit « ceci n'est pas un dépôt du jour, c'est un
-        // déménagement » : le fichier entre épinglé, comme ceux que la reprise
+        // déménagement » : le fichier entre archivé, comme ceux que la reprise
         // des anciens dossiers verse elle-même.
-        const epingle = c.req.query('reprise') === '1'
-        const ecrit = await ecrireDepot(base, compte, dossier, nom, octets, epingle)
+        const exemption = c.req.query('reprise') === '1' ? ('archive' as const) : undefined
+        const ecrit = await ecrireDepot(base, compte, dossier, nom, octets, exemption)
         // 413, parce que le client ne rejoue pas ce code. Une charge refusée par
         // un code de panne ferait réessayer la voiture indéfiniment, pour un
         // envoi qui ne passera jamais.

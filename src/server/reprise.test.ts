@@ -75,14 +75,15 @@ describe('la reprise des anciens dossiers', () => {
     expect(await lireDepot(base, SOLO_ACCOUNT_ID, 'traces', 'sortie.jsonl.gz')).toEqual(octets)
   })
 
-  it('épingle ce qu’elle reprend, sinon la rétention l’effacerait un mois plus tard', async () => {
+  it('archive ce qu’elle reprend, sinon la rétention l’effacerait un mois plus tard', async () => {
     deposer('traces', 'sortie.jsonl.gz', 'brut')
     deposer('journal', 'bord_001.jsonl', 'brut')
 
     await reprendreLesDossiers(base, SOLO_ACCOUNT_ID, ancien)
 
     const lignes = await base.query.deposits.findMany()
-    expect(lignes.map((ligne) => ligne.pinned)).toEqual([true, true])
+    // Archivé et non épinglé : l'épingle est un choix, et elle est bornée.
+    expect(lignes.map((ligne) => ligne.exemption)).toEqual(['archive', 'archive'])
   })
 
   it('ne change rien au second passage', async () => {

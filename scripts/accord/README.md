@@ -28,7 +28,12 @@ ce qu'on cherche à ne pas avoir.
 Tiré d'un relevé de tous les appels réseau du dépôt : vingt-deux requêtes
 distinctes, dont quatre contraintes dont la rupture ne s'entend pas. S'y ajoutent
 depuis les moteurs et les boîtes, qui n'ont jamais existé sur le serveur de
-fichiers — trente-cinq cas en tout.
+fichiers, puis les trajets — les lister, les emporter, les épingler, les effacer,
+et lire le verdict de la rétention. Quarante-cinq cas en tout.
+
+L'effacement y sert deux fois : il vérifie le geste, et il **rend la base
+propre** — le jeu déposait jusqu'ici une tranche de plus à chaque passage, sans
+rien pour l'enlever.
 
 | Ce qui est vérifié | Ce que ça casse si on le perd |
 |---|---|
@@ -49,17 +54,19 @@ se contredire. Les fichiers déposés portent une marque propre à l'exécution.
 résumé le dit. Un jeu qui se déclarerait vert en ayant tout sauté serait un jeu
 qui ment.
 
-## Quatre parts, et une seule qu'on n'adresse pas à l'ancien serveur
+## Cinq parts, et deux qu'on n'adresse pas à l'ancien serveur
 
 `--part` en joue une ou plusieurs, séparées par des virgules : `publique` (ce qui
 se sert sans compte), `profils` (la bibliothèque), `depots` (ce que la voiture
-envoie en roulant), `entites` (les moteurs et les boîtes).
+envoie en roulant), `entites` (les moteurs et les boîtes), `trajets` (les
+sessions : les lister, les emporter, les épingler, les effacer, et le verdict de
+la rétention).
 
 Sans `--part`, tout est joué — c'est ce que fait l'intégration continue contre le
 serveur neuf, dans son conteneur comme hors de lui. Le serveur de fichiers, lui,
-ne se voit pas demander `entites` : ce registre est né avec la base, et la
-question n'a pas de sens pour lui. C'est la seule exclusion, et elle disparaîtra
-avec lui.
+ne se voit demander ni `entites` ni `trajets` : l'un est né avec la base, l'autre
+suppose de savoir regrouper des tranches en trajets. La question n'a pas de sens
+pour lui, et ces deux exclusions disparaîtront avec lui.
 
 ## Où il tourne
 

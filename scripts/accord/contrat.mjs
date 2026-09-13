@@ -39,6 +39,11 @@ const TYPES_JS = ['application/javascript', 'text/javascript', 'application/ecma
 export function cas({ nom }) {
   const profil = `${nom}.json`
   const tranche = `${nom}.jsonl.gz`
+  // Une tranche au nom que la voiture donne : date, identifiant de session, rang.
+  // C'est ce nom-là qui fait un trajet ; celui de `tranche`, libre, fait un
+  // dépôt seul — les deux cas existent en base et les deux doivent s'effacer.
+  const session = `2026-09-11-06-24-01_${nom.slice(-6)}`
+  const trancheDeSession = `${session}_001.jsonl.gz`
   const releve = `${nom}-sonde.json`
   const contenuProfil = JSON.stringify({ name: 'Accord', sampleDir: 'demo', layers: [] })
   const moteur = `${nom}-moteur.json`
@@ -410,6 +415,136 @@ export function cas({ nom }) {
         compte: true,
       },
       attend: (r) => vrai(r.ok, `un code de succès, reçu ${r.status}`),
+    },
+    // --- Les trajets, et ce qu'on en fait ----------------------------------
+    //
+    // Une part à eux : le serveur de fichiers ne sait pas regrouper des tranches
+    // en trajets, et ne le saura jamais. La question n'a pas de sens pour lui,
+    // comme celle des moteurs et des boîtes.
+    {
+      nom: 'une tranche au nom de session se dépose',
+      part: 'trajets',
+      requete: {
+        chemin: `/traces/${trancheDeSession}`,
+        methode: 'PUT',
+        corps: '{"t":0}\n',
+        entetes: { 'Content-Type': 'application/gzip' },
+        compte: true,
+      },
+      attend: (r) => vrai(r.ok, `un code de succès, reçu ${r.status}`),
+    },
+    {
+      nom: 'les trajets refusent sans compte',
+      part: 'trajets',
+      requete: { chemin: '/sessions/', entetes: { Accept: 'application/json' } },
+      attend: (r) => vrai(r.status === 401 || r.status === 403, `un refus, reçu ${r.status}`),
+    },
+    {
+      nom: 'le trajet réunit ses tranches, avec son poids et ce qui le retient',
+      part: 'trajets',
+      requete: { chemin: '/sessions/', compte: true, entetes: { Accept: 'application/json' } },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        const trajets = JSON.parse(corps.toString('utf8'))
+        vrai(Array.isArray(trajets), 'le listage des trajets est un tableau')
+        const trouve = trajets.find((t) => t.cle === session)
+        vrai(trouve !== undefined, `le trajet ${session} est listé`)
+        vrai(trouve.octets > 0, 'le trajet annonce ce qu’il pèse')
+        egal(trouve.traces, 1, 'tranches de trace')
+        // Le dépôt au nom libre fait un trajet à lui seul : sans cela, rien ne
+        // pourrait jamais l'enlever.
+        vrai(
+          trajets.some((t) => t.cle === `depot:traces:${tranche}` && t.isole === true),
+          'le dépôt au nom libre est listé comme trajet seul',
+        )
+      },
+    },
+    {
+      nom: 'un trajet s’emporte en une archive zip',
+      part: 'trajets',
+      requete: { chemin: `/sessions/${encodeURIComponent(session)}/archive.zip`, compte: true },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        typeParmi(r, ['application/zip'])
+        vrai(
+          (r.headers.get('content-disposition') ?? '').includes('trajet-2026-09-11-06-24-01.zip'),
+          'l’archive porte la date du trajet dans son nom',
+        )
+        // « PK » : la signature d'une archive zip, en toutes lettres.
+        egal(corps.subarray(0, 2).toString('ascii'), 'PK', 'signature de l’archive')
+      },
+    },
+    {
+      nom: 'un trajet s’épingle, et la borne s’annonce',
+      part: 'trajets',
+      requete: {
+        chemin: `/sessions/${encodeURIComponent(session)}/epingle`,
+        methode: 'PUT',
+        compte: true,
+      },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        const rendu = JSON.parse(corps.toString('utf8'))
+        egal(rendu.etat, 'épinglé', 'état')
+        vrai(rendu.borne > 0, 'la borne est annoncée')
+      },
+    },
+    {
+      nom: 'la règle rend son verdict, et retient ce qui est épinglé',
+      part: 'trajets',
+      requete: { chemin: '/retention', compte: true, entetes: { Accept: 'application/json' } },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        const verdict = JSON.parse(corps.toString('utf8'))
+        vrai(Array.isArray(verdict.aEffacer), 'le verdict dit ce qui partirait')
+        vrai(verdict.delais?.traces > 0, 'les délais sont annoncés')
+        const retenu = verdict.retenus.find((t) => t.cle === session)
+        vrai(retenu !== undefined, 'le trajet épinglé est retenu')
+        egal(retenu.raison, 'épinglé', 'raison de la retenue')
+      },
+    },
+    {
+      nom: 'un trajet s’efface, et le rejouer n’est pas une panne',
+      part: 'trajets',
+      // Le ménage de ce jeu de requêtes, autant que sa vérification : sans
+      // effacement, chaque passage laisserait un trajet de plus en base.
+      requete: {
+        chemin: `/sessions/${encodeURIComponent(session)}`,
+        methode: 'DELETE',
+        compte: true,
+      },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        egal(JSON.parse(corps.toString('utf8')).efface, 1, 'tranches effacées')
+      },
+    },
+    {
+      nom: 'effacer deux fois rend zéro, et non une erreur',
+      part: 'trajets',
+      requete: {
+        chemin: `/sessions/${encodeURIComponent(session)}`,
+        methode: 'DELETE',
+        compte: true,
+      },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        egal(JSON.parse(corps.toString('utf8')).efface, 0, 'tranches effacées')
+      },
+    },
+    {
+      nom: 'un dépôt seul s’efface, sa clé portant des deux-points',
+      part: 'trajets',
+      // Les deux traces anciennes de la base sont de cette forme. Une clé mal
+      // échappée efface ailleurs, ou n'efface rien.
+      requete: {
+        chemin: `/sessions/${encodeURIComponent(`depot:traces:${tranche}`)}`,
+        methode: 'DELETE',
+        compte: true,
+      },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        egal(JSON.parse(corps.toString('utf8')).efface, 1, 'tranches effacées')
+      },
     },
     {
       nom: 'les relevés se listent',

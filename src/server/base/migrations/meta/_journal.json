@@ -22,6 +22,27 @@
       "when": 1789237965164,
       "tag": "0002_les-depots-sont-des-octets",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1789285867826,
+      "tag": "0003_la-date-du-trajet",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789286032964,
+      "tag": "0004_deux-natures-d-exemption",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789286037386,
+      "tag": "0005_l-epingle-cede-la-place",
+      "breakpoints": true
     }
   ]
 }

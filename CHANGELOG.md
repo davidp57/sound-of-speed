@@ -15,6 +15,82 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Une commande dit ce que la règle emporterait, sur une copie de la base.**
+  `npm run verdict -- copie.db` rend le même verdict que le relecteur, sans
+  serveur ni conteneur : de quoi juger les délais sur les vraies données avant
+  d'armer quoi que ce soit. Elle n'efface rien.
+
+- **Le serveur fait le ménage : la règle efface.** Au démarrage, comme les
+  migrations et la reprise, puis toutes les vingt-quatre heures — un serveur qui
+  ne redémarre pas pendant trois mois ne doit pas cesser de faire le ménage pour
+  autant. Un trajet part entier, tranches de trace et de journal ensemble, et
+  chaque passage s'écrit dans le journal du conteneur : ce qui est parti, ce qui
+  a été retenu et pourquoi. C'est le seul endroit où l'on verra ce qui a disparu.
+  Un passage qui n'efface rien reste discret, et un passage qui échoue laisse le
+  serveur servir. Le profil mesuré ne bouge pas : ce que les trajets ont montré
+  est déjà cumulé.
+
+- **Le relecteur montre ce que la règle de rétention emporterait, sans rien
+  effacer.** Quels trajets partiraient, à quelle date, combien d'octets, et pour
+  chacun de ceux qui restent, la raison qui le retient : épinglé, archivé, trop
+  récent, ou pas encore analysé. Un trajet part quand sa date d'enregistrement
+  dépasse le délai, que le profileur l'a traité, et qu'il n'est ni épinglé ni
+  archivé. Trente jours pour une trace, quatorze pour un journal seul — le
+  journal d'un trajet qui a une trace suit sa trace et part avec elle, sans quoi
+  on relirait un trajet ayant perdu ses faits marquants. Les deux délais se
+  règlent par `SPEED_RETENTION_TRACES` et `SPEED_RETENTION_JOURNAL`.
+
+- **Un trajet qu'on veut garder s'épingle.** L'épingle l'exempte de l'effacement
+  automatique, elle porte sur le trajet entier — on ne choisit pas une tranche de
+  journal —, et elle survit à un nouveau dépôt sous le même nom. Leur nombre est
+  borné, la borne se voit, et un refus dit quoi faire : décrocher autre chose, ou
+  emporter le trajet. Vingt par défaut, réglable par `SPEED_EPINGLES`. Les
+  trajets archivés, venus d'une reprise, n'y comptent pas : ce n'est pas un
+  choix, c'est un déménagement.
+
+- **Le relecteur rouvre une archive prise sur le disque.** Le trajet se relit
+  comme s'il venait du serveur — la carte, les cadrans, les faits marquants, la
+  barre de temps —, sans compte et sans réseau. C'est ce qui ferme la boucle :
+  tant que le relecteur ne savait relire que le serveur, télécharger ne servait à
+  rien et effacer revenait à perdre. Une archive à qui il manque des tranches se
+  relit quand même, et ce qui manque est nommé ; un fichier qui n'est pas une
+  archive de trajet le dit.
+
+- **Un trajet s'emporte en un fichier.** Le relecteur en rend une archive zip
+  unique — la plus grosse session de la base porte quarante-deux tranches, et
+  quarante-deux téléchargements ne seraient pas une porte de sortie. Les
+  tranches y entrent telles qu'elles ont été déposées, sous leur dossier
+  d'origine et sans être recomprimées : ce qui ressort est exactement ce qui
+  était monté. Le découpage est conservé, donc la trace des tranches manquantes
+  aussi. L'archive porte la date du trajet, pas celle du téléchargement.
+
+- **Le relecteur montre les trajets du serveur, et sait en effacer un.** Une
+  liste devant laquelle on voit ce que chaque trajet pèse, ce dont il est fait et
+  ce qui le retient — archivé, épinglé, ou pas encore analysé. Effacer emporte le
+  trajet entier, tranches de trace et de journal ensemble, après une
+  confirmation qui dit ce qui part ; les enregistrements anciens au nom libre,
+  que rien ne pouvait enlever jusqu'ici, s'effacent aussi. Ce que la trace a
+  montré reste dans le profil mesuré : le cumul ne se défait pas.
+
+- **Un dépôt sait s'il a été analysé, et de quelle exemption il relève.** Le
+  profileur marque ce qu'il a regardé, et il marque aussi ce dont il n'y avait
+  rien à tirer : sans cette marque, rien ne distinguerait « trop court pour
+  montrer quoi que ce soit » de « on n'a pas encore regardé », et la règle
+  d'effacement confondrait les deux. La marque porte le numéro du procédé, donc
+  elle ne vaut plus rien dès qu'il change — le démarrage annonce alors ce qu'il
+  reste à revoir. Et l'exemption d'effacement se dédouble : l'**épingle** est un
+  choix, l'**archive** est un fait, posé par la reprise sur ce qui vient d'un
+  ancien serveur. Les quatre-vingt-quatorze dépôts repris deviennent des
+  archives.
+
+- **Un dépôt sait quand le trajet a eu lieu.** Il portait la date de son arrivée
+  sur le serveur, qui ment dès que le dépôt est différé : une trace enregistrée
+  hors réseau et remontée trois jours plus tard, ou les quatre-vingt-quatorze
+  dépôts que la reprise a versés d'un coup. La date d'enregistrement se lit dans
+  le nom de la tranche, elle est écrite à l'arrivée, et le démarrage la donne à
+  ce qui est entré avant qu'elle existe. C'est elle que rend le listage, et c'est
+  elle qui décidera de l'effacement.
+
 - **Les réglages ne dorment plus dans le seul navigateur de la voiture.** Au
   premier lancement, les profils, les moteurs, les boîtes et les traces qui
   n'étaient jamais remontées partent en base — par petites poignées, pour ne pas

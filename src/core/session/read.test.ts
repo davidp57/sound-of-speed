@@ -4,16 +4,15 @@ import { gzip } from '../upload/compress'
 
 const CREDENTIALS = { user: 'depot', password: 'motdepasse' }
 
-function serveur(dossiers: Record<string, string[]>, contenus: Record<string, string | Blob> = {}) {
+/** Ce qu'une entrée porte en plus des fichiers, et qui ne joue ici aucun rôle. */
+const RESTE = { bytes: 0, isolated: false, pending: 0, exemption: null } as const
+
+function serveur(sessions: SessionDistante[] = [], contenus: Record<string, string | Blob> = {}) {
   const appels: string[] = []
   const impl = (async (url: string | URL) => {
     const chemin = decodeURIComponent(String(url))
     appels.push(chemin)
-    if (chemin.endsWith('/')) {
-      const noms = dossiers[chemin]
-      if (!noms) return new Response('', { status: 404 })
-      return Response.json(noms.map((name) => ({ name, type: 'file' })))
-    }
+    if (chemin === '/sessions/') return Response.json(sessions)
     const corps = contenus[chemin]
     if (corps === undefined) return new Response('', { status: 404 })
     return new Response(corps, { status: 200 })
@@ -21,36 +20,87 @@ function serveur(dossiers: Record<string, string[]>, contenus: Record<string, st
   return { impl, appels }
 }
 
+/** Un trajet tel que le serveur le rend. */
+interface SessionDistante {
+  cle: string
+  isole?: boolean
+  enregistreLe: number
+  tranches: { dossier: string; nom: string; octets: number }[]
+  octets: number
+  aVoir?: number
+  exemption?: string | null
+}
+
+function distante(
+  cle: string,
+  tranches: { dossier: string; nom: string }[],
+  reste: Partial<SessionDistante> = {},
+): SessionDistante {
+  return {
+    cle,
+    enregistreLe: Date.parse(`${cle.slice(0, 10)}T00:00:00Z`),
+    tranches: tranches.map((t) => ({ ...t, octets: 10 })),
+    octets: tranches.length * 10,
+    ...reste,
+  }
+}
+
 describe('la liste des sessions', () => {
   it('est vide sans compte, sans même interroger le serveur', async () => {
-    const { impl, appels } = serveur({})
+    const { impl, appels } = serveur()
     expect(await listSessions({ user: '', password: '' }, impl)).toEqual([])
     expect(appels).toHaveLength(0)
   })
 
-  it('regroupe les tranches d’un même trajet, la plus récente en tête', async () => {
-    const { impl } = serveur({
-      '/journal/': [
-        '2026-09-09-05-53-20_tyzp_001.jsonl',
-        '2026-09-10-17-07-47_2geq_001.jsonl.gz',
-        '2026-09-10-17-07-47_2geq_002.jsonl.gz',
-      ],
-      '/traces/': ['2026-09-10-17-07-47_2geq_001.jsonl.gz'],
-    })
+  it('prend les trajets tels que le serveur les regroupe', async () => {
+    // Le regroupement n'est plus refait ici : le serveur range les tranches et
+    // sait les réunir, avec ce qu'il est seul à connaître — le poids, ce qui a
+    // été regardé, ce qui est retenu.
+    const { impl } = serveur([
+      distante('2026-09-10-17-07-47_2geq', [
+        { dossier: 'journal', nom: '2026-09-10-17-07-47_2geq_001.jsonl.gz' },
+        { dossier: 'traces', nom: '2026-09-10-17-07-47_2geq_001.jsonl.gz' },
+      ]),
+      distante('2026-09-09-05-53-20_tyzp', [
+        { dossier: 'journal', nom: '2026-09-09-05-53-20_tyzp_001.jsonl' },
+      ]),
+    ])
 
     const sessions = await listSessions(CREDENTIALS, impl)
 
     expect(sessions).toHaveLength(2)
     expect(sessions[0]?.id).toBe('2geq')
-    expect(sessions[0]?.files).toHaveLength(3)
+    expect(sessions[0]?.files.map((f) => f.kind)).toEqual(['journal', 'capture'])
     expect(sessions[1]?.id).toBe('tyzp')
   })
 
-  it('ignore les enregistrements manuels d’avant, au nom libre', async () => {
-    const { impl } = serveur({
-      '/traces/': ['2026-09-09-06-25-28_test2_60700s.json', 'traces.json'],
-    })
-    expect(await listSessions(CREDENTIALS, impl)).toEqual([])
+  it('montre un dépôt seul, faute de quoi rien ne pourrait l’enlever', async () => {
+    // Deux traces anciennes portent un nom libre, d'avant la convention : le
+    // regroupement ne les voit pas, et elles étaient jusqu'ici invisibles.
+    const { impl } = serveur([
+      distante('depot:traces:traces.json', [{ dossier: 'traces', nom: 'traces.json' }], {
+        isole: true,
+      }),
+    ])
+
+    const [session] = await listSessions(CREDENTIALS, impl)
+
+    expect(session?.isolated).toBe(true)
+    expect(session?.id).toBe('traces.json')
+  })
+
+  it('rend le poids, ce qui reste à regarder et ce qui retient', async () => {
+    const { impl } = serveur([
+      distante('2026-09-10-17-07-47_2geq', [
+        { dossier: 'traces', nom: '2026-09-10-17-07-47_2geq_001.jsonl.gz' },
+      ], { aVoir: 1, exemption: 'archive' }),
+    ])
+
+    const [session] = await listSessions(CREDENTIALS, impl)
+
+    expect(session?.bytes).toBe(10)
+    expect(session?.pending).toBe(1)
+    expect(session?.exemption).toBe('archive')
   })
 
   it('s’annonce, le dossier n’étant plus lisible sans mot de passe', async () => {
@@ -64,10 +114,9 @@ describe('la liste des sessions', () => {
     expect(entêtes['Authorization']).toBe(`Basic ${btoa('depot:motdepasse')}`)
   })
 
-  it('passe outre un dossier absent, qui naît au premier dépôt', async () => {
-    const { impl } = serveur({ '/journal/': ['2026-09-10-17-07-47_2geq_001.jsonl'] })
-    const sessions = await listSessions(CREDENTIALS, impl)
-    expect(sessions).toHaveLength(1)
+  it('rend une liste vide devant un serveur qui ne connaît pas les trajets', async () => {
+    const impl = (async () => new Response('', { status: 404 })) as unknown as typeof fetch
+    expect(await listSessions(CREDENTIALS, impl)).toEqual([])
   })
 })
 
@@ -76,7 +125,7 @@ describe('le chargement d’une session', () => {
     const clair = '{"at":100,"kind":"audio","data":{}}\n'
     const compressé = await gzip('{"at":200,"kind":"source","data":{}}\n')
     const { impl } = serveur(
-      {},
+      [],
       {
         '/journal/2026-09-10-17-07-47_2geq_001.jsonl': clair,
         '/journal/2026-09-10-17-07-47_2geq_002.jsonl.gz': compressé,
@@ -92,6 +141,7 @@ describe('le chargement d’une session', () => {
           { name: '2026-09-10-17-07-47_2geq_001.jsonl', kind: 'journal' },
           { name: '2026-09-10-17-07-47_2geq_002.jsonl.gz', kind: 'journal' },
         ],
+        ...RESTE,
       },
       CREDENTIALS,
       impl,
@@ -102,7 +152,7 @@ describe('le chargement d’une session', () => {
   })
 
   it('rend ce qu’il a pu lire, et nomme ce qui manque', async () => {
-    const { impl } = serveur({}, { '/journal/a_001.jsonl': '{"at":1,"kind":"audio","data":{}}\n' })
+    const { impl } = serveur([], { '/journal/a_001.jsonl': '{"at":1,"kind":"audio","data":{}}\n' })
     const { session, failures } = await loadSession(
       {
         key: 'a',
@@ -112,6 +162,7 @@ describe('le chargement d’une session', () => {
           { name: 'a_001.jsonl', kind: 'journal' },
           { name: 'a_002.jsonl', kind: 'journal' },
         ],
+        ...RESTE,
       },
       CREDENTIALS,
       impl,
@@ -134,7 +185,7 @@ describe('durée annoncée dans la liste', () => {
         kind: 'capture' as const,
       })),
     ]
-    return { key: 'k', id: 'k', startedAt: 0, files }
+    return { key: 'k', id: 'k', startedAt: 0, files, ...RESTE }
   }
 
   it('rend une borne basse, et non une estimation', () => {

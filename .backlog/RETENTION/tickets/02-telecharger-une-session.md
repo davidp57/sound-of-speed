@@ -1,6 +1,6 @@
 # 02 — Télécharger une session en une archive
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -33,10 +33,12 @@ chez l'utilisateur, pas sur le serveur.
 
 ## Critères d'acceptation
 
-- [ ] Une session demandée rend une archive zip unique
-- [ ] L'archive porte les tranches sous leur nom de dépôt, trace et journal
-- [ ] Les octets extraits de l'archive sont identiques à ceux déposés, tranche
+- [x] Une session demandée rend une archive zip unique
+- [x] L'archive porte les tranches sous leur nom de dépôt, trace et journal —
+      rangées sous leur dossier d'origine, une trace et un journal pouvant porter
+      exactement le même nom
+- [x] Les octets extraits de l'archive sont identiques à ceux déposés, tranche
       par tranche
-- [ ] Le nom de l'archive porte la date du trajet
-- [ ] Une session d'une seule tranche rend une archive valide, pas un cas
+- [x] Le nom de l'archive porte la date du trajet
+- [x] Une session d'une seule tranche rend une archive valide, pas un cas
       particulier

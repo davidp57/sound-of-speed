@@ -10,6 +10,8 @@ import {
   loadSession,
   type SessionEntry,
 } from '../core/session/read'
+import { deleteTrip, downloadTrip, pinTrip, retentionVerdict } from '../core/session/manage'
+import { sessionFromArchive } from '../core/session/archive'
 import { stateAt, trackAt, type Session } from '../core/session/model'
 import { findGearChanges, findShiftBursts, recordedShifts } from '../core/session/shifts'
 import { accelProfile, profileRuns } from '../core/session/profile'
@@ -178,6 +180,7 @@ async function open(key: string): Promise<void> {
     failures.value = chargé.failures
     at.value = 0
     note.value = ''
+    gestion.value = false
   } catch (error) {
     if (jeton !== pending) return
     note.value = error instanceof Error ? error.message : 'Session illisible.'
@@ -502,11 +505,252 @@ function stamp(ms: number): string {
  * nombre de tranches établit, et qu'une durée exacte demanderait de charger la
  * session qu'on est justement en train de choisir.
  */
-function sessionLabel(entry: SessionEntry): string {
+function dureeAnnoncee(entry: SessionEntry): string {
   const ms = atLeastDurationMs(entry)
-  const durée =
-    ms === null ? 'journal seul' : ms === 0 ? 'moins de 5 min' : `plus de ${ms / 60_000} min`
-  return `${stamp(entry.startedAt)} — ${entry.id} — ${durée}`
+  return ms === null ? 'journal seul' : ms === 0 ? 'moins de 5 min' : `plus de ${ms / 60_000} min`
+}
+
+function sessionLabel(entry: SessionEntry): string {
+  return `${stamp(entry.startedAt)} — ${entry.id} — ${dureeAnnoncee(entry)}`
+}
+
+/**
+ * Le poids d'un trajet, dit dans l'unité qui se lit.
+ *
+ * Un kilo-octet et un mégaoctet ne veulent pas dire la même chose devant un
+ * bouton qui efface : les six départs avortés de la base pèsent un kilo-octet
+ * chacun, et c'est ce chiffre-là qui dit qu'on ne perd rien.
+ */
+function poids(octets: number): string {
+  if (octets < 1024) return `${octets} o`
+  if (octets < 1024 * 1024) return `${Math.round(octets / 1024)} Kio`
+  return `${(octets / (1024 * 1024)).toFixed(1)} Mio`
+}
+
+/**
+ * Ce qui retient un trajet, ou ce qui manque pour le regarder.
+ *
+ * Trois états distincts, et les confondre coûterait : **archivé** vient d'une
+ * reprise et ne s'efface pas tout seul, **épinglé** est un choix qu'on peut
+ * défaire, **pas encore analysé** dit que le profileur n'a pas regardé — donc
+ * qu'effacer perdrait ce que ce trajet avait à montrer.
+ */
+function etat(entry: SessionEntry): string {
+  if (entry.exemption === 'archive') return 'archivé'
+  if (entry.exemption === 'epingle') return 'épinglé'
+  if (entry.pending > 0) return 'pas encore analysé'
+  return ''
+}
+
+/** Ce dont le trajet est fait, en clair. */
+function contenu(entry: SessionEntry): string {
+  const traces = entry.files.filter((file) => file.kind === 'capture').length
+  const journal = entry.files.length - traces
+  const morceaux = []
+  if (traces > 0) morceaux.push(`${traces} trace${traces > 1 ? 's' : ''}`)
+  if (journal > 0) morceaux.push(`${journal} journal`)
+  return morceaux.join(' · ')
+}
+
+/**
+ * La liste des trajets, et ce qu'on en fait.
+ *
+ * Ouverte tant qu'aucun trajet n'est chargé : c'est l'écran d'accueil du
+ * relecteur. Elle se referme d'elle-même quand on en ouvre un, et se rappelle
+ * d'un bouton.
+ */
+const gestion = ref(true)
+
+/** Le trajet dont l'effacement attend un second geste, et ce qu'il emporterait. */
+const aEffacer = ref<SessionEntry | null>(null)
+const geste = ref('')
+
+function demanderEffacement(entry: SessionEntry): void {
+  aEffacer.value = entry
+  geste.value = ''
+}
+
+/**
+ * Efface pour de bon, après le second geste.
+ *
+ * Le profil mesuré ne bouge pas : ce que la trace a montré est déjà cumulé, et
+ * le cumul ne se défait pas — c'est toute la promesse de la rétention.
+ */
+async function effacer(entry: SessionEntry): Promise<void> {
+  aEffacer.value = null
+  busy.value = true
+  try {
+    const parties = await deleteTrip(entry.key, credentials)
+    if (parties === null) {
+      geste.value = `Le trajet du ${stamp(entry.startedAt)} n’a pas pu être effacé.`
+      return
+    }
+    geste.value =
+      parties === 0
+        ? 'Ce trajet était déjà parti.'
+        : `Trajet du ${stamp(entry.startedAt)} effacé : ${parties} tranche${parties > 1 ? 's' : ''}.`
+    oublierLeVerdict()
+    // Celui qu'on lisait vient de disparaître : le garder à l'écran ferait
+    // relire un trajet qui n'existe plus.
+    if (chosen.value === entry.key) {
+      chosen.value = ''
+      session.value = null
+      stopSound()
+    }
+    await refresh()
+  } finally {
+    busy.value = false
+  }
+}
+
+/**
+ * Ce que la règle de rétention emporterait, sans rien effacer.
+ *
+ * On le regarde avant que quoi que ce soit disparaisse : aucun contrôle ne dira
+ * qu'un délai est trop court — un mauvais seuil efface des données et rien ne
+ * rougit.
+ */
+const verdict = ref<Awaited<ReturnType<typeof retentionVerdict>>>(null)
+
+/**
+ * Le verdict vieillit dès qu'on touche à un trajet.
+ *
+ * Un verdict périmé qui nomme encore un trajet qu'on vient d'effacer se lit
+ * comme un effacement qui n'a pas pris. On l'efface plutôt que de le recalculer
+ * sans qu'on l'ait demandé : c'est un regard qu'on porte, pas un compteur.
+ */
+function oublierLeVerdict(): void {
+  verdict.value = null
+}
+
+async function voirLaRegle(): Promise<void> {
+  busy.value = true
+  try {
+    verdict.value = await retentionVerdict(credentials)
+    if (verdict.value === null) geste.value = 'La règle de rétention n’a pas répondu.'
+  } finally {
+    busy.value = false
+  }
+}
+
+/** Les raisons de retenir, comptées : « 14 archivés, 2 trop récents ». */
+const raisonsRetenues = computed(() => {
+  const comptes = new Map<string, number>()
+  for (const retenu of verdict.value?.retenus ?? []) {
+    comptes.set(retenu.raison, (comptes.get(retenu.raison) ?? 0) + 1)
+  }
+  return [...comptes].map(([raison, combien]) => `${combien} ${raison}${combien > 1 ? 's' : ''}`)
+})
+
+/**
+ * Où l'on en est de la borne d'épingles, tel que le serveur le dit.
+ *
+ * Connu seulement après un premier épinglage : l'afficher d'avance demanderait
+ * une requête de plus pour un chiffre dont on n'a besoin qu'au moment de poser
+ * une épingle.
+ */
+const epingles = ref<{ epinglees: number; borne: number } | null>(null)
+
+/**
+ * Épingle un trajet, ou le décroche.
+ *
+ * L'épingle est un choix — on garde ce trajet —, et le nombre en est borné. Un
+ * refus dit quoi faire : décrocher autre chose, ou emporter le trajet.
+ */
+async function basculerEpingle(entry: SessionEntry): Promise<void> {
+  busy.value = true
+  geste.value = ''
+  try {
+    const rendu = await pinTrip(entry.key, entry.exemption !== 'epingle', credentials)
+    if (rendu === null) {
+      geste.value = 'L’épingle n’a pas pu être posée : le serveur n’a pas répondu.'
+      return
+    }
+
+    epingles.value = { epinglees: rendu.epinglees, borne: rendu.borne }
+    oublierLeVerdict()
+    if (rendu.etat === 'borne atteinte') {
+      geste.value = `Borne atteinte : ${rendu.borne} trajets épinglés. Décrochez-en un, ou téléchargez celui-ci pour le garder hors du serveur.`
+      return
+    }
+    if (rendu.etat === 'archivé') {
+      geste.value = 'Ce trajet vient d’une reprise : il est déjà retenu, et l’épingle ne lui sert à rien.'
+      return
+    }
+    await refresh()
+  } finally {
+    busy.value = false
+  }
+}
+
+/**
+ * Rouvre une archive prise sur le disque.
+ *
+ * Sans compte et sans serveur : c'est ce qui ferme la boucle de l'archive. Un
+ * relecteur ouvert ailleurs, qui ne peut rien lister, sait quand même relire un
+ * trajet qu'on lui donne.
+ */
+const fichierArchive = ref<HTMLInputElement | null>(null)
+
+async function ouvrirArchive(evenement: Event): Promise<void> {
+  const fichier = (evenement.target as HTMLInputElement).files?.[0]
+  if (fichier === undefined) return
+
+  stop()
+  stopSound()
+  busy.value = true
+  note.value = `Ouverture de ${fichier.name}…`
+  // Le jeton du chargement en cours : une archive et une session du serveur ne
+  // doivent pas s'écraser l'une l'autre.
+  const jeton = ++pending
+  try {
+    const lu = await sessionFromArchive(new Uint8Array(await fichier.arrayBuffer()))
+    if (jeton !== pending) return
+    chosen.value = ''
+    session.value = lu.session
+    failures.value = lu.failures
+    at.value = 0
+    note.value = `${fichier.name} — relu depuis le disque.`
+    gestion.value = false
+  } catch (erreur) {
+    if (jeton !== pending) return
+    note.value = erreur instanceof Error ? erreur.message : 'Archive illisible.'
+  } finally {
+    if (jeton === pending) busy.value = false
+    // Sans cela, rouvrir le même fichier ne déclencherait rien.
+    ;(evenement.target as HTMLInputElement).value = ''
+  }
+}
+
+/**
+ * Emporte un trajet sur le disque.
+ *
+ * C'est la porte de sortie qui rend l'effacement acceptable : l'archive longue
+ * est chez l'utilisateur, pas sur le serveur. Elle descend par une requête et
+ * non par un lien, le dossier n'étant pas lisible sans mot de passe.
+ */
+async function telecharger(entry: SessionEntry): Promise<void> {
+  busy.value = true
+  geste.value = ''
+  try {
+    const archive = await downloadTrip(entry.key, credentials)
+    if (archive === null) {
+      geste.value = `L’archive du trajet du ${stamp(entry.startedAt)} n’a pas pu être tirée.`
+      return
+    }
+
+    const adresse = URL.createObjectURL(archive.blob)
+    const lien = document.createElement('a')
+    lien.href = adresse
+    lien.download = archive.filename
+    lien.click()
+    // L'adresse d'objet tient la mémoire tant qu'on ne la rend pas.
+    URL.revokeObjectURL(adresse)
+
+    geste.value = `${archive.filename} — ${poids(archive.blob.size)}.`
+  } finally {
+    busy.value = false
+  }
 }
 
 /**
@@ -585,6 +829,21 @@ void refresh()
           </option>
         </select>
         <button :disabled="busy" @click="refresh()">Rafraîchir</button>
+        <button :aria-pressed="gestion" @click="gestion = !gestion">Trajets</button>
+        <button
+          :disabled="busy"
+          title="Relire une archive téléchargée, sans passer par le serveur"
+          @click="fichierArchive?.click()"
+        >
+          Ouvrir une archive…
+        </button>
+        <input
+          ref="fichierArchive"
+          type="file"
+          accept="application/zip,.zip"
+          hidden
+          @change="ouvrirArchive"
+        />
       </div>
       <span v-if="session" class="muted">
         {{ session.sources.capture > 0 ? 'capture et journal' : 'journal seul' }} —
@@ -596,6 +855,112 @@ void refresh()
     <p v-if="failures.length" class="note">
       Fichiers illisibles, laissés de côté : {{ failures.join(', ') }}
     </p>
+
+    <!--
+      Les trajets du serveur, et ce qu'on en fait.
+
+      Tout se passe ici : on ne trie pas ses archives au volant, et l'application
+      de la voiture ne gagne aucun écran. La liste dit ce que chaque trajet pèse
+      et ce qui le retient, parce que c'est ce qu'on a besoin de savoir avant
+      d'effacer.
+    -->
+    <section v-if="gestion && entries.length > 0" class="panel trajets">
+      <table>
+        <thead>
+          <tr>
+            <th>Trajet</th>
+            <th>Durée</th>
+            <th>Contenu</th>
+            <th>Poids</th>
+            <th>État</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="entry in entries" :key="entry.key" :class="{ courant: chosen === entry.key }">
+            <td>
+              {{ stamp(entry.startedAt) }}
+              <span class="muted">{{ entry.id }}</span>
+            </td>
+            <td>{{ dureeAnnoncee(entry) }}</td>
+            <td>{{ contenu(entry) }}</td>
+            <td>{{ poids(entry.bytes) }}</td>
+            <td>{{ etat(entry) }}</td>
+            <td class="actions">
+              <button :disabled="busy" @click="chosen = entry.key">Ouvrir</button>
+              <button :disabled="busy" @click="telecharger(entry)">Télécharger</button>
+              <button
+                v-if="entry.exemption !== 'archive'"
+                :disabled="busy"
+                :aria-pressed="entry.exemption === 'epingle'"
+                :title="
+                  entry.exemption === 'epingle'
+                    ? 'Rendre ce trajet effaçable par la règle'
+                    : 'Garder ce trajet malgré la règle'
+                "
+                @click="basculerEpingle(entry)"
+              >
+                {{ entry.exemption === 'epingle' ? '★ Épinglé' : '☆ Épingler' }}
+              </button>
+              <button :disabled="busy" @click="demanderEffacement(entry)">Effacer</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!--
+        La confirmation dit ce qui part avant que cela ne parte : un effacement
+        qui surprend est un effacement qu'on regrette.
+      -->
+      <p v-if="aEffacer" class="confirm">
+        Effacer le trajet du {{ stamp(aEffacer.startedAt) }} ?
+        {{ aEffacer.files.length }} tranche{{ aEffacer.files.length > 1 ? 's' : '' }},
+        {{ poids(aEffacer.bytes) }}. Ce qu'il a montré reste dans le profil mesuré ; le trajet,
+        lui, ne se relira plus que depuis une archive téléchargée.
+        <span class="confirm-actions">
+          <button @click="effacer(aEffacer)">Effacer</button>
+          <button @click="aEffacer = null">Annuler</button>
+        </span>
+      </p>
+      <!--
+        Le verdict de la règle : ce qui partirait, et ce qui retient le reste.
+        Il n'efface rien — c'est tout son intérêt.
+      -->
+      <p class="regle">
+        <button :disabled="busy" @click="voirLaRegle()">Ce que la règle emporterait</button>
+        <span v-if="verdict" class="muted">
+          traces : {{ verdict.delais.traces }} jours · journal seul :
+          {{ verdict.delais.journal }} jours
+        </span>
+      </p>
+
+      <template v-if="verdict">
+        <p v-if="verdict.aEffacer.length === 0" class="note">
+          Rien ne partirait aujourd'hui. Ce qui reste :
+          {{ raisonsRetenues.join(', ') || 'aucun trajet' }}.
+        </p>
+        <template v-else>
+          <p class="note">
+            {{ verdict.aEffacer.length }} trajet{{ verdict.aEffacer.length > 1 ? 's' : '' }}
+            partirai{{ verdict.aEffacer.length > 1 ? 'ent' : 't' }}, {{ poids(verdict.octets) }}.
+            Ce qui reste : {{ raisonsRetenues.join(', ') }}.
+          </p>
+          <ul class="verdict">
+            <li v-for="trajet in verdict.aEffacer" :key="trajet.cle">
+              {{ stamp(trajet.enregistreLe) }} — {{ trajet.tranches }} tranche{{
+                trajet.tranches > 1 ? 's' : ''
+              }}, {{ poids(trajet.octets) }}{{ trajet.isole ? ' — dépôt seul' : '' }}
+            </li>
+          </ul>
+        </template>
+      </template>
+
+      <p v-if="geste" class="note">{{ geste }}</p>
+      <p v-if="epingles" class="note">
+        Épingles : {{ epingles.epinglees }} sur {{ epingles.borne }}. Les trajets archivés, venus
+        d'une reprise, n'y comptent pas.
+      </p>
+    </section>
 
     <template v-if="session">
       <section class="panel lecture">
@@ -1090,6 +1455,79 @@ select {
   color: var(--muted);
   font-size: 0.9rem;
   margin: 0;
+}
+
+/*
+ * La liste des trajets : un tableau, parce qu'on y compare des poids et des
+ * dates. Les colonnes se lisent d'un coup d'œil, ce qu'une suite de cartes ne
+ * permet pas.
+ */
+.trajets table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.trajets th {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: normal;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.trajets th,
+.trajets td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.35rem 0.5rem 0.35rem 0;
+  white-space: nowrap;
+}
+
+/* Le trajet ouvert, pour ne pas le chercher dans la liste. */
+.trajets .courant td {
+  color: var(--accent);
+}
+
+.trajets .actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+/* La règle, et ses seuils, sur une ligne. */
+.regle {
+  align-items: center;
+  display: flex;
+  gap: 0.6rem;
+  margin: 0.7rem 0 0;
+}
+
+.verdict {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0.3rem 0 0;
+  padding-left: 1.2rem;
+}
+
+/*
+ * La demande de confirmation : encadrée, pour qu'on la lise. Elle dit ce qui
+ * part avant que cela ne parte.
+ */
+.confirm {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0.6rem 0 0;
+  padding: 0.7rem 0.9rem;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
 }
 
 summary {

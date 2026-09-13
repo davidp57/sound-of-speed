@@ -145,7 +145,7 @@ describe('ce que le schéma garantit', () => {
       bytes: 1,
     })
 
-    expect((await base.select().from(deposits))[0]?.pinned).toBe(false)
+    expect((await base.select().from(deposits))[0]?.exemption).toBeNull()
   })
 
   it('un profil peut désigner un moteur qui n’existe pas ici', async () => {

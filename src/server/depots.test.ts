@@ -6,9 +6,18 @@ import { gunzipSync, gzipSync } from 'node:zlib'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
-import { CHARGE_MAXIMALE, ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
+import {
+  CHARGE_MAXIMALE,
+  ecrireDepot,
+  estUnDossier,
+  lireDepot,
+  listerDepots,
+  remplirLesDatesDEnregistrement,
+} from './depots'
+import { deposits } from './base/schema'
 
 const MIGRATIONS = 'src/server/base/migrations'
+const TRANCHE = '2026-09-11-06-24-01_da2m_001.jsonl.gz'
 
 let dossier: string
 let base: Base
@@ -113,3 +122,66 @@ describe('les dossiers que la voiture connaît', () => {
 function nomsDe(entrees: readonly { name: string; type: string }[]): string[] {
   return entrees.map((entree) => entree.name)
 }
+
+describe('la date du trajet', () => {
+  it('vient du nom, pas de l’heure du dépôt', async () => {
+    // Une trace enregistrée hors réseau et remontée trois jours plus tard porte
+    // une date de dépôt postérieure au trajet. C'est la date du nom qui décide
+    // de l'effacement.
+    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', TRANCHE, Buffer.from('x'))
+
+    const [ligne] = await base.select().from(deposits)
+
+    expect(ligne!.recordedAt).toBe(Math.floor(Date.UTC(2026, 8, 11, 6, 24, 1) / 1000))
+    expect(ligne!.recordedAt).not.toBe(ligne!.depositedAt)
+  })
+
+  it('se rattrape sur les dépôts entrés avant qu’elle existe', async () => {
+    // Les quatre-vingt-quatorze dépôts de la production prétendent tous dater de
+    // l'heure où la reprise a tourné.
+    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', TRANCHE, Buffer.from('x'))
+    await base.update(deposits).set({ recordedAt: null })
+
+    expect(await remplirLesDatesDEnregistrement(base)).toBe(1)
+
+    const [ligne] = await base.select().from(deposits)
+    expect(ligne!.recordedAt).toBe(Math.floor(Date.UTC(2026, 8, 11, 6, 24, 1) / 1000))
+  })
+
+  it('donne sa date de dépôt à un nom libre, plutôt que rien', async () => {
+    // Deux traces anciennes n'ont pas de date lisible dans leur nom. Une colonne
+    // vide obligerait tout ce qui lit cette date à se demander ce qu'elle veut
+    // dire.
+    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', 'essai-manuel.jsonl', Buffer.from('x'))
+    await base.update(deposits).set({ recordedAt: null })
+
+    await remplirLesDatesDEnregistrement(base)
+
+    const [ligne] = await base.select().from(deposits)
+    expect(ligne!.recordedAt).toBe(ligne!.depositedAt)
+  })
+
+  it('ne perd rien et ne touche qu’une fois', async () => {
+    // Le décompte avant et après doit montrer les mêmes dépôts et les mêmes
+    // octets.
+    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', TRANCHE, Buffer.from('douze octets'))
+    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'journal', TRANCHE, Buffer.from('x'))
+    const avant = await base.select().from(deposits)
+
+    await remplirLesDatesDEnregistrement(base)
+    const apres = await base.select().from(deposits)
+
+    expect(apres).toHaveLength(avant.length)
+    expect(apres.map((l) => l.bytes)).toEqual(avant.map((l) => l.bytes))
+    // Tout est déjà daté à l'écriture : le rattrapage n'a plus rien à faire.
+    expect(await remplirLesDatesDEnregistrement(base)).toBe(0)
+  })
+
+  it('liste sur la date du trajet', async () => {
+    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', TRANCHE, Buffer.from('x'))
+
+    const [entree] = await listerDepots(base, SOLO_ACCOUNT_ID, 'traces')
+
+    expect(new Date(entree!.mtime).getTime()).toBe(Date.UTC(2026, 8, 11, 6, 24, 1))
+  })
+})

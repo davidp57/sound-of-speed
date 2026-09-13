@@ -408,6 +408,47 @@ d'engine-sim ; celui du journal dit ce que le son a coûté en roulant. Un chiff
 sans son contexte ne se relit pas trois semaines plus tard.
 _Éviter_ : mesure (qui désigne une mesure de vitesse), statistique.
 
+## La rétention
+
+**Trajet** (_trip_, `SessionEntry`, `SessionEnBase`) :
+Une session vue depuis le serveur : ses tranches de trace et de journal réunies
+par le nom qu'elles portent. C'est l'**unité** de tout ce qu'on fait d'un
+enregistrement — on télécharge, on épingle et on efface un trajet, jamais une
+tranche : effacer tranche par tranche rendrait des sessions à trous.
+_Attention_ : un dépôt au nom libre, d'avant la convention de nommage, fait un
+trajet à lui seul — sans quoi rien ne pourrait jamais l'enlever.
+
+**Date d'enregistrement** (_recorded at_, `recordedAt`) :
+Quand le trajet a eu lieu, lue dans le nom des tranches. À distinguer de la
+**date de dépôt**, qui est celle de l'arrivée sur le serveur et qui ment dès que
+l'envoi est différé. C'est la date d'enregistrement qui décide de l'effacement.
+
+**Analysé** (_analyzed_, `analyzedProcedure`) :
+Se dit d'un dépôt que le profileur a **regardé**, quoi qu'il en ait tiré. Une
+session trop courte dont rien ne sort est analysée, et donc effaçable ; une
+session jamais soumise au profileur ne l'est pas, et rien ne l'effacera. La
+marque porte le numéro du procédé : elle ne vaut plus rien dès qu'il change.
+_Éviter_ : mesuré, traité (qui laissent croire qu'il en est sorti quelque chose).
+
+**Épingle** (_pin_, `exemption: 'epingle'`) :
+Le choix de garder un trajet malgré la règle. Elle est **bornée**, et la borne
+s'annonce.
+_Attention_ : à ne pas confondre avec le profil **épinglé** sur l'écran de
+conduite, qui est un favori et ne parle pas de rétention.
+
+**Archive** (_archive_, `exemption: 'archive'`) :
+L'exemption posée par une reprise sur ce qui vient d'un ancien serveur. Un fait,
+non un choix : ces trajets ont été déménagés, et les effacer un mois plus tard
+reviendrait à les avoir déplacés pour les perdre. Elle n'est pas bornée.
+_Éviter_ : épingle automatique — les deux natures existent justement pour ne pas
+se confondre.
+
+**Verdict** (_verdict_, `verdictDeRetention`) :
+Ce que la règle emporterait, rendu **sans rien effacer** : les trajets qui
+partiraient, et pour chacun de ceux qui restent, la raison qui le retient. Le
+seul moyen de juger un délai, puisqu'un seuil trop court efface des données sans
+que rien ne rougisse.
+
 ## Profil effectif
 
 Ce que le moteur, la boîte, le conditionnement et le mixage emploient réellement :

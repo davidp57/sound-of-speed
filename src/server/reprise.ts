@@ -15,11 +15,15 @@
  * profil du disque d'effacer celui qu'on aura réglé entre-temps dans la voiture.
  * C'est aussi ce qui la rend rejouable : relancée, elle n'écrit rien.
  *
- * **Ce qui entre est épinglé.** Les traces, mais aussi le journal et les
+ * **Ce qui entre est archivé.** Les traces, mais aussi le journal et les
  * relevés : la raison vaut pour les trois. La règle de rétention effacerait un
  * mois plus tard ce qu'on vient de déplacer, et on aurait déménagé des données
  * pour les perdre. La spec du lot ne nommait que les traces ; l'argument ne les
  * distingue pas.
+ *
+ * Archivé, et non épinglé : l'épingle est un choix de l'utilisateur, et elle est
+ * bornée. Ce qui est déménagé n'a pas été choisi, et quatorze sessions reprises
+ * rempliraient la borne avant la première épingle.
  *
  * **Le profil mesuré n'est pas repris.** Le serveur le recalcule depuis les
  * traces qu'il a en base, à chaque démarrage. Copier l'ancien fichier
@@ -29,6 +33,8 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+
+import { recordedAtOf } from '../core/upload/slice-name'
 
 import type { Base } from './base/base'
 import { deposits, profiles } from './base/schema'
@@ -137,7 +143,8 @@ async function reprendreDesDepots(
       name: nom,
       content: octets,
       bytes: octets.byteLength,
-      pinned: true,
+      recordedAt: dateDEnregistrement(nom) ?? undefined,
+      exemption: 'archive',
     })
 
     reprise.entres += 1
@@ -261,4 +268,10 @@ function nomLisible(profil: unknown, repli: string): string {
     if (typeof nom === 'string' && nom.trim() !== '') return nom
   }
   return repli.replace(/\.json$/i, '')
+}
+
+/** La date du trajet, en secondes, telle que le nom de la tranche la porte. */
+function dateDEnregistrement(nom: string): number | null {
+  const ms = recordedAtOf(nom)
+  return ms === null ? null : Math.floor(ms / 1000)
 }
