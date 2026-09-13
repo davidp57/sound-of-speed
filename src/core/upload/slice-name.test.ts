@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { groupBySession, parseSliceName } from './slice-name'
+import { groupBySession, parseSliceName, recordedAtOf } from './slice-name'
 import { SliceBuffer } from './slicing'
 
 /**
@@ -127,5 +127,31 @@ describe('groupBySession', () => {
     ])
 
     expect(sessions[0]!.map((s) => s.index)).toEqual([19, 21])
+  })
+})
+
+describe('recordedAtOf', () => {
+  it('rend l’instant que le tampon a écrit dans le nom', () => {
+    // L'aller-retour, encore : c'est `SliceBuffer` qui décide du format, et une
+    // date lue de travers ferait effacer un trajet du bon mois.
+    const debut = Date.UTC(2026, 8, 11, 6, 24, 1)
+    const b = tampon()
+    b.add({ at: 0, n: 0 })
+
+    expect(recordedAtOf(b.takeSlice(0)!.name)).toBe(debut)
+  })
+
+  it('lit la date en temps universel, quel que soit le fuseau de la machine', () => {
+    // Le nom vient de `toISOString`. La relire en heure locale donnerait deux
+    // dates différentes pour la même tranche selon qui la regarde.
+    expect(recordedAtOf('2026-09-11-06-24-01_da2m_001.jsonl.gz')).toBe(
+      Date.UTC(2026, 8, 11, 6, 24, 1),
+    )
+  })
+
+  it('rend null sur un nom libre', () => {
+    // Le dossier des traces en porte deux, d'avant la convention.
+    expect(recordedAtOf('trace-essai.jsonl')).toBeNull()
+    expect(recordedAtOf('essai_manuel_001.jsonl')).toBeNull()
   })
 })

@@ -184,6 +184,21 @@ export const deposits = sqliteTable(
     content: blob('content', { mode: 'buffer' }).notNull(),
     bytes: integer('bytes').notNull(),
     depositedAt: integer('deposited_at').notNull().default(maintenant),
+    /**
+     * Quand le trajet a été enregistré, lu dans le nom de la tranche.
+     *
+     * Deux dates, parce qu'une seule ne suffit pas : la date de dépôt est celle
+     * de l'arrivée sur le serveur, et elle ment dès que le dépôt est différé —
+     * une trace enregistrée hors réseau et remontée trois jours plus tard, ou
+     * les quatre-vingt-quatorze dépôts de la reprise, qui prétendent tous dater
+     * de l'heure où elle a tourné. C'est cette date-ci qui décide de
+     * l'effacement.
+     *
+     * Facultative : deux traces anciennes portent un nom libre, d'avant la
+     * convention, et n'ont pas de date lisible. Elles reçoivent leur date de
+     * dépôt à défaut, et le rattrapage du démarrage s'en charge.
+     */
+    recordedAt: integer('recorded_at'),
     /** Exempté de l'effacement. Voir le lot RETENTION. */
     pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
   },

@@ -1,6 +1,6 @@
 # 04 — Le dépôt sait quand le trajet a eu lieu
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 

@@ -15,6 +15,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un dépôt sait quand le trajet a eu lieu.** Il portait la date de son arrivée
+  sur le serveur, qui ment dès que le dépôt est différé : une trace enregistrée
+  hors réseau et remontée trois jours plus tard, ou les quatre-vingt-quatorze
+  dépôts que la reprise a versés d'un coup. La date d'enregistrement se lit dans
+  le nom de la tranche, elle est écrite à l'arrivée, et le démarrage la donne à
+  ce qui est entré avant qu'elle existe. C'est elle que rend le listage, et c'est
+  elle qui décidera de l'effacement.
+
 - **Les réglages ne dorment plus dans le seul navigateur de la voiture.** Au
   premier lancement, les profils, les moteurs, les boîtes et les traces qui
   n'étaient jamais remontées partent en base — par petites poignées, pour ne pas

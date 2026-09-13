@@ -14,7 +14,9 @@
  * ne le dise.
  */
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
+
+import { recordedAtOf } from '../core/upload/slice-name'
 
 import type { Base } from './base/base'
 import { deposits } from './base/schema'
@@ -51,7 +53,11 @@ export async function listerDepots(
   dossier: Dossier,
 ): Promise<Entree[]> {
   const lignes = await base
-    .select({ name: deposits.name, depositedAt: deposits.depositedAt })
+    .select({
+      name: deposits.name,
+      depositedAt: deposits.depositedAt,
+      recordedAt: deposits.recordedAt,
+    })
     .from(deposits)
     .where(and(eq(deposits.accountId, compte), eq(deposits.folder, dossier)))
 
@@ -59,7 +65,11 @@ export async function listerDepots(
     .map((ligne) => ({
       name: ligne.name,
       type: 'file' as const,
-      mtime: dateHttp(ligne.depositedAt),
+      // La date du trajet, pas celle de l'arrivée : les quatre-vingt-quatorze
+      // dépôts de la reprise prétendent tous dater de l'heure où elle a tourné,
+      // et un listage qui le répéterait ferait croire à quatre-vingt-quatorze
+      // trajets du même soir.
+      mtime: dateHttp(ligne.recordedAt ?? ligne.depositedAt),
     }))
     .sort((a, b) => a.name.localeCompare(b.name))
 }
@@ -117,6 +127,8 @@ export async function ecrireDepot(
 ): Promise<Ecriture> {
   if (octets.byteLength > CHARGE_MAXIMALE) return 'trop gros'
 
+  const enregistreLe = dateDEnregistrement(nom)
+
   await base
     .insert(deposits)
     .values({
@@ -126,6 +138,7 @@ export async function ecrireDepot(
       name: nom,
       content: octets,
       bytes: octets.byteLength,
+      ...(enregistreLe === null ? {} : { recordedAt: enregistreLe }),
       pinned: epingle,
     })
     .onConflictDoUpdate({
@@ -133,9 +146,52 @@ export async function ecrireDepot(
       set: {
         content: octets,
         bytes: octets.byteLength,
+        ...(enregistreLe === null ? {} : { recordedAt: enregistreLe }),
         ...(epingle ? { pinned: true } : {}),
       },
     })
 
   return 'écrit'
+}
+
+/**
+ * La date du trajet, en secondes, tirée du nom de la tranche.
+ *
+ * Le cœur sait lire le nom ; il rend des millisecondes, la base compte en
+ * secondes comme toutes ses autres dates. Rend `null` sur un nom libre — la
+ * date de dépôt prendra le relais.
+ */
+function dateDEnregistrement(nom: string): number | null {
+  const ms = recordedAtOf(nom)
+  return ms === null ? null : Math.floor(ms / 1000)
+}
+
+/**
+ * Donne sa date de trajet à ce qui est entré avant qu'elle existe.
+ *
+ * Les dépôts déjà en base n'ont que leur date d'arrivée, et les
+ * quatre-vingt-quatorze de la reprise prétendent tous dater de l'heure où elle a
+ * tourné. On la relit dans leur nom, une fois, au démarrage.
+ *
+ * **Un nom libre reçoit sa date de dépôt**, et c'est un choix plutôt qu'un trou :
+ * deux traces anciennes n'ont pas de date lisible, elles sont archivées, et rien
+ * ne les effacera. Une colonne laissée vide obligerait tout ce qui lit cette
+ * date à se demander ce que veut dire « pas de date ».
+ *
+ * Sans effet au second appel : seules les lignes sans date sont touchées.
+ */
+export async function remplirLesDatesDEnregistrement(base: Base): Promise<number> {
+  const lignes = await base
+    .select({ id: deposits.id, name: deposits.name, depositedAt: deposits.depositedAt })
+    .from(deposits)
+    .where(isNull(deposits.recordedAt))
+
+  for (const ligne of lignes) {
+    await base
+      .update(deposits)
+      .set({ recordedAt: dateDEnregistrement(ligne.name) ?? ligne.depositedAt })
+      .where(eq(deposits.id, ligne.id))
+  }
+
+  return lignes.length
 }

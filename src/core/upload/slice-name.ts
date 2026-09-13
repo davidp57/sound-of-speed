@@ -64,3 +64,25 @@ export function groupBySession(names: readonly string[]): SliceRef[][] {
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([, slices]) => slices.sort((a, b) => a.index - b.index))
 }
+
+/**
+ * L'instant où le trajet a commencé, lu dans le nom de la tranche.
+ *
+ * Le nom porte l'horodatage en temps universel — `SliceBuffer` l'écrit avec
+ * `toISOString` — donc la conversion se fait en universel, sans quoi une même
+ * tranche daterait de deux heures différentes selon la machine qui la relit.
+ *
+ * Rend `null` sur un nom qui ne suit pas la convention : le dossier des traces
+ * porte encore deux enregistrements manuels d'avant, au nom libre.
+ */
+export function recordedAtOf(name: string): number | null {
+  const ref = parseSliceName(name)
+  if (ref === null) return null
+
+  const found = /^(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})$/.exec(ref.stamp)
+  if (found === null) return null
+
+  const [, y, mo, d, h, mi, s] = found
+  const at = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(s))
+  return Number.isNaN(at) ? null : at
+}

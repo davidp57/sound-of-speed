@@ -12,6 +12,7 @@ import { serve } from '@hono/node-server'
 
 import { SOLO_ACCOUNT_ID, ouvrirBase } from './base/base'
 import { lireComptes } from './comptes'
+import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout } from './profil-mesure'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { creerServeur } from './serveur'
@@ -26,6 +27,18 @@ const anciensDossiers = process.env['SPEED_REPRISE']
 
 const { base, fermer } = await ouvrirBase({ fichier: fichierDeBase, migrations })
 console.log(`base ouverte et à jour : ${fichierDeBase}`)
+
+// La date du trajet sur ce qui est entré avant qu'elle existe. Avant la reprise,
+// pour qu'elle n'ait à traiter que ce qu'elle vient de verser — la reprise, elle,
+// écrit déjà la date en entrant.
+try {
+  const datees = await remplirLesDatesDEnregistrement(base)
+  if (datees > 0) console.log(`date du trajet donnée à ${datees} dépôts`)
+} catch (erreur) {
+  // Une date manquante se rattrape au démarrage suivant ; un serveur qui ne
+  // démarre pas, non.
+  console.error(`dates d'enregistrement : ${String(erreur)}`)
+}
 
 // La reprise des anciens dossiers, quand on lui en désigne un.
 //
