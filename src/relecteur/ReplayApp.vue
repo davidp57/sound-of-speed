@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import TrackMap from './TrackMap.vue'
 import DialGauge from '../ui/components/DialGauge.vue'
-import { loadDepositCredentials } from '../core/preset/store'
 import {
   atLeastDurationMs,
   listSessions,
@@ -33,7 +32,6 @@ import type { Profile } from '../core/preset/schema'
  * un passage de rapport qu'on n'a jamais observé.
  */
 
-const credentials = loadDepositCredentials()
 
 const entries = ref<SessionEntry[]>([])
 const chosen = ref<string>('')
@@ -141,17 +139,17 @@ function goTo(ms: number): void {
   seekSound()
 }
 
-const hasAccount = credentials.user !== '' && credentials.password !== ''
-
 async function refresh(): Promise<void> {
   busy.value = true
   note.value = ''
   try {
-    entries.value = await listSessions(credentials)
+    entries.value = await listSessions()
     if (entries.value.length === 0) {
-      note.value = hasAccount
-        ? 'Aucune session sur le serveur.'
-        : "Aucun compte de dépôt sur cet appareil : le relecteur lit le serveur avec le même compte que l'application."
+      // Le relecteur lit sous le compte de **cet** appareil. Ouvert sur un poste
+      // qui n'a jamais servi, il ne voit rien — ce n'est pas une panne, et le
+      // relier à celui de la voiture est ce qui le remplira.
+      note.value =
+        'Aucune session sous le compte de cet appareil. Reliez-le à celui de la voiture pour y voir ses trajets.'
     }
   } finally {
     busy.value = false
@@ -174,7 +172,7 @@ async function open(key: string): Promise<void> {
   busy.value = true
   note.value = `Chargement de ${entry.files.length} fichier${entry.files.length > 1 ? 's' : ''}…`
   try {
-    const chargé = await loadSession(entry, credentials)
+    const chargé = await loadSession(entry)
     if (jeton !== pending) return
     session.value = chargé.session
     failures.value = chargé.failures
@@ -580,7 +578,7 @@ async function effacer(entry: SessionEntry): Promise<void> {
   aEffacer.value = null
   busy.value = true
   try {
-    const parties = await deleteTrip(entry.key, credentials)
+    const parties = await deleteTrip(entry.key)
     if (parties === null) {
       geste.value = `Le trajet du ${stamp(entry.startedAt)} n’a pas pu être effacé.`
       return
@@ -626,7 +624,7 @@ function oublierLeVerdict(): void {
 async function voirLaRegle(): Promise<void> {
   busy.value = true
   try {
-    verdict.value = await retentionVerdict(credentials)
+    verdict.value = await retentionVerdict()
     if (verdict.value === null) geste.value = 'La règle de rétention n’a pas répondu.'
   } finally {
     busy.value = false
@@ -661,7 +659,7 @@ async function basculerEpingle(entry: SessionEntry): Promise<void> {
   busy.value = true
   geste.value = ''
   try {
-    const rendu = await pinTrip(entry.key, entry.exemption !== 'epingle', credentials)
+    const rendu = await pinTrip(entry.key, entry.exemption !== 'epingle')
     if (rendu === null) {
       geste.value = 'L’épingle n’a pas pu être posée : le serveur n’a pas répondu.'
       return
@@ -733,7 +731,7 @@ async function telecharger(entry: SessionEntry): Promise<void> {
   busy.value = true
   geste.value = ''
   try {
-    const archive = await downloadTrip(entry.key, credentials)
+    const archive = await downloadTrip(entry.key)
     if (archive === null) {
       geste.value = `L’archive du trajet du ${stamp(entry.startedAt)} n’a pas pu être tirée.`
       return

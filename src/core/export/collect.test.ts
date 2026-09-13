@@ -14,7 +14,6 @@ import { archiveName, ARCHIVE_FOLDERS, collectArchive } from './collect'
  * Le faux `fetch` reprend celui des tests de la bibliothèque du serveur.
  */
 
-const CREDENTIALS = { user: 'depot', password: 'motdepasse' }
 
 /** Un `fetch` de comptoir : retient les appels et répond selon le chemin. */
 function reseau(fichiers: Record<string, string | number>) {
@@ -45,7 +44,7 @@ describe('le ramassage des données du serveur', () => {
       '/profiles/sport.json': '{"name":"Sport"}',
     })
 
-    const resultat = await collectArchive(CREDENTIALS, impl)
+    const resultat = await collectArchive(impl)
 
     expect(resultat.entries.map((e) => e.path)).toEqual([
       '/journal/tranche_001.jsonl',
@@ -58,28 +57,32 @@ describe('le ramassage des données du serveur', () => {
     expect(resultat.bytes).toBeGreaterThan(0)
   })
 
-  it("s'annonce sur chaque requête, listage comme lecture", async () => {
+  it('ne compose aucune authentification sur ses requêtes', async () => {
+    // Le mot de passe partagé a disparu : le témoin de connexion voyage tout
+    // seul, la page et le serveur étant sur la même origine.
     const { impl, appels } = reseau({
       '/journal/': JSON.stringify([{ name: 'a.jsonl', type: 'file' }]),
       '/journal/a.jsonl': 'x',
     })
 
-    await collectArchive(CREDENTIALS, impl)
+    await collectArchive(impl)
 
     expect(appels.length).toBeGreaterThan(0)
     for (const appel of appels) {
-      expect(appel.headers['Authorization']).toMatch(/^Basic /)
+      expect(appel.headers['Authorization']).toBeUndefined()
     }
   })
 
-  it('ne demande rien sans compte, et le dit', async () => {
+  it('interroge les dossiers même quand ils sont tous vides', async () => {
+    // Ce qui a changé : il n'y a plus de « pas de compte saisi » à constater
+    // sans bouger. La requête part, et le serveur répond ce qu'il sait de cet
+    // appareil.
     const { impl, appels } = reseau({})
 
-    const resultat = await collectArchive({ user: '', password: '' }, impl)
+    const resultat = await collectArchive(impl)
 
-    expect(appels).toEqual([])
+    expect(appels.length).toBeGreaterThan(0)
     expect(resultat.entries).toEqual([])
-    expect(resultat.failures).toHaveLength(1)
   })
 
   it("passe un dossier absent sans le compter comme un échec", async () => {
@@ -90,7 +93,7 @@ describe('le ramassage des données du serveur', () => {
       '/journal/a.jsonl': 'x',
     })
 
-    const resultat = await collectArchive(CREDENTIALS, impl)
+    const resultat = await collectArchive(impl)
 
     expect(resultat.entries).toHaveLength(1)
     expect(resultat.failures).toEqual([])
@@ -103,7 +106,7 @@ describe('le ramassage des données du serveur', () => {
       '/traces/route.json': '[]',
     })
 
-    const resultat = await collectArchive(CREDENTIALS, impl)
+    const resultat = await collectArchive(impl)
 
     expect(resultat.entries.map((e) => e.path)).toEqual(['/traces/route.json'])
     expect(resultat.failures).toEqual(['/journal/ (403)'])
@@ -119,7 +122,7 @@ describe('le ramassage des données du serveur', () => {
       '/journal/casse.jsonl': 500,
     })
 
-    const resultat = await collectArchive(CREDENTIALS, impl)
+    const resultat = await collectArchive(impl)
 
     expect(resultat.entries.map((e) => e.path)).toEqual(['/journal/bon.jsonl'])
     expect(resultat.failures).toEqual(['/journal/casse.jsonl (500)'])
@@ -134,7 +137,7 @@ describe('le ramassage des données du serveur', () => {
       '/journal/a.jsonl': 'x',
     })
 
-    const resultat = await collectArchive(CREDENTIALS, impl)
+    const resultat = await collectArchive(impl)
 
     expect(resultat.entries.map((e) => e.path)).toEqual(['/journal/a.jsonl'])
   })
@@ -142,7 +145,7 @@ describe('le ramassage des données du serveur', () => {
   it('rend un listage illisible comme un échec nommé', async () => {
     const { impl } = reseau({ '/journal/': 'ceci n’est pas du JSON' })
 
-    const resultat = await collectArchive(CREDENTIALS, impl)
+    const resultat = await collectArchive(impl)
 
     expect(resultat.failures).toEqual(['/journal/ (listage illisible)'])
   })
@@ -160,7 +163,7 @@ describe('le ramassage des données du serveur', () => {
     })
 
     const etapes: { done: number; total: number }[] = []
-    await collectArchive(CREDENTIALS, impl, (done, total) => etapes.push({ done, total }))
+    await collectArchive(impl, (done, total) => etapes.push({ done, total }))
 
     expect(etapes).toHaveLength(3)
     expect(etapes.at(-1)).toEqual({ done: 3, total: 3 })
@@ -172,7 +175,7 @@ describe('le ramassage des données du serveur', () => {
       '/journal/trace%20du%209.jsonl': 'x',
     })
 
-    const resultat = await collectArchive(CREDENTIALS, impl)
+    const resultat = await collectArchive(impl)
 
     expect(appels.map((a) => a.url)).toContain('/journal/trace%20du%209.jsonl')
     // Le chemin dans le paquet reste lisible : c'est un nom de fichier, pas une

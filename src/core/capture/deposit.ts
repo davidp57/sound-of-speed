@@ -1,4 +1,3 @@
-import type { DepositCredentials } from '../upload/put'
 import { putSlice, type SliceOutcome } from '../upload/slice-put'
 import type { Slice } from '../upload/slicing'
 
@@ -18,8 +17,7 @@ const FOLDER = '/traces/'
 
 export function depositCaptureSlice(
   slice: Slice,
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<SliceOutcome> {
-  return putSlice(FOLDER, slice, credentials, fetchImpl)
+  return putSlice(FOLDER, slice, fetchImpl)
 }

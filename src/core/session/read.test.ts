@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { atLeastDurationMs, listSessions, loadSession } from './read'
 import { gzip } from '../upload/compress'
 
-const CREDENTIALS = { user: 'depot', password: 'motdepasse' }
 
 /** Ce qu'une entrée porte en plus des fichiers, et qui ne joue ici aucun rôle. */
 const RESTE = { bytes: 0, isolated: false, pending: 0, exemption: null } as const
@@ -46,10 +45,14 @@ function distante(
 }
 
 describe('la liste des sessions', () => {
-  it('est vide sans compte, sans même interroger le serveur', async () => {
+  it('interroge le serveur, même quand il n’y a rien à voir', async () => {
+    // Ce qui a changé avec le compte par appareil : il n'y a plus de « pas de
+    // compte saisi » à constater sans bouger. La requête part, et c'est le
+    // serveur qui dit ce qu'il connaît de cet appareil.
     const { impl, appels } = serveur()
-    expect(await listSessions({ user: '', password: '' }, impl)).toEqual([])
-    expect(appels).toHaveLength(0)
+
+    expect(await listSessions(impl)).toEqual([])
+    expect(appels).toHaveLength(1)
   })
 
   it('prend les trajets tels que le serveur les regroupe', async () => {
@@ -66,7 +69,7 @@ describe('la liste des sessions', () => {
       ]),
     ])
 
-    const sessions = await listSessions(CREDENTIALS, impl)
+    const sessions = await listSessions(impl)
 
     expect(sessions).toHaveLength(2)
     expect(sessions[0]?.id).toBe('2geq')
@@ -83,7 +86,7 @@ describe('la liste des sessions', () => {
       }),
     ])
 
-    const [session] = await listSessions(CREDENTIALS, impl)
+    const [session] = await listSessions(impl)
 
     expect(session?.isolated).toBe(true)
     expect(session?.id).toBe('traces.json')
@@ -96,27 +99,32 @@ describe('la liste des sessions', () => {
       ], { aVoir: 1, exemption: 'archive' }),
     ])
 
-    const [session] = await listSessions(CREDENTIALS, impl)
+    const [session] = await listSessions(impl)
 
     expect(session?.bytes).toBe(10)
     expect(session?.pending).toBe(1)
     expect(session?.exemption).toBe('archive')
   })
 
-  it('s’annonce, le dossier n’étant plus lisible sans mot de passe', async () => {
-    let entêtes: Record<string, string> = {}
+  it('ne compose aucune authentification : le témoin voyage tout seul', async () => {
+    // Le mot de passe partagé a disparu. La page et le serveur sont sur la même
+    // origine, donc le navigateur joint le témoin de connexion de lui-même —
+    // composer un en-tête ici reviendrait à en inventer un second, qui n'ouvre
+    // rien.
+    let entetes: Record<string, string> | undefined
     const impl = (async (_url: string, init?: RequestInit) => {
-      entêtes = init?.headers as Record<string, string>
+      entetes = init?.headers as Record<string, string> | undefined
       return Response.json([])
     }) as unknown as typeof fetch
 
-    await listSessions(CREDENTIALS, impl)
-    expect(entêtes['Authorization']).toBe(`Basic ${btoa('depot:motdepasse')}`)
+    await listSessions(impl)
+
+    expect(entetes?.['Authorization']).toBeUndefined()
   })
 
   it('rend une liste vide devant un serveur qui ne connaît pas les trajets', async () => {
     const impl = (async () => new Response('', { status: 404 })) as unknown as typeof fetch
-    expect(await listSessions(CREDENTIALS, impl)).toEqual([])
+    expect(await listSessions(impl)).toEqual([])
   })
 })
 
@@ -143,7 +151,6 @@ describe('le chargement d’une session', () => {
         ],
         ...RESTE,
       },
-      CREDENTIALS,
       impl,
     )
 
@@ -164,7 +171,6 @@ describe('le chargement d’une session', () => {
         ],
         ...RESTE,
       },
-      CREDENTIALS,
       impl,
     )
 

@@ -109,33 +109,25 @@ describe('ce dont on se souvient', () => {
 })
 
 describe('ce que le serveur rend', () => {
-  const compte = { user: 'moi', password: 'secret' }
-
-  it('rend une liste vide sans compte, sans même demander', async () => {
-    let appele = false
-    const feint = (): Promise<Response> => {
-      appele = true
-      return Promise.resolve(new Response('[]'))
-    }
-
-    expect(await listerDistant(DOSSIER, { user: '', password: '' }, feint)).toEqual([])
-    expect(appele).toBe(false)
-  })
+  // Le cas « pas de compte saisi » a disparu avec le mot de passe partagé : la
+  // requête part toujours, et c'est le serveur qui dit qu'il ne reconnaît pas
+  // cet appareil. Un appareil qui n'a pas encore de compte reçoit donc une liste
+  // vide par la même voie que tout le reste.
 
   it('rend une liste vide quand le réseau ne répond pas', async () => {
     // Hors réseau, il n'y a pas de nouvelle à prendre : ce n'est pas une panne,
     // et le lancement ne doit ni attendre ni se plaindre.
     const feint = (): Promise<Response> => Promise.reject(new Error('hors réseau'))
 
-    expect(await listerDistant(DOSSIER, compte, feint)).toEqual([])
-    expect(await lireDistant(DOSSIER, 'route.json', compte, feint)).toBeNull()
+    expect(await listerDistant(DOSSIER, feint)).toEqual([])
+    expect(await lireDistant(DOSSIER, 'route.json', feint)).toBeNull()
   })
 
   it('rend une liste vide sur un dossier qui n’existe pas', async () => {
     const feint = (): Promise<Response> =>
       Promise.resolve(new Response('rien', { status: 404 }))
 
-    expect(await listerDistant(DOSSIER, compte, feint)).toEqual([])
+    expect(await listerDistant(DOSSIER, feint)).toEqual([])
   })
 
   it('échappe le nom du fichier qu’il va lire', async () => {
@@ -145,7 +137,7 @@ describe('ce que le serveur rend', () => {
       return Promise.resolve(new Response('{}'))
     }
 
-    await lireDistant(DOSSIER, 'route été.json', compte, feint)
+    await lireDistant(DOSSIER, 'route été.json', feint)
     expect(vue).toBe('/profiles/route%20%C3%A9t%C3%A9.json')
   })
 })

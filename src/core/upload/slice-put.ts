@@ -1,4 +1,4 @@
-import { authHeader, byteLength, hasCredentials, type DepositCredentials } from './put'
+import { byteLength } from './put'
 import { pack } from './compress'
 import type { Slice } from './slicing'
 
@@ -29,13 +29,12 @@ export type SliceOutcome =
       /**
        * Pourquoi cela n'est pas parti.
        *
-       * La distinction n'est pas cosmétique : `no-credentials` se corrige à
-       * l'écran de configuration, `refused` veut dire que le compte ne
-       * correspond pas à celui du serveur, et `network` qu'on est hors
+       * La distinction n'est pas cosmétique : `refused` veut dire que cet
+       * appareil n'a plus de compte reconnu, et `network` qu'on est hors
        * couverture — ce qui arrive en roulant et n'est **pas** une erreur.
        * Seul ce dernier cas justifie de garder la tranche pour plus tard.
        */
-      reason: 'no-credentials' | 'refused' | 'network'
+      reason: 'refused' | 'network'
       detail: string
       /** Vrai quand il vaut la peine de réessayer avec la même tranche. */
       retry: boolean
@@ -53,28 +52,14 @@ export async function putSlice(
   /** Dossier servi en écriture, barre oblique finale comprise. */
   folder: string,
   slice: Slice,
-  credentials: DepositCredentials,
   fetchImpl: typeof fetch = fetch,
 ): Promise<SliceOutcome> {
-  if (!hasCredentials(credentials)) {
-    return {
-      ok: false,
-      reason: 'no-credentials',
-      detail: "Aucun compte de dépôt : il se règle à l'écran de configuration.",
-      // Rien ne sert de réessayer : il manque un réglage, pas du réseau. Mais la
-      // tranche est gardée, sans quoi le journal du trajet serait perdu par le
-      // seul fait qu'on a oublié de saisir un compte.
-      retry: true,
-    }
-  }
-
   const packed = await pack(slice.name, slice.body)
 
   try {
     const response = await fetchImpl(folder + encodeURIComponent(packed.name), {
       method: 'PUT',
       headers: {
-        Authorization: authHeader(credentials),
         'Content-Type': packed.compressed ? 'application/gzip' : 'application/x-ndjson',
       },
       body: packed.body,
@@ -90,9 +75,9 @@ export async function putSlice(
         reason: 'refused',
         detail:
           response.status === 401
-            ? 'Refusé : le nom ou le mot de passe ne correspond pas au fichier du serveur.'
-            : "Le serveur s'est laissé convaincre mais n'a pas le droit d'écrire dans le dossier.",
-        // Réessayer avec le même compte donnerait le même refus.
+            ? "Refusé : cet appareil n'a plus de compte reconnu par le serveur."
+            : "Le serveur reconnaît cet appareil mais lui refuse l'écriture ici.",
+        // Réessayer donnerait le même refus tant qu'aucun compte n'est repris.
         retry: false,
       }
     }
