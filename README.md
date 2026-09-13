@@ -228,6 +228,17 @@ au-delà, chaque mesure était rejetée comme aberrante et la vitesse se figeait
 Les propositions, elles, restent affichées étape par étape et se recopient à la
 main.
 
+**Compte** — tout ce qui touche à l'identité, et nulle part ailleurs : ce que
+porte cet appareil, **donner un code** pour qu'un autre appareil ouvre le même
+compte, et **recopier un code** venu d'un autre. La place de la connexion par
+adresse y est prise, et dit qu'elle n'existe pas encore.
+
+Il est apparu le 13 septembre 2026, quand la section du compte a quitté
+**Configuration** : le chemin normal va de la voiture au poste de travail, et
+c'est sur le poste, clavier sous les doigts, qu'on se fera un vrai compte. Un
+rappel escamotable signale son existence — **à la deuxième ouverture, une seule
+fois** : au premier lancement on veut rouler, pas lire.
+
 **Banc** — conduire une vitesse à la main, sans rouler : les deux pédales, le
 curseur d'allure maintenue, et les réglages de ce que la source fabrique
 (cadence, bruit de mesure, précision annoncée). Il rappelle la vitesse, le
@@ -1152,8 +1163,8 @@ comportement attendu : rien ne distingue « le second appareil de quelqu'un » d
 « premier appareil de quelqu'un d'autre ». Les réunir demande un geste explicite,
 et ce geste est un code à scanner.
 
-**Relier un second appareil : un jeton, deux rendus.** L'écran de configuration
-donne un code. Un téléphone qui le **scanne**, ou un poste de travail où l'on
+**Relier un second appareil : un jeton, deux rendus.** L'écran **Compte** donne
+un code. Un téléphone qui le **scanne**, ou un poste de travail où l'on
 **recopie huit caractères**, ouvre le même compte — mêmes profils, mêmes moteurs,
 mêmes boîtes, mêmes trajets, même profil mesuré. Aucune adresse à saisir, aucun
 mot de passe à retenir, aucun service tiers.
@@ -1184,8 +1195,8 @@ essais par minute et par adresse : sur les dix minutes de validité, cela fait
 cent tentatives contre six cent cinquante milliards de combinaisons. La limite
 ne s'applique qu'en production, la bibliothèque la coupant ailleurs.
 
-**Un compte anonyme n'a toujours rien à récupérer**, et l'écran de configuration
-le dit : vider les données du site depuis les réglages du navigateur perd l'accès
+**Un compte anonyme n'a toujours rien à récupérer**, et l'écran **Compte** le
+dit : vider les données du site depuis les réglages du navigateur perd l'accès
 à ce compte, et à ce qui a été déposé avec. Relier un second appareil n'y change
 rien — le compte n'a toujours ni adresse ni mot de passe, et les perdre tous les
 deux le perdrait. C'est une vraie adresse qui y mettra fin. La remise à zéro des
@@ -2991,7 +3002,7 @@ suit pas.
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
-| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 5 tickets sur 12** |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 6 tickets sur 12** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

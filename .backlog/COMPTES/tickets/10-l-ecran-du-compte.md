@@ -1,6 +1,6 @@
 # 10 — L'écran du compte : le lieu unique où tout se passe
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 13 septembre 2026
 
 **Bloqué par :** [05 — Un jeton, deux rendus](05-relier-un-appareil-par-un-code.md).
 
@@ -48,9 +48,30 @@ un renvoi d'une ligne.
 
 ## Critères d'acceptation
 
-- [ ] Un onglet Compte existe, et la barre tient sur une largeur de téléphone
-- [ ] Il donne un code à scanner et un code court, avec leur validité restante
-- [ ] Il reçoit un code court, et dit ce qui ne va pas quand il est faux
-- [ ] Le bloc du compte a quitté l'écran de configuration, qui y renvoie
-- [ ] Une bannière escamotable rappelle les deux voies, une fois
-- [ ] Hors réseau, l'écran dit ce qu'il ne peut pas faire
+- [x] Un onglet Compte existe, et la barre tient sur une largeur de téléphone
+- [x] Il donne un code à scanner et un code court, avec leur validité restante
+- [x] Il reçoit un code court, et dit ce qui ne va pas quand il est faux
+- [x] Le bloc du compte a quitté l'écran de configuration, qui y renvoie
+- [x] Une bannière escamotable rappelle l'écran, une fois
+- [x] Hors réseau, l'écran dit ce qu'il ne peut pas faire
+
+## Ce qui a été fait, et ce qui a été mesuré
+
+`src/ui/AccountView.vue` porte les trois sections — ce que porte cet appareil,
+donner un code, rejoindre un compte — plus la place de la connexion par adresse,
+qui dit qu'elle n'existe pas encore. L'écran de configuration garde deux lignes
+de renvoi.
+
+**Mesuré à 375 pixels** : la barre se replie sur deux lignes, l'onglet Compte
+tient, et rien ne déborde en largeur (`scrollWidth` 375 pour un `clientWidth` de
+375).
+
+**Hors réseau, les deux sens le disent** — vérifié en coupant `fetch` dans la
+page : « Sans réseau, il n'y a pas de code à afficher » d'un côté, « le code se
+vérifie sur le serveur » de l'autre.
+
+**Le rappel n'est pas une bannière des deux voies**, faute de seconde voie : il
+annonce l'écran. Il paraît à la **deuxième ouverture** — au premier lancement on
+veut rouler, pas lire — jamais pendant que l'aide est ouverte, et se ferme
+définitivement au premier clic. Deux clés de stockage : le compte des ouvertures,
+et le fait qu'il ait été montré.

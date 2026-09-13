@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import NumberField from './components/NumberField.vue'
 import { finalDriveFor, rpmAtSpeed } from '../core/preset/defaults'
@@ -7,8 +7,6 @@ import { ProfileImportError, fromFile, toFile } from '../core/preset/store'
 import type { SampleAnalysis } from '../core/audio/analyze'
 import type { ProfileSection } from '../core/preset/store'
 import { isComfortable, isReachableOrigin, shareUrl } from '../core/preset/share'
-import { demanderUnCode } from '../core/identity/client'
-import { lienDeLiaison } from '../core/identity/lien'
 import qrcode from 'qrcode-generator'
 import {
   buildProfile,
@@ -103,10 +101,6 @@ import {
   answerMeasuredCar,
   carDecision,
   driveFace,
-  identity,
-  identityState,
-  liaison,
-  rejoindreUnCompte,
   measuredCar,
   measuredOverrides,
   setDriveFace,
@@ -273,156 +267,6 @@ function onBank(event: Event): void {
   // La banque appartient au moteur : elle ne se pose donc pas sur le profil.
   if (name !== '') setSampleDir(name)
 }
-
-/**
- * Ce que l'écran dit du compte de cet appareil.
- *
- * Le cas qui compte est le troisième : **un compte anonyme n'a rien à
- * récupérer**. Vider les données de ce site depuis le navigateur en perdrait
- * l'accès, et avec lui ce qui a été déposé sous ce compte. Le dire ici vaut
- * mieux que le laisser découvrir.
- */
-const compteDeLAppareil = computed(() => {
-  if (identity.value === null) {
-    if (identityState.value === 'refusee') {
-      return "Le serveur n’a pas donné de compte à cet appareil. Il réessaiera."
-    }
-    return 'Cet appareil n’a pas encore de compte : il en prendra un au prochain contact avec le serveur. Rien à saisir, et rien ne l’empêche de rouler en attendant.'
-  }
-  if (identityState.value === 'reprise') {
-    return 'Le serveur ne reconnaissait plus le compte de cet appareil : il en a repris un neuf. Ce qui avait été déposé sous l’ancien n’est plus accessible — un compte anonyme n’a pas de mot de passe pour le reprendre.'
-  }
-  if (identity.value.anonymous) {
-    return 'Cet appareil a son compte, créé tout seul, sans adresse rattachée. Vider les données de ce site depuis les réglages du navigateur en perdrait l’accès — et ce qui a été déposé avec.'
-  }
-  // Plus anonyme : un code de liaison lui a posé un mot de passe, ou une adresse
-  // s'y est rattachée. Dans les deux cas le compte se rouvre ailleurs, et la
-  // mise en garde sur les données du site n'a plus lieu d'être.
-  return `Cet appareil ouvre le compte « ${identity.value.name} ».`
-})
-
-/**
- * Relier un second appareil : un code à scanner, ou huit caractères à taper.
- *
- * Les deux portent le même jeton. Le lien évite de recopier quand on a une
- * caméra ; le code court sauve le poste de travail qui n'en a pas — et c'est
- * justement le second appareil le plus probable.
- */
-const codeARelier = ref('')
-const lienARelier = ref('')
-const qrARelier = ref('')
-const noteDeLiaison = ref('')
-
-/** Ce qu'il reste de validité, en secondes, remis à jour chaque seconde. */
-const resteDuCode = ref(0)
-let compteARebours: ReturnType<typeof setInterval> | null = null
-
-const resteAffiche = computed(() => {
-  const minutes = Math.floor(resteDuCode.value / 60)
-  const secondes = resteDuCode.value % 60
-  return `${minutes}:${String(secondes).padStart(2, '0')}`
-})
-
-function masquerLeCode(): void {
-  if (compteARebours !== null) clearInterval(compteARebours)
-  compteARebours = null
-  codeARelier.value = ''
-  lienARelier.value = ''
-  qrARelier.value = ''
-  resteDuCode.value = 0
-}
-
-async function onRelier(): Promise<void> {
-  if (codeARelier.value !== '') {
-    masquerLeCode()
-    return
-  }
-
-  noteDeLiaison.value = ''
-  const demande = await demanderUnCode()
-  if (demande.state === 'sans-reseau') {
-    // Hors réseau on ne relie pas : le code vient du serveur. Le dire vaut mieux
-    // que faire attendre devant un bouton qui ne répond pas.
-    noteDeLiaison.value =
-      'Sans réseau, il n’y a pas de code à afficher : il vient du serveur. À refaire une fois rentré.'
-    return
-  }
-  if (demande.state === 'refusee') {
-    noteDeLiaison.value = demande.detail
-    return
-  }
-
-  codeARelier.value = demande.code
-  const url = lienDeLiaison(window.location.origin, demande.code)
-  lienARelier.value = url
-  if (!isReachableOrigin(window.location.origin)) {
-    noteDeLiaison.value =
-      'Ce lien porte l’adresse à laquelle vous consultez l’application, qui n’est joignable que d’ici. Pour relier un appareil qui n’est pas sur ce réseau, refaire l’opération depuis l’adresse publique du serveur.'
-  }
-
-  // Correction moyenne : assez robuste pour un écran, sans gonfler le code.
-  const code = qrcode(0, 'M')
-  code.addData(url)
-  code.make()
-  qrARelier.value = code.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
-
-  // Le compte à rebours plutôt qu'un effacement muet : un code qui disparaît
-  // pendant qu'on le recopie, sans prévenir, ferait recommencer sans comprendre.
-  const finit = () => Math.max(0, Math.round((demande.expireLe - Date.now()) / 1000))
-  resteDuCode.value = finit()
-  compteARebours = setInterval(() => {
-    resteDuCode.value = finit()
-    if (resteDuCode.value === 0) masquerLeCode()
-  }, 1000)
-}
-
-async function onCopierLeLienDeLiaison(): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(lienARelier.value)
-    noteDeLiaison.value = 'Lien copié.'
-  } catch {
-    noteDeLiaison.value = 'Copie refusée par le navigateur : sélectionner le lien à la main.'
-  }
-}
-
-/**
- * L'autre bout : recopier ici le code lu sur l'autre appareil.
- *
- * Sans ce champ, le code court ne servirait à rien — c'est lui qui sauve
- * l'appareil sans caméra, et c'est le poste de travail qu'on relie le plus
- * souvent.
- */
-const codeSaisi = ref('')
-const saisieEnCours = ref(false)
-
-async function onSaisirLeCode(): Promise<void> {
-  if (saisieEnCours.value) return
-  saisieEnCours.value = true
-  noteDeLiaison.value = ''
-  try {
-    // Le même chemin que le code scanné, et pas un raccourci à côté : c'est ce
-    // qui garantit que les deux ramènent les mêmes réglages et annoncent la
-    // même chose.
-    await rejoindreUnCompte(codeSaisi.value)
-    const faite = liaison.value
-    if (faite?.etat === 'sans-reseau') {
-      noteDeLiaison.value = 'Sans réseau, on ne peut pas relier : le code se vérifie sur le serveur.'
-      return
-    }
-    if (faite?.etat === 'refusee') {
-      noteDeLiaison.value = faite.detail
-      return
-    }
-    codeSaisi.value = ''
-    masquerLeCode()
-  } finally {
-    saisieEnCours.value = false
-  }
-}
-
-onUnmounted(() => {
-  masquerLeCode()
-})
 
 /** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
 /**
@@ -1308,72 +1152,10 @@ async function rapatrier(): Promise<void> {
       </div>
 
       <p class="note">
-        <strong>Le compte de cet appareil.</strong> {{ compteDeLAppareil }}
+        <strong>Le compte de cet appareil</strong> vit dans l'écran
+        <strong>Compte</strong>, avec de quoi relier un autre appareil au même
+        compte. C'est lui qui porte tout ce qui remonte d'ici.
       </p>
-
-      <p class="note">
-        Ce compte sert à tout ce qui remonte sur le serveur depuis la voiture,
-        dont le navigateur refuse les téléchargements : traces, journal, relevés
-        de mesure et profils. Il n’y a rien à saisir — l’appareil s’annonce tout
-        seul.
-      </p>
-
-      <!--
-        Relier un second appareil. Le geste vit ici, et nulle part au premier
-        lancement : une fenêtre qui demanderait de choisir au démarrage serait
-        l'écran d'inscription que ce lot supprime, et elle tomberait au moment
-        où l'on veut juste rouler.
-      -->
-      <div class="choices">
-        <button :class="{ 'is-active': !!codeARelier }" @click="onRelier()">
-          {{ codeARelier ? 'Masquer le code' : 'Relier un appareil…' }}
-        </button>
-      </div>
-      <p class="note">
-        Un téléphone qui scanne le code, ou un poste de travail où l’on recopie
-        huit caractères, ouvre le <strong>même compte</strong> : les mêmes
-        profils, les mêmes moteurs, les mêmes boîtes, les mêmes trajets. Aucune
-        adresse, aucun service tiers.
-      </p>
-      <div v-if="codeARelier" class="share">
-        <p class="note warn">
-          Qui voit ce code ouvre ce compte. Il ne sert qu’<strong>une fois</strong>,
-          et il expire dans <strong>{{ resteAffiche }}</strong>.
-        </p>
-        <p class="code-court">{{ codeARelier }}</p>
-        <p class="note">
-          Sur un appareil sans caméra : ouvrir cette application, écran Réglages,
-          et recopier ces huit caractères. Les traits et la casse n’ont pas
-          d’importance.
-        </p>
-        <div class="qr" v-html="qrARelier" />
-        <input :value="lienARelier" readonly @focus="($event.target as HTMLInputElement).select()" />
-        <div class="choices">
-          <button @click="onCopierLeLienDeLiaison()">Copier le lien</button>
-          <button @click="masquerLeCode()">Masquer</button>
-        </div>
-      </div>
-      <div class="choices">
-        <input
-          v-model="codeSaisi"
-          type="text"
-          inputmode="text"
-          autocapitalize="characters"
-          spellcheck="false"
-          placeholder="Code lu sur l’autre appareil"
-          @keyup.enter="onSaisirLeCode()"
-        />
-        <button :disabled="codeSaisi.length < 8 || saisieEnCours" @click="onSaisirLeCode()">
-          Rejoindre ce compte
-        </button>
-      </div>
-      <p class="note">
-        L’autre bout : si un appareil vous a donné un code, le recopier ici. Cet
-        appareil rejoindra son compte ; celui qu’il porte aujourd’hui est effacé
-        s’il est vide, gardé sinon — et la bannière le dira.
-      </p>
-
-      <p v-if="noteDeLiaison" class="note">{{ noteDeLiaison }}</p>
 
       <!--
         La remontée au serveur. Trois positions, et la troisième est un choix
