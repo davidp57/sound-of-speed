@@ -55,6 +55,15 @@ export type JournalEventKind =
   | 'profile'
   /** Une erreur, avec ce qu'on en sait. */
   | 'error'
+  /**
+   * Ce que le navigateur dit de lui-même, une fois par session.
+   *
+   * C'est la seule façon de savoir **pour de bon** sur quoi l'application
+   * tourne : la détection d'appareil est un pari sur une chaîne d'agent, et
+   * rien jusqu'ici ne permettait de le vérifier — le journal que la voiture
+   * dépose ne portait pas la sienne.
+   */
+  | 'device'
 
 export interface JournalEvent {
   /** Millisecondes depuis le début de la session. */

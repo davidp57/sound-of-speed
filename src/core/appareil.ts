@@ -54,6 +54,28 @@ export function devinerLAppareil({ agent, largeur, tactile }: IndicesDAppareil):
   return 'poste'
 }
 
+/**
+ * Ce que le navigateur dit de lui-même, tel que le journal l'enregistre.
+ *
+ * **Deviné et appliqué, les deux.** Un écart entre les deux dit que quelqu'un a
+ * dû corriger à la main — donc que la détection s'est trompée, et c'est
+ * exactement ce qu'on cherche à savoir en relisant un trajet.
+ */
+export function entreeDAppareil(
+  indices: IndicesDAppareil,
+  applique: Appareil,
+  hauteur: number,
+): Record<string, string | number | boolean> {
+  return {
+    agent: indices.agent,
+    largeur: indices.largeur,
+    hauteur,
+    tactile: indices.tactile,
+    devine: devinerLAppareil(indices),
+    appareil: applique,
+  }
+}
+
 export function estUnAppareil(valeur: unknown): valeur is Appareil {
   return typeof valeur === 'string' && (APPAREILS as readonly string[]).includes(valeur)
 }

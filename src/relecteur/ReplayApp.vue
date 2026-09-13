@@ -337,6 +337,7 @@ const KIND_LABELS: Record<string, string> = {
   audio: 'son',
   profile: 'configuration',
   capture: 'capture',
+  device: 'appareil',
   error: 'erreur',
 }
 

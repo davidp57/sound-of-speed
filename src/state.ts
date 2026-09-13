@@ -86,7 +86,12 @@ import {
   type Rattachement,
   type Suppression,
 } from './core/identity/compte'
-import { appareilCourant, rangerLAppareilChoisi, type Appareil } from './core/appareil'
+import {
+  appareilCourant,
+  entreeDAppareil,
+  rangerLAppareilChoisi,
+  type Appareil,
+} from './core/appareil'
 import { lireLienDansUrl, type CodeDeLiaison } from './core/identity/lien'
 import {
   prochaineEcheance,
@@ -1003,6 +1008,9 @@ function readConsent(): UploadConsent {
 
 export function setUploadConsent(consent: UploadConsent): void {
   uploadConsent.value = consent
+  // Accorder la remontée en cours de route ouvre un journal qui n'a pas encore
+  // dit sur quoi il tourne. C'est précisément la session qu'on voudra lire.
+  noterLAppareil()
   writePreference(JOURNAL_KEY, consent)
   collector.setConsent(consent)
   // Un accord qui s'ouvre fait partir ce qui attendait, sans attendre le
@@ -1042,6 +1050,34 @@ const journal = new Journal({ sessionId, startedAt: journalStartedAt })
  */
 let journalElapsedMs = 0
 const collector = new JournalCollector(journal, readConsent())
+
+/**
+ * Ce que le navigateur dit de lui-même, écrit **une fois** en tête de session.
+ *
+ * Reconnaître une voiture à sa chaîne d'agent est un pari, et rien ne permettait
+ * de le vérifier : le journal déposé ne portait pas cette chaîne, et le volume du
+ * NAS n'a pas de base à interroger. Il la porte désormais, et le premier trajet
+ * dira si le marqueur est le bon.
+ *
+ * Il suit le consentement comme le reste du journal : rien n'est écrit quand on
+ * n'a rien accordé.
+ */
+let appareilNote = false
+
+function noterLAppareil(): void {
+  if (appareilNote || typeof window === 'undefined' || uploadConsent.value === 'none') return
+  appareilNote = true
+
+  const indices = {
+    agent: navigator.userAgent,
+    largeur: window.screen?.width ?? window.innerWidth,
+    tactile: window.matchMedia?.('(pointer: coarse)').matches === true,
+  }
+  const hauteur = window.screen?.height ?? window.innerHeight
+  journal.add(journalElapsedMs, 'device', entreeDAppareil(indices, appareil.value, hauteur))
+}
+
+noterLAppareil()
 
 /** Tranches déposées, pour que l'écran dise ce qui est parti. */
 export const journalDeposits = ref<{ name: string; bytes: number }[]>([])
