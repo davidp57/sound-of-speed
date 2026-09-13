@@ -1829,11 +1829,28 @@ export async function seConnecterAvecUnCompteTenuAilleurs(fournisseur: string): 
  * redescendre ce que le nouveau porte.
  */
 async function acheverLeRetourDuTiers(): Promise<void> {
-  if (retourDuTiers === 'refuse') {
+  if (retourDuTiers === 'refus-connexion') {
     liaison.value = {
       etat: 'refusee',
       detail:
-        'Ce compte n’a pas ouvert de session ici. Un compte tenu ailleurs doit d’abord être rattaché depuis cet écran, en étant connecté.',
+        'Ce compte tenu ailleurs n’a encore été rattaché à aucun compte d’ici, et il n’en crée jamais : il n’ouvre donc rien. Pour vous en servir, rattachez-le depuis l’appareil qui porte déjà votre compte — ce qui suppose d’y être.',
+    }
+    return
+  }
+  if (retourDuTiers === 'refus-rattachement') {
+    liaison.value = {
+      etat: 'refusee',
+      detail:
+        'Le rattachement a échoué. Deux causes possibles : ce compte tenu ailleurs est déjà rattaché à un autre compte d’ici, ou le fournisseur a refusé — son écran le dit quand c’est lui.',
+    }
+    return
+  }
+  if (retourDuTiers === 'refuse') {
+    // Une page ouverte avant que les deux refus soient distingués. On ne sait
+    // pas lequel des deux gestes a échoué, et on ne le prétend pas.
+    liaison.value = {
+      etat: 'refusee',
+      detail: 'Le compte tenu ailleurs n’a rien ouvert ni rattaché.',
     }
     return
   }

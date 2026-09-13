@@ -33,8 +33,23 @@ const IDENTITE = '/api/auth'
  */
 const RETOUR = 'compte'
 
-/** Ce qu'un aller-retour chez un fournisseur peut avoir donné. */
-export type RetourDuTiers = 'rattache' | 'connecte' | 'refuse'
+/**
+ * Ce qu'un aller-retour chez un fournisseur peut avoir donné.
+ *
+ * **Un refus dit lequel des deux gestes a échoué.** Les deux partageaient la
+ * même valeur `refuse`, et l'écran affichait donc au rattachement le message de
+ * la connexion — « ce compte n'a pas ouvert de session ici » alors qu'on venait
+ * d'essayer d'en rattacher un. Le diagnostic partait dans le décor.
+ *
+ * `refuse` reste accepté : une page laissée ouverte peut encore en porter un, et
+ * il vaut mieux un message vague qu'un retour ignoré.
+ */
+export type RetourDuTiers =
+  | 'rattache'
+  | 'connecte'
+  | 'refus-rattachement'
+  | 'refus-connexion'
+  | 'refuse'
 
 /** Où l'appareil range le compte qu'il s'apprête peut-être à abandonner. */
 const CLE_ANCIEN = 'speed.compteAvantLeTiers.v1'
@@ -52,7 +67,7 @@ export async function rattacherUnTiers(
   fournisseur: string,
   options: IdentityOptions = {},
 ): Promise<Depart> {
-  return partir(`${IDENTITE}/link-social`, fournisseur, 'rattache', options)
+  return partir(`${IDENTITE}/link-social`, fournisseur, 'rattache', 'refus-rattachement', options)
 }
 
 /**
@@ -69,7 +84,7 @@ export async function seConnecterAvecUnTiers(
 ): Promise<Depart> {
   // Avant de partir, parce qu'au retour l'identité rangée sera déjà l'autre.
   garderLAncien(loadIdentity()?.id)
-  return partir(`${IDENTITE}/sign-in/social`, fournisseur, 'connecte', options)
+  return partir(`${IDENTITE}/sign-in/social`, fournisseur, 'connecte', 'refus-connexion', options)
 }
 
 /**
@@ -83,6 +98,7 @@ async function partir(
   route: string,
   fournisseur: string,
   issue: RetourDuTiers,
+  refus: RetourDuTiers,
   { fetchImpl = fetch }: IdentityOptions,
 ): Promise<Depart> {
   const origine = typeof window === 'undefined' ? '' : window.location.origin
@@ -98,7 +114,7 @@ async function partir(
         // Sans cela, un refus laisse le navigateur sur une page d'erreur de la
         // bibliothèque, hors de l'application — dans une voiture, sans clavier
         // ni bouton de retour commode.
-        errorCallbackURL: `${origine}/?${RETOUR}=refuse`,
+        errorCallbackURL: `${origine}/?${RETOUR}=${refus}`,
       }),
     })
   } catch {
@@ -144,7 +160,14 @@ export function lireLeRetourDuTiers(): RetourDuTiers | null {
     window.location.pathname + (reste === '' ? '' : `?${reste}`) + window.location.hash,
   )
 
-  return lu === 'rattache' || lu === 'connecte' || lu === 'refuse' ? lu : null
+  const connus: RetourDuTiers[] = [
+    'rattache',
+    'connecte',
+    'refus-rattachement',
+    'refus-connexion',
+    'refuse',
+  ]
+  return connus.includes(lu as RetourDuTiers) ? (lu as RetourDuTiers) : null
 }
 
 /** Range le compte qu'on s'apprête à abandonner, le temps de l'aller-retour. */

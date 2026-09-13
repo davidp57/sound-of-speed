@@ -52,6 +52,15 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Un rattachement refusé annonçait le refus d'une connexion.** Les deux gestes
+  qui passent par un compte tenu ailleurs partageaient la même adresse de retour
+  en cas d'échec : quel que soit celui qu'on venait de tenter, l'écran disait
+  « ce compte n'a pas ouvert de session ici », qui ne parle que du second. Sur un
+  rattachement qui échoue, le message envoyait donc chercher la panne là où elle
+  n'était pas. Chaque geste a maintenant son propre retour, et son message : ce
+  qu'un compte tenu ailleurs n'a jamais rattaché n'ouvre rien, et un
+  rattachement peut échouer parce que ce compte est déjà pris ailleurs.
+
 - **L'écran réclamait un mot de passe aux comptes qui n'en ont pas.** Un compte
   enregistré chez un fournisseur — Google, Tesla — n'a pas de mot de passe : le
   champ « Mot de passe, pour confirmer » de la suppression et le bloc « Changer
