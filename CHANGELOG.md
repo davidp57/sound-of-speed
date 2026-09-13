@@ -52,6 +52,27 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Aucune connexion par un compte tenu ailleurs ne fonctionnait.** Rattacher
+  Google marchait ; s'en servir ensuite pour rouvrir son compte, jamais. L'écran
+  répondait que ce fournisseur n'avait été rattaché à aucun compte — alors qu'il
+  l'était, et que la preuve était bien en base.
+
+  La cause est une jointure. Pour savoir à qui appartient une preuve, la
+  bibliothèque d'identité joint la preuve et son compte ; sans l'option qui
+  demande les jointures natives, elle prend un repli qui, sur un schéma dont les
+  tables et les champs sont renommés comme ici, rend un compte **vide**. La
+  preuve était trouvée, son propriétaire non, et la connexion refusée. Les
+  relations manquaient en outre au schéma Drizzle — sans elles, la jointure
+  native n'a rien à suivre.
+
+  **Le défaut ne pouvait pas se voir avant d'avoir un fournisseur configuré** :
+  le rattachement, lui, marche, puisqu'il sait déjà de quel compte il parle. On
+  rattachait donc son compte Google avec succès, et on ne pouvait plus jamais
+  s'en servir pour revenir. Trouvé sur la pile de production le 13 septembre
+  2026, sur un compte qui portait cinq profils et quatre-vingt-quatorze dépôts.
+  Un test tient désormais la seule question qui compte — à qui appartient cette
+  preuve.
+
 - **Un rattachement refusé annonçait le refus d'une connexion.** Les deux gestes
   qui passent par un compte tenu ailleurs partageaient la même adresse de retour
   en cas d'échec : quel que soit celui qu'on venait de tenter, l'écran disait

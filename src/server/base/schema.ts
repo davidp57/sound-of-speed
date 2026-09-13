@@ -15,7 +15,7 @@
  * brancher un encaissement et à changer une valeur par défaut.
  */
 
-import { sql } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import { blob, index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 /** L'instant présent, en secondes, tel que SQLite le calcule lui-même. */
@@ -390,3 +390,60 @@ export const measuredCars = sqliteTable('measured_cars', {
   content: text('content', { mode: 'json' }).notNull(),
   updatedAt: integer('updated_at').notNull().default(maintenant),
 })
+
+/**
+ * Les relations que la bibliothèque d'identité a besoin de suivre.
+ *
+ * **Sans elles, une connexion par un compte tenu ailleurs est impossible.** Pour
+ * savoir à qui appartient une preuve, Better Auth demande à Drizzle de joindre
+ * la preuve et son compte. Cette jointure passe par `db.query`, qui ne connaît
+ * que les relations déclarées ici : sans déclaration, la bibliothèque retrouve
+ * la preuve mais pas son propriétaire, conclut que la preuve est **orpheline**,
+ * et refuse la connexion. Le rattachement, lui, marchait — il sait déjà de quel
+ * compte il parle —, ce qui rendait le défaut difficile à voir : on rattachait
+ * Google, et on ne pouvait plus jamais s'en servir pour revenir.
+ *
+ * **Les noms ne sont pas libres, et ce ne sont pas ceux qu'on croit.** La
+ * bibliothèque cherche la relation sous le **nom de la table** vers laquelle
+ * elle joint — `accounts` ici, puisque c'est ainsi que s'appelle la table des
+ * comptes —, et non sous le nom du modèle (`user`) de son propre vocabulaire.
+ * Les renommer casserait la jointure sans rien dire, et le seul symptôme serait
+ * une connexion refusée des heures plus tard.
+ *
+ * Il n'y a **que** le sens qui sert : d'une preuve vers son compte. Le sens
+ * inverse n'est demandé nulle part, et le déclarer obligerait à nommer les deux
+ * relations à la main pour que Drizzle les apparie.
+ */
+export const relationsDesPreuves = relations(authIdentities, ({ one }) => ({
+  accounts: one(accounts, {
+    fields: [authIdentities.accountId],
+    references: [accounts.id],
+  }),
+}))
+
+export const relationsDesSessions = relations(authSessions, ({ one }) => ({
+  accounts: one(accounts, {
+    fields: [authSessions.accountId],
+    references: [accounts.id],
+  }),
+}))
+
+/**
+ * Et le sens inverse : ce qu'un compte porte comme preuves et comme sessions.
+ *
+ * Demandé dès qu'on cherche un compte par son adresse en voulant ses preuves —
+ * ce que fait toute connexion par mot de passe.
+ *
+ * **Le `s` en trop n'est pas une faute de frappe.** Pour une relation « à
+ * plusieurs », l'adaptateur construit le nom qu'il cherche en collant un `s` au
+ * nom de la table jointe : `auth_identities` devient `auth_identitiess`. Sans ce
+ * `s`, la jointure lève une erreur au premier appel — pas à la compilation, pas
+ * au démarrage : à la première connexion par mot de passe. Les tests de
+ * `compte.test.ts` le tiennent, et c'est bien pour cela qu'il ne faut pas
+ * « corriger » ces noms en les relisant.
+ */
+export const relationsDesComptes = relations(accounts, ({ many }) => ({
+  auth_identitiess: many(authIdentities),
+  auth_sessionss: many(authSessions),
+}))
+
