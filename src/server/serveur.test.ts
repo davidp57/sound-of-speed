@@ -4,6 +4,8 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { SOLO_ACCOUNT_ID, ouvrirBase, type Base } from './base/base'
+import { ecrireDepot } from './depots'
 import { creerServeur } from './serveur'
 
 let racine: string
@@ -157,5 +159,101 @@ describe('ce qui sort avec un fichier', () => {
     // l'application sur une nouvelle version : les figer figerait tout.
     const page = await serveur().request('/', NAVIGATION)
     expect(page.headers.get('cache-control')).toBe('no-cache')
+  })
+})
+
+/**
+ * Les trajets par l'adresse, et non par le module.
+ *
+ * C'est ce contrat-là que le relecteur appelle : une clé mal échappée ou un
+ * refus mal codé ne se voient qu'ici.
+ */
+describe('les trajets, vus du réseau', () => {
+  const COMPTES = {
+    configure: true,
+    verifie: (utilisateur: string, motDePasse: string) =>
+      utilisateur === 'depot' && motDePasse === 'motdepasse',
+  }
+  const ANNONCE = { Authorization: `Basic ${Buffer.from('depot:motdepasse').toString('base64')}` }
+
+  let base: Base
+  let fermer: () => void
+
+  beforeEach(async () => {
+    const ouverte = await ouvrirBase({
+      fichier: join(racine, 'speed.db'),
+      migrations: 'src/server/base/migrations',
+    })
+    base = ouverte.base
+    fermer = ouverte.fermer
+  })
+
+  afterEach(() => fermer())
+
+  function avecBase() {
+    return creerServeur({ application, base, comptes: COMPTES, compte: SOLO_ACCOUNT_ID })
+  }
+
+  it('rend les trajets à qui s’annonce, et refuse les autres', async () => {
+    await ecrireDepot(
+      base,
+      SOLO_ACCOUNT_ID,
+      'traces',
+      '2026-09-11-06-24-01_da2m_001.jsonl.gz',
+      Buffer.from('x'),
+    )
+
+    expect((await avecBase().request('/sessions/')).status).toBe(401)
+
+    const reponse = await avecBase().request('/sessions/', { headers: ANNONCE })
+    const trajets = (await reponse.json()) as { cle: string; octets: number }[]
+
+    expect(reponse.status).toBe(200)
+    expect(trajets.map((trajet) => trajet.cle)).toEqual(['2026-09-11-06-24-01_da2m'])
+    expect(trajets[0]!.octets).toBe(1)
+  })
+
+  it('efface un trajet désigné, et le second appel n’est pas une panne', async () => {
+    await ecrireDepot(
+      base,
+      SOLO_ACCOUNT_ID,
+      'traces',
+      '2026-09-11-06-24-01_da2m_001.jsonl.gz',
+      Buffer.from('x'),
+    )
+
+    const premier = await avecBase().request('/sessions/2026-09-11-06-24-01_da2m', {
+      method: 'DELETE',
+      headers: ANNONCE,
+    })
+    const second = await avecBase().request('/sessions/2026-09-11-06-24-01_da2m', {
+      method: 'DELETE',
+      headers: ANNONCE,
+    })
+
+    expect(await premier.json()).toEqual({ efface: 1 })
+    expect(second.status).toBe(200)
+    expect(await second.json()).toEqual({ efface: 0 })
+  })
+
+  it('efface un dépôt seul, dont la clé porte des deux-points', async () => {
+    // Deux traces anciennes portent un nom libre. Une clé mal échappée efface
+    // ailleurs, ou n'efface rien.
+    await ecrireDepot(base, SOLO_ACCOUNT_ID, 'traces', 'traces.json', Buffer.from('x'))
+
+    const reponse = await avecBase().request(
+      `/sessions/${encodeURIComponent('depot:traces:traces.json')}`,
+      { method: 'DELETE', headers: ANNONCE },
+    )
+
+    expect(await reponse.json()).toEqual({ efface: 1 })
+  })
+
+  it('ne replie pas la page d’application sur un trajet absent', async () => {
+    // Le client distingue « pas de trajet », qui est normal, de « le serveur est
+    // cassé ». Une page HTML en 200 lui retire cette distinction.
+    const reponse = await avecBase().request('/sessions/rien', NAVIGATION)
+
+    expect(reponse.status).toBe(404)
   })
 })

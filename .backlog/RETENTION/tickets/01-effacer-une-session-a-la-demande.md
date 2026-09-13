@@ -1,6 +1,6 @@
 # 01 — Une session s'efface à la demande
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — reste à passer les six départs avortés en production
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -34,12 +34,13 @@ la base porte six départs avortés d'un kilo-octet que rien ne peut enlever.
 
 ## Critères d'acceptation
 
-- [ ] Une session désignée disparaît entièrement, tranches de trace et de journal
+- [x] Une session désignée disparaît entièrement, tranches de trace et de journal
       comprises
-- [ ] Un dépôt isolé, sans session, s'efface aussi
-- [ ] La confirmation nomme la date, le nombre de tranches et le poids avant
+- [x] Un dépôt isolé, sans session, s'efface aussi
+- [x] La confirmation nomme la date, le nombre de tranches et le poids avant
       d'effacer
-- [ ] Effacer deux fois la même session ne rend pas d'erreur
-- [ ] Le profil mesuré est inchangé après l'effacement — vérifié sur son poids et
+- [x] Effacer deux fois la même session ne rend pas d'erreur
+- [x] Le profil mesuré est inchangé après l'effacement — vérifié sur son poids et
       sa couverture
-- [ ] Les six départs avortés de la base de production sont partis
+- [ ] Les six départs avortés de la base de production sont partis — le geste
+      appartient à David, devant le relecteur, une fois la version déployée

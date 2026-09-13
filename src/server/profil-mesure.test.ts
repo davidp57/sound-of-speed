@@ -15,6 +15,7 @@ import {
   tracesNonAnalysees,
 } from './profil-mesure'
 import { deposits } from './base/schema'
+import { effacerSession } from './sessions'
 import { PROCEDURE_VERSION } from '../core/calibration/aggregate'
 
 const MIGRATIONS = 'src/server/base/migrations'
@@ -220,5 +221,22 @@ describe('la marque d’analyse', () => {
 
     const [ligne] = await base.select().from(deposits)
     expect(ligne!.analyzedProcedure).toBeNull()
+  })
+})
+
+describe('effacer une trace ne défait pas ce qu’elle a montré', () => {
+  it('laisse le profil mesuré au chiffre près', async () => {
+    // C'est toute la promesse du lot : le serveur garde ce que les trajets
+    // montrent, pas les trajets. Le cumul ne se défait pas.
+    await deposer('2026-09-12-19-00-00_a_001.jsonl.gz', uneTranche('a'))
+    await reprendreApresDepot(base, SOLO_ACCOUNT_ID, '2026-09-12-19-00-00_a_001.jsonl.gz')
+    const avant = await lireProfilMesure(base, SOLO_ACCOUNT_ID)
+
+    expect(await effacerSession(base, SOLO_ACCOUNT_ID, '2026-09-12-19-00-00_a')).toBe(1)
+
+    const apres = await lireProfilMesure(base, SOLO_ACCOUNT_ID)
+    expect(apres).not.toBeNull()
+    expect(apres).toBe(avant)
+    expect(await base.select().from(deposits)).toHaveLength(0)
   })
 })

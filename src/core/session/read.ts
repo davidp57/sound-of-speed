@@ -1,14 +1,16 @@
 import { authHeader, hasCredentials, type DepositCredentials } from '../upload/put'
 import { gunzip } from '../upload/compress'
 import { SLICE_AFTER_MS } from '../upload/slicing'
-import { buildSession, sessionKeyOf, type Session, type SessionFile } from './model'
+import { buildSession, type Session, type SessionFile } from './model'
 
 /**
  * Retrouver les sessions déposées sur le serveur.
  *
- * Les deux dossiers sont lus : `journal/` raconte, `traces/` rejoue, et une
- * session peut n'avoir que l'un des deux — celles d'avant la capture continue
- * n'ont que leur journal.
+ * **C'est le serveur qui regroupe.** Il range des tranches et sait les réunir en
+ * trajets, avec ce qu'il est seul à connaître : le poids, ce que le profileur a
+ * regardé, ce qui est retenu et à quel titre. Le relecteur lisait les deux
+ * dossiers et regroupait lui-même ; deux règles de regroupement auraient fini
+ * par ne plus dire la même chose, et rien ne l'aurait signalé.
  *
  * **La lecture s'annonce.** Les dossiers ne se lisent plus sans mot de passe
  * depuis le 10 septembre 2026 ; sans compte, la liste est vide plutôt qu'en
@@ -17,16 +19,19 @@ import { buildSession, sessionKeyOf, type Session, type SessionFile } from './mo
  * `fetch` est injecté pour que tout ceci se vérifie sans réseau ni serveur.
  */
 
-const FOLDERS = [
-  { path: '/journal/', kind: 'journal' as const },
-  { path: '/traces/', kind: 'capture' as const },
-]
-
-/** Entrée du listage JSON produit par nginx. */
-interface AutoIndexEntry {
-  name?: string
-  type?: string
+/** Ce que rend `/sessions/`, tel que le serveur l'écrit. */
+interface SessionDistante {
+  cle?: string
+  isole?: boolean
+  enregistreLe?: number
+  tranches?: { dossier?: string; nom?: string; octets?: number }[]
+  octets?: number
+  aVoir?: number
+  exemption?: string | null
 }
+
+/** Ce qui retient un trajet : un choix, ou un déménagement. */
+export type Exemption = 'epingle' | 'archive'
 
 /** Une session repérée sur le serveur, sans son contenu. */
 export interface SessionEntry {
@@ -34,14 +39,26 @@ export interface SessionEntry {
   id: string
   startedAt: number
   files: { name: string; kind: 'journal' | 'capture' }[]
+  /** Poids de ses tranches, en octets : ce que l'effacement rendrait. */
+  bytes: number
+  /**
+   * Ce « trajet » n'est qu'un dépôt seul, au nom libre d'avant la convention.
+   *
+   * Le regroupement ne le voit pas, le profileur non plus. Il figure dans la
+   * liste pour une seule raison : sans lui, rien ne pourrait jamais l'enlever.
+   */
+  isolated: boolean
+  /** Tranches de trace que le profileur n'a pas encore regardées. */
+  pending: number
+  /** Ce qui exempte ce trajet de l'effacement, ou rien. */
+  exemption: Exemption | null
 }
 
 /**
  * Les sessions du serveur, la plus récente en tête.
  *
- * Les fichiers qui ne suivent pas la convention de nommage sont ignorés : le
- * dossier des traces contient encore les enregistrements manuels d'avant, qui
- * portent un nom libre et ne se recollent pas en tranches.
+ * Vide plutôt qu'en erreur : sans compte, hors réseau, ou devant un serveur qui
+ * ne connaît pas encore les trajets, il n'y a simplement rien à montrer.
  */
 export async function listSessions(
   credentials: DepositCredentials,
@@ -50,38 +67,47 @@ export async function listSessions(
   if (!hasCredentials(credentials)) return []
   const headers = { Accept: 'application/json', Authorization: authHeader(credentials) }
 
-  const sessions = new Map<string, SessionEntry>()
-
-  for (const folder of FOLDERS) {
-    let listing: unknown
-    try {
-      const response = await fetchImpl(folder.path, { headers })
-      // Un dossier absent n'est pas une anomalie : ils naissent au premier dépôt.
-      if (!response.ok) continue
-      listing = await response.json()
-    } catch {
-      continue
-    }
-    if (!Array.isArray(listing)) continue
-
-    for (const entry of listing as AutoIndexEntry[]) {
-      const name = entry.name ?? ''
-      if (entry.type === 'directory' || name === '') continue
-      const clé = sessionKeyOf(name)
-      if (clé === null) continue
-
-      const trouvée = sessions.get(clé.key) ?? {
-        key: clé.key,
-        id: clé.key.slice(clé.key.lastIndexOf('_') + 1),
-        startedAt: clé.startedAt,
-        files: [],
-      }
-      trouvée.files.push({ name, kind: folder.kind })
-      sessions.set(clé.key, trouvée)
-    }
+  let listing: unknown
+  try {
+    const response = await fetchImpl('/sessions/', { headers })
+    if (!response.ok) return []
+    listing = await response.json()
+  } catch {
+    return []
   }
+  if (!Array.isArray(listing)) return []
 
-  return [...sessions.values()].sort((a, b) => b.startedAt - a.startedAt)
+  return (listing as SessionDistante[]).flatMap((brute) => {
+    const entry = sessionEntryOf(brute)
+    return entry === null ? [] : [entry]
+  })
+}
+
+function sessionEntryOf(brute: SessionDistante): SessionEntry | null {
+  const key = brute.cle
+  if (typeof key !== 'string' || key === '') return null
+
+  const files = (brute.tranches ?? []).flatMap((tranche) =>
+    typeof tranche.nom === 'string' && tranche.nom !== ''
+      ? [{ name: tranche.nom, kind: tranche.dossier === 'journal' ? ('journal' as const) : ('capture' as const) }]
+      : [],
+  )
+  if (files.length === 0) return null
+
+  const isolated = brute.isole === true
+  return {
+    key,
+    // L'identifiant de session pour un trajet, le nom du fichier pour un dépôt
+    // seul : dans les deux cas, ce qui le désigne pour un humain.
+    id: isolated ? (files[0]?.name ?? key) : key.slice(key.lastIndexOf('_') + 1),
+    startedAt: typeof brute.enregistreLe === 'number' ? brute.enregistreLe : 0,
+    files,
+    bytes: typeof brute.octets === 'number' ? brute.octets : 0,
+    isolated,
+    pending: typeof brute.aVoir === 'number' ? brute.aVoir : 0,
+    exemption:
+      brute.exemption === 'epingle' || brute.exemption === 'archive' ? brute.exemption : null,
+  }
 }
 
 /**

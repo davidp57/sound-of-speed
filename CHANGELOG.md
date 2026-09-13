@@ -15,6 +15,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le relecteur montre les trajets du serveur, et sait en effacer un.** Une
+  liste devant laquelle on voit ce que chaque trajet pèse, ce dont il est fait et
+  ce qui le retient — archivé, épinglé, ou pas encore analysé. Effacer emporte le
+  trajet entier, tranches de trace et de journal ensemble, après une
+  confirmation qui dit ce qui part ; les enregistrements anciens au nom libre,
+  que rien ne pouvait enlever jusqu'ici, s'effacent aussi. Ce que la trace a
+  montré reste dans le profil mesuré : le cumul ne se défait pas.
+
 - **Un dépôt sait s'il a été analysé, et de quelle exemption il relève.** Le
   profileur marque ce qu'il a regardé, et il marque aussi ce dont il n'y avait
   rien à tirer : sans cette marque, rien ne distinguerait « trop court pour

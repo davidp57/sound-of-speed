@@ -17,6 +17,7 @@ import { Hono } from 'hono'
 import { SOLO_ACCOUNT_ID, type Base } from './base/base'
 import { coupleDe, type Comptes } from './comptes'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
+import { effacerSession, listerSessions } from './sessions'
 import { ecrireEntite, estUnRegistre, lireEntite, listerEntites } from './entites'
 import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
@@ -62,6 +63,7 @@ const DONNEES = [
   '/journal/',
   '/mesures/',
   '/mesure-voiture/',
+  '/sessions/',
 ]
 
 export function creerServeur(options: OptionsDuServeur): Hono {
@@ -171,6 +173,29 @@ export function creerServeur(options: OptionsDuServeur): Hono {
         'Content-Type': 'application/json; charset=utf-8',
         'Cache-Control': 'no-store',
       })
+    })
+
+    // --- Les trajets, et ce qu'on en fait ----------------------------------
+    //
+    // La base range des tranches ; on n'efface pas une tranche, on efface un
+    // trajet. Le regroupement est celui du cœur, le même que le relecteur
+    // emploie pour recoller une session : deux règles finiraient par ne plus
+    // dire la même chose.
+    app.get('/sessions/', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      return c.json(await listerSessions(base, compte), 200, { 'Cache-Control': 'no-store' })
+    })
+
+    app.delete('/sessions/:cle', async (c) => {
+      const refus = refuser(c.req.raw.headers, options.comptes)
+      if (refus !== null) return refus
+
+      // Effacer un trajet déjà parti n'est pas une panne : la voiture rejoue une
+      // demande, et la seconde doit répondre comme la première.
+      const efface = await effacerSession(base, compte, c.req.param('cle'))
+      return c.json({ efface }, 200)
     })
 
     // --- Ce que la voiture envoie en roulant -------------------------------
