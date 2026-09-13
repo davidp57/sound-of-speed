@@ -81,6 +81,57 @@ export interface OptionsDeService {
 }
 
 /**
+ * Ce qui se compresse, et ce qui ne se compresse pas.
+ *
+ * Les mêmes types que `docker/nginx.conf` retenait : du texte et du binaire qui
+ * compresse bien. Recompresser un FLAC ou un PNG coûte du temps pour rien —
+ * parfois pour plus gros.
+ */
+const COMPRESSIBLES = new Set([
+  'css',
+  'html',
+  'js',
+  'json',
+  'mjs',
+  'svg',
+  'wasm',
+  'webmanifest',
+  'jsonl',
+])
+
+/**
+ * En dessous, la compression ne rend rien.
+ *
+ * Le seuil de nginx, gardé tel quel : un kilo-octet. L'en-tête et le bloc gzip
+ * pèsent déjà quelques dizaines d'octets, et le temps de compression n'est pas
+ * nul.
+ */
+const TAILLE_MINIMALE = 1024
+
+function estCompressible(chemin: string): boolean {
+  return COMPRESSIBLES.has(chemin.split('.').pop()?.toLowerCase() ?? '')
+}
+
+/**
+ * Le client accepte-t-il du gzip ?
+ *
+ * On lit la liste plutôt que d'y chercher un mot : `gzip;q=0` est un **refus**
+ * explicite, et il contient précisément le mot qu'on cherchait.
+ */
+function accepteGzip(entetes: Headers): boolean {
+  return (entetes.get('accept-encoding') ?? '')
+    .split(',')
+    .map((morceau) => morceau.trim().toLowerCase())
+    .some((morceau) => (morceau === 'gzip' || morceau.startsWith('gzip;')) && !refuse(morceau))
+}
+
+/** `q=0` sur une entrée veut dire « surtout pas celui-là ». */
+function refuse(morceau: string): boolean {
+  const qualite = /;\s*q=([\d.]+)/.exec(morceau)
+  return qualite !== null && Number(qualite[1]) === 0
+}
+
+/**
  * Rend un fichier, en honorant une demande de plage d'octets.
  *
  * **Les plages ne sont pas une option.** Le navigateur les demande de lui-même
@@ -114,6 +165,27 @@ export function servirFichier(
   }
 
   if (plage === null) {
+    // **Compresser, comme nginx le faisait.** Le serveur qui l'a remplacé ne le
+    // faisait plus, et personne ne l'avait vu : la voiture tirait 310 ko de
+    // JavaScript là où gzip en fait 101. C'est de loin le premier poste de ce
+    // qu'elle charge au démarrage.
+    //
+    // Jamais avec une plage : le client demande des octets d'un fichier, pas
+    // d'un flux compressé. Et `Content-Length` disparaît, la taille finale
+    // n'étant pas connue avant d'avoir tout compressé.
+    if (taille >= TAILLE_MINIMALE && estCompressible(chemin) && accepteGzip(entetes)) {
+      return new Response(fluxDe(chemin).pipeThrough(new CompressionStream('gzip')), {
+        status: 200,
+        headers: {
+          ...base,
+          'Content-Encoding': 'gzip',
+          // Sans quoi un cache intermédiaire resservirait la version compressée
+          // à un client qui ne l'accepte pas.
+          Vary: 'Accept-Encoding',
+        },
+      })
+    }
+
     return new Response(fluxDe(chemin), {
       status: 200,
       headers: { ...base, 'Content-Length': String(taille) },

@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** 🔄 en cours — 11/14
+**Statut :** 🔄 en cours — 12/14
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -111,7 +111,7 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 | [06](tickets/06-les-droits-ouvrent-les-ecrans.md) ✅ | Les rôles ouvrent les écrans, et un droit expiré les referme | 02 |
 | [14](tickets/14-l-appareil-porte-les-fonctions.md) ✅ | L'appareil porte les fonctions, et le drapeau de construction s'en va | 06 |
 | [07](tickets/07-hors-reseau-rien-ne-change.md) | Hors réseau, rien ne change : vérifié réseau coupé | 04, 06 |
-| [08](tickets/08-le-poids-charge-par-la-voiture.md) | Le poids chargé par la voiture, mesuré avant et après | 06, 14 |
+| [08](tickets/08-le-poids-charge-par-la-voiture.md) ✅ | Le poids chargé par la voiture, mesuré avant et après | 06, 14 |
 | [15](tickets/15-le-navigateur-se-dit-dans-le-journal.md) ✅ | Le navigateur se dit dans le journal, une fois par session | 14 |
 
 Le [ticket 09](tickets/09-reprendre-son-compte.md) est **remplacé** par les

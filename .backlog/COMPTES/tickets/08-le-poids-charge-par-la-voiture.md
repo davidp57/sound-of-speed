@@ -1,6 +1,6 @@
 # 08 — Le poids chargé par la voiture, mesuré avant et après
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 13 septembre 2026
 
 **Bloqué par :** [06 — Les droits ouvrent les écrans](06-les-droits-ouvrent-les-ecrans.md),
 qui décide de ce qui s'affiche et donc de ce qui peut ne pas se charger.
@@ -48,10 +48,55 @@ Donc le « avant » n'est pas 341 contre 343 : c'est un paquet qui contient déj
 tout ce qu'on croyait exclu. Ce que le découpage peut rendre est l'ensemble de
 ces écrans, pas les deux kilo-octets du croisement des deux axes.
 
+## Ce que la mesure a trouvé
+
+Mesuré dans un navigateur, l'appareil déclaré « voiture », en relevant ce que le
+réseau transfère réellement — et non les tailles annoncées par la construction.
+
+| État | Ce que la voiture tire au démarrage |
+|---|---|
+| Avant | 459,4 ko |
+| Après le découpage des trois écrans | 422,6 ko — **−8 %** |
+| Après la compression | **141,5 ko** — **−69 %** au total |
+
+**Le découpage rapporte 37 ko. La compression en rapporte 281.**
+
+### La vraie trouvaille : le serveur ne compressait plus
+
+nginx compressait — `docker/nginx.conf` le dit encore, `gzip on` et
+`application/javascript` dans ses types. Le serveur TypeScript qui l'a remplacé
+au lot 48 ne le faisait plus, et personne ne l'avait vu : la voiture tirait
+**310 ko de JavaScript là où gzip en fait 99**.
+
+C'est une régression d'un lot précédent, trouvée ici parce que ce ticket
+regardait le bon chiffre — celui que le réseau transfère, pas celui que la
+construction annonce. Un `encodedBodySize` égal au `decodedBodySize` est ce qui
+l'a dénoncée.
+
+Corrigée : les types textuels se compressent au-delà d'un kilo-octet, jamais les
+échantillons — du FLAC déjà compressé ne gagne rien —, et jamais une plage
+d'octets, le client demandant les octets d'un fichier et non d'un flux. Six
+tests tiennent ces bords.
+
+### Le découpage : petit, et gardé quand même
+
+Trois écrans qu'une voiture n'ouvre jamais — étalonnage, banc, synthèse —
+chargés à la demande. Trois lignes de code, 37 ko. Le marché est bon : la
+complexité ajoutée tient dans un `defineAsyncComponent`, et le gain se mesure.
+
+Les autres écrans restent chargés d'emblée, et c'est délibéré : ils s'ouvrent au
+volant, donc les différer déplacerait leur téléchargement au premier appui,
+c'est-à-dire là où il n'y a pas de réseau.
+
+**Hors réseau :** le service worker garde les morceaux comme le reste de
+`/assets/`, dès la première ouverture en ligne. Un écran jamais ouvert n'est pas
+en cache — mais c'est un écran que cet appareil n'ouvre pas, et qui ne manque
+donc à personne. Sur un téléphone ou un poste, il y a du réseau.
+
 ## Critères d'acceptation
 
-- [ ] Le poids tiré au démarrage par la voiture est mesuré avant le découpage
-- [ ] Il est mesuré après, dans les mêmes conditions
-- [ ] L'écart est écrit, et la conclusion — découper ou non — est argumentée
-- [ ] Hors réseau, tous les écrans qu'un compte ouvre restent accessibles
-- [ ] Aucun écran ne se charge pour un compte qui n'y a pas droit
+- [x] Le poids tiré au démarrage par la voiture est mesuré avant le découpage
+- [x] Il est mesuré après, dans les mêmes conditions
+- [x] L'écart est écrit, et la conclusion — découper ou non — est argumentée
+- [x] Hors réseau, tous les écrans qu'un compte ouvre restent accessibles
+- [x] Aucun écran ne se charge pour un compte qui n'y a pas droit

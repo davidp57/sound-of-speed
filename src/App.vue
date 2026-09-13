@@ -1,14 +1,27 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import AccountView from './ui/AccountView.vue'
 import ConfigView from './ui/ConfigView.vue'
 import HelpView from './ui/HelpView.vue'
 import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
-import CalibrationPanel from './ui/CalibrationPanel.vue'
-import SynthView from './ui/SynthView.vue'
-import BenchView from './ui/BenchView.vue'
+
+/**
+ * Les trois écrans qu'une voiture n'ouvre jamais, chargés à la demande.
+ *
+ * **C'est la seule chose que le découpage peut rendre**, et c'est mesuré : les
+ * autres écrans s'ouvrent au volant, donc les différer ne ferait que déplacer
+ * leur téléchargement au premier appui, dans un endroit où il n'y a pas de
+ * réseau.
+ *
+ * Le service worker les garde comme le reste de `/assets/`, dès la première
+ * ouverture en ligne — un morceau jamais ouvert n'est pas en cache, mais un
+ * écran qu'on n'ouvre pas ne manque à personne.
+ */
+const CalibrationPanel = defineAsyncComponent(() => import('./ui/CalibrationPanel.vue'))
+const SynthView = defineAsyncComponent(() => import('./ui/SynthView.vue'))
+const BenchView = defineAsyncComponent(() => import('./ui/BenchView.vue'))
 import type { Appareil } from './core/appareil'
 import type { Role } from './core/identity/roles'
 import {

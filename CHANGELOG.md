@@ -8,6 +8,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le serveur ne compressait plus rien.** nginx le faisait ; le serveur qui l'a
+  remplacé ne le faisait plus, et personne ne l'avait vu. La voiture tirait
+  **310 ko de JavaScript là où gzip en fait 99**. Les types textuels se
+  compressent désormais au-delà d'un kilo-octet — jamais les échantillons, déjà
+  compressés, ni une plage d'octets, le client demandant les octets d'un fichier
+  et non d'un flux. Ce que la voiture charge au démarrage passe de **459 ko à
+  142 ko**, mesuré dans un navigateur.
+
 - **Le service worker gardait en cache ce qui appartient à un compte.** Son
   dernier cas attrapait tout ce qui répondait 200 : la session, les droits, les
   profils, la liste des trajets — que le serveur déclare pourtant `no-store`.
@@ -23,6 +31,11 @@ Toutes les évolutions notables du projet. Format
   en une douzaine de caractères.
 
 ### Ajouté
+
+- **Les trois écrans qu'une voiture n'ouvre jamais se chargent à la demande** —
+  étalonnage, banc, synthèse. Trente-sept kilo-octets de moins au démarrage. Les
+  autres restent chargés d'emblée, et c'est délibéré : ils s'ouvrent au volant,
+  donc les différer déplacerait leur téléchargement là où il n'y a pas de réseau.
 
 - **Le journal dit sur quel navigateur il a tourné**, une fois par session : la
   chaîne d'agent, l'écran, le pointeur, ce qu'on a deviné de l'appareil et ce
