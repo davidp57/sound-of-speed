@@ -1,108 +1,83 @@
 /**
  * Relier un second appareil au compte d'un premier.
  *
- * L'écran de la voiture affiche un code, on le scanne avec son téléphone, et cet
- * appareil-là ouvre **le même compte** : les mêmes profils, les mêmes moteurs,
- * les mêmes trajets. Sans adresse, sans mot de passe à retenir, sans service
- * tiers — c'est ce qui en fait le chemin normal.
+ * L'écran de la voiture donne un code. On le scanne avec son téléphone, ou on
+ * recopie huit caractères sur un poste de travail sans caméra, et cet appareil
+ * ouvre **le même compte** : les mêmes profils, les mêmes moteurs, les mêmes
+ * trajets. Sans adresse, sans mot de passe à retenir, sans service tiers — c'est
+ * ce qui en fait le chemin normal.
  *
- * **Le compte anonyme a déjà tout ce qu'il faut.** La bibliothèque d'identité
- * lui a fabriqué une adresse sous le domaine réservé `.invalid`, qui ne désigne
- * aucune boîte ; il suffit de lui poser un mot de passe, et le couple devient un
- * identifiant complet. Aucun courriel ne part, et il n'y en a pas à configurer.
+ * **Un jeton, deux rendus.** Le lien à scanner et le code court portent la même
+ * valeur : celle qui ouvre le compte une fois, et qui expire. Le lien évite de
+ * recopier, le code court sauve l'appareil sans caméra.
  *
- * **Un code affiché donne le compte à qui le photographie.** C'est assumé : ce
- * qui est en jeu est une bibliothèque de réglages, pas de l'argent. Le code ne
- * reste pas à l'écran, et l'écran le dit. Une deuxième demande **remplace** le
- * mot de passe, ce qui périme le code d'avant : un écran photographié la semaine
- * dernière n'ouvre plus rien dès qu'on en affiche un nouveau.
+ * **Pourquoi pas le mot de passe du compte.** La première version en posait un
+ * sur le compte anonyme, et cela marchait — mais la bibliothèque d'identité n'en
+ * garde qu'un par compte : afficher un code aurait écrasé celui qu'on choisit au
+ * ticket 11. Un jeton séparé ne touche à rien.
+ *
+ * **Pourquoi un greffon de la bibliothèque, et non deux routes à nous.** Le
+ * témoin de connexion est **signé** avec le secret du serveur : le composer à la
+ * main donnerait un témoin que les routes de la bibliothèque ne reconnaîtraient
+ * pas. Mesuré en lisant `setSessionCookie`. De l'intérieur, on obtient en prime
+ * la table de vérification — qui sait déjà consommer une valeur une seule fois,
+ * de façon atomique, et rendre `null` si elle a expiré — et la limitation de
+ * débit, qui est ce qui protège vraiment un code court.
+ *
+ * **Ce qu'un code donne à qui le voit.** Le compte, jusqu'à ce qu'il serve ou
+ * qu'il expire. C'est assumé : ce qui est en jeu est une bibliothèque de
+ * réglages, pas de l'argent — et le jeton s'use.
  */
 
-import { randomBytes } from 'node:crypto'
+import { createHash, randomInt } from 'node:crypto'
 
-import { and, eq } from 'drizzle-orm'
+import { createAuthEndpoint, getSessionFromCtx, sessionMiddleware } from 'better-auth/api'
+import { setSessionCookie } from 'better-auth/cookies'
+import { eq } from 'drizzle-orm'
+import * as z from 'zod'
 
 import type { Base } from './base/base'
-import { accounts, authIdentities } from './base/schema'
+import { accounts } from './base/schema'
 import { ceQuePorte } from './heritage'
-import type { Identite } from './identite'
 
-/** Le préfixe sous lequel ce module répond. */
-export const CHEMIN_LIAISON = '/api/liaison'
-
-/**
- * Le nom que la bibliothèque donne à la preuve « adresse et mot de passe ».
- *
- * Les autres valeurs de cette colonne sont des fournisseurs tiers ; c'est
- * celle-ci, et elle seule, qu'un code de liaison remplace.
- */
-const PREUVE_PAR_MOT_DE_PASSE = 'credential'
+/** Le préfixe sous lequel ce greffon répond, sous celui de l'identité. */
+export const CHEMIN_LIAISON = '/api/auth/liaison'
 
 /**
- * Assez long pour que deviner soit hors de question.
+ * L'alphabet du code court, sans ce qui se confond.
  *
- * Vingt-quatre octets font trente-deux caractères en base64url. Le mot de passe
- * n'est jamais tapé par personne : il voyage dans le code à scanner, et sa
- * longueur ne coûte donc rien à l'usage.
+ * Ni `I` ni `1`, ni `O` ni `0`, ni `L`, ni `U` — qui se lit `V` sur un écran de
+ * voiture et s'entend comme lui au téléphone. Trente caractères, ce qui fait
+ * six cent cinquante milliards de combinaisons sur huit rangs.
  */
-const OCTETS_DU_MOT_DE_PASSE = 24
+const ALPHABET = '23456789ABCDEFGHJKMNPQRSTVWXYZ'
 
-/** Ce qui ouvre le compte, et qui tient dans un code à scanner. */
-export interface CoupleDeLiaison {
-  email: string
-  motDePasse: string
-}
-
-export type CodePose =
-  | { etat: 'pose'; couple: CoupleDeLiaison }
-  /** Personne n'est connecté : il n'y a pas de compte à relier. */
-  | { etat: 'sans-compte' }
-  /** Un compte sans adresse ne peut pas se rouvrir ailleurs — voir `solo`. */
-  | { etat: 'sans-adresse' }
+/** Huit caractères, groupés en deux : on les dicte sans épeler. */
+const LONGUEUR = 8
 
 /**
- * Pose un mot de passe sur le compte de la session, et rend de quoi le rouvrir.
+ * Dix minutes, et c'est un choix d'usage plutôt que de sécurité.
  *
- * `setPassword` est une route réservée au serveur : elle est appelée d'ici, pour
- * la session en cours, et jamais depuis la page. Elle refuse de remplacer un mot
- * de passe existant — d'où la preuve d'abord effacée, qui est aussi ce qui
- * périme le code précédent.
- *
- * **Le compte cesse d'être anonyme.** `is_anonymous` ne dirait plus la vérité :
- * un compte qui a un mot de passe est récupérable, c'est-à-dire exactement le
- * contraire de ce que ce drapeau annonce aux écrans.
+ * Le temps d'aller de la voiture au bureau, pas celui d'oublier un écran allumé.
+ * Ce qui protège vraiment est l'usage unique, et la limitation de débit ci-après.
  */
-export async function poserUnCodeDeLiaison(
-  base: Base,
-  identite: Identite,
-  entetes: Headers,
-): Promise<CodePose> {
-  const session = await identite.api.getSession({ headers: entetes })
-  if (session === null) return { etat: 'sans-compte' }
+export const VALIDITE_MS = 10 * 60 * 1000
 
-  const email = session.user.email
-  if (typeof email !== 'string' || email === '') return { etat: 'sans-adresse' }
+/**
+ * Ce qui rend un code court aussi sûr qu'un long : on ne peut pas essayer vite.
+ *
+ * Dix essais par minute, par adresse. Sur les dix minutes de validité d'un code,
+ * cela fait cent tentatives contre six cent cinquante milliards de combinaisons.
+ * Sans cette borne, l'alphabet ne suffirait pas.
+ *
+ * **Elle ne s'applique qu'en production** : la bibliothèque coupe sa limitation
+ * de débit hors de là, ce qui est voulu — un jeu de tests ne doit pas se faire
+ * refouler — mais explique qu'aucun test ne la voie.
+ */
+const ESSAIS_PAR_MINUTE = 10
 
-  const motDePasse = randomBytes(OCTETS_DU_MOT_DE_PASSE).toString('base64url')
-
-  await base
-    .delete(authIdentities)
-    .where(
-      and(
-        eq(authIdentities.accountId, session.user.id),
-        eq(authIdentities.providerId, PREUVE_PAR_MOT_DE_PASSE),
-      ),
-    )
-
-  await identite.api.setPassword({ body: { newPassword: motDePasse }, headers: entetes })
-
-  await base
-    .update(accounts)
-    .set({ isAnonymous: false, updatedAt: new Date() })
-    .where(eq(accounts.id, session.user.id))
-
-  return { etat: 'pose', couple: { email, motDePasse } }
-}
+/** Sous quoi le jeton est rangé dans la table de vérification. */
+const PREFIXE = 'liaison:'
 
 /** Ce qu'est devenu le compte que l'appareil portait avant de se relier. */
 export type SortDeLAncien =
@@ -113,80 +88,113 @@ export type SortDeLAncien =
   /** Il n'y en avait pas, ou c'était déjà le même compte. */
   | 'aucun'
 
-export type Liaison =
-  | {
-      etat: 'reliee'
-      /** Les en-têtes de la bibliothèque, témoin de connexion compris. */
-      entetes: Headers
-      compte: { id: string; name: string; anonymous: boolean }
-      ancien: SortDeLAncien
-    }
-  /** Le couple ne vaut rien : code périmé, ou mal lu. */
-  | { etat: 'refusee' }
-
 /**
- * Ouvre le compte désigné par le couple, et règle le sort de celui d'avant.
+ * Le greffon, à monter sur la bibliothèque d'identité.
  *
- * **L'ordre est le sujet.** L'appareil qui se relie porte déjà un compte anonyme
- * — il s'en est créé un au démarrage, comme tout appareil neuf. La preuve qu'il
- * le possède est son témoin de connexion, et ce témoin est remplacé par la
- * connexion : il faut donc décider du sort de l'ancien **dans le même passage**,
- * pendant qu'on tient encore les deux bouts.
- *
- * Un compte vide s'efface : le garder laisserait traîner un compte que personne
- * ne rouvrira jamais. Un compte qui porte quelque chose se garde, et l'écran le
- * dit — c'est à son propriétaire de décider ce qu'il en fait, pas à ce code.
+ * Il reçoit la base parce qu'il a besoin de savoir ce qu'un compte porte —
+ * `ceQuePorte` — pour décider si celui que l'appareil abandonne mérite d'être
+ * gardé. Tout le reste passe par la bibliothèque.
  */
-export async function relierAuCompte(
-  base: Base,
-  identite: Identite,
-  entetes: Headers,
-  couple: CoupleDeLiaison,
-): Promise<Liaison> {
-  const avant = await identite.api.getSession({ headers: entetes })
-
-  let ouverture: { headers: Headers; response: { user: { id: string; name: string } } }
-  try {
-    ouverture = await identite.api.signInEmail({
-      body: { email: couple.email, password: couple.motDePasse },
-      headers: entetes,
-      returnHeaders: true,
-    })
-  } catch {
-    // Un couple refusé n'est pas une panne : c'est un code périmé, le cas
-    // ordinaire dès qu'on en a affiché un plus récent.
-    return { etat: 'refusee' }
-  }
-
-  const compte = ouverture.response.user
-  const ancien = await reglerLAncien(base, avant?.user, compte.id)
-
-  const relu = await base.select().from(accounts).where(eq(accounts.id, compte.id))
-
+export function liaison({ base }: { base: Base }) {
   return {
-    etat: 'reliee',
-    entetes: ouverture.headers,
-    compte: {
-      id: compte.id,
-      name: relu[0]?.name ?? compte.name,
-      anonymous: relu[0]?.isAnonymous ?? false,
+    id: 'liaison',
+
+    endpoints: {
+      /**
+       * Donne un code pour le compte de la session.
+       *
+       * Ce qui est rangé est l'**empreinte** du code, jamais le code : une base
+       * qu'on recopie pour la regarder ne doit pas livrer de quoi ouvrir des
+       * comptes. L'appelant reçoit la seule copie lisible.
+       */
+      poserUnCodeDeLiaison: createAuthEndpoint(
+        '/liaison/code',
+        { method: 'POST', use: [sessionMiddleware] },
+        async (contexte) => {
+          const code = tirerUnCode()
+          const expireLe = new Date(Date.now() + VALIDITE_MS)
+
+          await contexte.context.internalAdapter.createVerificationValue({
+            identifier: `${PREFIXE}${empreinte(code)}`,
+            value: contexte.context.session.user.id,
+            expiresAt: expireLe,
+          })
+
+          return contexte.json({ code, expireLe: expireLe.toISOString() })
+        },
+      ),
+
+      /**
+       * Ouvre ici le compte que le code désigne, et règle le sort de l'ancien.
+       *
+       * **L'ordre est le sujet.** L'appareil qui se relie porte déjà un compte
+       * anonyme — il s'en est créé un au démarrage, comme tout appareil neuf. La
+       * preuve qu'il le possède est son témoin de connexion, et ce témoin est
+       * remplacé par la nouvelle session : il faut donc décider du sort de
+       * l'ancien **dans le même passage**, pendant qu'on tient les deux bouts.
+       */
+      relierAuCompte: createAuthEndpoint(
+        '/liaison/relier',
+        { method: 'POST', body: z.object({ code: z.string() }) },
+        async (contexte) => {
+          const consomme = await contexte.context.internalAdapter.consumeVerificationValue(
+            `${PREFIXE}${empreinte(normaliser(contexte.body.code))}`,
+          )
+          // Usé, périmé, ou mal recopié : les trois se confondent volontairement.
+          // Dire lequel apprendrait quelque chose à qui cherche.
+          if (!consomme) throw contexte.error('UNAUTHORIZED', { message: 'Ce code n’ouvre rien.' })
+
+          const compte = await contexte.context.internalAdapter.findUserById(consomme.value)
+          if (!compte) throw contexte.error('UNAUTHORIZED', { message: 'Ce code n’ouvre rien.' })
+
+          const avant = await getSessionFromCtx(contexte)
+
+          // Une session **neuve**, et non celle de l'appareil qui a donné le
+          // code : deux appareils qui partageraient une session se
+          // déconnecteraient ensemble.
+          const session = await contexte.context.internalAdapter.createSession(compte.id)
+          await setSessionCookie(contexte, { session, user: compte })
+
+          const ancien = await reglerLAncien(base, avant?.user.id, compte.id)
+
+          return contexte.json({
+            compte: {
+              id: compte.id,
+              name: compte.name,
+              anonymous: await estAnonyme(base, compte.id),
+            },
+            ancien,
+          })
+        },
+      ),
     },
-    ancien,
+
+    rateLimit: [
+      { pathMatcher: (chemin: string) => chemin === '/liaison/relier', window: 60, max: ESSAIS_PAR_MINUTE },
+      { pathMatcher: (chemin: string) => chemin === '/liaison/code', window: 60, max: ESSAIS_PAR_MINUTE },
+    ],
   }
 }
 
+/**
+ * Un compte vide s'efface, un compte qui porte quelque chose se garde.
+ *
+ * Le garder laisserait traîner un compte que personne ne rouvrira jamais ;
+ * l'effacer sans regarder perdrait des réglages. Ce qui se passe ensuite est à
+ * son propriétaire, pas à ce code : l'écran le dit, et s'arrête là.
+ */
 async function reglerLAncien(
   base: Base,
-  avant: { id: string; isAnonymous?: boolean | null | undefined } | undefined,
+  avant: string | undefined,
   desormais: string,
 ): Promise<SortDeLAncien> {
-  if (avant === undefined || avant.id === desormais) return 'aucun'
+  if (avant === undefined || avant === desormais) return 'aucun'
 
   // Un compte qu'on n'a pas créé tout seul ne s'efface pas au passage : il a une
   // adresse, ou un mot de passe, donc quelqu'un peut y revenir.
-  if (avant.isAnonymous !== true) return 'garde'
+  if (!(await estAnonyme(base, avant))) return 'garde'
 
-  const porte = await ceQuePorte(base, avant.id)
+  const porte = await ceQuePorte(base, avant)
   const vide =
     porte.profils === 0 &&
     porte.moteurs === 0 &&
@@ -198,6 +206,50 @@ async function reglerLAncien(
 
   // La cascade emporte ses sessions et ses preuves. Rien d'autre ne pend à ce
   // compte, puisqu'on vient de vérifier qu'il ne porte rien.
-  await base.delete(accounts).where(eq(accounts.id, avant.id))
+  await base.delete(accounts).where(eq(accounts.id, avant))
   return 'efface'
+}
+
+/**
+ * Un compte s'est-il créé tout seul ?
+ *
+ * Lu **dans la colonne**, et non dans le type que rend la bibliothèque : c'est
+ * la colonne qui fait foi — `CONTEXT.md` le dit —, et le type générique de
+ * l'adaptateur ne connaît pas les champs qu'un greffon ajoute.
+ */
+async function estAnonyme(base: Base, compte: string): Promise<boolean> {
+  const lignes = await base
+    .select({ anonyme: accounts.isAnonymous })
+    .from(accounts)
+    .where(eq(accounts.id, compte))
+  return lignes[0]?.anonyme === true
+}
+
+/**
+ * Un code tiré au sort, groupé en deux.
+ *
+ * `randomInt` plutôt qu'un modulo sur des octets : trente ne divise pas deux
+ * cent cinquante-six, et le biais qui en résulterait ne se verrait pas.
+ */
+function tirerUnCode(): string {
+  let code = ''
+  for (let i = 0; i < LONGUEUR; i += 1) code += ALPHABET[randomInt(ALPHABET.length)]
+  return `${code.slice(0, 4)}-${code.slice(4)}`
+}
+
+/**
+ * Ce qu'on accepte à la saisie.
+ *
+ * Le trait est un confort de lecture, la casse une distraction : ni l'un ni
+ * l'autre ne portent d'information. Refuser `k7m4pq2r` parce qu'il est en
+ * minuscules serait une punition sans contrepartie.
+ */
+export function normaliser(code: string): string {
+  const propre = code.toUpperCase().replace(/[^0-9A-Z]/g, '')
+  return propre.length === LONGUEUR ? `${propre.slice(0, 4)}-${propre.slice(4)}` : propre
+}
+
+/** L'empreinte rangée en base. Le code porte assez de hasard pour s'en tenir là. */
+function empreinte(code: string): string {
+  return createHash('sha256').update(code).digest('base64url')
 }

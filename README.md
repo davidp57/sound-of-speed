@@ -1152,36 +1152,44 @@ comportement attendu : rien ne distingue « le second appareil de quelqu'un » d
 « premier appareil de quelqu'un d'autre ». Les réunir demande un geste explicite,
 et ce geste est un code à scanner.
 
-**Relier un second appareil : un code, et rien d'autre.** L'écran de
-configuration affiche un code ; un téléphone ou un poste de travail qui le scanne
-ouvre le **même compte** — mêmes profils, mêmes moteurs, mêmes boîtes, mêmes
-trajets, même profil mesuré. Aucune adresse à saisir, aucun mot de passe à
-retenir, aucun service tiers.
+**Relier un second appareil : un jeton, deux rendus.** L'écran de configuration
+donne un code. Un téléphone qui le **scanne**, ou un poste de travail où l'on
+**recopie huit caractères**, ouvre le même compte — mêmes profils, mêmes moteurs,
+mêmes boîtes, mêmes trajets, même profil mesuré. Aucune adresse à saisir, aucun
+mot de passe à retenir, aucun service tiers.
 
-Ce que le code porte est un lien vers l'application, et ce qui ouvre le compte
-vit dans son **fragment** — la partie qui suit le `#`, qui n'est jamais transmise
-au serveur ni inscrite dans ses journaux. Le compte anonyme a déjà tout ce qu'il
-faut : la bibliothèque lui a fabriqué une adresse sous le domaine réservé
-`.invalid`, qui ne désigne aucune boîte, et le serveur lui pose un mot de passe
-au moment où l'on demande un code.
+Les deux rendus portent la même valeur. Le lien à scanner évite de recopier ; le
+code court sauve l'appareil sans caméra, qui est justement le second appareil le
+plus probable. Il tient en huit caractères dans un alphabet où rien ne se
+confond — ni `I`, ni `L`, ni `O`, ni `U`, ni `0`, ni `1` —, et la casse comme les
+traits sont ignorés à la saisie.
+
+Ce que le lien porte vit dans son **fragment** — la partie qui suit le `#`, qui
+n'est jamais transmise au serveur ni inscrite dans ses journaux.
 
 Trois conséquences, toutes assumées :
 
-- **Qui photographie l'écran ouvre le compte.** Ce qui est en jeu est une
-  bibliothèque de réglages, pas de l'argent. Le code s'efface au bout de deux
-  minutes, l'écran le dit, et **afficher un code neuf périme le précédent** — le
-  mot de passe est remplacé, pas ajouté.
+- **Qui voit l'écran ouvre le compte**, jusqu'à ce que le code serve ou qu'il
+  expire. Ce qui est en jeu est une bibliothèque de réglages, pas de l'argent. Le
+  code **ne sert qu'une fois**, il expire en dix minutes, et l'écran affiche le
+  temps qui reste.
 - **Le compte que l'appareil portait avant** est effacé s'il était vide, gardé
   sinon — et l'écran le dit, parce qu'un compte anonyme gardé n'a pas de mot de
   passe pour y revenir.
-- **Hors réseau, on ne relie pas** : le code vient du serveur. L'écran le dit au
-  lieu de faire attendre.
+- **Hors réseau, on ne relie pas** : le code vient du serveur, et s'y vérifie.
+  L'écran le dit au lieu de faire attendre.
 
-**Un compte anonyme n'a rien à récupérer**, et l'écran de configuration le dit :
-vider les données du site depuis les réglages du navigateur perd l'accès à ce
-compte, et à ce qui a été déposé avec. Afficher un code de liaison y met fin — le
-compte a dès lors un mot de passe, donc il se rouvre ailleurs — et rattacher une
-adresse le fera aussi. La remise à zéro des réglages, elle, n'y touche pas.
+**Ce qui protège un code court, c'est qu'on ne peut pas essayer vite.** Dix
+essais par minute et par adresse : sur les dix minutes de validité, cela fait
+cent tentatives contre six cent cinquante milliards de combinaisons. La limite
+ne s'applique qu'en production, la bibliothèque la coupant ailleurs.
+
+**Un compte anonyme n'a toujours rien à récupérer**, et l'écran de configuration
+le dit : vider les données du site depuis les réglages du navigateur perd l'accès
+à ce compte, et à ce qui a été déposé avec. Relier un second appareil n'y change
+rien — le compte n'a toujours ni adresse ni mot de passe, et les perdre tous les
+deux le perdrait. C'est une vraie adresse qui y mettra fin. La remise à zéro des
+réglages, elle, n'y touche pas.
 
 **Elle se pose sur la table `accounts`**, celle qui existe déjà et à qui pendaient déjà
 six autres tables. L'inverse — adopter la table qu'elle apporte — aurait obligé
@@ -1218,8 +1226,12 @@ Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, 
 compte. Un jeu de quarante-huit requêtes le vérifie à chaque intégration — voir
 [`scripts/accord/`](scripts/accord/README.md).
 
-S'y ajoute `/api/liaison/`, sous lequel la voiture demande un code et un second
-appareil s'y relie.
+S'y ajoute `/api/auth/liaison/`, sous lequel la voiture demande un code et un
+second appareil s'y relie. Ce sont deux routes **de la bibliothèque
+d'identité** — un greffon, et non deux routes à côté : le témoin de connexion est
+signé avec le secret du serveur, et seule la bibliothèque sait le poser. En
+prime, ces deux routes exigent un en-tête `Origin`, que tout navigateur envoie et
+qu'un site tiers ne peut pas falsifier.
 
 S'y ajoutent **deux emplacements que le serveur de fichiers n'a jamais rendus** :
 `/engines/` et `/gearboxes/`. Un moteur ou une boîte réglé au volant y remonte
@@ -2979,7 +2991,7 @@ suit pas.
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
-| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 4 tickets sur 12** |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 5 tickets sur 12** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

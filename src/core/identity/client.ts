@@ -10,14 +10,14 @@
  * la main tout de suite, et le travail se fait derrière.
  */
 
-import type { CoupleDeLiaison } from './lien'
+import type { CodeDeLiaison } from './lien'
 import { loadIdentity, saveIdentity, type LocalIdentity } from './store'
 
 /** Le chemin sous lequel le serveur répond de l'identité. */
 const IDENTITE = '/api/auth'
 
 /** Le chemin sous lequel il répond de la liaison entre appareils. */
-const LIAISON = '/api/liaison'
+const LIAISON = '/api/auth/liaison'
 
 export interface IdentityOptions {
   fetchImpl?: typeof fetch
@@ -178,9 +178,9 @@ function compteDe(charge: unknown): Omit<LocalIdentity, 'obtainedAt'> | null {
 /**
  * Relier un second appareil au compte de la voiture.
  *
- * Deux gestes symétriques : la voiture **demande un code**, l'autre appareil
+ * Deux gestes symétriques : la voiture **donne un code**, l'autre appareil
  * **s'y relie**. Le premier se fait depuis l'écran de configuration, le second
- * en ouvrant le lien que le code porte.
+ * en ouvrant le lien que le code porte, ou en recopiant huit caractères.
  *
  * **Hors réseau, on ne relie pas.** C'est acceptable — on ne relie pas un
  * appareil en roulant —, mais l'écran doit le dire au lieu d'attendre : c'est
@@ -188,18 +188,18 @@ function compteDe(charge: unknown): Omit<LocalIdentity, 'obtainedAt'> | null {
  */
 
 export type CodeDemande =
-  | { state: 'pose'; couple: CoupleDeLiaison }
+  | { state: 'pose'; code: CodeDeLiaison; expireLe: number }
   | { state: 'sans-reseau' }
   | { state: 'refusee'; detail: string }
 
 /**
- * Demande au serveur de quoi faire un code.
+ * Demande au serveur un code de liaison.
  *
- * Ce qui revient ouvre le compte : ça ne se range nulle part, ça s'affiche et
- * ça disparaît.
+ * Ce qui revient ouvre le compte, une fois : ça ne se range nulle part, ça
+ * s'affiche et ça disparaît.
  */
 export async function demanderUnCode(options: IdentityOptions = {}): Promise<CodeDemande> {
-  const { fetchImpl = fetch } = options
+  const { fetchImpl = fetch, now = Date.now } = options
 
   let reponse: Response
   try {
@@ -229,12 +229,23 @@ export async function demanderUnCode(options: IdentityOptions = {}): Promise<Cod
     return { state: 'refusee', detail: 'Le serveur a répondu autre chose que du JSON.' }
   }
 
-  const couple = coupleDe(charge)
-  if (couple === null) {
-    return { state: 'refusee', detail: "La réponse ne porte pas de quoi relier." }
+  if (typeof charge !== 'object' || charge === null) {
+    return { state: 'refusee', detail: "La réponse ne porte pas de code." }
   }
-  return { state: 'pose', couple }
+  const champs = charge as Record<string, unknown>
+  const code = champs['code']
+  if (typeof code !== 'string' || code === '') {
+    return { state: 'refusee', detail: "La réponse ne porte pas de code." }
+  }
+
+  // Une date illisible ne vaut pas un refus : le code marche, c'est seulement le
+  // compte à rebours qui manquerait. On retombe sur la validité annoncée.
+  const annonce = Date.parse(typeof champs['expireLe'] === 'string' ? champs['expireLe'] : '')
+  return { state: 'pose', code, expireLe: Number.isFinite(annonce) ? annonce : now() + VALIDITE_MS }
 }
+
+/** Dix minutes, comme le serveur. Sert de repli quand sa date est illisible. */
+const VALIDITE_MS = 10 * 60 * 1000
 
 /** Ce qu'est devenu le compte que cet appareil portait avant de se relier. */
 export type SortDeLAncien = 'efface' | 'garde' | 'aucun'
@@ -253,7 +264,7 @@ export type LiaisonFaite =
  * l'écran puisse le dire.
  */
 export async function relierCetAppareil(
-  couple: CoupleDeLiaison,
+  code: CodeDeLiaison,
   options: IdentityOptions = {},
 ): Promise<LiaisonFaite> {
   const { fetchImpl = fetch, now = Date.now } = options
@@ -263,14 +274,20 @@ export async function relierCetAppareil(
     reponse = await fetchImpl(`${LIAISON}/relier`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(couple),
+      body: JSON.stringify({ code }),
     })
   } catch {
     return { state: 'sans-reseau' }
   }
 
-  if (reponse.status === 401) {
-    return { state: 'refusee', detail: "Ce code n'ouvre plus rien : en afficher un nouveau." }
+  if (reponse.status === 401 || reponse.status === 400) {
+    return {
+      state: 'refusee',
+      detail: "Ce code n'ouvre rien : il a déjà servi, ou il a passé dix minutes.",
+    }
+  }
+  if (reponse.status === 429) {
+    return { state: 'refusee', detail: 'Trop d’essais de suite. Réessayer dans une minute.' }
   }
   if (!reponse.ok) {
     return { state: 'refusee', detail: `Le serveur a répondu ${reponse.status}.` }
@@ -291,16 +308,6 @@ export async function relierCetAppareil(
   const identity: LocalIdentity = { ...compte.identity, obtainedAt: now() }
   saveIdentity(identity)
   return { state: 'reliee', identity, ancien: compte.ancien }
-}
-
-function coupleDe(charge: unknown): CoupleDeLiaison | null {
-  if (typeof charge !== 'object' || charge === null) return null
-  const champs = charge as Record<string, unknown>
-  const email = champs['email']
-  const motDePasse = champs['motDePasse']
-  if (typeof email !== 'string' || email === '') return null
-  if (typeof motDePasse !== 'string' || motDePasse === '') return null
-  return { email, motDePasse }
 }
 
 function compteRelie(

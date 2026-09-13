@@ -105,6 +105,8 @@ import {
   driveFace,
   identity,
   identityState,
+  liaison,
+  rejoindreUnCompte,
   measuredCar,
   measuredOverrides,
   setDriveFace,
@@ -300,30 +302,38 @@ const compteDeLAppareil = computed(() => {
 })
 
 /**
- * Relier un second appareil, en lui faisant scanner un code.
+ * Relier un second appareil : un code à scanner, ou huit caractères à taper.
  *
- * Le code porte un lien vers cette application, et le lien porte de quoi ouvrir
- * ce compte — le tout dans le fragment, qui ne part jamais au serveur. C'est le
- * motif du partage de profil ; ici ce qui voyage ouvre un compte, d'où le délai
- * et l'avertissement.
+ * Les deux portent le même jeton. Le lien évite de recopier quand on a une
+ * caméra ; le code court sauve le poste de travail qui n'en a pas — et c'est
+ * justement le second appareil le plus probable.
  */
+const codeARelier = ref('')
 const lienARelier = ref('')
 const qrARelier = ref('')
 const noteDeLiaison = ref('')
 
-/** Deux minutes : le temps de scanner, pas celui d'oublier l'écran allumé. */
-const DUREE_DU_CODE_MS = 120_000
-let effacementDuCode: ReturnType<typeof setTimeout> | null = null
+/** Ce qu'il reste de validité, en secondes, remis à jour chaque seconde. */
+const resteDuCode = ref(0)
+let compteARebours: ReturnType<typeof setInterval> | null = null
+
+const resteAffiche = computed(() => {
+  const minutes = Math.floor(resteDuCode.value / 60)
+  const secondes = resteDuCode.value % 60
+  return `${minutes}:${String(secondes).padStart(2, '0')}`
+})
 
 function masquerLeCode(): void {
-  if (effacementDuCode !== null) clearTimeout(effacementDuCode)
-  effacementDuCode = null
+  if (compteARebours !== null) clearInterval(compteARebours)
+  compteARebours = null
+  codeARelier.value = ''
   lienARelier.value = ''
   qrARelier.value = ''
+  resteDuCode.value = 0
 }
 
 async function onRelier(): Promise<void> {
-  if (lienARelier.value !== '') {
+  if (codeARelier.value !== '') {
     masquerLeCode()
     return
   }
@@ -342,7 +352,8 @@ async function onRelier(): Promise<void> {
     return
   }
 
-  const url = lienDeLiaison(window.location.origin, demande.couple)
+  codeARelier.value = demande.code
+  const url = lienDeLiaison(window.location.origin, demande.code)
   lienARelier.value = url
   if (!isReachableOrigin(window.location.origin)) {
     noteDeLiaison.value =
@@ -355,7 +366,14 @@ async function onRelier(): Promise<void> {
   code.make()
   qrARelier.value = code.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
 
-  effacementDuCode = setTimeout(masquerLeCode, DUREE_DU_CODE_MS)
+  // Le compte à rebours plutôt qu'un effacement muet : un code qui disparaît
+  // pendant qu'on le recopie, sans prévenir, ferait recommencer sans comprendre.
+  const finit = () => Math.max(0, Math.round((demande.expireLe - Date.now()) / 1000))
+  resteDuCode.value = finit()
+  compteARebours = setInterval(() => {
+    resteDuCode.value = finit()
+    if (resteDuCode.value === 0) masquerLeCode()
+  }, 1000)
 }
 
 async function onCopierLeLienDeLiaison(): Promise<void> {
@@ -364,6 +382,41 @@ async function onCopierLeLienDeLiaison(): Promise<void> {
     noteDeLiaison.value = 'Lien copié.'
   } catch {
     noteDeLiaison.value = 'Copie refusée par le navigateur : sélectionner le lien à la main.'
+  }
+}
+
+/**
+ * L'autre bout : recopier ici le code lu sur l'autre appareil.
+ *
+ * Sans ce champ, le code court ne servirait à rien — c'est lui qui sauve
+ * l'appareil sans caméra, et c'est le poste de travail qu'on relie le plus
+ * souvent.
+ */
+const codeSaisi = ref('')
+const saisieEnCours = ref(false)
+
+async function onSaisirLeCode(): Promise<void> {
+  if (saisieEnCours.value) return
+  saisieEnCours.value = true
+  noteDeLiaison.value = ''
+  try {
+    // Le même chemin que le code scanné, et pas un raccourci à côté : c'est ce
+    // qui garantit que les deux ramènent les mêmes réglages et annoncent la
+    // même chose.
+    await rejoindreUnCompte(codeSaisi.value)
+    const faite = liaison.value
+    if (faite?.etat === 'sans-reseau') {
+      noteDeLiaison.value = 'Sans réseau, on ne peut pas relier : le code se vérifie sur le serveur.'
+      return
+    }
+    if (faite?.etat === 'refusee') {
+      noteDeLiaison.value = faite.detail
+      return
+    }
+    codeSaisi.value = ''
+    masquerLeCode()
+  } finally {
+    saisieEnCours.value = false
   }
 }
 
@@ -1272,20 +1325,26 @@ async function rapatrier(): Promise<void> {
         où l'on veut juste rouler.
       -->
       <div class="choices">
-        <button :class="{ 'is-active': !!lienARelier }" @click="onRelier()">
-          {{ lienARelier ? 'Masquer le code' : 'Relier un appareil…' }}
+        <button :class="{ 'is-active': !!codeARelier }" @click="onRelier()">
+          {{ codeARelier ? 'Masquer le code' : 'Relier un appareil…' }}
         </button>
       </div>
       <p class="note">
-        Un téléphone ou un poste de travail qui scanne ce code ouvre le
-        <strong>même compte</strong> : les mêmes profils, les mêmes moteurs, les
-        mêmes boîtes, les mêmes trajets. Rien à saisir, aucune adresse, aucun
-        service tiers.
+        Un téléphone qui scanne le code, ou un poste de travail où l’on recopie
+        huit caractères, ouvre le <strong>même compte</strong> : les mêmes
+        profils, les mêmes moteurs, les mêmes boîtes, les mêmes trajets. Aucune
+        adresse, aucun service tiers.
       </p>
-      <div v-if="lienARelier" class="share">
+      <div v-if="codeARelier" class="share">
         <p class="note warn">
-          Qui voit ce code ouvre ce compte. Il s’efface tout seul au bout de deux
-          minutes, et afficher un code neuf périme celui-ci.
+          Qui voit ce code ouvre ce compte. Il ne sert qu’<strong>une fois</strong>,
+          et il expire dans <strong>{{ resteAffiche }}</strong>.
+        </p>
+        <p class="code-court">{{ codeARelier }}</p>
+        <p class="note">
+          Sur un appareil sans caméra : ouvrir cette application, écran Réglages,
+          et recopier ces huit caractères. Les traits et la casse n’ont pas
+          d’importance.
         </p>
         <div class="qr" v-html="qrARelier" />
         <input :value="lienARelier" readonly @focus="($event.target as HTMLInputElement).select()" />
@@ -1294,6 +1353,26 @@ async function rapatrier(): Promise<void> {
           <button @click="masquerLeCode()">Masquer</button>
         </div>
       </div>
+      <div class="choices">
+        <input
+          v-model="codeSaisi"
+          type="text"
+          inputmode="text"
+          autocapitalize="characters"
+          spellcheck="false"
+          placeholder="Code lu sur l’autre appareil"
+          @keyup.enter="onSaisirLeCode()"
+        />
+        <button :disabled="codeSaisi.length < 8 || saisieEnCours" @click="onSaisirLeCode()">
+          Rejoindre ce compte
+        </button>
+      </div>
+      <p class="note">
+        L’autre bout : si un appareil vous a donné un code, le recopier ici. Cet
+        appareil rejoindra son compte ; celui qu’il porte aujourd’hui est effacé
+        s’il est vide, gardé sinon — et la bannière le dira.
+      </p>
+
       <p v-if="noteDeLiaison" class="note">{{ noteDeLiaison }}</p>
 
       <!--
@@ -2348,6 +2427,19 @@ td input[type='number'] {
   margin: 0.6rem 0;
   font-family: ui-monospace, monospace;
   font-size: 0.8rem;
+}
+
+.code-court {
+  /*
+   * Gros, espacé, en chiffres à chasse fixe : il se lit à bout de bras sur
+   * l'écran d'une voiture, et se recopie sans confondre deux caractères.
+   */
+  font-family: ui-monospace, 'SFMono-Regular', 'Consolas', monospace;
+  font-size: 2rem;
+  letter-spacing: 0.25em;
+  text-align: center;
+  margin: 0.5rem 0;
+  user-select: all;
 }
 
 .qr {

@@ -560,53 +560,60 @@ export function cas({ nom }) {
     },
     // --- Relier un second appareil ----------------------------------------
     //
-    // Le code de liaison est le dernier cas joué, et ce n'est pas un hasard : il
-    // pose un mot de passe sur le compte du jeu, qui cesse alors d'être anonyme.
-    // Rien en aval n'en dépend, mais le mettre plus haut ferait porter cette
-    // conséquence à tout ce qui suit.
+    // Le code de liaison est un jeton à usage unique : le demander n'engage
+    // rien, ce qui permet de le vérifier ici sans laisser de trace utilisable.
+    //
+    // **L'en-tête `Origin` n'est pas décoratif.** La bibliothèque d'identité
+    // refuse un POST qui n'en porte pas — c'est sa protection contre les
+    // requêtes venues d'un autre site —, et un navigateur en met un tout seul.
+    // Le jeu, lui, doit le composer.
     {
       nom: 'le code de liaison refuse sans compte',
       part: 'identite',
       // Un code donné sans compte donnerait un compte à qui le demande.
-      requete: { chemin: '/api/liaison/code', methode: 'POST', corps: '{}' },
-      attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
-    },
-    {
-      nom: 'un code de liaison porte de quoi rouvrir le compte ailleurs',
-      part: 'identite',
       requete: {
-        chemin: '/api/liaison/code',
+        chemin: '/api/auth/liaison/code',
         methode: 'POST',
         corps: '{}',
         entetes: { 'Content-Type': 'application/json' },
+        origine: true,
+      },
+      attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
+    },
+    {
+      nom: 'un code de liaison se lit à bout de bras et se dicte',
+      part: 'identite',
+      requete: {
+        chemin: '/api/auth/liaison/code',
+        methode: 'POST',
+        corps: '{}',
+        entetes: { 'Content-Type': 'application/json' },
+        origine: true,
         compte: true,
       },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
-        const couple = JSON.parse(corps.toString('utf8'))
-        vrai(typeof couple.email === 'string' && couple.email !== '', 'une adresse')
-        vrai(typeof couple.motDePasse === 'string' && couple.motDePasse.length > 20, 'un mot de passe')
-        // Ce qui ouvre un compte n'a rien à faire dans un cache partagé.
+        const donne = JSON.parse(corps.toString('utf8'))
+        // Ni I, ni L, ni O, ni U, ni 0, ni 1 : ce qui se confond sur un écran de
+        // voiture, ou au téléphone.
         vrai(
-          (r.headers.get('cache-control') ?? '').includes('no-store'),
-          'le code n’est jamais mis en cache',
+          /^[2-9A-HJKMNP-TV-Z]{4}-[2-9A-HJKMNP-TV-Z]{4}$/.test(donne.code ?? ''),
+          `huit caractères sans ceux qui se confondent, reçu ${JSON.stringify(donne.code)}`,
         )
+        vrai(Number.isFinite(Date.parse(donne.expireLe ?? '')), 'une date d’échéance lisible')
       },
     },
     {
       nom: 'un code qui ne vaut rien n’ouvre rien',
       part: 'identite',
-      // Le cas ordinaire : un écran photographié la semaine dernière, dont le
-      // mot de passe a été remplacé depuis. Tout autre code qu'un refus ferait
-      // rejouer l'appareil.
+      // Le cas ordinaire : un code déjà servi, ou mal recopié. Tout autre code
+      // qu'un refus ferait rejouer l'appareil.
       requete: {
-        chemin: '/api/liaison/relier',
+        chemin: '/api/auth/liaison/relier',
         methode: 'POST',
-        corps: JSON.stringify({
-          email: `${nom}@anonymous.placeholder.invalid`,
-          motDePasse: 'ce-mot-de-passe-n-ouvre-rien',
-        }),
+        corps: JSON.stringify({ code: 'ZZZZ-ZZZZ' }),
         entetes: { 'Content-Type': 'application/json' },
+        origine: true,
         compte: true,
       },
       attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),

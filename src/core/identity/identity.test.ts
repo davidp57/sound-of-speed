@@ -279,7 +279,7 @@ describe('ce qui est gardé', () => {
 })
 
 describe('relier un second appareil', () => {
-  const COUPLE = { email: 'a7@anonymous.placeholder.invalid', motDePasse: 'assez-long-pour-un-code' }
+  const CODE = 'K7M4-PQ2R'
 
   /** Un serveur qui répond ce qu'on lui dit de répondre, et note ce qu'on lui demande. */
   function serveurDeLiaison(reponses: Record<string, { statut: number; charge?: unknown }>) {
@@ -297,10 +297,29 @@ describe('relier un second appareil', () => {
     return { fetchImpl, appels }
   }
 
-  it('demande un code, et le rend tel quel', async () => {
-    const { fetchImpl } = serveurDeLiaison({ 'liaison/code': { statut: 200, charge: COUPLE } })
+  it('demande un code, et rend ce qu’il reste de validité', async () => {
+    const expire = new Date(1_700_000_600_000).toISOString()
+    const { fetchImpl } = serveurDeLiaison({
+      'liaison/code': { statut: 200, charge: { code: CODE, expireLe: expire } },
+    })
 
-    expect(await demanderUnCode({ fetchImpl })).toEqual({ state: 'pose', couple: COUPLE })
+    expect(await demanderUnCode({ fetchImpl })).toEqual({
+      state: 'pose',
+      code: CODE,
+      expireLe: 1_700_000_600_000,
+    })
+  })
+
+  it('garde le code quand la date d’échéance est illisible', async () => {
+    // Le compte à rebours manquerait, pas le code : refuser ici priverait d'un
+    // geste qui marche pour une date mal formée.
+    const { fetchImpl } = serveurDeLiaison({
+      'liaison/code': { statut: 200, charge: { code: CODE, expireLe: 'bientôt' } },
+    })
+
+    const demande = await demanderUnCode({ fetchImpl, now: () => 1_700_000_000_000 })
+
+    expect(demande).toEqual({ state: 'pose', code: CODE, expireLe: 1_700_000_600_000 })
   })
 
   it('dit qu’on ne relie pas hors réseau, au lieu d’attendre', async () => {
@@ -311,7 +330,7 @@ describe('relier un second appareil', () => {
     }) as unknown as typeof fetch
 
     expect(await demanderUnCode({ fetchImpl })).toEqual({ state: 'sans-reseau' })
-    expect(await relierCetAppareil(COUPLE, { fetchImpl })).toEqual({ state: 'sans-reseau' })
+    expect(await relierCetAppareil(CODE, { fetchImpl })).toEqual({ state: 'sans-reseau' })
   })
 
   it('range l’identité du compte rejoint, et dit le sort de l’ancien', async () => {
@@ -319,13 +338,13 @@ describe('relier un second appareil', () => {
       'liaison/relier': {
         statut: 200,
         charge: {
-          compte: { id: 'c-voiture', name: 'Appareil du 13/09/2026', anonymous: false },
+          compte: { id: 'c-voiture', name: 'Appareil du 13/09/2026', anonymous: true },
           ancien: 'garde',
         },
       },
     })
 
-    const faite = await relierCetAppareil(COUPLE, { fetchImpl, now: () => 1_700_000_000_000 })
+    const faite = await relierCetAppareil(CODE, { fetchImpl, now: () => 1_700_000_000_000 })
 
     expect(faite).toEqual({
       state: 'reliee',
@@ -333,23 +352,39 @@ describe('relier un second appareil', () => {
       identity: {
         id: 'c-voiture',
         name: 'Appareil du 13/09/2026',
-        anonymous: false,
+        anonymous: true,
         obtainedAt: 1_700_000_000_000,
       },
     })
     // Ce qui compte autant : l'appareil rouvrira ce compte-là au démarrage
-    // suivant, sans repasser par le code.
+    // suivant, sans repasser par un code.
     expect(loadIdentity()?.id).toBe('c-voiture')
   })
 
-  it('ne garde rien d’un code périmé', async () => {
+  it('ne garde rien d’un code usé, et le dit sans jargon', async () => {
     saveIdentity(GARDEE)
     const { fetchImpl } = serveurDeLiaison({ 'liaison/relier': { statut: 401 } })
 
-    const faite = await relierCetAppareil(COUPLE, { fetchImpl })
+    const faite = await relierCetAppareil(CODE, { fetchImpl })
 
-    expect(faite.state).toBe('refusee')
+    expect(faite).toEqual({
+      state: 'refusee',
+      detail: "Ce code n'ouvre rien : il a déjà servi, ou il a passé dix minutes.",
+    })
     expect(loadIdentity()).toEqual(GARDEE)
+  })
+
+  it('distingue le refoulement des essais trop rapprochés', async () => {
+    // C'est ce qui protège un code court : le dire fait patienter au lieu de
+    // faire recommencer en boucle.
+    const { fetchImpl } = serveurDeLiaison({ 'liaison/relier': { statut: 429 } })
+
+    const faite = await relierCetAppareil(CODE, { fetchImpl })
+
+    expect(faite).toEqual({
+      state: 'refusee',
+      detail: 'Trop d’essais de suite. Réessayer dans une minute.',
+    })
   })
 })
 

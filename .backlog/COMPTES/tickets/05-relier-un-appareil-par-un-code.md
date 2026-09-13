@@ -1,6 +1,6 @@
 # 05 — Relier un second appareil : un jeton, deux rendus
 
-**Statut :** 🔄 rouvert le 13 septembre 2026 — une première version est livrée (PR #147), le mot de passe posé laisse la place à un jeton
+**Statut :** ✅ fait — 13 septembre 2026, en deux passes (PR #147 puis le jeton)
 
 **Bloqué par :** [02 — Un compte se crée tout seul](02-un-compte-se-cree-tout-seul.md).
 
@@ -80,10 +80,10 @@ la règle « un code neuf périme le précédent » — un jeton s'use, cela suf
 
 ## Critères d'acceptation
 
-- [ ] Un code court de huit caractères relie un appareil sans caméra
-- [ ] Le jeton s'use à la première utilisation, et expire
-- [ ] Les essais sont comptés, et refusés au-delà
-- [ ] Le mot de passe du compte n'est plus touché par la liaison
+- [x] Un code court de huit caractères relie un appareil sans caméra
+- [x] Le jeton s'use à la première utilisation, et expire
+- [x] Les essais sont bornés — par la limitation de débit, voir ci-dessous
+- [x] Le mot de passe du compte n'est plus touché par la liaison
 - [x] L'écran de configuration affiche un code qui relie un second appareil
 - [x] Le second appareil ouvre le même compte : mêmes profils, moteurs, boîtes,
       trajets et profil mesuré
@@ -123,6 +123,32 @@ pas encore, et une bannière qui n'annoncerait qu'un chemin déjà visible dans
 l'écran de configuration n'apprendrait rien. Ce qui est en place est le message
 d'arrivée, sur l'appareil qui vient de se relier.
 
-**Pour le ticket 09 :** le mot de passe posé ici est **remplacé** à chaque
-demande de code. Le jour où l'on choisit son mot de passe, cette règle ne peut
-plus valoir telle quelle — afficher un code effacerait le mot de passe choisi.
+## La seconde passe : le jeton
+
+**Ce qui a décidé de la forme.** Le témoin de connexion est **signé** avec le
+secret du serveur — lu dans `setSessionCookie`. Le composer à la main donnerait
+un témoin que les routes de la bibliothèque ne reconnaîtraient pas ; une première
+tentative de route Hono à côté a buté là-dessus. D'où un **greffon de la
+bibliothèque**, qui donne en prime la table de vérification — elle sait consommer
+une valeur une seule fois, de façon atomique, et rendre `null` si elle a expiré —
+et la limitation de débit.
+
+**Le compteur d'essais par jeton a été abandonné en route**, et c'est mieux
+ainsi : un code inconnu ne vise aucun jeton, donc le compter sur les jetons en
+cours revenait à laisser n'importe qui tuer le code de quelqu'un d'autre en cinq
+essais. La borne est celle de la bibliothèque, par adresse : dix par minute.
+
+**Mesuré contre le vrai serveur**, puis dans le navigateur : le code en
+minuscules et sans trait est accepté, le second appareil ouvre le compte du
+premier et voit descendre son profil, le même code refusé la seconde fois, et le
+compte du premier reste anonyme — c'est-à-dire que son mot de passe n'a pas été
+touché.
+
+**La vérification d'origine s'est invitée**, et on la garde : la bibliothèque
+refuse un POST sans en-tête `Origin`. Un navigateur en met un tout seul, un site
+tiers ne peut pas le falsifier — c'est une protection contre les requêtes venues
+d'ailleurs. Le jeu d'accord, lui, doit le composer.
+
+**Le champ de saisie vit provisoirement dans l'écran de configuration** : sans
+lui, le code court ne servirait à rien. Il déménagera avec le reste au
+[ticket 10](10-l-ecran-du-compte.md).
