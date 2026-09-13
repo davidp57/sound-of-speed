@@ -1,6 +1,13 @@
 # 09 — Reprendre son compte quand on a tout perdu
 
-**Statut :** ⬜ prêt — les deux voies, tranché par David le 13 septembre 2026
+**Statut :** 🚫 remplacé le 13 septembre 2026 par les tickets
+[11](11-un-vrai-compte.md), [12](12-un-compte-tiers.md) et
+[13](13-tenir-son-compte.md)
+
+> Ce ticket reste lisible parce que **les arbitrages qu'il porte tiennent** : les
+> deux voies plutôt qu'une, rien qui s'impose à qui déploie chez lui, une adresse
+> seule qui n'ouvre rien, et « sans adresse, on ne reprend rien ». Ce qui a changé
+> est l'endroit où cela se passe — un écran dédié — et le découpage.
 
 **Bloqué par :** [05 — Relier un second appareil](05-relier-un-appareil-par-un-code.md).
 

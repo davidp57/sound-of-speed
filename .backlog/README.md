@@ -64,7 +64,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [MIGRER](MIGRER/spec.md) — 3/5 · les réglages quittent le navigateur de la voiture et les dossiers du NAS pour la base | ✅ 4/4 — repris du NAS, remonté du navigateur, et rendu au lancement |
 | [RETENTION](RETENTION/spec.md) — 4/5 · analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte ; 8 tickets | 🧑 8/8 — livré ; verdict lu sur la base de production, il est vide |
 | [IMAGE-ARM64](IMAGE-ARM64/spec.md) — l'image du serveur échoue une fois sur deux en arm64 : QEMU rend une instruction illégale pendant `npm ci` | ⬜ constaté le 13 septembre |
-| [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | 🔄 5/9 — un second appareil se relie en scannant un code ; restent les droits, le hors-réseau, le poids et la reprise |
+| [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | 🔄 4/12 — le lot s'élargit le 13 septembre : un écran dédié aux comptes, et un jeton de liaison à la place du mot de passe posé |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,

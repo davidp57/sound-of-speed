@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** 🔄 en cours — 5/9
+**Statut :** 🔄 en cours — 4/12
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -103,11 +103,17 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 | [02](tickets/02-un-compte-se-cree-tout-seul.md) ✅ | Un compte se crée tout seul, et l'application démarre sans lui | 01 |
 | [03](tickets/03-ce-que-porte-solo-change-de-mains.md) ✅ | Ce que porte `solo` devient celui du premier compte | 02 |
 | [04](tickets/04-la-voiture-depose-avec-son-compte.md) ✅ | La voiture dépose avec son compte, et le mot de passe partagé s'efface | 02, 03 |
-| [05](tickets/05-relier-un-appareil-par-un-code.md) ✅ | Relier un second appareil en scannant un code | 02 |
-| [09](tickets/09-reprendre-son-compte.md) | Reprendre son compte quand on a tout perdu : adresse **et** compte tiers | 05 |
+| [05](tickets/05-relier-un-appareil-par-un-code.md) 🔄 | Un jeton de liaison, deux rendus : un code à scanner et un code court à taper | 02 |
+| [10](tickets/10-l-ecran-du-compte.md) | L'écran du compte : le lieu unique où tout se passe | 05 |
+| [11](tickets/11-un-vrai-compte.md) | Un vrai compte : une adresse et un mot de passe, choisis depuis un clavier | 10 |
+| [12](tickets/12-un-compte-tiers.md) | Un compte tenu ailleurs, et seulement s'il est configuré | 11 |
+| [13](tickets/13-tenir-son-compte.md) | Tenir son compte : changer, oublier, emporter, supprimer | 11 |
 | [06](tickets/06-les-droits-ouvrent-les-ecrans.md) | Les droits ouvrent les écrans, et un droit expiré les referme | 02 |
 | [07](tickets/07-hors-reseau-rien-ne-change.md) | Hors réseau, rien ne change : vérifié réseau coupé | 04, 06 |
 | [08](tickets/08-le-poids-charge-par-la-voiture.md) | Le poids chargé par la voiture, mesuré avant et après | 06 |
+
+Le [ticket 09](tickets/09-reprendre-son-compte.md) est **remplacé** par les
+tickets 10 à 13 : voir l'élargissement ci-dessous.
 
 **Quatre points tranchés par David le 13 septembre 2026**, à l'ouverture du
 découpage :
@@ -165,3 +171,44 @@ questions de David sur ce que l'identité recouvre vraiment :
    de connexion fermé au code de la page, valable un an, et une entrée de stockage
    local qui n'ouvre rien. Deux navigateurs sur la même machine font donc deux
    comptes.
+
+## L'élargissement du 13 septembre 2026 : un écran pour les comptes
+
+Le ticket 05 livré, David a demandé ce que porte le code à scanner, et ce qui se
+passe sur un poste de travail **sans caméra**. Deux constats en sont sortis.
+
+**Le premier est technique, et il défait une partie du 05.** La bibliothèque
+d'identité ne garde qu'une preuve « mot de passe » par compte. Le code de
+liaison, tel qu'il a été livré, **remplace** ce mot de passe — donc afficher un
+code effacerait celui que l'on aurait choisi, dès que choisir un mot de passe
+devient possible. La conséquence est nette : **le code à scanner et le code court
+sont la même chose**, un jeton de liaison à usage unique, avec deux rendus. Un
+lien, ou huit caractères à taper. Le mot de passe machine disparaît, et avec lui
+l'effet de bord sur `is_anonymous`.
+
+**Le second est un élargissement de périmètre**, et il tient en une idée : le
+chemin normal va de la voiture au poste de travail. On relie le poste par un
+code, et c'est **là**, sur un vrai clavier, qu'on se fabrique un vrai compte. La
+voiture n'est pas un endroit où taper une adresse.
+
+D'où un **écran dédié aux comptes**, qui porte tout : afficher un code à scanner,
+afficher un code court, saisir un code court, se connecter avec une adresse,
+créer un vrai compte, changer de mot de passe, « j'ai oublié », emporter ses
+données, supprimer son compte.
+
+**Quatre points tranchés par David le 13 septembre 2026 :**
+
+11. **L'écran du compte est un onglet de la barre**, à côté d'Étalonnage — pas
+    une vue par-dessus, pas une section de Configuration. Le ticket 06 décidera
+    ensuite s'il se montre au volant.
+12. **Le jeton d'abord, l'écran ensuite.** L'écran a besoin du code court pour
+    avoir quelque chose à montrer.
+13. **Le compte tenu ailleurs vient après** les tickets 10, 11 et 13 : c'est le
+    seul morceau qui dépend d'un tiers et d'une configuration que personne n'a
+    par défaut.
+14. **Supprimer son compte emporte tout** — profils, moteurs, boîtes, trajets,
+    profil mesuré —, avec une confirmation en deux temps, et **une option pour
+    emporter ses données d'abord** : un fichier à télécharger, ou un envoi par
+    courriel quand un relais est configuré. Le navigateur de la voiture refuse
+    les téléchargements : sur la voiture, sans relais, l'écran doit le dire au
+    lieu de proposer un bouton qui ne fait rien.

@@ -1,6 +1,6 @@
-# 05 — Relier un second appareil en scannant un code
+# 05 — Relier un second appareil : un jeton, deux rendus
 
-**Statut :** ✅ fait — 13 septembre 2026
+**Statut :** 🔄 rouvert le 13 septembre 2026 — une première version est livrée (PR #147), le mot de passe posé laisse la place à un jeton
 
 **Bloqué par :** [02 — Un compte se crée tout seul](02-un-compte-se-cree-tout-seul.md).
 
@@ -12,27 +12,50 @@ son compte quand on a tout perdu. Le second est le
 
 ## Ce qu'il faut obtenir
 
-L'écran de la voiture affiche un code. On le scanne avec son téléphone, ou avec
-son ordinateur de bureau, et cet appareil-là ouvre le **même compte** : les mêmes
-profils, les mêmes moteurs, les mêmes trajets.
+L'écran de la voiture affiche un code. On le scanne avec son téléphone, ou **on
+recopie huit caractères** sur un poste de travail sans caméra, et cet appareil-là
+ouvre le **même compte** : les mêmes profils, les mêmes moteurs, les mêmes
+trajets.
 
 **Sans adresse, sans mot de passe à retenir, sans aucun service tiers.** C'est ce
 qui en fait le chemin normal, et c'est pour cela qu'il vient avant tout le reste.
 
+## Ce que la première version a livré, et ce qui la remplace
+
+Livrée le 13 septembre 2026 (PR #147) : le serveur posait un **mot de passe** sur
+le compte anonyme, et le couple voyageait dans le fragment d'un lien. Cela
+marche, et c'est vérifié — mais cela ne survit pas à la suite.
+
+**La bibliothèque d'identité ne garde qu'une preuve « mot de passe » par
+compte.** Afficher un code écrasait donc le mot de passe du compte : sans
+conséquence tant que personne n'en choisit un, fatal dès le
+[ticket 11](11-un-vrai-compte.md). Et le couple affiché restait valable
+indéfiniment, ce qui empêchait de le sauvegarder sans risque.
+
+Ce qui le remplace : **un jeton de liaison à usage unique**, qui expire, rangé
+dans une table à nous. Deux rendus du même jeton :
+
+- un **lien à scanner**, comme aujourd'hui, mais qui ne porte que le jeton ;
+- un **code court** de huit caractères, groupés, dans un alphabet sans caractères
+  qu'on confond (ni `I`, ni `L`, ni `O`, ni `U`), à recopier sur un clavier.
+
+Ce qui disparaît avec le mot de passe machine : la bascule de `is_anonymous`, et
+la règle « un code neuf périme le précédent » — un jeton s'use, cela suffit.
+
 ## Ce à quoi il faut faire attention
 
-- **Le compte anonyme a déjà tout ce qu'il faut.** La bibliothèque lui a fabriqué
-  une adresse sous le domaine réservé `.invalid`, qui ne désigne aucune boîte ; il
-  suffit de lui **poser un mot de passe**, et le couple devient un identifiant
-  complet. Vérifié le 13 septembre 2026 sur le vrai serveur : `setPassword` est
-  une route réservée au serveur, donc appelée depuis notre code pour la session en
-  cours ; la connexion depuis un autre navigateur avec ce couple rend bien le même
-  compte, y compris depuis un navigateur qui venait de se créer le sien.
+- **Un code court se devine, un lien non.** Huit caractères dans un alphabet de
+  trente-deux font mille milliards de combinaisons ; c'est assez pour dix minutes
+  de validité, à condition de **compter les essais** et de refuser au-delà. Sans
+  ce compteur, le calcul ne tient plus.
+- **Le jeton s'use.** Une fois qu'un appareil s'en est servi, il ne vaut plus
+  rien — c'est ce qui permet de l'afficher sans arrière-pensée, et ce qui rend
+  inutile la règle de péremption de la première version.
 - **Le code porte un lien, pas des identifiants à recopier.** Tout dans le
   **fragment** de l'adresse, qui n'est jamais transmis au serveur — c'est
   exactement le motif du partage de profil, déjà en place avec
   `qrcode-generator`. Recopier `afwfxnmq…@anonymous.placeholder.invalid` à la main
-  serait une punition.
+  serait une punition ; huit caractères, non.
 - **Un code affiché donne le compte à qui le photographie.** C'est assumé : ce qui
   est en jeu est une bibliothèque de réglages, pas de l'argent. Mais le code ne
   reste pas à l'écran, et l'écran le dit.
@@ -45,9 +68,10 @@ qui en fait le chemin normal, et c'est pour cela qu'il vient avant tout le reste
 - **Le compte anonyme que l'appareil secondaire vient de se créer** survit à la
   connexion — mesuré. Sur un appareil neuf il ne porte rien : on l'efface s'il est
   vide, on le garde et on le dit sinon.
-- **`is_anonymous` ne dit plus la vérité** une fois un mot de passe posé : le
-  compte reste marqué anonyme alors qu'il est devenu récupérable. Le drapeau
-  repasse à faux quand un mot de passe est posé.
+- **`is_anonymous` ne bouge pas.** Un compte relié à deux appareils reste
+  irrécupérable si on perd les deux : il n'a toujours ni adresse ni mot de passe.
+  Le drapeau dit donc la vérité, et l'écran garde sa mise en garde jusqu'au
+  [ticket 11](11-un-vrai-compte.md).
 - **Ce qui voyage et ce qui ne voyage pas.** Le volume, le visage de l'écran, le
   verrou, le mode de boîte décrivent l'appareil et restent locaux ; c'est déjà la
   règle du lot MIGRER, et elle ne change pas ici.
@@ -56,6 +80,10 @@ qui en fait le chemin normal, et c'est pour cela qu'il vient avant tout le reste
 
 ## Critères d'acceptation
 
+- [ ] Un code court de huit caractères relie un appareil sans caméra
+- [ ] Le jeton s'use à la première utilisation, et expire
+- [ ] Les essais sont comptés, et refusés au-delà
+- [ ] Le mot de passe du compte n'est plus touché par la liaison
 - [x] L'écran de configuration affiche un code qui relie un second appareil
 - [x] Le second appareil ouvre le même compte : mêmes profils, moteurs, boîtes,
       trajets et profil mesuré
