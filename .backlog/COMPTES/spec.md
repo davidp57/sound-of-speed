@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** ⬜ prêt
+**Statut :** ⬜ prêt — huit tickets
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -89,3 +89,26 @@ perdre d'argent, pas d'en gagner.
 - [ ] La base porte les droits, et un droit expiré referme ce qu'il ouvrait
 - [ ] Celui qui déploie chez lui n'a aucune adresse à donner ni service tiers à
       configurer
+
+## Les tickets
+
+Découpés le 13 septembre 2026. Un seul démarre tout de suite : la bibliothèque
+doit exister avant qu'on parle d'identité. Les deux derniers vérifient — hors
+réseau, et le poids — ce que les six premiers promettent chacun de leur côté.
+
+| | Sujet | Bloqué par |
+|---|---|---|
+| [01](tickets/01-better-auth-entre-dans-le-serveur.md) | Better Auth entre dans le serveur, sans rien casser | — |
+| [02](tickets/02-un-compte-se-cree-tout-seul.md) | Un compte se crée tout seul, et l'application démarre sans lui | 01 |
+| [03](tickets/03-ce-que-porte-solo-change-de-mains.md) | Ce que porte `solo` devient celui du premier compte | 02 |
+| [04](tickets/04-la-voiture-depose-avec-son-compte.md) | La voiture dépose avec son compte, et le mot de passe partagé s'efface | 02, 03 |
+| [05](tickets/05-rattacher-une-adresse-ne-perd-rien.md) | Rattacher une adresse conserve tout ce que le compte portait | 02 |
+| [06](tickets/06-les-droits-ouvrent-les-ecrans.md) | Les droits ouvrent les écrans, et un droit expiré les referme | 02 |
+| [07](tickets/07-hors-reseau-rien-ne-change.md) | Hors réseau, rien ne change : vérifié réseau coupé | 04, 06 |
+| [08](tickets/08-le-poids-charge-par-la-voiture.md) | Le poids chargé par la voiture, mesuré avant et après | 06 |
+
+**Ce que le découpage laisse ouvert**, et qui se tranchera dans les tickets
+plutôt qu'ici : quelle table de comptes fait foi une fois la bibliothèque montée
+(01), ce que la remise à zéro fait d'une identité (02), ce qu'on fait du compte
+anonyme d'un second appareil qui se connecte (05), et le sort du fichier
+`htpasswd` (04).

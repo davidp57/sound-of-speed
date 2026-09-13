@@ -63,7 +63,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [SERVEUR](SERVEUR/spec.md) — 2/5 · un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | 🧑 8/8 — livré et mesuré sur le NAS ; reste l’essai hors réseau |
 | [MIGRER](MIGRER/spec.md) — 3/5 · les réglages quittent le navigateur de la voiture et les dossiers du NAS pour la base | ✅ 4/4 — repris du NAS, remonté du navigateur, et rendu au lancement |
 | [RETENTION](RETENTION/spec.md) — 4/5 · analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte ; 8 tickets | 🧑 8/8 — livré ; verdict lu sur la base de production, il est vide |
-| [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | ⬜ |
+| [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | ⬜ 8 tickets |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
