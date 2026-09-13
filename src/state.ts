@@ -78,8 +78,14 @@ import {
   type IdentityOutcome,
   type SortDeLAncien,
 } from './core/identity/client'
+import {
+  rattacherUneAdresse,
+  seConnecter,
+  type Connexion,
+  type Rattachement,
+} from './core/identity/compte'
 import { lireLienDansUrl, type CodeDeLiaison } from './core/identity/lien'
-import { loadIdentity, type LocalIdentity } from './core/identity/store'
+import { loadIdentity, saveIdentity, type LocalIdentity } from './core/identity/store'
 import { UploadQueue, type QueuedUpload } from './core/upload/queue'
 import { loadQueue, saveQueue } from './core/upload/store'
 import {
@@ -1656,6 +1662,51 @@ export async function rejoindreUnCompte(code: CodeDeLiaison): Promise<void> {
   saveDejaVu({})
   liaison.value = { etat: 'reliee', ancien: faite.ancien }
   await rapatrier()
+}
+
+/**
+ * Donne une adresse et un mot de passe au compte de cet appareil.
+ *
+ * Le compte ne change pas : il n'y a donc **rien à rapatrier**, et c'est ce qui
+ * distingue ce geste de la connexion. Seul son état change — il cesse d'être
+ * anonyme —, et l'écran doit le voir tout de suite.
+ */
+export async function rattacherSonAdresse(
+  email: string,
+  motDePasse: string,
+): Promise<Rattachement> {
+  const rendu = await rattacherUneAdresse(email, motDePasse)
+  if (rendu.state !== 'rattachee') return rendu
+
+  const courant = identity.value
+  if (courant !== null) {
+    const desormais = { ...courant, anonymous: false, email: rendu.email }
+    identity.value = desormais
+    saveIdentity(desormais)
+  }
+  return rendu
+}
+
+/**
+ * Ouvre ici un compte qui existe ailleurs.
+ *
+ * Le compte change, donc tout ce que l'autre porte redescend — comme après un
+ * code de liaison, et pour la même raison : le registre de ce qu'on a déjà vu
+ * parlait du compte d'avant.
+ */
+export async function seConnecterAUnCompte(
+  email: string,
+  motDePasse: string,
+): Promise<Connexion> {
+  const rendu = await seConnecter(email, motDePasse)
+  if (rendu.state !== 'connectee') return rendu
+
+  identity.value = rendu.identity
+  identityState.value = 'gardee'
+  saveDejaVu({})
+  liaison.value = { etat: 'reliee', ancien: rendu.ancien }
+  await rapatrier()
+  return rendu
 }
 
 if (typeof window !== 'undefined') {

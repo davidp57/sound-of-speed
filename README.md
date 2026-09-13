@@ -230,8 +230,8 @@ main.
 
 **Compte** — tout ce qui touche à l'identité, et nulle part ailleurs : ce que
 porte cet appareil, **donner un code** pour qu'un autre appareil ouvre le même
-compte, et **recopier un code** venu d'un autre. La place de la connexion par
-adresse y est prise, et dit qu'elle n'existe pas encore.
+compte, **recopier un code** venu d'un autre, et **une adresse avec un mot de
+passe** pour le jour où l'on n'a plus aucun appareil.
 
 Il est apparu le 13 septembre 2026, quand la section du compte a quitté
 **Configuration** : le chemin normal va de la voiture au poste de travail, et
@@ -1195,12 +1195,32 @@ essais par minute et par adresse : sur les dix minutes de validité, cela fait
 cent tentatives contre six cent cinquante milliards de combinaisons. La limite
 ne s'applique qu'en production, la bibliothèque la coupant ailleurs.
 
-**Un compte anonyme n'a toujours rien à récupérer**, et l'écran **Compte** le
-dit : vider les données du site depuis les réglages du navigateur perd l'accès
-à ce compte, et à ce qui a été déposé avec. Relier un second appareil n'y change
-rien — le compte n'a toujours ni adresse ni mot de passe, et les perdre tous les
-deux le perdrait. C'est une vraie adresse qui y mettra fin. La remise à zéro des
-réglages, elle, n'y touche pas.
+**Un compte anonyme n'a rien à récupérer**, et l'écran **Compte** le dit : vider
+les données du site depuis les réglages du navigateur perd l'accès à ce compte,
+et à ce qui a été déposé avec. Relier un second appareil n'y change rien — le
+compte n'a toujours ni adresse ni mot de passe, et les perdre tous les deux le
+perdrait. La remise à zéro des réglages, elle, n'y touche pas.
+
+**Une adresse et un mot de passe y mettent fin.** On les choisit dans l'écran
+**Compte**, depuis un poste de travail — c'est le moment de saisir sur un vrai
+clavier, pas au volant. Deux gestes que cet écran distingue, et qu'il faut ne pas
+confondre :
+
+- **Rattacher** donne une adresse au compte de cet appareil. Le compte **ne
+  change pas d'identifiant** : ses profils, ses moteurs, ses boîtes, ses trajets
+  et son profil mesuré ne bougent pas d'un pouce. C'est ce qui distingue ce
+  chemin d'une inscription ordinaire, qui créerait un compte neuf et laisserait
+  les réglages sur l'ancien.
+- **Ouvrir un compte qui existe** fait l'inverse : cet appareil rejoint un compte
+  d'ailleurs, et celui qu'il portait est effacé s'il était vide, gardé sinon.
+
+À partir de là, le compte se rouvre depuis n'importe quel appareil, même quand on
+a perdu tous les siens, et il se range dans un gestionnaire de mots de passe.
+
+**Aucun courriel ne part, et l'adresse n'est pas vérifiée.** Il n'y a pas de
+relais à configurer, et celui qui déploie chez lui n'en fournira pas. Ce que cela
+coûte est dit à l'écran : tant qu'il n'y a pas de relais, un mot de passe perdu
+l'est pour de bon.
 
 **Elle se pose sur la table `accounts`**, celle qui existe déjà et à qui pendaient déjà
 six autres tables. L'inverse — adopter la table qu'elle apporte — aurait obligé
@@ -1234,11 +1254,12 @@ sur le site, c'est cette adresse-là qu'il lui faut.
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
-compte. Un jeu de quarante-huit requêtes le vérifie à chaque intégration — voir
+compte. Un jeu de cinquante-deux requêtes le vérifie à chaque intégration — voir
 [`scripts/accord/`](scripts/accord/README.md).
 
-S'y ajoute `/api/auth/liaison/`, sous lequel la voiture demande un code et un
-second appareil s'y relie. Ce sont deux routes **de la bibliothèque
+S'y ajoutent `/api/auth/liaison/`, sous lequel la voiture demande un code et un
+second appareil s'y relie, et `/api/auth/compte/`, qui rattache une adresse et
+rouvre un compte ailleurs. Ce sont deux routes **de la bibliothèque
 d'identité** — un greffon, et non deux routes à côté : le témoin de connexion est
 signé avec le secret du serveur, et seule la bibliothèque sait le poser. En
 prime, ces deux routes exigent un en-tête `Origin`, que tout navigateur envoie et
@@ -3002,7 +3023,7 @@ suit pas.
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
-| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 6 tickets sur 12** |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **en cours, 7 tickets sur 12** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

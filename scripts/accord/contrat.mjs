@@ -618,6 +618,75 @@ export function cas({ nom }) {
       },
       attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
     },
+
+    // --- Se faire un vrai compte -------------------------------------------
+    //
+    // Joué après le code de liaison, et pour la même raison : rattacher une
+    // adresse fait cesser le compte du jeu d'être anonyme. Rien en aval n'en
+    // dépend, et le garder à la fin évite d'y penser.
+    {
+      nom: 'rattacher une adresse refuse sans compte',
+      part: 'identite',
+      requete: {
+        chemin: '/api/auth/compte/rattacher',
+        methode: 'POST',
+        corps: JSON.stringify({ email: `${nom}@exemple.fr`, motDePasse: 'un-mot-de-passe-assez-long' }),
+        entetes: { 'Content-Type': 'application/json' },
+        origine: true,
+      },
+      attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
+    },
+    {
+      nom: 'une adresse se rattache au compte qui existe déjà',
+      part: 'identite',
+      // Le point du ticket 11 : le compte ne change pas d'identifiant, donc rien
+      // de ce qu'il porte ne bouge. Une inscription ordinaire en créerait un neuf.
+      requete: {
+        chemin: '/api/auth/compte/rattacher',
+        methode: 'POST',
+        corps: JSON.stringify({ email: `${nom}@exemple.fr`, motDePasse: 'un-mot-de-passe-assez-long' }),
+        entetes: { 'Content-Type': 'application/json' },
+        origine: true,
+        compte: true,
+      },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        egal(JSON.parse(corps.toString('utf8')).email, `${nom}@exemple.fr`.toLowerCase(), 'adresse')
+      },
+    },
+    {
+      nom: 'un mot de passe faux n’ouvre aucun compte',
+      part: 'identite',
+      // Ni le code ni le message ne doivent dire lequel des deux était faux :
+      // cela apprendrait quelles adresses existent.
+      requete: {
+        chemin: '/api/auth/compte/connexion',
+        methode: 'POST',
+        corps: JSON.stringify({ email: `${nom}@exemple.fr`, motDePasse: 'ce-n-est-pas-le-bon' }),
+        entetes: { 'Content-Type': 'application/json' },
+        origine: true,
+      },
+      attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
+    },
+    {
+      nom: 'le compte se rouvre avec son adresse et son mot de passe',
+      part: 'identite',
+      requete: {
+        chemin: '/api/auth/compte/connexion',
+        methode: 'POST',
+        corps: JSON.stringify({ email: `${nom}@exemple.fr`, motDePasse: 'un-mot-de-passe-assez-long' }),
+        entetes: { 'Content-Type': 'application/json' },
+        origine: true,
+      },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        const rendu = JSON.parse(corps.toString('utf8'))
+        egal(rendu.user?.email, `${nom}@exemple.fr`.toLowerCase(), 'adresse du compte rendu')
+        // Sans témoin, l'appareil aurait ouvert un compte qu'il ne pourrait pas
+        // atteindre.
+        vrai((r.headers.get('set-cookie') ?? '') !== '', 'un témoin de connexion est posé')
+      },
+    },
   ]
 }
 

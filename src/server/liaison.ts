@@ -33,12 +33,10 @@ import { createHash, randomInt } from 'node:crypto'
 
 import { createAuthEndpoint, getSessionFromCtx, sessionMiddleware } from 'better-auth/api'
 import { setSessionCookie } from 'better-auth/cookies'
-import { eq } from 'drizzle-orm'
 import * as z from 'zod'
 
+import { estAnonyme, reglerLAncien } from './abandon'
 import type { Base } from './base/base'
-import { accounts } from './base/schema'
-import { ceQuePorte } from './heritage'
 
 /** Le préfixe sous lequel ce greffon répond, sous celui de l'identité. */
 export const CHEMIN_LIAISON = '/api/auth/liaison'
@@ -79,21 +77,12 @@ const ESSAIS_PAR_MINUTE = 10
 /** Sous quoi le jeton est rangé dans la table de vérification. */
 const PREFIXE = 'liaison:'
 
-/** Ce qu'est devenu le compte que l'appareil portait avant de se relier. */
-export type SortDeLAncien =
-  /** Il était vide : effacé, et personne ne le regrettera. */
-  | 'efface'
-  /** Il portait quelque chose : gardé, et l'écran le dit. */
-  | 'garde'
-  /** Il n'y en avait pas, ou c'était déjà le même compte. */
-  | 'aucun'
-
 /**
  * Le greffon, à monter sur la bibliothèque d'identité.
  *
- * Il reçoit la base parce qu'il a besoin de savoir ce qu'un compte porte —
- * `ceQuePorte` — pour décider si celui que l'appareil abandonne mérite d'être
- * gardé. Tout le reste passe par la bibliothèque.
+ * Il reçoit la base parce qu'il a besoin de savoir ce qu'un compte porte, pour
+ * décider si celui que l'appareil abandonne mérite d'être gardé — voir
+ * `abandon.ts`. Tout le reste passe par la bibliothèque.
  */
 export function liaison({ base }: { base: Base }) {
   return {
@@ -174,55 +163,6 @@ export function liaison({ base }: { base: Base }) {
       { pathMatcher: (chemin: string) => chemin === '/liaison/code', window: 60, max: ESSAIS_PAR_MINUTE },
     ],
   }
-}
-
-/**
- * Un compte vide s'efface, un compte qui porte quelque chose se garde.
- *
- * Le garder laisserait traîner un compte que personne ne rouvrira jamais ;
- * l'effacer sans regarder perdrait des réglages. Ce qui se passe ensuite est à
- * son propriétaire, pas à ce code : l'écran le dit, et s'arrête là.
- */
-async function reglerLAncien(
-  base: Base,
-  avant: string | undefined,
-  desormais: string,
-): Promise<SortDeLAncien> {
-  if (avant === undefined || avant === desormais) return 'aucun'
-
-  // Un compte qu'on n'a pas créé tout seul ne s'efface pas au passage : il a une
-  // adresse, ou un mot de passe, donc quelqu'un peut y revenir.
-  if (!(await estAnonyme(base, avant))) return 'garde'
-
-  const porte = await ceQuePorte(base, avant)
-  const vide =
-    porte.profils === 0 &&
-    porte.moteurs === 0 &&
-    porte.boites === 0 &&
-    porte.depots === 0 &&
-    porte.droits === 0 &&
-    !porte.profilMesure
-  if (!vide) return 'garde'
-
-  // La cascade emporte ses sessions et ses preuves. Rien d'autre ne pend à ce
-  // compte, puisqu'on vient de vérifier qu'il ne porte rien.
-  await base.delete(accounts).where(eq(accounts.id, avant))
-  return 'efface'
-}
-
-/**
- * Un compte s'est-il créé tout seul ?
- *
- * Lu **dans la colonne**, et non dans le type que rend la bibliothèque : c'est
- * la colonne qui fait foi — `CONTEXT.md` le dit —, et le type générique de
- * l'adaptateur ne connaît pas les champs qu'un greffon ajoute.
- */
-async function estAnonyme(base: Base, compte: string): Promise<boolean> {
-  const lignes = await base
-    .select({ anonyme: accounts.isAnonymous })
-    .from(accounts)
-    .where(eq(accounts.id, compte))
-  return lignes[0]?.anonyme === true
 }
 
 /**
