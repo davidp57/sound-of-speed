@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** 🔄 en cours — 14/15
+**Statut :** 🔄 en cours — 16/18
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)

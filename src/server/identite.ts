@@ -98,6 +98,27 @@ export function creerIdentite({ base, secret, adresse, tiers }: OptionsDIdentite
 
   return betterAuth({
     secret,
+    /**
+     * **Les jointures natives, sans quoi aucune connexion par un compte tenu
+     * ailleurs ne fonctionne.**
+     *
+     * Pour savoir à qui appartient une preuve — c'est la question que pose tout
+     * retour de Google ou de Tesla —, la bibliothèque joint la preuve et son
+     * compte. Sans cette option, elle n'utilise pas la jointure de l'adaptateur
+     * mais un repli qui, sur un schéma dont les tables et les champs sont
+     * renommés comme ici, rend un compte **vide** : la preuve est trouvée, son
+     * propriétaire non, et la connexion est refusée comme si ce fournisseur
+     * n'avait jamais été rattaché.
+     *
+     * Le défaut ne se voyait pas : le rattachement, lui, marchait — il sait
+     * déjà de quel compte il parle. On rattachait donc Google avec succès, et
+     * on ne pouvait plus jamais s'en servir pour revenir. Trouvé le 13 septembre
+     * 2026 sur la pile de production ; `proprietaire.test.ts` le tient.
+     *
+     * Les relations que cette jointure suit sont déclarées dans `base/schema.ts`,
+     * et leurs noms ne sont pas libres.
+     */
+    advanced: { database: { joins: true } },
     ...(adresse === undefined ? {} : { baseURL: adresse }),
     basePath: CHEMIN_IDENTITE,
 
