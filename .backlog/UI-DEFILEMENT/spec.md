@@ -1,7 +1,7 @@
 # UI-DEFILEMENT — faire défiler sans dérégler
 
 **Statut :** 🧑 attend David
-**Branche :** `fix/defilement`
+**Branches :** `fix/defilement`, `fix/defilement-partout`
 **Version visée :** 0.3
 
 ## Le problème
@@ -52,9 +52,12 @@ se révèle inopérant sur ce navigateur.
   pas ici.
 - **Sa marque visuelle.** Le dépôt s'interdit les animations et l'emphase ; une
   bande discrète mais reconnaissable, sans dégradé ni flèche clignotante.
-- **Est-ce que la bande sert aussi ailleurs ?** L'écran de télémétrie est une
-  longue colonne lui aussi, mais il n'a pas de curseurs — donc pas le problème.
-  À ne pas généraliser sans raison.
+- ~~**Est-ce que la bande sert aussi ailleurs ?**~~ **Tranché le 14 septembre
+  2026 : oui.** L'argument « pas de curseurs, donc pas le problème » ratait le
+  besoin — ce qu'on cherche en montant dans la voiture, c'est une zone où poser
+  le pouce sans réfléchir, la même à chaque écran. La bande est donc à gauche de
+  tout écran qui se lit en colonne, et nulle part au poste de travail. Voir le
+  [ticket 04](tickets/04-la-bande-passe-sur-les-autres-ecrans.md).
 
 ## Hors périmètre
 

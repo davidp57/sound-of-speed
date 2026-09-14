@@ -6,6 +6,21 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Modifié
+
+- **La bande de défilement passe sur tous les écrans qui se lisent au doigt.**
+  Demandé par David le 14 septembre 2026 : elle n'existait que sur l'écran de
+  configuration. Elle est maintenant à gauche de la télémétrie, de l'étalonnage,
+  du compte et de l'aide, et le glissement n'y dérègle rien.
+
+  **Elle ne paraît qu'en voiture et sur téléphone** : au poste de travail on
+  fait défiler à la molette, et la bande ne ferait qu'y prendre de la largeur.
+  L'écran de conduite n'en reçoit pas — il ne défile pas, et la place manque
+  déjà aux cadrans.
+
+  Le comportement tactile des curseurs, lui, ne change pas : il était déjà
+  déclaré pour tous les curseurs de l'application, où qu'ils soient.
+
 ### Ajouté
 
 - **Le six en ligne est livré avec l'application**, à la demande de David. Quatre

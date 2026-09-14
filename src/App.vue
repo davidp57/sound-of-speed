@@ -27,6 +27,7 @@ import type { Role } from './core/identity/roles'
 import {
   appareil,
   applyUpdate,
+  bandeDeDefilement,
   identity,
   offlineStatus,
   setBrake,
@@ -448,14 +449,22 @@ onBeforeUnmount(() => {
         :immersive="immersive"
         @exit="toggleImmersive()"
       />
-      <TelemetryView v-else-if="tab === 'telemetry'" />
-      <CalibrationPanel v-else-if="tab === 'calibration'" />
-      <SynthView v-else-if="tab === 'synth' && ouverts.has('synth')" />
-      <BenchView v-else-if="tab === 'bench' && ouverts.has('bench')" />
-      <ConfigView v-else-if="tab === 'config'" />
-      <!-- Le compte ferme la liste : c'est le seul écran qu'aucun rôle ne peut
-           refermer, donc le seul qui puisse servir de repli. -->
-      <AccountView v-else />
+      <!--
+        Tous les autres écrans partagent la bande de défilement : ils se lisent
+        du pouce, en colonne, et le glissement n'y doit rien dérégler. L'écran
+        de conduite reste dehors — il ne défile pas, et la bande prendrait aux
+        cadrans la largeur qui leur manque déjà.
+      -->
+      <div v-else class="ecran" :class="{ 'bande-defilement': bandeDeDefilement }">
+        <TelemetryView v-if="tab === 'telemetry'" />
+        <CalibrationPanel v-else-if="tab === 'calibration'" />
+        <SynthView v-else-if="tab === 'synth' && ouverts.has('synth')" />
+        <BenchView v-else-if="tab === 'bench' && ouverts.has('bench')" />
+        <ConfigView v-else-if="tab === 'config'" />
+        <!-- Le compte ferme la liste : c'est le seul écran qu'aucun rôle ne peut
+             refermer, donc le seul qui puisse servir de repli. -->
+        <AccountView v-else />
+      </div>
     </main>
 
     <div v-if="received" class="banner">
@@ -609,5 +618,14 @@ onBeforeUnmount(() => {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
+}
+
+/*
+ * L'écran occupe toute la hauteur du contenu, même quand il est court : sans
+ * cela la bande de défilement s'arrêterait au bas du texte, et le pouce
+ * tomberait dans le vide au tiers de l'écran.
+ */
+.ecran {
+  min-height: 100%;
 }
 </style>
