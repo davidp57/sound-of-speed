@@ -2,14 +2,17 @@
 import { bandeDeDefilement } from '../state'
 
 /**
- * Page d'aide.
+ * L'aide de référence, derrière le bouton `?`.
  *
- * Affichée d'office au premier lancement, puis rappelable à tout moment. Elle
- * répond aux questions qu'on se pose en ouvrant l'application pour la première
- * fois — pourquoi il n'y a pas de son, pourquoi la vitesse reste à zéro — plutôt
- * que de décrire l'interface écran par écran.
+ * Elle n'est plus l'écran du premier lancement depuis le 14 septembre 2026 :
+ * cet écran-là accueille, celui-ci répond. Le tri s'est fait sur une question —
+ * « est-ce qu'on ouvre l'aide pour ça ? ». Où se trouve D ne s'ouvre pas, la
+ * visite guidée le montre ; pourquoi la vitesse reste à zéro, oui.
+ *
+ * Ce qui est parti : « Pour commencer » et « Les commandes de conduite », que la
+ * visite désigne sur l'interface elle-même.
  */
-defineEmits<{ close: []; compte: [] }>()
+defineEmits<{ close: []; compte: []; visite: [] }>()
 
 /**
  * L'adresse du code source, et la version servie à cette page.
@@ -28,59 +31,10 @@ const appVersion = __APP_VERSION__
   <div class="help">
     <div class="ecran" :class="{ 'bande-defilement': bandeDeDefilement }">
       <article>
-        <h1>Sound of Speed</h1>
+        <h1>Aide</h1>
         <p class="lead">
-          Cette application ajoute un son de moteur à une voiture qui n'en fait pas.
-          Elle mesure votre vitesse au GPS, en calcule un régime moteur et un rapport
-          de boîte, et joue le son qui correspond.
-        </p>
-
-        <h2>Pour commencer</h2>
-        <ol>
-          <li>
-            Sur l'écran <b>Conduite</b>, appuyez sur <b>D</b>. L'application
-            démarre : la localisation, le son, l'enregistrement du trajet. Un
-            navigateur n'ouvre le son et la position qu'après un appui — sans ce
-            geste, il ne se passe rien.
-          </li>
-          <li>
-            Autorisez la localisation quand le navigateur la demande, la première
-            fois.
-          </li>
-          <li>
-            En arrivant, appuyez sur <b>P</b>. Tout s'arrête et ce qui a été
-            enregistré part vers le serveur.
-          </li>
-        </ol>
-
-        <h2>Les commandes de conduite</h2>
-        <p>
-          Elles sont entre les deux cadrans, et il y en a quatre.
-        </p>
-        <ul>
-          <li>
-            <b>D</b> démarre. Une fois en route, le même bouton passe en
-            <b>S</b> — le mode sport, qui tient les rapports plus haut dans les
-            tours. Un appui de plus revient à <b>D</b>.
-          </li>
-          <li>
-            <b>P</b> met tout au repos. Il fonctionne aussi en roulant : c'est le
-            bouton d'arrêt de l'application.
-          </li>
-          <li>
-            <b>AUTO</b> et <b>MAN</b> choisissent la boîte. Les commandes de
-            chaque mode sont montrées au-dessus de son étiquette : le bouton de
-            marche pour l'automatique, <b>+</b> et <b>−</b> pour la manuelle. Les
-            touches qui ne commandent plus rien sont estompées — le bouton de
-            marche, lui, reste vif en boîte manuelle, parce qu'il y règle encore
-            le mode sport, donc le son.
-          </li>
-        </ul>
-        <p>
-          Le son se coupe et se rend par l'icône de haut-parleur, en haut à
-          droite, sans rien arrêter d'autre. Si une autre application prend le son
-          — la musique de la voiture, un appel —, c'est le même bouton qui le
-          récupère.
+          Ce que l'on se demande en roulant, et où le trouver. Les commandes elles-mêmes
+          sont montrées par la visite guidée.
         </p>
 
         <h2>La vitesse reste à zéro ?</h2>
@@ -96,6 +50,10 @@ const appVersion = __APP_VERSION__
           cadrans, une fois le son démarré. Il peut monter
           au-delà du maximum habituel, ce qui est utile quand le volume de la voiture
           reste bas pour la musique.
+        </p>
+        <p>
+          Si une autre application a pris le son — la musique de la voiture, un
+          appel —, c'est l'icône de haut-parleur, en haut à droite, qui le récupère.
         </p>
 
         <h2>En roulant</h2>
@@ -145,6 +103,26 @@ const appVersion = __APP_VERSION__
           couche sonore. C'est là qu'il faut regarder quand quelque chose cloche.
         </p>
 
+        <h2>Votre compte</h2>
+        <p>
+          Un compte s'est créé tout seul au premier démarrage : c'est lui qui porte
+          vos profils, vos moteurs et vos trajets. Tant qu'il n'est pas enregistré,
+          il ne tient qu'à ce navigateur — l'enregistrer lui donne un chemin de
+          retour, et se fait depuis un ordinateur plutôt qu'au volant.
+        </p>
+        <p>
+          <button class="lien" @click="$emit('compte')">Aller à l'écran Compte</button>
+        </p>
+
+        <h2>Revoir la visite</h2>
+        <p>
+          Les bulles qui désignent les commandes, une deuxième fois. Elles ne se
+          montrent qu'au premier lancement, où l'on a surtout envie de démarrer.
+        </p>
+        <p>
+          <button class="lien" @click="$emit('visite')">Revoir la visite guidée</button>
+        </p>
+
         <h2>Code source et licence</h2>
         <p>
           Cette application est un logiciel libre, sous licence AGPL-3.0. Son code
@@ -161,29 +139,7 @@ const appVersion = __APP_VERSION__
           enregistré, il faut déposer sa propre banque d'échantillons.
         </p>
 
-        <h2>Ce compte est le vôtre</h2>
-        <p>
-          Un compte s'est créé tout seul au premier démarrage : c'est lui qui porte
-          vos profils, vos moteurs et vos trajets, et c'est sous lui que la voiture
-          dépose ce qu'elle enregistre. Il n'y a rien eu à saisir, et il n'y a rien
-          à saisir pour rouler.
-        </p>
-        <p>
-          Tant qu'il n'est pas enregistré, il ne tient qu'à ce navigateur.
-          L'enregistrer — avec une adresse, ou un compte que vous avez déjà
-          ailleurs — lui donne un chemin de retour : on le rouvre sur un autre
-          appareil, et on ne le perd plus. Cela se fait dans l'écran
-          <b>Compte</b>, et depuis un ordinateur plutôt qu'au volant.
-        </p>
-        <p>
-          <button class="lien" @click="$emit('compte')">Aller à l'écran Compte</button>
-        </p>
-
-        <p class="foot">
-          Vous pouvez revenir ici à tout moment par le bouton <b>?</b>, en haut.
-        </p>
-
-        <button class="start" @click="$emit('close')">Commencer</button>
+        <button class="start" @click="$emit('close')">Fermer</button>
       </article>
     </div>
   </div>
@@ -239,25 +195,11 @@ li {
   line-height: 1.6;
 }
 
-ol {
-  padding-left: 1.2rem;
-}
-
-li {
-  margin-bottom: 0.5rem;
-}
-
 code {
   background: var(--panel-alt);
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
   font-size: 0.9em;
-}
-
-.foot {
-  color: var(--muted);
-  font-size: 0.9rem;
-  margin-top: 2rem;
 }
 
 .version {
@@ -280,7 +222,7 @@ code {
 .start {
   display: block;
   width: 100%;
-  margin-top: 1rem;
+  margin-top: 2rem;
   padding: 0.9rem;
   font-size: 1.05rem;
   background: var(--accent);

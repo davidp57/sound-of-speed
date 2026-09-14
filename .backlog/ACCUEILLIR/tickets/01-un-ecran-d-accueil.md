@@ -1,6 +1,6 @@
 # 01 — Un écran d'accueil, le compte en tête
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 14 septembre 2026
 
 ## Ce qu'il faut obtenir
 

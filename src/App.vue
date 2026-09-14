@@ -4,6 +4,9 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch 
 import AccountView from './ui/AccountView.vue'
 import ConfigView from './ui/ConfigView.vue'
 import HelpView from './ui/HelpView.vue'
+import WelcomeView from './ui/WelcomeView.vue'
+import VisiteGuidee from './ui/VisiteGuidee.vue'
+import { ETAPES_DE_VISITE } from './ui/visite'
 import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
 
@@ -88,11 +91,21 @@ const tab = ref<Tab>('drive')
 const immersive = ref(false)
 
 /**
- * Aide, montrée d'office à la première ouverture.
+ * L'accueil, montré d'office à la première ouverture ; l'aide, seulement sur
+ * demande.
+ *
+ * Les deux étaient un seul écran jusqu'au 14 septembre 2026, et ce texte servait
+ * deux usages qui n'ont rien en commun : accueillir quelqu'un qui ouvre
+ * l'application, et répondre à une question qu'on se pose trois semaines plus
+ * tard. L'accueil est court et ne revient pas ; l'aide est longue et vit
+ * derrière le `?`.
+ *
+ * La clé ne change pas de nom : elle tient toujours le même « une seule fois »,
+ * et la renommer redonnerait l'accueil à qui l'a déjà vu.
  *
  * Le stockage peut être refusé — navigation privée, quota plein. On ne montre
- * alors l'aide qu'une fois par session plutôt que de la répéter à chaque
- * chargement, ni de la taire par prudence.
+ * alors l'accueil qu'une fois par session plutôt que de le répéter à chaque
+ * chargement, ni de le taire par prudence.
  */
 const HELP_SEEN_KEY = 'speed.helpSeen.v1'
 /**
@@ -105,6 +118,16 @@ const HELP_SEEN_KEY = 'speed.helpSeen.v1'
 const OUVERTURES_KEY = 'speed.ouvertures.v1'
 const COMPTE_SIGNALE_KEY = 'speed.compteSignale.v1'
 const helpOpen = ref(false)
+const welcomeOpen = ref(false)
+
+/**
+ * La visite guidée, qui prend la suite de l'accueil.
+ *
+ * Elle a sa propre clé : on peut la revoir sans revoir l'accueil, et l'accueil
+ * déjà vu ne doit pas empêcher une visite qu'on relance depuis l'aide.
+ */
+const VISITE_VUE_KEY = 'speed.visiteVue.v1'
+const visiteOuverte = ref(false)
 /** Message d'un profil reçu par lien, le temps de l'annoncer. */
 const received = ref('')
 
@@ -197,9 +220,53 @@ function markHelpSeen(): void {
   }
 }
 
+function closeWelcome(): void {
+  welcomeOpen.value = false
+  markHelpSeen()
+}
+
+/**
+ * « Commencer » ferme l'accueil et lance la visite — sauf si on l'a déjà vue.
+ *
+ * Les deux clés sont distinctes, et c'est ce qui permet de relancer la visite
+ * plus tard sans remontrer l'accueil.
+ */
+function commencer(): void {
+  closeWelcome()
+  if (tab.value !== 'drive') tab.value = 'drive'
+  try {
+    visiteOuverte.value = localStorage.getItem(VISITE_VUE_KEY) === null
+  } catch {
+    visiteOuverte.value = true
+  }
+}
+
+/** Depuis l'aide : elle se ferme, on revient à la conduite, et les bulles
+ *  repartent — c'est là qu'elles ont quelque chose à désigner. */
+function revoirLaVisite(): void {
+  closeHelp()
+  tab.value = 'drive'
+  visiteOuverte.value = true
+}
+
+function fermerLaVisite(): void {
+  visiteOuverte.value = false
+  try {
+    localStorage.setItem(VISITE_VUE_KEY, '1')
+  } catch {
+    // Sans conséquence : elle se relance depuis l'aide.
+  }
+}
+
+/** L'aide, elle, se ferme sans rien retenir : on l'a ouverte exprès. */
 function closeHelp(): void {
   helpOpen.value = false
-  markHelpSeen()
+}
+
+/** Depuis l'accueil : il se ferme pour de bon, et on atterrit sur le compte. */
+function allerAuCompteDepuisLAccueil(): void {
+  closeWelcome()
+  allerAuCompte()
 }
 
 async function toggleImmersive(): Promise<void> {
@@ -336,9 +403,9 @@ function releaseControls(): void {
 
 onMounted(() => {
   try {
-    helpOpen.value = localStorage.getItem(HELP_SEEN_KEY) === null
+    welcomeOpen.value = localStorage.getItem(HELP_SEEN_KEY) === null
   } catch {
-    helpOpen.value = true
+    welcomeOpen.value = true
   }
   signalerLeCompte()
   // Un profil reçu par lien s'installe avant tout le reste, et le signale.
@@ -378,7 +445,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="shell" :class="{ immersive }">
     <header v-if="!immersive" class="bar">
-      <nav class="tabs">
+      <nav class="tabs" data-visite="onglets">
         <button
           v-for="entry in onglets"
           :key="entry.id"
@@ -396,6 +463,7 @@ onBeforeUnmount(() => {
       <div class="right">
         <button
           class="icon-button"
+          data-visite="son"
           :class="{ 'is-active': soundState === 'on', 'is-warn': soundState === 'taken' }"
           :title="SOUND_TITLES[soundState]"
           :aria-label="SOUND_TITLES[soundState]"
@@ -417,6 +485,7 @@ onBeforeUnmount(() => {
         <button
           v-if="screenLockSupported"
           class="icon-button"
+          data-visite="verrou"
           :class="{ 'is-active': keepScreenOn && screenLockHeld, 'is-warn': keepScreenOn && !screenLockHeld }"
           :title="keepScreenOn ? 'Écran gardé allumé' : 'Laisser l’écran s’éteindre'"
           :aria-label="keepScreenOn ? 'Écran gardé allumé' : 'Laisser l’écran s’éteindre'"
@@ -428,10 +497,14 @@ onBeforeUnmount(() => {
             <path d="M9 20h6" />
           </svg>
         </button>
-        <button class="help-button" title="Aide" @click="helpOpen = true">?</button>
+        <button class="help-button" data-visite="aide" title="Aide" @click="helpOpen = true">
+          ?
+        </button>
         <!-- Le plein écran est l'écran de conduite sans la barre : sans ce
              rôle-là, il n'y a rien à mettre en plein écran. -->
-        <button v-if="ouvertPar('conduite')" @click="toggleImmersive()">Plein écran</button>
+        <button v-if="ouvertPar('conduite')" data-visite="plein-ecran" @click="toggleImmersive()">
+          Plein écran
+        </button>
       </div>
     </header>
 
@@ -473,7 +546,9 @@ onBeforeUnmount(() => {
     </div>
 
     <div
-      v-if="compteASignaler && compteAEnregistrer && !helpOpen && !messageDeLiaison"
+      v-if="
+        compteASignaler && compteAEnregistrer && !helpOpen && !visiteOuverte && !messageDeLiaison
+      "
       class="banner"
     >
       <span>
@@ -490,7 +565,18 @@ onBeforeUnmount(() => {
       <button @click="liaisonVue = true">Fermer</button>
     </div>
 
-    <HelpView v-if="helpOpen" @close="closeHelp()" @compte="allerAuCompteDepuisLAide()" />
+    <WelcomeView
+      v-if="welcomeOpen"
+      @close="commencer()"
+      @compte="allerAuCompteDepuisLAccueil()"
+    />
+    <VisiteGuidee v-if="visiteOuverte" :etapes="ETAPES_DE_VISITE" @fin="fermerLaVisite()" />
+    <HelpView
+      v-else-if="helpOpen"
+      @close="closeHelp()"
+      @compte="allerAuCompteDepuisLAide()"
+      @visite="revoirLaVisite()"
+    />
 
   </div>
 </template>
@@ -530,11 +616,11 @@ onBeforeUnmount(() => {
  */
 .bar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 1rem 0;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
 }
@@ -543,6 +629,51 @@ onBeforeUnmount(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+/*
+ * Les onglets ont la forme d'onglets, et les boutons celle de boutons.
+ *
+ * Ils étaient déjà une barre d'onglets au sens du balisage — `nav`,
+ * `aria-pressed`, l'actif plein couleur d'accent — mais **dessinés comme tous
+ * les autres boutons de l'application**, `Plein écran` et `?` compris, à
+ * quelques pixels de là. Rien ne disait lequel navigue et lequel agit ; David
+ * l'a relevé le 14 septembre 2026.
+ *
+ * L'actif se raccorde au contenu : il en prend le fond, ses coins ne sont
+ * arrondis qu'en haut, et son bord bas mange la ligne de la barre — c'est le
+ * `-1px` qui fait la découpe. Les autres sont nus.
+ *
+ * **La zone tactile ne rétrécit pas** : 37,6 pixels de haut avant, 38,4 après,
+ * mesuré. Ce qui disparaît en bordure est rendu en remplissage.
+ *
+ * **Le raccord ne vaut que sur une ligne** — donc dans la voiture et sur un
+ * poste. Sous 375 pixels les onglets s'empilent sur trois rangs et l'actif ne
+ * touche plus rien : il reste distingué par son fond et sa couleur, ce qui est
+ * l'essentiel, mais la découpe ne veut plus rien dire. Aucun remède en CSS seul
+ * ne tient là, et un rang d'onglets empilé n'est de toute façon plus une barre
+ * d'onglets.
+ */
+.tabs button {
+  margin-bottom: -1px;
+  padding: 0.55rem 0.9rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 6px 6px 0 0;
+  background: none;
+  color: var(--muted);
+}
+
+.tabs button:hover:not(:disabled) {
+  color: var(--text);
+  border-color: transparent;
+}
+
+.tabs button[aria-pressed='true'] {
+  background: var(--bg);
+  border-color: var(--line);
+  border-bottom-color: var(--bg);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 /*
@@ -555,6 +686,9 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 0.4rem;
   margin-left: auto;
+  /* La barre ne garde plus de remplissage en bas — il appartient aux onglets,
+     qui doivent toucher sa ligne. Les commandes le reprennent pour elles. */
+  margin-bottom: 0.6rem;
 }
 
 /* Les commandes d'appareil : une icône chacune, même gabarit que l'aide. */

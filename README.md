@@ -271,8 +271,24 @@ premier lancement on veut rouler, pas lire —, et **il repasse tant que le comp
 n'est pas enregistré**, une fois toutes les dix ouvertures. Montré une seule
 fois, il tombait exactement au moment où l'on n'a encore rien à perdre.
 
-L'aide du premier lancement finit sur le même sujet : elle dit que ce compte est
-le vôtre, et mène à cet écran.
+**Une visite guidée prend la suite de l'accueil.** Des bulles fléchées se posent
+sur l'interface et désignent ce qu'on touche — D, P, le choix de la boîte, le
+volume, puis la barre du haut : les onglets, le son, le verrou d'écran, le plein
+écran et l'aide. Elles lisent la position de leur cible dans le document plutôt que de la
+dessiner : ce qui n'est pas là se saute, et le décompte reste juste. Un bouton
+« Passer » en sort à tout moment.
+
+**L'aide, derrière le bouton `?`, répond au lieu d'accueillir.** Elle ne décrit
+plus les commandes — la visite les montre — et garde ce qu'on vient y chercher :
+pourquoi la vitesse reste à zéro, où est le volume, comment partir sans réseau,
+comment créer un profil, ce que dit la télémétrie, et l'offre de source exigée
+par la licence. Un lien y relance la visite.
+
+**L'écran d'accueil ouvre sur le compte**, et c'est son premier bloc : le
+compte existe déjà, il portera les réglages et les trajets, et il ne tient qu'à
+ce navigateur tant qu'on ne l'enregistre pas. Dans la voiture, il propose de se
+donner un code plutôt que de s'enregistrer — c'est la même distinction que tient
+l'écran Compte, et l'accueil ne peut pas proposer l'inverse de ce qu'il dira.
 
 **Banc** — conduire une vitesse à la main, sans rouler : les deux pédales, le
 curseur d'allure maintenue, et les réglages de ce que la source fabrique
@@ -1098,7 +1114,8 @@ ce qui vient de la base arrive après l'écran. Trois garde-fous :
   lancement, pas en continu.
 
 **Ce qui reste local** : le volume, le visage de l'écran, le verrou, le mode de
-boîte, l'accord donné aux dépôts, l'aide déjà vue, l'étalonnage en cours. Ces
+boîte, l'accord donné aux dépôts, l'accueil et la visite déjà vus, l'étalonnage
+en cours. Ces
 réglages décrivent l'appareil, pas le conducteur.
 
 Rien n'est effacé du stockage local par cette reprise.
@@ -3280,6 +3297,7 @@ suit pas.
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
 | 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **14 tickets sur 15 ; Google est configuré sur le NAS et vérifié ; restent l'essai hors réseau en voiture et « j'ai oublié »** |
+| 52 | Accueillir au premier lancement : un écran court le compte en tête, une visite à bulles sur l'interface, de vrais onglets, et une aide qui répond au lieu d'accueillir | **livré** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
@@ -3366,7 +3384,8 @@ En clair, et sans que ce paragraphe remplace le texte de la licence :
 C'est la raison du choix : ce produit est devenu un service qu'on atteint depuis
 un navigateur, et une licence qui ne se déclenche qu'à la distribution de
 fichiers n'y changerait rien. L'application satisfait elle-même cette exigence :
-l'écran d'aide porte un lien vers le dépôt et la version servie. **Si vous
+l'écran d'accueil et l'aide portent tous deux un lien vers le dépôt et la
+version servie. **Si vous
 déployez une version modifiée, ce lien doit mener à votre code, pas à celui-ci.**
 
 ### Ce qui n'est pas sous AGPL

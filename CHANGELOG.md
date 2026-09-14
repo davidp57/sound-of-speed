@@ -6,7 +6,35 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Une visite guidée après l'accueil.** Des bulles fléchées se posent sur
+  l'interface réelle et désignent ce qu'on touche : D, P, le choix de la boîte,
+  le volume. Elles lisent la position de leur cible dans le document, se
+  replacent quand la fenêtre change de taille, et **sautent ce qui n'est pas
+  là** — le volume n'apparaît qu'une fois le son prêt, et un rôle peut fermer un
+  écran. Un bouton « Passer » en sort à tout moment. La visite continue sur la
+  barre du haut : les onglets, le son, le verrou d'écran, le plein écran et
+  l'aide.
+- **Un écran d'accueil au premier lancement**, à la place du manuel de onze
+  sections. Il tient sur un écran : ce que fait l'application, le compte en
+  premier et en gros — il existe déjà, il portera les réglages et les trajets,
+  et il ne tient qu'à ce navigateur — puis les trois gestes pour rouler. Dans la
+  voiture, il propose de se donner un code plutôt que de s'enregistrer, comme le
+  fait l'écran Compte.
+
 ### Modifié
+
+- **Les onglets ont la forme d'onglets.** Ils étaient dessinés comme tous les
+  autres boutons de l'application, `Plein écran` et `?` compris, à quelques
+  pixels de là : rien ne disait lequel navigue et lequel agit. L'onglet actif se
+  raccorde désormais au contenu — coins arrondis en haut, bord bas qui mange la
+  ligne de la barre — et les autres sont nus. La zone tactile passe de 37,6 à
+  38,4 pixels. Le raccord ne vaut que tant que la barre tient sur une ligne.
+- **L'aide n'est plus le premier écran : elle répond au lieu d'accueillir.**
+  Derrière le bouton `?`, elle perd « Pour commencer » et « Les commandes de
+  conduite », que la visite montre sur l'interface, et garde ce qu'on vient y
+  chercher. Un lien y relance la visite.
 
 - **Les cadrans occupent l'écran.** Demandé par David le 14 septembre 2026 :
   « les cadrans sont trop petits, il faut gagner de la place en réduisant la

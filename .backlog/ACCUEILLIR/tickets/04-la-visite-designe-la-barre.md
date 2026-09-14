@@ -1,6 +1,6 @@
 # 04 — La visite désigne la barre du haut
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 14 septembre 2026
 
 **Bloqué par :** [02 — Des bulles sur l'interface](02-des-bulles-sur-l-interface.md)
 pour le mécanisme, et [03 — De vrais onglets](03-de-vrais-onglets.md) pour ne pas
@@ -28,6 +28,17 @@ Quatre bulles de plus, après celles de l'écran de conduite :
 4. **Plein écran** et **`?`** : l'un donne toute la hauteur aux chiffres, l'autre
    rouvre l'aide, et on peut y revenir à tout moment. Dernière bulle, celle qui
    termine la visite.
+
+## Ce qui a changé en le faisant
+
+**Cinq bulles, pas quatre.** Le plein écran et le `?` devaient tenir dans une
+seule : ils sont voisins mais distincts, et une bulle qui désigne l'un en parlant
+des deux désigne mal. Séparés, le plein écran se saute tout seul là où il
+n'existe pas — il ne s'affiche qu'avec le rôle de conduite.
+
+**La bannière de rappel du compte s'efface pendant la visite.** Elle apparaissait
+en bas de l'écran et redisait ce que l'accueil venait de dire, en travers des
+bulles.
 
 ## Comment on vérifie
 

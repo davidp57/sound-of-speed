@@ -62,7 +62,9 @@ const driveLabel = computed(() => {
 
 <template>
   <div class="selector">
-    <div class="modes">
+    <!-- `data-visite` : ce que la visite guidée du premier lancement désigne.
+         Elle ne connaît que ces noms, pas la structure de cet écran. -->
+    <div class="modes" data-visite="boite">
       <!--
         La boîte automatique : une seule touche, qui porte la marche et le
         tempérament.
@@ -72,6 +74,7 @@ const driveLabel = computed(() => {
           <button
             type="button"
             class="key"
+            data-visite="marche"
             :class="{ 'is-active': isRunning }"
             :aria-label="driveLabel"
             @click="pressDrive()"
@@ -91,6 +94,7 @@ const driveLabel = computed(() => {
           <button
             type="button"
             class="key park"
+            data-visite="repos"
             :class="{ 'is-active': !isRunning }"
             :aria-label="isRunning ? 'Mettre au repos' : 'Au repos'"
             @click="stop()"

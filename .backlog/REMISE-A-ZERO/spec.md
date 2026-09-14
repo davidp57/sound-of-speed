@@ -30,7 +30,7 @@ ORIGINE. Ce lot-ci est l'échelon au-dessus : l'appareil entier.
 
 ## Ce que l'application retient
 
-Seize clés, relevées dans le code :
+Dix-neuf clés, relevées dans le code :
 
 | Clé | Ce qu'elle porte |
 |---|---|
@@ -45,13 +45,20 @@ Seize clés, relevées dans le code :
 | `speed.driveMode.v1` | Route ou Sport |
 | `speed.driveFace.v1` | la disposition de l'écran de conduite |
 | `speed.advancedMode.v1` | le mode avancé de la configuration |
-| `speed.helpSeen.v1` | l'aide déjà lue |
+| `speed.helpSeen.v1` | l'accueil du premier lancement, déjà vu |
+| `speed.visiteVue.v1` | la visite guidée, déjà vue |
 | `speed.journal.v1` | le consentement au journal de bord |
 | `speed.deposit.v1` | le consentement à la remontée |
 | `speed.traces.v1` | les traces connues |
 | `speed.uploads.v1` | les dépôts en attente |
+| `speed.ouvertures.v1` | combien de fois l'application a été ouverte |
+| `speed.compteSignale.v1` | à quelle ouverture le rappel du compte a été écarté |
 
-**Une dix-septième clé existe depuis le 13 septembre 2026, et ce bouton ne doit
+Les deux dernières manquaient au relevé : elles sont arrivées avec le rappel du
+compte, le 13 septembre 2026, et la liste n'a pas suivi. Le décompte est donc à
+refaire au moment d'écrire le bouton, pas à recopier d'ici.
+
+**Une vingtième clé existe depuis le 13 septembre 2026, et ce bouton ne doit
 pas l'effacer** : `speed.identity.v1` porte le compte de cet appareil, arrivé
 avec le lot [COMPTES](../COMPTES/spec.md). Son ticket 02 le tranche : la remise
 à zéro remet des **réglages** à leurs valeurs d'usine, elle ne déconnecte pas.

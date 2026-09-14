@@ -413,7 +413,7 @@ const SPEED_STEP_KMH = 20
       -->
       <div v-if="audioPhase === 'ready'" class="group">
         <span class="label">Son</span>
-        <label class="volume">
+        <label class="volume" data-visite="volume">
           Volume
           <input
             type="range"
