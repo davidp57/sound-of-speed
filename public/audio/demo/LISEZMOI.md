@@ -38,13 +38,21 @@ corrigent. Un moteur simulé, lui, n'appartient à personne.
 ## Provenance et licence
 
 Produite par `scripts/generate-bank/`, depuis la définition
-`scripts/generate-bank/engines/i4-check.json`. Elle se refait à l'identique :
+`scripts/generate-bank/engines/i4-check.json` :
 
 ```bash
 node native/prepare.mjs
 bash native/build-generator.sh
 node scripts/generate-bank/generate.mjs scripts/generate-bank/engines/i4-check.json
 ```
+
+**La commande ne rend plus exactement ces fichiers-là.** Depuis le
+14 septembre 2026, le banc construit le moteur que décrit la bibliothèque de
+l'application et non plus une géométrie figée dans son code : sept valeurs
+avaient divergé, dont la gigue d'échantillonnage, corrigée le 8 septembre côté
+son direct mais jamais côté banc. Refaire la banque donne donc un son plus
+grave et sans ce cliquetis. Les fichiers livrés ici sont ceux d'avant, et leur
+remplacement est un choix qui se juge à l'oreille.
 
 Le modèle de moteur et la réponse d'échappement viennent d'engine-sim
 (© 2022 AngeTheGreat, licence MIT — texte recopié dans

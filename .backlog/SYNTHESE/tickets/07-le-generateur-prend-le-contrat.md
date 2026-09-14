@@ -116,9 +116,11 @@ la vérifie sans banque sous la main.
 | Saut d'énergie au bouclage, une fois joué | 13,6 % au pire, 3,3 % en médiane |
 | Relief brut rabattu | 0,35, soit 23 dB retenus sur 65,7 mesurés |
 
-Points de comparaison, mesurés avec les mêmes outils : la banque enregistrée est
-à 0,26–0,81 de vitesse de lecture et 10,8 % de saut ; le V8 généré du
-5 septembre à 0,74–1,36 et 1,30 demi-ton.
+Point de comparaison, mesuré avec les mêmes outils : la banque enregistrée est à
+0,26–0,81 de vitesse de lecture et 10,8 % de saut. Les chiffres des banques
+générées plus tôt dans ce lot ne se comparent pas directement — ils ont été pris
+à des états différents du modèle, avant et après la captation d'échappement.
+C'est le piège où je suis tombé plus bas, section « Les deux autres banques ».
 
 ## Ce que la convergence a révélé
 
@@ -142,3 +144,55 @@ fallait le dire.
 
 Et le contrat annonçait un test d'accord entre ses deux listes qui **n'existait
 pas**. Il existe : `src/core/preset/engine-contract.test.ts`.
+
+## Les deux autres banques, régénérées
+
+Demandé par David le 14 septembre, dans la foulée.
+
+| Banque | Prises | Vitesse de lecture | Erreur de timbre | Saut au bouclage | Calcul |
+|---|---|---|---|---|---|
+| `gm-ls-long-header` | 18 | 0,74 – 1,35 | 1,14 demi-ton | 13,6 % | 221 s |
+| `v8-crossplane` | 18 | 0,74 – 1,36 | 1,49 demi-ton | 11,4 % | 212 s |
+| `i4-check` | 15 | 0,71 – 1,40 | **4,99 demi-tons** | **39,7 %** | 75 s |
+
+Les deux chiffres en gras du quatre cylindres demandaient une explication, et la
+première que j'ai donnée était fausse : j'avais comparé les 4,99 aux 0,67
+annoncés plus haut dans ce lot, en concluant à une régression. **Ces 0,67
+mesuraient la banque au tube fabriqué**, pas celle à captation réelle ; les deux
+ne se comparent pas.
+
+Mesuré pour trancher : six prises en charge de 1 592 à 6 300 tr/min, avec
+l'ancienne géométrie du banc puis avec `subaru-ej25`, tout le reste identique.
+
+| Régime | ancien banc | `subaru-ej25` |
+|---|---|---|
+| 1 592 | 419 Hz | 284 Hz |
+| 2 245 | 588 Hz | 427 Hz |
+| 3 167 | 531 Hz | 379 Hz |
+| 4 466 | 570 Hz | 371 Hz |
+| 5 305 | 518 Hz | 313 Hz |
+| 6 300 | 646 Hz | 459 Hz |
+| **amplitude, en demi-tons** | **7,48** | **8,32** |
+
+Deux faits en sortent :
+
+1. **Le centroïde zigzague dans les deux cas**, de sept à huit demi-tons, sans
+   monotonie. Ce n'est donc pas la convergence qui a créé l'irrégularité : elle
+   était là, et l'erreur de timbre de 4,99 mesure le modèle, pas le changement
+   de moteur.
+2. **Le moteur de la bibliothèque sonne 27 à 40 % plus grave.** Les cames en
+   sont la cause la plus probable — durées 232 et 236 contre 220, centres de
+   lobes relevés dans le fichier au lieu du défaut de la structure.
+
+Le saut de 39,7 % porte sur **une seule prise**, `off-800` : le pied levé au
+ralenti, la plus faible de toutes à −65,7 dB brut, retenue à −23 dB. C'est le
+premier endroit où écouter si une boucle claque.
+
+## Reste à décider
+
+La **banque de démonstration** de `public/audio/demo/`, la seule versionnée, est
+produite depuis `i4-check`. Elle porte donc encore la gigue d'échantillonnage à
+0,05 — le cliquetis corrigé le 8 septembre côté direct — et l'ancienne
+géométrie. La régénérer changerait le son que tout nouveau venu entend au
+premier lancement : plus grave, sans cliquetis. C'est un livrable public, donc
+un choix de David.

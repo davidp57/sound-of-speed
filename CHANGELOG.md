@@ -29,12 +29,19 @@ Toutes les évolutions notables du projet. Format
   erreur de timbre 1,14 demi-ton, saut d'énergie au bouclage 13,6 % au pire.
   Reste à l'écouter.
 
-  **Régénérer une banque d'avant ne rendra pas le même son.** Les deux sources
-  avaient divergé — cinq valeurs sur le V8, sept sur le quatre cylindres — et
-  c'est le TypeScript qui porte les corrections. La plus audible : la gigue
-  d'échantillonnage, 0,05 côté banc contre 0 depuis la mesure du 8 septembre,
-  qui valait 8,7 dB à 5 600 Hz et 25,5 dB à 8 000 Hz. La correction n'avait
-  jamais atteint le banc.
+  **Les deux autres banques sont régénérées**, à la demande de David. Les deux
+  sources avaient divergé — cinq valeurs sur le V8, sept sur le quatre
+  cylindres — et c'est le TypeScript qui porte les corrections. La plus
+  audible : la gigue d'échantillonnage, 0,05 côté banc contre 0 depuis la mesure
+  du 8 septembre, qui valait 8,7 dB à 5 600 Hz et 25,5 dB à 8 000 Hz. La
+  correction n'avait jamais atteint le banc.
+
+  Le V8 sort à 11,4 % de saut d'énergie au bouclage et 1,49 demi-ton d'erreur de
+  timbre. Le quatre cylindres, lui, sort à 4,99 demi-tons. Mesuré pour savoir d'où ça vient : le centroïde du modèle zigzague de
+  sept à huit demi-tons sur la plage **avec l'ancienne géométrie comme avec la
+  neuve**. Ce n'est donc pas le changement de moteur qui l'a créé. Celui-ci
+  déplace autre chose : le quatre cylindres sonne 27 à 40 % plus grave, les
+  cames ayant repris les durées relevées dans le fichier.
 
 ### Corrigé
 
