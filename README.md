@@ -163,12 +163,23 @@ est vu de la place du conducteur. Le redessiner en perspective demandait de
 remesurer ce qu'un rendu continu coûte à la régularité du son, pour un décor dont
 rien ne se lit. Le son passe avant.
 
-**Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
-lissage, pente, accélération, qualité du signal GPS, régime, régime entendu,
-charge, état de la transmission, régime que donnerait chaque rapport, gain et
-vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là que
-se lit l'état de la **capture du trajet** : ce qu'elle retient, ce qui est parti,
-et ce qui l'empêche de partir.
+**Télémétrie** — quatre valeurs de **santé du signal**, en grand et lisibles en
+roulant : la précision annoncée par le GPS, le temps depuis la dernière mesure,
+la vitesse lissée à côté de la brute, l'état du son. Elles répondent à la seule
+question qu'on se pose au volant — est-ce que ça marche, et sinon où ça casse.
+La précision passe en couleur d'alerte au-delà du seuil du profil, et le temps
+depuis la dernière mesure au-delà de trois secondes.
+
+Cet écran **reste ouvert en roulant** : lire n'est pas régler, il n'a aucun
+champ modifiable, et c'est le seul endroit d'où l'on voit ce que le GPS donne
+vraiment pendant un trajet.
+
+Le reste — dix sections — tient sous un repli intitulé *Avancé — à lire à
+l'arrêt* : vitesse brute et lissée, écart de lissage, pente, accélération,
+qualité du signal, régime, régime entendu, charge, état de la transmission,
+régime que donnerait chaque rapport, gain et vitesse de lecture de chaque couche,
+niveau de sortie, et l'état de la **capture du trajet**. C'est un avertissement,
+pas un verrou : il s'ouvre au toucher.
 
 Elle porte aussi de quoi **redemander une position en roulant**. Passer par `P`
 puis `D` relance déjà la localisation, mais au prix du son coupé et d'une capture

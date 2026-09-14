@@ -39,6 +39,16 @@ Toutes les évolutions notables du projet. Format
   la raison et le temps restant. Un onglet qui va et vient déplacerait ses
   voisins sous le doigt.
 
+- **La télémétrie se lit d'un coup d'œil en roulant.** Quatre valeurs de santé
+  passent en tête, en grand : la précision annoncée par le GPS, le temps depuis
+  la dernière mesure, la vitesse lissée à côté de la brute, l'état du son. Les
+  dix sections d'origine tiennent sous un repli intitulé *Avancé — à lire à
+  l'arrêt*, à leur taille d'avant.
+
+  L'écran reste ouvert en roulant, et c'est délibéré : lire n'est pas régler, il
+  n'a aucun champ modifiable, et c'est le seul endroit d'où l'on voit ce que le
+  GPS donne vraiment pendant un trajet.
+
 - **Un écran Atelier, et le rôle `atelier` sert enfin à quelque chose.** Créer,
   nommer, dupliquer, supprimer, exporter et partager un profil, régler le mixage
   et les couches, fabriquer un moteur, tenir un timbre au banc de synthèse : tout
