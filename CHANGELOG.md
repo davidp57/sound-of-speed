@@ -6,6 +6,56 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Le banc hors ligne sait produire n'importe quel moteur de la bibliothèque.**
+  David, le 14 septembre : « peut-on utiliser l'engine-sim pour générer une
+  banque de son de la GM échappement long ? ». Non, on ne pouvait pas : le
+  moteur qu'il désigne n'existait que du côté TypeScript, et le banc portait sa
+  géométrie écrite en dur dans une copie de `probe.cpp` — deux moteurs, pas un
+  de plus.
+
+  Une définition de banque **nomme** désormais un moteur :
+  `"engine": "gm-ls-long-header"`, un identifiant de la même liste que l'écran
+  de synthèse. L'outil en tire les vingt-neuf nombres du contrat et les passe au
+  banc par fichier ; `node scripts/generate-bank/moteur.mjs` liste ce qu'on sait
+  construire. La copie a disparu : les constructeurs paramétrés ont déménagé
+  dans `native/engines.h`, que la sonde et le banc incluent tous les deux. La
+  sonde rend les mêmes chiffres qu'avant, mesuré — 1 841 tr/min et ×0,96 le
+  temps réel, à l'identique.
+
+  **Une banque du GM à collecteur long est produite** : 18 fichiers, 3 min 41 de
+  calcul, vitesse de lecture de 0,74 à 1,35 sur toute la conduite ordinaire,
+  erreur de timbre 1,14 demi-ton, saut d'énergie au bouclage 13,6 % au pire.
+  Reste à l'écouter.
+
+  **Régénérer une banque d'avant ne rendra pas le même son.** Les deux sources
+  avaient divergé — cinq valeurs sur le V8, sept sur le quatre cylindres — et
+  c'est le TypeScript qui porte les corrections. La plus audible : la gigue
+  d'échantillonnage, 0,05 côté banc contre 0 depuis la mesure du 8 septembre,
+  qui valait 8,7 dB à 5 600 Hz et 25,5 dB à 8 000 Hz. La correction n'avait
+  jamais atteint le banc.
+
+### Corrigé
+
+- **Un profil de banque générée garde le moteur qui a fait son son.** Il portait
+  la définition de banque dans `engineDefinition`, qui est le champ des
+  vingt-neuf nombres du moteur : à l'import, le dossier et la recette
+  disparaissaient. Le champ porte maintenant le moteur, et la recette reste où
+  elle est écrite — `mesures.json`, à côté des fichiers produits, que le
+  `sampleDir` du profil désigne. Conséquence utile : basculer un tel profil en
+  son direct joue le moteur qui a produit ses échantillons.
+
+  Le test qui devait attraper ce défaut ne tournait nulle part : le fichier
+  entier était sauté faute de banque sous la main, et le défaut y est resté du
+  5 au 14 septembre. Il tourne désormais en intégration continue.
+
+- **Le contrat de définition de moteur est enfin gardé par un test.** Le
+  document l'annonçait — « un test compare la liste TypeScript à l'énumération
+  C++ » — mais ce test n'existait pas. Il existe, et il vérifie les clés, leur
+  ordre, la numérotation et le compte. Un décalage d'un cran ferait passer une
+  longueur de bielle pour un volume de chambre.
+
 ### Modifié
 
 - **L'écran du compte suit le parcours de toutes les autres applications.** On

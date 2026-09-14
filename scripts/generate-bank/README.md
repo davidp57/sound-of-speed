@@ -33,7 +33,8 @@ pour que la vitesse de lecture reste près de un.
 ```bash
 node native/prepare.mjs                 # sources d'engine-sim, une fois
 bash native/build-generator.sh          # compile le banc hors ligne
-node scripts/generate-bank/generate.mjs scripts/generate-bank/engines/v8-crossplane.json
+node scripts/generate-bank/moteur.mjs   # les moteurs qu'on sait construire
+node scripts/generate-bank/generate.mjs scripts/generate-bank/engines/gm-ls-long-header.json
 ```
 
 La banque atterrit dans `public/audio/<dossier>/`, qui n'est pas versionné —
@@ -50,38 +51,46 @@ Le dossier produit contient les WAV, plus deux fichiers :
 - **`profil.json`** — un profil partiel. L'application le complète avec ses
   valeurs par défaut à l'import : on le charge par « Importer un profil » dans
   l'écran de configuration, et il n'y a rien d'autre à régler. Il se déclare
-  d'origine **générée à l'avance** et emporte la définition de moteur qui l'a
-  produit : sans elle, la banque serait une boîte noire qu'on ne saurait plus
-  refaire après avoir changé un réglage.
-- **`mesures.json`** — le relevé complet : régimes tenus, sauts d'énergie,
-  niveaux mesurés, centroïdes, couple au dynamomètre, température de chambre.
-  Aucun chiffre annoncé ailleurs n'est invérifiable.
+  d'origine **générée à l'avance** et emporte **le moteur** qui a fait le son,
+  les vingt-neuf nombres du contrat. Conséquence utile : basculer ce profil en
+  son direct joue le moteur qui a produit ses échantillons.
+- **`mesures.json`** — le relevé complet : la définition de banque, le moteur,
+  les régimes tenus, sauts d'énergie, niveaux mesurés, centroïdes, couple au
+  dynamomètre, température de chambre. C'est la recette, à côté des fichiers
+  qu'elle a produits : une banque se refait en la relisant, et le `sampleDir` du
+  profil est ce qui y mène. Aucun chiffre annoncé ailleurs n'est invérifiable.
 
-Les prises témoins et les prises brutes restent dans `<dossier>/.brut/`. Elles
-ne partent pas dans la banque.
+Les prises témoins et les prises brutes restent dans `<dossier>/.brut/`, avec
+`moteur.txt` — les vingt-neuf nombres tels que le banc les a lus. Rien de tout
+cela ne part dans la banque.
 
 Le profil produit se vérifie contre la fonction d'import de l'application, sans
 navigateur :
 
 ```bash
-PROFIL_GENERE=public/audio/v8-crossplane/profil.json \
+PROFIL_GENERE=public/audio/gm-ls-long-header/profil.json \
   npx vitest run scripts/generate-bank/profile.test.mjs
 ```
 
-Sans la variable, le test se passe : il n'a pas de banque sous la main.
+Sans la variable, les cas qui demandent une vraie banque se passent — mais le
+reste du fichier tourne, et il tourne donc en intégration continue. Il ne le
+faisait pas : le fichier entier était sauté faute de banque, et le défaut qu'il
+devait attraper y est resté du 5 au 14 septembre 2026.
 
-## La définition de moteur
+## La définition de banque
 
 Un fichier JSON, par exemple
-[`engines/v8-crossplane.json`](engines/v8-crossplane.json) :
+[`engines/gm-ls-long-header.json`](engines/gm-ls-long-header.json). Elle dit
+**quel moteur** et **quelles prises** ; le moteur lui-même vit dans
+l'application :
 
 | Champ | Rôle |
 |---|---|
 | `name` | nom du profil produit |
 | `sampleDir` | sous-dossier de `public/audio/` |
-| `base` | définition C++ utilisée : `crossplaneV8` ou `inline4` |
-| `cylinders` | nombre de cylindres, repris dans le profil |
-| `idleRpm`, `redlineRpm` | les deux bouts de la plage couverte |
+| `engine` | **un identifiant de la bibliothèque de l'application** — `node scripts/generate-bank/moteur.mjs` les liste |
+| `idleRpm` | le bas de la plage couverte |
+| `redlineRpm` | le haut, facultatif : le moteur choisi porte le sien |
 | `simulationHz` | fréquence de simulation, 10 000 comme la sonde |
 | `impulseSamples` | longueur du tube fabriqué, quand c'est lui qui sert |
 | `exhaustResponse` | captation d'échappement, un nom de `public/impulse/` sans l'extension ; `smooth_39` par défaut, `"tube"` pour l'ancienne résonance fabriquée |
@@ -128,10 +137,30 @@ Ce n'est pas le haut-médium qui décide — `sharp_01` en porte plus que
 sonner synthétique**, la bande même du souffle que le tube laissait passer.
 Surveiller celle-là d'abord sur une banque produite.
 
-**La géométrie du moteur reste en C++**, dans `native/engines.h` : cotes,
-came, courbes de débit, ordre d'allumage. Le JSON choisit une définition et
-règle ce qui façonne la banque. Décrire un moteur entier en JSON est le travail
-du mode direct (ticket 03), pas celui-ci.
+### Le moteur vient de la bibliothèque de l'application
+
+`engine` nomme un moteur de `ENGINE_LIBRARY` — la liste que l'écran de synthèse
+propose, celle d'où viennent les réglages que David a trouvés à l'oreille. Le
+banc reçoit ses **vingt-neuf nombres**, ceux de
+[`CONTRAT-MOTEUR.md`](../../native/CONTRAT-MOTEUR.md), par un fichier que l'outil
+écrit dans `.brut/moteur.txt`.
+
+Ce n'était pas le cas jusqu'au 14 septembre 2026 : la géométrie vivait en dur
+dans `native/engines.h`, et le banc ne savait construire que deux moteurs. Une
+banque du GM à collecteur long était donc impossible — le moteur n'existait que
+du côté TypeScript. Les constructeurs paramétrés de `probe.cpp` ont déménagé
+dans `engines.h`, que les deux programmes incluent désormais.
+
+Ce qui reste en dur, et ne se règle pas : les courbes de débit des soupapes,
+l'ordre d'allumage et les angles de manetons. Ils *définissent* un moteur, ils ne
+le règlent pas ; le contrat le dit et en donne la raison.
+
+**Régénérer une banque d'avant ne rend pas le même son.** Les deux sources
+avaient divergé, et c'est le TypeScript qui porte les valeurs corrigées : cinq
+écarts sur le V8, sept sur le quatre cylindres. Le plus audible est
+`inputSampleNoise`, 0,05 en C++ contre 0 depuis la mesure du 8 septembre —
+mesurée à 8,7 dB à 5 600 Hz et 25,5 dB à 8 000 Hz, c'est le cliquetis que David
+a traqué toute cette journée-là. La correction n'avait jamais atteint le banc.
 
 ## Comment le banc obtient un régime tenu
 
@@ -203,15 +232,21 @@ le même relief.
   contre les 56 % de la banque enregistrée. Cela joue **en faveur** du chiffre
   annoncé : plus le timbre suit le régime, moins le rééchantillonnage a tort. Une
   vraie réponse d'échappement changerait le timbre, pas la méthode.
-- **Le moteur codé en dur n'a pas été comparé au même moteur chargé par le
-  langage de script d'engine-sim.** Même réserve que la sonde, dont il reprend
-  les définitions.
+- **Le moteur n'a pas été comparé au même moteur chargé par le langage de
+  script d'engine-sim.** Même réserve que la sonde, avec qui il partage
+  désormais ses constructeurs.
+- **Le son du banc n'est pas celui du mode direct.** Le correcteur de niveau est
+  neutralisé ici — c'est ce qui donne à la banque son relief — là où le direct
+  passe par un niveleur visant seize mille. Comparer les deux à l'oreille ne
+  compare donc pas deux réglages du même appareil.
 
 ## Les fichiers
 
 | Fichier | Rôle |
 |---|---|
 | `generate.mjs` | l'outil : plan, banc, mesures, profil |
+| `moteur.mjs` | la bibliothèque de moteurs, lue dans le TypeScript de l'application |
+| `profil.mjs` | le profil produit, à part pour qu'il se vérifie sans banque |
 | `plan.mjs` | quels régimes, quelle charge, quelle longueur |
 | `loop.mjs` | fermeture de boucle, portée de `core/audio/engine.ts` |
 | `spectrum.mjs` | centroïde spectral, porté de `core/audio/analyze.ts` |
@@ -220,7 +255,7 @@ le même relief.
 | `profile.test.mjs` | le profil produit passe-t-il l'import de l'application |
 | `engines/*.json` | les définitions de moteur |
 | `../../native/generator.cpp` | le banc hors ligne, en C++ |
-| `../../native/engines.h` | les définitions de moteur, copiées de `probe.cpp` |
+| `../../native/engines.h` | les constructeurs de moteur, partagés avec la sonde |
 | `../../native/build-generator.sh` | la compilation |
 
 `loop.mjs` et `spectrum.mjs` sont des **portages**, pas des inventions : les

@@ -1,13 +1,20 @@
 // Les definitions de moteur d'engine-sim, en C++.
 //
-// Copie conforme des constructeurs de `probe.cpp`. Deux outils en ont besoin —
-// la sonde, qui chronometre, et le generateur de banque, qui enregistre — et
-// `probe.cpp` appartient au ticket 01 : on le laisse tranquille plutot que de
-// l'ouvrir a deux mains. La copie est le prix de ce partage ; toute correction
-// portee ici doit l'etre aussi la-bas, et l'inverse.
+// **Un moteur est un tableau de nombres**, celui que decrit
+// native/CONTRAT-MOTEUR.md, et ce fichier est ce qui le construit. Le reste du
+// depot le remplit : le TypeScript pour le son en direct, une definition de
+// banque pour le banc hors ligne.
 //
-// Rien n'est invente dans ces valeurs : le quatre cylindres decalque le Subaru
-// EJ25 livre avec engine-sim, le V8 croise le GM LS du meme dossier.
+// Il portait auparavant une copie figee de ces constructeurs, avec la geometrie
+// ecrite en dur, et l'assumait — « la copie est le prix de ce partage ». Elle a
+// coute ce que coutent les copies : le banc hors ligne ne savait produire que
+// deux moteurs, et pas ceux que David avait regles a l'oreille. Les
+// constructeurs parametres de `probe.cpp` ont donc demenage ici, et `probe.cpp`
+// les inclut.
+//
+// Rien n'est invente dans les valeurs de reference : le quatre cylindres
+// decalque le Subaru EJ25 livre avec engine-sim, le V8 croise le GM LS du meme
+// dossier.
 
 #ifndef SPEED_NATIVE_ENGINES_H
 #define SPEED_NATIVE_ENGINES_H
@@ -23,21 +30,22 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <utility>
 #include <vector>
 
 namespace engines {
 
-inline double diskInertia(double mass, double radius) {
+double diskInertia(double mass, double radius) {
     return 0.5 * mass * radius * radius;
 }
 
-inline double rodInertia(double mass, double length) {
+double rodInertia(double mass, double length) {
     return (1.0 / 12.0) * mass * length * length;
 }
 
 // Un lobe de came harmonique, comme le fait `harmonic_cam_lobe` dans le
 // langage de script (scripting/include/actions.h).
-inline Function *harmonicCamLobe(double durationAt50Thou, double gamma, double lift, int steps) {
+Function *harmonicCamLobe(double durationAt50Thou, double gamma, double lift, int steps) {
     const double angle = durationAt50Thou / 4;
     const double s = std::pow(2 * units::distance(50, units::thou) / lift, 1 / gamma) - 1;
     const double k = std::acos(s) / angle;
@@ -62,7 +70,7 @@ inline Function *harmonicCamLobe(double durationAt50Thou, double gamma, double l
     return f;
 }
 
-inline Function *flowCurve(const std::vector<std::pair<double, double>> &samples) {
+Function *flowCurve(const std::vector<std::pair<double, double>> &samples) {
     Function *f = new Function;
     f->initialize((int)samples.size(), units::distance(50, units::thou));
     for (const auto &s : samples) {
@@ -73,11 +81,142 @@ inline Function *flowCurve(const std::vector<std::pair<double, double>> &samples
     return f;
 }
 
+// ---------------------------------------------------------------------------
+// La definition d'un moteur, telle qu'un profil la porte.
+//
+// L'ordre de cette enumeration **est** le contrat : il est fixe par
+// native/CONTRAT-MOTEUR.md, le TypeScript ecrit le tableau dans le meme ordre,
+// et un test compare les deux listes. Un parametre neuf s'ajoute a la fin ; un
+// parametre retire laisse sa place occupee plutot que de decaler les suivants.
+//
+// Le nom de cle en fin de ligne est ce que le test relit. Il doit rester colle
+// au format `// <cle>`, sans rien d'autre sur la ligne.
+// ---------------------------------------------------------------------------
+
+enum EngineParam {
+    ENGINE_CYLINDERS = 0,             // cylinders
+    ENGINE_BORE = 1,                  // bore
+    ENGINE_STROKE = 2,                // stroke
+    ENGINE_ROD_LENGTH = 3,            // rodLength
+    ENGINE_CHAMBER_VOLUME = 4,        // chamberVolume
+    ENGINE_INTAKE_RUNNER_VOLUME = 5,  // intakeRunnerVolume
+    ENGINE_INTAKE_RUNNER_AREA = 6,    // intakeRunnerArea
+    ENGINE_EXHAUST_RUNNER_VOLUME = 7, // exhaustRunnerVolume
+    ENGINE_EXHAUST_RUNNER_AREA = 8,   // exhaustRunnerArea
+    ENGINE_LOBE_SEPARATION = 9,       // lobeSeparation
+    ENGINE_INTAKE_LOBE_CENTER = 10,   // intakeLobeCenter
+    ENGINE_EXHAUST_LOBE_CENTER = 11,  // exhaustLobeCenter
+    ENGINE_INTAKE_LIFT = 12,          // intakeLift
+    ENGINE_EXHAUST_LIFT = 13,         // exhaustLift
+    ENGINE_INTAKE_DURATION = 14,      // intakeDuration
+    ENGINE_EXHAUST_DURATION = 15,     // exhaustDuration
+    ENGINE_PLENUM_VOLUME = 16,        // plenumVolume
+    ENGINE_INTAKE_FLOW_RATE = 17,     // intakeFlowRate
+    ENGINE_IDLE_THROTTLE_PLATE = 18,  // idleThrottlePlate
+    ENGINE_PRIMARY_TUBE_LENGTH = 19,  // primaryTubeLength
+    ENGINE_PRIMARY_FLOW_RATE = 20,    // primaryFlowRate
+    ENGINE_OUTLET_FLOW_RATE = 21,     // outletFlowRate
+    ENGINE_COLLECTOR_VOLUME = 22,     // collectorVolume
+    ENGINE_EXHAUST_AUDIO_VOLUME = 23, // exhaustAudioVolume
+    ENGINE_REV_LIMIT = 24,            // revLimit
+    ENGINE_LIMITER_DURATION = 25,     // limiterDuration
+    ENGINE_AIR_NOISE = 26,            // airNoise
+    ENGINE_INPUT_SAMPLE_NOISE = 27,   // inputSampleNoise
+    ENGINE_HEADER_LENGTH = 28,        // headerLength
+    ENGINE_PARAM_COUNT = 29
+};
+
+struct EngineDefinition {
+    double v[ENGINE_PARAM_COUNT];
+    double operator[](int i) const { return v[i]; }
+};
+
+// Les valeurs de reference du contrat, colonne EJ25. Elles ne sont pas celles
+// que ce fichier portait en dur : l'alesage, la bielle, la chambre, les
+// sections de conduit, la levee, la duree, la boite a air et le debit
+// d'admission s'en ecartaient, sans que rien ne le dise. Le contrat tranche.
+const EngineDefinition DEFAULT_INLINE4 = {{
+    4,        // cylinders
+    3.917,    // bore
+    3.11,     // stroke
+    5.142,    // rodLength
+    67,       // chamberVolume
+    149.6,    // intakeRunnerVolume
+    1.8225,   // intakeRunnerArea
+    50,       // exhaustRunnerVolume
+    1.5625,   // exhaustRunnerArea
+    114,      // lobeSeparation
+    114,      // intakeLobeCenter
+    114,      // exhaustLobeCenter
+    0.395,    // intakeLift
+    0.377,    // exhaustLift
+    220,      // intakeDuration
+    220,      // exhaustDuration
+    1.325,    // plenumVolume
+    800,      // intakeFlowRate
+    0.9985,   // idleThrottlePlate
+    10,       // primaryTubeLength
+    200,      // primaryFlowRate
+    1000,     // outletFlowRate
+    100,      // collectorVolume
+    4.0,      // exhaustAudioVolume
+    6500,     // revLimit — le contrat ne le fixe pas, il vient du profil
+    0.08,     // limiterDuration
+    0.15,     // airNoise
+    0.05,     // inputSampleNoise
+    10,       // headerLength
+}};
+
+// Colonne GM LS du contrat, memes remarques : la chambre, les sections de
+// conduit, la duree de came, la boite a air et le debit d'admission
+// s'ecartaient de la reference.
+const EngineDefinition DEFAULT_CROSSPLANE_V8 = {{
+    8,        // cylinders
+    3.78,     // bore
+    3.622,    // stroke
+    6.299,    // rodLength
+    90,       // chamberVolume
+    149.6,    // intakeRunnerVolume
+    4.84,     // intakeRunnerArea
+    50,       // exhaustRunnerVolume
+    3.0625,   // exhaustRunnerArea
+    114,      // lobeSeparation
+    114,      // intakeLobeCenter
+    114,      // exhaustLobeCenter
+    0.551,    // intakeLift
+    0.551,    // exhaustLift
+    234,      // intakeDuration
+    234,      // exhaustDuration
+    1.325,    // plenumVolume
+    700,      // intakeFlowRate
+    0.9985,   // idleThrottlePlate — juge a l oreille, voir defaults.ts
+    29,       // primaryTubeLength
+    500,      // primaryFlowRate
+    1000,     // outletFlowRate
+    100,      // collectorVolume
+    4.0,      // exhaustAudioVolume
+    6800,     // revLimit — le contrat ne le fixe pas, il vient du profil
+    0.2,      // limiterDuration
+    0.15,     // airNoise
+    0.05,     // inputSampleNoise
+    20,       // headerLength
+}};
+
+const EngineDefinition &defaultDefinition(int cylinders) {
+    return cylinders == 4 ? DEFAULT_INLINE4 : DEFAULT_CROSSPLANE_V8;
+}
+
+// Un pouce carre, en unites internes. Les sections de conduit sont donnees en
+// pouces carres par le contrat, la ou le code d'origine ecrivait un produit de
+// deux cotes.
+const double INCH2 =
+    units::distance(1.0, units::inch) * units::distance(1.0, units::inch);
+
 // Le pendant direct de es_script::EngineNode::buildEngine(), sans piranha.
-inline Engine *buildInline4() {
-    const double stroke = units::distance(79.0, units::mm);
-    const double bore = units::distance(99.5, units::mm);
-    const double rodLength = units::distance(5.142, units::inch);
+Engine *buildInline4(const EngineDefinition &def) {
+    const double stroke = units::distance(def[ENGINE_STROKE], units::inch);
+    const double bore = units::distance(def[ENGINE_BORE], units::inch);
+    const double rodLength = units::distance(def[ENGINE_ROD_LENGTH], units::inch);
     const double rodMass = units::mass(535.0, units::g);
     const double compressionHeight = units::distance(1.0, units::inch);
     const double crankMass = units::mass(9.39, units::kg);
@@ -90,6 +229,9 @@ inline Engine *buildInline4() {
     Engine::Parameters params;
     params.name = "Sonde I4";
     params.cylinderBanks = 1;
+    // Le nombre de cylindres choisit le constructeur, il ne se lit pas ici :
+    // ordre d'allumage et angles de manetons le suivent, et ils definissent le
+    // moteur.
     params.cylinderCount = 4;
     params.crankshaftCount = 1;
     params.exhaustSystemCount = 1;
@@ -112,8 +254,8 @@ inline Engine *buildInline4() {
     //
     // Pas zero pour autant : un moteur a du souffle, et le retirer tout a fait
     // sonne synthetique.
-    params.initialNoise = 0.15;
-    params.initialJitter = 0.05;
+    params.initialNoise = def[ENGINE_AIR_NOISE];
+    params.initialJitter = def[ENGINE_INPUT_SAMPLE_NOISE];
 
     DirectThrottleLinkage *throttle = new DirectThrottleLinkage;
     DirectThrottleLinkage::Parameters throttleParams;
@@ -191,10 +333,20 @@ inline Engine *buildInline4() {
     const double firingAngle[4] = {
         0.00 * cycle, 0.75 * cycle, 0.25 * cycle, 0.50 * cycle };
 
-    Function *lobeProfile = harmonicCamLobe(
-        232 * units::deg, 2.0, units::distance(9.78, units::mm), 100);
+    // Deux profils de came au lieu d'un : le contrat donne une levee et une
+    // duree par cote, comme les fichiers de reference.
+    Function *intakeLobe = harmonicCamLobe(
+        def[ENGINE_INTAKE_DURATION] * units::deg, 2.0,
+        units::distance(def[ENGINE_INTAKE_LIFT], units::inch), 100);
+    Function *exhaustLobe = harmonicCamLobe(
+        def[ENGINE_EXHAUST_DURATION] * units::deg, 2.0,
+        units::distance(def[ENGINE_EXHAUST_LIFT], units::inch), 100);
 
-    const double lobeSeparation = 114 * units::deg;
+    // `lobeSeparation` ne sert qu'a poser les deux centres par defaut, comme
+    // dans le langage de script (`intake_lobe_center: lobe_separation`). Ce
+    // sont les centres qui calent les cames ici.
+    const double intakeLobeCenter = def[ENGINE_INTAKE_LOBE_CENTER] * units::deg;
+    const double exhaustLobeCenter = def[ENGINE_EXHAUST_LOBE_CENTER] * units::deg;
     const double rot360 = 360 * units::deg;
 
     Camshaft *intakeCam = new Camshaft;
@@ -203,13 +355,14 @@ inline Engine *buildInline4() {
     camParams.lobes = 4;
     camParams.advance = 0.0;
     camParams.crankshaft = crank;
-    camParams.lobeProfile = lobeProfile;
     camParams.baseRadius = units::distance(1.0, units::inch);
+    camParams.lobeProfile = intakeLobe;
     intakeCam->initialize(camParams);
+    camParams.lobeProfile = exhaustLobe;
     exhaustCam->initialize(camParams);
     for (int i = 0; i < 4; ++i) {
-        intakeCam->setLobeCenterline(i, rot360 + lobeSeparation + firingAngle[i]);
-        exhaustCam->setLobeCenterline(i, rot360 - lobeSeparation + firingAngle[i]);
+        intakeCam->setLobeCenterline(i, rot360 + intakeLobeCenter + firingAngle[i]);
+        exhaustCam->setLobeCenterline(i, rot360 - exhaustLobeCenter + firingAngle[i]);
     }
 
     StandardValvetrain *valvetrain = new StandardValvetrain;
@@ -228,21 +381,19 @@ inline Engine *buildInline4() {
     headParams.ExhaustPortFlow = flowCurve({
         {0, 0}, {50, 37}, {100, 72}, {150, 113}, {200, 160},
         {250, 196}, {300, 222}, {350, 235}, {400, 245}, {450, 246} });
-    headParams.CombustionChamberVolume = 67.0 * units::cc;
-    headParams.IntakeRunnerVolume = 149.6 * units::cc;
-    headParams.IntakeRunnerCrossSectionArea =
-        units::distance(1.35, units::inch) * units::distance(1.35, units::inch);
-    headParams.ExhaustRunnerVolume = 50.0 * units::cc;
-    headParams.ExhaustRunnerCrossSectionArea =
-        units::distance(1.25, units::inch) * units::distance(1.25, units::inch);
+    headParams.CombustionChamberVolume = def[ENGINE_CHAMBER_VOLUME] * units::cc;
+    headParams.IntakeRunnerVolume = def[ENGINE_INTAKE_RUNNER_VOLUME] * units::cc;
+    headParams.IntakeRunnerCrossSectionArea = def[ENGINE_INTAKE_RUNNER_AREA] * INCH2;
+    headParams.ExhaustRunnerVolume = def[ENGINE_EXHAUST_RUNNER_VOLUME] * units::cc;
+    headParams.ExhaustRunnerCrossSectionArea = def[ENGINE_EXHAUST_RUNNER_AREA] * INCH2;
     headParams.FlipDisplay = false;
     head->initialize(headParams);
 
     Intake *intake = engine->getIntake(0);
     Intake::Parameters intakeParams;
-    intakeParams.volume = 1.325 * units::L;
+    intakeParams.volume = def[ENGINE_PLENUM_VOLUME] * units::L;
     intakeParams.CrossSectionArea = 20.0 * units::cm2;
-    intakeParams.InputFlowK = GasSystem::k_carb(800.0);
+    intakeParams.InputFlowK = GasSystem::k_carb(def[ENGINE_INTAKE_FLOW_RATE]);
     intakeParams.IdleFlowK = GasSystem::k_carb(0.0);
     intakeParams.RunnerFlowRate = GasSystem::k_carb(250.0);
     // Le papillon au ralenti, a la valeur de reference d'engine-sim.
@@ -254,7 +405,7 @@ inline Engine *buildInline4() {
     //
     // C'est le defaut d'engine-sim (intake.h), et les moteurs qu'il livre le
     // gardent tel quel.
-    intakeParams.IdleThrottlePlatePosition = 0.975;
+    intakeParams.IdleThrottlePlatePosition = def[ENGINE_IDLE_THROTTLE_PLATE];
     intakeParams.RunnerLength = units::distance(12.0, units::inch);
     intakeParams.VelocityDecay = 0.5;
     intake->initialize(intakeParams);
@@ -270,14 +421,15 @@ inline Engine *buildInline4() {
     // collector_cross_section_area (es/objects/objects.mr).
     const double collectorArea = constants::pi
         * units::distance(2.0, units::inch) * units::distance(2.0, units::inch);
-    exhaustParams.length = (100.0 * units::L) / collectorArea;
+    exhaustParams.length = (def[ENGINE_COLLECTOR_VOLUME] * units::L) / collectorArea;
     exhaustParams.collectorCrossSectionArea = collectorArea;
-    exhaustParams.outletFlowRate = GasSystem::k_carb(1000.0);
-    exhaustParams.primaryTubeLength = units::distance(10.0, units::inch);
-    exhaustParams.primaryFlowRate = GasSystem::k_carb(200.0);
+    exhaustParams.outletFlowRate = GasSystem::k_carb(def[ENGINE_OUTLET_FLOW_RATE]);
+    exhaustParams.primaryTubeLength =
+        units::distance(def[ENGINE_PRIMARY_TUBE_LENGTH], units::inch);
+    exhaustParams.primaryFlowRate = GasSystem::k_carb(def[ENGINE_PRIMARY_FLOW_RATE]);
     exhaustParams.velocityDecay = 1.0;
     // L'EJ25 declare `audio_volume: 0.5 * 8`, soit quatre.
-    exhaustParams.audioVolume = 4.0;
+    exhaustParams.audioVolume = def[ENGINE_EXHAUST_AUDIO_VOLUME];
     exhaustParams.impulseResponse = impulse;
     exhaust->initialize(exhaustParams);
 
@@ -285,7 +437,11 @@ inline Engine *buildInline4() {
         head->setIntake(i, intake);
         head->setExhaustSystem(i, exhaust);
         head->setSoundAttenuation(i, 1.0);
-        head->setHeaderPrimaryLength(i, units::distance(10.0, units::inch));
+        // Le quatre cylindres n'etage pas ses collecteurs — l'EJ25 n'en declare
+        // aucune longueur, et c'est pourquoi il n'a pas les resonances
+        // multiples du V8.
+        head->setHeaderPrimaryLength(
+            i, units::distance(def[ENGINE_HEADER_LENGTH], units::inch));
     }
 
     Function *timingCurve = new Function;
@@ -300,8 +456,14 @@ inline Engine *buildInline4() {
     ignitionParams.cylinderCount = 4;
     ignitionParams.crankshaft = crank;
     ignitionParams.timingCurve = timingCurve;
-    ignitionParams.revLimit = units::rpm(6500);
-    ignitionParams.limiterDuration = 0.08;
+    // Le rupteur suit le profil, il n'est plus fige.
+    //
+    // Il valait 6 500 et 6 800 en dur, quand le profil Sport monte a 8 500 :
+    // passe 6 800, engine-sim coupait l'allumage. Il ne restait alors que le
+    // pompage d'air, aigu et sans corps — David l'a entendu comme « la
+    // frequence sourde tout d'un coup coupee », vers 6 900 tr/min.
+    ignitionParams.revLimit = units::rpm(def[ENGINE_REV_LIMIT]);
+    ignitionParams.limiterDuration = def[ENGINE_LIMITER_DURATION];
     engine->getIgnitionModule()->initialize(ignitionParams);
     for (int i = 0; i < 4; ++i) {
         engine->getIgnitionModule()->setFiringOrder(i, firingAngle[i]);
@@ -361,10 +523,10 @@ inline Engine *buildInline4() {
  *   vilebrequin croise. C'est de la que vient le grondement inegal : chaque banc
  *   voit ses allumages espaces de 90 puis 180 degres, et non regulierement.
  */
-inline Engine *buildCrossplaneV8() {
-    const double stroke = units::distance(3.622, units::inch);
-    const double bore = units::distance(4.065, units::inch);
-    const double rodLength = units::distance(6.098, units::inch);
+Engine *buildCrossplaneV8(const EngineDefinition &def) {
+    const double stroke = units::distance(def[ENGINE_STROKE], units::inch);
+    const double bore = units::distance(def[ENGINE_BORE], units::inch);
+    const double rodLength = units::distance(def[ENGINE_ROD_LENGTH], units::inch);
     const double rodMass = units::mass(675.0, units::g);
     const double compressionHeight = units::distance(1.115, units::inch);
     const double crankMass = units::mass(20.0, units::kg);
@@ -399,8 +561,8 @@ inline Engine *buildCrossplaneV8() {
     //
     // Pas zero pour autant : un moteur a du souffle, et le retirer tout a fait
     // sonne synthetique.
-    params.initialNoise = 0.15;
-    params.initialJitter = 0.05;
+    params.initialNoise = def[ENGINE_AIR_NOISE];
+    params.initialJitter = def[ENGINE_INPUT_SAMPLE_NOISE];
 
     DirectThrottleLinkage *throttle = new DirectThrottleLinkage;
     DirectThrottleLinkage::Parameters throttleParams;
@@ -493,16 +655,26 @@ inline Engine *buildCrossplaneV8() {
         rod->initialize(rodParams);
     }
 
-    Function *lobeProfile = harmonicCamLobe(
-        226 * units::deg, 2.0, units::distance(0.551, units::inch), 100);
-    const double lobeSeparation = 114 * units::deg;
+    // Deux profils de came au lieu d'un : le contrat donne une levee et une
+    // duree par cote, comme les fichiers de reference.
+    Function *intakeLobe = harmonicCamLobe(
+        def[ENGINE_INTAKE_DURATION] * units::deg, 2.0,
+        units::distance(def[ENGINE_INTAKE_LIFT], units::inch), 100);
+    Function *exhaustLobe = harmonicCamLobe(
+        def[ENGINE_EXHAUST_DURATION] * units::deg, 2.0,
+        units::distance(def[ENGINE_EXHAUST_LIFT], units::inch), 100);
+
+    // `lobeSeparation` ne sert qu'a poser les deux centres par defaut, comme
+    // dans le langage de script. Ce sont les centres qui calent les cames ici.
+    const double intakeLobeCenter = def[ENGINE_INTAKE_LOBE_CENTER] * units::deg;
+    const double exhaustLobeCenter = def[ENGINE_EXHAUST_LOBE_CENTER] * units::deg;
     const double rot360 = 360 * units::deg;
 
     Intake *intake = engine->getIntake(0);
     Intake::Parameters intakeParams;
-    intakeParams.volume = 5.7 * units::L;
+    intakeParams.volume = def[ENGINE_PLENUM_VOLUME] * units::L;
     intakeParams.CrossSectionArea = 40.0 * units::cm2;
-    intakeParams.InputFlowK = GasSystem::k_carb(1200.0);
+    intakeParams.InputFlowK = GasSystem::k_carb(def[ENGINE_INTAKE_FLOW_RATE]);
     intakeParams.IdleFlowK = GasSystem::k_carb(0.0);
     intakeParams.RunnerFlowRate = GasSystem::k_carb(300.0);
     // Le papillon au ralenti, a la valeur de reference d'engine-sim.
@@ -514,7 +686,7 @@ inline Engine *buildCrossplaneV8() {
     //
     // C'est le defaut d'engine-sim (intake.h), et les moteurs qu'il livre le
     // gardent tel quel.
-    intakeParams.IdleThrottlePlatePosition = 0.975;
+    intakeParams.IdleThrottlePlatePosition = def[ENGINE_IDLE_THROTTLE_PLATE];
     intakeParams.RunnerLength = units::distance(8.0, units::inch);
     intakeParams.VelocityDecay = 0.5;
     intake->initialize(intakeParams);
@@ -526,14 +698,15 @@ inline Engine *buildCrossplaneV8() {
         camParams.lobes = 4;
         camParams.advance = 0.0;
         camParams.crankshaft = crank;
-        camParams.lobeProfile = lobeProfile;
         camParams.baseRadius = units::distance(1.0, units::inch);
+        camParams.lobeProfile = intakeLobe;
         intakeCam->initialize(camParams);
+        camParams.lobeProfile = exhaustLobe;
         exhaustCam->initialize(camParams);
         for (int i = 0; i < 4; ++i) {
             const double angle = firingAngle[b * 4 + i];
-            intakeCam->setLobeCenterline(i, rot360 + lobeSeparation + angle);
-            exhaustCam->setLobeCenterline(i, rot360 - lobeSeparation + angle);
+            intakeCam->setLobeCenterline(i, rot360 + intakeLobeCenter + angle);
+            exhaustCam->setLobeCenterline(i, rot360 - exhaustLobeCenter + angle);
         }
 
         StandardValvetrain *valvetrain = new StandardValvetrain;
@@ -552,13 +725,11 @@ inline Engine *buildCrossplaneV8() {
         headParams.ExhaustPortFlow = flowCurve({
             {0, 0}, {100, 53}, {200, 101}, {300, 135}, {400, 168},
             {500, 189}, {600, 206}, {700, 212} });
-        headParams.CombustionChamberVolume = 68.0 * units::cc;
-        headParams.IntakeRunnerVolume = 149.6 * units::cc;
-        headParams.IntakeRunnerCrossSectionArea =
-            units::distance(2.0, units::inch) * units::distance(2.0, units::inch);
-        headParams.ExhaustRunnerVolume = 50.0 * units::cc;
-        headParams.ExhaustRunnerCrossSectionArea =
-            units::distance(1.5, units::inch) * units::distance(1.5, units::inch);
+        headParams.CombustionChamberVolume = def[ENGINE_CHAMBER_VOLUME] * units::cc;
+        headParams.IntakeRunnerVolume = def[ENGINE_INTAKE_RUNNER_VOLUME] * units::cc;
+        headParams.IntakeRunnerCrossSectionArea = def[ENGINE_INTAKE_RUNNER_AREA] * INCH2;
+        headParams.ExhaustRunnerVolume = def[ENGINE_EXHAUST_RUNNER_VOLUME] * units::cc;
+        headParams.ExhaustRunnerCrossSectionArea = def[ENGINE_EXHAUST_RUNNER_AREA] * INCH2;
         headParams.FlipDisplay = (b == 1);
         head->initialize(headParams);
 
@@ -571,9 +742,8 @@ inline Engine *buildCrossplaneV8() {
         ExhaustSystem::Parameters exhaustParams;
         const double collectorArea = constants::pi
             * units::distance(2.0, units::inch) * units::distance(2.0, units::inch);
-        exhaustParams.length = (100.0 * units::L) / collectorArea;
+        exhaustParams.length = (def[ENGINE_COLLECTOR_VOLUME] * units::L) / collectorArea;
         exhaustParams.collectorCrossSectionArea = collectorArea;
-        exhaustParams.outletFlowRate = GasSystem::k_carb(1000.0);
         // L'echappement, releve sur le GM LS lui aussi.
         //
         // Il ne l'etait pas : ces valeurs venaient du quatre cylindres, dont
@@ -582,10 +752,12 @@ inline Engine *buildCrossplaneV8() {
         // en tete disait « rien n'y est invente » en enumerant ce qui est
         // recopie : angle de V, point mort haut, manetons, ordre d'allumage,
         // repartition des bancs. L'echappement n'etait pas dans la liste.
-        exhaustParams.primaryTubeLength = units::distance(29.0, units::inch);
-        exhaustParams.primaryFlowRate = GasSystem::k_carb(500.0);
+        exhaustParams.outletFlowRate = GasSystem::k_carb(def[ENGINE_OUTLET_FLOW_RATE]);
+        exhaustParams.primaryTubeLength =
+            units::distance(def[ENGINE_PRIMARY_TUBE_LENGTH], units::inch);
+        exhaustParams.primaryFlowRate = GasSystem::k_carb(def[ENGINE_PRIMARY_FLOW_RATE]);
         exhaustParams.velocityDecay = 1.0;
-        exhaustParams.audioVolume = 4.0;
+        exhaustParams.audioVolume = def[ENGINE_EXHAUST_AUDIO_VOLUME];
         exhaustParams.impulseResponse = impulse;
         exhaust->initialize(exhaustParams);
 
@@ -593,8 +765,30 @@ inline Engine *buildCrossplaneV8() {
             head->setIntake(i, intake);
             head->setExhaustSystem(i, exhaust);
             head->setSoundAttenuation(i, 1.0);
-            head->setHeaderPrimaryLength(
-                i, units::distance(29.0 + i * 2.0, units::inch));
+            // La longueur de collecteur de chaque cylindre.
+            //
+            // **Ce n'est pas la longueur du tube primaire**, et les confondre
+            // etait une erreur : le tube primaire vaut vingt-neuf pouces sur le
+            // GM LS, quand ses quatre collecteurs mesurent de 6,79 a 1,97 pouce.
+            // On posait 29, 31, 33 et 35 pouces — cinq a dix fois trop long, et
+            // croissant la ou les fichiers decroissent. Quatre resonances
+            // fausses, que le quatre cylindres n'a pas puisqu'il n'etage rien :
+            // c'est ce que David entendait comme « des frequences parasites par
+            // dessus, qu'on dirait synchro sur le cote rugueux mais plus
+            // aigues ».
+            //
+            // Le 454 les ecrit `distance * 4, 3, 2, 1` avec `distance` a cinq
+            // pouces, soit 20, 15, 10 et 5. On reprend cette regle : le premier
+            // cylindre porte le collecteur le plus long, et les suivants s'en
+            // deduisent par quarts.
+            // La longueur est reglable parce qu'elle arbitre : longue, elle
+            // apporte le cote rugueux et vivant en charge **et** des frequences
+            // parasites au ralenti ; courte, elle enleve les deux. David :
+            // « moins (mais toujours) de parasites, et par contre un moteur
+            // bien moins vivant en charge ». C'est un compromis, donc un
+            // curseur, et non une valeur qu'on tranche a sa place.
+            const double header = def[ENGINE_HEADER_LENGTH] * (4.0 - i) / 4.0;
+            head->setHeaderPrimaryLength(i, units::distance(header, units::inch));
         }
     }
 
@@ -610,8 +804,14 @@ inline Engine *buildCrossplaneV8() {
     ignitionParams.cylinderCount = 8;
     ignitionParams.crankshaft = crank;
     ignitionParams.timingCurve = timingCurve;
-    ignitionParams.revLimit = units::rpm(6800);
-    ignitionParams.limiterDuration = 0.2;
+    // Le rupteur suit le profil, il n'est plus fige.
+    //
+    // Il valait 6 500 et 6 800 en dur, quand le profil Sport monte a 8 500 :
+    // passe 6 800, engine-sim coupait l'allumage. Il ne restait alors que le
+    // pompage d'air, aigu et sans corps — David l'a entendu comme « la
+    // frequence sourde tout d'un coup coupee », vers 6 900 tr/min.
+    ignitionParams.revLimit = units::rpm(def[ENGINE_REV_LIMIT]);
+    ignitionParams.limiterDuration = def[ENGINE_LIMITER_DURATION];
     engine->getIgnitionModule()->initialize(ignitionParams);
     for (int i = 0; i < 8; ++i) {
         engine->getIgnitionModule()->setFiringOrder(i, firingAngle[i]);
@@ -650,61 +850,16 @@ inline Engine *buildCrossplaneV8() {
 }
 
 /**
- * La reponse d'un tube d'echappement.
+ * Le seul point ou le nombre de cylindres decide de quelque chose.
  *
- * **Ce n'est pas un bruit.** La premiere version tirait un bruit blanc
- * decroissant, avec ce commentaire : « le contenu importe peu, seule sa
- * longueur pese sur le cout ». C'etait vrai tant qu'on mesurait le cout
- * processeur ; c'est faux des qu'on produit du son a ecouter. Convoluer des
- * explosions par du bruit rend du bruit : mesure sur la banque produite, le
- * spectre remontait de 10 dB entre 2 et 8 kHz, la ou une prise faite sur une
- * vraie voiture descend de 17.
- *
- * Un echappement est un tube. L'onde court jusqu'au bout, se reflechit sur
- * l'extremite ouverte — en changeant de signe —, revient, et ainsi de suite en
- * s'affaiblissant. Sa reponse est donc une suite d'echos espaces du temps
- * d'aller-retour, adoucis a chaque reflexion.
- *
- * Miroir de `exhaustImpulse` dans `src/core/synth/impulse.ts`, qui fait la meme
- * chose pour le son en direct. Toute correction portee la doit l'etre ici.
+ * Ordre d'allumage, angles de manetons, angle de V et point mort haut
+ * definissent le moteur : ils ne se reglent pas, ils suivent le constructeur.
+ * Tout le reste vient du tableau.
  */
-inline std::vector<int16_t> makeImpulseResponse(
-        unsigned int samples, double sampleRate = 44100.0, double tubeHz = 57.0) {
-    std::vector<double> reponse(samples, 0.0);
-
-    const double period = sampleRate / (tubeHz > 1.0 ? tubeHz : 1.0);
-    for (unsigned int k = 0; k * period < (double)samples; ++k) {
-        const unsigned int position = (unsigned int)(k * period + 0.5);
-        if (position >= samples) break;
-        // Le signe alterne : l'extremite ouverte reflechit une onde de pression
-        // en onde de depression. C'est ce qui met la fondamentale a un demi-tour
-        // de tube et non a un tour entier.
-        const double sign = (k % 2 == 0) ? 1.0 : -1.0;
-        reponse[position] += sign * std::exp(-4.0 * (double)position / samples);
-    }
-
-    // Une reflexion reelle s'etale et perd ses aigus. Un train de pics nus
-    // sonnerait comme un tuyau d'orgue, pas comme un echappement.
-    const double a = 1.0 - std::exp(-2.0 * 3.14159265358979 * 2000.0 / sampleRate);
-    double state = 0.0;
-    double crete = 0.0;
-    for (unsigned int i = 0; i < samples; ++i) {
-        state += a * (reponse[i] - state);
-        reponse[i] = state;
-        const double abs = state < 0 ? -state : state;
-        if (abs > crete) crete = abs;
-    }
-
-    std::vector<int16_t> ir(samples);
-    const double echelle = crete > 0.0 ? 20000.0 / crete : 0.0;
-    for (unsigned int i = 0; i < samples; ++i) {
-        ir[i] = (int16_t)(reponse[i] * echelle);
-    }
-    // Le chargeur coupe la queue sous 100 en valeur absolue : on garantit que
-    // le dernier echantillon compte, sinon la reponse serait tronquee.
-    ir[samples - 1] = 1000;
-    return ir;
+Engine *buildEngine(const EngineDefinition &def) {
+    return (int)def[ENGINE_CYLINDERS] == 4 ? buildInline4(def) : buildCrossplaneV8(def);
 }
+
 } // namespace engines
 
 #endif // SPEED_NATIVE_ENGINES_H
