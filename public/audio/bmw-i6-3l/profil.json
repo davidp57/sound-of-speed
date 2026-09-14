@@ -1,0 +1,232 @@
+{
+  "name": "L6",
+  "soundSource": "prerendered",
+  "engineDefinition": {
+    "cylinders": 6,
+    "bore": 3.307,
+    "stroke": 3.528,
+    "rodLength": 5.315,
+    "chamberVolume": 54,
+    "intakeRunnerVolume": 149.6,
+    "intakeRunnerArea": 4.84,
+    "exhaustRunnerVolume": 50,
+    "exhaustRunnerArea": 3.0625,
+    "lobeSeparation": 114,
+    "intakeLobeCenter": 114,
+    "exhaustLobeCenter": 114,
+    "intakeLift": 0.39,
+    "exhaustLift": 0.37,
+    "intakeDuration": 244,
+    "exhaustDuration": 236,
+    "plenumVolume": 1.325,
+    "intakeFlowRate": 800,
+    "idleThrottlePlate": 0.9985,
+    "primaryTubeLength": 24,
+    "primaryFlowRate": 400,
+    "outletFlowRate": 1500,
+    "collectorVolume": 100,
+    "exhaustAudioVolume": 4,
+    "revLimit": 7000,
+    "limiterDuration": 0.08,
+    "airNoise": 0.15,
+    "inputSampleNoise": 0,
+    "headerLength": 16
+  },
+  "sampleDir": "bmw-i6-3l",
+  "engine": {
+    "cylinders": 6,
+    "idleRpm": 750,
+    "redlineRpm": 7000
+  },
+  "mix": {
+    "loadReliefDb": 0,
+    "rpmReliefDb": 0,
+    "idleLevelDb": 0,
+    "offLoadGain": 1,
+    "crossfadeLowRpm": 750,
+    "crossfadeHighRpm": 1032,
+    "idleFadeOutRpm": 1032
+  },
+  "layers": [
+    {
+      "key": "on_750",
+      "file": "on-750.flac",
+      "role": "on",
+      "anchorRpm": 750,
+      "gain": 0.1025,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "off_750",
+      "file": "off-750.flac",
+      "role": "off",
+      "anchorRpm": 750,
+      "gain": 0.0479,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "on_1032",
+      "file": "on-1032.flac",
+      "role": "on",
+      "anchorRpm": 1032,
+      "gain": 0.1756,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "off_1032",
+      "file": "off-1032.flac",
+      "role": "off",
+      "anchorRpm": 1032,
+      "gain": 0.0526,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "on_1420",
+      "file": "on-1420.flac",
+      "role": "on",
+      "anchorRpm": 1420,
+      "gain": 0.2138,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "off_1420",
+      "file": "off-1420.flac",
+      "role": "off",
+      "anchorRpm": 1420,
+      "gain": 0.0987,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "on_1953",
+      "file": "on-1953.flac",
+      "role": "on",
+      "anchorRpm": 1953,
+      "gain": 0.2341,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "off_1953",
+      "file": "off-1953.flac",
+      "role": "off",
+      "anchorRpm": 1953,
+      "gain": 0.1133,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "on_2688",
+      "file": "on-2688.flac",
+      "role": "on",
+      "anchorRpm": 2688,
+      "gain": 0.3433,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "off_2688",
+      "file": "off-2688.flac",
+      "role": "off",
+      "anchorRpm": 2688,
+      "gain": 0.1474,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "on_3698",
+      "file": "on-3698.flac",
+      "role": "on",
+      "anchorRpm": 3698,
+      "gain": 0.3391,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "off_3698",
+      "file": "off-3698.flac",
+      "role": "off",
+      "anchorRpm": 3698,
+      "gain": 0.1998,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "on_5088",
+      "file": "on-5088.flac",
+      "role": "on",
+      "anchorRpm": 5088,
+      "gain": 0.3621,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "off_5088",
+      "file": "off-5088.flac",
+      "role": "off",
+      "anchorRpm": 5088,
+      "gain": 0.217,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "on_7000",
+      "file": "on-7000.flac",
+      "role": "on",
+      "anchorRpm": 7000,
+      "gain": 1,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "off_7000",
+      "file": "off-7000.flac",
+      "role": "off",
+      "anchorRpm": 7000,
+      "gain": 0.3535,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "idle_750",
+      "file": "idle-750.flac",
+      "role": "idle",
+      "anchorRpm": 750,
+      "gain": 0.0799,
+      "minRate": 0.664,
+      "maxRate": 1.507,
+      "enabled": true
+    },
+    {
+      "key": "limiter_7300",
+      "file": "limiter-7300.flac",
+      "role": "limiter",
+      "anchorRpm": 7300,
+      "gain": 0.2932,
+      "minRate": 0.8,
+      "maxRate": 1.25,
+      "enabled": true
+    }
+  ]
+}

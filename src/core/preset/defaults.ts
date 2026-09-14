@@ -3,6 +3,7 @@ import { DEFAULT_RENDERING, type SynthRendering } from '../synth/rendering'
 // générateur produit : ses gains et ses ancrages sont mesurés prise par prise.
 import GM_LS_BANK from './gm-ls-profile.json'
 import GM_LS_LONG_BANK from './gm-ls-long-header-profile.json'
+import BMW_I6_BANK from './bmw-i6-3l-profile.json'
 import SUBARU_EJ25_BANK from './subaru-ej25-profile.json'
 import { clampEngineDefinition } from './engine-definition'
 import type { EngineDefinition, Profile } from './schema'
@@ -396,6 +397,18 @@ export function createGmLsLongHeaderProfile(): Profile {
   return createBankProfile('gm-ls-long-header', GM_LS_LONG_BANK)
 }
 
+/**
+ * Le six en ligne, l'architecture des BMW.
+ *
+ * Livré depuis le 14 septembre 2026, à la demande de David. C'est le seul dont
+ * les cotes ne sont pas relevées d'un fichier d'engine-sim mais construites de
+ * mémoire, et le seul dont l'échappement est un 6-en-2 — deux lignes de trois
+ * cylindres, qui lui valent 12 dB de plus entre 4 et 8 kHz.
+ */
+export function createBmwI6Profile(): Profile {
+  return createBankProfile('bmw-i6-3l', BMW_I6_BANK)
+}
+
 /** Le quatre cylindres à plat. */
 export function createSubaruEj25Profile(): Profile {
   return createBankProfile('subaru-ej25', SUBARU_EJ25_BANK)
@@ -418,7 +431,15 @@ export function createSubaruEj25Profile(): Profile {
  * se déclenche que sur demande.
  */
 export function createFactoryProfiles(): Profile[] {
-  return [createGmLsProfile(), createGmLsLongHeaderProfile(), createSubaruEj25Profile()]
+  // Par nombre de cylindres décroissant : les deux huit, puis le six, puis le
+  // quatre. Seule la première place décide de quelque chose — c'est le profil
+  // actif au premier lancement — et c'est le V8 croisé, choisi à l'oreille.
+  return [
+    createGmLsProfile(),
+    createGmLsLongHeaderProfile(),
+    createBmwI6Profile(),
+    createSubaruEj25Profile(),
+  ]
 }
 
 /**
@@ -455,6 +476,7 @@ export function knownFactoryProfiles(): Profile[] {
   return [
     createGmLsProfile(),
     createGmLsLongHeaderProfile(),
+    createBmwI6Profile(),
     createSubaruEj25Profile(),
     createV8Profile(),
     createRoadProfile(),

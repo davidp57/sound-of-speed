@@ -56,7 +56,12 @@ describe('profils livrés', () => {
     // tout premier lancement, le profil actif est le premier de cette liste.
     // David les a écoutés le 14 septembre 2026 — « les V8 sonnent bien mieux que
     // les 4L ».
-    expect(profiles.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'subaru-ej25'])
+    expect(profiles.map((p) => p.id)).toEqual([
+      'gm-ls',
+      'gm-ls-long-header',
+      'bmw-i6-3l',
+      'subaru-ej25',
+    ])
     expect(profiles[0]!.sampleDir).toBe('gm-ls')
   })
 
@@ -78,6 +83,7 @@ describe('profils livrés', () => {
     expect(knownFactoryProfiles().map((p) => p.id)).toEqual([
       'gm-ls',
       'gm-ls-long-header',
+      'bmw-i6-3l',
       'subaru-ej25',
       'v8',
       'route',
@@ -97,7 +103,7 @@ describe('profils livrés', () => {
     }
 
     const cylindres = createFactoryProfiles().map((p) => p.engine.cylinders)
-    expect(cylindres).toEqual([8, 8, 4])
+    expect(cylindres).toEqual([8, 8, 6, 4])
   })
 
   it('rend des copies neuves à chaque appel', () => {

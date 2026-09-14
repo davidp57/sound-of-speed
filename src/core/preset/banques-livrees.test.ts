@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createFactoryProfiles,
+  createBmwI6Profile,
   createGmLsLongHeaderProfile,
   createGmLsProfile,
   createSubaruEj25Profile,
@@ -20,7 +21,7 @@ import { fromFile } from './store'
  * Il y en avait une, la démonstration. Il y en a trois depuis le 14 septembre
  * 2026 : David les a écoutées et les a jugées livrables.
  */
-const BANQUES = ['gm-ls', 'gm-ls-long-header', 'subaru-ej25'] as const
+const BANQUES = ['gm-ls', 'gm-ls-long-header', 'bmw-i6-3l', 'subaru-ej25'] as const
 
 describe.each(BANQUES)('la banque livrée %s', (banque) => {
   const profile = fromFile(readFileSync(`public/audio/${banque}/profil.json`, 'utf8'))
@@ -73,6 +74,7 @@ describe('les profils d’usine', () => {
   it.each([
     ['gm-ls', createGmLsProfile],
     ['gm-ls-long-header', createGmLsLongHeaderProfile],
+    ['bmw-i6-3l', createBmwI6Profile],
     ['subaru-ej25', createSubaruEj25Profile],
   ])('%s désigne la banque livrée, fichier par fichier', (banque, creer) => {
     const usine = creer()
@@ -87,7 +89,12 @@ describe('les profils d’usine', () => {
     const livres = createFactoryProfiles()
     expect(livres[0]?.id).toBe('gm-ls')
     expect(livres[0]?.favorite).toBe(true)
-    expect(livres.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'subaru-ej25'])
+    expect(livres.map((p) => p.id)).toEqual([
+      'gm-ls',
+      'gm-ls-long-header',
+      'bmw-i6-3l',
+      'subaru-ej25',
+    ])
   })
 
   it('ne livre que des banques qui sont dans le dépôt', () => {
