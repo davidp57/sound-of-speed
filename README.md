@@ -1863,14 +1863,31 @@ son profil d'usine — le V8 des deux profils livrés. Aucun profil ne se retrou
 sans moteur à décrire, et basculer son origine en *généré en direct* donne
 toujours un son.
 
-### Mode simplifié
+### Les trois curseurs du conducteur
 
 Le guide de création sait déduire une cinquantaine de réglages de quatre
 réponses. Ce savoir ne servait qu'une fois, à la création ; les curseurs globaux
-le rendent disponible en continu. Ils **écrasent** les réglages qu'ils
-commandent — un curseur global recalcule, il ne peut pas faire autrement — et un
-bouton **Revenir aux réglages d'avant** rend le profil tel qu'il était avant le
-premier mouvement.
+le rendent disponible en continu.
+
+**Ils se posent à côté du profil, pas dedans**, depuis le 14 septembre 2026.
+C'est une **couche**, comme l'étalonnage : le profil livré reste intact, la
+couche se réapplique par-dessus la version qui arrive de l'atelier, et le bouton
+**Enlever mes ajustements** la retire.
+
+La raison est que le conducteur ne fabrique plus de profil : il ajuste ceux
+qu'on lui livre. Écrire dedans posait la question du jour où l'atelier en
+redépose une version corrigée, et aucune des deux réponses n'était bonne —
+écraser son réglage, ou le laisser sur une photo périmée qui ne reçoit plus rien.
+
+La couche pèse **trois nombres**, un par curseur, et non les trente valeurs
+qu'ils recalculent : c'est ce que permet leur inversibilité, décrite juste en
+dessous. Elle est rangée **par profil** — rendre sportif un V8 ne dit rien du
+quatre cylindres d'à côté — et ne voyage pas avec un profil partagé, comme le
+volume.
+
+Elle remplace le bouton *Revenir aux réglages d'avant*, qui ne vivait que le
+temps d'une session et sur un seul appareil : on bricolait en roulant, on coupait
+le contact, et le lendemain le recours avait disparu.
 
 Aucun des deux n'est enregistré dans le profil : leur position s'en **déduit**.
 Le curseur reflète donc ce qu'on a réellement sous les doigts, y compris sur un

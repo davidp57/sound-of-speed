@@ -9,8 +9,9 @@ import { SIMPLE_GEAR_COUNTS } from '../core/preset/character'
 import { missingSentence } from '../core/calibration/coverage'
 import {
   editedProfile,
+  enleverLeReglageConducteur,
+  reglageConducteurPose,
   profileList,
-  resetActive,
   selectProfile,
   selectedProfileId,
   toggleFavorite,
@@ -20,14 +21,12 @@ import {
   offlineStatus,
   prepareOffline,
   promptInstall,
-  canUndoGlobalChange,
   gearCount,
   responsiveness,
   setGearCount,
   setResponsiveness,
   setSportiness,
   sportiness,
-  undoGlobalChange,
   library,
   libraryLoading,
   refreshLibrary,
@@ -81,29 +80,6 @@ const profile = editedProfile
  */
 const CLAC_PAR_DEFAUT = 0.35
 const dernierClac = ref(0)
-
-/**
- * Le retour au profil livré, en deux temps.
- *
- * Un premier appui demande confirmation, un second agit : écraser des réglages
- * cherchés à l'oreille mérite une seconde d'hésitation, et un dialogue système
- * serait plus lourd que le geste.
- */
-const retourEnAttente = ref(false)
-const retourFait = ref('')
-
-function revenirAuProfilLivre(): void {
-  if (!retourEnAttente.value) {
-    retourEnAttente.value = true
-    return
-  }
-  resetActive('all')
-  retourEnAttente.value = false
-  retourFait.value = 'Profil rendu tel qu’il a été livré.'
-  setTimeout(() => {
-    retourFait.value = ''
-  }, 10_000)
-}
 
 const clacActif = computed(() => profile.value.feel.shiftJolt.clack > 0)
 
@@ -296,13 +272,14 @@ function megabytes(bytes: number): string {
           et les temporisations.
         </p>
         <div class="global-actions">
-          <button :disabled="!canUndoGlobalChange" @click="undoGlobalChange()">
-            Revenir aux réglages d'avant
+          <button :disabled="!reglageConducteurPose" @click="enleverLeReglageConducteur()">
+            Enlever mes ajustements
           </button>
           <span class="note">
-            Un curseur global recalcule : il écrase les réglages qu'il commande.
-            Ce retour rend l'état du profil tel qu'il était avant le premier
-            mouvement.
+            Ces trois curseurs se posent <strong>à côté</strong> du profil, pas
+            dedans : il reste tel qu'il a été livré, et une version corrigée qui
+            arrive de l'atelier garde vos ajustements. Les enlever le rend tel
+            quel.
           </span>
         </div>
         <div class="preview">
@@ -370,28 +347,11 @@ function megabytes(bytes: number): string {
         </button>
       </div>
       <!--
-        Le seul retour qui survit à un redémarrage.
-
-        « Revenir aux réglages d'avant », sous les curseurs, ne s'enregistre pas :
-        il vit dans cette session et sur cet appareil. On bricole en roulant, on
-        coupe le contact, et le lendemain il n'y a plus rien. Celui-ci rend le
-        profil tel qu'il a été livré.
-
-        Un seul bouton, et non le sélecteur de sections qui est parti à
-        l'atelier : proposer « réinitialiser le mixage » à qui n'a jamais vu le
-        mixage ne l'aide pas.
+        Rien à réinitialiser ici depuis que les curseurs se posent en couche :
+        le profil n'est plus modifié, donc il est déjà celui qu'on a livré. Ce
+        qui s'enlève, ce sont les ajustements, et le bouton est sous les
+        curseurs qui les posent.
       -->
-      <div class="choices">
-        <button :class="{ 'is-active': retourEnAttente }" @click="revenirAuProfilLivre()">
-          {{ retourEnAttente ? 'Confirmer' : 'Revenir au profil d’usine' }}
-        </button>
-        <button v-if="retourEnAttente" @click="retourEnAttente = false">Annuler</button>
-        <span class="note">
-          Efface les ajustements faits ici et rend le profil tel qu'il a été
-          livré.
-        </span>
-      </div>
-      <p v-if="retourFait" class="note">{{ retourFait }}</p>
 
       <div class="library">
         <div class="choices">

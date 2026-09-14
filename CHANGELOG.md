@@ -39,6 +39,21 @@ Toutes les évolutions notables du projet. Format
   la raison et le temps restant. Un onglet qui va et vient déplacerait ses
   voisins sous le doigt.
 
+- **Les ajustements du conducteur deviennent une couche.** Les trois curseurs —
+  calme ↔ sportif, pépère ↔ nerveux, nombre de rapports — ne s'écrivent plus dans
+  le profil mais à côté. Le profil livré reste intact, et une version corrigée
+  déposée depuis l'atelier arrive **avec les ajustements conservés**.
+
+  La couche pèse trois nombres et non les trente valeurs qu'un curseur
+  recalcule : aucune de ces positions n'est enregistrée dans un profil, elles
+  s'en déduisent. Elle est rangée par profil, et ne voyage pas avec un profil
+  partagé — comme le volume.
+
+  Un bouton **Enlever mes ajustements** la retire et rend le profil tel qu'il a
+  été livré. Il remplace *Revenir aux réglages d'avant*, qui ne vivait que le
+  temps d'une session et sur un seul appareil : on bricolait en roulant, on
+  coupait le contact, et le lendemain le recours avait disparu.
+
 - **La télémétrie se lit d'un coup d'œil en roulant.** Quatre valeurs de santé
   passent en tête, en grand : la précision annoncée par le GPS, le temps depuis
   la dernière mesure, la vitesse lissée à côté de la brute, l'état du son. Les

@@ -9,6 +9,16 @@ import { Engine, SHIFT_CLACK_AT, type EngineState } from './core/engine/engine'
 import { Gearbox, type GearboxState, type ShiftMode } from './core/drivetrain/gearbox'
 import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditioner'
 import {
+  avecReglage,
+  estVide,
+  lireReglage,
+  rapportsAffiches,
+  reactiviteAffichee,
+  SANS_REGLAGE,
+  temperamentAffiche,
+  type ReglageConducteur,
+} from './core/preset/reglage-conducteur'
+import {
   attenteRestanteMs,
   ecranOuvert,
   GARDE_AU_DEPART,
@@ -26,16 +36,11 @@ import type { SourceStatus, SpeedSample, SpeedSource } from './core/speed/source
 import { soundSourceOf, type SoundSource } from './core/preset/schema'
 import { playBackfire, playClack, type EventTarget } from './core/audio/events'
 import { clackAmplitude, shiftCut } from './core/audio/mix'
-import type { EngineDefinition, Profile, ProfileOrigin } from './core/preset/schema'
+import type { EngineDefinition, Profile } from './core/preset/schema'
 import { clampEngineDefinition } from './core/preset/engine-definition'
 import type { LibraryEngine } from './core/preset/engine-library'
 import {
-  applyResponsiveness,
-  applySportiness,
   resizeGearTables,
-  responsivenessOf,
-  setGearCount as withGearCount,
-  sportinessOf,
 } from './core/preset/character'
 import { SynthEngine, type SynthStatus } from './core/synth/synth'
 import { DEFAULT_RENDERING, DEFAULT_SYNTH, renderingOf, type SynthSettings } from './core/synth/settings'
@@ -172,8 +177,6 @@ import {
 } from './core/calibration/measured-car'
 import type { CarAggregate } from './core/calibration/aggregate'
 import {
-  applyOrigin,
-  captureOrigin,
   duplicateProfile,
   loadProfiles,
   loadTraces,
@@ -469,15 +472,105 @@ export async function refreshMeasuredCar(): Promise<void> {
  * choisi, on entend ce que la voiture peut.
  */
 export const runtimeProfile = computed<Profile>(() =>
-  // Les deux couches se composent, et l'ordre compte : l'étalonnage guidé passe
-  // en dernier. Il se fait sur commande, en quelques minutes, et vise un
-  // réglage précis ; la mesure du serveur s'affine toute seule sur des semaines.
-  // Quand David prend la peine de dérouler le protocole, c'est lui qui décide.
+  // Les couches se composent, et l'ordre compte.
+  //
+  // Le réglage du conducteur passe **en premier**, sur le profil livré : c'est
+  // une préférence, et une préférence ne doit pas écraser une mesure. Puis les
+  // deux étalonnages, dont le guidé en dernier — il se fait sur commande, en
+  // quelques minutes, et vise un réglage précis ; la mesure du serveur s'affine
+  // toute seule sur des semaines.
   withCalibration(
-    withCalibration(activeProfile.value, measuredOverrides.value),
+    withCalibration(
+      avecReglage(activeProfile.value, reglageConducteur.value),
+      measuredOverrides.value,
+    ),
     calibrationOverrides.value,
   ),
 )
+
+/**
+ * Ce que le conducteur a ajusté, rangé à côté des profils.
+ *
+ * **Par profil**, et non une seule couche pour tous : rendre sportif un V8 ne
+ * veut rien dire pour le quatre cylindres d'à côté, dont le tempérament est un
+ * autre choix.
+ */
+const CLE_REGLAGES = 'speed.reglageConducteur.v1'
+
+const reglagesParProfil = ref<Record<string, ReglageConducteur>>(lireLesReglages())
+
+export const reglageConducteur = computed<ReglageConducteur>(
+  () => reglagesParProfil.value[selectedId.value] ?? SANS_REGLAGE,
+)
+
+/** Y a-t-il quelque chose à enlever ? */
+export const reglageConducteurPose = computed(() => !estVide(reglageConducteur.value))
+
+function poserLeReglage(patch: Partial<ReglageConducteur>): void {
+  const courant = reglageConducteur.value
+  reglagesParProfil.value = {
+    ...reglagesParProfil.value,
+    [selectedId.value]: { ...courant, ...patch },
+  }
+  rangerLesReglages(reglagesParProfil.value)
+}
+
+/**
+ * Enlève la couche : le profil redevient celui que l'atelier a livré.
+ *
+ * C'est le seul retour qui survive à un redémarrage. « Revenir aux réglages
+ * d'avant », qui accompagnait les curseurs, ne vivait que le temps d'une
+ * session et sur un seul appareil.
+ */
+export function enleverLeReglageConducteur(): void {
+  const reste = { ...reglagesParProfil.value }
+  delete reste[selectedId.value]
+  reglagesParProfil.value = reste
+  rangerLesReglages(reste)
+}
+
+/**
+ * Ce qui a été rangé, relu au démarrage.
+ *
+ * **Le `catch` ne couvre que le stockage et le contenu**, et sa déclaration est
+ * au-dessus de l'appel pour une raison apprise à la dure : `CLE_REGLAGES`
+ * vivait sous cette fonction, et la zone morte temporelle levait une
+ * `ReferenceError` que ce `catch` avalait en silence. La couche revenait vide à
+ * chaque chargement, sans rien dans la console.
+ */
+function lireLesReglages(): Record<string, ReglageConducteur> {
+  let brut: string | null
+  try {
+    brut = localStorage.getItem(CLE_REGLAGES)
+  } catch {
+    // Stockage fermé : on repart sans couche, ce qui rend les profils livrés
+    // tels quels plutôt que de refuser de démarrer.
+    return {}
+  }
+  if (brut === null) return {}
+
+  let lu: unknown
+  try {
+    lu = JSON.parse(brut)
+  } catch {
+    // Contenu abîmé : même conduite.
+    return {}
+  }
+  if (typeof lu !== 'object' || lu === null) return {}
+
+  const sortie: Record<string, ReglageConducteur> = {}
+  for (const [id, valeur] of Object.entries(lu)) sortie[id] = lireReglage(valeur)
+  return sortie
+}
+
+function rangerLesReglages(reglages: Record<string, ReglageConducteur>): void {
+  try {
+    localStorage.setItem(CLE_REGLAGES, JSON.stringify(reglages))
+  } catch {
+    // Sans conséquence pour cette session : le réglage vaut jusqu'au prochain
+    // chargement.
+  }
+}
 
 const simulator = new SimulatorSource()
 const gpsBench = new GpsBench(simulator)
@@ -3609,81 +3702,53 @@ export function importEngine(text: string): string {
 // --- Curseurs globaux ----------------------------------------------------
 
 /**
- * État de retour, pris juste avant qu'un curseur global n'écrase le profil.
+ * Tempérament, réactivité, nombre de rapports : les trois curseurs du
+ * conducteur.
  *
- * Un curseur global recalcule une dizaine de réglages d'un coup : il ne peut
- * pas faire autrement, et sans retour possible une heure de réglage fin
- * partirait au premier mouvement. Le lot ORIGINE avait déjà doté chaque profil
- * d'un état de retour ; celui-ci en est un second, pris à la volée.
+ * Ils **ne s'écrivent plus dans le profil** depuis le 14 septembre 2026, mais
+ * dans une couche posée à côté — voir `core/preset/reglage-conducteur.ts`. Ce
+ * qui a changé, et pourquoi : le conducteur ne fabrique plus de profil, il
+ * ajuste ceux que l'atelier lui livre. Écrire dedans posait la question du jour
+ * où l'atelier en redépose une version corrigée, et aucune des deux réponses
+ * n'était bonne — écraser son réglage, ou le laisser sur une photo périmée.
  *
- * Il est relevé au **premier** mouvement et gardé jusqu'à ce qu'on s'en serve :
- * on revient donc à l'état d'avant qu'on ait commencé à toucher aux curseurs,
- * et non à celui d'avant le dernier cran. C'est ce qu'on cherche quand on
- * s'aperçoit qu'on a gâché le profil.
- *
- * De cet appareil et de cette session seulement : il ne s'enregistre pas.
+ * Les positions affichées viennent de la couche, et de ce que porte le profil
+ * tant qu'on n'y a pas touché : le curseur reflète ce qu'on a réellement sous
+ * les doigts, au lieu de partir d'une position arbitraire.
  */
-const globalUndo = ref<{ id: string; origin: ProfileOrigin } | null>(null)
-
-export const canUndoGlobalChange = computed(() => globalUndo.value?.id === selectedId.value)
-
-function applyGlobalChange(change: (profile: Profile) => Profile): void {
-  const current = activeProfile.value
-  if (globalUndo.value?.id !== current.id) {
-    globalUndo.value = { id: current.id, origin: captureOrigin(current) }
-  }
-  dissolve(change(current))
-}
-
-export function undoGlobalChange(): void {
-  const snapshot = globalUndo.value
-  if (!snapshot || snapshot.id !== selectedId.value) return
-  dissolve(applyOrigin(activeProfile.value, snapshot.origin))
-  globalUndo.value = null
-}
-
-/**
- * Tempérament du profil actif, de 0 (calme) à 1 (sportif).
- *
- * Déduit du profil et non enregistré dans lui : le curseur reflète donc ce
- * qu'on a réellement sous les doigts, y compris sur un profil réglé à la main
- * ou reçu par lien, au lieu de partir d'une position arbitraire.
- */
-export const sportiness = computed(() => sportinessOf(activeProfile.value))
+export const sportiness = computed(() =>
+  temperamentAffiche(activeProfile.value, reglageConducteur.value),
+)
 
 export function setSportiness(value: number): void {
-  applyGlobalChange((profile) => applySportiness(profile, value))
+  poserLeReglage({ temperament: value })
 }
 
-/**
- * Réactivité du profil actif, de 0 (pépère) à 1 (nerveux).
- *
- * Distincte du tempérament, et il faut qu'elle s'entende : le premier dit si la
- * voiture pousse fort, celle-ci dit si elle répond vite.
- */
-export const responsiveness = computed(() => responsivenessOf(activeProfile.value))
+export const responsiveness = computed(() =>
+  reactiviteAffichee(activeProfile.value, reglageConducteur.value),
+)
 
 export function setResponsiveness(value: number): void {
-  applyGlobalChange((profile) => applyResponsiveness(profile, value))
+  poserLeReglage({ reactivite: value })
 }
 
-/** Nombre de rapports du profil actif. */
-export const gearCount = computed(() => activeProfile.value.drivetrain.gearRatios.length)
+export const gearCount = computed(() =>
+  rapportsAffiches(activeProfile.value, reglageConducteur.value),
+)
 
 /**
  * Change le nombre de rapports, boîte complète : démultiplications réparties,
  * régimes de passage et temporisations redimensionnés.
  *
- * Compte comme un mouvement de curseur global — il refait la boîte — donc il
- * prend le même état de retour. Et la boîte se recale aussitôt sur la vitesse
- * courante : sans cela, changer de nombre de rapports en roulant laisserait le
- * rapport engagé pointer sur une démultiplication qui n'est plus la même, donc
- * le régime sauter. Les réglages sont reposés à la main avant le recalage,
- * l'observateur qui s'en charge d'ordinaire ne se déclenchant qu'après.
+ * La boîte se recale aussitôt sur la vitesse courante : sans cela, changer de
+ * nombre de rapports en roulant laisserait le rapport engagé pointer sur une
+ * démultiplication qui n'est plus la même, donc le régime sauter. Les réglages
+ * sont reposés à la main avant le recalage, l'observateur qui s'en charge
+ * d'ordinaire ne se déclenchant qu'après.
  */
 export function setGearCount(count: number): void {
-  applyGlobalChange((profile) => withGearCount(profile, count))
-  const profile = activeProfile.value
+  poserLeReglage({ rapports: count })
+  const profile = runtimeProfile.value
   gearbox.setPresets(profile.drivetrain, profile.engine, profile.feel)
   gearbox.settleFor((gear) => rpmInGear(gear, telemetry.value.speed.kmh))
 }
