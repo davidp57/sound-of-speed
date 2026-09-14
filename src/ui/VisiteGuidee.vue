@@ -32,6 +32,7 @@ const index = ref(0)
 const zone = ref<{ x: number; y: number; w: number; h: number } | null>(null)
 const cote = ref<'dessus' | 'dessous'>('dessous')
 const bulle = ref<HTMLElement | null>(null)
+let observateur: ResizeObserver | null = null
 
 const etape = computed(() => presentes.value[index.value])
 const dernier = computed(() => index.value >= presentes.value.length - 1)
@@ -153,11 +154,16 @@ onMounted(() => {
   // est en dessous descend : une bulle posée avant le repli montrerait le vide.
   window.addEventListener('resize', replacer)
   window.addEventListener('scroll', replacer, true)
+  // Et la mise en page peut bouger **sans** que la fenêtre change de taille :
+  // un droit qui s'ouvre ajoute un onglet, et la barre se replie d'un rang.
+  observateur = new ResizeObserver(replacer)
+  observateur.observe(document.body)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', replacer)
   window.removeEventListener('scroll', replacer, true)
+  observateur?.disconnect()
 })
 </script>
 

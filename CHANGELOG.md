@@ -13,7 +13,9 @@ Toutes les évolutions notables du projet. Format
   le volume. Elles lisent la position de leur cible dans le document, se
   replacent quand la fenêtre change de taille, et **sautent ce qui n'est pas
   là** — le volume n'apparaît qu'une fois le son prêt, et un rôle peut fermer un
-  écran. Un bouton « Passer » en sort à tout moment.
+  écran. Un bouton « Passer » en sort à tout moment. La visite continue sur la
+  barre du haut : les onglets, le son, le verrou d'écran, le plein écran et
+  l'aide.
 - **Un écran d'accueil au premier lancement**, à la place du manuel de onze
   sections. Il tient sur un écran : ce que fait l'application, le compte en
   premier et en gros — il existe déjà, il portera les réglages et les trajets,

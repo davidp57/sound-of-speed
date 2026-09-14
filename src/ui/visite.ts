@@ -54,3 +54,52 @@ export const ETAPES_DE_CONDUITE: readonly EtapeDeVisite[] = [
       'Il monte au-delà du maximum habituel, ce qui sert quand le volume de la voiture reste bas pour la musique.',
   },
 ]
+
+/**
+ * La barre du haut : la navigation à gauche, les commandes d'appareil à droite.
+ *
+ * **Ce qui est ouvert dépend du compte et de l'appareil**, et la bulle des
+ * onglets le dit plutôt que de nommer des écrans que la voiture ne montre pas.
+ * Le verrou n'existe pas sur tous les navigateurs et le plein écran n'apparaît
+ * qu'avec le rôle de conduite : leurs bulles se sautent alors.
+ *
+ * L'aide ferme la marche : c'est la bulle qui dit comment revenir.
+ */
+export const ETAPES_DE_LA_BARRE: readonly EtapeDeVisite[] = [
+  {
+    cible: 'onglets',
+    titre: 'Les écrans',
+    texte:
+      'On change d’écran ici. Il y en a plus ou moins selon le compte et selon l’appareil : la voiture n’a pas besoin de ceux qu’on regarde à l’arrêt, un moteur à la main.',
+  },
+  {
+    cible: 'son',
+    titre: 'Couper et rendre le son',
+    texte:
+      'Sans rien arrêter d’autre. Si une autre application le prend — la musique de la voiture, un appel —, c’est le même bouton qui le récupère.',
+  },
+  {
+    cible: 'verrou',
+    titre: 'Garder l’écran allumé',
+    texte:
+      'Sans lui, l’écran s’éteint au bout d’une minute et vous perdez la vitesse de vue.',
+  },
+  {
+    cible: 'plein-ecran',
+    titre: 'Plein écran',
+    texte:
+      'La barre disparaît : les chiffres prennent toute la hauteur et les commandes deviennent quatre grandes touches. On en sort par la croix, en haut à droite.',
+  },
+  {
+    cible: 'aide',
+    titre: 'Et pour le reste',
+    texte:
+      'Ce bouton ouvre l’aide, à tout moment. On y retrouve ce qui n’est pas montré ici, et de quoi revoir cette visite.',
+  },
+]
+
+/** La visite entière : l'écran de conduite, puis la barre. */
+export const ETAPES_DE_VISITE: readonly EtapeDeVisite[] = [
+  ...ETAPES_DE_CONDUITE,
+  ...ETAPES_DE_LA_BARRE,
+]

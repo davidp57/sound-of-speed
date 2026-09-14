@@ -6,7 +6,7 @@ import ConfigView from './ui/ConfigView.vue'
 import HelpView from './ui/HelpView.vue'
 import WelcomeView from './ui/WelcomeView.vue'
 import VisiteGuidee from './ui/VisiteGuidee.vue'
-import { ETAPES_DE_CONDUITE } from './ui/visite'
+import { ETAPES_DE_VISITE } from './ui/visite'
 import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
 
@@ -437,7 +437,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="shell" :class="{ immersive }">
     <header v-if="!immersive" class="bar">
-      <nav class="tabs">
+      <nav class="tabs" data-visite="onglets">
         <button
           v-for="entry in onglets"
           :key="entry.id"
@@ -455,6 +455,7 @@ onBeforeUnmount(() => {
       <div class="right">
         <button
           class="icon-button"
+          data-visite="son"
           :class="{ 'is-active': soundState === 'on', 'is-warn': soundState === 'taken' }"
           :title="SOUND_TITLES[soundState]"
           :aria-label="SOUND_TITLES[soundState]"
@@ -476,6 +477,7 @@ onBeforeUnmount(() => {
         <button
           v-if="screenLockSupported"
           class="icon-button"
+          data-visite="verrou"
           :class="{ 'is-active': keepScreenOn && screenLockHeld, 'is-warn': keepScreenOn && !screenLockHeld }"
           :title="keepScreenOn ? 'Écran gardé allumé' : 'Laisser l’écran s’éteindre'"
           :aria-label="keepScreenOn ? 'Écran gardé allumé' : 'Laisser l’écran s’éteindre'"
@@ -487,10 +489,14 @@ onBeforeUnmount(() => {
             <path d="M9 20h6" />
           </svg>
         </button>
-        <button class="help-button" title="Aide" @click="helpOpen = true">?</button>
+        <button class="help-button" data-visite="aide" title="Aide" @click="helpOpen = true">
+          ?
+        </button>
         <!-- Le plein écran est l'écran de conduite sans la barre : sans ce
              rôle-là, il n'y a rien à mettre en plein écran. -->
-        <button v-if="ouvertPar('conduite')" @click="toggleImmersive()">Plein écran</button>
+        <button v-if="ouvertPar('conduite')" data-visite="plein-ecran" @click="toggleImmersive()">
+          Plein écran
+        </button>
       </div>
     </header>
 
@@ -532,7 +538,9 @@ onBeforeUnmount(() => {
     </div>
 
     <div
-      v-if="compteASignaler && compteAEnregistrer && !helpOpen && !messageDeLiaison"
+      v-if="
+        compteASignaler && compteAEnregistrer && !helpOpen && !visiteOuverte && !messageDeLiaison
+      "
       class="banner"
     >
       <span>
@@ -554,7 +562,7 @@ onBeforeUnmount(() => {
       @close="commencer()"
       @compte="allerAuCompteDepuisLAccueil()"
     />
-    <VisiteGuidee v-if="visiteOuverte" :etapes="ETAPES_DE_CONDUITE" @fin="fermerLaVisite()" />
+    <VisiteGuidee v-if="visiteOuverte" :etapes="ETAPES_DE_VISITE" @fin="fermerLaVisite()" />
     <HelpView v-else-if="helpOpen" @close="closeHelp()" @compte="allerAuCompteDepuisLAide()" />
 
   </div>

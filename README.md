@@ -273,7 +273,8 @@ fois, il tombait exactement au moment où l'on n'a encore rien à perdre.
 
 **Une visite guidée prend la suite de l'accueil.** Des bulles fléchées se posent
 sur l'interface et désignent ce qu'on touche — D, P, le choix de la boîte, le
-volume. Elles lisent la position de leur cible dans le document plutôt que de la
+volume, puis la barre du haut : les onglets, le son, le verrou d'écran, le plein
+écran et l'aide. Elles lisent la position de leur cible dans le document plutôt que de la
 dessiner : ce qui n'est pas là se saute, et le décompte reste juste. Un bouton
 « Passer » en sort à tout moment.
 
