@@ -20,6 +20,13 @@ Toutes les évolutions notables du projet. Format
   servent encore au calcul. Neuf exports devenus sans usage quittent
   `src/state.ts`.
 
+### Corrigé
+
+- **Les profils épinglés se touchent en roulant.** La rangée de l'écran de
+  conduite avait des cibles de 38 pixels de haut, sous le seuil recommandé pour
+  un bouton visé au doigt. Portées à 44, et c'est gratuit : l'écran de conduite
+  mesure 1 387 pixels avant comme après. Le plein écran les agrandit à 84.
+
 ### Ajouté
 
 - **Les réglages de fond ont leur écran, et il ne s'ouvre qu'à l'arrêt.** Moteur,

@@ -87,6 +87,13 @@ source sont passés en **Paramètres**, le son et le verrou d'écran en haut à
 droite avec l'aide — ce sont des commandes d'appareil, pas de conduite. Le
 volume reste sous les cadrans, c'est un réglage qu'on pose une fois.
 
+**Une rangée de profils épinglés** permet de changer le bruit du moteur en
+roulant, sans quitter les cadrans. Elle n'apparaît qu'à partir de deux profils
+épinglés — un bouton unique qu'on ne peut pas désactiver n'est pas un choix — et
+la liste complète reste dans Paramètres. Ses cibles font 44 pixels de haut, 84
+en plein écran : mesuré, parce qu'un bouton visé au doigt sur une route ne se
+règle pas à l'estime.
+
 **L'écran occupe toute la place qu'on lui donne**, plein écran ou non. Il était
 borné à 60 rem de large et se dimensionnait sur son contenu, ce qui laissait
 240 pixels de largeur et 343 de hauteur inutilisés sur un écran de 1200 × 800 —
