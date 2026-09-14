@@ -82,10 +82,16 @@ Pour un NAS Synology et Portainer, la procédure détaillée est plus bas :
 ## Les écrans
 
 **Conduite** — la vitesse, le rapport, le régime, et les commandes de conduite
-entre les deux cadrans. Rien d'autre : le choix de l'affichage et celui de la
+sous les deux cadrans. Rien d'autre : le choix de l'affichage et celui de la
 source sont passés en **Configuration**, le son et le verrou d'écran en haut à
 droite avec l'aide — ce sont des commandes d'appareil, pas de conduite. Le
-volume reste sous les cadrans, c'est un réglage qu'on pose une fois. Les
+volume reste sous les cadrans, c'est un réglage qu'on pose une fois.
+
+**L'écran occupe toute la place qu'on lui donne**, plein écran ou non. Il était
+borné à 60 rem de large et se dimensionnait sur son contenu, ce qui laissait
+240 pixels de largeur et 343 de hauteur inutilisés sur un écran de 1200 × 800 —
+sans conséquence tant qu'on supposait qu'on roulait en plein écran, ce qui
+n'était pas le cas. Les
 commandes du simulateur, elles, sont sur l'écran **Banc**. Un bouton **Plein
 écran** masque la barre du haut : l'affichage occupe toute la hauteur et les
 commandes deviennent de grandes touches. On en sort par la **flèche de retour**,
@@ -122,14 +128,28 @@ Cet écran a **deux visages**, choisis en **Configuration** › *Affichage de la
 conduite* :
 
 - **Cadrans** — un tableau de bord. Le compteur de vitesse et le compte-tours
-  sont deux cadrans à aiguille, le rapport engagé est écrit en grand entre les
-  deux. La zone rouge du compte-tours commence au seuil de coupure, donc le
-  plafond se voit sans lire un chiffre. Chaque cadran garde son nombre en petit,
-  au centre, pour le réglage et le diagnostic. Le compteur est gradué jusqu'à
-  180 km/h — la vitesse à laquelle le dernier rapport touche le rupteur dépasse
-  300 km/h sur les deux profils livrés, une échelle qui laisserait l'aiguille
-  dans un coin. En plein écran, sur un écran large, les deux cadrans sont côte à
-  côte ; en portrait, ils s'empilent, chacun sur toute la largeur.
+  sont deux cadrans à aiguille qui se partagent toute la largeur ; le rapport
+  engagé est écrit **en haut, entre les deux**, et les commandes de conduite
+  passent en bande sous eux. La zone rouge du compte-tours commence au seuil de
+  coupure, donc le plafond se voit sans lire un chiffre. Chaque cadran garde son
+  nombre en petit, au centre, pour le réglage et le diagnostic. Le compteur est
+  gradué jusqu'à 180 km/h — la vitesse à laquelle le dernier rapport touche le
+  rupteur dépasse 300 km/h sur les deux profils livrés, une échelle qui
+  laisserait l'aiguille dans un coin. En portrait, les cadrans s'empilent,
+  chacun sur toute la largeur, et le rapport se lit entre les deux.
+
+  **Le rapport est posé par-dessus, pas rangé dans une rangée à lui**, et ce
+  n'est pas un détail de mise en page : il occupait avant une colonne centrale
+  qui prenait 263 des 920 pixels disponibles. Un disque ne profite pas de la
+  hauteur libre — il ne grandit qu'en largeur —, donc tout ce qui occupe le
+  milieu de la rangée se paie en taille de cadran. Mesuré sur un écran de
+  1024 × 768 : **296 pixels de diamètre avant, 434 après**, et 594 sur un écran
+  de 1400 × 900. Une rangée propre pour le rapport en aurait repris cent.
+
+  Les deux rangées ont un **plancher**. Sans lui, la rangée des cadrans se
+  comprime sans limite quand la fenêtre est courte : mesuré sur 790 × 590, le
+  disque tombait à 106 pixels, illisible et sans qu'on puisse faire défiler pour
+  le retrouver. Sous le plancher, l'écran déborde et défile — le moindre mal.
 - **Chiffres** — la vitesse, le rapport et le régime en nombres, avec la
   réglette de régime. C'est cette vue qui sert à régler : cent tours d'écart se
   lisent sur un nombre et ne se voient pas sur une aiguille.
@@ -1570,10 +1590,11 @@ d'essai qui écraserait le cache de celle qui sert serait une mauvaise idée.
 
 ## En voiture
 
-**Plein écran** — masque la barre d'onglets, porte l'affichage à toute la hauteur
-et remplace les commandes par quatre grandes touches. Sur le visage à cadrans,
-les deux cadrans prennent la hauteur disponible : côte à côte sur un écran large,
-empilés en portrait.
+**Plein écran** — masque la barre d'onglets et remplace les commandes par quatre
+grandes touches. Il ne sert plus qu'à cela : l'écran de conduite prend toute la
+place disponible dans les deux cas depuis le 14 septembre 2026, et ce qu'on gagne
+à passer en plein écran est la hauteur de la barre du haut, pas une autre mise
+en page.
 
 **Session média** — l'application apparaît sur l'écran verrouillé et dans le
 panneau de notifications, avec le nom du profil, sa configuration et une pochette
@@ -1706,10 +1727,12 @@ ordinateur.
 | **Échappement** | Combien de résonance passe par-dessus le son direct. *Direct* ne garde que le son cru du moteur, où le grain s'entend le plus ; *enveloppé* ne laisse que le son réverbéré, qui étale les fronts |
 | **On écoute** | Le silencieux : refermé bas, la voiture s'entend à travers la tôle et les vitres ; ouvert en grand, on l'entend de dehors |
 
-**Le moteur se change aussi depuis l'écran de conduite**, sur un rang de boutons
-sous celui des profils — un par moteur, avec son nom court. Il n'apparaît que si
-le profil décrit un moteur simulé. C'est ce qui permet d'essayer plusieurs
-moteurs en roulant sans passer par la configuration.
+**Le moteur se changeait aussi depuis l'écran de conduite**, sur un rang de
+boutons sous celui des profils. Il en est **retiré** le 14 septembre 2026, à la
+demande de David : cette ligne de douze boutons prenait 58 pixels de hauteur à
+l'écran qui doit se lire d'un coup d'œil, et ses cadrans les lui reprennent —
+293 pixels de disque avec elle, 366 sans. Le choix reste entier en
+**Configuration**, avec l'échappement et le point d'écoute.
 
 Chaque liste garde une entrée pour la valeur qui ne tombe sur aucun palier :
 un réglage fin fait au banc ne se fait pas écraser en ouvrant l'écran. Pour le
@@ -1974,11 +1997,12 @@ domaine.
 
 ### Le tempérament de la boîte
 
-**Entre les cadrans**, sous le rapport engagé : un bouton qui porte **Route** ou
-**Sport** et donne l'autre au clic. Les commandes de boîte — automatique ou
-manuelle, et les deux flèches — sont juste au-dessus du rapport, du même côté :
-la main se trouve là où le regard est déjà. C'est ce qui décide à quel régime les rapports passent, et c'est le
-seul réglage de tempérament qui reste au volant.
+**Dans la bande sous les cadrans** : un bouton qui porte **Route** ou **Sport**
+et donne l'autre au clic, avec les commandes de boîte — automatique ou manuelle,
+et les deux flèches. Elles étaient entre les cadrans jusqu'au 14 septembre 2026,
+où le rapport a pris seul cette place : la colonne centrale coûtait aux disques
+la moitié de leur taille. C'est ce qui décide à quel régime les rapports
+passent, et c'est le seul réglage de tempérament qui reste au volant.
 
 Les régimes de passage ne se règlent plus un par un. Ils se déduisent du
 **rupteur du moteur** et du tempérament choisi, comme la descente le faisait
@@ -3224,7 +3248,7 @@ suit pas.
 | 17 | Défilement de l'écran de configuration sans dérégler un curseur | corrigé, reste à essayer |
 | 18 | Le volume général sort du profil : c'est une préférence d'appareil | fait |
 | 19 | Mode simplifié : deux curseurs globaux, le détail derrière un mode avancé | fait, reste à écouter |
-| 20 | Tableau de bord à cadrans | fait, reste à essayer ; le décor défilant est retiré, et ne sera pas refait |
+| 20 | Tableau de bord à cadrans | fait ; les cadrans ont repris la place que leur prenaient le rapport et une largeur bridée — 296 px de diamètre avant, 434 après —, reste à essayer en roulant ; le décor défilant est retiré, et ne sera pas refait |
 | 21 | Imperfections : tremblement de régime, couches désaccordées, boucle qui ne se répète plus | fait, reste à écouter |
 | 22 | Étalonnage : mesurer la vraie voiture pour régler les virtuelles | fait, reste à rouler |
 | 23 | Le serveur accepte le dépôt d'une trace | fait, éprouvé sur le NAS |
