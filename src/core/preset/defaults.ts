@@ -1,7 +1,9 @@
 import { DEFAULT_RENDERING, type SynthRendering } from '../synth/rendering'
 // Le profil de la banque de démonstration, repris tel quel du fichier que le
 // générateur produit : ses gains et ses ancrages sont mesurés prise par prise.
-import DEMO from './demo-profile.json'
+import GM_LS_BANK from './gm-ls-profile.json'
+import GM_LS_LONG_BANK from './gm-ls-long-header-profile.json'
+import SUBARU_EJ25_BANK from './subaru-ej25-profile.json'
 import { clampEngineDefinition } from './engine-definition'
 import type { EngineDefinition, Profile } from './schema'
 
@@ -354,53 +356,69 @@ export function createV8Profile(): Profile {
 }
 
 /**
- * Le profil de la banque de démonstration.
+ * Un profil d'usine bâti sur une banque livrée.
  *
- * C'est le seul profil livré qui **sonne à coup sûr** : sa banque est dans le
- * dépôt et dans l'image, là où celle du V8 est déposée à la main sur le serveur.
- * Chez qui découvre le projet, le V8 désigne donc une banque absente et se tait ;
- * la démonstration, elle, joue.
+ * Les valeurs viennent du fichier produit par le générateur, repris tel quel :
+ * les gains, les ancrages et les bornes de lecture y sont **mesurés**, prise par
+ * prise, et les réécrire à la main reviendrait à les inventer. Ce qui n'est pas
+ * du son — la boîte, la conduite, le tempérament — vient du calibrage commun.
  *
- * Son moteur est **simulé** — produit au banc par `scripts/generate-bank/` — et
- * l'aide le dit à l'écran. Une prise sur une vraie voiture appartient à qui l'a
- * faite, et le projet ne redistribue que ce qu'il a le droit de redistribuer.
- *
- * Ses valeurs viennent du fichier produit par le générateur, repris tel quel :
- * les gains et les ancrages y sont **mesurés**, prise par prise, et les
- * réécrire à la main reviendrait à les inventer.
+ * Le moteur de chacune est **simulé**, produit au banc par
+ * `scripts/generate-bank/`, et l'aide le dit à l'écran. Une prise sur une vraie
+ * voiture appartient à qui l'a faite, et le projet ne redistribue que ce qu'il a
+ * le droit de redistribuer.
  */
-export function createDemoProfile(): Profile {
+function createBankProfile(id: string, bank: typeof GM_LS_BANK): Profile {
   const base = createRoadProfile()
   return {
     ...base,
-    id: 'demo',
-    name: DEMO.name,
-    favorite: true,
+    id,
+    name: bank.name,
     soundSource: 'prerendered',
-    sampleDir: DEMO.sampleDir,
-    engine: { ...base.engine, ...DEMO.engine },
-    mix: { ...base.mix, ...DEMO.mix },
-    layers: DEMO.layers.map((couche) => ({ ...couche })),
+    sampleDir: bank.sampleDir,
+    engine: { ...base.engine, ...bank.engine },
+    mix: { ...base.mix, ...bank.mix },
+    layers: bank.layers.map((couche) => ({ ...couche })),
     engineDefinition: clampEngineDefinition({
       ...(base.engineDefinition ?? {}),
-      ...DEMO.engineDefinition,
+      ...bank.engineDefinition,
     }),
   } as Profile
 }
 
+/** Le V8 croisé, et c'est lui qu'on entend au premier lancement. */
+export function createGmLsProfile(): Profile {
+  return { ...createBankProfile('gm-ls', GM_LS_BANK), favorite: true }
+}
+
+/** Le même V8 avec l'échappement que David a trouvé à l'oreille. */
+export function createGmLsLongHeaderProfile(): Profile {
+  return createBankProfile('gm-ls-long-header', GM_LS_LONG_BANK)
+}
+
+/** Le quatre cylindres à plat. */
+export function createSubaruEj25Profile(): Profile {
+  return createBankProfile('subaru-ej25', SUBARU_EJ25_BANK)
+}
+
 /**
- * La démonstration d'abord, et c'est ce qui décide du premier son.
+ * Les profils livrés, et l'ordre décide du premier son.
  *
- * Au tout premier lancement, le profil actif est le premier de cette liste. Le
- * mettre en tête est donc la différence entre une application qui joue et une
- * application muette chez quelqu'un qui n'a encore rien déposé.
+ * Au tout premier lancement, le profil actif est le premier de cette liste : le
+ * **V8 croisé**, choisi par David le 14 septembre 2026 après avoir écouté les
+ * trois — « les V8 sonnent bien mieux que les 4L ».
+ *
+ * Les trois sonnent à coup sûr : leurs banques sont dans le dépôt et dans
+ * l'image. Ce n'était le cas que d'une seule, et le profil V8 livré désignait
+ * une banque enregistrée qu'on n'a pas le droit de redistribuer — donc muet chez
+ * qui découvrait le projet.
  *
  * Cela ne change rien pour une installation déjà en service : les profils
  * enregistrés sont relus tels quels, et la restauration des profils d'usine ne
  * se déclenche que sur demande.
  */
 export function createFactoryProfiles(): Profile[] {
-  return [createDemoProfile(), createV8Profile()]
+  return [createGmLsProfile(), createGmLsLongHeaderProfile(), createSubaruEj25Profile()]
 }
 
 /**
@@ -411,9 +429,21 @@ export function createFactoryProfiles(): Profile[] {
  * valeurs de Sport — le défaut exact que la reprise par identifiant avait
  * corrigé, et qui avait fait porter les essais sur route sur des valeurs que
  * personne n'avait choisies.
+ *
+ * `createV8Profile` n'est plus livré depuis le 14 septembre 2026 — sa banque
+ * est une prise sur une vraie voiture, qu'on n'a pas le droit de
+ * redistribuer — mais il reste ici : c'est le profil que David a enregistré, et
+ * il doit continuer d'être repris avec son calibrage à lui.
  */
 export function knownFactoryProfiles(): Profile[] {
-  return [createDemoProfile(), createV8Profile(), createRoadProfile(), createDefaultProfile()]
+  return [
+    createGmLsProfile(),
+    createGmLsLongHeaderProfile(),
+    createSubaruEj25Profile(),
+    createV8Profile(),
+    createRoadProfile(),
+    createDefaultProfile(),
+  ]
 }
 
 export function createDefaultProfile(): Profile {

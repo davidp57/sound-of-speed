@@ -1,6 +1,6 @@
 # 08 — La démonstration devrait-elle être un V8 ?
 
-**Statut :** 🧑 attend David — un arbitrage, pas un travail
+**Statut :** ✅ fait — tranché le 14 septembre 2026, et plus largement que la question posée
 
 **Bloqué par :** aucun — le générateur sait déjà produire les deux
 
@@ -58,3 +58,19 @@ cylindres réglé à l'oreille est une entrée de bibliothèque comme une autre.
   banques ont des chiffres comparables de vitesse de lecture et de bouclage.
   C'est exactement le genre de question que ce lot dit depuis le début ne pas
   savoir trancher sans oreille.
+
+## Tranché
+
+David, le 14 septembre 2026 :
+
+> on va faire mieux : au lieu de livrer juste une banque de démo, on va livrer
+> tout ce qu'on a généré (donc, tout ce qui est légalement livrable puisque
+> procar n'est pas à nous), en mettant le v8-crossplane en premier dans la liste
+> (profil par défaut).
+
+La question posée était « démonstration en V8 ou en quatre cylindres ». La
+réponse est **les trois**, avec le V8 croisé en tête. Ce que ça change au-delà de
+l'arbitrage : la notion même de « banque de démonstration » disparaît, et le
+profil V8 qui désignait `procar` — muet chez qui découvre — cesse d'être livré.
+
+Exécuté dans le ticket 09.

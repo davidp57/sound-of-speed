@@ -45,7 +45,7 @@ export function cas({ nom }) {
   const session = `2026-09-11-06-24-01_${nom.slice(-6)}`
   const trancheDeSession = `${session}_001.jsonl.gz`
   const releve = `${nom}-sonde.json`
-  const contenuProfil = JSON.stringify({ name: 'Accord', sampleDir: 'demo', layers: [] })
+  const contenuProfil = JSON.stringify({ name: 'Accord', sampleDir: 'gm-ls', layers: [] })
   const moteur = `${nom}-moteur.json`
   const boite = `${nom}-boite.json`
   const contenuMoteur = JSON.stringify({ version: 1, engine: { id: nom, name: 'Accord' } })
@@ -146,7 +146,7 @@ export function cas({ nom }) {
     },
     {
       nom: "le listage d'une banque",
-      requete: { chemin: '/audio/demo/', entetes: { Accept: 'application/json' } },
+      requete: { chemin: '/audio/gm-ls/', entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
         const entrees = autoindex(corps)
@@ -158,7 +158,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'un échantillon se télécharge',
-      requete: { chemin: '/audio/demo/on-800.flac' },
+      requete: { chemin: '/audio/gm-ls/on-750.flac' },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
         vrai(corps.length > 1000, 'le corps a la taille d’un échantillon')
@@ -169,7 +169,7 @@ export function cas({ nom }) {
       // Le navigateur le fait de lui-même sur les médias. Un serveur qui rend
       // 200 avec tout le fichier n'est pas faux, mais un qui rend 206 doit
       // rendre la bonne plage.
-      requete: { chemin: '/audio/demo/on-800.flac', entetes: { Range: 'bytes=0-99' } },
+      requete: { chemin: '/audio/gm-ls/on-750.flac', entetes: { Range: 'bytes=0-99' } },
       attend: (r, corps) => {
         vrai([200, 206].includes(r.status), `statut 200 ou 206, reçu ${r.status}`)
         if (r.status === 206) {

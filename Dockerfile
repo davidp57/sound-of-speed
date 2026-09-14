@@ -29,15 +29,24 @@ FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
-# La banque de démonstration sort de `audio/`, et c'est ce qui la sauve.
+# Les banques livrées sortent de `audio/`, et c'est ce qui les sauve.
 #
 # Le volume des échantillons se monte **sur** `/usr/share/nginx/html/audio` : il
-# masque tout ce que l'image a mis là-dessous. Une démonstration rangée dans
-# `audio/demo/` serait donc invisible dès que la pile tourne avec son volume,
-# c'est-à-dire toujours. On la déplace hors de portée du montage ; nginx la
-# ramène sous `/audio/demo/` par un alias.
-RUN mv /usr/share/nginx/html/audio/demo /usr/share/nginx/html/_demo \
-    && rm -rf /usr/share/nginx/html/audio
+# masque tout ce que l'image a mis là-dessous. Une banque rangée dans `audio/`
+# serait donc invisible dès que la pile tourne avec son volume, c'est-à-dire
+# toujours. On les déplace hors de portée du montage ; nginx les ramène sous
+# `/audio/<banque>/` par un alias, un par banque.
+#
+# Le dossier entier déménage, et non les trois par leur nom : l'image est
+# construite depuis un clone, où `dist/audio` ne contient que ce que le dépôt
+# versionne — les banques produites au banc, jamais une banque enregistrée, et
+# c'est le `.gitignore` qui le tient.
+#
+# Sur un poste de développement, `public/audio` contient en plus les banques
+# déposées à la main, qui se retrouveraient ici. Elles n'en sortiraient pas pour
+# autant : nginx ne ramène sous `/audio/` que les banques qu'il nomme, un bloc
+# par banque, et une banque inconnue de sa liste reste invisible.
+RUN mv /usr/share/nginx/html/audio /usr/share/nginx/html/_banques
 
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \

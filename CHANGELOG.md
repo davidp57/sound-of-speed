@@ -8,6 +8,39 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Trois banques de son sont livrées avec l'application, au lieu d'une.** David,
+  après les avoir écoutées : « on va livrer tout ce qu'on a généré […] en mettant
+  le V8 en premier ». Ce sont les banques **produites au banc**, qui
+  n'appartiennent à personne — 4,2 Mo en FLAC à elles trois.
+
+  | Profil | Moteur | Prises | Poids |
+  |---|---|---|---|
+  | **V8** | V8 croisé, GM LS 5,7 L | 18 | 1,5 Mo |
+  | **V8 collecteur long** | le même, échappement réglé à l'oreille | 18 | 1,5 Mo |
+  | **L4** | quatre cylindres à plat | 15 | 1,2 Mo |
+
+  **Le V8 est premier, donc c'est lui qu'on entend au premier lancement.** C'était
+  la démonstration en quatre cylindres, et le verdict de l'écoute a tranché : « les
+  V8 sonnent bien mieux que les 4L ».
+
+  Chaque dossier porte le nom du moteur qui l'a produite — `demo` et `i4-check`
+  étaient des noms d'essai, et « demo » devenait faux dès qu'il y en a trois. Une
+  fiche par banque dit ce qu'elle vaut, chiffres mesurés à l'appui, et comment la
+  refaire.
+
+### Retiré
+
+- **Le profil V8 qui désignait une banque absente.** Il pointait `procar`, une
+  prise sur une vraie voiture qu'on n'a pas le droit de redistribuer : il était
+  donc **muet** chez qui découvrait l'application. Il reste dans les calibrages
+  connus — un profil enregistré qui s'en réclame continue d'être repris avec ses
+  valeurs à lui — mais il n'est plus livré.
+
+  Conséquence pour une installation en service : le profil de démonstration
+  enregistré désigne un dossier qui n'existe plus et se taira. Les nouveaux
+  profils s'obtiennent par « Profils d'usine », dans l'écran de configuration.
+
+
 - **Le banc hors ligne sait produire n'importe quel moteur de la bibliothèque.**
   David, le 14 septembre : « peut-on utiliser l'engine-sim pour générer une
   banque de son de la GM échappement long ? ». Non, on ne pouvait pas : le

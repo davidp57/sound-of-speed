@@ -124,7 +124,7 @@ describe('ce que le service worker garde', () => {
     // Ce sont les fichiers construits, les échantillons et la page elle-même :
     // sans eux, une voiture dans un tunnel ne démarre pas.
     expect(interception('/assets/index-abcd1234.js')).toBe('repond')
-    expect(interception('/audio/demo/on-800.flac')).toBe('repond')
+    expect(interception('/audio/gm-ls/on-750.flac')).toBe('repond')
     expect(interception('/icons/icon-192.png')).toBe('repond')
     expect(interception('/', 'navigate')).toBe('repond')
     expect(interception('/relecteur.html', 'navigate')).toBe('repond')

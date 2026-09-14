@@ -1,6 +1,6 @@
 {
-  "name": "V8 croisé (généré)",
-  "sampleDir": "v8-crossplane",
+  "name": "V8",
+  "sampleDir": "gm-ls",
   "engine": "gm-ls",
   "idleRpm": 750,
   "simulationHz": 10000,

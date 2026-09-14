@@ -11,12 +11,17 @@ dist/
 # dossier exclu, donc `public/audio/` suivi d'une exception ne ramènerait rien.
 public/audio/*
 
-# Une exception, et une seule : la banque de démonstration. Elle est simulée,
-# donc sans question de droits, et pèse 1,6 Mo en FLAC. Sans elle, qui clone le
-# dépôt obtient une application de son qui ne fait aucun son — la tirer du
+# Les exceptions : les banques **produites au banc**, qui n'appartiennent à
+# personne et pèsent 4,2 Mo en FLAC à elles trois. Sans elles, qui clone le
+# dépôt obtient une application de son qui ne fait aucun son — les tirer du
 # réseau au moment de construire l'image casserait le clone autonome pour
 # économiser un poids qu'on peut se permettre.
-!public/audio/demo/
+#
+# Une banque **enregistrée** ne passera jamais ici : une prise sur une vraie
+# voiture appartient à qui l'a faite, et `procar` vient d'une autre application.
+!public/audio/gm-ls/
+!public/audio/gm-ls-long-header/
+!public/audio/subaru-ej25/
 tsconfig.tsbuildinfo
 
 # Fichier de mots de passe produit par `npm run htpasswd`. Il n'a rien à faire
