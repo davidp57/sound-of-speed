@@ -130,7 +130,7 @@ contester.
 | # | Ticket | Statut |
 |---|--------|--------|
 | 01 | [Un écran d'accueil, le compte en tête](tickets/01-un-ecran-d-accueil.md) | ✅ |
-| 02 | [Des bulles posées sur la vraie interface](tickets/02-des-bulles-sur-l-interface.md) | ⬜ |
+| 02 | [Des bulles posées sur la vraie interface](tickets/02-des-bulles-sur-l-interface.md) | ✅ |
 | 03 | [De vrais onglets, avec une découpe](tickets/03-de-vrais-onglets.md) | ⬜ |
 | 04 | [La visite désigne la barre du haut](tickets/04-la-visite-designe-la-barre.md) | ⬜ |
 | 05 | [L'aide de référence, allégée](tickets/05-l-aide-de-reference-allegee.md) | ⬜ |

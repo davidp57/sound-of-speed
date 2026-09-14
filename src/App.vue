@@ -5,6 +5,8 @@ import AccountView from './ui/AccountView.vue'
 import ConfigView from './ui/ConfigView.vue'
 import HelpView from './ui/HelpView.vue'
 import WelcomeView from './ui/WelcomeView.vue'
+import VisiteGuidee from './ui/VisiteGuidee.vue'
+import { ETAPES_DE_CONDUITE } from './ui/visite'
 import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
 
@@ -117,6 +119,15 @@ const OUVERTURES_KEY = 'speed.ouvertures.v1'
 const COMPTE_SIGNALE_KEY = 'speed.compteSignale.v1'
 const helpOpen = ref(false)
 const welcomeOpen = ref(false)
+
+/**
+ * La visite guidée, qui prend la suite de l'accueil.
+ *
+ * Elle a sa propre clé : on peut la revoir sans revoir l'accueil, et l'accueil
+ * déjà vu ne doit pas empêcher une visite qu'on relance depuis l'aide.
+ */
+const VISITE_VUE_KEY = 'speed.visiteVue.v1'
+const visiteOuverte = ref(false)
 /** Message d'un profil reçu par lien, le temps de l'annoncer. */
 const received = ref('')
 
@@ -212,6 +223,31 @@ function markHelpSeen(): void {
 function closeWelcome(): void {
   welcomeOpen.value = false
   markHelpSeen()
+}
+
+/**
+ * « Commencer » ferme l'accueil et lance la visite — sauf si on l'a déjà vue.
+ *
+ * Les deux clés sont distinctes, et c'est ce qui permet de relancer la visite
+ * plus tard sans remontrer l'accueil.
+ */
+function commencer(): void {
+  closeWelcome()
+  if (tab.value !== 'drive') tab.value = 'drive'
+  try {
+    visiteOuverte.value = localStorage.getItem(VISITE_VUE_KEY) === null
+  } catch {
+    visiteOuverte.value = true
+  }
+}
+
+function fermerLaVisite(): void {
+  visiteOuverte.value = false
+  try {
+    localStorage.setItem(VISITE_VUE_KEY, '1')
+  } catch {
+    // Sans conséquence : elle se relance depuis l'aide.
+  }
 }
 
 /** L'aide, elle, se ferme sans rien retenir : on l'a ouverte exprès. */
@@ -515,9 +551,10 @@ onBeforeUnmount(() => {
 
     <WelcomeView
       v-if="welcomeOpen"
-      @close="closeWelcome()"
+      @close="commencer()"
       @compte="allerAuCompteDepuisLAccueil()"
     />
+    <VisiteGuidee v-if="visiteOuverte" :etapes="ETAPES_DE_CONDUITE" @fin="fermerLaVisite()" />
     <HelpView v-else-if="helpOpen" @close="closeHelp()" @compte="allerAuCompteDepuisLAide()" />
 
   </div>

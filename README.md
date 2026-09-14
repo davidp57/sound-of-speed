@@ -271,7 +271,13 @@ premier lancement on veut rouler, pas lire —, et **il repasse tant que le comp
 n'est pas enregistré**, une fois toutes les dix ouvertures. Montré une seule
 fois, il tombait exactement au moment où l'on n'a encore rien à perdre.
 
-**L'écran d'accueil ouvre sur le même sujet**, et c'est son premier bloc : le
+**Une visite guidée prend la suite de l'accueil.** Des bulles fléchées se posent
+sur l'interface et désignent ce qu'on touche — D, P, le choix de la boîte, le
+volume. Elles lisent la position de leur cible dans le document plutôt que de la
+dessiner : ce qui n'est pas là se saute, et le décompte reste juste. Un bouton
+« Passer » en sort à tout moment.
+
+**L'écran d'accueil ouvre sur le compte**, et c'est son premier bloc : le
 compte existe déjà, il portera les réglages et les trajets, et il ne tient qu'à
 ce navigateur tant qu'on ne l'enregistre pas. Dans la voiture, il propose de se
 donner un code plutôt que de s'enregistrer — c'est la même distinction que tient
@@ -1101,7 +1107,8 @@ ce qui vient de la base arrive après l'écran. Trois garde-fous :
   lancement, pas en continu.
 
 **Ce qui reste local** : le volume, le visage de l'écran, le verrou, le mode de
-boîte, l'accord donné aux dépôts, l'aide déjà vue, l'étalonnage en cours. Ces
+boîte, l'accord donné aux dépôts, l'accueil et la visite déjà vus, l'étalonnage
+en cours. Ces
 réglages décrivent l'appareil, pas le conducteur.
 
 Rien n'est effacé du stockage local par cette reprise.

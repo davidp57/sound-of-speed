@@ -1,6 +1,6 @@
 # 02 — Des bulles posées sur la vraie interface
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 14 septembre 2026
 
 **Bloqué par :** [01 — Un écran d'accueil](01-un-ecran-d-accueil.md). La visite
 part de l'accueil : c'est « Commencer » qui la lance.
