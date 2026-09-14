@@ -46,6 +46,19 @@ Toutes les évolutions notables du projet. Format
   la raison et le temps restant. Un onglet qui va et vient déplacerait ses
   voisins sous le doigt.
 
+- **Le banc rend la commande qui fabrique la banque du son qu'on écoute.** Deux
+  blocs à coller : la définition à enregistrer, et la ligne qui la consomme. Les
+  réglages sont ceux qu'on vient d'entendre — plus besoin de les retrouver après
+  avoir réglé à l'oreille, ce qui était la vraie friction.
+
+  La chaîne tourne sur le poste et non sur le serveur : elle lance un binaire
+  natif compilé là, quand le serveur est une image Linux ARM64 sur un NAS qui
+  sert déjà l'application. L'écran le dit.
+
+  Un test compare la définition produite à celle livrée pour le même moteur :
+  l'application et la chaîne ne partagent aucun type, et rien d'autre
+  n'empêcherait le format de diverger avant une génération lancée pour rien.
+
 - **Les ajustements du conducteur deviennent une couche.** Les trois curseurs —
   calme ↔ sportif, pépère ↔ nerveux, nombre de rapports — ne s'écrivent plus dans
   le profil mais à côté. Le profil livré reste intact, et une version corrigée

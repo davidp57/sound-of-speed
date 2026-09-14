@@ -1837,7 +1837,16 @@ le son n'avait pas été activé, changer d'origine ne l'allume pas.
 
 *Généré à l'avance* ne demande rien de plus qu'*enregistré* — c'est un dossier
 d'échantillons comme un autre, produit par
-[`scripts/generate-bank/`](scripts/generate-bank/README.md). Le générateur
+[`scripts/generate-bank/`](scripts/generate-bank/README.md).
+
+**Le banc de synthèse rend de quoi le lancer** : la section *Fabriquer la
+banque* donne la définition à enregistrer et la ligne qui la consomme, avec les
+réglages qu'on vient d'entendre. La chaîne tourne **sur le poste** et non sur le
+serveur — elle lance un binaire natif compilé là, quand le serveur est une image
+Linux ARM64 sur le NAS. Ce qu'on retire n'est pas le terminal, c'est d'avoir à
+retrouver les paramètres après avoir réglé à l'oreille.
+
+Le générateur
 charge la **même captation d'échappement** que le mode direct, choisie par
 `exhaustResponse` dans la définition de banque : il fabriquait sa propre
 résonance, qui creusait le médium et laissait passer un souffle aigu battant à
