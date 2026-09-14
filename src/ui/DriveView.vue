@@ -347,6 +347,17 @@ const SPEED_STEP_KMH = 20
     </section>
 
     <section v-if="driveFace === 'dials'" class="dashboard">
+      <!--
+        Le rapport est en haut, au milieu, entre les deux cadrans — David, le
+        14 septembre 2026. Il occupait avant une colonne centrale qui prenait
+        263 des 920 pixels de la rangée : les cadrans sont passés de 296 à
+        448 pixels de diamètre en l'en sortant, mesuré sur un écran de 1024.
+      -->
+      <div class="gear-read">
+        <div class="gear-value numeric">{{ gearLabel }}</div>
+        <div class="unit">rapport</div>
+      </div>
+
       <div class="cell speed">
         <DialGauge
           :value="telemetry.speed.kmh"
@@ -354,19 +365,6 @@ const SPEED_STEP_KMH = 20
           :step="SPEED_STEP_KMH"
           unit="km/h"
         />
-      </div>
-
-      <div class="cell gear">
-        <!--
-          Les commandes ne sont pas rangées en bas de l'écran : elles sont entre
-          les deux cadrans, là où le regard est déjà, au lieu de descendre
-          chercher une barre. Le rapport se lit à leur droite.
-        -->
-        <DriveSelector />
-        <div class="gear-read">
-          <div class="gear-value numeric">{{ gearLabel }}</div>
-          <div class="unit">rapport</div>
-        </div>
       </div>
 
       <div class="cell rpm">
@@ -380,6 +378,13 @@ const SPEED_STEP_KMH = 20
           unit="tr/min"
         />
       </div>
+
+      <!--
+        Les commandes de boîte passent sous les cadrans : il n'y a plus de
+        colonne centrale pour les tenir, et la bande leur donne des touches
+        plus larges qu'elles ne l'étaient entre les deux disques.
+      -->
+      <DriveSelector class="commandes" />
     </section>
 
     <section v-else class="readout">
@@ -522,12 +527,21 @@ const SPEED_STEP_KMH = 20
   font-size: 0.95rem;
 }
 
+/*
+ * L'écran de conduite occupe la place qu'on lui donne, plein écran ou non.
+ *
+ * Il était borné à 60 rem de large et se dimensionnait sur son contenu : sur un
+ * écran de 1200, deux cent quarante pixels de largeur restaient inutilisés et
+ * trois cent quarante-trois de hauteur sous les cadrans. C'était sans
+ * conséquence tant qu'on supposait qu'on roulait en plein écran ; David n'y
+ * passe jamais — dit le 14 septembre 2026 —, donc c'était la mise en page
+ * ordinaire qui était fausse.
+ */
 .drive {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  max-width: 60rem;
-  margin: 0 auto;
+  height: 100%;
 }
 
 /*
@@ -675,27 +689,48 @@ const SPEED_STEP_KMH = 20
 /*
  * Tableau de bord.
  *
- * Trois cellules qui se lisent ensemble, sans rien faire défiler : le compteur,
- * le rapport, le compte-tours. En portrait, les deux cadrans se partagent la
- * largeur et le rapport passe en bandeau sous eux — c'est l'information la plus
- * utile de l'écran, celle qui explique ce qu'on entend, et elle a droit à toute
- * la largeur plutôt qu'au tiers du milieu.
+ * Deux cadrans côte à côte, le rapport au-dessus entre les deux, les commandes
+ * de boîte en bande dessous.
+ *
+ * **Le rapport a quitté la rangée** le 14 septembre 2026, sur décision de
+ * David : entre les deux cadrans, il leur prenait 263 des 920 pixels
+ * disponibles, et les bornait à 296 pixels de diamètre quand la place en
+ * permettait 448. Un disque ne peut pas profiter de la hauteur libre — il ne
+ * grandit qu'en largeur —, donc tout ce qui occupe le milieu de la rangée se
+ * paie en taille de cadran.
  *
  * Les cellules n'ont ni fond ni bordure ici : les cadrans portent déjà leur
- * propre disque opaque, et le décor doit pouvoir se voir autour.
+ * propre disque opaque.
  */
 .dashboard {
   position: relative;
-  display: grid;
   /*
-   * La colonne centrale porte maintenant le sélecteur **et** le rapport, côte
-   * à côte : il lui faut la place des deux, sans quoi le rapport retombe sous
-   * les touches et la rangée dépasse les cadrans.
+   * La rangée prend la hauteur qui reste, plein écran ou non : c'est elle qui
+   * porte l'écran, tout le reste est une bande. Les cadrans, eux, restent
+   * bornés par la largeur de leur colonne — un disque ne grandit pas en
+   * hauteur —, et la hauteur en trop leur sert à se centrer.
    */
-  grid-template-columns: 1fr minmax(15rem, 0.8fr) 1fr;
-  grid-template-areas: 'speed gear rpm';
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  /*
+   * La rangée des cadrans est élastique, celle des commandes garde sa taille :
+   * ce qui reste revient aux disques.
+   *
+   * **Le plancher de 11 rem n'est pas décoratif.** Sans lui, la rangée se
+   * comprime sans limite dès que la fenêtre est courte : mesuré sur 790 × 590,
+   * le disque tombait à 106 pixels — illisible, et sans qu'on puisse faire
+   * défiler pour le retrouver. Sous ce plancher, l'écran déborde et défile,
+   * ce qui est le moindre mal.
+   */
+  grid-template-rows: minmax(11rem, 1fr) auto;
+  grid-template-areas:
+    'speed rpm'
+    'commandes commandes';
   align-items: center;
-  gap: 0.75rem;
+  justify-items: center;
+  gap: 0.5rem 0.75rem;
   padding: 0.5rem;
 }
 
@@ -708,6 +743,21 @@ const SPEED_STEP_KMH = 20
   border: none;
   padding: 0;
   min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * Le cadran remplit sa cellule et s'y inscrit sans se déformer — c'est le
+ * repère du SVG qui tient ses proportions. Il prend donc la plus grande taille
+ * que la largeur **et** la hauteur permettent, sans qu'aucune règle n'ait à
+ * choisir laquelle des deux borne.
+ */
+.dashboard .dial {
+  width: 100%;
+  height: 100%;
+  max-height: none;
 }
 
 .dashboard .speed {
@@ -719,19 +769,24 @@ const SPEED_STEP_KMH = 20
 }
 
 /*
- * Le sélecteur à gauche, le rapport à sa droite — la disposition que David a
- * dessinée le 11 septembre 2026. Côte à côte, la colonne centrale reste à la
- * hauteur des cadrans ; l'un sous l'autre, elle les dépassait de cinquante
- * pixels et tirait toute la rangée vers le bas.
+ * Le rapport est en haut, au milieu, **posé par-dessus** plutôt que rangé dans
+ * une rangée à lui : le cadran est dessiné dans un repère plus large que son
+ * disque, si bien que le haut de l'écran entre les deux est vide. Une rangée
+ * propre lui aurait coûté cent pixels, pris aux disques — c'est exactement ce
+ * qu'on cherchait à leur rendre.
  */
-.dashboard .gear {
-  grid-area: gear;
-  text-align: center;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+.dashboard .gear-read {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.dashboard .commandes {
+  grid-area: commandes;
+  width: 100%;
+  max-width: 32rem;
 }
 
 .gear-read {
@@ -740,8 +795,9 @@ const SPEED_STEP_KMH = 20
   align-items: center;
 }
 
+/* Le rapport grandit avec l'écran : c'est l'information qu'on cherche le plus. */
 .gear-value {
-  font-size: clamp(2.5rem, 9vw, 5.5rem);
+  font-size: clamp(2.5rem, 12vh, 9rem);
   line-height: 1;
   font-weight: 300;
   color: var(--accent);
@@ -840,9 +896,7 @@ const SPEED_STEP_KMH = 20
 }
 
 .drive.immersive {
-  height: 100%;
   gap: 0.5rem;
-  max-width: none;
   padding: 0.5rem;
 }
 
@@ -910,62 +964,39 @@ const SPEED_STEP_KMH = 20
 }
 
 /*
- * Mode plein écran, visage à cadrans : la rangée de cadrans prend toute la
- * hauteur disponible et les cadrans s'y inscrivent en gardant leurs
- * proportions. Les rangées sont déclarées, faute de quoi elles se
- * dimensionneraient sur leur contenu et déborderaient de l'écran.
+ * En portrait, les cadrans s'empilent.
+ *
+ * Côte à côte, chacun est borné par la moitié de la largeur — 165 pixels
+ * mesurés sur un téléphone de 375 —, et la hauteur libre reste vide. L'un sous
+ * l'autre, ils font toute la largeur. Le rapport garde sa place en haut et les
+ * commandes la leur en bas, comme en paysage : c'est la même planche de bord,
+ * pas une autre disposition à apprendre.
  */
-.drive.immersive .dashboard {
-  flex: 1;
-  min-height: 0;
-  align-items: stretch;
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.drive.immersive .dashboard .cell {
-  min-height: 0;
-}
-
-/*
- * Les cadrans prennent toute la hauteur de leur cellule au lieu de garder la
- * largeur pour seule mesure : sans cette règle, un cadran de 175 pixels de large
- * flottait au milieu d'une rangée de 500 de haut. Le dessin s'inscrit dans la
- * boîte et se centre, ses proportions étant tenues par le repère du SVG.
- */
-.drive.immersive .dashboard .dial {
-  height: 100%;
-  max-height: none;
-}
-
-/* Le rapport grandit avec l'écran : c'est l'information qu'on cherche le plus. */
-.drive.immersive .gear-value {
-  font-size: clamp(3rem, 14vh, 10rem);
-}
-
 @media (max-width: 640px) {
   .dashboard {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
+    /*
+     * Même plancher qu'en paysage, et pour la même raison : sur un téléphone de
+     * 375 × 812, la barre d'onglets tient sur trois lignes et ce qui reste ne
+     * suffit pas à deux cadrans. Sans plancher, ils tombaient à 60 pixels de
+     * diamètre.
+     */
+    grid-template-rows: minmax(12rem, 1fr) minmax(12rem, 1fr) auto;
     grid-template-areas:
-      'speed rpm'
-      'gear gear';
+      'speed'
+      'rpm'
+      'commandes';
   }
 
   /*
-   * Plein écran en portrait : les cadrans s'empilent.
-   *
-   * Côte à côte, chacun est borné par la moitié de la largeur — 165 pixels
-   * mesurés sur un téléphone de 375 —, et la hauteur libre reste vide. Empilés,
-   * ils font 375 de large chacun, avec le rapport entre les deux comme sur une
-   * planche de bord. Hors plein écran, ils restent côte à côte : là, c'est de
-   * lire les trois d'un coup sans faire défiler qui compte.
+   * Empilés, les deux disques ne laissent plus de creux commun : le rapport se
+   * met entre eux, à droite, là où les deux cadrans ont leur coin vide.
    */
-  .drive.immersive .dashboard {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      'speed'
-      'gear'
-      'rpm';
-    grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+  .dashboard .gear-read {
+    top: 50%;
+    left: auto;
+    right: 0.5rem;
+    transform: translateY(-50%);
   }
 }
 

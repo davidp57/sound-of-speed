@@ -1,7 +1,7 @@
 # TABLEAU-DE-BORD — un vrai tableau de bord, et un paysage qui défile
 
 **Statut :** 🧑 attend David
-**Branche :** `feature/tableau-de-bord`
+**Branches :** `feature/tableau-de-bord`, `feature/cadrans-en-grand`
 **Version visée :** 0.4
 
 ## L'idée
@@ -84,11 +84,20 @@ doit pas hoqueter, demande d'être mesuré avant d'être promis.
 
 ## Où en est le lot
 
-Les quatre tickets sont écrits en code. Deux sont clos — la disposition en
-tableau de bord (02) et les deux visages (03). Deux attendent la voiture : le
-cadran (01), pour la lecture en roulant et en plein soleil, et le paysage (04),
-dont le coût est mesuré au poste mais pas sur le navigateur de bord, et dont
-l'effet sur la régularité du son ne peut pas s'établir sans faire sortir du son.
+Les cinq tickets sont écrits en code. Trois sont clos — la disposition en tableau
+de bord (02), les deux visages (03) et la place rendue aux cadrans (05). Deux
+attendent la voiture : le cadran (01), pour la lecture en roulant et en plein
+soleil, et le paysage (04), dont le coût est mesuré au poste mais pas sur le
+navigateur de bord, et dont l'effet sur la régularité du son ne peut pas
+s'établir sans faire sortir du son.
+
+**Un cinquième ticket est né de l'usage**, le 14 septembre 2026 : les cadrans
+étaient trop petits. Deux causes, et aucune n'était celle qu'on aurait devinée —
+la colonne centrale qui portait le sélecteur et le rapport prenait 28 % de la
+rangée, et l'écran de conduite, borné à 60 rem, ne prenait pas la place
+disponible parce qu'on supposait qu'on roulait en plein écran. David n'y passe
+jamais. Le disque est passé de 296 à 434 pixels sur un écran de 1024 × 768 ;
+le détail est dans le [ticket 05](tickets/05-les-cadrans-occupent-l-ecran.md).
 
 **Le paysage n'est pas abandonné.** La mesure qui conditionnait sa réalisation est
 favorable : la durée d'image ne bouge pas, et le décor coûte 0,13 ms de temps de

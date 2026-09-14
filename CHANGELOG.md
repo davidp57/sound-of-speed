@@ -8,6 +8,23 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Les cadrans occupent l'écran.** Demandé par David le 14 septembre 2026 :
+  « les cadrans sont trop petits, il faut gagner de la place en réduisant la
+  largeur du bloc central ». Le rapport quitte la colonne centrale et se pose
+  **en haut, entre les deux cadrans** ; les commandes de conduite passent en
+  bande sous eux.
+
+  Mesuré sur un écran de 1024 × 768 : le disque passe de **296 à 434 pixels**
+  de diamètre, et à 594 sur un écran de 1400 × 900. Un disque ne profite pas de
+  la hauteur libre — il ne grandit qu'en largeur —, donc tout ce qui occupait le
+  milieu de la rangée se payait en taille de cadran.
+
+- **L'écran de conduite prend toute la place, plein écran ou non.** Il était
+  borné à 60 rem de large et se dimensionnait sur son contenu : 240 pixels de
+  largeur et 343 de hauteur inutilisés sur un écran de 1200 × 800. C'était sans
+  conséquence tant qu'on supposait qu'on roulait en plein écran — David n'y
+  passe jamais, donc c'était la mise en page ordinaire qui était fausse.
+
 - **La bande de défilement passe sur tous les écrans qui se lisent au doigt.**
   Demandé par David le 14 septembre 2026 : elle n'existait que sur l'écran de
   configuration. Elle est maintenant à gauche de la télémétrie, de l'étalonnage,
