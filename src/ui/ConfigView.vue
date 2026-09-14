@@ -2029,20 +2029,11 @@ async function rapatrier(): Promise<void> {
 
 <style scoped>
 /*
- * Bande de défilement, à gauche.
- *
- * À gauche parce que c'est la place du conducteur, donc celle du pouce. Elle
- * donne une zone où le glissement ne peut rien dérégler quoi qu'il arrive, y
- * compris si le navigateur de la voiture ignore le comportement tactile déclaré
- * sur les curseurs — c'est un Chromium ancien, et c'est le seul avis qui compte.
- *
- * Faite en réservant une marge sur la grille plutôt qu'en ajoutant un élément :
- * la bande ne porte aucune information et n'est pas atteignable, donc rien ne
- * justifie de la mettre dans le document.
+ * La bande de défilement était déclarée ici ; elle vit maintenant dans
+ * `style.css` et se pose sur tous les écrans qui défilent, en voiture et sur
+ * téléphone. Cet écran ne la porte donc plus lui-même.
  */
 .config {
-  --band: clamp(1.75rem, 6vw, 2.75rem);
-
   display: grid;
   /*
    * Le `min()` est ce qui empêche la grille de déborder en portrait : une
@@ -2055,38 +2046,6 @@ async function rapatrier(): Promise<void> {
   align-items: start;
   max-width: 80rem;
   margin: 0 auto;
-  position: relative;
-  padding-left: calc(var(--band) + 1rem);
-}
-
-.config::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: var(--band);
-  background: var(--panel-alt);
-  border-right: 1px solid var(--line);
-  border-radius: 6px 0 0 6px;
-  touch-action: pan-y;
-}
-
-/* Le mot est en haut, là où le regard arrive avant de commencer à lire. */
-.config::after {
-  content: 'défiler';
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: var(--band);
-  padding-top: 0.6rem;
-  writing-mode: vertical-rl;
-  text-align: start;
-  font-size: 0.7rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
-  pointer-events: none;
 }
 
 .panel {

@@ -104,3 +104,59 @@ input[type='range'] {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
+
+/*
+ * Bande de défilement, à gauche de l'écran.
+ *
+ * À gauche parce que c'est la place du conducteur, donc celle du pouce. Elle
+ * donne une zone où le glissement ne peut rien dérégler quoi qu'il arrive, y
+ * compris si le navigateur de la voiture ignore le comportement tactile déclaré
+ * plus haut sur les curseurs — c'est un Chromium ancien, et c'est le seul avis
+ * qui compte.
+ *
+ * Elle était propre à l'écran de configuration ; David l'a demandée sur les
+ * autres le 14 septembre 2026. Elle vit donc ici, et l'écran qui la veut porte
+ * la classe. Elle se pose sur l'élément qui fait toute la hauteur du contenu,
+ * pas sur le conteneur qui défile : autrement elle resterait en haut de la
+ * fenêtre et sortirait de vue au premier glissement.
+ *
+ * Faite en réservant une marge plutôt qu'en ajoutant un élément : la bande ne
+ * porte aucune information et n'est pas atteignable, donc rien ne justifie de
+ * la mettre dans le document.
+ */
+.bande-defilement {
+  --band: clamp(1.75rem, 6vw, 2.75rem);
+
+  position: relative;
+  padding-left: calc(var(--band) + 1rem);
+}
+
+.bande-defilement::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--band);
+  background: var(--panel-alt);
+  border-right: 1px solid var(--line);
+  border-radius: 6px 0 0 6px;
+  touch-action: pan-y;
+}
+
+/* Le mot est en haut, là où le regard arrive avant de commencer à lire. */
+.bande-defilement::after {
+  content: 'défiler';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--band);
+  padding-top: 0.6rem;
+  writing-mode: vertical-rl;
+  text-align: start;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  pointer-events: none;
+}

@@ -538,6 +538,16 @@ export function choisirLAppareil(choisi: Appareil): void {
 export const simulatorAvailable = computed(() => appareil.value !== 'voiture')
 
 /**
+ * La bande où le glissement ne peut rien dérégler, à gauche des écrans.
+ *
+ * Elle ne sert qu'au doigt : au poste de travail on fait défiler à la molette
+ * ou à la barre, et elle ne ferait que manger de la largeur. Elle suit donc
+ * l'appareil, que l'écran du compte laisse corriger quand la détection se
+ * trompe.
+ */
+export const bandeDeDefilement = computed(() => appareil.value !== 'poste')
+
+/**
  * Ce que le banc fabrique, quand le simulateur est la source.
  *
  * - `perfect` : une vitesse exacte à chaque image. Toute la difficulté du

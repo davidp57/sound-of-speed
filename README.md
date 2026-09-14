@@ -191,9 +191,15 @@ caractère, mixage, couches. Aucun réglage ne disparaît en simplifié : ils
 attendent. Le choix du mode est une préférence de l'appareil, comme le volume :
 il se retient et ne voyage pas avec un profil partagé.
 
-C'est aussi là qu'on gère les profils et qu'on analyse les échantillons. Une
-bande de défilement longe le bord gauche : le glissement n'y dérègle rien, et
-les curseurs eux-mêmes rendent le glissement vertical à la page.
+C'est aussi là qu'on gère les profils et qu'on analyse les échantillons.
+
+**Une bande de défilement longe le bord gauche de chaque écran qui se lit en
+colonne** — configuration, télémétrie, étalonnage, compte, aide : le glissement
+n'y dérègle rien. Elle ne paraît qu'en voiture et sur téléphone, l'appareil
+étant deviné au démarrage et corrigeable dans l'écran Compte ; au poste de
+travail on fait défiler à la molette. L'écran de conduite n'en a pas, faute de
+défiler. Les curseurs, eux, rendent partout le glissement vertical à la page et
+ne gardent que l'horizontal.
 
 **Étalonnage** — un protocole guidé en six étapes : rouler en ville, sur route,
 sur autoroute, puis une accélération franche, une décélération pied levé et un
