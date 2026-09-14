@@ -3,17 +3,10 @@ import { computed } from 'vue'
 
 import DialGauge from './components/DialGauge.vue'
 import DriveSelector from './DriveSelector.vue'
-import { describesSimulatedEngine, soundSourceOf } from '../core/preset/schema'
-import {
-  ENGINE_LIBRARY,
-  ORIGIN_MAX_GAPS,
-  closestLibraryEngine,
-} from '../core/preset/engine-library'
 import {
   activateAudio,
   activeProfile,
   captureStatus,
-  applyLibraryEngine,
   driveFace,
   favoriteProfiles,
   masterVolume,
@@ -43,46 +36,6 @@ import {
 } from '../state'
 
 withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
-
-/**
- * Les moteurs simulés, à portée de pouce.
- *
- * David : « on doit pouvoir changer facilement la source du son du profil
- * [...] en sélectionnant le moteur simulé sur la page principale. Donc, des
- * boutons pour le profil, et si le profil sélectionné correspond à un moteur
- * simulé (ou à une simu enregistrée, d'ailleurs) des boutons pour chaque type
- * de moteur dispo. »
- *
- * Le rang n'apparaît que si le profil décrit un moteur simulé. Sur un profil
- * *généré à l'avance*, il choisit bien le moteur du profil, mais la banque
- * déjà rendue continue de jouer : le son ne changera qu'au prochain rendu.
- */
-const showsEngines = computed(() => describesSimulatedEngine(soundSourceOf(activeProfile.value)))
-
-const closestEngine = computed(() => {
-  const mine = activeProfile.value.engineDefinition
-  if (mine === undefined) return null
-  return closestLibraryEngine(mine, activeProfile.value.engine.redlineRpm)
-})
-
-/** Le bouton allumé : seulement quand le moteur est chargé tel quel. */
-const loadedEngineId = computed(() =>
-  closestEngine.value?.gaps === 0 ? closestEngine.value.engine.id : '',
-)
-
-/**
- * Ce qui s'affiche en tête du rang.
- *
- * Un moteur retouché n'allume aucun bouton — mais le taire laisserait croire
- * qu'aucun n'est chargé. Le libellé dit alors de qui il descend.
- */
-const engineLabel = computed(() => {
-  const near = closestEngine.value
-  if (near === null || near.gaps > ORIGIN_MAX_GAPS) return 'Moteur'
-  if (near.gaps === 0) return 'Moteur'
-  const s = near.gaps > 1 ? 's' : ''
-  return `${near.engine.short}, retouché — ${near.gaps} valeur${s}`
-})
 
 /**
  * Quitter le plein écran.
@@ -333,18 +286,6 @@ const SPEED_STEP_KMH = 20
       </button>
     </section>
     </div>
-
-    <section v-if="showsEngines" class="engines" :class="{ large: immersive }">
-      <span class="engines-label">{{ engineLabel }}</span>
-      <button
-        v-for="entry in ENGINE_LIBRARY"
-        :key="entry.id"
-        :aria-pressed="entry.id === loadedEngineId"
-        @click="applyLibraryEngine(entry)"
-      >
-        {{ entry.short }}
-      </button>
-    </section>
 
     <section v-if="driveFace === 'dials'" class="dashboard">
       <!--
@@ -615,24 +556,6 @@ const SPEED_STEP_KMH = 20
 }
 
 .favorites.large button {
-  flex: 1;
-  padding: 0.7rem 0.5rem;
-}
-
-.engines {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  margin-top: 0.4rem;
-}
-
-.engines-label {
-  font-size: 0.8rem;
-  opacity: 0.7;
-}
-
-.engines.large button {
   flex: 1;
   padding: 0.7rem 0.5rem;
 }

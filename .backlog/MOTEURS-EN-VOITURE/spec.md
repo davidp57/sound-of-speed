@@ -68,7 +68,8 @@ Elle reste donc là où elle est, avec les réglages du calcul.
 2. Chaque moteur de la bibliothèque porte son rendu d'usine. Le GM reçoit les
    valeurs relevées par David.
 3. L'écran de conduite gagne trois choix : le moteur, l'échappement, le point
-   d'écoute. Pas de curseur.
+   d'écoute. Pas de curseur. **Le rang des moteurs en est retiré le 14 septembre
+   2026**, à la demande de David — voir plus bas.
 4. Le banc ne bouge pas : il reste l'atelier, PC seulement.
 
 Hors périmètre, à traiter séparément : pousser les relevés de mesure sur le
@@ -83,6 +84,22 @@ version 6 ressort avec un rendu complet.
 
 Ce qui n'est **pas** vérifié : le son lui-même, et le comportement en voiture.
 La réserve à 60 ms n'a été mesurée sans creux que sur le poste de bureau.
+
+## Le rang des moteurs quitte l'écran de conduite, le 14 septembre 2026
+
+David : « enlève la ligne Moteur de l'écran de conduite ». C'est le point 3 du
+périmètre qui se rétracte, et il l'avait lui-même demandé le 6 septembre — le
+constat d'usage a changé, pas l'avis sur le fond.
+
+Ce qui l'a décidé : la ligne aligne douze boutons et prend 58 pixels de hauteur,
+sur un écran dont les cadrans manquent justement de place. Mesuré sur 1024 × 768,
+alerte GPS et bandeau de compte affichés : le disque passe de 293 à 366 pixels
+en la retirant.
+
+**Aucune fonction n'est perdue.** Le moteur se choisit en Configuration, dans la
+même liste déroulante qu'avant, avec l'échappement et le point d'écoute. Ce qui
+disparaît est le raccourci en roulant — essayer plusieurs moteurs demande
+maintenant de changer d'écran.
 
 ## Les réglages relevés par David, le 6 septembre 2026
 

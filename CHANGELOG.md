@@ -19,6 +19,13 @@ Toutes les évolutions notables du projet. Format
   la hauteur libre — il ne grandit qu'en largeur —, donc tout ce qui occupait le
   milieu de la rangée se payait en taille de cadran.
 
+- **Le rang des moteurs quitte l'écran de conduite**, à la demande de David.
+  Douze boutons et 58 pixels de hauteur pris à l'écran dont les cadrans
+  manquaient de place : mesuré sur 1024 × 768 avec l'alerte GPS et le bandeau de
+  compte, le disque passe de 293 à 366 pixels en le retirant. Le moteur se
+  choisit toujours en **Configuration**, avec l'échappement et le point
+  d'écoute ; ce qui disparaît est le raccourci en roulant.
+
 - **L'écran de conduite prend toute la place, plein écran ou non.** Il était
   borné à 60 rem de large et se dimensionnait sur son contenu : 240 pixels de
   largeur et 343 de hauteur inutilisés sur un écran de 1200 × 800. C'était sans
