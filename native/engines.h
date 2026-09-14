@@ -548,7 +548,19 @@ Engine *buildInline6(const EngineDefinition &def) {
     // moteur.
     params.cylinderCount = 6;
     params.crankshaftCount = 1;
-    params.exhaustSystemCount = 1;
+    // Deux lignes d'echappement, trois cylindres chacune — un montage 6-en-2,
+    // celui qu'on trouve sur les six en ligne de route.
+    //
+    // C'etait la derniere difference structurelle avec le V8, le seul moteur
+    // que David trouvait interessant. Mesure a 3 698 tr/min, son sec, part
+    // d'energie : la seconde ligne apporte **12,1 dB entre 4 et 8 kHz** et rien
+    // ailleurs. Verdict a l'oreille : « c'est mieux ».
+    //
+    // Elle ne comble pas tout : il manque encore 16 dB entre 1 et 4 kHz pour
+    // rejoindre le V8, et quatre autres pistes ont ete eliminees avant
+    // celle-la — collecteurs etages, echappement complet du GM, came du V8,
+    // vilebrequin croise contre plat. Ce qui reste a essayer est la cylindree.
+    params.exhaustSystemCount = 2;
     params.intakeCount = 1;
     params.starterTorque = units::torque(90.0, units::ft_lb);
     params.starterSpeed = units::rpm(500);
@@ -737,32 +749,42 @@ Engine *buildInline6(const EngineDefinition &def) {
     intakeParams.VelocityDecay = 0.5;
     intake->initialize(intakeParams);
 
-    // La reponse impulsionnelle n'est qu'un nom de fichier ici : la sonde
-    // fabrique elle-meme les echantillons, plus bas.
-    ImpulseResponse *impulse = new ImpulseResponse;
-    impulse->initialize("sonde", 0.01);
+    // Les deux lignes sont identiques : memes cotes, meme reponse. Ce qui les
+    // distingue est ce qui y entre — les cylindres 1 a 3 dans l'une, 4 a 6 dans
+    // l'autre —, donc le rythme des impulsions qu'elles portent.
+    ExhaustSystem *lignes[2];
+    for (int b = 0; b < 2; ++b) {
+        // La reponse impulsionnelle n'est qu'un nom de fichier ici : le banc
+        // fabrique lui-meme les echantillons.
+        ImpulseResponse *impulse = new ImpulseResponse;
+        impulse->initialize("sonde", 0.01);
 
-    ExhaustSystem *exhaust = engine->getExhaustSystem(0);
-    ExhaustSystem::Parameters exhaustParams;
-    // Le langage de script derive la longueur du volume : length = volume /
-    // collector_cross_section_area (es/objects/objects.mr).
-    const double collectorArea = constants::pi
-        * units::distance(2.0, units::inch) * units::distance(2.0, units::inch);
-    exhaustParams.length = (def[ENGINE_COLLECTOR_VOLUME] * units::L) / collectorArea;
-    exhaustParams.collectorCrossSectionArea = collectorArea;
-    exhaustParams.outletFlowRate = GasSystem::k_carb(def[ENGINE_OUTLET_FLOW_RATE]);
-    exhaustParams.primaryTubeLength =
-        units::distance(def[ENGINE_PRIMARY_TUBE_LENGTH], units::inch);
-    exhaustParams.primaryFlowRate = GasSystem::k_carb(def[ENGINE_PRIMARY_FLOW_RATE]);
-    exhaustParams.velocityDecay = 1.0;
-    // L'EJ25 declare `audio_volume: 0.5 * 8`, soit quatre.
-    exhaustParams.audioVolume = def[ENGINE_EXHAUST_AUDIO_VOLUME];
-    exhaustParams.impulseResponse = impulse;
-    exhaust->initialize(exhaustParams);
+        ExhaustSystem *exhaust = engine->getExhaustSystem(b);
+        ExhaustSystem::Parameters exhaustParams;
+        // Le langage de script derive la longueur du volume : length = volume /
+        // collector_cross_section_area (es/objects/objects.mr).
+        const double collectorArea = constants::pi
+            * units::distance(2.0, units::inch) * units::distance(2.0, units::inch);
+        exhaustParams.length = (def[ENGINE_COLLECTOR_VOLUME] * units::L) / collectorArea;
+        exhaustParams.collectorCrossSectionArea = collectorArea;
+        exhaustParams.outletFlowRate = GasSystem::k_carb(def[ENGINE_OUTLET_FLOW_RATE]);
+        exhaustParams.primaryTubeLength =
+            units::distance(def[ENGINE_PRIMARY_TUBE_LENGTH], units::inch);
+        exhaustParams.primaryFlowRate = GasSystem::k_carb(def[ENGINE_PRIMARY_FLOW_RATE]);
+        exhaustParams.velocityDecay = 1.0;
+        // L'EJ25 declare `audio_volume: 0.5 * 8`, soit quatre.
+        exhaustParams.audioVolume = def[ENGINE_EXHAUST_AUDIO_VOLUME];
+        exhaustParams.impulseResponse = impulse;
+        exhaust->initialize(exhaustParams);
+        lignes[b] = exhaust;
+    }
 
     for (int i = 0; i < 6; ++i) {
         head->setIntake(i, intake);
-        head->setExhaustSystem(i, exhaust);
+        // Les trois premiers cylindres dans une ligne, les trois autres dans
+        // l'autre : c'est le decoupage d'un collecteur 6-en-2, et il suit
+        // l'ordre d'allumage 1-5-3 puis 6-2-4.
+        head->setExhaustSystem(i, lignes[i < 3 ? 0 : 1]);
         head->setSoundAttenuation(i, 1.0);
         // Tous les collecteurs a la meme longueur. Un six en ligne bien fait les
         // egalise : c'est meme ce qui lui donne sa regularite, et un collecteur

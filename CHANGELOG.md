@@ -6,6 +6,38 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Un six cylindres en ligne, l'architecture des BMW.** Demandé par David.
+  C'est la troisième que le projet sait bâtir — manetons à 0-120-240, ordre
+  d'allumage 1-5-3-6-2-4, et **deux lignes d'échappement** de trois cylindres
+  chacune, le montage 6-en-2 des six de route. La seconde ligne apporte 12,1 dB
+  entre 4 et 8 kHz, mesurés, et c'est le seul des cinq essais qui ait donné
+  quelque chose : « c'est mieux ».
+
+  Ses cotes ne sont pas relevées d'un fichier d'engine-sim mais construites de
+  mémoire, et c'est le seul moteur de la bibliothèque dans ce cas — un test
+  vérifie qu'il le reste.
+
+### Corrigé
+
+- **Une boucle pouvait tomber à trois cycles.** Le choix de fenêtre introduit
+  la veille gardait la plus longue qui tient sous le seuil de raccord ; quand
+  aucune ne tenait, il descendait sans limite. Sur le six, trois prises
+  faisaient **95 millisecondes** — un bourdonnement qui se répète dix fois par
+  seconde. Aucun chiffre du relevé ne le signalait : le raccord d'une boucle de
+  trois cycles est excellent. Il fallait un seuil **et** un plancher, et le
+  relevé avertit désormais quand une prise sort de sa cible.
+
+  Les trois banques livrées n'étaient pas touchées — régénérées après
+  correction, elles rendent les mêmes chiffres au centième.
+
+- **La compilation du banc ignorait les en-têtes.** `engines.h` porte tous les
+  constructeurs de moteur, et le modifier ne déclenchait aucune recompilation :
+  deux essais de suite ont rendu des chiffres identiques au centième, parce
+  qu'ils mesuraient le binaire d'avant.
+
+
 ### Corrigé
 
 - **Le banc faisait passer tout le son par la réponse d'échappement ; le mode
