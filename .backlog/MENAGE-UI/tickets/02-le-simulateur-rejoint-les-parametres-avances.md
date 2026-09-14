@@ -1,6 +1,6 @@
 # 02 — Le simulateur et le sélecteur de source rejoignent le second niveau, hors voiture
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — Les paramètres avancés deviennent un écran à part, gardé
 
@@ -23,11 +23,34 @@ garde, puisque la source n'est plus le GPS. C'est voulu — sans cela, régler e
 
 ## Critères d'acceptation
 
-- [ ] Le simulateur et le sélecteur de source vivent dans l'écran des paramètres
+- [x] Le simulateur et le sélecteur de source vivent dans l'écran des paramètres
       avancés
-- [ ] Sur l'appareil « voiture », ni l'un ni l'autre n'apparaît, quel que soit
+- [x] Sur l'appareil « voiture », ni l'un ni l'autre n'apparaît, quel que soit
       le rôle du compte
-- [ ] Sur un poste ou un téléphone, passer au simulateur lève la garde, et
+- [x] Sur un poste ou un téléphone, passer au simulateur lève la garde, et
       l'écran reste ouvert pendant qu'on simule une vitesse
-- [ ] Revenir au GPS remet la garde, et l'écran se referme si l'on roule
-- [ ] On règle un frein moteur et on l'entend sans quitter l'écran
+- [x] Revenir au GPS remet la garde, et l'écran se referme si l'on roule
+- [x] On règle un frein moteur et on l'entend sans quitter l'écran
+
+## Ce qui a été fait, et mesuré
+
+L'onglet **Banc** disparaît : la barre repasse de huit à sept entrées sur un
+poste. Le banc reste chargé à la demande — il l'était depuis `App.vue`, il l'est
+maintenant depuis l'écran avancé, et c'est vérifié au build : 6,45 ko dans son
+propre morceau, morceau principal inchangé à 108,4 ko compressés.
+
+Vérifié dans le navigateur, appareil déclaré « voiture » : cinq onglets, et
+l'écran Avancé n'y montre ni la source ni le banc. Déclaré « poste » : la source
+et le banc sont en tête, avant Moteur.
+
+## Une friction connue, laissée telle quelle
+
+Sur un poste, si la source est le GPS **et** que l'application tourne, l'écran
+avancé se ferme — or c'est lui qui porte désormais le sélecteur de source. La
+sortie existe : repasser au repos, attendre les trente secondes, choisir le
+simulateur.
+
+Laissée en l'état à dessein : la décision du 14 septembre est que l'écran gardé
+soit vide, avec la seule phrase qui dit pourquoi. Y glisser un sélecteur
+reviendrait à rouvrir cette décision pour un cas où l'on n'a aucune raison de
+rester — tester au GPS sur une machine immobile.

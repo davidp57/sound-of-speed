@@ -92,7 +92,7 @@ borné à 60 rem de large et se dimensionnait sur son contenu, ce qui laissait
 240 pixels de largeur et 343 de hauteur inutilisés sur un écran de 1200 × 800 —
 sans conséquence tant qu'on supposait qu'on roulait en plein écran, ce qui
 n'était pas le cas. Les
-commandes du simulateur, elles, sont sur l'écran **Banc**. Un bouton **Plein
+commandes du simulateur, elles, sont dans l'écran **Avancé**. Un bouton **Plein
 écran** masque la barre du haut : l'affichage occupe toute la hauteur et les
 commandes deviennent de grandes touches. On en sort par la **flèche de retour**,
 à gauche de la rangée, à l'écart des autres et d'une autre couleur — l'écart est
@@ -308,7 +308,13 @@ ce navigateur tant qu'on ne l'enregistre pas. Dans la voiture, il propose de se
 donner un code plutôt que de s'enregistrer — c'est la même distinction que tient
 l'écran Compte, et l'accueil ne peut pas proposer l'inverse de ce qu'il dira.
 
-**Banc** — conduire une vitesse à la main, sans rouler : les deux pédales, le
+**Banc** — en tête de l'écran **Avancé**, avec le choix de la source, et jamais
+sur l'appareil « voiture ». Il y a rejoint le réglage le 14 septembre 2026 :
+régler une inertie ou un frein moteur sans l'entendre n'a pas de sens, et il n'y
+a rien à entendre à l'arrêt sans lui. Passer au simulateur lève au passage la
+garde de cet écran, puisque la vitesse ne vient plus du GPS.
+
+Conduire une vitesse à la main, sans rouler : les deux pédales, le
 curseur d'allure maintenue, et les réglages de ce que la source fabrique
 (cadence, bruit de mesure, précision annoncée). Il rappelle la vitesse, le
 régime et le rapport, de façon à se suffire sans regarder les cadrans. Ces
@@ -1439,7 +1445,7 @@ compte en porte zéro à trois.
 
 | Rôle | Ce qu'il ouvre |
 |---|---|
-| `conduite` | conduire, la télémétrie, les réglages, l'étalonnage, le banc |
+| `conduite` | conduire, la télémétrie, les réglages simples et avancés, l'étalonnage |
 | `atelier` | fabriquer des moteurs et des boîtes — déposer sur `/engines/` et `/gearboxes/` |
 | `synthese` | régler un timbre |
 
@@ -1479,14 +1485,13 @@ trois : le drapeau de construction qui cachait le banc a disparu le
 | Avancé | à l'arrêt | à l'arrêt | à l'arrêt |
 | Compte | ✅ | ✅ | ✅ |
 | Étalonnage | ❌ | ✅ | ✅ |
-| Banc (simulateur) | ❌ | ✅ | ✅ |
+| Banc et sources, dans Avancé | ❌ | à l'arrêt | à l'arrêt |
 | Synthèse (timbre) | ❌ | ❌ | ✅ |
 
 L'étalonnage se fait tout seul depuis les traces ; son panneau manuel est un
-reste. Le banc et la synthèse sont des écrans qu'on regarde à l'arrêt, un moteur
-à la main. Et la rangée des sources de vitesse disparaît en voiture : il n'y
-reste que le GPS, et un seul bouton qu'on ne peut pas désactiver n'est pas un
-choix.
+reste. La synthèse est un écran qu'on regarde à l'arrêt, un moteur à la main. Et
+la rangée des sources de vitesse n'existe pas en voiture : il n'y reste que le
+GPS, et un seul bouton qu'on ne peut pas désactiver n'est pas un choix.
 
 **L'appareil se devine, et se corrige** depuis l'écran du compte ; le choix reste
 sur cet appareil et survit à une réouverture. Le marqueur qui reconnaît le
@@ -1548,7 +1553,9 @@ les octets d'un fichier et non d'un flux. Le serveur qui a remplacé nginx ne le
 faisait plus : la voiture tirait 310 ko de JavaScript là où gzip en fait 99.
 
 **Trois écrans se chargent à la demande** : l'étalonnage, le banc et la
-synthèse, qu'une voiture n'ouvre jamais. Les autres arrivent d'emblée, et c'est
+synthèse, qu'une voiture n'ouvre jamais. Le banc l'est resté en déménageant dans
+l'écran Avancé, et c'est mesuré : le morceau principal n'a pas bougé. Les autres
+arrivent d'emblée, et c'est
 délibéré — ils s'ouvrent au volant, donc les différer déplacerait leur
 téléchargement là où il n'y a pas de réseau.
 

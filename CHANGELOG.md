@@ -25,6 +25,17 @@ Toutes les évolutions notables du projet. Format
   la raison et le temps restant. Un onglet qui va et vient déplacerait ses
   voisins sous le doigt.
 
+- **Le simulateur et le choix de la source rejoignent l'écran Avancé**, et
+  n'apparaissent jamais sur l'appareil « voiture ». Régler une inertie ou un
+  frein moteur sans l'entendre n'a pas de sens, et il n'y a rien à entendre à
+  l'arrêt sans le simulateur : il est désormais en tête de l'écran où l'on règle,
+  avec les boutons qui permettent de le choisir. Passer au simulateur lève au
+  passage la garde, puisque la vitesse ne vient plus du GPS.
+
+  L'onglet **Banc** disparaît de la barre, qui repasse de huit à sept entrées sur
+  un poste. Le banc reste chargé à la demande : mesuré, le morceau principal ne
+  bouge pas.
+
 - **La pétarade et le clac de boîte se coupent depuis l'écran Paramètres.** Deux
   effets de décor sonore qu'on veut pouvoir taire en ville ou avec un passager,
   sans changer de caractère. Leur réglage fin reste dans l'écran Avancé. Couper

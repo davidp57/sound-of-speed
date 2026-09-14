@@ -25,7 +25,6 @@ import TelemetryView from './ui/TelemetryView.vue'
  */
 const CalibrationPanel = defineAsyncComponent(() => import('./ui/CalibrationPanel.vue'))
 const SynthView = defineAsyncComponent(() => import('./ui/SynthView.vue'))
-const BenchView = defineAsyncComponent(() => import('./ui/BenchView.vue'))
 import type { Appareil } from './core/appareil'
 import type { Role } from './core/identity/roles'
 import {
@@ -332,11 +331,14 @@ const TABS: {
   // réglage de conduite, et la section qu'il occupait dans Configuration se
   // perdait au milieu du reste.
   { id: 'account', label: 'Compte' },
-  // Les deux écrans de banc. Ils ont leur propre page depuis le 8 septembre
-  // 2026 : leurs commandes vivaient sous les cadrans de l'écran de conduite, où
-  // elles prenaient la place de ce qu'on lit en roulant.
+  // Le banc de synthèse. Il a sa propre page depuis le 8 septembre 2026 : ses
+  // commandes vivaient sous les cadrans de l'écran de conduite, où elles
+  // prenaient la place de ce qu'on lit en roulant.
+  //
+  // Le simulateur avait le sien à côté ; il a rejoint l'écran Avancé le
+  // 14 septembre, avec le choix de la source. Régler sans entendre n'a pas de
+  // sens, et il n'y a rien à entendre à l'arrêt sans lui.
   { id: 'synth', label: 'Synthèse', role: 'synthese', sur: ['poste'] },
-  { id: 'bench', label: 'Banc', role: 'conduite', sur: ['telephone', 'poste'] },
 ]
 
 /**

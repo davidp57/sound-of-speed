@@ -1,17 +1,31 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 
 import NumberField from './components/NumberField.vue'
 import { finalDriveFor, rpmAtSpeed } from '../core/preset/defaults'
 import type { SampleAnalysis } from '../core/audio/analyze'
 import type { LayerRole } from '../core/preset/schema'
 import {
+  appareil,
   editedProfile,
   tryClack,
   analyzeLayerFile,
   setGearRatios,
   refreshBanks,
+  setSource,
+  simulatorAvailable,
+  sourceKind,
+  type SourceKind,
 } from '../state'
+
+/**
+ * Le banc, chargé à la demande.
+ *
+ * Il l'était depuis `App.vue`, où il avait son propre onglet, et le rester est
+ * ce qui permet de le déplacer sans alourdir ce que la voiture télécharge : le
+ * morceau reste à part, et une voiture ne l'ouvre jamais.
+ */
+const BenchView = defineAsyncComponent(() => import('./BenchView.vue'))
 
 /**
  * Les réglages de fond : le moteur, la transmission, le signal, le caractère.
@@ -39,6 +53,29 @@ import {
  * toujours le ralenti, il atterrit simplement dans le moteur.
  */
 const profile = editedProfile
+
+/**
+ * Le choix de la source, et pourquoi il n'existe pas en voiture.
+ *
+ * David : « en voiture on est toujours en GPS, pas besoin des boutons simu ou
+ * rejeu ». Le simulateur et le rejeu sont des outils d'atelier ; au volant ils
+ * ne seraient qu'un moyen de se tromper sur ce qu'on entend.
+ *
+ * **L'appareil range, la garde protège, et les deux se cumulent.** L'appareil
+ * est déclaré par celui qui s'en sert, donc il se trompe ; mais cacher le
+ * simulateur dans la voiture reste juste, et c'est la garde qui tient le reste.
+ */
+const horsVoiture = computed(() => appareil.value !== 'voiture')
+
+const SOURCES = computed<{ id: SourceKind; label: string }[]>(() =>
+  simulatorAvailable.value
+    ? [
+        { id: 'simulator', label: 'Simulateur' },
+        { id: 'geolocation', label: 'GPS' },
+        { id: 'replay', label: 'Rejeu' },
+      ]
+    : [{ id: 'geolocation', label: 'GPS' }],
+)
 
 // Les banques se lisent à l'ouverture de l'écran : c'est le seul endroit d'où
 // l'on en change, et une banque déposée entre-temps apparaît en y revenant.
@@ -222,6 +259,33 @@ function impliedCylinders(index: number): number | null {
 
 <template>
   <div class="config">
+    <!--
+      La source, en tête : on règle ce qu'on entend, et sans le simulateur il
+      n'y a rien à entendre à l'arrêt. C'est aussi ce qui lève la garde — dès
+      que la vitesse ne vient plus du GPS, cet écran ne se referme plus.
+    -->
+    <template v-if="horsVoiture && SOURCES.length > 1">
+      <section class="panel wide">
+        <h2>Source de vitesse</h2>
+        <div class="choices">
+          <button
+            v-for="entry in SOURCES"
+            :key="entry.id"
+            :aria-pressed="sourceKind === entry.id"
+            @click="setSource(entry.id)"
+          >
+            {{ entry.label }}
+          </button>
+        </div>
+        <p class="note">
+          En voiture on est toujours au GPS, et ces boutons n'y existent pas. Le
+          simulateur fabrique une vitesse, le rejeu en redonne une enregistrée :
+          l'un comme l'autre permet de régler et d'entendre sans rouler.
+        </p>
+      </section>
+      <BenchView class="banc-en-grille" />
+    </template>
+
     <section class="panel">
       <h2>Moteur</h2>
       <NumberField
@@ -865,6 +929,14 @@ function impliedCylinders(index: number): number | null {
 }
 
 .panel.wide {
+  grid-column: 1 / -1;
+}
+
+/*
+ * Le banc occupe toute la largeur : il porte ses propres panneaux, et les
+ * laisser entrer dans une colonne de la grille les couperait en deux.
+ */
+.banc-en-grille {
   grid-column: 1 / -1;
 }
 
