@@ -9,6 +9,13 @@ import { Offline, type OfflineStatus } from './core/offline'
 import { Engine, SHIFT_CLACK_AT, type EngineState } from './core/engine/engine'
 import { Gearbox, type GearboxState, type ShiftMode } from './core/drivetrain/gearbox'
 import { SpeedConditioner, type ConditionedSpeed } from './core/speed/conditioner'
+import {
+  attenteRestanteMs,
+  ecranOuvert,
+  GARDE_AU_DEPART,
+  observer,
+  type EtatDeGarde,
+} from './core/garde'
 import { GeolocationSource } from './core/speed/geolocation'
 import { ReplaySource, TraceRecorder, type Trace } from './core/speed/replay'
 import { SimulatorSource } from './core/speed/simulator'
@@ -573,6 +580,55 @@ export const sourceKind = ref<SourceKind>(import.meta.env.DEV ? 'simulator' : 'g
 export const sourceStatus = ref<SourceStatus>('idle')
 export const sourceDetail = ref<string>('')
 export const isRunning = ref(false)
+
+/**
+ * La garde des écrans de réglage : ce qui s'ouvre à l'arrêt.
+ *
+ * La règle vit dans `core/garde.ts` ; ce qui suit ne fait que l'alimenter et
+ * lui donner une horloge.
+ *
+ * **Elle a besoin d'une horloge qui bat même au repos.** La boucle s'arrête
+ * avec l'application, et c'est précisément au repos que l'attente se déroule :
+ * sans ce minuteur, un écran resté fermé à l'appui sur « P » ne s'ouvrirait
+ * jamais. Il ne bat que pendant une attente, et pas une seconde de plus.
+ */
+const garde = ref<EtatDeGarde>(GARDE_AU_DEPART)
+const gardeHorlogeMs = ref(Date.now())
+
+/** Ce que la garde regarde : la source, le repos, et l'heure. */
+const situationDeGarde = computed(() => ({
+  auGps: sourceKind.value === 'geolocation',
+  enMarche: isRunning.value,
+  maintenantMs: gardeHorlogeMs.value,
+}))
+
+/** Les écrans de réglage sont-ils ouverts ? */
+export const gardeOuverte = computed(() => ecranOuvert(garde.value, situationDeGarde.value))
+
+/** Ce qu'il reste à attendre, en millisecondes. Zéro quand c'est ouvert. */
+export const gardeAttenteMs = computed(() =>
+  attenteRestanteMs(garde.value, situationDeGarde.value),
+)
+
+let gardeMinuteur: ReturnType<typeof setInterval> | null = null
+
+watch(
+  // Une attente se déroule quand l'écran est fermé alors qu'on est au repos :
+  // c'est le seul cas où le temps qui passe change quelque chose sans qu'aucune
+  // boucle ne tourne.
+  () => !gardeOuverte.value && !isRunning.value && sourceKind.value === 'geolocation',
+  (enAttente) => {
+    if (enAttente && gardeMinuteur === null) {
+      gardeMinuteur = setInterval(() => {
+        gardeHorlogeMs.value = Date.now()
+      }, 1_000)
+    } else if (!enAttente && gardeMinuteur !== null) {
+      clearInterval(gardeMinuteur)
+      gardeMinuteur = null
+    }
+  },
+  { immediate: true },
+)
 
 /**
  * Chien de garde du signal de vitesse.
@@ -2308,6 +2364,15 @@ function step(dt: number): void {
   const speed = conditioner.tick(dt)
   const profile = runtimeProfile.value
 
+  // La garde se nourrit du même arrêt que la boîte : deux notions d'immobilité
+  // finiraient par diverger sans qu'on sache laquelle croire.
+  gardeHorlogeMs.value = Date.now()
+  garde.value = observer(garde.value, {
+    auGps: sourceKind.value === 'geolocation',
+    alArret: speed.atStandstill,
+    maintenantMs: gardeHorlogeMs.value,
+  })
+
   // La charge vient de l'image précédente : le moteur est calculé après la
   // boîte, et un décalage d'une image est imperceptible devant la constante de
   // lissage de la charge.
@@ -2816,6 +2881,15 @@ export function start(): void {
 export function stop(): void {
   currentSource().stop()
   isRunning.value = false
+  // Le repos coupe le GPS : plus personne ne dira si la voiture bouge. L'attente
+  // repart donc d'ici, et non de la dernière position reçue — sans quoi un
+  // « P » enfoncé en roulant ouvrirait l'écran sans que rien se soit arrêté.
+  gardeHorlogeMs.value = Date.now()
+  garde.value = observer('en-mouvement', {
+    auGps: sourceKind.value === 'geolocation',
+    alArret: true,
+    maintenantMs: gardeHorlogeMs.value,
+  })
   // Les **deux** cadences s'arrêtent. Couper la seule boucle d'affichage ne
   // suffit pas : dès que la banque joue, c'est l'horloge du fil audio qui bat
   // la mesure, et elle continuait de poster à soixante hertz après « P ». Le

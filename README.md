@@ -83,7 +83,7 @@ Pour un NAS Synology et Portainer, la procédure détaillée est plus bas :
 
 **Conduite** — la vitesse, le rapport, le régime, et les commandes de conduite
 sous les deux cadrans. Rien d'autre : le choix de l'affichage et celui de la
-source sont passés en **Configuration**, le son et le verrou d'écran en haut à
+source sont passés en **Paramètres**, le son et le verrou d'écran en haut à
 droite avec l'aide — ce sont des commandes d'appareil, pas de conduite. Le
 volume reste sous les cadrans, c'est un réglage qu'on pose une fois.
 
@@ -124,7 +124,7 @@ repos, où la touche affiche toujours « D » et le tempérament revient à « r
 — la garder en « S » ferait lire une lettre et repartir sur l'autre réglage. Les
 touches qui ne commandent réellement rien, elles, sont estompées.
 
-Cet écran a **deux visages**, choisis en **Configuration** › *Affichage de la
+Cet écran a **deux visages**, choisis en **Paramètres** › *Affichage de la
 conduite* :
 
 - **Cadrans** — un tableau de bord. Le compteur de vitesse et le compte-tours
@@ -203,15 +203,33 @@ allumé, et si l'autorisation de géolocalisation est retenue d'une session à
 l'autre. Cette dernière est relevée au chargement de la page, avant tout suivi :
 plus tard, elle vaudrait « accordée » dans tous les cas.
 
-**Configuration** — deux modes. En **simplifié**, la vue est courte : la
-création guidée, les profils, le fonctionnement hors réseau. En **avancé**, la
-cinquantaine de réglages détaillés s'ajoute dessous, en curseur et en saisie,
-appliqués immédiatement, groupés par section — moteur, transmission, signal,
-caractère, mixage, couches. Aucun réglage ne disparaît en simplifié : ils
-attendent. Le choix du mode est une préférence de l'appareil, comme le volume :
-il se retient et ne voyage pas avec un profil partagé.
+**Paramètres** — la vue courte : les trois curseurs globaux, la création guidée,
+les profils, les deux effets sonores qu'on coupe au volant — pétarade et clac de
+boîte —, le fonctionnement hors réseau.
 
-C'est aussi là qu'on gère les profils et qu'on analyse les échantillons.
+**Avancé** — la cinquantaine de réglages détaillés, en curseur et en saisie,
+appliqués immédiatement, groupés par section : moteur, transmission, signal,
+caractère, mixage, couches. C'est aussi là qu'on analyse les échantillons.
+
+Les deux écrans étaient un seul jusqu'au 14 septembre 2026, avec une bascule
+*Simplifié / Avancé* que n'importe qui cochait, y compris en roulant. Ils sont
+maintenant deux onglets, et le second **ne s'ouvre qu'à l'arrêt** — voir « La
+garde » ci-dessous.
+
+### La garde
+
+Un écran de réglage de fond se règle posé, pas au volant. L'onglet **Avancé** est
+donc fermé tant que la vitesse vient du GPS, sauf si elle est nulle depuis trente
+secondes **et** que l'application est au repos. Sous simulateur ou rejeu, il n'y
+a pas de garde : c'est précisément quand on règle que la vitesse n'est pas nulle.
+
+L'onglet reste **visible et grisé** plutôt que de disparaître — un onglet qui va
+et vient déplace ses voisins sous le doigt. Il reste cliquable, et son écran dit
+la raison et le temps restant.
+
+La garde regarde d'où vient la vitesse, jamais quel appareil on croit être :
+l'application le sait de source sûre, là où reconnaître une voiture à la chaîne
+d'agent du navigateur reste un pari non vérifié.
 
 **Une bande de défilement longe le bord gauche de chaque écran qui se lit en
 colonne** — configuration, télémétrie, étalonnage, compte, aide : le glissement
@@ -264,7 +282,7 @@ compte ici est rangé en bas, replié : c'est le geste rare, et le seul qui fass
 perdre quelque chose.
 
 Il est apparu le 13 septembre 2026, quand la section du compte a quitté
-**Configuration** : le chemin normal va de la voiture au poste de travail, et
+**Paramètres** : le chemin normal va de la voiture au poste de travail, et
 c'est sur le poste, clavier sous les doigts, qu'on enregistre son compte. Un
 rappel escamotable signale son existence à partir de la deuxième ouverture — au
 premier lancement on veut rouler, pas lire —, et **il repasse tant que le compte
@@ -1457,7 +1475,8 @@ trois : le drapeau de construction qui cachait le banc a disparu le
 |---|---|---|---|
 | Conduite | ✅ | ✅ | ✅ |
 | Télémétrie | ✅ | ✅ | ✅ |
-| Configuration | ✅ | ✅ | ✅ |
+| Paramètres | ✅ | ✅ | ✅ |
+| Avancé | à l'arrêt | à l'arrêt | à l'arrêt |
 | Compte | ✅ | ✅ | ✅ |
 | Étalonnage | ❌ | ✅ | ✅ |
 | Banc (simulateur) | ❌ | ✅ | ✅ |
@@ -1659,7 +1678,7 @@ Internet n'y démarre pas. Un service worker met en cache l'application et les
 échantillons : une fois cela fait, tout fonctionne sans connexion, et le serveur
 n'a plus besoin d'être joignable pour rouler — seulement pour mettre à jour.
 
-Dans l'écran **Configuration**, section *Hors réseau* :
+Dans l'écran **Paramètres**, section *Hors réseau* :
 
 - **Préparer hors réseau** met en cache tous les échantillons du profil sans
   attendre d'en avoir besoin, et affiche ce qui est déjà disponible. À faire
@@ -1704,11 +1723,10 @@ Les recherches dans le cache se font donc avec `ignoreVary`.
 
 ## Référence des réglages
 
-Tout est dans l'écran **Configuration**, appliqué immédiatement. Les sections qui
-suivent — moteur, transmission, signal de vitesse, mixage, caractère, couches —
-sont celles du **mode avancé** : la bascule en haut de l'écran les fait
-apparaître. En mode simplifié, elles sont remplacées par quelques curseurs
-globaux qui les commandent.
+Tout est appliqué immédiatement. Les sections qui suivent — moteur,
+transmission, signal de vitesse, mixage, caractère, couches — sont celles de
+l'écran **Avancé**, qui ne s'ouvre qu'à l'arrêt. L'écran **Paramètres** les
+remplace par quelques curseurs globaux qui les commandent.
 
 ### Origine du son
 
@@ -1749,7 +1767,7 @@ boutons sous celui des profils. Il en est **retiré** le 14 septembre 2026, à l
 demande de David : cette ligne de douze boutons prenait 58 pixels de hauteur à
 l'écran qui doit se lire d'un coup d'œil, et ses cadrans les lui reprennent —
 293 pixels de disque avec elle, 366 sans. Le choix reste entier en
-**Configuration**, avec l'échappement et le point d'écoute.
+**Avancé**, avec l'échappement et le point d'écoute.
 
 Chaque liste garde une entrée pour la valeur qui ne tombe sur aucun palier :
 un réglage fin fait au banc ne se fait pas écraser en ouvrant l'écran. Pour le
@@ -2323,8 +2341,8 @@ s'y consulte au volant : ce qui naît en roulant y restait, et comprendre après
 coup ce que l'application a vécu demandait de deviner. Elle peut désormais
 **déposer toute seule** sur le serveur ce qu'elle produit.
 
-**Rien n'est envoyé par défaut.** Le réglage est dans l'écran de configuration,
-en mode avancé, et il a trois positions :
+**Rien n'est envoyé par défaut.** Le réglage est dans l'écran **Avancé**, et il
+a trois positions :
 
 | Position | Ce qui part |
 |---|---|

@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import AccountView from './ui/AccountView.vue'
+import AdvancedConfigView from './ui/AdvancedConfigView.vue'
 import ConfigView from './ui/ConfigView.vue'
 import HelpView from './ui/HelpView.vue'
 import WelcomeView from './ui/WelcomeView.vue'
@@ -31,7 +32,10 @@ import {
   appareil,
   applyUpdate,
   bandeDeDefilement,
+  gardeAttenteMs,
+  gardeOuverte,
   identity,
+  isRunning,
   offlineStatus,
   setBrake,
   importFromUrl,
@@ -75,7 +79,15 @@ function toggleSound(): void {
   else void activateAudio()
 }
 
-type Tab = 'drive' | 'telemetry' | 'config' | 'calibration' | 'account' | 'synth' | 'bench'
+type Tab =
+  | 'drive'
+  | 'telemetry'
+  | 'config'
+  | 'advanced'
+  | 'calibration'
+  | 'account'
+  | 'synth'
+  | 'bench'
 
 const tab = ref<Tab>('drive')
 
@@ -300,10 +312,20 @@ function onFullscreenChange(): void {
  * seul depuis les traces, son panneau manuel est un reste ; le **banc** et la
  * **synthèse** sont des écrans qu'on regarde à l'arrêt, un moteur à la main.
  */
-const TABS: { id: Tab; label: string; role?: Role; sur?: readonly Appareil[] }[] = [
+const TABS: {
+  id: Tab
+  label: string
+  role?: Role
+  sur?: readonly Appareil[]
+  /** L'onglet se ferme en roulant — voir `core/garde.ts`. */
+  gardee?: true
+}[] = [
   { id: 'drive', label: 'Conduite', role: 'conduite' },
   { id: 'telemetry', label: 'Télémétrie', role: 'conduite' },
-  { id: 'config', label: 'Configuration', role: 'conduite' },
+  { id: 'config', label: 'Paramètres', role: 'conduite' },
+  // Les réglages de fond : ils demandent d'être posé, pas d'avoir un droit. Le
+  // conducteur qui bricole chez lui est le même que celui qui roule.
+  { id: 'advanced', label: 'Avancé', role: 'conduite', gardee: true },
   { id: 'calibration', label: 'Étalonnage', role: 'conduite', sur: ['telephone', 'poste'] },
   // L'identité vit dans son propre écran depuis le 13 septembre 2026 : donner un
   // code, en recevoir un, et bientôt se faire un vrai compte. Ce n'est pas un
@@ -331,6 +353,19 @@ const onglets = computed(() =>
       (entree.sur === undefined || entree.sur.includes(appareil.value)),
   ),
 )
+
+/**
+ * Ce qu'il reste à attendre, dit en clair.
+ *
+ * Un écran qui annonce « à l'arrêt » sans rien de plus laisse croire qu'il ne
+ * s'ouvrira jamais : au repos, le décompte dit que quelque chose se passe. En
+ * roulant il n'y a rien à annoncer — c'est repartir qui rouvrira, pas patienter.
+ */
+const attenteLisible = computed(() => {
+  const restant = gardeAttenteMs.value
+  if (restant === 0 || isRunning.value) return ''
+  return `Encore ${Math.ceil(restant / 1000)} s.`
+})
 
 /** De quoi vérifier qu'un écran a le droit d'être rendu, et pas seulement listé. */
 const ouverts = computed(() => new Set(onglets.value.map((entree) => entree.id)))
@@ -446,9 +481,16 @@ onBeforeUnmount(() => {
   <div class="shell" :class="{ immersive }">
     <header v-if="!immersive" class="bar">
       <nav class="tabs" data-visite="onglets">
+        <!--
+          Un onglet gardé est **grisé, jamais retiré**. Le retirer déplacerait
+          ses voisins sous le doigt à chaque arrêt, et un bouton qu'on désactive
+          sans dire pourquoi ne s'explique pas tout seul : celui-ci reste
+          cliquable, et son écran donne la raison.
+        -->
         <button
           v-for="entry in onglets"
           :key="entry.id"
+          :class="{ 'is-locked': entry.gardee && !gardeOuverte }"
           :aria-pressed="tab === entry.id"
           @click="tab = entry.id"
         >
@@ -534,6 +576,13 @@ onBeforeUnmount(() => {
         <SynthView v-else-if="tab === 'synth' && ouverts.has('synth')" />
         <BenchView v-else-if="tab === 'bench' && ouverts.has('bench')" />
         <ConfigView v-else-if="tab === 'config'" />
+        <template v-else-if="tab === 'advanced'">
+          <AdvancedConfigView v-if="gardeOuverte" />
+          <p v-else class="garde-fermee">
+            Disponible uniquement à l'arrêt.
+            <span v-if="attenteLisible">{{ attenteLisible }}</span>
+          </p>
+        </template>
         <!-- Le compte ferme la liste : c'est le seul écran qu'aucun rôle ne peut
              refermer, donc le seul qui puisse servir de repli. -->
         <AccountView v-else />
@@ -668,6 +717,17 @@ onBeforeUnmount(() => {
   border-color: transparent;
 }
 
+/*
+ * L'onglet gardé, fermé.
+ *
+ * Il s'estompe sans se désactiver : `disabled` le rendrait inatteignable, donc
+ * muet sur sa raison. Il garde sa place et sa cible tactile — ce qui change est
+ * ce qu'il ouvre.
+ */
+.tabs button.is-locked {
+  opacity: 0.45;
+}
+
 .tabs button[aria-pressed='true'] {
   background: var(--bg);
   border-color: var(--line);
@@ -761,5 +821,16 @@ onBeforeUnmount(() => {
  */
 .ecran {
   min-height: 100%;
+}
+
+/* L'écran d'un onglet gardé : une phrase, et rien d'autre à toucher. */
+.garde-fermee {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 3rem 1rem;
+  color: var(--muted);
+  text-align: center;
 }
 </style>

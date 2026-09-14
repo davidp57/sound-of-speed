@@ -8,6 +8,28 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Les réglages de fond ont leur écran, et il ne s'ouvre qu'à l'arrêt.** Moteur,
+  transmission, signal de vitesse, caractère, mixage et couches quittent l'écran
+  de configuration pour un onglet **Avancé**. La bascule *Simplifié / Avancé*
+  disparaît : ce n'était qu'une préférence, cochée par n'importe qui, y compris
+  en roulant.
+
+  L'onglet est fermé tant que la vitesse vient du GPS, sauf si elle est nulle
+  depuis trente secondes **et** que l'application est au repos. Sous simulateur
+  ou rejeu, il n'y a pas de garde — c'est justement quand on règle que la vitesse
+  n'est pas nulle. La garde regarde d'où vient le chiffre, jamais quel appareil
+  on croit être : reconnaître une voiture à la chaîne d'agent du navigateur reste
+  un pari non vérifié.
+
+  L'onglet reste **visible et grisé** plutôt que de disparaître, et son écran dit
+  la raison et le temps restant. Un onglet qui va et vient déplacerait ses
+  voisins sous le doigt.
+
+- **La pétarade et le clac de boîte se coupent depuis l'écran Paramètres.** Deux
+  effets de décor sonore qu'on veut pouvoir taire en ville ou avec un passager,
+  sans changer de caractère. Leur réglage fin reste dans l'écran Avancé. Couper
+  le clac garde sa valeur pour la rendre telle quelle.
+
 - **Une visite guidée après l'accueil.** Des bulles fléchées se posent sur
   l'interface réelle et désignent ce qu'on touche : D, P, le choix de la boîte,
   le volume. Elles lisent la position de leur cible dans le document, se
