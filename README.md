@@ -2555,7 +2555,7 @@ ses couches.
 **Une seule exception, `audio/demo/`** : la banque de démonstration, qui est
 livrée avec l'application. C'est un quatre cylindres **simulé**, produit au banc
 par [`scripts/generate-bank/`](scripts/generate-bank/README.md) — quinze prises,
-1,6 Mo en FLAC. Un profil d'usine la désigne, et c'est lui qui joue au tout
+1,2 Mo en FLAC. Un profil d'usine la désigne, et c'est lui qui joue au tout
 premier lancement : sans elle, une installation neuve serait muette jusqu'à ce
 qu'on ait déposé quelque chose.
 

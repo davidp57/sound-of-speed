@@ -16,7 +16,7 @@ n'importe quelle autre banque.
 | Prises | 15 — sept ancrages par famille, de 800 à 6 300 tr/min, plus le ralenti |
 | Familles | en charge et pied levé |
 | Format | FLAC, 44,1 kHz, mono |
-| Poids | 1,6 Mo |
+| Poids | 1,2 Mo |
 | Échappement | captation `smooth_39`, la même que le son en direct |
 
 Le profil se trouve à côté, dans `profil.json` : il s'importe tel quel dans
@@ -38,21 +38,35 @@ corrigent. Un moteur simulé, lui, n'appartient à personne.
 ## Provenance et licence
 
 Produite par `scripts/generate-bank/`, depuis la définition
-`scripts/generate-bank/engines/i4-check.json` :
+[`engines/demo.json`](../../../scripts/generate-bank/engines/demo.json). Elle se
+refait en trois commandes :
 
 ```bash
-node native/prepare.mjs
-bash native/build-generator.sh
-node scripts/generate-bank/generate.mjs scripts/generate-bank/engines/i4-check.json
+bash native/build-generator.sh   # après node native/prepare.mjs, une fois
+node scripts/generate-bank/generate.mjs scripts/generate-bank/engines/demo.json
+node scripts/transcode.mjs public/audio/demo
 ```
 
-**La commande ne rend plus exactement ces fichiers-là.** Depuis le
-14 septembre 2026, le banc construit le moteur que décrit la bibliothèque de
-l'application et non plus une géométrie figée dans son code : sept valeurs
-avaient divergé, dont la gigue d'échantillonnage, corrigée le 8 septembre côté
-son direct mais jamais côté banc. Refaire la banque donne donc un son plus
-grave et sans ce cliquetis. Les fichiers livrés ici sont ceux d'avant, et leur
-remplacement est un choix qui se juge à l'oreille.
+Il reste ensuite à passer les couches du profil en `.flac`, à effacer les `.wav`
+et `.brut/`, et à recopier `profil.json` dans
+[`src/core/preset/demo-profile.json`](../../../src/core/preset/demo-profile.json)
+— le profil d'usine, qui doit désigner exactement ces fichiers-là. Un test le
+vérifie (`demo-bank.test.ts`) : les deux vivent à deux endroits, et rien
+n'empêche mécaniquement de régénérer l'un sans l'autre.
+
+**Refaite le 14 septembre 2026**, quand le banc a cessé de porter sa propre
+géométrie pour construire le moteur que décrit la bibliothèque de l'application.
+Sept valeurs avaient divergé, dont la gigue d'échantillonnage — corrigée le
+8 septembre côté son direct, jamais côté banc. Ce que le remplacement change, et
+qui s'entend :
+
+- **le son est plus grave**, de 27 à 40 % sur le centre de gravité du spectre.
+  Les cames ont repris les durées relevées dans le fichier d'engine-sim, 232 et
+  236 degrés au lieu de 220 ;
+- **le cliquetis a disparu** : la gigue valait 8,7 dB à 5 600 Hz et 25,5 dB à
+  8 000 Hz ;
+- **le pied levé est plus en retrait**, jusqu'à 6,8 dB sous son niveau d'avant
+  au ralenti. C'est le relief mesuré sur le nouveau modèle, pas un réglage.
 
 Le modèle de moteur et la réponse d'échappement viennent d'engine-sim
 (© 2022 AngeTheGreat, licence MIT — texte recopié dans

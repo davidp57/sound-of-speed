@@ -1,0 +1,19 @@
+{
+  "name": "Quatre cylindres (démonstration)",
+  "sampleDir": "demo",
+  "engine": "subaru-ej25",
+  "idleRpm": 800,
+  "redlineRpm": 6300,
+  "simulationHz": 10000,
+  "impulseSamples": 10000,
+  "exhaustResponse": "smooth_39",
+  "bank": {
+    "spacingOctaves": 0.5,
+    "takeSeconds": 3.0,
+    "settleSeconds": 3.0,
+    "idleThrottle": 0.08,
+    "limiterRpm": 0,
+    "reliefCompression": 0.35,
+    "witnesses": false
+  }
+}
