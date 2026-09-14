@@ -1,97 +1,208 @@
-# MENAGE-UI — faire le ménage dans l'interface
+# MENAGE-UI — trois niveaux, et ce qui les sépare n'est pas un droit
 
-**Statut :** ⬜ prêt — devenu le deuxième volet d'[ATELIER](../ATELIER/spec.md)
-**Branche :** à ouvrir
-**Version visée :** à décider
+**Statut :** ⬜ prêt
+**Branche :** `feature/menage-ui`
+**Version visée :** 0.5
 
-**L'entretien a eu lieu**, le 12 septembre 2026. Il a trouvé plus grand que
-l'interface : le ménage n'est pas une passe sur les écrans, c'est la séparation
-de l'atelier et de la voiture. Ce lot garde son objet — ce que la voiture montre
-— et passe derrière le chemin qui livre les moteurs. Les décisions sont dans la
-spec d'ATELIER.
+**Cette spécification remplace la précédente**, écrite le 8 septembre 2026 et
+reprise le 12. Elle a été refaite le 14 septembre à partir de cinq cas d'usage
+donnés par David, qui ont déplacé la question : le ménage ne se règle ni par un
+drapeau de construction, ni par un droit, mais par **ce que la personne est en
+train de faire**. L'analyse précédente est abandonnée ; ce qu'elle avait de bon
+— la liste des sections, le croquis de l'écran de conduite — est repris ici.
 
-Le relevé ci-dessous date du 8 septembre et a vieilli : `ConfigView.vue` fait
-2 524 lignes, et l'ensemble des écrans 6 960.
+## Ce qu'il faut obtenir
 
-## Ce qui a déclenché
+Cinq cas d'usage, et chacun doit trouver son écran.
 
-L'essai sur route du 8 septembre 2026. David, sur l'interface : « c'est vraiment
-compliqué ce qu'on a fait, faut qu'on fasse une passe de consolidation ». Puis,
-le même jour, sur le choix entre un lot neuf et l'élargissement de MODE-SIMPLE :
-« un lot neuf, faut faire du ménage ».
+1. **En roulant** : choisir le profil pour changer le bruit du moteur, se servir
+   des commandes de boîte, régler le volume.
+2. **À l'arrêt** : paramétrer ses profils simplement.
+3. **Chez soi** : modifier ses profils en profondeur.
+4. **En atelier, sur un poste** : manipuler tout ce qui change la sonorité d'un
+   profil.
+5. **En développement** : enregistrer de nouvelles banques avec engine-sim.
 
-Le mot compte : ce n'est pas une refonte graphique ni une couche de simplicité
-par-dessus l'existant. C'est du **ménage** — retirer, regrouper, ranger ce qui
-s'est accumulé.
+Aujourd'hui la voiture montre quatre onglets, dont un écran de configuration de
+2 454 lignes et dix sections. Les cinq cas s'y mélangent.
 
-## Ce qui est mesuré
+## Le modèle : trois niveaux
 
-| Écran | Lignes | Ce qu'il porte |
+Ce qui sépare les niveaux n'est pas un droit mais la situation. Le premier
+niveau est ouvert à tous, partout. Le deuxième demande d'être à l'arrêt. Le
+troisième demande un rôle et un poste de travail.
+
+| | Écran | Contenu | Conditions |
+|---|---|---|---|
+| **1** | Conduite | cadrans, commandes de boîte, tempérament, volume, favoris épinglés | — |
+| **1** | Paramètres | choisir et épingler un profil, les trois curseurs globaux, recevoir un profil par lien, hors réseau, pétarade et clac | — |
+| **1** | Télémétrie | quatre valeurs de santé agrandies ; le reste sous un repli | — |
+| **1** | Compte | inchangé | — |
+| **2** | Paramètres avancés | Moteur, Transmission, Signal de vitesse, Caractère | garde |
+| **2** | · simulateur et sélecteur de source | | garde, et téléphone ou poste |
+| **3** | Atelier | Mixage, Couches, créer, renommer, dupliquer, supprimer, exporter et partager un profil, banc de synthèse | garde, rôle, et poste |
+
+Le rôle demandé par l'atelier est `atelier`, et `synthese` pour le banc. Les
+deux existent déjà : `atelier` n'ouvrait aucun écran, alors que le serveur
+l'exige pour accepter un dépôt.
+
+## La garde : une seule règle
+
+**Si la source est le GPS, un écran gardé est fermé — sauf vitesse nulle depuis
+trente secondes et application au repos.** Sous simulateur ou rejeu, il n'y a
+pas de garde.
+
+L'onglet gardé reste **visible et grisé** plutôt que de disparaître. Sélectionné,
+il s'ouvre sur un écran vide qui dit « disponible uniquement à l'arrêt ». Un
+bouton mort qui ne dit pas pourquoi est un défaut ; un onglet qui apparaît et
+disparaît en déplace un autre sous le doigt.
+
+Trois raisons à cette forme.
+
+**La garde ne repose sur aucune devinette.** L'application sait de source sûre
+d'où vient son chiffre de vitesse. Reconnaître une voiture à la chaîne d'agent
+du navigateur est un pari que `core/appareil.ts` annonce lui-même comme non
+vérifié sur la vraie Tesla ; une détection ratée ouvrirait en roulant l'écran
+que la garde devait fermer.
+
+**Elle ne ferme pas le simulateur sur lui-même.** Une garde qui regarderait la
+vitesse de la chaîne se déclencherait dès qu'on simule 90 km/h, c'est-à-dire
+exactement quand on règle.
+
+**L'axe de l'appareil range l'écran, la garde le protège.** Les deux se
+cumulent : un écran réservé au poste porte quand même la garde, parce que
+l'appareil est déclaré par celui qui s'en sert et qu'une déclaration se trompe.
+
+Il reste un trou, et il est assumé : quelqu'un installé en voiture qui déclare
+un poste **et** passe au simulateur échappe à tout. Il n'entend alors plus sa
+propre vitesse, donc il ne conduit plus avec.
+
+## Décisions
+
+Prises le 14 septembre 2026, au cours de l'entretien.
+
+### Le simulateur appartient au niveau 2, hors voiture
+
+C'est le seul moyen d'entendre un réglage sans rouler. Sans lui, le cas 3 règle
+une inertie ou un frein moteur en silence, ce qui n'a pas de sens. Le sélecteur
+de source le suit, sans quoi on ne peut pas choisir le simulateur.
+
+Ni l'un ni l'autre n'apparaît sur l'appareil « voiture » : le croquis du
+10 septembre les en bannissait, et la garde ne s'y substitue pas.
+
+### Le conducteur ajuste, il ne crée pas
+
+Créer, renommer, dupliquer, supprimer, exporter et partager un profil sont des
+gestes d'atelier. Le conducteur choisit parmi ce qu'on lui a livré, l'épingle,
+et bouge les trois curseurs globaux.
+
+Un profil reçu par lien s'installe comme aujourd'hui : recevoir n'est pas créer.
+
+### Les ajustements du conducteur sont une couche
+
+Les trois curseurs globaux se rangent à côté du profil, pas dedans. Le profil
+livré reste intact, et la couche se réapplique quand une version corrigée arrive
+de l'atelier.
+
+C'est le motif déjà en place pour l'étalonnage, et les curseurs s'y prêtent : le
+tempérament et la réactivité ne sont pas enregistrés dans un profil, ils s'en
+déduisent. La couche pèse donc trois nombres — tempérament, réactivité, nombre
+de rapports — et non la trentaine de valeurs qu'un curseur recalcule.
+
+### Le panneau d'étalonnage manuel s'en va
+
+L'étalonnage se fait tout seul depuis les trajets ordinaires. Le panneau portait
+aussi l'enregistrement et le rejeu des traces, mais la capture du trajet démarre
+seule au démarrage du GPS et se dépose par tranches, et le rejeu se pilote depuis
+la télémétrie. Ce qui disparaît est le déclenchement manuel d'une trace et la
+liste locale des traces.
+
+### La télémétrie reste lisible en roulant
+
+Lire n'est pas régler : un écran sans champ modifiable ne présente pas le risque
+que la garde couvre. Quatre valeurs de santé montent en haut, agrandies —
+précision annoncée, temps depuis la dernière mesure, vitesse lissée et brute,
+état du son. Elles répondent à la seule question qu'on se pose au volant : est-ce
+que ça marche, et sinon où ça casse.
+
+Le reste passe sous un repli libellé « avancé — à lire à l'arrêt », à sa taille
+actuelle. C'est un avertissement, pas un verrou.
+
+### Le profil se change depuis l'écran de conduite
+
+Le cas 1 demande de changer le bruit du moteur en roulant ; le croquis du
+10 septembre ne prévoyait pas de sélecteur. Les deux se concilient par les
+favoris : une rangée courte des seuls profils épinglés, deux ou trois grandes
+cibles. La liste complète reste dans Paramètres.
+
+L'épinglage existe déjà et ne servait qu'à trier une liste.
+
+### Les écrans d'atelier se rangent sous un onglet
+
+Une barre de neuf entrées n'est plus une barre : elle se replie sur trois rangs
+dès 375 pixels, et le raccord de l'onglet actif au contenu ne veut alors plus
+rien dire. L'atelier porte sa propre navigation interne — c'est l'écran où l'on
+passe du temps, pas celui qu'on touche en roulant.
+
+### Le banc rend la commande de fabrication
+
+La fabrication d'une banque lance un binaire natif compilé sur le poste. Le
+serveur du NAS est en Linux ARM64 et n'a ni ce binaire ni la puissance pour un
+simulateur physique pendant qu'il sert la voiture. Une compilation croisée
+rouvrirait le chantier que le lot IMAGE-ARM64 a fermé — et ce qui l'avait sauvé,
+c'est que npm sait installer pour une autre architecture, ce qu'un binaire C++
+ne sait pas faire.
+
+Le banc rend donc la commande exacte, avec les réglages qu'on vient d'entendre,
+prête à coller. La friction réelle n'est pas de taper une commande, c'est de
+retrouver les bons paramètres après avoir réglé à l'oreille.
+
+C'est réversible : le jour où taper gêne encore, le bouton existe et il n'y aura
+qu'à changer ce qu'il déclenche.
+
+## Ce qu'on ne construit pas
+
+- **Un quatrième rôle.** Les paramètres avancés ne demandent aucun droit : le
+  conducteur des cas 2 et 3 est la même personne. La garde suffit.
+- **Une fabrication de banque exécutée par un serveur.** Voir la décision
+  ci-dessus.
+- **Le plein écran au démarrage.** Le croquis demandait « aucun bouton en
+  haut » ; le rangement sous un onglet s'en approche sans laisser un premier
+  lancement sans porte visible. Le reste est une question de navigation, à
+  instruire à part.
+- **La descente des moteurs depuis le serveur.** Les profils redescendent déjà,
+  les moteurs et les boîtes remontent seulement. Ce chemin appartient au premier
+  volet d'[ATELIER](../ATELIER/spec.md) et ne bloque pas celui-ci : un profil
+  complet qui redescend suffit à ce que vider la voiture ne la fige pas.
+
+## Critères d'acceptation
+
+- [ ] En roulant, on change de profil sans quitter l'écran de conduite
+- [ ] En roulant, l'onglet des paramètres avancés est visible, grisé, et
+      s'ouvre sur « disponible uniquement à l'arrêt »
+- [ ] Arrêté depuis trente secondes et au repos, il s'ouvre
+- [ ] Sous simulateur, il est ouvert sans condition
+- [ ] L'appareil « voiture » ne montre jamais le simulateur ni le sélecteur de
+      source, à aucun niveau
+- [ ] Un compte sans le rôle `atelier` ne voit pas l'onglet Atelier, et le
+      serveur refuse ses dépôts
+- [ ] Un profil ajusté au premier niveau garde son ajustement quand une version
+      corrigée du même profil arrive de l'atelier
+- [ ] La télémétrie se lit en roulant, ses quatre valeurs de santé en grand
+- [ ] Le contrôle qualité passe, et aucun écran retiré ne laisse de code mort
+
+## Les tickets
+
+Découpés le 14 septembre 2026. Le premier pose la garde et le second niveau ;
+tout le reste en dépend ou s'en détache franchement.
+
+| | Sujet | Bloqué par |
 |---|---|---|
-| `ConfigView.vue` | 2 236 | dix sections, soixante-cinq champs |
-| `SynthView.vue` | 1 052 | le banc de synthèse |
-| `DriveView.vue` | 889 | les cadrans, la barre d'outils, les messages |
-| `TelemetryView.vue` | 747 | tout ce qui alimente le son |
-| `CalibrationPanel.vue` | 541 | le protocole en six étapes |
-| `BenchView.vue` | 384 | le simulateur, sorti de l'écran de conduite le 8 septembre |
-| `HelpView.vue` | 182 | l'aide |
-
-Six mille lignes d'interface pour une application qui affiche trois chiffres.
-
-Relevé le 8 septembre 2026, après la sortie du simulateur hors de l'écran de
-conduite : celle-ci a retiré 210 lignes à `DriveView.vue` et fait tomber sa
-hauteur en mode simulateur d'environ six cents pixels à quatre cent sept.
-
-## Ce que ce lot n'est pas
-
-- **Pas MODE-SIMPLE.** Ce lot-là ajoute quelques curseurs globaux qui commandent
-  les autres : il met une couche par-dessus. Ici on enlève. Les deux peuvent se
-  suivre, dans cet ordre — ranger d'abord, résumer ensuite —, et c'est
-  précisément la question que l'entretien doit trancher.
-- **Pas UI-DEFILEMENT**, qui traite un défaut précis : dérégler un curseur en
-  faisant défiler l'écran de configuration.
-
-## Ce qui n'est pas tranché
-
-Tout, et c'est voulu : écrire des tickets avant l'entretien donnerait des
-frontières qui ne survivraient pas à la première décision. Les questions à poser,
-au moins :
-
-1. qu'est-ce qui se **supprime** ? Soixante-cinq champs de configuration, tous
-   n'ont pas fait la preuve qu'on y touche ;
-2. qu'est-ce qui appartient au **banc** plutôt qu'à la voiture, et devrait donc
-   suivre le simulateur hors de la construction de production ;
-3. quels réglages sont des **conséquences** d'autres réglages, et n'ont donc rien
-   à faire à côté d'eux ;
-4. ce qui se lit **en roulant** contre ce qui se règle **garé** — deux publics,
-   deux écrans, et aujourd'hui ils se mélangent ;
-5. dans quel ordre : ranger avant de résumer, ou l'inverse.
-
-## L'écran de conduite, dessiné par David
-
-Le 10 septembre 2026, David a envoyé un croquis de l'écran principal plutôt
-qu'une liste. Ce qu'il y demande, et ce qui en est fait :
-
-| Demandé | État |
-|---|---|
-| Deux cadrans grands, qui remplissent l'écran | ✅ la place libérée leur revient |
-| Les commandes de boîte **entre les cadrans**, au-dessus du rapport | ✅ |
-| Le tempérament sous le rapport | ✅ |
-| **Un seul bouton par choix**, qui change de valeur au clic | ✅ auto ⇄ manuelle, route ⇄ sport |
-| Pas de sélecteur GPS / simulateur / rejeu | ✅ en production ; ⬜ reste visible sur l'image `develop` |
-| **Aucun bouton en haut** | ⬜ la barre d'onglets demande les trois applications |
-| Plus de doublon « Route / Sport » | ✅ un seul profil livré, nommé d'après son moteur |
-
-**Ce qui bloque les deux points restants** : ils supposent que la version
-embarquée n'embarque pas les écrans de l'atelier. C'est le volet « trois
-applications » de [REFONTE](../REFONTE/spec.md), pas un ménage d'écran — le
-drapeau de construction qui met le simulateur et les bancs dans l'image
-`develop` les met aussi dans la voiture, et c'est ce que David voit.
-
-**Le doublon qui n'en était pas.** Son croquis relevait deux boutons
-« Route / Sport ». Ce n'était pas un doublon : l'un choisissait le profil,
-l'autre le tempérament, et ils portaient le même nom. Les profils livrés se
-nomment donc désormais d'après leur moteur — « V8 » —, et il n'y en a plus
-qu'un : leur différence tenait à leurs seuils de passage, qui ont déménagé vers
-le tempérament.
-
+| [01](tickets/01-les-parametres-avances-deviennent-un-ecran-garde.md) | Les paramètres avancés deviennent un écran à part, gardé | — |
+| [02](tickets/02-le-simulateur-rejoint-les-parametres-avances.md) | Le simulateur et le sélecteur de source rejoignent le second niveau, hors voiture | 01 |
+| [03](tickets/03-l-atelier-rassemble-le-son-et-la-fabrication.md) | L'atelier : un onglet qui rassemble le son et la fabrication de profils | 01 |
+| [04](tickets/04-le-panneau-d-etalonnage-manuel-s-en-va.md) | Le panneau d'étalonnage manuel s'en va | 02 |
+| [05](tickets/05-le-banc-rend-la-commande-de-fabrication.md) | Le banc rend la commande de fabrication, prête à coller | 03 |
+| [06](tickets/06-les-ajustements-du-conducteur-sont-une-couche.md) | Les ajustements du conducteur deviennent une couche | — |
+| [07](tickets/07-les-favoris-changent-le-son-en-roulant.md) | Les favoris épinglés changent le son depuis l'écran de conduite | — |
+| [08](tickets/08-la-telemetrie-se-lit-en-roulant.md) | La télémétrie se lit d'un coup d'œil en roulant | — |

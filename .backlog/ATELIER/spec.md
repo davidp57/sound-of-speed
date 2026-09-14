@@ -117,7 +117,10 @@ un geste d'atelier, qui n'a pas à partir en voiture.
    n'est plus une séparation à la fabrication, décidé le 12 septembre : il n'y a
    qu'une application, et c'est le **droit porté par le compte** qui ouvre les
    écrans. [MENAGE-UI](../MENAGE-UI/spec.md) en est le lot d'exécution côté
-   interface, et il attend le serveur de [PLATEFORME](../PLATEFORME/spec.md).
+   interface. Il n'attend plus rien : le serveur est livré, et sa spec a été
+   refaite le 14 septembre 2026 sur cinq cas d'usage. Le droit n'y ouvre plus
+   que l'atelier ; ce qui sépare conduire de régler est la **situation** — être
+   à l'arrêt —, pas un rôle porté par le compte.
 3. **La contraction** — finir le vidage du profil, avec l'état de retour qui
    déménage. C'est le ticket 04 de REFONTE, suspendu le 12 septembre : le vider
    n'avait de sens qu'une fois su ce que l'atelier livre.

@@ -34,8 +34,9 @@ abandonnées. Un compte porte des droits : la conduite pour un invité, les
 réglages pour qui bricole, le banc pour qui fabrique des moteurs.
 
 [MENAGE-UI](../MENAGE-UI/spec.md) n'est donc plus une séparation à la
-fabrication mais une affaire de droits, et ses décisions sur ce qui reste
-réglable au volant tiennent.
+fabrication. Sa spec refaite le 14 septembre 2026 précise la suite : le droit
+n'ouvre que l'atelier, et ce qui sépare conduire de régler est d'être à
+l'arrêt.
 
 Le coût est connu : la voiture reçoit du code qu'elle n'utilisera pas. **Le
 chargement à la demande** ramène ce coût près de zéro, au prix d'un découpage —
