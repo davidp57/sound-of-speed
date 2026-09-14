@@ -1,7 +1,6 @@
 # 07 — Le générateur construit le moteur que décrit le contrat
 
-**Statut :** 🧑 attend David — la banque du GM à collecteur long est produite,
-reste à l'écouter
+**Statut :** ✅ fait — écouté et validé par David le 14 septembre 2026
 
 **Bloqué par :** aucun — le contrat et les constructeurs paramétrés existent
 
@@ -96,7 +95,7 @@ la vérifie sans banque sous la main.
       l'import
 - [x] Les cas de `profile.test.mjs` qui n'ont pas besoin d'une banque tournent
       en CI
-- [ ] 🧑 La banque du GM à collecteur long, jugée à l'oreille
+- [x] La banque du GM à collecteur long, jugée à l'oreille
 
 ## Ce qui n'est pas vérifié
 
@@ -188,11 +187,38 @@ Le saut de 39,7 % porte sur **une seule prise**, `off-800` : le pied levé au
 ralenti, la plus faible de toutes à −65,7 dB brut, retenue à −23 dB. C'est le
 premier endroit où écouter si une boucle claque.
 
-## Reste à décider
+## La démonstration, refaite
 
-La **banque de démonstration** de `public/audio/demo/`, la seule versionnée, est
-produite depuis `i4-check`. Elle porte donc encore la gigue d'échantillonnage à
-0,05 — le cliquetis corrigé le 8 septembre côté direct — et l'ancienne
-géométrie. La régénérer changerait le son que tout nouveau venu entend au
-premier lancement : plus grave, sans cliquetis. C'est un livrable public, donc
-un choix de David.
+Demandée par David dans la foulée. Elle était produite depuis `i4-check` par
+copie manuelle ; une définition
+[`engines/demo.json`](../../../scripts/generate-bank/engines/demo.json) la
+génère désormais directement, et le profil d'usine
+(`src/core/preset/demo-profile.json`) est recopié du profil produit.
+
+Ce que le remplacement change dans le son livré, mesuré :
+
+| | |
+|---|---|
+| Hauteur | 27 à 40 % plus grave sur le centre de gravité du spectre |
+| Cliquetis | disparu — la gigue valait 8,7 dB à 5 600 Hz et 25,5 dB à 8 000 Hz |
+| Pied levé | jusqu'à −6,8 dB sous son niveau d'avant, au ralenti |
+| Poids | 1,2 Mo pour 15 prises, contre 1,6 |
+
+Un chiffre du relevé pourrait tromper : « 0,00 demi-ton » d'erreur de timbre.
+Ce n'est pas une amélioration mais une absence de mesure — la démonstration est
+produite sans prises témoins, et sans témoin il n'y a rien à quoi comparer.
+
+## Le verdict
+
+David, le 14 septembre 2026, après écoute des quatre banques :
+
+> c'est pas mal du tout ; je pense que ces profils sont livrables, en
+> particulier les V8 qui sonnent bien mieux que les 4L.
+
+Les deux V8 — `gm-ls` et `gm-ls-long-header` — sont donc au-dessus du quatre
+cylindres, qui reste livrable mais moins bon. C'est **le quatre cylindres qui
+sert de démonstration**, faute d'un V8 aussi léger : à reprendre si l'on veut
+que la première écoute d'un nouveau venu soit la meilleure. La piste la plus
+probable est du côté des cames de `subaru-ej25`, qui sont ce qui a changé sa
+hauteur, et le réglage se fait dans la bibliothèque comme n'importe quel autre.
+
