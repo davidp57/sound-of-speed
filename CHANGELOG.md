@@ -23,6 +23,17 @@ Toutes les évolutions notables du projet. Format
   voiture, il propose de se donner un code plutôt que de s'enregistrer, comme le
   fait l'écran Compte.
 
+### Corrigé
+
+- **L'aide indiquait la mauvaise sortie du plein écran.** Elle envoyait vers
+  « la croix en haut à droite » ; c'est une flèche de retour, en bas à gauche de
+  la rangée de commandes, depuis que la croix flottante a été retirée — elle
+  recouvrait le bouton de profil le plus à droite. Le texte n'avait pas suivi.
+- **Sept textes revus après relecture de David** : le mode sport fait monter le
+  moteur dans les tours plutôt qu'il ne « tient les rapports », le trajet part au
+  serveur tout seul par tranches de cinq minutes et non au seul appui sur P, et
+  ce qui est estompé est simplement désactivé.
+
 ### Modifié
 
 - **Les onglets ont la forme d'onglets.** Ils étaient dessinés comme tous les
