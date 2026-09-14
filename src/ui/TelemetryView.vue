@@ -26,6 +26,7 @@ import {
   measuredCar,
   measuredCarStatus,
   restartGeolocation,
+  soundState,
   telemetry,
 } from '../state'
 
@@ -93,6 +94,36 @@ const mix = computed(() => computeMix(activeProfile.value, telemetry.value.engin
 const speedError = computed(
   () => telemetry.value.speed.rawKmh - telemetry.value.speed.kmh,
 )
+
+/**
+ * Le seuil au-delà duquel la précision annoncée mérite l'œil.
+ *
+ * C'est celui du profil, et non un chiffre écrit ici : resserrer le seuil de
+ * rejet doit changer ce qui s'allume, sinon le repère ment.
+ */
+const precisionMauvaise = computed(
+  () =>
+    fixStats.value.lastAccuracyM !== null &&
+    fixStats.value.lastAccuracyM > activeProfile.value.speed.maxAccuracyM,
+)
+
+/**
+ * L'état du son en un mot.
+ *
+ * Il se lit sur `soundState`, celui-là même que porte le bouton de la barre :
+ * deux façons de dire si le son sort finiraient par se contredire, et c'est
+ * exactement le genre d'écart qu'on vient regarder ici.
+ */
+const MOTS_DU_SON: Record<string, string> = {
+  loading: 'charge',
+  error: 'erreur',
+  off: 'inactif',
+  muted: 'coupé',
+  taken: 'pris ailleurs',
+  on: 'actif',
+}
+
+const etatDuSon = computed(() => MOTS_DU_SON[soundState.value] ?? soundState.value)
 
 const totalRatio = computed(
   () => telemetry.value.gearbox.ratio * activeProfile.value.drivetrain.finalDrive,
@@ -278,7 +309,60 @@ function onRateChange(event: Event): void {
 </script>
 
 <template>
-  <div class="telemetry">
+  <!--
+    La racine n'est pas la grille : celle-ci vit sous le repli, et poser le bloc
+    de santé dedans l'aurait enfermé dans une colonne de 21 rem au milieu de
+    l'écran. Mesuré : il n'occupait qu'un tiers de la largeur.
+  -->
+  <div class="ecran-telemetrie">
+    <!--
+      Les quatre valeurs de santé, en grand.
+
+      Lire n'est pas régler : cet écran n'a aucun champ modifiable, donc il ne
+      présente pas le risque que la garde couvre, et c'est le seul endroit d'où
+      l'on voit ce que le GPS donne vraiment pendant un trajet. Mais ses dix
+      sections ne se lisent pas au volant.
+
+      Celles-ci répondent à la seule question qu'on se pose en roulant : est-ce
+      que ça marche, et sinon où ça casse. La précision est le défaut numéro un
+      — les 9 999,99 m de l'essai du 11 septembre 2026 ; le temps depuis la
+      dernière mesure dit si le GPS s'est tu ; l'écart entre la vitesse brute et
+      la lissée dit si le conditionneur suit.
+
+      Le régime et le rapport n'y sont pas : ils sont sur les cadrans, à un
+      onglet de là.
+    -->
+    <section class="panel wide sante">
+      <h2>Santé du signal</h2>
+      <div class="grands">
+        <div class="grand" :class="{ warn: precisionMauvaise }">
+          <span class="valeur">{{
+            fixStats.lastAccuracyM === null ? '—' : Math.round(fixStats.lastAccuracyM)
+          }}</span>
+          <span class="unite">m de précision</span>
+        </div>
+        <div class="grand" :class="{ warn: telemetry.speed.sinceLastSampleMs > 3000 }">
+          <span class="valeur">{{ (telemetry.speed.sinceLastSampleMs / 1000).toFixed(1) }}</span>
+          <span class="unite">s depuis la mesure</span>
+        </div>
+        <div class="grand">
+          <span class="valeur">{{ fixed(telemetry.speed.kmh, 0) }}</span>
+          <span class="unite">km/h lissés · {{ fixed(telemetry.speed.rawKmh, 0) }} bruts</span>
+        </div>
+        <div class="grand" :class="{ warn: soundState === 'error' }">
+          <span class="valeur petit">{{ etatDuSon }}</span>
+          <span class="unite">son</span>
+        </div>
+      </div>
+    </section>
+
+    <!--
+      Tout le reste, replié. C'est un avertissement, pas un verrou : il s'ouvre
+      quand on le touche, et rien ici ne se dérègle.
+    -->
+    <details class="repli">
+      <summary>Avancé — à lire à l'arrêt</summary>
+      <div class="telemetry">
     <section class="panel">
       <h2>Vitesse</h2>
       <ValueRow label="Lissée" :value="fixed(telemetry.speed.kmh)" unit="km/h" />
@@ -749,6 +833,8 @@ function onRateChange(event: Event): void {
       enregistrement, borné par étape — délimiter une mesure n'est pas capturer
       une session, et une étape mal bornée donne une mesure fausse.
     -->
+      </div>
+    </details>
   </div>
 </template>
 
@@ -760,6 +846,75 @@ function onRateChange(event: Event): void {
   align-items: start;
   max-width: 80rem;
   margin: 0 auto;
+}
+
+/*
+ * La santé du signal : quatre valeurs qui se lisent d'un coup d'œil.
+ *
+ * Le `minmax` à 9 rem tient quatre colonnes sur un écran de voiture et deux sur
+ * un téléphone de 375 px, sans jamais déborder — c'est la même mécanique que la
+ * grille ci-dessus, à une échelle plus serrée.
+ */
+.ecran-telemetrie {
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.sante {
+  margin-bottom: 1rem;
+}
+
+.grands {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.8rem;
+}
+
+.grand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.grand .valeur {
+  font-size: 2.2rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Un mot ne se lit pas en corps 2,2 rem : il tient sur la largeur, pas le
+   regard. */
+.grand .valeur.petit {
+  font-size: 1.5rem;
+}
+
+.grand .unite {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.grand.warn .valeur {
+  color: var(--warn);
+}
+
+/*
+ * Le repli : un avertissement, pas un verrou. Il s'ouvre au toucher, et rien
+ * dessous ne se dérègle — c'est de la lecture.
+ */
+.repli {
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.repli > summary {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.repli > .telemetry {
+  margin-top: 1rem;
 }
 
 

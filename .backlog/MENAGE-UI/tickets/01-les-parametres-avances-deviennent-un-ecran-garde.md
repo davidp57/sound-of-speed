@@ -1,6 +1,6 @@
 # 01 — Les paramètres avancés deviennent un écran à part, gardé
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -35,17 +35,33 @@ ferait attendre une demi-minute pour rien.
 
 ## Critères d'acceptation
 
-- [ ] L'écran de configuration ne porte plus que ce qui se règle simplement, et
+- [x] L'écran de configuration ne porte plus que ce qui se règle simplement, et
       le bouton Simplifié / Avancé n'existe plus
-- [ ] Un second onglet porte Moteur, Transmission, Signal de vitesse et
+- [x] Un second onglet porte Moteur, Transmission, Signal de vitesse et
       Caractère
-- [ ] La pétarade et le clac se règlent depuis le premier niveau
-- [ ] Au GPS, en roulant, l'onglet est visible et grisé ; ouvert, il affiche
+- [x] La pétarade et le clac se règlent depuis le premier niveau
+- [x] Au GPS, en roulant, l'onglet est visible et grisé ; ouvert, il affiche
       « disponible uniquement à l'arrêt »
-- [ ] Au GPS, arrêté depuis trente secondes et au repos, il s'ouvre sur ses
+- [x] Au GPS, arrêté depuis trente secondes et au repos, il s'ouvre sur ses
       quatre sections
-- [ ] Repartir referme l'écran sans attendre un redémarrage
-- [ ] Sous simulateur, l'onglet est ouvert sans condition
-- [ ] Sur un appareil qui n'a jamais reçu de position, l'onglet est ouvert sans
+- [x] Repartir referme l'écran sans attendre un redémarrage
+- [x] Sous simulateur, l'onglet est ouvert sans condition
+- [x] Sur un appareil qui n'a jamais reçu de position, l'onglet est ouvert sans
       attendre
-- [ ] La garde est couverte par des tests du cœur, sans navigateur
+- [x] La garde est couverte par des tests du cœur, sans navigateur
+
+## Ce qui a été fait, et mesuré
+
+Les six sections avancées sont parties, Mixage et Couches comprises : le
+ticket 03 les emmènera de là vers l'atelier. `ConfigView.vue` passe de 2 454 à
+1 599 lignes, et le nouvel écran en fait 1 033 — le CSS devenu sans emploi a été
+retiré de chacun, quarante-quatre règles en tout.
+
+Vérifié dans le navigateur : l'onglet se grise dès que l'application tourne au
+GPS, le décompte s'affiche au repos, et l'écran s'ouvre tout seul à la trentième
+seconde sans rien recharger.
+
+**Un coût à signaler** : sur un poste où tous les rôles sont ouverts, la barre
+passe de sept à huit onglets. Mesurée à 375 pixels, elle occupe trois rangs et
+198 pixels de haut. C'est ce que le ticket 03 corrige en rassemblant les quatre
+écrans d'atelier sous un onglet.

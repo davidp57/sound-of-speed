@@ -1,6 +1,6 @@
 # 04 — Le panneau d'étalonnage manuel s'en va
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 02 — Le simulateur et le sélecteur de source rejoignent le
 second niveau, hors voiture
@@ -26,10 +26,27 @@ intact.
 
 ## Critères d'acceptation
 
-- [ ] L'écran d'étalonnage n'existe plus, ni son onglet
-- [ ] Rejouer un trajet capturé reste possible depuis le second niveau
-- [ ] L'étalonnage automatique fonctionne comme avant : le profil mesuré se
+- [x] L'écran d'étalonnage n'existe plus, ni son onglet
+- [x] Rejouer un trajet capturé reste possible depuis le second niveau
+- [x] L'étalonnage automatique fonctionne comme avant : le profil mesuré se
       propose et s'applique
-- [ ] Le code du cœur devenu inutile est retiré, et les tests de ce qui sert
+- [x] Le code du cœur devenu inutile est retiré, et les tests de ce qui sert
       encore passent sans modification
-- [ ] Le contrôle qualité est vert, sans import mort ni export inutilisé
+- [x] Le contrôle qualité est vert, sans import mort ni export inutilisé
+
+## Ce qui a été fait, et ce qui ne l'a pas été
+
+547 lignes d'écran retirées, et neuf exports de `src/state.ts` avec elles :
+l'enregistrement et l'arrêt d'une trace, le rejeu d'une trace, le compte de
+relevés, l'erreur de stockage, l'étape d'étalonnage en cours, la pose d'une
+session, la recopie d'un réglage mesuré, et le mode avancé devenu sans objet au
+ticket 01. L'enregistreur de traces et la mise en file d'une trace partent avec.
+
+**Rien n'a été supprimé dans `core/calibration/`**, et c'est le résultat d'une
+vérification, pas d'une prudence : les quatre modules qu'on pouvait croire liés
+au panneau — `analyze`, `protocol`, `suggest`, `settings` — servent tous à la
+mesure automatique, par `onboard`, `braking`, `from-aggregate` et `segments`.
+
+Les 1 585 tests passent sans qu'aucun ait été touché.
+
+Le morceau principal descend à 97,5 ko compressés.

@@ -17,6 +17,11 @@ import {
   type EngineGroup,
 } from '../core/preset/schema'
 import { mergeEngineGroup, groupVaries } from '../core/preset/engine-definition'
+import {
+  cheminDeDefinition,
+  commandeDeFabrication,
+  definitionEnTexte,
+} from '../core/synth/fabrication'
 import { GM_LS_V8, SUBARU_EJ25 } from '../core/preset/defaults'
 import {
   ENGINE_LIBRARY,
@@ -300,6 +305,35 @@ async function capturer(): Promise<void> {
   setTimeout(() => { capture.value = '' }, 8000)
 }
 
+/**
+ * De quoi refabriquer la banque de ce qu'on écoute.
+ *
+ * Deux blocs et non un : la définition est un fichier à enregistrer, la commande
+ * une ligne à lancer. Les fondre en un seul obligerait à choisir un dialecte de
+ * terminal pour écrire le fichier, et il n'y en a pas un seul sur ce poste.
+ */
+const cheminDeFabrication = computed(() => cheminDeDefinition(activeProfile.value))
+
+const definitionFabrication = computed(() =>
+  definitionEnTexte(activeProfile.value, synthSettings.value),
+)
+
+const commandeFabrication = computed(() => commandeDeFabrication(activeProfile.value))
+
+const copie = ref('')
+
+async function copier(texte: string, quoi: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(texte)
+    copie.value = `${quoi} copiée`
+  } catch {
+    copie.value = 'Copie refusée — sélectionner le bloc à la main.'
+  }
+  setTimeout(() => {
+    copie.value = ''
+  }, 6000)
+}
+
 function onFlag(key: keyof SynthSettings, event: Event): void {
   const target = event.target as HTMLInputElement
   void applySynthSettings({ ...synthSettings.value, [key]: target.checked })
@@ -466,6 +500,41 @@ const gauge = computed(() => {
     </section>
 
     </div>
+
+    <!--
+      Fabriquer la banque du son qu'on vient de régler.
+
+      **Ce n'est pas le serveur qui fabrique**, et c'est une décision : la chaîne
+      lance un binaire natif compilé sur ce poste, là où le serveur est une image
+      Linux ARM64 sur un NAS qui sert déjà l'application, les échantillons et la
+      base. La friction qu'on retire n'est pas de taper une commande, c'est de
+      retrouver les paramètres après avoir réglé à l'oreille.
+    -->
+    <section class="panel wide fabrication">
+      <h2>Fabriquer la banque</h2>
+      <p class="hint">
+        Deux blocs à coller, dans l'ordre. Le premier est la définition à
+        enregistrer sous
+        <code>{{ cheminDeFabrication }}</code> ; le second la fabrique. Elle
+        tourne sur ce poste, pas sur le serveur : la chaîne lance un binaire
+        compilé ici.
+      </p>
+      <div class="actions">
+        <button @click="copier(definitionFabrication, 'définition')">
+          Copier la définition
+        </button>
+        <button @click="copier(commandeFabrication, 'commande')">
+          Copier la commande
+        </button>
+        <span v-if="copie" class="state">{{ copie }}</span>
+      </div>
+      <pre class="bloc">{{ definitionFabrication }}</pre>
+      <pre class="bloc">{{ commandeFabrication }}</pre>
+      <p class="hint">
+        La banque sort dans <code>public/audio/{{ activeProfile.sampleDir }}/</code>,
+        avec le profil partiel que l'application importe tel quel.
+      </p>
+    </section>
 
     <div class="columns">
     <section class="panel">
@@ -980,6 +1049,31 @@ const gauge = computed(() => {
 
 .panel.wide {
   width: 100%;
+}
+
+/*
+ * Les blocs à coller.
+ *
+ * Ils défilent chacun dans leur boîte plutôt que d'élargir la page : une
+ * définition tient en vingt lignes, et la ligne de commande dépasse la largeur
+ * d'un écran étroit. Sans ce `overflow`, c'est la page entière qui se décalait
+ * de côté — le même défaut que le tableau des couches, mesuré à 687 pixels pour
+ * un écran de 375.
+ */
+.fabrication .bloc {
+  margin: 0.6rem 0 0;
+  padding: 0.6rem 0.8rem;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-alt);
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre;
+  /* Le texte se sélectionne : la copie par bouton peut être refusée, et il
+     reste alors le geste à la main. */
+  user-select: text;
 }
 
 h2 {

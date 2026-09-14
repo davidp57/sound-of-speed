@@ -6,7 +6,118 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Retiré
+
+- **Le panneau d'étalonnage manuel s'en va**, avec son protocole en six étapes.
+  Le serveur étalonne tout seul depuis les trajets ordinaires, et l'écran de
+  conduite propose le profil mesuré quand il a de quoi conclure. Ce qui
+  disparaît vraiment : le déclenchement manuel d'une trace et la liste locale
+  des traces — la capture démarre seule au démarrage du GPS, et le rejeu se
+  pilote depuis la télémétrie.
+
+  Le code du cœur qui sert à la mesure automatique est intact : rien n'a été
+  supprimé dans `core/calibration/`, dont les quatre modules du protocole
+  servent encore au calcul. Neuf exports devenus sans usage quittent
+  `src/state.ts`.
+
+### Corrigé
+
+- **Les profils épinglés se touchent en roulant.** La rangée de l'écran de
+  conduite avait des cibles de 38 pixels de haut, sous le seuil recommandé pour
+  un bouton visé au doigt. Portées à 44, et c'est gratuit : l'écran de conduite
+  mesure 1 387 pixels avant comme après. Le plein écran les agrandit à 84.
+
 ### Ajouté
+
+- **Les réglages de fond ont leur écran, et il ne s'ouvre qu'à l'arrêt.** Moteur,
+  transmission, signal de vitesse, caractère, mixage et couches quittent l'écran
+  de configuration pour un onglet **Avancé**. La bascule *Simplifié / Avancé*
+  disparaît : ce n'était qu'une préférence, cochée par n'importe qui, y compris
+  en roulant.
+
+  L'onglet est fermé tant que la vitesse vient du GPS, sauf si elle est nulle
+  depuis trente secondes **et** que l'application est au repos. Sous simulateur
+  ou rejeu, il n'y a pas de garde — c'est justement quand on règle que la vitesse
+  n'est pas nulle. La garde regarde d'où vient le chiffre, jamais quel appareil
+  on croit être : reconnaître une voiture à la chaîne d'agent du navigateur reste
+  un pari non vérifié.
+
+  L'onglet reste **visible et grisé** plutôt que de disparaître, et son écran dit
+  la raison et le temps restant. Un onglet qui va et vient déplacerait ses
+  voisins sous le doigt.
+
+- **Le banc rend la commande qui fabrique la banque du son qu'on écoute.** Deux
+  blocs à coller : la définition à enregistrer, et la ligne qui la consomme. Les
+  réglages sont ceux qu'on vient d'entendre — plus besoin de les retrouver après
+  avoir réglé à l'oreille, ce qui était la vraie friction.
+
+  La chaîne tourne sur le poste et non sur le serveur : elle lance un binaire
+  natif compilé là, quand le serveur est une image Linux ARM64 sur un NAS qui
+  sert déjà l'application. L'écran le dit.
+
+  Un test compare la définition produite à celle livrée pour le même moteur :
+  l'application et la chaîne ne partagent aucun type, et rien d'autre
+  n'empêcherait le format de diverger avant une génération lancée pour rien.
+
+- **Les ajustements du conducteur deviennent une couche.** Les trois curseurs —
+  calme ↔ sportif, pépère ↔ nerveux, nombre de rapports — ne s'écrivent plus dans
+  le profil mais à côté. Le profil livré reste intact, et une version corrigée
+  déposée depuis l'atelier arrive **avec les ajustements conservés**.
+
+  La couche pèse trois nombres et non les trente valeurs qu'un curseur
+  recalcule : aucune de ces positions n'est enregistrée dans un profil, elles
+  s'en déduisent. Elle est rangée par profil, et ne voyage pas avec un profil
+  partagé — comme le volume.
+
+  Un bouton **Enlever mes ajustements** la retire et rend le profil tel qu'il a
+  été livré. Il remplace *Revenir aux réglages d'avant*, qui ne vivait que le
+  temps d'une session et sur un seul appareil : on bricolait en roulant, on
+  coupait le contact, et le lendemain le recours avait disparu.
+
+- **La télémétrie se lit d'un coup d'œil en roulant.** Quatre valeurs de santé
+  passent en tête, en grand : la précision annoncée par le GPS, le temps depuis
+  la dernière mesure, la vitesse lissée à côté de la brute, l'état du son. Les
+  dix sections d'origine tiennent sous un repli intitulé *Avancé — à lire à
+  l'arrêt*, à leur taille d'avant.
+
+  L'écran reste ouvert en roulant, et c'est délibéré : lire n'est pas régler, il
+  n'a aucun champ modifiable, et c'est le seul endroit d'où l'on voit ce que le
+  GPS donne vraiment pendant un trajet.
+
+- **Un écran Atelier, et le rôle `atelier` sert enfin à quelque chose.** Créer,
+  nommer, dupliquer, supprimer, exporter et partager un profil, régler le mixage
+  et les couches, fabriquer un moteur, tenir un timbre au banc de synthèse : tout
+  ce qui fabrique tient sous un onglet, avec sa navigation en trois volets. Le
+  rôle existait depuis le lot COMPTES — le serveur l'exigeait pour accepter un
+  dépôt, mais aucun écran ne le demandait. Le volet Synthèse demande `synthese`
+  en plus.
+
+  **La voiture y gagne 9 % de téléchargement**, mesuré : le morceau principal
+  passe de 107,4 à 98,1 ko compressés, l'atelier partant dans un morceau à part
+  qu'elle n'ouvre jamais. La barre du haut retombe à cinq onglets en voiture.
+
+  Ce qui reste dans **Paramètres** est ce qu'un conducteur fait de ce qu'on lui a
+  livré : choisir un profil, l'épingler, l'ajuster, le rendre tel qu'il était, en
+  recevoir de nouveaux depuis le serveur. Un bouton **« Revenir au profil
+  d'usine »** y remplace le sélecteur de sections, parti à l'atelier : c'est le
+  seul retour qui survive à un redémarrage, celui qui accompagne les curseurs ne
+  vivant que le temps d'une session.
+
+- **Le simulateur et le choix de la source rejoignent l'écran Avancé**, et
+  n'apparaissent jamais sur l'appareil « voiture ». Régler une inertie ou un
+  frein moteur sans l'entendre n'a pas de sens, et il n'y a rien à entendre à
+  l'arrêt sans le simulateur : il est désormais en tête de l'écran où l'on règle,
+  avec les boutons qui permettent de le choisir. Passer au simulateur lève au
+  passage la garde, puisque la vitesse ne vient plus du GPS.
+
+  L'onglet **Banc** disparaît de la barre, qui repasse de huit à sept entrées sur
+  un poste. Le banc reste chargé à la demande : mesuré, le morceau principal ne
+  bouge pas.
+
+- **La pétarade et le clac de boîte se coupent depuis l'écran Paramètres.** Deux
+  effets de décor sonore qu'on veut pouvoir taire en ville ou avec un passager,
+  sans changer de caractère. Leur réglage fin reste dans l'écran Avancé. Couper
+  le clac garde sa valeur pour la rendre telle quelle.
 
 - **Une visite guidée après l'accueil.** Des bulles fléchées se posent sur
   l'interface réelle et désignent ce qu'on touche : D, P, le choix de la boîte,

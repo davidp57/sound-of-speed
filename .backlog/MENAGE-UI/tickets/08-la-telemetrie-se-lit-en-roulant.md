@@ -1,6 +1,6 @@
 # 08 — La télémétrie se lit d'un coup d'œil en roulant
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -31,9 +31,29 @@ s'ouvre quand on le touche.
 
 ## Critères d'acceptation
 
-- [ ] Les quatre valeurs de santé se lisent en haut, agrandies, sans faire
+- [x] Les quatre valeurs de santé se lisent en haut, agrandies, sans faire
       défiler
-- [ ] Le reste est replié derrière un libellé qui prévient
-- [ ] Le repli s'ouvre et se ferme sans rien verrouiller
-- [ ] L'écran reste ouvert en roulant, quel que soit l'appareil
-- [ ] Aucune valeur n'a disparu : ce qui était affiché l'est toujours, ailleurs
+- [x] Le reste est replié derrière un libellé qui prévient
+- [x] Le repli s'ouvre et se ferme sans rien verrouiller
+- [x] L'écran reste ouvert en roulant, quel que soit l'appareil
+- [x] Aucune valeur n'a disparu : ce qui était affiché l'est toujours, ailleurs
+
+## Ce qui a été fait, et mesuré
+
+Les quatre valeurs de santé occupent toute la largeur, en quatre colonnes sur un
+poste et deux sur un téléphone de 375 pixels : 185 pixels de haut, sans
+débordement horizontal. Le repli fermé fait 36 pixels.
+
+Deux repères passent en couleur d'alerte : la précision au-delà du seuil **du
+profil** — et non d'un chiffre écrit dans l'écran, sinon resserrer le seuil de
+rejet ne changerait rien à ce qui s'allume — et le temps depuis la dernière
+mesure au-delà de trois secondes.
+
+L'état du son se lit sur `soundState`, celui-là même que porte le bouton de la
+barre : deux façons de dire si le son sort finiraient par se contredire, et
+c'est exactement l'écart qu'on vient regarder ici.
+
+**Un défaut corrigé en cours de route**, trouvé en regardant plutôt qu'en
+supposant : posé dans la grille de l'écran, le bloc de santé n'occupait qu'une
+colonne de 21 rem au milieu de la page. La racine n'est plus la grille ; celle-ci
+vit sous le repli.

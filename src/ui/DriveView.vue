@@ -275,16 +275,28 @@ const SPEED_STEP_KMH = 20
       conducteur défile en perspective, d'avant en arrière. Il reviendra
       autrement, et le code de l'ancien est dans l'historique.
     -->
-      <section v-if="favoriteProfiles.length > 1" class="favorites" :class="{ large: immersive }">
-      <button
-        v-for="entry in favoriteProfiles"
-        :key="entry.id"
-        :aria-pressed="entry.id === selectedProfileId"
-        @click="selectProfile(entry.id)"
+      <!--
+        Changer le son en roulant, sans quitter les cadrans.
+
+        Seuls les profils **épinglés**, et à partir de deux : un bouton unique
+        qu'on ne peut pas désactiver n'est pas un choix, et la liste complète est
+        dans Paramètres. L'épinglage existait depuis longtemps et ne servait
+        qu'à trier une liste ; c'est ici qu'il prend son usage.
+      -->
+      <section
+        v-if="favoriteProfiles.length > 1"
+        class="favorites"
+        :class="{ large: immersive }"
       >
-        {{ entry.name }}
-      </button>
-    </section>
+        <button
+          v-for="entry in favoriteProfiles"
+          :key="entry.id"
+          :aria-pressed="entry.id === selectedProfileId"
+          @click="selectProfile(entry.id)"
+        >
+          {{ entry.name }}
+        </button>
+      </section>
     </div>
 
     <section v-if="driveFace === 'dials'" class="dashboard">
@@ -546,13 +558,23 @@ const SPEED_STEP_KMH = 20
  * se rangent alors l'un sous l'autre, alignés à gauche.
  */
 .favorites {
-  margin-left: auto;
-}
-
-.favorites {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
+  margin-left: auto;
+}
+
+/*
+ * La cible se touche en roulant, et c'est mesuré.
+ *
+ * Elle faisait 38 pixels de haut, sous le seuil que les deux systèmes
+ * recommandent — 44 chez l'un, 48 chez l'autre — pour un bouton qu'on vise d'un
+ * doigt, sur une route, sans regarder longtemps. Les 6 pixels rendus coûtent
+ * 0,4 % de la hauteur de l'écran de conduite, mesuré à 1 387 pixels : c'est le
+ * meilleur marché du lot.
+ */
+.favorites button {
+  min-height: 44px;
 }
 
 .favorites.large button {

@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import AccountView from './ui/AccountView.vue'
+import AdvancedConfigView from './ui/AdvancedConfigView.vue'
 import ConfigView from './ui/ConfigView.vue'
 import HelpView from './ui/HelpView.vue'
 import WelcomeView from './ui/WelcomeView.vue'
@@ -11,27 +12,31 @@ import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
 
 /**
- * Les trois écrans qu'une voiture n'ouvre jamais, chargés à la demande.
+ * L'atelier, qu'une voiture n'ouvre jamais, chargé à la demande.
  *
- * **C'est la seule chose que le découpage peut rendre**, et c'est mesuré : les
- * autres écrans s'ouvrent au volant, donc les différer ne ferait que déplacer
- * leur téléchargement au premier appui, dans un endroit où il n'y a pas de
- * réseau.
+ * **C'est la seule chose que le découpage peut rendre**, et c'est mesuré : le
+ * morceau principal est tombé de 107,4 à 98,1 ko compressés le jour où celui-ci
+ * en est sorti. Les autres écrans s'ouvrent au volant, donc les différer ne
+ * ferait que déplacer leur téléchargement au premier appui, dans un endroit où
+ * il n'y a pas de réseau.
+ *
+ * Il emmène avec lui le banc et la synthèse, qui ont leurs propres morceaux.
  *
  * Le service worker les garde comme le reste de `/assets/`, dès la première
  * ouverture en ligne — un morceau jamais ouvert n'est pas en cache, mais un
  * écran qu'on n'ouvre pas ne manque à personne.
  */
-const CalibrationPanel = defineAsyncComponent(() => import('./ui/CalibrationPanel.vue'))
-const SynthView = defineAsyncComponent(() => import('./ui/SynthView.vue'))
-const BenchView = defineAsyncComponent(() => import('./ui/BenchView.vue'))
+const AtelierView = defineAsyncComponent(() => import('./ui/AtelierView.vue'))
 import type { Appareil } from './core/appareil'
 import type { Role } from './core/identity/roles'
 import {
   appareil,
   applyUpdate,
   bandeDeDefilement,
+  gardeAttenteMs,
+  gardeOuverte,
   identity,
+  isRunning,
   offlineStatus,
   setBrake,
   importFromUrl,
@@ -75,7 +80,13 @@ function toggleSound(): void {
   else void activateAudio()
 }
 
-type Tab = 'drive' | 'telemetry' | 'config' | 'calibration' | 'account' | 'synth' | 'bench'
+type Tab =
+  | 'drive'
+  | 'telemetry'
+  | 'config'
+  | 'advanced'
+  | 'account'
+  | 'atelier'
 
 const tab = ref<Tab>('drive')
 
@@ -300,21 +311,34 @@ function onFullscreenChange(): void {
  * seul depuis les traces, son panneau manuel est un reste ; le **banc** et la
  * **synthèse** sont des écrans qu'on regarde à l'arrêt, un moteur à la main.
  */
-const TABS: { id: Tab; label: string; role?: Role; sur?: readonly Appareil[] }[] = [
+const TABS: {
+  id: Tab
+  label: string
+  role?: Role
+  sur?: readonly Appareil[]
+  /** L'onglet se ferme en roulant — voir `core/garde.ts`. */
+  gardee?: true
+}[] = [
   { id: 'drive', label: 'Conduite', role: 'conduite' },
   { id: 'telemetry', label: 'Télémétrie', role: 'conduite' },
-  { id: 'config', label: 'Configuration', role: 'conduite' },
-  { id: 'calibration', label: 'Étalonnage', role: 'conduite', sur: ['telephone', 'poste'] },
+  { id: 'config', label: 'Paramètres', role: 'conduite' },
+  // Les réglages de fond : ils demandent d'être posé, pas d'avoir un droit. Le
+  // conducteur qui bricole chez lui est le même que celui qui roule.
+  { id: 'advanced', label: 'Avancé', role: 'conduite', gardee: true },
   // L'identité vit dans son propre écran depuis le 13 septembre 2026 : donner un
   // code, en recevoir un, et bientôt se faire un vrai compte. Ce n'est pas un
   // réglage de conduite, et la section qu'il occupait dans Configuration se
   // perdait au milieu du reste.
   { id: 'account', label: 'Compte' },
-  // Les deux écrans de banc. Ils ont leur propre page depuis le 8 septembre
-  // 2026 : leurs commandes vivaient sous les cadrans de l'écran de conduite, où
-  // elles prenaient la place de ce qu'on lit en roulant.
-  { id: 'synth', label: 'Synthèse', role: 'synthese', sur: ['poste'] },
-  { id: 'bench', label: 'Banc', role: 'conduite', sur: ['telephone', 'poste'] },
+  // L'atelier : un onglet pour tout ce qui fabrique — les profils, le son, le
+  // banc de synthèse. Il porte sa propre navigation interne, parce qu'une barre
+  // de neuf entrées n'est plus une barre : elle se replie sur trois rangs dès
+  // 375 pixels, et le raccord de l'onglet actif au contenu ne veut alors plus
+  // rien dire.
+  //
+  // C'est ce qui donne enfin son contenu au rôle `atelier`, que le serveur
+  // exigeait déjà pour accepter un dépôt sans qu'aucun écran ne le demande.
+  { id: 'atelier', label: 'Atelier', role: 'atelier', sur: ['poste'], gardee: true },
 ]
 
 /**
@@ -330,6 +354,24 @@ const onglets = computed(() =>
       (entree.role === undefined || ouvertPar(entree.role)) &&
       (entree.sur === undefined || entree.sur.includes(appareil.value)),
   ),
+)
+
+/**
+ * Ce qu'il reste à attendre, dit en clair.
+ *
+ * Un écran qui annonce « à l'arrêt » sans rien de plus laisse croire qu'il ne
+ * s'ouvrira jamais : au repos, le décompte dit que quelque chose se passe. En
+ * roulant il n'y a rien à annoncer — c'est repartir qui rouvrira, pas patienter.
+ */
+const attenteLisible = computed(() => {
+  const restant = gardeAttenteMs.value
+  if (restant === 0 || isRunning.value) return ''
+  return `Encore ${Math.ceil(restant / 1000)} s.`
+})
+
+/** L'onglet qu'on regarde est-il fermé par la garde ? */
+const gardeFermeeIci = computed(
+  () => !gardeOuverte.value && TABS.some((entree) => entree.id === tab.value && entree.gardee),
 )
 
 /** De quoi vérifier qu'un écran a le droit d'être rendu, et pas seulement listé. */
@@ -446,9 +488,16 @@ onBeforeUnmount(() => {
   <div class="shell" :class="{ immersive }">
     <header v-if="!immersive" class="bar">
       <nav class="tabs" data-visite="onglets">
+        <!--
+          Un onglet gardé est **grisé, jamais retiré**. Le retirer déplacerait
+          ses voisins sous le doigt à chaque arrêt, et un bouton qu'on désactive
+          sans dire pourquoi ne s'explique pas tout seul : celui-ci reste
+          cliquable, et son écran donne la raison.
+        -->
         <button
           v-for="entry in onglets"
           :key="entry.id"
+          :class="{ 'is-locked': entry.gardee && !gardeOuverte }"
           :aria-pressed="tab === entry.id"
           @click="tab = entry.id"
         >
@@ -529,10 +578,15 @@ onBeforeUnmount(() => {
         cadrans la largeur qui leur manque déjà.
       -->
       <div v-else class="ecran" :class="{ 'bande-defilement': bandeDeDefilement }">
-        <TelemetryView v-if="tab === 'telemetry'" />
-        <CalibrationPanel v-else-if="tab === 'calibration'" />
-        <SynthView v-else-if="tab === 'synth' && ouverts.has('synth')" />
-        <BenchView v-else-if="tab === 'bench' && ouverts.has('bench')" />
+        <!-- La garde passe avant tout : un écran qu'elle ferme n'est pas monté,
+             et c'est ce qui dispense chacun d'eux de la vérifier lui-même. -->
+        <p v-if="gardeFermeeIci" class="garde-fermee">
+          Disponible uniquement à l'arrêt.
+          <span v-if="attenteLisible">{{ attenteLisible }}</span>
+        </p>
+        <TelemetryView v-else-if="tab === 'telemetry'" />
+        <AtelierView v-else-if="tab === 'atelier' && ouverts.has('atelier')" />
+        <AdvancedConfigView v-else-if="tab === 'advanced'" />
         <ConfigView v-else-if="tab === 'config'" />
         <!-- Le compte ferme la liste : c'est le seul écran qu'aucun rôle ne peut
              refermer, donc le seul qui puisse servir de repli. -->
@@ -668,6 +722,17 @@ onBeforeUnmount(() => {
   border-color: transparent;
 }
 
+/*
+ * L'onglet gardé, fermé.
+ *
+ * Il s'estompe sans se désactiver : `disabled` le rendrait inatteignable, donc
+ * muet sur sa raison. Il garde sa place et sa cible tactile — ce qui change est
+ * ce qu'il ouvre.
+ */
+.tabs button.is-locked {
+  opacity: 0.45;
+}
+
 .tabs button[aria-pressed='true'] {
   background: var(--bg);
   border-color: var(--line);
@@ -761,5 +826,16 @@ onBeforeUnmount(() => {
  */
 .ecran {
   min-height: 100%;
+}
+
+/* L'écran d'un onglet gardé : une phrase, et rien d'autre à toucher. */
+.garde-fermee {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 3rem 1rem;
+  color: var(--muted);
+  text-align: center;
 }
 </style>

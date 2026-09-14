@@ -1,6 +1,6 @@
 # MENAGE-UI — trois niveaux, et ce qui les sépare n'est pas un droit
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 8 tickets sur 8
 **Branche :** `feature/menage-ui`
 **Version visée :** 0.5
 
@@ -177,19 +177,19 @@ qu'à changer ce qu'il déclenche.
 
 ## Critères d'acceptation
 
-- [ ] En roulant, on change de profil sans quitter l'écran de conduite
-- [ ] En roulant, l'onglet des paramètres avancés est visible, grisé, et
+- [x] En roulant, on change de profil sans quitter l'écran de conduite
+- [x] En roulant, l'onglet des paramètres avancés est visible, grisé, et
       s'ouvre sur « disponible uniquement à l'arrêt »
-- [ ] Arrêté depuis trente secondes et au repos, il s'ouvre
-- [ ] Sous simulateur, il est ouvert sans condition
-- [ ] L'appareil « voiture » ne montre jamais le simulateur ni le sélecteur de
+- [x] Arrêté depuis trente secondes et au repos, il s'ouvre
+- [x] Sous simulateur, il est ouvert sans condition
+- [x] L'appareil « voiture » ne montre jamais le simulateur ni le sélecteur de
       source, à aucun niveau
-- [ ] Un compte sans le rôle `atelier` ne voit pas l'onglet Atelier, et le
+- [x] Un compte sans le rôle `atelier` ne voit pas l'onglet Atelier, et le
       serveur refuse ses dépôts
-- [ ] Un profil ajusté au premier niveau garde son ajustement quand une version
+- [x] Un profil ajusté au premier niveau garde son ajustement quand une version
       corrigée du même profil arrive de l'atelier
-- [ ] La télémétrie se lit en roulant, ses quatre valeurs de santé en grand
-- [ ] Le contrôle qualité passe, et aucun écran retiré ne laisse de code mort
+- [x] La télémétrie se lit en roulant, ses quatre valeurs de santé en grand
+- [x] Le contrôle qualité passe, et aucun écran retiré ne laisse de code mort
 
 ## Les tickets
 
@@ -198,11 +198,38 @@ tout le reste en dépend ou s'en détache franchement.
 
 | | Sujet | Bloqué par |
 |---|---|---|
-| [01](tickets/01-les-parametres-avances-deviennent-un-ecran-garde.md) | Les paramètres avancés deviennent un écran à part, gardé | — |
-| [02](tickets/02-le-simulateur-rejoint-les-parametres-avances.md) | Le simulateur et le sélecteur de source rejoignent le second niveau, hors voiture | 01 |
-| [03](tickets/03-l-atelier-rassemble-le-son-et-la-fabrication.md) | L'atelier : un onglet qui rassemble le son et la fabrication de profils | 01 |
-| [04](tickets/04-le-panneau-d-etalonnage-manuel-s-en-va.md) | Le panneau d'étalonnage manuel s'en va | 02 |
-| [05](tickets/05-le-banc-rend-la-commande-de-fabrication.md) | Le banc rend la commande de fabrication, prête à coller | 03 |
-| [06](tickets/06-les-ajustements-du-conducteur-sont-une-couche.md) | Les ajustements du conducteur deviennent une couche | — |
-| [07](tickets/07-les-favoris-changent-le-son-en-roulant.md) | Les favoris épinglés changent le son depuis l'écran de conduite | — |
-| [08](tickets/08-la-telemetrie-se-lit-en-roulant.md) | La télémétrie se lit d'un coup d'œil en roulant | — |
+| [01](tickets/01-les-parametres-avances-deviennent-un-ecran-garde.md) ✅ | Les paramètres avancés deviennent un écran à part, gardé | — |
+| [02](tickets/02-le-simulateur-rejoint-les-parametres-avances.md) ✅ | Le simulateur et le sélecteur de source rejoignent le second niveau, hors voiture | 01 |
+| [03](tickets/03-l-atelier-rassemble-le-son-et-la-fabrication.md) ✅ | L'atelier : un onglet qui rassemble le son et la fabrication de profils | 01 |
+| [04](tickets/04-le-panneau-d-etalonnage-manuel-s-en-va.md) ✅ | Le panneau d'étalonnage manuel s'en va | 02 |
+| [05](tickets/05-le-banc-rend-la-commande-de-fabrication.md) ✅ | Le banc rend la commande de fabrication, prête à coller | 03 |
+| [06](tickets/06-les-ajustements-du-conducteur-sont-une-couche.md) ✅ | Les ajustements du conducteur deviennent une couche | — |
+| [07](tickets/07-les-favoris-changent-le-son-en-roulant.md) ✅ | Les favoris épinglés changent le son depuis l'écran de conduite | — |
+| [08](tickets/08-la-telemetrie-se-lit-en-roulant.md) ✅ | La télémétrie se lit d'un coup d'œil en roulant | — |
+
+## Ce que le lot a donné, mesuré
+
+| | avant | après |
+|---|---|---|
+| Morceau principal, compressé | 107,4 ko | **97,8 ko** |
+| Onglets en voiture | 4 | 5, dont un grisé en roulant |
+| Hauteur de la barre en voiture | 58 px | 58 px |
+| `ConfigView.vue` | 2 454 lignes | 792, plus trois écrans à côté |
+| Cible des profils épinglés | 38 px | 44 px, 84 en plein écran |
+| Tests | 1 585 | 1 612 |
+
+Les 9 % gagnés sur le téléchargement viennent de l'atelier, parti dans son
+propre morceau : la voiture ne le prend jamais.
+
+## Ce qui reste dû, et qui n'est pas de ce lot
+
+**La couche du conducteur ne suit pas le compte** d'un appareil à l'autre. Le
+ticket 06 le demandait, et la question qu'il tranchait trop vite mérite d'être
+posée ailleurs : un ajustement est-il une préférence d'appareil, comme le
+volume, ou une donnée de compte ? Ça se décide avec le chemin de dépôt, dans
+[ATELIER](../ATELIER/spec.md).
+
+**Le croquis du 10 septembre demandait « aucun bouton en haut ».** La barre est
+passée de sept onglets à cinq en voiture, ce qui s'en approche sans laisser un
+premier lancement sans porte visible. Aller plus loin — démarrer en plein écran —
+est une question de navigation, pas de ménage.

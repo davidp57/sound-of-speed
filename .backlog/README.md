@@ -42,7 +42,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [SYNTHESE](SYNTHESE/spec.md) — produire le son au lieu de le rejouer : engine-sim reste un outil d'atelier, qui fabrique des banques ; la génération en direct dans la voiture est abandonnée | 🧑 |
 | [REMONTEE](REMONTEE/spec.md) — tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils, sur un accord unique | 🧑 |
 | [ESSAI-08](ESSAI-08/spec.md) — quatre constats de l'essai du 8 septembre : GPS qui ne démarre pas, son faux en roulant, interface à consolider, dépôt qui refuse les identifiants | 🧑 |
-| [MENAGE-UI](MENAGE-UI/spec.md) — trois niveaux d'écran, et ce qui les sépare n'est pas un droit : conduire, régler à l'arrêt, fabriquer en atelier | ⬜ spec refaite le 14 septembre 2026 sur cinq cas d'usage ; 8 tickets |
+| [MENAGE-UI](MENAGE-UI/spec.md) — trois niveaux d'écran, et ce qui les sépare n'est pas un droit : conduire, régler à l'arrêt, fabriquer en atelier | ✅ 8/8 — la voiture télécharge 9 % de moins et montre cinq onglets ; reste à décider ailleurs si la couche d'ajustements suit le compte |
 | [DELISSER](DELISSER/spec.md) — un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | 🧑 |
 | [RAPATRIER](RAPATRIER/spec.md) — faire redescendre ce que la voiture a déposé : les quatre dossiers du serveur en un paquet, depuis un téléphone | 🧑 |
 | [MOUVEMENT](MOUVEMENT/spec.md) — une seule notion de « est-ce qu'on ralentit ? » : deux compteurs se contredisent depuis le 8 septembre, et la boîte reste bloquée ou monte à contretemps | ⬜ |

@@ -83,16 +83,23 @@ Pour un NAS Synology et Portainer, la procédure détaillée est plus bas :
 
 **Conduite** — la vitesse, le rapport, le régime, et les commandes de conduite
 sous les deux cadrans. Rien d'autre : le choix de l'affichage et celui de la
-source sont passés en **Configuration**, le son et le verrou d'écran en haut à
+source sont passés en **Paramètres**, le son et le verrou d'écran en haut à
 droite avec l'aide — ce sont des commandes d'appareil, pas de conduite. Le
 volume reste sous les cadrans, c'est un réglage qu'on pose une fois.
+
+**Une rangée de profils épinglés** permet de changer le bruit du moteur en
+roulant, sans quitter les cadrans. Elle n'apparaît qu'à partir de deux profils
+épinglés — un bouton unique qu'on ne peut pas désactiver n'est pas un choix — et
+la liste complète reste dans Paramètres. Ses cibles font 44 pixels de haut, 84
+en plein écran : mesuré, parce qu'un bouton visé au doigt sur une route ne se
+règle pas à l'estime.
 
 **L'écran occupe toute la place qu'on lui donne**, plein écran ou non. Il était
 borné à 60 rem de large et se dimensionnait sur son contenu, ce qui laissait
 240 pixels de largeur et 343 de hauteur inutilisés sur un écran de 1200 × 800 —
 sans conséquence tant qu'on supposait qu'on roulait en plein écran, ce qui
 n'était pas le cas. Les
-commandes du simulateur, elles, sont sur l'écran **Banc**. Un bouton **Plein
+commandes du simulateur, elles, sont dans l'écran **Avancé**. Un bouton **Plein
 écran** masque la barre du haut : l'affichage occupe toute la hauteur et les
 commandes deviennent de grandes touches. On en sort par la **flèche de retour**,
 à gauche de la rangée, à l'écart des autres et d'une autre couleur — l'écart est
@@ -124,7 +131,7 @@ repos, où la touche affiche toujours « D » et le tempérament revient à « r
 — la garder en « S » ferait lire une lettre et repartir sur l'autre réglage. Les
 touches qui ne commandent réellement rien, elles, sont estompées.
 
-Cet écran a **deux visages**, choisis en **Configuration** › *Affichage de la
+Cet écran a **deux visages**, choisis en **Paramètres** › *Affichage de la
 conduite* :
 
 - **Cadrans** — un tableau de bord. Le compteur de vitesse et le compte-tours
@@ -163,12 +170,23 @@ est vu de la place du conducteur. Le redessiner en perspective demandait de
 remesurer ce qu'un rendu continu coûte à la régularité du son, pour un décor dont
 rien ne se lit. Le son passe avant.
 
-**Télémétrie** — tout ce qui alimente le son : vitesse brute et lissée, écart de
-lissage, pente, accélération, qualité du signal GPS, régime, régime entendu,
-charge, état de la transmission, régime que donnerait chaque rapport, gain et
-vitesse de lecture de chaque couche sonore, niveau de sortie. C'est aussi là que
-se lit l'état de la **capture du trajet** : ce qu'elle retient, ce qui est parti,
-et ce qui l'empêche de partir.
+**Télémétrie** — quatre valeurs de **santé du signal**, en grand et lisibles en
+roulant : la précision annoncée par le GPS, le temps depuis la dernière mesure,
+la vitesse lissée à côté de la brute, l'état du son. Elles répondent à la seule
+question qu'on se pose au volant — est-ce que ça marche, et sinon où ça casse.
+La précision passe en couleur d'alerte au-delà du seuil du profil, et le temps
+depuis la dernière mesure au-delà de trois secondes.
+
+Cet écran **reste ouvert en roulant** : lire n'est pas régler, il n'a aucun
+champ modifiable, et c'est le seul endroit d'où l'on voit ce que le GPS donne
+vraiment pendant un trajet.
+
+Le reste — dix sections — tient sous un repli intitulé *Avancé — à lire à
+l'arrêt* : vitesse brute et lissée, écart de lissage, pente, accélération,
+qualité du signal, régime, régime entendu, charge, état de la transmission,
+régime que donnerait chaque rapport, gain et vitesse de lecture de chaque couche,
+niveau de sortie, et l'état de la **capture du trajet**. C'est un avertissement,
+pas un verrou : il s'ouvre au toucher.
 
 Elle porte aussi de quoi **redemander une position en roulant**. Passer par `P`
 puis `D` relance déjà la localisation, mais au prix du son coupé et d'une capture
@@ -203,30 +221,54 @@ allumé, et si l'autorisation de géolocalisation est retenue d'une session à
 l'autre. Cette dernière est relevée au chargement de la page, avant tout suivi :
 plus tard, elle vaudrait « accordée » dans tous les cas.
 
-**Configuration** — deux modes. En **simplifié**, la vue est courte : la
-création guidée, les profils, le fonctionnement hors réseau. En **avancé**, la
-cinquantaine de réglages détaillés s'ajoute dessous, en curseur et en saisie,
-appliqués immédiatement, groupés par section — moteur, transmission, signal,
-caractère, mixage, couches. Aucun réglage ne disparaît en simplifié : ils
-attendent. Le choix du mode est une préférence de l'appareil, comme le volume :
-il se retient et ne voyage pas avec un profil partagé.
+**Paramètres** — la vue courte : les trois curseurs globaux, la création guidée,
+les profils, les deux effets sonores qu'on coupe au volant — pétarade et clac de
+boîte —, le fonctionnement hors réseau.
 
-C'est aussi là qu'on gère les profils et qu'on analyse les échantillons.
+**Avancé** — la cinquantaine de réglages détaillés, en curseur et en saisie,
+appliqués immédiatement, groupés par section : moteur, transmission, signal,
+caractère, mixage, couches. C'est aussi là qu'on analyse les échantillons.
+
+Les deux écrans étaient un seul jusqu'au 14 septembre 2026, avec une bascule
+*Simplifié / Avancé* que n'importe qui cochait, y compris en roulant. Ils sont
+maintenant deux onglets, et le second **ne s'ouvre qu'à l'arrêt** — voir « La
+garde » ci-dessous.
+
+### La garde
+
+Un écran de réglage de fond se règle posé, pas au volant. L'onglet **Avancé** est
+donc fermé tant que la vitesse vient du GPS, sauf si elle est nulle depuis trente
+secondes **et** que l'application est au repos. Sous simulateur ou rejeu, il n'y
+a pas de garde : c'est précisément quand on règle que la vitesse n'est pas nulle.
+
+L'onglet reste **visible et grisé** plutôt que de disparaître — un onglet qui va
+et vient déplace ses voisins sous le doigt. Il reste cliquable, et son écran dit
+la raison et le temps restant.
+
+La garde regarde d'où vient la vitesse, jamais quel appareil on croit être :
+l'application le sait de source sûre, là où reconnaître une voiture à la chaîne
+d'agent du navigateur reste un pari non vérifié.
 
 **Une bande de défilement longe le bord gauche de chaque écran qui se lit en
-colonne** — configuration, télémétrie, étalonnage, compte, aide : le glissement
+colonne** — paramètres, télémétrie, atelier, compte, aide : le glissement
 n'y dérègle rien. Elle ne paraît qu'en voiture et sur téléphone, l'appareil
 étant deviné au démarrage et corrigeable dans l'écran Compte ; au poste de
 travail on fait défiler à la molette. L'écran de conduite n'en a pas, faute de
 défiler. Les curseurs, eux, rendent partout le glissement vertical à la page et
 ne gardent que l'horizontal.
 
-**Étalonnage** — un protocole guidé en six étapes : rouler en ville, sur route,
-sur autoroute, puis une accélération franche, une décélération pied levé et un
-freinage franc. Chacune s'enregistre à part et **juge si elle a bien été
-faite** : une « accélération franche » qui n'atteint pas le critère est refusée,
-et la raison est dite, plutôt que de donner une charge fausse. Un récapitulatif
-met ensuite le mesuré face au réglé.
+**L'étalonnage n'a plus d'écran** depuis le 14 septembre 2026. Il en avait un —
+un protocole guidé en six étapes, à exécuter en roulant — et le serveur fait
+désormais la même chose tout seul, en relisant les trajets ordinaires. L'écran
+de conduite propose le profil mesuré quand il y a de quoi conclure.
+
+Ce qui disparaît avec ce panneau : le déclenchement manuel d'une trace et la
+liste locale des traces. La capture, elle, démarre seule au démarrage du GPS et
+se dépose par tranches, et c'est avec elle qu'on rejoue un trajet au bureau.
+
+Ce que les six étapes mesuraient — ville, route, autoroute, accélération
+franche, décélération pied levé, freinage franc — reste le vocabulaire du
+calcul, et le code qui l'exploite est intact.
 
 Ce que l'étalonnage mesure devient une **couche** par-dessus les profils. Un
 profil décrit un son — le caractère d'un moteur, sa boîte, son mixage ;
@@ -264,7 +306,7 @@ compte ici est rangé en bas, replié : c'est le geste rare, et le seul qui fass
 perdre quelque chose.
 
 Il est apparu le 13 septembre 2026, quand la section du compte a quitté
-**Configuration** : le chemin normal va de la voiture au poste de travail, et
+**Paramètres** : le chemin normal va de la voiture au poste de travail, et
 c'est sur le poste, clavier sous les doigts, qu'on enregistre son compte. Un
 rappel escamotable signale son existence à partir de la deuxième ouverture — au
 premier lancement on veut rouler, pas lire —, et **il repasse tant que le compte
@@ -290,7 +332,13 @@ ce navigateur tant qu'on ne l'enregistre pas. Dans la voiture, il propose de se
 donner un code plutôt que de s'enregistrer — c'est la même distinction que tient
 l'écran Compte, et l'accueil ne peut pas proposer l'inverse de ce qu'il dira.
 
-**Banc** — conduire une vitesse à la main, sans rouler : les deux pédales, le
+**Banc** — en tête de l'écran **Avancé**, avec le choix de la source, et jamais
+sur l'appareil « voiture ». Il y a rejoint le réglage le 14 septembre 2026 :
+régler une inertie ou un frein moteur sans l'entendre n'a pas de sens, et il n'y
+a rien à entendre à l'arrêt sans lui. Passer au simulateur lève au passage la
+garde de cet écran, puisque la vitesse ne vient plus du GPS.
+
+Conduire une vitesse à la main, sans rouler : les deux pédales, le
 curseur d'allure maintenue, et les réglages de ce que la source fabrique
 (cadence, bruit de mesure, précision annoncée). Il rappelle la vitesse, le
 régime et le rapport, de façon à se suffire sans regarder les cadrans. Ces
@@ -1421,9 +1469,9 @@ compte en porte zéro à trois.
 
 | Rôle | Ce qu'il ouvre |
 |---|---|
-| `conduite` | conduire, la télémétrie, les réglages, l'étalonnage, le banc |
-| `atelier` | fabriquer des moteurs et des boîtes — déposer sur `/engines/` et `/gearboxes/` |
-| `synthese` | régler un timbre |
+| `conduite` | conduire, la télémétrie, les réglages simples et avancés |
+| `atelier` | l'écran **Atelier** : créer et tenir les profils, régler le son, fabriquer des moteurs et des boîtes — et déposer sur `/engines/` et `/gearboxes/` |
+| `synthese` | le volet **Synthèse** de l'atelier : régler un timbre |
 
 **Tout le monde a tout, et rien n'est encaissé.** Ce qui est offert à n'importe
 quel compte est une valeur, pas une règle :
@@ -1457,17 +1505,25 @@ trois : le drapeau de construction qui cachait le banc a disparu le
 |---|---|---|---|
 | Conduite | ✅ | ✅ | ✅ |
 | Télémétrie | ✅ | ✅ | ✅ |
-| Configuration | ✅ | ✅ | ✅ |
+| Paramètres | ✅ | ✅ | ✅ |
+| Avancé | à l'arrêt | à l'arrêt | à l'arrêt |
 | Compte | ✅ | ✅ | ✅ |
-| Étalonnage | ❌ | ✅ | ✅ |
-| Banc (simulateur) | ❌ | ✅ | ✅ |
-| Synthèse (timbre) | ❌ | ❌ | ✅ |
+| Banc et sources, dans Avancé | ❌ | à l'arrêt | à l'arrêt |
+| Atelier (rôle `atelier`) | ❌ | ❌ | à l'arrêt |
 
-L'étalonnage se fait tout seul depuis les traces ; son panneau manuel est un
-reste. Le banc et la synthèse sont des écrans qu'on regarde à l'arrêt, un moteur
-à la main. Et la rangée des sources de vitesse disparaît en voiture : il n'y
-reste que le GPS, et un seul bouton qu'on ne peut pas désactiver n'est pas un
-choix.
+L'étalonnage se fait tout seul depuis les traces, et son panneau manuel a été
+retiré. L'atelier est un écran qu'on regarde à l'arrêt, un moteur à la main. Et
+la rangée des sources de vitesse n'existe pas en voiture : il n'y reste que le
+GPS, et un seul bouton qu'on ne peut pas désactiver n'est pas un choix.
+
+**L'atelier** rassemble sous un onglet unique ce qui avait quatre onglets à lui
+seul : les profils — créer, nommer, dupliquer, exporter, partager —, le son
+(mixage et couches) et le banc de synthèse. Il porte sa navigation interne en
+trois volets, et la synthèse y demande le rôle `synthese` en plus.
+
+Ce qui reste dans **Paramètres**, c'est ce qu'un conducteur fait de ce qu'on lui
+a livré : choisir un profil, l'épingler, l'ajuster aux trois curseurs, le rendre
+tel qu'il était, en recevoir de nouveaux. Il ne fabrique pas.
 
 **L'appareil se devine, et se corrige** depuis l'écran du compte ; le choix reste
 sur cet appareil et survit à une réouverture. Le marqueur qui reconnaît le
@@ -1528,10 +1584,15 @@ est déjà compressé —, et jamais une plage d'octets, le client demandant alo
 les octets d'un fichier et non d'un flux. Le serveur qui a remplacé nginx ne le
 faisait plus : la voiture tirait 310 ko de JavaScript là où gzip en fait 99.
 
-**Trois écrans se chargent à la demande** : l'étalonnage, le banc et la
-synthèse, qu'une voiture n'ouvre jamais. Les autres arrivent d'emblée, et c'est
-délibéré — ils s'ouvrent au volant, donc les différer déplacerait leur
+**Trois écrans se chargent à la demande** : le banc, la synthèse et l'atelier,
+qu'une voiture n'ouvre jamais. Les autres arrivent d'emblée, et
+c'est délibéré — ils s'ouvrent au volant, donc les différer déplacerait leur
 téléchargement là où il n'y a pas de réseau.
+
+**Ce que ça pèse, mesuré le 14 septembre 2026.** Sortir l'atelier du morceau
+principal a fait tomber celui-ci de 107,4 à 98,1 ko compressés, soit 9 % de
+moins téléchargés par la voiture. L'atelier lui-même fait 12,4 ko, et elle ne
+les prend jamais.
 
 ### Ce qui n'a pas encore été mesuré
 
@@ -1659,7 +1720,7 @@ Internet n'y démarre pas. Un service worker met en cache l'application et les
 échantillons : une fois cela fait, tout fonctionne sans connexion, et le serveur
 n'a plus besoin d'être joignable pour rouler — seulement pour mettre à jour.
 
-Dans l'écran **Configuration**, section *Hors réseau* :
+Dans l'écran **Paramètres**, section *Hors réseau* :
 
 - **Préparer hors réseau** met en cache tous les échantillons du profil sans
   attendre d'en avoir besoin, et affiche ce qui est déjà disponible. À faire
@@ -1704,11 +1765,10 @@ Les recherches dans le cache se font donc avec `ignoreVary`.
 
 ## Référence des réglages
 
-Tout est dans l'écran **Configuration**, appliqué immédiatement. Les sections qui
-suivent — moteur, transmission, signal de vitesse, mixage, caractère, couches —
-sont celles du **mode avancé** : la bascule en haut de l'écran les fait
-apparaître. En mode simplifié, elles sont remplacées par quelques curseurs
-globaux qui les commandent.
+Tout est appliqué immédiatement. Les sections qui suivent — moteur,
+transmission, signal de vitesse, mixage, caractère, couches — sont celles de
+l'écran **Avancé**, qui ne s'ouvre qu'à l'arrêt. L'écran **Paramètres** les
+remplace par quelques curseurs globaux qui les commandent.
 
 ### Origine du son
 
@@ -1749,7 +1809,7 @@ boutons sous celui des profils. Il en est **retiré** le 14 septembre 2026, à l
 demande de David : cette ligne de douze boutons prenait 58 pixels de hauteur à
 l'écran qui doit se lire d'un coup d'œil, et ses cadrans les lui reprennent —
 293 pixels de disque avec elle, 366 sans. Le choix reste entier en
-**Configuration**, avec l'échappement et le point d'écoute.
+**Avancé**, avec l'échappement et le point d'écoute.
 
 Chaque liste garde une entrée pour la valeur qui ne tombe sur aucun palier :
 un réglage fin fait au banc ne se fait pas écraser en ouvrant l'écran. Pour le
@@ -1777,7 +1837,16 @@ le son n'avait pas été activé, changer d'origine ne l'allume pas.
 
 *Généré à l'avance* ne demande rien de plus qu'*enregistré* — c'est un dossier
 d'échantillons comme un autre, produit par
-[`scripts/generate-bank/`](scripts/generate-bank/README.md). Le générateur
+[`scripts/generate-bank/`](scripts/generate-bank/README.md).
+
+**Le banc de synthèse rend de quoi le lancer** : la section *Fabriquer la
+banque* donne la définition à enregistrer et la ligne qui la consomme, avec les
+réglages qu'on vient d'entendre. La chaîne tourne **sur le poste** et non sur le
+serveur — elle lance un binaire natif compilé là, quand le serveur est une image
+Linux ARM64 sur le NAS. Ce qu'on retire n'est pas le terminal, c'est d'avoir à
+retrouver les paramètres après avoir réglé à l'oreille.
+
+Le générateur
 charge la **même captation d'échappement** que le mode direct, choisie par
 `exhaustResponse` dans la définition de banque : il fabriquait sa propre
 résonance, qui creusait le médium et laissait passer un souffle aigu battant à
@@ -1810,14 +1879,31 @@ son profil d'usine — le V8 des deux profils livrés. Aucun profil ne se retrou
 sans moteur à décrire, et basculer son origine en *généré en direct* donne
 toujours un son.
 
-### Mode simplifié
+### Les trois curseurs du conducteur
 
 Le guide de création sait déduire une cinquantaine de réglages de quatre
 réponses. Ce savoir ne servait qu'une fois, à la création ; les curseurs globaux
-le rendent disponible en continu. Ils **écrasent** les réglages qu'ils
-commandent — un curseur global recalcule, il ne peut pas faire autrement — et un
-bouton **Revenir aux réglages d'avant** rend le profil tel qu'il était avant le
-premier mouvement.
+le rendent disponible en continu.
+
+**Ils se posent à côté du profil, pas dedans**, depuis le 14 septembre 2026.
+C'est une **couche**, comme l'étalonnage : le profil livré reste intact, la
+couche se réapplique par-dessus la version qui arrive de l'atelier, et le bouton
+**Enlever mes ajustements** la retire.
+
+La raison est que le conducteur ne fabrique plus de profil : il ajuste ceux
+qu'on lui livre. Écrire dedans posait la question du jour où l'atelier en
+redépose une version corrigée, et aucune des deux réponses n'était bonne —
+écraser son réglage, ou le laisser sur une photo périmée qui ne reçoit plus rien.
+
+La couche pèse **trois nombres**, un par curseur, et non les trente valeurs
+qu'ils recalculent : c'est ce que permet leur inversibilité, décrite juste en
+dessous. Elle est rangée **par profil** — rendre sportif un V8 ne dit rien du
+quatre cylindres d'à côté — et ne voyage pas avec un profil partagé, comme le
+volume.
+
+Elle remplace le bouton *Revenir aux réglages d'avant*, qui ne vivait que le
+temps d'une session et sur un seul appareil : on bricolait en roulant, on coupait
+le contact, et le lendemain le recours avait disparu.
 
 Aucun des deux n'est enregistré dans le profil : leur position s'en **déduit**.
 Le curseur reflète donc ce qu'on a réellement sous les doigts, y compris sur un
@@ -2149,10 +2235,14 @@ calcul, faute de savoir ce que fait la voiture. `fullLoadAccelMs2` vaut 2 m/s²
 sur le profil Route — une valeur raisonnée, jamais mesurée, sur un véhicule qui
 en fait bien davantage. L'étalonnage remplace ce raisonnement par un relevé.
 
-Il se trouve **en bas de l'écran Télémétrie**. Tout se passe dans la voiture :
-l'analyse ne demande que du calcul, et le résultat se voit tout de suite.
+**Il n'a plus d'écran** depuis le 14 septembre 2026 : le serveur relit les
+trajets ordinaires et en tire le profil de la vraie voiture, que l'écran de
+conduite propose quand il a de quoi conclure. La section qui suit décrit le
+protocole manuel tel qu'il a existé, parce que c'est lui qui a défini ce que le
+calcul cherche encore aujourd'hui — les six étapes, leurs critères, ce qu'elles
+mesurent.
 
-### La marche à suivre
+### La marche à suivre, quand elle était manuelle
 
 1. Démarrer l'application, source **GPS**.
 2. Lire la consigne de l'étape, et son **critère**. Le critère est annoncé avant
@@ -2323,8 +2413,8 @@ s'y consulte au volant : ce qui naît en roulant y restait, et comprendre après
 coup ce que l'application a vécu demandait de deviner. Elle peut désormais
 **déposer toute seule** sur le serveur ce qu'elle produit.
 
-**Rien n'est envoyé par défaut.** Le réglage est dans l'écran de configuration,
-en mode avancé, et il a trois positions :
+**Rien n'est envoyé par défaut.** Le réglage est dans l'écran **Avancé**, et il
+a trois positions :
 
 | Position | Ce qui part |
 |---|---|
@@ -3298,6 +3388,7 @@ suit pas.
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
 | 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **14 tickets sur 15 ; Google est configuré sur le NAS et vérifié ; restent l'essai hors réseau en voiture et « j'ai oublié »** |
 | 52 | Accueillir au premier lancement : un écran court le compte en tête, une visite à bulles sur l'interface, de vrais onglets, et une aide qui répond au lieu d'accueillir | **livré ; reste l'essai au volant** |
+| 53 | Trois niveaux d'écran, et ce qui les sépare n'est pas un droit : conduire, régler à l'arrêt, fabriquer en atelier. La voiture télécharge 9 % de moins et montre cinq onglets | **livré ; reste l'essai au volant** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

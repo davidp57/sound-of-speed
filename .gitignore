@@ -23,6 +23,12 @@ public/audio/*
 !public/audio/gm-ls-long-header/
 !public/audio/bmw-i6-3l/
 !public/audio/subaru-ej25/
+
+# Le dossier de travail de la chaîne de fabrication, qui vit **dans** la banque
+# qu'elle produit : ré-inclure les quatre banques livrées le ramenait avec
+# elles. Un WAV non compressé y pèse 260 ko, et une génération complète en
+# écrit une centaine.
+public/audio/*/.brut/
 tsconfig.tsbuildinfo
 
 # Fichier de mots de passe produit par `npm run htpasswd`. Il n'a rien à faire
