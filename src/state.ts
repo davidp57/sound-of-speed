@@ -3402,7 +3402,12 @@ export function addProfile(profile: Profile): void {
 }
 
 export function restoreFactoryProfiles(): number {
-  const missing = missingFactoryProfiles(profiles.value)
+  // Les banques listées par le serveur entrent dans le compte : un profil réglé
+  // sur une banque déposée n'est pas livré, mais il se propose chez qui l'a.
+  const missing = missingFactoryProfiles(
+    profiles.value,
+    banks.value.map((banque) => banque.name),
+  )
   if (missing.length > 0) profiles.value = [...profiles.value, ...missing]
   return missing.length
 }

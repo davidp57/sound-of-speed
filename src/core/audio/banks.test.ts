@@ -32,23 +32,23 @@ describe('la découverte des banques', () => {
   it('rend les dossiers de /audio/ et ce qu’ils contiennent', async () => {
     const { impl } = reseau({
       '/audio/': listage([
-        { name: 'procar', type: 'directory' },
+        { name: 'v8-musclecar', type: 'directory' },
         { name: 'v8-crossplane', type: 'directory' },
       ]),
-      '/audio/procar/': listage([
-        { name: 'procar-on-low.wav', type: 'file' },
-        { name: 'procar-on-high.wav', type: 'file' },
+      '/audio/v8-musclecar/': listage([
+        { name: 'on-low.wav', type: 'file' },
+        { name: 'on-high.wav', type: 'file' },
       ]),
       '/audio/v8-crossplane/': listage([{ name: 'v8-on-low.flac', type: 'file' }]),
     })
 
     const banques = await fetchBanks(impl)
 
-    expect(banques.map((banque) => banque.name)).toEqual(['procar', 'v8-crossplane'])
     // Triés : la liste s'affiche, et un ordre qui bouge d'un chargement à
     // l'autre se lit mal.
-    expect(banques[0]?.files).toEqual(['procar-on-high.wav', 'procar-on-low.wav'])
-    expect(banques[1]?.files).toEqual(['v8-on-low.flac'])
+    expect(banques.map((banque) => banque.name)).toEqual(['v8-crossplane', 'v8-musclecar'])
+    expect(banques[0]?.files).toEqual(['v8-on-low.flac'])
+    expect(banques[1]?.files).toEqual(['on-high.wav', 'on-low.wav'])
   })
 
   it('rend une liste vide quand /audio/ ne se liste pas', async () => {
@@ -76,22 +76,22 @@ describe('la découverte des banques', () => {
       '/audio/': listage([
         { name: 'note.txt', type: 'file' },
         { name: 'egare.wav', type: 'file' },
-        { name: 'procar', type: 'directory' },
+        { name: 'v8-musclecar', type: 'directory' },
       ]),
-      '/audio/procar/': listage([{ name: 'procar-on-low.wav', type: 'file' }]),
+      '/audio/v8-musclecar/': listage([{ name: 'on-low.wav', type: 'file' }]),
     })
 
     const banques = await fetchBanks(impl)
 
-    expect(banques.map((banque) => banque.name)).toEqual(['procar'])
+    expect(banques.map((banque) => banque.name)).toEqual(['v8-musclecar'])
   })
 
   it('ne compte que les fichiers audio d’une banque', async () => {
     const { impl } = reseau({
-      '/audio/': listage([{ name: 'procar', type: 'directory' }]),
-      '/audio/procar/': listage([
-        { name: 'procar-on-low.wav', type: 'file' },
-        { name: 'procar-on-low.flac', type: 'file' },
+      '/audio/': listage([{ name: 'v8-musclecar', type: 'directory' }]),
+      '/audio/v8-musclecar/': listage([
+        { name: 'on-low.wav', type: 'file' },
+        { name: 'on-low.flac', type: 'file' },
         { name: 'notes.md', type: 'file' },
         { name: 'brouillons', type: 'directory' },
       ]),
@@ -99,23 +99,23 @@ describe('la découverte des banques', () => {
 
     const banques = await fetchBanks(impl)
 
-    expect(banques[0]?.files).toEqual(['procar-on-low.flac', 'procar-on-low.wav'])
+    expect(banques[0]?.files).toEqual(['on-low.flac', 'on-low.wav'])
   })
 
   it('n’est pas emportée par une banque qui ne se liste pas', async () => {
     const { impl } = reseau({
       '/audio/': listage([
         { name: 'ferme', type: 'directory' },
-        { name: 'procar', type: 'directory' },
+        { name: 'v8-musclecar', type: 'directory' },
       ]),
-      '/audio/procar/': listage([{ name: 'procar-on-low.wav', type: 'file' }]),
+      '/audio/v8-musclecar/': listage([{ name: 'on-low.wav', type: 'file' }]),
     })
 
     const banques = await fetchBanks(impl)
 
     // La banque muette reste dans la liste, vide : son dossier existe, c'est son
     // contenu qu'on ignore.
-    expect(banques.map((banque) => banque.name)).toEqual(['ferme', 'procar'])
+    expect(banques.map((banque) => banque.name)).toEqual(['ferme', 'v8-musclecar'])
     expect(banques[0]?.files).toEqual([])
   })
 
@@ -131,7 +131,7 @@ describe('la découverte des banques', () => {
 })
 
 describe('les fichiers qu’une banque n’a pas', () => {
-  const banque = { name: 'procar', files: ['a.wav', 'b.wav'] }
+  const banque = { name: 'v8-musclecar', files: ['a.wav', 'b.wav'] }
 
   it('nomme ceux que le profil déclare en vain', () => {
     expect(missingFiles(banque, ['a.wav', 'c.wav', 'd.wav'])).toEqual(['c.wav', 'd.wav'])
@@ -155,12 +155,12 @@ describe('les fichiers qu’une banque n’a pas', () => {
 describe('les banques qu’un profil utilise', () => {
   it('les rend sans doublon', () => {
     expect(
-      usedBanks([{ sampleDir: 'procar' }, { sampleDir: 'v8' }, { sampleDir: 'procar' }]),
-    ).toEqual(['procar', 'v8'])
+      usedBanks([{ sampleDir: 'v8-musclecar' }, { sampleDir: 'v8' }, { sampleDir: 'v8-musclecar' }]),
+    ).toEqual(['v8-musclecar', 'v8'])
   })
 
   it('ignore un profil sans banque', () => {
-    expect(usedBanks([{ sampleDir: '' }, { sampleDir: 'procar' }])).toEqual(['procar'])
+    expect(usedBanks([{ sampleDir: '' }, { sampleDir: 'v8-musclecar' }])).toEqual(['v8-musclecar'])
   })
 
   it('rend une liste vide sans profil', () => {

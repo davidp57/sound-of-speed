@@ -27,8 +27,8 @@ beforeEach(() => {
   writeFileSync(join(application, 'audio', 'gm-ls', 'on-750.flac'), OCTETS_LIVRES)
 
   // Et un volume d'échantillons déposés, comme sur un serveur en service.
-  mkdirSync(join(echantillons, 'procar'), { recursive: true })
-  writeFileSync(join(echantillons, 'procar', 'on-low.wav'), 'des octets déposés')
+  mkdirSync(join(echantillons, 'v8-musclecar'), { recursive: true })
+  writeFileSync(join(echantillons, 'v8-musclecar', 'on-low.wav'), 'des octets déposés')
 })
 
 afterEach(() => {
@@ -61,14 +61,14 @@ describe('les deux sources d’échantillons', () => {
     expect(entrees).toEqual(
       expect.arrayContaining([
         { name: 'gm-ls', type: 'directory' },
-        { name: 'procar', type: 'directory' },
+        { name: 'v8-musclecar', type: 'directory' },
       ]),
     )
   })
 
   it('sert un échantillon de chacune', async () => {
     expect((await serveur().request('/audio/gm-ls/on-750.flac')).status).toBe(200)
-    expect((await serveur().request('/audio/procar/on-low.wav')).status).toBe(200)
+    expect((await serveur().request('/audio/v8-musclecar/on-low.wav')).status).toBe(200)
   })
 
   it('rend le listage au format que le cœur attend', async () => {

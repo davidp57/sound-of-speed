@@ -1990,8 +1990,16 @@ profil. Au premier lancement, il se déduit du profil actif.
 
 ### Profils
 
-**Un** profil est livré avec l'application — le **V8** —, et le bouton
-**Profils d'usine** le réintroduit si on l'a supprimé.
+**Trois** profils sont livrés avec l'application — **V8**, **V8 collecteur
+long** et **L4**, un par banque produite au banc —, et le bouton **Profils
+d'usine** réintroduit ceux qu'on a supprimés.
+
+Ce bouton propose aussi les profils d'usine réglés sur une banque **déposée**,
+mais seulement **quand le serveur liste cette banque**. Ces profils-là ne partent
+pas avec l'application : leurs échantillons sont des prises sur de vraies
+voitures, que le projet n'a pas le droit de redistribuer. Chez qui a la banque,
+le profil existe donc ; chez les autres, il n'est jamais proposé, parce qu'un
+profil sans ses échantillons est muet.
 
 Il y en avait deux, Route et Sport, et leur différence tenait à leurs seuils de
 passage. Ceux-ci se déduisant du rupteur et du tempérament, garder deux profils
@@ -2014,8 +2022,11 @@ d'ailleurs. Trois conséquences :
 
 Ce qu'un moteur **n'emporte pas** : les rapports, le pont, la façon de passer
 les vitesses, ni les réglages de mesure du signal. Changer de moteur change le
-son, pas la conduite. Les moteurs livrés sont les deux profils d'usine — leurs
-rupteurs diffèrent de deux mille tours, ce sont bien deux moteurs.
+son, pas la conduite. Les moteurs livrés sont ceux des trois profils d'usine,
+et **ils partagent le même étagement** — sept rapports, pont 3,7. Leurs rupteurs
+sont assez voisins pour que cela tienne (6 500, 6 500 et 6 300) ; ce ne serait
+plus vrai d'un moteur qui monte beaucoup plus haut, et la question est
+ouverte.
 
 **Route** — calibré sur les vitesses que l'on pratique vraiment. **Sept
 rapports** depuis le 11 septembre 2026, dont une septième longue pour
