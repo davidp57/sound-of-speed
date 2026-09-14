@@ -6,7 +6,6 @@ import {
   createFactoryProfiles,
   createRoadProfile,
   finalDriveFor,
-  GM_LS_V8,
   rpmAtSpeed,
 } from './defaults'
 import { Engine } from '../engine/engine'
@@ -47,26 +46,24 @@ describe('rpmAtSpeed et finalDriveFor', () => {
 })
 
 describe('profils livrés', () => {
-  it("en livre un seul, nommé d'après son moteur", () => {
-    // Il y en avait deux, Route et Sport, et leur différence tenait à leurs
-    // seuils de passage. Ceux-ci se déduisent maintenant du rupteur et du
-    // tempérament : garder deux profils reviendrait à proposer deux fois le même
-    // moteur avec deux tempéraments figés. Un profil se nomme donc d'après ce
-    // qu'on entend, et non d'après une façon de conduire.
+  it("les nomme d'après leur moteur, et ne livre que des banques redistribuables", () => {
+    // Un profil se nomme d'après ce qu'on entend, et non d'après une façon de
+    // conduire : les seuils de passage se déduisent du rupteur et du
+    // tempérament, pas d'un profil « Route » ou « Sport ».
     const profiles = createFactoryProfiles()
 
-    // La démonstration est **première**, et ce n'est pas un détail de rangement :
-    // au tout premier lancement, le profil actif est le premier de cette liste.
-    // Le V8 désigne une banque déposée sur le serveur, que celui qui découvre le
-    // projet n'a pas ; la démonstration, elle, est livrée avec l'application.
-    expect(profiles.map((p) => p.id)).toEqual(['demo', 'v8'])
-    expect(profiles[0]!.sampleDir).toBe('demo')
+    // Le V8 croisé est **premier**, et ce n'est pas un détail de rangement : au
+    // tout premier lancement, le profil actif est le premier de cette liste.
+    // David les a écoutés le 14 septembre 2026 — « les V8 sonnent bien mieux que
+    // les 4L ».
+    expect(profiles.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'subaru-ej25'])
+    expect(profiles[0]!.sampleDir).toBe('gm-ls')
   })
 
   it('livre le calibrage de la route, et non celui de Sport', () => {
     // Rupteur à 6 500, celui du GM LS livré, et des rapports placés sur les
     // vitesses qu'on pratique vraiment. Le nerf se prend au tempérament.
-    const v8 = createFactoryProfiles().find((p) => p.id === 'v8')!
+    const v8 = createFactoryProfiles().find((p) => p.id === 'gm-ls')!
     expect(v8.engine.redlineRpm).toBe(createRoadProfile().engine.redlineRpm)
     expect(v8.drivetrain.finalDrive).toBe(createRoadProfile().drivetrain.finalDrive)
   })
@@ -75,29 +72,32 @@ describe('profils livrés', () => {
     // Un profil « Route » ou « Sport » enregistré doit garder sa base à lui,
     // sinon il se voit complété avec les valeurs d'un autre.
     //
-    // La démonstration y figure aussi, et pas seulement pour la forme :
-    // réinitialiser une de ses sections cherche ici son profil d'origine. Sans
-    // elle, on lui rendrait les valeurs du V8 — un mixage réglé sur une tout
-    // autre banque.
-    expect(knownFactoryProfiles().map((p) => p.id)).toEqual(['demo', 'v8', 'route', 'procar'])
+    // Le V8 de Procar y figure bien qu'il ne soit plus livré : c'est celui que
+    // David a enregistré, et réinitialiser une de ses sections cherche ici son
+    // profil d'origine. Sans lui, on lui rendrait le mixage d'une autre banque.
+    expect(knownFactoryProfiles().map((p) => p.id)).toEqual([
+      'gm-ls',
+      'gm-ls-long-header',
+      'subaru-ej25',
+      'v8',
+      'route',
+      'procar',
+    ])
   })
 
-  it('les fait sonner par échantillons, et décrit quand même leur moteur', () => {
-    // L'origine enregistrée est la seule gréée aujourd'hui, et celle sur
-    // laquelle les deux profils sont réglés. La définition de moteur est là
-    // malgré tout : basculer un profil en direct doit donner un son, pas un
-    // formulaire de vingt-sept nombres à remplir avant d'entendre quoi que ce
-    // soit. Les deux profils imitent un V8, comme leur banque.
-    const v8 = createFactoryProfiles().find((p) => p.id === 'v8')!
-    expect(v8.soundSource).toBe('recorded')
-    expect(v8.engineDefinition).toEqual(GM_LS_V8)
+  it('les fait tous sonner par échantillons, et décrit quand même leur moteur', () => {
+    // Les trois banques livrées sont produites au banc, donc « générées à
+    // l'avance ». La définition de moteur les accompagne : ce sont les
+    // vingt-neuf nombres qui ont produit ce son-là, et basculer un profil en
+    // direct doit donner un son, pas un formulaire à remplir avant d'entendre
+    // quoi que ce soit.
+    for (const livre of createFactoryProfiles()) {
+      expect(livre.soundSource).toBe('prerendered')
+      expect(livre.engineDefinition?.cylinders).toBe(livre.engine.cylinders)
+    }
 
-    // La démonstration, elle, se déclare pour ce qu'elle est : une banque
-    // produite au banc, donc « générée à l'avance ». Elle décrit un quatre
-    // cylindres et non le V8 livré.
-    const demo = createFactoryProfiles().find((p) => p.id === 'demo')!
-    expect(demo.soundSource).toBe('prerendered')
-    expect(demo.engine.cylinders).toBe(4)
+    const cylindres = createFactoryProfiles().map((p) => p.engine.cylinders)
+    expect(cylindres).toEqual([8, 8, 4])
   })
 
   it('rend des copies neuves à chaque appel', () => {

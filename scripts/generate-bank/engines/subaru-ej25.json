@@ -1,6 +1,6 @@
 {
-  "name": "Quatre cylindres (essai)",
-  "sampleDir": "i4-check",
+  "name": "L4",
+  "sampleDir": "subaru-ej25",
   "engine": "subaru-ej25",
   "idleRpm": 800,
   "redlineRpm": 6300,

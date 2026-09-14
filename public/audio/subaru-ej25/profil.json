@@ -1,5 +1,5 @@
 {
-  "name": "Quatre cylindres (démonstration)",
+  "name": "L4",
   "soundSource": "prerendered",
   "engineDefinition": {
     "cylinders": 4,
@@ -32,7 +32,7 @@
     "inputSampleNoise": 0,
     "headerLength": 10
   },
-  "sampleDir": "demo",
+  "sampleDir": "subaru-ej25",
   "engine": {
     "cylinders": 4,
     "idleRpm": 800,
@@ -193,7 +193,7 @@
       "file": "idle-800.flac",
       "role": "idle",
       "anchorRpm": 800,
-      "gain": 0.1634,
+      "gain": 0.1645,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true

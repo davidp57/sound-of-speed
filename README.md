@@ -61,8 +61,9 @@ docker compose -f docker/docker-compose.yml up -d
 
 **4. Ouvrir**, sur `http://<la machine>:8088`, et appuyer sur **Activer le son**.
 
-L'application joue déjà : une banque de démonstration est livrée avec elle. Ce
-qu'on entend est un moteur **simulé**, pas l'enregistrement d'une vraie voiture
+L'application joue déjà : **trois banques de son** sont livrées avec elle — deux
+V8 et un quatre cylindres, qu'on choisit dans la liste des profils. Ce qu'on
+entend est un moteur **simulé**, pas l'enregistrement d'une vraie voiture
 — pour un vrai son, déposez vos propres enregistrements dans
 `$SPEED_DATA/audio/`, un sous-dossier par banque (voir
 [Les échantillons](#les-échantillons)).
@@ -2552,24 +2553,30 @@ Le dossier `public/audio/` **n'est pas versionné**, volontairement, et le code
 n'y référence rien en dur : chaque profil déclare un sous-dossier et la liste de
 ses couches.
 
-**Une seule exception, `audio/demo/`** : la banque de démonstration, qui est
-livrée avec l'application. C'est un quatre cylindres **simulé**, produit au banc
-par [`scripts/generate-bank/`](scripts/generate-bank/README.md) — quinze prises,
-1,2 Mo en FLAC. Un profil d'usine la désigne, et c'est lui qui joue au tout
-premier lancement : sans elle, une installation neuve serait muette jusqu'à ce
-qu'on ait déposé quelque chose.
+**Trois exceptions** : les banques **produites au banc** par
+[`scripts/generate-bank/`](scripts/generate-bank/README.md), qui sont livrées
+avec l'application. 4,2 Mo en FLAC à elles trois, et un profil d'usine par
+banque.
 
-Elle est simulée pour une raison précise, et pas par goût : une prise sur une
+| Banque | Moteur | Prises | Poids |
+|---|---|---|---|
+| [`gm-ls`](public/audio/gm-ls/LISEZMOI.md) | V8 croisé, GM LS 5,7 L | 18 | 1,5 Mo |
+| [`gm-ls-long-header`](public/audio/gm-ls-long-header/LISEZMOI.md) | le même, collecteur long | 18 | 1,5 Mo |
+| [`subaru-ej25`](public/audio/subaru-ej25/LISEZMOI.md) | quatre cylindres à plat | 15 | 1,2 Mo |
+
+**Le V8 croisé est le premier de la liste**, donc le profil actif au tout premier
+lancement — choisi à l'oreille le 14 septembre 2026. Sans ces banques, une
+installation neuve serait muette jusqu'à ce qu'on ait déposé quelque chose.
+
+Elles sont simulées pour une raison précise, et pas par goût : une prise sur une
 vraie voiture appartient à qui l'a faite. Les banques enregistrées restent donc
-hors du dépôt et hors de l'image, dans un volume — voir
-[`public/audio/demo/LISEZMOI.md`](public/audio/demo/LISEZMOI.md) et la section
+hors du dépôt et hors de l'image, dans un volume — voir la section
 [Licence](#licence).
 
-Dans l'image, cette banque est rangée **hors de** `audio/`, et nginx la ramène
-sous `/audio/demo/` par un alias. Le volume des échantillons se monte sur
-`/usr/share/nginx/html/audio` et masquerait tout ce que l'image y place —
-la démonstration comprise, c'est-à-dire toujours, puisque le volume est monté
-dans la pile livrée.
+Dans l'image, elles sont rangées **hors de** `audio/`, et nginx les ramène sous
+`/audio/<banque>/` par un alias, un par banque. Le volume des échantillons se
+monte sur `/usr/share/nginx/html/audio` et masquerait tout ce que l'image y
+place, c'est-à-dire toujours, puisque le volume est monté dans la pile livrée.
 
 Il faut, par moteur, des boucles stationnaires à régime connu : montée en charge
 bas et haut régime, décélération bas et haut régime, un ralenti, un rupteur.
@@ -3330,8 +3337,10 @@ déployez une version modifiée, ce lien doit mener à votre code, pas à celui-
 | Drizzle, l'ORM du serveur | Drizzle Team | Apache-2.0 |
 | `bcryptjs`, pour le fichier de mots de passe | Daniel Wirtz | BSD-3-Clause |
 
-La [banque de démonstration](public/audio/demo/LISEZMOI.md), elle, est produite
-par ce dépôt et suit sa licence.
+Les trois banques livrées — [`gm-ls`](public/audio/gm-ls/LISEZMOI.md),
+[`gm-ls-long-header`](public/audio/gm-ls-long-header/LISEZMOI.md) et
+[`subaru-ej25`](public/audio/subaru-ej25/LISEZMOI.md) — sont produites par ce
+dépôt et suivent sa licence.
 
 **Aucune banque enregistrée n'est distribuée avec le projet**, et ce n'est pas un
 oubli : une prise sur une vraie voiture appartient à qui l'a faite. Celle qui

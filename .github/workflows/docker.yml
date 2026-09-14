@@ -102,11 +102,16 @@ jobs:
           done
           curl -fsS -o /dev/null http://localhost:8088/index.html
 
-      - name: La démonstration est servie malgré le montage des échantillons
+      - name: Les banques livrées sont servies malgré le montage des échantillons
         run: |
           set -euo pipefail
-          curl -fsS -o /dev/null http://localhost:8088/audio/demo/profil.json
-          curl -fsS -o /dev/null http://localhost:8088/audio/demo/on-800.flac
+          for banque in gm-ls gm-ls-long-header subaru-ej25; do
+            curl -fsS -o /dev/null "http://localhost:8088/audio/$banque/profil.json"
+            # Le listage, que l'alias perd si on ne le lui rend pas : sans lui
+            # l'application ne peut plus énumérer les prises d'une banque.
+            curl -fsS -o /dev/null "http://localhost:8088/audio/$banque/"
+          done
+          curl -fsS -o /dev/null http://localhost:8088/audio/gm-ls/on-750.flac
           test "$(curl -s -o /dev/null -w '%{http_code}' \
             http://localhost:8088/audio/procar/procar-on-low.wav)" = 404
 

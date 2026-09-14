@@ -105,7 +105,7 @@ describe('ouvrir la base', () => {
       id: 'moteur-1',
       accountId: COMPTE,
       name: 'V8',
-      content: { sampleDir: 'demo' },
+      content: { sampleDir: 'gm-ls' },
     })
 
     const seconde = await ouvrir(fichier)
@@ -113,7 +113,7 @@ describe('ouvrir la base', () => {
 
     expect(moteurs).toHaveLength(1)
     expect(moteurs[0]?.name).toBe('V8')
-    expect(moteurs[0]?.content).toEqual({ sampleDir: 'demo' })
+    expect(moteurs[0]?.content).toEqual({ sampleDir: 'gm-ls' })
   })
 })
 

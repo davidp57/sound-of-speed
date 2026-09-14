@@ -22,7 +22,7 @@ describe('les types que le navigateur exige', () => {
 
 describe('un chemin d’URL devient un chemin de fichier', () => {
   it('rend le fichier demandé', () => {
-    expect(cheminSur('/racine', '/audio/demo/on-800.flac')).toContain('on-800.flac')
+    expect(cheminSur('/racine', '/audio/gm-ls/on-750.flac')).toContain('on-750.flac')
   })
 
   it('ne laisse jamais sortir du dossier servi', () => {
