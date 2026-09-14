@@ -8,6 +8,35 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **« Profils d'usine » propose aussi les profils des banques déposées.** Un
+  profil réglé sur une banque qu'on n'a pas le droit de redistribuer ne peut pas
+  partir avec l'application — c'est pour ça que le profil V8 a cessé d'être
+  livré — mais il n'a aucune raison d'être introuvable chez qui a la banque.
+
+  Il est donc proposé **quand le serveur liste sa banque**, et jamais sinon :
+  proposer un profil muet serait pire que ne rien proposer. Relevé par David le
+  jour même : « on n'a pas de profil pour l'ancien V8 ? la banque procar ». Non,
+  et c'était un trou.
+
+### Changé
+
+- **La banque `procar` s'appelle `v8-musclecar`.** Demandé par David : le nom
+  d'un serveur se lit de l'extérieur, fût-il un NAS chez soi. Ses cinq fichiers
+  perdent leur préfixe au passage — `on-low.wav` plutôt que `procar-on-low.wav`,
+  comme les banques produites au banc, où le dossier porte déjà le nom.
+
+  Le profil qui la joue s'appelle maintenant **V8 musclecar**, ce qui le
+  distingue du V8 livré. Son identifiant interne, lui, ne bouge pas : c'est la
+  clé par laquelle un profil enregistré retrouve sa base, et la changer ferait
+  compléter un profil avec les valeurs d'un autre.
+
+  **Le dossier doit être renommé sur le serveur** — l'application ne peut pas le
+  faire, les échantillons ne lui appartiennent pas. Tant que ce n'est pas fait,
+  le profil désigne des fichiers absents et reste muet.
+
+
+### Ajouté
+
 - **Trois banques de son sont livrées avec l'application, au lieu d'une.** David,
   après les avoir écoutées : « on va livrer tout ce qu'on a généré […] en mettant
   le V8 en premier ». Ce sont les banques **produites au banc**, qui

@@ -35,7 +35,7 @@ afterEach(() => {
   }
 })
 
-const UN_PROFIL = JSON.stringify({ name: 'Mon V8', sampleDir: 'procar', layers: [] })
+const UN_PROFIL = JSON.stringify({ name: 'Mon V8', sampleDir: 'v8-musclecar', layers: [] })
 
 describe('la bibliothèque de profils', () => {
   it('part vide, sans que ce soit une anomalie', async () => {

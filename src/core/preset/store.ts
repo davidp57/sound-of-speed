@@ -1,4 +1,9 @@
-import { createFactoryProfiles, createV8Profile, knownFactoryProfiles } from './defaults'
+import {
+  createFactoryProfiles,
+  createV8Profile,
+  depositFactoryProfiles,
+  knownFactoryProfiles,
+} from './defaults'
 import { clampEngineDefinition } from './engine-definition'
 import { clampRealCar, type RealCar } from './real-car'
 import { isDriveMode, type DriveMode } from '../drivetrain/drive-mode'
@@ -265,10 +270,29 @@ export function oublierLeCompteDeDepot(): void {
  * Sert à récupérer un profil livré après coup : celui qui a commencé avec une
  * seule voix n'a aucune raison d'être privé de la suivante, ni de devoir tout
  * ressaisir.
+ *
+ * **`availableBanks` ouvre la porte aux profils qu'on ne livre pas.** Un profil
+ * d'usine réglé sur une banque **déposée** ne peut pas partir avec
+ * l'application — les échantillons ne sont pas redistribuables — mais il n'a
+ * aucune raison d'être introuvable chez qui a la banque. On le propose donc
+ * quand le serveur la liste, et jamais sinon : proposer un profil muet serait
+ * pire que ne rien proposer.
+ *
+ * David l'a relevé le 14 septembre 2026, le jour où le profil V8 a cessé d'être
+ * livré : « on n'a pas de profil pour l'ancien V8 ? la banque procar ». Non, et
+ * c'était un trou — chez lui, la banque est là.
  */
-export function missingFactoryProfiles(existing: Profile[]): Profile[] {
+export function missingFactoryProfiles(
+  existing: Profile[],
+  availableBanks: readonly string[] = [],
+): Profile[] {
   const known = new Set(existing.map((p) => p.id))
-  return createFactoryProfiles().filter((p) => !known.has(p.id))
+  const listees = new Set(availableBanks)
+  const proposables = [
+    ...createFactoryProfiles(),
+    ...depositFactoryProfiles().filter((p) => listees.has(p.sampleDir)),
+  ]
+  return proposables.filter((p) => !known.has(p.id))
 }
 
 /** Sections d'un profil que l'on peut ramener séparément à leur état d'usine. */

@@ -113,7 +113,7 @@ jobs:
           done
           curl -fsS -o /dev/null http://localhost:8088/audio/gm-ls/on-750.flac
           test "$(curl -s -o /dev/null -w '%{http_code}' \
-            http://localhost:8088/audio/procar/procar-on-low.wav)" = 404
+            http://localhost:8088/audio/v8-musclecar/on-low.wav)" = 404
 
       - name: Le contrat avec le client est tenu
         # Le seul contrôle qui regarde ce que le **serveur** rend. Les tests du

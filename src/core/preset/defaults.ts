@@ -194,7 +194,7 @@ export function finalDriveFor(
 }
 
 /**
- * Profil de départ, calé sur le jeu d'échantillons présent dans `audio/procar/`.
+ * Profil de départ, calé sur le jeu d'échantillons présent dans `audio/v8-musclecar/`.
  *
  * Les régimes d'ancrage viennent d'une mesure du pic d'allumage de chaque
  * fichier (V8 quatre temps, f = rpm / 120 × 8). Celui de `off-high` est le moins
@@ -352,7 +352,7 @@ export function createRoadProfile(): Profile {
  * vitesses qu'on pratique vraiment. Le nerf se prend maintenant au tempérament.
  */
 export function createV8Profile(): Profile {
-  return { ...createRoadProfile(), id: 'v8', name: 'V8' }
+  return { ...createRoadProfile(), id: 'v8', name: 'V8 musclecar' }
 }
 
 /**
@@ -422,6 +422,22 @@ export function createFactoryProfiles(): Profile[] {
 }
 
 /**
+ * Les profils d'usine réglés sur une banque **déposée**, et non livrée.
+ *
+ * Ils ne peuvent pas partir avec l'application : leurs échantillons sont des
+ * prises sur de vraies voitures, que le projet n'a pas le droit de
+ * redistribuer. Mais chez qui a la banque, le profil doit exister — sans quoi
+ * il faudrait le ressaisir couche par couche.
+ *
+ * « Profils d'usine » les propose donc quand le serveur liste leur banque, et
+ * jamais sinon. C'est la seule liste dont l'affichage dépend de ce qu'il y a en
+ * face.
+ */
+export function depositFactoryProfiles(): Profile[] {
+  return [createV8Profile()]
+}
+
+/**
  * Les calibrages d'usine connus, y compris ceux qui ne sont plus livrés.
  *
  * La reprise d'un profil enregistré cherche ici sa base par identifiant. Sans
@@ -446,13 +462,22 @@ export function knownFactoryProfiles(): Profile[] {
   ]
 }
 
+/**
+ * L'ancien profil « Sport », gardé pour la reprise.
+ *
+ * Son identifiant reste `procar`, alors que la banque a été renommée le
+ * 14 septembre 2026 : c'est la clé par laquelle un profil enregistré retrouve sa
+ * base, et la changer ferait compléter un « Sport » enregistré avec les valeurs
+ * d'un autre. Un identifiant ne s'affiche nulle part et ne sort pas du
+ * navigateur, sauf dans un profil exporté.
+ */
 export function createDefaultProfile(): Profile {
   return {
     id: 'procar',
     name: 'Sport',
     favorite: true,
     // Les deux profils livrés sonnent par échantillons : c'est la seule origine
-    // gréée, et la banque de `procar/` est ce sur quoi ils sont réglés.
+    // gréée, et la banque de `v8-musclecar/` est ce sur quoi ils sont réglés.
     soundSource: 'recorded',
     // Le moteur simulé est décrit même sur un profil qui sonne par échantillons :
     // c'est ce qui permet de basculer son origine en direct et d'entendre quelque
@@ -462,7 +487,7 @@ export function createDefaultProfile(): Profile {
     // direct doit donner quelque chose d'écoutable, pas un moteur non réglé.
     // Ce sont les valeurs du GM LS en bibliothèque, relevées par David.
     rendering: { ...GM_LS_RENDERING },
-    sampleDir: 'procar',
+    sampleDir: 'v8-musclecar',
     engine: {
       cylinders: 8,
       idleRpm: 780,
@@ -593,7 +618,7 @@ export function createDefaultProfile(): Profile {
     layers: [
       {
         key: 'on_low',
-        file: 'procar-on-low.wav',
+        file: 'on-low.wav',
         role: 'on',
         anchorRpm: 3128,
         gain: 1,
@@ -603,7 +628,7 @@ export function createDefaultProfile(): Profile {
       },
       {
         key: 'on_high',
-        file: 'procar-on-high.wav',
+        file: 'on-high.wav',
         role: 'on',
         anchorRpm: 8150,
         gain: 1,
@@ -613,7 +638,7 @@ export function createDefaultProfile(): Profile {
       },
       {
         key: 'off_low',
-        file: 'procar-off-low.wav',
+        file: 'off-low.wav',
         role: 'off',
         anchorRpm: 3299,
         // Mesuré : cette prise est 9,6 dB plus faible que `on-low`. La
@@ -626,7 +651,7 @@ export function createDefaultProfile(): Profile {
       },
       {
         key: 'off_high',
-        file: 'procar-off-high.wav',
+        file: 'off-high.wav',
         role: 'off',
         anchorRpm: 7604,
         // Mesuré : 6,5 dB plus faible que `on-high`, et non 9,6 comme sa
@@ -638,7 +663,7 @@ export function createDefaultProfile(): Profile {
       },
       {
         key: 'limiter',
-        file: 'procar-limiter.wav',
+        file: 'limiter.wav',
         role: 'limiter',
         anchorRpm: 8000,
         gain: 0.35,

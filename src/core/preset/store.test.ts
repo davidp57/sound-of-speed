@@ -147,7 +147,7 @@ describe('loadProfiles', () => {
 
     // Navigation privée, quota plein : la conduite continue.
     expect(() => saveProfiles([createDefaultProfile()])).not.toThrow()
-    expect(() => saveSelectedId('procar')).not.toThrow()
+    expect(() => saveSelectedId('v8-musclecar')).not.toThrow()
   })
 })
 
@@ -395,6 +395,43 @@ describe('réinitialisation par section', () => {
     const ailleurs = { ...createDefaultProfile(), sampleDir: 'une-autre-banque' }
 
     expect(resetProfileSection(ailleurs, 'engine').sampleDir).toBe('une-autre-banque')
+  })
+})
+
+describe('les profils d’usine d’une banque déposée', () => {
+  // Un profil réglé sur une banque déposée ne part pas avec l'application : ses
+  // échantillons sont une prise sur une vraie voiture. Mais chez qui a la
+  // banque, il doit exister — sinon il faudrait le ressaisir couche par couche.
+  it('ne se propose pas quand le serveur ne liste pas sa banque', () => {
+    const manquants = missingFactoryProfiles([], [])
+
+    expect(manquants.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'subaru-ej25'])
+  })
+
+  it('se propose quand la banque est là', () => {
+    const manquants = missingFactoryProfiles([], ['v8-musclecar'])
+
+    expect(manquants.map((p) => p.id)).toEqual([
+      'gm-ls',
+      'gm-ls-long-header',
+      'subaru-ej25',
+      'v8',
+    ])
+    expect(manquants.find((p) => p.id === 'v8')?.sampleDir).toBe('v8-musclecar')
+  })
+
+  it('ne le propose pas deux fois', () => {
+    const deja = missingFactoryProfiles([], ['v8-musclecar'])
+
+    expect(missingFactoryProfiles(deja, ['v8-musclecar'])).toEqual([])
+  })
+
+  it('ignore une banque listée qu’aucun profil d’usine ne réclame', () => {
+    // Une banque déposée sans profil connu ne fabrique rien : on ne devine pas
+    // les ancrages ni les gains d'échantillons qu'on n'a jamais mesurés.
+    const manquants = missingFactoryProfiles([], ['une-banque-a-nous'])
+
+    expect(manquants.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'subaru-ej25'])
   })
 })
 
@@ -704,7 +741,7 @@ describe('reprise du volume hérité', () => {
     saveProfiles([autre as Profile, ancien as Profile])
 
     expect(loadInheritedVolume('route')).toBe(0.33)
-    expect(loadInheritedVolume('procar')).toBe(0.9)
+    expect(loadInheritedVolume('v8-musclecar')).toBe(0.9)
   })
 
   it('retombe sur le premier profil quand l identifiant est inconnu', () => {
@@ -735,7 +772,7 @@ describe('reprise par identifiant', () => {
     //
     // On simule un profil Route enregistré par une version antérieure : il porte
     // son identité et une seule section, les autres manquent.
-    const partiel = { id: 'route', name: 'Route', sampleDir: 'procar' }
+    const partiel = { id: 'route', name: 'Route', sampleDir: 'v8-musclecar' }
     saveProfiles([partiel as unknown as Profile])
 
     const relu = loadProfiles()[0] as Profile
@@ -752,7 +789,7 @@ describe('reprise par identifiant', () => {
   })
 
   it('complète un profil Sport avec les valeurs de Sport', () => {
-    const partiel = { id: 'procar', name: 'Sport', sampleDir: 'procar' }
+    const partiel = { id: 'procar', name: 'Sport', sampleDir: 'v8-musclecar' }
     saveProfiles([partiel as unknown as Profile])
 
     const relu = loadProfiles()[0] as Profile
@@ -769,7 +806,7 @@ describe('reprise par identifiant', () => {
   it('retombe sur les valeurs génériques pour un profil fabriqué', () => {
     // Un profil sorti du guide de création porte un identifiant tiré au sort :
     // aucun profil livré ne lui correspond, et le repli d'avant reste le bon.
-    const partiel = { id: 'un-identifiant-a-nous', name: 'Le mien', sampleDir: 'procar' }
+    const partiel = { id: 'un-identifiant-a-nous', name: 'Le mien', sampleDir: 'v8-musclecar' }
     saveProfiles([partiel as unknown as Profile])
 
     const relu = loadProfiles()[0] as Profile

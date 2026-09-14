@@ -15,7 +15,7 @@
  *
  * ## Ce qui est mesuré
  *
- * Relevé sur les quatre couches de la banque `procar`, à la fenêtre de 20 ms.
+ * Relevé sur les quatre couches de la banque `v8-musclecar`, à la fenêtre de 20 ms.
  *
  * **La loi de fondu.** Deux positions d'un même enregistrement sont peu
  * corrélées, donc leurs énergies s'ajoutent au lieu de leurs amplitudes. Un

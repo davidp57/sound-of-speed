@@ -25,7 +25,7 @@ describe('le profil qui remonte', () => {
   })
 
   it('ne répète pas un identifiant qui est déjà le nom', () => {
-    // Les profils d'usine s'appellent « route », « procar » : leur fichier
+    // Les profils d'usine s'appellent « route », « v8-musclecar » : leur fichier
     // s'appelait « route-route.json ».
     expect(profileFileName(profile({ id: 'route', name: 'Route' }))).toBe('route.json')
   })

@@ -91,7 +91,7 @@ describe('les profils d’usine', () => {
   })
 
   it('ne livre que des banques qui sont dans le dépôt', () => {
-    // Le profil V8 livré désignait `procar`, une prise sur une vraie voiture
+    // Le profil V8 livré désignait `v8-musclecar`, une prise sur une vraie voiture
     // qu'on n'a pas le droit de redistribuer : il était donc muet chez qui
     // découvrait le projet. Aucun profil livré ne doit plus désigner une banque
     // absente de l'image.
