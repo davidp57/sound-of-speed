@@ -1,6 +1,6 @@
 # ACCUEILLIR — l'écran d'aide du premier lancement, revu
 
-**Statut :** ⬜ prêt — cadre posé le 13 septembre 2026, découpé le 14 septembre
+**Statut :** ✅ fait — 5/5, le 14 septembre 2026
 **Branche :** `feature/accueillir`
 **Version visée :** 0.2.x
 
@@ -133,4 +133,4 @@ contester.
 | 02 | [Des bulles posées sur la vraie interface](tickets/02-des-bulles-sur-l-interface.md) | ✅ |
 | 03 | [De vrais onglets, avec une découpe](tickets/03-de-vrais-onglets.md) | ✅ |
 | 04 | [La visite désigne la barre du haut](tickets/04-la-visite-designe-la-barre.md) | ✅ |
-| 05 | [L'aide de référence, allégée](tickets/05-l-aide-de-reference-allegee.md) | ⬜ |
+| 05 | [L'aide de référence, allégée](tickets/05-l-aide-de-reference-allegee.md) | ✅ |

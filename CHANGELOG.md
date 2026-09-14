@@ -31,9 +31,10 @@ Toutes les évolutions notables du projet. Format
   raccorde désormais au contenu — coins arrondis en haut, bord bas qui mange la
   ligne de la barre — et les autres sont nus. La zone tactile passe de 37,6 à
   38,4 pixels. Le raccord ne vaut que tant que la barre tient sur une ligne.
-- **L'aide n'est plus le premier écran.** Elle reste entière derrière le bouton
-  `?`, où elle répond à une question qu'on se pose ; l'accueil, lui, ne revient
-  pas.
+- **L'aide n'est plus le premier écran : elle répond au lieu d'accueillir.**
+  Derrière le bouton `?`, elle perd « Pour commencer » et « Les commandes de
+  conduite », que la visite montre sur l'interface, et garde ce qu'on vient y
+  chercher. Un lien y relance la visite.
 
 - **Les cadrans occupent l'écran.** Demandé par David le 14 septembre 2026 :
   « les cadrans sont trop petits, il faut gagner de la place en réduisant la

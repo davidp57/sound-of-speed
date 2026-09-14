@@ -278,6 +278,12 @@ volume, puis la barre du haut : les onglets, le son, le verrou d'écran, le plei
 dessiner : ce qui n'est pas là se saute, et le décompte reste juste. Un bouton
 « Passer » en sort à tout moment.
 
+**L'aide, derrière le bouton `?`, répond au lieu d'accueillir.** Elle ne décrit
+plus les commandes — la visite les montre — et garde ce qu'on vient y chercher :
+pourquoi la vitesse reste à zéro, où est le volume, comment partir sans réseau,
+comment créer un profil, ce que dit la télémétrie, et l'offre de source exigée
+par la licence. Un lien y relance la visite.
+
 **L'écran d'accueil ouvre sur le compte**, et c'est son premier bloc : le
 compte existe déjà, il portera les réglages et les trajets, et il ne tient qu'à
 ce navigateur tant qu'on ne l'enregistre pas. Dans la voiture, il propose de se

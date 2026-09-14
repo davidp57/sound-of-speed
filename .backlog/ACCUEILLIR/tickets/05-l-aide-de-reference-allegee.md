@@ -1,6 +1,6 @@
 # 05 — L'aide de référence, allégée
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 14 septembre 2026
 
 **Bloqué par :** [02](02-des-bulles-sur-l-interface.md) et
 [04](04-la-visite-designe-la-barre.md) : on ne retire de l'aide que ce que la
@@ -21,8 +21,10 @@ pose : la vitesse reste à zéro, le son est trop faible, en roulant, partir san
 réseau, créer sa propre voiture, régler le son, l'écran Télémétrie, code source et
 licence.
 
-**Ce qui s'ajoute** : un lien « revoir la visite », qui efface
-`speed.visiteVue.v1` et la relance. Une visite qu'on ne peut pas revoir se regarde
+**Ce qui s'ajoute** : un lien « revoir la visite », qui ferme l'aide, revient à
+la conduite — c'est là que les bulles ont quelque chose à désigner — et relance
+la visite. Il ne touche pas à `speed.visiteVue.v1` : la fin de la visite la
+réécrit de toute façon. Une visite qu'on ne peut pas revoir se regarde
 une fois, mal, en voulant démarrer.
 
 **Le compte** garde une section dans l'aide — plus courte que celle de l'accueil,

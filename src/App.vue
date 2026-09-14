@@ -241,6 +241,14 @@ function commencer(): void {
   }
 }
 
+/** Depuis l'aide : elle se ferme, on revient à la conduite, et les bulles
+ *  repartent — c'est là qu'elles ont quelque chose à désigner. */
+function revoirLaVisite(): void {
+  closeHelp()
+  tab.value = 'drive'
+  visiteOuverte.value = true
+}
+
 function fermerLaVisite(): void {
   visiteOuverte.value = false
   try {
@@ -563,7 +571,12 @@ onBeforeUnmount(() => {
       @compte="allerAuCompteDepuisLAccueil()"
     />
     <VisiteGuidee v-if="visiteOuverte" :etapes="ETAPES_DE_VISITE" @fin="fermerLaVisite()" />
-    <HelpView v-else-if="helpOpen" @close="closeHelp()" @compte="allerAuCompteDepuisLAide()" />
+    <HelpView
+      v-else-if="helpOpen"
+      @close="closeHelp()"
+      @compte="allerAuCompteDepuisLAide()"
+      @visite="revoirLaVisite()"
+    />
 
   </div>
 </template>
