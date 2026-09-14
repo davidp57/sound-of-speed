@@ -271,8 +271,11 @@ premier lancement on veut rouler, pas lire —, et **il repasse tant que le comp
 n'est pas enregistré**, une fois toutes les dix ouvertures. Montré une seule
 fois, il tombait exactement au moment où l'on n'a encore rien à perdre.
 
-L'aide du premier lancement finit sur le même sujet : elle dit que ce compte est
-le vôtre, et mène à cet écran.
+**L'écran d'accueil ouvre sur le même sujet**, et c'est son premier bloc : le
+compte existe déjà, il portera les réglages et les trajets, et il ne tient qu'à
+ce navigateur tant qu'on ne l'enregistre pas. Dans la voiture, il propose de se
+donner un code plutôt que de s'enregistrer — c'est la même distinction que tient
+l'écran Compte, et l'accueil ne peut pas proposer l'inverse de ce qu'il dira.
 
 **Banc** — conduire une vitesse à la main, sans rouler : les deux pédales, le
 curseur d'allure maintenue, et les réglages de ce que la source fabrique
@@ -3366,7 +3369,8 @@ En clair, et sans que ce paragraphe remplace le texte de la licence :
 C'est la raison du choix : ce produit est devenu un service qu'on atteint depuis
 un navigateur, et une licence qui ne se déclenche qu'à la distribution de
 fichiers n'y changerait rien. L'application satisfait elle-même cette exigence :
-l'écran d'aide porte un lien vers le dépôt et la version servie. **Si vous
+l'écran d'accueil et l'aide portent tous deux un lien vers le dépôt et la
+version servie. **Si vous
 déployez une version modifiée, ce lien doit mener à votre code, pas à celui-ci.**
 
 ### Ce qui n'est pas sous AGPL

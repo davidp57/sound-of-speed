@@ -4,6 +4,7 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch 
 import AccountView from './ui/AccountView.vue'
 import ConfigView from './ui/ConfigView.vue'
 import HelpView from './ui/HelpView.vue'
+import WelcomeView from './ui/WelcomeView.vue'
 import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
 
@@ -88,11 +89,21 @@ const tab = ref<Tab>('drive')
 const immersive = ref(false)
 
 /**
- * Aide, montrée d'office à la première ouverture.
+ * L'accueil, montré d'office à la première ouverture ; l'aide, seulement sur
+ * demande.
+ *
+ * Les deux étaient un seul écran jusqu'au 14 septembre 2026, et ce texte servait
+ * deux usages qui n'ont rien en commun : accueillir quelqu'un qui ouvre
+ * l'application, et répondre à une question qu'on se pose trois semaines plus
+ * tard. L'accueil est court et ne revient pas ; l'aide est longue et vit
+ * derrière le `?`.
+ *
+ * La clé ne change pas de nom : elle tient toujours le même « une seule fois »,
+ * et la renommer redonnerait l'accueil à qui l'a déjà vu.
  *
  * Le stockage peut être refusé — navigation privée, quota plein. On ne montre
- * alors l'aide qu'une fois par session plutôt que de la répéter à chaque
- * chargement, ni de la taire par prudence.
+ * alors l'accueil qu'une fois par session plutôt que de le répéter à chaque
+ * chargement, ni de le taire par prudence.
  */
 const HELP_SEEN_KEY = 'speed.helpSeen.v1'
 /**
@@ -105,6 +116,7 @@ const HELP_SEEN_KEY = 'speed.helpSeen.v1'
 const OUVERTURES_KEY = 'speed.ouvertures.v1'
 const COMPTE_SIGNALE_KEY = 'speed.compteSignale.v1'
 const helpOpen = ref(false)
+const welcomeOpen = ref(false)
 /** Message d'un profil reçu par lien, le temps de l'annoncer. */
 const received = ref('')
 
@@ -197,9 +209,20 @@ function markHelpSeen(): void {
   }
 }
 
+function closeWelcome(): void {
+  welcomeOpen.value = false
+  markHelpSeen()
+}
+
+/** L'aide, elle, se ferme sans rien retenir : on l'a ouverte exprès. */
 function closeHelp(): void {
   helpOpen.value = false
-  markHelpSeen()
+}
+
+/** Depuis l'accueil : il se ferme pour de bon, et on atterrit sur le compte. */
+function allerAuCompteDepuisLAccueil(): void {
+  closeWelcome()
+  allerAuCompte()
 }
 
 async function toggleImmersive(): Promise<void> {
@@ -336,9 +359,9 @@ function releaseControls(): void {
 
 onMounted(() => {
   try {
-    helpOpen.value = localStorage.getItem(HELP_SEEN_KEY) === null
+    welcomeOpen.value = localStorage.getItem(HELP_SEEN_KEY) === null
   } catch {
-    helpOpen.value = true
+    welcomeOpen.value = true
   }
   signalerLeCompte()
   // Un profil reçu par lien s'installe avant tout le reste, et le signale.
@@ -490,7 +513,12 @@ onBeforeUnmount(() => {
       <button @click="liaisonVue = true">Fermer</button>
     </div>
 
-    <HelpView v-if="helpOpen" @close="closeHelp()" @compte="allerAuCompteDepuisLAide()" />
+    <WelcomeView
+      v-if="welcomeOpen"
+      @close="closeWelcome()"
+      @compte="allerAuCompteDepuisLAccueil()"
+    />
+    <HelpView v-else-if="helpOpen" @close="closeHelp()" @compte="allerAuCompteDepuisLAide()" />
 
   </div>
 </template>

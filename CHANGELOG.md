@@ -6,7 +6,20 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Un écran d'accueil au premier lancement**, à la place du manuel de onze
+  sections. Il tient sur un écran : ce que fait l'application, le compte en
+  premier et en gros — il existe déjà, il portera les réglages et les trajets,
+  et il ne tient qu'à ce navigateur — puis les trois gestes pour rouler. Dans la
+  voiture, il propose de se donner un code plutôt que de s'enregistrer, comme le
+  fait l'écran Compte.
+
 ### Modifié
+
+- **L'aide n'est plus le premier écran.** Elle reste entière derrière le bouton
+  `?`, où elle répond à une question qu'on se pose ; l'accueil, lui, ne revient
+  pas.
 
 - **Les cadrans occupent l'écran.** Demandé par David le 14 septembre 2026 :
   « les cadrans sont trop petits, il faut gagner de la place en réduisant la

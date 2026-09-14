@@ -41,7 +41,8 @@ après, et écrit dans le commentaire.
 - Hauteur tactile des entrées : identique ou supérieure à aujourd'hui, mesurée.
 - Le repli de la barre sur deux lignes sous 655 pixels tient toujours, et
   l'onglet actif reste raccordé au contenu sur les deux lignes.
-- Thèmes clair et sombre : le raccord au contenu ne laisse pas de trait résiduel.
+- Le raccord de l'onglet actif au contenu ne laisse pas de trait résiduel — la
+  feuille de style est sombre et unique, il n'y a qu'un rendu à regarder.
 
 ## Ce qui est hors de ce ticket
 
