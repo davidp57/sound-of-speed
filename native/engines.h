@@ -281,7 +281,7 @@ Engine *buildInline4(const EngineDefinition &def) {
     crank->initialize(crankParams);
 
     const double journalAngles[4] = {
-        0.0 * units::deg, 270.0 * units::deg, 90.0 * units::deg, 180.0 * units::deg };
+        0.0 * units::deg, 180.0 * units::deg, 180.0 * units::deg, 0.0 * units::deg };
     for (int i = 0; i < 4; ++i) {
         crank->setRodJournalAngle(i, journalAngles[i]);
     }
@@ -937,7 +937,7 @@ Engine *buildCrossplaneV8(const EngineDefinition &def) {
 
     // Le croisement, recopie du GM LS.
     const double journalAngles[4] = {
-        0.0 * units::deg, 180.0 * units::deg, 180.0 * units::deg, 0.0 * units::deg };
+        0.0 * units::deg, 270.0 * units::deg, 90.0 * units::deg, 180.0 * units::deg };
     for (int i = 0; i < 4; ++i) crank->setRodJournalAngle(i, journalAngles[i]);
 
     CylinderBank *banks[2];
