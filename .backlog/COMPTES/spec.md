@@ -1,6 +1,6 @@
 # COMPTES — un compte porte des droits, et ce qu'il ouvre décide de ce qu'on voit
 
-**Statut :** 🔄 en cours — 16/18
+**Statut :** 🔄 en cours — 16/19
 **Branche :** plusieurs
 **Version visée :** 0.5
 **Dérivé de :** [PLATEFORME](../PLATEFORME/spec.md)
@@ -114,6 +114,7 @@ réseau, et le poids — ce que les six premiers promettent chacun de leur côt�
 | [07](tickets/07-hors-reseau-rien-ne-change.md) | Hors réseau, rien ne change : vérifié réseau coupé | 04, 06 |
 | [08](tickets/08-le-poids-charge-par-la-voiture.md) ✅ | Le poids chargé par la voiture, mesuré avant et après | 06, 14 |
 | [15](tickets/15-le-navigateur-se-dit-dans-le-journal.md) ✅ | Le navigateur se dit dans le journal, une fois par session | 14 |
+| [19](tickets/19-le-compte-tiers-ne-se-dit-pas-a-l-ecran.md) | Un compte tiers rattaché continue de s'annoncer comme anonyme — vu le 14 septembre 2026 | — |
 
 Le [ticket 09](tickets/09-reprendre-son-compte.md) est **remplacé** par les
 tickets 10 à 13 : voir l'élargissement ci-dessous.
