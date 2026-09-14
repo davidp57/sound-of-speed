@@ -53,7 +53,7 @@
       "file": "on-750.flac",
       "role": "on",
       "anchorRpm": 750,
-      "gain": 0.5912,
+      "gain": 0.695,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -63,7 +63,7 @@
       "file": "off-750.flac",
       "role": "off",
       "anchorRpm": 750,
-      "gain": 0.2204,
+      "gain": 0.2358,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -73,7 +73,7 @@
       "file": "on-1021.flac",
       "role": "on",
       "anchorRpm": 1021,
-      "gain": 0.6669,
+      "gain": 0.7283,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -83,7 +83,7 @@
       "file": "off-1021.flac",
       "role": "off",
       "anchorRpm": 1021,
-      "gain": 0.2399,
+      "gain": 0.25,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -93,7 +93,7 @@
       "file": "on-1390.flac",
       "role": "on",
       "anchorRpm": 1390,
-      "gain": 0.9269,
+      "gain": 0.8268,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -103,7 +103,7 @@
       "file": "off-1390.flac",
       "role": "off",
       "anchorRpm": 1390,
-      "gain": 0.3592,
+      "gain": 0.2882,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -113,7 +113,7 @@
       "file": "on-1892.flac",
       "role": "on",
       "anchorRpm": 1892,
-      "gain": 1.0199,
+      "gain": 1.1042,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -123,7 +123,7 @@
       "file": "off-1892.flac",
       "role": "off",
       "anchorRpm": 1892,
-      "gain": 0.3401,
+      "gain": 0.3151,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -133,7 +133,7 @@
       "file": "on-2576.flac",
       "role": "on",
       "anchorRpm": 2576,
-      "gain": 0.9641,
+      "gain": 0.8139,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -143,7 +143,7 @@
       "file": "off-2576.flac",
       "role": "off",
       "anchorRpm": 2576,
-      "gain": 0.4279,
+      "gain": 0.3853,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -153,7 +153,7 @@
       "file": "on-3507.flac",
       "role": "on",
       "anchorRpm": 3507,
-      "gain": 1.1556,
+      "gain": 0.939,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -163,7 +163,7 @@
       "file": "off-3507.flac",
       "role": "off",
       "anchorRpm": 3507,
-      "gain": 0.4265,
+      "gain": 0.3656,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -173,7 +173,7 @@
       "file": "on-4775.flac",
       "role": "on",
       "anchorRpm": 4775,
-      "gain": 0.9784,
+      "gain": 1,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -183,7 +183,7 @@
       "file": "off-4775.flac",
       "role": "off",
       "anchorRpm": 4775,
-      "gain": 0.4471,
+      "gain": 0.4164,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -193,7 +193,7 @@
       "file": "on-6500.flac",
       "role": "on",
       "anchorRpm": 6500,
-      "gain": 1,
+      "gain": 0.6375,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -203,7 +203,7 @@
       "file": "off-6500.flac",
       "role": "off",
       "anchorRpm": 6500,
-      "gain": 0.4785,
+      "gain": 0.3932,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -213,7 +213,7 @@
       "file": "idle-750.flac",
       "role": "idle",
       "anchorRpm": 750,
-      "gain": 0.1775,
+      "gain": 0.2334,
       "minRate": 0.671,
       "maxRate": 1.492,
       "enabled": true
@@ -223,7 +223,7 @@
       "file": "limiter-6950.flac",
       "role": "limiter",
       "anchorRpm": 6950,
-      "gain": 0.5637,
+      "gain": 0.5113,
       "minRate": 0.8,
       "maxRate": 1.25,
       "enabled": true

@@ -19,7 +19,14 @@ const WINDOW_COUNT = 6
 /** Au-dessus, on ne mesure plus le moteur mais le souffle de la prise. */
 const CENTROID_LIMIT_HZ = 8000
 
-function fft(real, imaginary) {
+/**
+ * Transformée de Fourier rapide, en place.
+ *
+ * Exportée depuis le 14 septembre 2026 : `echappement.mjs` s'en sert pour
+ * convoluer une prise par la captation d'échappement. Une seconde copie aurait
+ * été une seconde chose à corriger.
+ */
+export function fft(real, imaginary) {
   const n = real.length
 
   for (let i = 1, j = 0; i < n; i += 1) {

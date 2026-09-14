@@ -94,6 +94,7 @@ l'application :
 | `simulationHz` | fréquence de simulation, 10 000 comme la sonde |
 | `impulseSamples` | longueur du tube fabriqué, quand c'est lui qui sert |
 | `exhaustResponse` | captation d'échappement, un nom de `public/impulse/` sans l'extension ; `smooth_39` par défaut, `"tube"` pour l'ancienne résonance fabriquée |
+| `exhaustMix` | part d'énergie qui passe par cette captation ; `0.45` par défaut, la valeur du mode direct |
 | `bank.spacingOctaves` | écart maximal entre deux ancrages voisins |
 | `bank.takeSeconds` | longueur visée d'une prise |
 | `bank.settleSeconds` | stabilisation avant enregistrement |
@@ -101,6 +102,35 @@ l'application :
 | `bank.limiterRpm` | régime de la prise de rupteur, 0 pour ne pas en faire |
 | `bank.reliefCompression` | de combien le relief mesuré est rabattu, voir plus bas |
 | `bank.witnesses` | produire les prises témoins de mesure |
+
+### L'échappement ne prend que 45 % de la sortie
+
+Le banc s'appuyait sur la convolution interne d'engine-sim, qui est **entière**.
+Le mode direct, lui, n'en mélange que 45 % et garde 55 % de son sec — réglage de
+David du 6 septembre 2026, étendu à toute la bibliothèque le 8, avec cette
+raison : « à cent pour cent, tout le son passait par la réponse d'échappement —
+celle d'un V8 Chevrolet, y compris sous un quatre cylindres ».
+
+La correction n'avait jamais atteint le banc. Mesuré le 14 septembre sur le
+quatre cylindres à 2 245 tr/min, part d'énergie entre 1 et 4 kHz :
+
+| | 1 – 4 kHz |
+|---|---|
+| sec, sans convolution | −21,7 dB |
+| convolué entièrement — ce que le banc produisait | −26,3 dB |
+| **prise réelle, le repère** | **−18,6 dB** |
+
+Le sec colle presque à la vraie prise ; c'est la convolution intégrale qui
+l'enfonce. David, sur la banque livrée : « ça sonne synthétique, électronique ».
+Sur le mélange à 45 % : « c'est pas mal, on garde ça ».
+
+Le banc rend donc désormais le son **sec** — `--exhaust none` installe une
+impulsion unité — et c'est `echappement.mjs` qui pose la captation, avec le
+mélange en racine d'énergie de la chaîne du direct.
+
+**Ce que ça ne corrige pas.** Au-dessus de 4 kHz, tout ce que produit le banc
+reste 30 à 45 dB sous une vraie prise, sec comme convolué. Le modèle ne fabrique
+pas ce grain-là, et aucun filtre ne crée ce qui n'existe pas.
 
 ### L'échappement se capte, il ne s'invente pas
 
@@ -186,6 +216,32 @@ Trois choses ont dû être réglées, et chacune s'est vue à la mesure :
    l'autre : on mesure la crête pendant la stabilisation, à volume réduit, en
    corrigeant le tir tant que la mesure ne vaut rien.
 
+## La fenêtre qui se referme le mieux
+
+Une prise fait un nombre entier de cycles moteur, donc ses deux bouts sont en
+phase par construction. Cela suffisait tant que le banc rendait un signal lissé
+par une convolution entière : le son sec a des transitoires plus raides, et le
+raccord se voit — le saut au bouclage du V8 est passé de 11,4 % à 26,4 % le jour
+où l'échappement est descendu à 45 %.
+
+Or un cycle ne vaut pas l'autre. On essaie donc **toutes** les fenêtres d'un
+nombre entier de cycles, à tous les décalages d'un cycle, et l'on garde la plus
+longue dont le raccord tient sous 8 % — le seuil est celui de la banque
+enregistrée, qui est à 10,8 % et que personne n'a signalée.
+
+Le critère a d'abord été une longueur minimale, et c'était une erreur : le
+chiffre trouvé sur le quatre cylindres ne valait pas pour le V8. À neuf dixièmes
+de la prise, le premier restait à 7,05 % quand le second remontait à 18,9 %. Ce
+qui fait le raccord, c'est **où** l'on coupe, pas combien.
+
+| Banque | Saut au pire, avant | après |
+|---|---|---|
+| `gm-ls` | 26,4 % | **6,7 %** |
+| `gm-ls-long-header` | 28,8 % | **5,7 %** |
+| `subaru-ej25` | 39,7 % | **7,7 %** |
+
+Les prises gardent leur longueur : 2,72 à 3,08 secondes pour trois visées.
+
 ## La fermeture de boucle
 
 À régime tenu, le son se répète exactement tous les deux tours de vilebrequin.
@@ -248,7 +304,8 @@ le même relief.
 | `moteur.mjs` | la bibliothèque de moteurs, lue dans le TypeScript de l'application |
 | `profil.mjs` | le profil produit, à part pour qu'il se vérifie sans banque |
 | `plan.mjs` | quels régimes, quelle charge, quelle longueur |
-| `loop.mjs` | fermeture de boucle, portée de `core/audio/engine.ts` |
+| `loop.mjs` | fermeture de boucle, portée de `core/audio/engine.ts` ; choix de la fenêtre |
+| `echappement.mjs` | la captation posée après le banc, avec le mélange du direct |
 | `spectrum.mjs` | centroïde spectral, porté de `core/audio/analyze.ts` |
 | `wav.mjs` | lecture et écriture de WAV 16 bits mono |
 | `plan.test.mjs` | l'arithmétique des ancrages et des longueurs de boucle |
