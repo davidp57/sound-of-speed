@@ -248,9 +248,11 @@ export interface EngineField {
  * les valeurs de référence restent le repère.
  */
 export const ENGINE_FIELDS: readonly EngineField[] = [
-  // Quatre ou huit, et rien entre les deux : l'ordre d'allumage et les angles de
-  // manetons sont écrits en dur dans `probe.cpp` pour ces deux moteurs-là.
-  { key: 'cylinders', label: 'Cylindres', unit: '', min: 4, max: 8, step: 4, group: 'geometry' },
+  // Quatre, six ou huit, et rien entre : l'ordre d'allumage et les angles de
+  // manetons définissent une architecture, et `native/engines.h` en sait bâtir
+  // trois — quatre en ligne, six en ligne, V8 croisé. Le six est arrivé le
+  // 14 septembre 2026, à la demande de David.
+  { key: 'cylinders', label: 'Cylindres', unit: '', min: 4, max: 8, step: 2, group: 'geometry' },
   { key: 'bore', label: 'Alésage', unit: 'po', min: 2, max: 5, step: 0.001, group: 'geometry' },
   { key: 'stroke', label: 'Course', unit: 'po', min: 2, max: 5, step: 0.001, group: 'geometry' },
   { key: 'rodLength', label: 'Bielle', unit: 'po', min: 3, max: 9, step: 0.001, group: 'geometry' },

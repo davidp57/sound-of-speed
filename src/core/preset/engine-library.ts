@@ -15,10 +15,11 @@ import type { EngineDefinition } from './schema'
  * engine-sim : « l'exemple que je t'ai trouvé propose de *charger un moteur* ».
  *
  * **Ce qui limite la liste**, ce n'est pas le nombre de définitions disponibles
- * — le dépôt d'engine-sim en contient vingt-cinq — mais les deux architectures
- * que `native/probe.cpp` sait construire : quatre cylindres en ligne, et V8 à
- * quatre-vingt-dix degrés à vilebrequin croisé. Un V12, un radial ou un V6 à
- * calage inégal demanderaient chacun leur constructeur.
+ * — le dépôt d'engine-sim en contient vingt-cinq — mais les trois architectures
+ * que `native/engines.h` sait construire : quatre cylindres en ligne, six
+ * cylindres en ligne, et V8 à quatre-vingt-dix degrés à vilebrequin croisé. Un
+ * V12, un radial ou un V6 à calage inégal demanderaient chacun leur
+ * constructeur — le six en ligne a demandé le sien le 14 septembre 2026.
  */
 export interface LibraryEngine {
   id: string
@@ -32,7 +33,15 @@ export interface LibraryEngine {
    */
   short: string
   /** D'où vient la définition, pour qu'on puisse y retourner. */
-  source: string
+  /**
+   * Le fichier d'engine-sim dont la définition est relevée.
+   *
+   * Facultatif depuis le 14 septembre 2026 : le six en ligne n'est relevé de
+   * nulle part, il est construit de mémoire. Son absence de source **est**
+   * l'information — un moteur sans source n'a pas la même valeur de preuve que
+   * les autres, et un test le vérifie.
+   */
+  source?: string
   /** Le rupteur du moteur d'origine, en tours par minute. */
   redlineRpm: number
   definition: EngineDefinition
@@ -350,6 +359,64 @@ export const GM_LS_V8_LONG_HEADER: EngineDefinition = {
   headerLength: 30,
 }
 
+/**
+ * Un six cylindres en ligne de trois litres, l'architecture des BMW.
+ *
+ * Demandé par David le 14 septembre 2026, après avoir trouvé le quatre
+ * cylindres sans caractère : « ajoute un 6 en ligne du type BMW ».
+ *
+ * **Ces cotes ne sont pas sourcées**, et c'est la différence avec tous les
+ * autres moteurs de cette liste : ceux-là sont relevés dans un fichier
+ * d'engine-sim, celui-ci est construit de mémoire à partir de ce qu'on sait d'un
+ * six BMW de trois litres — 84 mm d'alésage, 89,6 mm de course, un rapport
+ * volumétrique de 10,2. Il n'a pas de `source` pour cette raison.
+ *
+ * Ce qui fait son caractère n'est pas dans ces nombres mais dans son
+ * architecture, écrite en dur dans `native/engines.h` : manetons à 0-120-240,
+ * ordre d'allumage 1-5-3-6-2-4, donc un allumage tous les 120 degrés.
+ * Parfaitement régulier, là où le V8 croisé grogne d'être inégal.
+ *
+ * Le reste — conduits, cames, admission — reprend les valeurs du Subaru EJ25,
+ * faute d'un relevé. C'est une réserve, pas un choix.
+ */
+export const BMW_I6_3L: EngineDefinition = {
+  cylinders: 6,
+  // 84 mm.
+  bore: 3.307,
+  // 89,6 mm : la course dépasse l'alésage, comme sur les six de route.
+  stroke: 3.528,
+  // 135 mm.
+  rodLength: 5.315,
+  // 54 cc pour 496,5 cc par cylindre, soit un rapport de 10,2 — celui d'un
+  // moteur atmosphérique de route.
+  chamberVolume: 54,
+  intakeRunnerVolume: 149.6,
+  intakeRunnerArea: 4.84,
+  exhaustRunnerVolume: 50,
+  exhaustRunnerArea: 3.0625,
+  lobeSeparation: 114,
+  intakeLobeCenter: 114,
+  exhaustLobeCenter: 114,
+  intakeLift: 0.39,
+  exhaustLift: 0.37,
+  intakeDuration: 244,
+  exhaustDuration: 236,
+  plenumVolume: 1.325,
+  intakeFlowRate: 800,
+  idleThrottlePlate: 0.9985,
+  // Un six en ligne a six primaires égales qui se rejoignent, et un tube long :
+  // c'est ce qui lui donne sa note tenue.
+  primaryTubeLength: 24,
+  primaryFlowRate: 400,
+  outletFlowRate: 1500,
+  collectorVolume: 100,
+  exhaustAudioVolume: 4,
+  limiterDuration: 0.08,
+  airNoise: 0.15,
+  inputSampleNoise: 0,
+  headerLength: 16,
+}
+
 export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
   {
     id: 'gm-ls',
@@ -374,6 +441,16 @@ export const ENGINE_LIBRARY: readonly LibraryEngine[] = [
     // plus long. Changer les deux à la fois empêcherait de savoir ce qu'on
     // entend.
     rendering: GM_LS_RENDERING,
+  },
+  {
+    id: 'bmw-i6-3l',
+    label: 'Six en ligne — 3,0 L',
+    short: 'L6',
+    // Pas de `source` : ce moteur n'est pas relevé d'un fichier d'engine-sim,
+    // il est construit de mémoire. La définition le dit.
+    redlineRpm: 7000,
+    definition: BMW_I6_3L,
+    rendering: DEFAULT_RENDERING,
   },
   {
     id: 'subaru-ej25',

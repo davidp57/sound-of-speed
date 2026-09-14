@@ -281,7 +281,7 @@ Engine *buildInline4(const EngineDefinition &def) {
     crank->initialize(crankParams);
 
     const double journalAngles[4] = {
-        0.0 * units::deg, 180.0 * units::deg, 180.0 * units::deg, 0.0 * units::deg };
+        0.0 * units::deg, 270.0 * units::deg, 90.0 * units::deg, 180.0 * units::deg };
     for (int i = 0; i < 4; ++i) {
         crank->setRodJournalAngle(i, journalAngles[i]);
     }
@@ -509,6 +509,355 @@ Engine *buildInline4(const EngineDefinition &def) {
 
 
 /**
+ * Un six cylindres en ligne, l'architecture des BMW.
+ *
+ * Demande par David le 14 septembre 2026, apres avoir trouve le quatre
+ * cylindres sans caractere : « ajoute un 6 en ligne du type BMW ».
+ *
+ * C'est la troisieme architecture que ce fichier sait batir, et la plus simple
+ * apres le quatre en ligne : un seul banc, un seul collecteur, des manetons
+ * reguliers. Ce qui la definit tient aux deux tableaux du corps — les manetons
+ * et l'ordre d'allumage —, chacun commente a sa place.
+ *
+ * Les cotes de reference sont celles d'un trois litres, et **elles ne sont pas
+ * sourcees** : elles viennent de ce que l'on sait d'un six BMW de cette
+ * cylindree, pas d'un fichier d'engine-sim ni d'une fiche constructeur. Le reste
+ * du moteur reprend les valeurs du quatre cylindres, faute de mieux, et les
+ * endroits ou cela se voit le disent.
+ */
+Engine *buildInline6(const EngineDefinition &def) {
+    const double stroke = units::distance(def[ENGINE_STROKE], units::inch);
+    const double bore = units::distance(def[ENGINE_BORE], units::inch);
+    const double rodLength = units::distance(def[ENGINE_ROD_LENGTH], units::inch);
+    const double rodMass = units::mass(560.0, units::g);
+    const double compressionHeight = units::distance(1.0, units::inch);
+    // Un vilebrequin de six en ligne est long : sept paliers, plus de matiere
+    // que celui d'un quatre. Le volant est celui d'une voiture de tourisme.
+    const double crankMass = units::mass(14.0, units::kg);
+    const double flywheelMass = units::mass(8.0, units::kg);
+    const double flywheelRadius = units::distance(6.0, units::inch);
+    const double cycle = 2 * 360 * units::deg;
+
+    Engine *engine = new Engine;
+
+    Engine::Parameters params;
+    params.name = "Sonde I6";
+    params.cylinderBanks = 1;
+    // Le nombre de cylindres choisit le constructeur, il ne se lit pas ici :
+    // ordre d'allumage et angles de manetons le suivent, et ils definissent le
+    // moteur.
+    params.cylinderCount = 6;
+    params.crankshaftCount = 1;
+    // Deux lignes d'echappement, trois cylindres chacune — un montage 6-en-2,
+    // celui qu'on trouve sur les six en ligne de route.
+    //
+    // C'etait la derniere difference structurelle avec le V8, le seul moteur
+    // que David trouvait interessant. Mesure a 3 698 tr/min, son sec, part
+    // d'energie : la seconde ligne apporte **12,1 dB entre 4 et 8 kHz** et rien
+    // ailleurs. Verdict a l'oreille : « c'est mieux ».
+    //
+    // Elle ne comble pas tout : il manque encore 16 dB entre 1 et 4 kHz pour
+    // rejoindre le V8, et quatre autres pistes ont ete eliminees avant
+    // celle-la — collecteurs etages, echappement complet du GM, came du V8,
+    // vilebrequin croise contre plat. Ce qui reste a essayer est la cylindree.
+    params.exhaustSystemCount = 2;
+    params.intakeCount = 1;
+    params.starterTorque = units::torque(90.0, units::ft_lb);
+    params.starterSpeed = units::rpm(500);
+    params.redline = units::rpm(7000);
+    params.dynoMinSpeed = units::rpm(1000);
+    params.dynoMaxSpeed = units::rpm(7000);
+    params.dynoHoldStep = units::rpm(100);
+    params.initialSimulationFrequency = 10000;
+    params.initialHighFrequencyGain = 0.01;
+    // Les deux bruits que le synthetiseur ajoute a dessein. Sans ces deux
+    // lignes, ils valent 1,0 et 0,5 — les valeurs de la structure d'engine-sim,
+    // qui sont des valeurs de demonstration. Mesure sur le ralenti d'un quatre
+    // cylindres : elles produisaient un plateau plat de 250 Hz a 2 kHz et une
+    // remontee de 11 dB entre 2 et 8 kHz, la ou un moteur decroit. Le bruit
+    // d'air ne s'ajoute pas au signal, il le **multiplie** : a un, le moteur
+    // disparait derriere sa propre modulation.
+    //
+    // Pas zero pour autant : un moteur a du souffle, et le retirer tout a fait
+    // sonne synthetique.
+    params.initialNoise = def[ENGINE_AIR_NOISE];
+    params.initialJitter = def[ENGINE_INPUT_SAMPLE_NOISE];
+
+    DirectThrottleLinkage *throttle = new DirectThrottleLinkage;
+    DirectThrottleLinkage::Parameters throttleParams;
+    throttleParams.gamma = 2.0;
+    throttle->initialize(throttleParams);
+    params.throttle = throttle;
+
+    engine->initialize(params);
+
+    // Vilebrequin : manetons a 0, 120, 240, 240, 120, 0 degres.
+    Crankshaft::Parameters crankParams;
+    crankParams.mass = crankMass;
+    crankParams.flywheelMass = flywheelMass;
+    crankParams.momentOfInertia =
+        diskInertia(crankMass, stroke / 2)
+        + diskInertia(flywheelMass, flywheelRadius)
+        + diskInertia(units::mass(10.0, units::kg), units::distance(6.0, units::cm));
+    crankParams.crankThrow = stroke / 2;
+    crankParams.frictionTorque = units::torque(1.2, units::ft_lb);
+    crankParams.tdc = 90 * units::deg;  // banc vertical (angle 0), comme les moteurs en ligne livres
+    crankParams.rodJournals = 6;
+    Crankshaft *crank = engine->getCrankshaft(0);
+    crank->initialize(crankParams);
+
+    // Les paires qui montent ensemble : 1-6, 2-5, 3-4. C'est de la que vient
+    // l'equilibre parfait du six en ligne — les forces d'inertie du premier et
+    // du deuxieme ordre s'annulent deux a deux, sans arbre d'equilibrage.
+    const double journalAngles[6] = {
+        0.0 * units::deg, 120.0 * units::deg, 240.0 * units::deg,
+        240.0 * units::deg, 120.0 * units::deg, 0.0 * units::deg };
+    for (int i = 0; i < 6; ++i) {
+        crank->setRodJournalAngle(i, journalAngles[i]);
+    }
+
+    CylinderBank *bank = engine->getCylinderBank(0);
+    CylinderBank::Parameters bankParams;
+    bankParams.crankshaft = crank;
+    bankParams.positionX = 0.0;
+    bankParams.positionY = 0.0;
+    bankParams.angle = 0.0;
+    bankParams.bore = bore;
+    bankParams.deckHeight = stroke / 2 + rodLength + compressionHeight;
+    bankParams.displayDepth = 0.0;
+    bankParams.cylinderCount = 6;
+    bankParams.index = 0;
+    bank->initialize(bankParams);
+
+    for (int i = 0; i < 6; ++i) {
+        Piston *piston = engine->getPiston(i);
+        ConnectingRod *rod = engine->getConnectingRod(i);
+
+        Piston::Parameters pistonParams;
+        pistonParams.Rod = rod;
+        pistonParams.Bank = bank;
+        pistonParams.CylinderIndex = i;
+        pistonParams.BlowbyFlowCoefficient = GasSystem::k_28inH2O(0.001);
+        pistonParams.CompressionHeight = compressionHeight;
+        pistonParams.WristPinPosition = 0.0;
+        pistonParams.Displacement = 0.0;
+        pistonParams.mass = units::mass(414.0 + 152.0, units::g);
+        piston->initialize(pistonParams);
+
+        ConnectingRod::Parameters rodParams;
+        rodParams.mass = rodMass;
+        rodParams.momentOfInertia = rodInertia(rodMass, rodLength);
+        rodParams.centerOfMass = 0.0;
+        rodParams.length = rodLength;
+        rodParams.rodJournals = 0;
+        rodParams.slaveThrow = 0.0;
+        rodParams.piston = piston;
+        rodParams.crankshaft = crank;
+        rodParams.master = nullptr;
+        rodParams.journal = i;
+        rod->initialize(rodParams);
+    }
+
+    // Ordre d'allumage 1-5-3-6-2-4, soit un allumage tous les 120 degres de
+    // vilebrequin, parfaitement regulier. La ou le V8 croise grogne parce que
+    // ses allumages sont inegaux sur chaque banc, le six en ligne est lisse.
+    //
+    // Chaque cylindre allume un demi-tour apres celui qui partage son maneton :
+    // le 1 a 0 degre et le 6 a 360, le 5 a 120 et le 2 a 480, le 3 a 240 et le
+    // 4 a 600. Range par cylindre, en fractions de cycle :
+    const double firingAngle[6] = {
+        0.0 * cycle, (4.0 / 6.0) * cycle, (2.0 / 6.0) * cycle,
+        (5.0 / 6.0) * cycle, (1.0 / 6.0) * cycle, (3.0 / 6.0) * cycle };
+
+    // Deux profils de came au lieu d'un : le contrat donne une levee et une
+    // duree par cote, comme les fichiers de reference.
+    Function *intakeLobe = harmonicCamLobe(
+        def[ENGINE_INTAKE_DURATION] * units::deg, 2.0,
+        units::distance(def[ENGINE_INTAKE_LIFT], units::inch), 100);
+    Function *exhaustLobe = harmonicCamLobe(
+        def[ENGINE_EXHAUST_DURATION] * units::deg, 2.0,
+        units::distance(def[ENGINE_EXHAUST_LIFT], units::inch), 100);
+
+    // `lobeSeparation` ne sert qu'a poser les deux centres par defaut, comme
+    // dans le langage de script (`intake_lobe_center: lobe_separation`). Ce
+    // sont les centres qui calent les cames ici.
+    const double intakeLobeCenter = def[ENGINE_INTAKE_LOBE_CENTER] * units::deg;
+    const double exhaustLobeCenter = def[ENGINE_EXHAUST_LOBE_CENTER] * units::deg;
+    const double rot360 = 360 * units::deg;
+
+    Camshaft *intakeCam = new Camshaft;
+    Camshaft *exhaustCam = new Camshaft;
+    Camshaft::Parameters camParams;
+    camParams.lobes = 6;
+    camParams.advance = 0.0;
+    camParams.crankshaft = crank;
+    camParams.baseRadius = units::distance(1.0, units::inch);
+    camParams.lobeProfile = intakeLobe;
+    intakeCam->initialize(camParams);
+    camParams.lobeProfile = exhaustLobe;
+    exhaustCam->initialize(camParams);
+    for (int i = 0; i < 6; ++i) {
+        intakeCam->setLobeCenterline(i, rot360 + intakeLobeCenter + firingAngle[i]);
+        exhaustCam->setLobeCenterline(i, rot360 - exhaustLobeCenter + firingAngle[i]);
+    }
+
+    StandardValvetrain *valvetrain = new StandardValvetrain;
+    StandardValvetrain::Parameters valvetrainParams;
+    valvetrainParams.intakeCamshaft = intakeCam;
+    valvetrainParams.exhaustCamshaft = exhaustCam;
+    valvetrain->initialize(valvetrainParams);
+
+    CylinderHead *head = engine->getHead(0);
+    CylinderHead::Parameters headParams;
+    headParams.Bank = bank;
+    headParams.Valvetrain = valvetrain;
+    // Les memes courbes de debit que le quatre cylindres : ce sont des donnees
+    // de banc d'essai, et nous n'en avons pas d'autres. C'est une reserve, pas
+    // un choix.
+    headParams.IntakePortFlow = flowCurve({
+        {0, 0}, {50, 58}, {100, 103}, {150, 156}, {200, 214},
+        {250, 249}, {300, 268}, {350, 280}, {400, 280}, {450, 281} });
+    headParams.ExhaustPortFlow = flowCurve({
+        {0, 0}, {50, 37}, {100, 72}, {150, 113}, {200, 160},
+        {250, 196}, {300, 222}, {350, 235}, {400, 245}, {450, 246} });
+    headParams.CombustionChamberVolume = def[ENGINE_CHAMBER_VOLUME] * units::cc;
+    headParams.IntakeRunnerVolume = def[ENGINE_INTAKE_RUNNER_VOLUME] * units::cc;
+    headParams.IntakeRunnerCrossSectionArea = def[ENGINE_INTAKE_RUNNER_AREA] * INCH2;
+    headParams.ExhaustRunnerVolume = def[ENGINE_EXHAUST_RUNNER_VOLUME] * units::cc;
+    headParams.ExhaustRunnerCrossSectionArea = def[ENGINE_EXHAUST_RUNNER_AREA] * INCH2;
+    headParams.FlipDisplay = false;
+    head->initialize(headParams);
+
+    Intake *intake = engine->getIntake(0);
+    Intake::Parameters intakeParams;
+    intakeParams.volume = def[ENGINE_PLENUM_VOLUME] * units::L;
+    intakeParams.CrossSectionArea = 20.0 * units::cm2;
+    intakeParams.InputFlowK = GasSystem::k_carb(def[ENGINE_INTAKE_FLOW_RATE]);
+    intakeParams.IdleFlowK = GasSystem::k_carb(0.0);
+    intakeParams.RunnerFlowRate = GasSystem::k_carb(250.0);
+    // Le papillon au ralenti, a la valeur de reference d'engine-sim.
+    //
+    // Il valait 0,9985 chez nous, quasiment ferme. Le debit d'air passe en
+    // cosinus de l'angle : cos(0,9985 * pi/2) = 0,0024 contre 0,0393 a 0,975,
+    // soit **dix-sept fois moins d'air**. Le moteur etait asphyxie au ralenti,
+    // il ne brulait presque pas, et ce qu'on entendait etait le pompage.
+    //
+    // C'est le defaut d'engine-sim (intake.h), et les moteurs qu'il livre le
+    // gardent tel quel.
+    intakeParams.IdleThrottlePlatePosition = def[ENGINE_IDLE_THROTTLE_PLATE];
+    intakeParams.RunnerLength = units::distance(12.0, units::inch);
+    intakeParams.VelocityDecay = 0.5;
+    intake->initialize(intakeParams);
+
+    // Les deux lignes sont identiques : memes cotes, meme reponse. Ce qui les
+    // distingue est ce qui y entre — les cylindres 1 a 3 dans l'une, 4 a 6 dans
+    // l'autre —, donc le rythme des impulsions qu'elles portent.
+    ExhaustSystem *lignes[2];
+    for (int b = 0; b < 2; ++b) {
+        // La reponse impulsionnelle n'est qu'un nom de fichier ici : le banc
+        // fabrique lui-meme les echantillons.
+        ImpulseResponse *impulse = new ImpulseResponse;
+        impulse->initialize("sonde", 0.01);
+
+        ExhaustSystem *exhaust = engine->getExhaustSystem(b);
+        ExhaustSystem::Parameters exhaustParams;
+        // Le langage de script derive la longueur du volume : length = volume /
+        // collector_cross_section_area (es/objects/objects.mr).
+        const double collectorArea = constants::pi
+            * units::distance(2.0, units::inch) * units::distance(2.0, units::inch);
+        exhaustParams.length = (def[ENGINE_COLLECTOR_VOLUME] * units::L) / collectorArea;
+        exhaustParams.collectorCrossSectionArea = collectorArea;
+        exhaustParams.outletFlowRate = GasSystem::k_carb(def[ENGINE_OUTLET_FLOW_RATE]);
+        exhaustParams.primaryTubeLength =
+            units::distance(def[ENGINE_PRIMARY_TUBE_LENGTH], units::inch);
+        exhaustParams.primaryFlowRate = GasSystem::k_carb(def[ENGINE_PRIMARY_FLOW_RATE]);
+        exhaustParams.velocityDecay = 1.0;
+        // L'EJ25 declare `audio_volume: 0.5 * 8`, soit quatre.
+        exhaustParams.audioVolume = def[ENGINE_EXHAUST_AUDIO_VOLUME];
+        exhaustParams.impulseResponse = impulse;
+        exhaust->initialize(exhaustParams);
+        lignes[b] = exhaust;
+    }
+
+    for (int i = 0; i < 6; ++i) {
+        head->setIntake(i, intake);
+        // Les trois premiers cylindres dans une ligne, les trois autres dans
+        // l'autre : c'est le decoupage d'un collecteur 6-en-2, et il suit
+        // l'ordre d'allumage 1-5-3 puis 6-2-4.
+        head->setExhaustSystem(i, lignes[i < 3 ? 0 : 1]);
+        head->setSoundAttenuation(i, 1.0);
+        // Tous les collecteurs a la meme longueur. Un six en ligne bien fait les
+        // egalise : c'est meme ce qui lui donne sa regularite, et un collecteur
+        // etage y serait un defaut.
+        head->setHeaderPrimaryLength(
+            i, units::distance(def[ENGINE_HEADER_LENGTH], units::inch));
+    }
+
+    Function *timingCurve = new Function;
+    timingCurve->initialize(5, units::rpm(1000));
+    timingCurve->addSample(units::rpm(0), 25 * units::deg);
+    timingCurve->addSample(units::rpm(1000), 25 * units::deg);
+    timingCurve->addSample(units::rpm(2000), 30 * units::deg);
+    timingCurve->addSample(units::rpm(3000), 40 * units::deg);
+    timingCurve->addSample(units::rpm(4000), 40 * units::deg);
+
+    IgnitionModule::Parameters ignitionParams;
+    ignitionParams.cylinderCount = 6;
+    ignitionParams.crankshaft = crank;
+    ignitionParams.timingCurve = timingCurve;
+    // Le rupteur suit le profil, il n'est plus fige.
+    //
+    // Il valait 6 500 et 6 800 en dur, quand le profil Sport monte a 8 500 :
+    // passe 6 800, engine-sim coupait l'allumage. Il ne restait alors que le
+    // pompage d'air, aigu et sans corps — David l'a entendu comme « la
+    // frequence sourde tout d'un coup coupee », vers 6 900 tr/min.
+    ignitionParams.revLimit = units::rpm(def[ENGINE_REV_LIMIT]);
+    ignitionParams.limiterDuration = def[ENGINE_LIMITER_DURATION];
+    engine->getIgnitionModule()->initialize(ignitionParams);
+    for (int i = 0; i < 6; ++i) {
+        engine->getIgnitionModule()->setFiringOrder(i, firingAngle[i]);
+    }
+
+    Function *turbulence = new Function;
+    turbulence->initialize(30, 1);
+    for (int i = 0; i < 30; ++i) {
+        turbulence->addSample((double)i, i * 0.5);
+    }
+
+    // La courbe par defaut du langage de script (es/objects/objects.mr) :
+    // sans elle, la combustion dereference un pointeur nul.
+    Function *flameSpeed = new Function;
+    flameSpeed->initialize(10, 5.0);
+    flameSpeed->addSample(0.0, 3.0);
+    for (int i = 1; i < 10; ++i) {
+        flameSpeed->addSample(i * 5.0, 1.5 * i * 5.0);
+    }
+
+    Fuel *fuel = engine->getFuel();
+    Fuel::Parameters fuelParams;
+    fuelParams.maxTurbulenceEffect = 2.5;
+    fuelParams.maxBurningEfficiency = 0.75;
+    fuelParams.turbulenceToFlameSpeedRatio = flameSpeed;
+    fuel->initialize(fuelParams);
+
+    CombustionChamber::Parameters ccParams;
+    ccParams.CrankcasePressure = units::pressure(1.0, units::atm);
+    ccParams.Fuel = fuel;
+    ccParams.StartingPressure = units::pressure(1.0, units::atm);
+    ccParams.StartingTemperature = units::celcius(25.0);
+    ccParams.MeanPistonSpeedToTurbulence = turbulence;
+    for (int i = 0; i < engine->getCylinderCount(); ++i) {
+        ccParams.Piston = engine->getPiston(i);
+        ccParams.Head = engine->getHead(ccParams.Piston->getCylinderBank()->getIndex());
+        engine->getChamber(i)->initialize(ccParams);
+    }
+
+    engine->calculateDisplacement();
+    return engine;
+}
+
+
+/**
  * Un V8 americain a vilebrequin croise, releve sur le GM LS livre avec
  * engine-sim (assets/engines/atg-video-2/07_gm_ls.mr).
  *
@@ -588,7 +937,7 @@ Engine *buildCrossplaneV8(const EngineDefinition &def) {
 
     // Le croisement, recopie du GM LS.
     const double journalAngles[4] = {
-        0.0 * units::deg, 270.0 * units::deg, 90.0 * units::deg, 180.0 * units::deg };
+        0.0 * units::deg, 180.0 * units::deg, 180.0 * units::deg, 0.0 * units::deg };
     for (int i = 0; i < 4; ++i) crank->setRodJournalAngle(i, journalAngles[i]);
 
     CylinderBank *banks[2];
@@ -857,7 +1206,11 @@ Engine *buildCrossplaneV8(const EngineDefinition &def) {
  * Tout le reste vient du tableau.
  */
 Engine *buildEngine(const EngineDefinition &def) {
-    return (int)def[ENGINE_CYLINDERS] == 4 ? buildInline4(def) : buildCrossplaneV8(def);
+    switch ((int)def[ENGINE_CYLINDERS]) {
+        case 4: return buildInline4(def);
+        case 6: return buildInline6(def);
+        default: return buildCrossplaneV8(def);
+    }
 }
 
 } // namespace engines

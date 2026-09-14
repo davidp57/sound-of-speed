@@ -55,17 +55,30 @@ describe('bibliothèque de moteurs', () => {
       expect(revLimit).toBeDefined()
       expect(entry.redlineRpm).toBeGreaterThanOrEqual(revLimit!.min)
       expect(entry.redlineRpm).toBeLessThanOrEqual(revLimit!.max)
-      expect(entry.source).toMatch(/^assets\/engines\/.+\.mr$/)
+      // Une source quand il y en a une. Le six en ligne n'en a pas : il est
+      // construit de mémoire et non relevé d'un fichier, et sa définition le
+      // dit. Un moteur sans source reste recevable, mais il doit rester
+      // l'exception — sinon la bibliothèque cesse d'être un relevé.
+      if (entry.source !== undefined) {
+        expect(entry.source).toMatch(/^assets\/engines\/.+\.mr$/)
+      }
       expect(entry.label.length).toBeGreaterThan(0)
     },
   )
 
-  // Quatre ou huit, et rien entre les deux : `probe.cpp` n'a que ces deux
+  it('garde les moteurs sans source pour l’exception', () => {
+    // Le jour où la moitié de la liste est construite de mémoire, elle ne
+    // documente plus rien. Un seul aujourd'hui : le six en ligne.
+    const sansSource = ENGINE_LIBRARY.filter((entry) => entry.source === undefined)
+    expect(sansSource.map((entry) => entry.id)).toEqual(['bmw-i6-3l'])
+  })
+
+  // Quatre, six ou huit, et rien entre : `native/engines.h` n'a que ces trois
   // constructeurs, et une définition hors de ce choix serait ramenée à l'un des
   // deux sans qu'on l'entende venir.
   it('ne propose que des architectures que le C++ sait construire', () => {
     for (const entry of ENGINE_LIBRARY) {
-      expect([4, 8]).toContain(entry.definition.cylinders)
+      expect([4, 6, 8]).toContain(entry.definition.cylinders)
     }
   })
 })
