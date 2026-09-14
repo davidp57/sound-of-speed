@@ -1,8 +1,10 @@
 # ACCUEILLIR — l'écran d'aide du premier lancement, revu
 
-**Statut :** ✅ fait — 5/5, le 14 septembre 2026
-**Branche :** `feature/accueillir`
-**Version visée :** 0.2.x
+**Statut :** 🧑 attend David — 5/5 livrés le 14 septembre 2026, reste l'essai au
+volant
+**Branche :** `feature/accueillir` (PR #171) et `fix/textes-accueil` (PR #172),
+mergées dans `develop`
+**Version visée :** 0.2.48
 
 ## Ce que David demande
 
@@ -134,3 +136,15 @@ contester.
 | 03 | [De vrais onglets, avec une découpe](tickets/03-de-vrais-onglets.md) | ✅ |
 | 04 | [La visite désigne la barre du haut](tickets/04-la-visite-designe-la-barre.md) | ✅ |
 | 05 | [L'aide de référence, allégée](tickets/05-l-aide-de-reference-allegee.md) | ✅ |
+
+## Ce qui reste
+
+Deux choses ne se jugent que dans la voiture :
+
+- **La face « au volant » de l'accueil** — la troisième phrase du bloc compte,
+  qui propose le code au lieu de l'enregistrement. Elle dépend de l'appareil
+  détecté, et c'est là-bas qu'on voit si elle tombe juste.
+- **Le placement des bulles sur l'écran de la Tesla.** Elles sont mesurées à
+  1280 et à 375 pixels au bureau ; le zoom du navigateur de bord n'est pas
+  réglable et sa valeur par défaut a changé avec le logiciel de la voiture. Une
+  bulle qui déborde ne se verrait qu'à l'usage.
