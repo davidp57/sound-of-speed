@@ -8,6 +8,18 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le six en ligne est livré avec l'application**, à la demande de David. Quatre
+  profils d'usine au lieu de trois — **V8**, **V8 collecteur long**, **L6**,
+  **L4** —, rangés par nombre de cylindres décroissant. Le V8 croisé reste
+  premier, donc actif au premier lancement.
+
+  4,9 Mo d'échantillons dans le dépôt au lieu de 4,2. Rien ne change côté
+  voiture : la mise en cache hors réseau ne prend que les couches du profil
+  actif.
+
+
+### Ajouté
+
 - **Un six cylindres en ligne, l'architecture des BMW.** Demandé par David.
   C'est la troisième que le projet sait bâtir — manetons à 0-120-240, ordre
   d'allumage 1-5-3-6-2-4, et **deux lignes d'échappement** de trois cylindres

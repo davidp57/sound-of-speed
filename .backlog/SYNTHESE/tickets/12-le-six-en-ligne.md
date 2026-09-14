@@ -1,6 +1,6 @@
 # 12 — Un six cylindres en ligne, et la chasse au grain du V8
 
-**Statut :** 🧑 attend David — le moteur est là et jugé « mieux » ; reste à dire s'il se livre
+**Statut :** ✅ fait — livré avec l'application le 14 septembre 2026
 
 **Bloqué par :** aucun
 
@@ -80,11 +80,26 @@ Deux enseignements qui valent au-delà de ce ticket :
 
 ## Ce qui n'est pas tranché
 
-- **Le six se livre-t-il ?** Il n'est pas dans les profils d'usine : David le
-  trouve « moyen en charge », et l'ajouter serait décider à sa place. Sa banque
-  est produite et son profil s'importe.
+- **Le six est livré**, tranché par David le 14 septembre : « le six dans les
+  profils d'usine ». Quatre profils au lieu de trois, rangés par nombre de
+  cylindres décroissant, le V8 croisé toujours premier.
 - **Le diesel 2.0** demandé dans le même message n'est pas fait. Il bute sur
   autre chose : le carburant, l'avance à l'allumage et la vitesse de flamme ne
   sont pas dans le contrat, et une part du claquement diesel est un bruit
   mécanique qu'engine-sim ne modélise pas.
 - **Le timbre**, comme toujours sur ce lot.
+
+## Ce qui reste à faire, et qui n'est pas du code
+
+**Le régler.** C'est l'hypothèse qui survit aux sept autres, et elle est écrite
+dans `engine-library.ts` depuis des semaines : « un seul est réglé à ce jour, le
+GM LS, aux valeurs relevées par David ». Le V8 est le seul moteur travaillé du
+dépôt ; le quatre cylindres et le six portent des valeurs de référence brutes.
+
+Cela expliquerait le dégradé mesuré sur le son sec — V8 à −10,5 dB entre 1 et
+2 kHz, quatre cylindres à −18,9, six à −26,2 — et pourquoi aucun paramètre isolé
+ne rend les 16 dB manquants : un réglage est un ensemble, pas un curseur.
+
+Le module WebAssembly a été recompilé le 14 septembre, donc le six apparaît dans
+l'écran Synthèse avec ses vingt-neuf curseurs. C'est le seul essai que la machine
+ne peut pas faire.

@@ -1990,9 +1990,9 @@ profil. Au premier lancement, il se déduit du profil actif.
 
 ### Profils
 
-**Trois** profils sont livrés avec l'application — **V8**, **V8 collecteur
-long** et **L4**, un par banque produite au banc —, et le bouton **Profils
-d'usine** réintroduit ceux qu'on a supprimés.
+**Quatre** profils sont livrés avec l'application — **V8**, **V8 collecteur
+long**, **L6** et **L4**, un par banque produite au banc —, et le bouton
+**Profils d'usine** réintroduit ceux qu'on a supprimés.
 
 Ce bouton propose aussi les profils d'usine réglés sur une banque **déposée**,
 mais seulement **quand le serveur liste cette banque**. Ces profils-là ne partent
@@ -2022,10 +2022,10 @@ d'ailleurs. Trois conséquences :
 
 Ce qu'un moteur **n'emporte pas** : les rapports, le pont, la façon de passer
 les vitesses, ni les réglages de mesure du signal. Changer de moteur change le
-son, pas la conduite. Les moteurs livrés sont ceux des trois profils d'usine,
+son, pas la conduite. Les moteurs livrés sont ceux des quatre profils d'usine,
 et **ils partagent le même étagement** — sept rapports, pont 3,7. Leurs rupteurs
-sont assez voisins pour que cela tienne (6 500, 6 500 et 6 300) ; ce ne serait
-plus vrai d'un moteur qui monte beaucoup plus haut, et la question est
+restent assez voisins pour que cela tienne (6 500, 6 500, 7 000 et 6 300) ; ce ne
+serait plus vrai d'un moteur qui monte beaucoup plus haut, et la question est
 ouverte.
 
 **Route** — calibré sur les vitesses que l'on pratique vraiment. **Sept
@@ -2564,15 +2564,16 @@ Le dossier `public/audio/` **n'est pas versionné**, volontairement, et le code
 n'y référence rien en dur : chaque profil déclare un sous-dossier et la liste de
 ses couches.
 
-**Trois exceptions** : les banques **produites au banc** par
+**Quatre exceptions** : les banques **produites au banc** par
 [`scripts/generate-bank/`](scripts/generate-bank/README.md), qui sont livrées
-avec l'application. 4,2 Mo en FLAC à elles trois, et un profil d'usine par
+avec l'application. 4,9 Mo en FLAC à elles quatre, et un profil d'usine par
 banque.
 
 | Banque | Moteur | Prises | Poids |
 |---|---|---|---|
 | [`gm-ls`](public/audio/gm-ls/LISEZMOI.md) | V8 croisé, GM LS 5,7 L | 18 | 1,5 Mo |
 | [`gm-ls-long-header`](public/audio/gm-ls-long-header/LISEZMOI.md) | le même, collecteur long | 18 | 1,5 Mo |
+| [`bmw-i6-3l`](public/audio/bmw-i6-3l/LISEZMOI.md) | six en ligne, 3,0 L | 18 | 1,3 Mo |
 | [`subaru-ej25`](public/audio/subaru-ej25/LISEZMOI.md) | quatre cylindres à plat | 15 | 1,2 Mo |
 
 **Le V8 croisé est le premier de la liste**, donc le profil actif au tout premier
