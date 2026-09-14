@@ -28,6 +28,8 @@ import { fileURLToPath } from 'node:url'
 
 import { buildPlan } from './plan.mjs'
 import { closeLoop, seamStep } from './loop.mjs'
+import { fichierMoteur, resoudreMoteur } from './moteur.mjs'
+import { buildProfile } from './profil.mjs'
 import { peak, rms, spectralCentroid } from './spectrum.mjs'
 import { readWav, writeWav } from './wav.mjs'
 
@@ -83,12 +85,12 @@ function parseArgs(argv) {
 }
 
 /** Lance le banc natif et rend son relevé, prise par prise. */
-function runBench(definition, plan, rawDir) {
+function runBench(definition, enginePath, plan, rawDir) {
   return new Promise((resolveRun, rejectRun) => {
     const child = spawn(
       BINARY,
       [
-        '--engine', definition.base,
+        '--engine-def', enginePath,
         '--sim-hz', String(definition.simulationHz),
         '--impulse', String(definition.impulseSamples),
         ...(exhaustPath(definition) === '' ? [] : ['--exhaust', exhaustPath(definition)]),
@@ -250,12 +252,22 @@ async function main() {
   const options = parseArgs(process.argv.slice(2))
   const definition = JSON.parse(readFileSync(options.definition, 'utf8'))
 
-  const plan = buildPlan(definition, SAMPLE_RATE)
+  // Le moteur vient de la bibliothèque de l'application, la même que celle de
+  // l'écran de synthèse. Le rupteur qu'elle porte fait le domaine de la banque :
+  // une définition qui le redit l'emporte, mais elle n'a pas à le redire.
+  const moteur = await resoudreMoteur(definition)
+  const plan = buildPlan({ ...definition, redlineRpm: moteur.redlineRpm }, SAMPLE_RATE)
   const bankDir = join(options.out, definition.sampleDir)
   const rawDir = join(bankDir, '.brut')
   mkdirSync(rawDir, { recursive: true })
 
-  console.log(`Moteur : ${definition.name} (${definition.base}, ${definition.cylinders} cylindres)`)
+  // Le moteur part au banc par fichier, et ce fichier reste : une banque se
+  // refait en le relisant, sans avoir à retrouver quelle version de la
+  // bibliothèque l'a produite.
+  const enginePath = join(rawDir, 'moteur.txt')
+  writeFileSync(enginePath, fichierMoteur(moteur))
+
+  console.log(`Moteur : ${moteur.label} (${moteur.id}, ${moteur.cylinders} cylindres)`)
   console.log(
     `Ancrages : ${plan.anchors.length} de ${Math.round(plan.anchors[0])}` +
       ` à ${Math.round(plan.anchors[plan.anchors.length - 1])} tr/min,` +
@@ -264,7 +276,7 @@ async function main() {
   console.log(`Prises : ${plan.takes.length}, ${definition.bank.takeSeconds} s visée chacune`)
   console.log('')
 
-  const output = await runBench(definition, plan, rawDir)
+  const output = await runBench(definition, enginePath, plan, rawDir)
   const { report, totalSeconds } = parseReport(output)
 
   // --- Reprise de chaque prise : niveau, fermeture de boucle, mesures. ---
@@ -379,14 +391,14 @@ async function main() {
       label: candidate.label,
       takes: kept.length,
       ratio: Math.pow(anchorList[anchorList.length - 1] / anchorList[0], 1 / (anchorList.length - 1)),
-      ...rateSpan(anchorList, definition.idleRpm, definition.redlineRpm),
+      ...rateSpan(anchorList, definition.idleRpm, moteur.redlineRpm),
       timbre: timbreError(kept, [...witnesses, ...dropped]),
     }
   })
 
   // --- Le profil partiel, importable tel quel. ---
   const anchorList = bankOn.map((r) => r.measuredRpm)
-  const span = rateSpan(anchorList, definition.idleRpm, definition.redlineRpm)
+  const span = rateSpan(anchorList, definition.idleRpm, moteur.redlineRpm)
   // Une marge de 10 % au-delà de la plage mesurée : le tremblement de régime et
   // le désaccord entre couches débordent légèrement, et une couche bornée est
   // effacée par le mixage.
@@ -406,41 +418,16 @@ async function main() {
       enabled: true,
     }))
 
-  const profile = {
-    name: definition.name,
-    // Le profil dit d'où vient son son, et garde la définition qui l'a produit.
-    // Sans elle, une banque générée deviendrait une boîte noire : personne ne
-    // saurait plus la refaire après avoir changé un réglage du moteur.
-    soundSource: 'prerendered',
-    engineDefinition: definition,
-    sampleDir: definition.sampleDir,
-    engine: {
-      cylinders: definition.cylinders,
-      idleRpm: definition.idleRpm,
-      redlineRpm: definition.redlineRpm,
-    },
-    mix: {
-      // Ces quatre-là compensaient à la main ce que la banque enregistrée ne
-      // portait pas. Les gains de couche le portent désormais, mesuré : les
-      // laisser en place reviendrait à appliquer deux fois le même relief.
-      loadReliefDb: 0,
-      rpmReliefDb: 0,
-      idleLevelDb: 0,
-      offLoadGain: 1,
-      // Sans effet au-delà de deux couches par famille — le fondu se fait alors
-      // d'un ancrage au suivant — mais écrits pour que le profil reste juste si
-      // l'on désactive des couches.
-      crossfadeLowRpm: Math.round(anchorList[0]),
-      crossfadeHighRpm: Math.round(anchorList[1] ?? anchorList[0]),
-      idleFadeOutRpm: Math.round(anchorList[1] ?? anchorList[0]),
-    },
-    layers,
-  }
+  const profile = buildProfile({ definition, moteur, layers, anchorList })
 
   writeFileSync(join(bankDir, 'profil.json'), `${JSON.stringify(profile, null, 2)}\n`)
 
+  // La recette complète, à côté des fichiers qu'elle a produits : la définition
+  // de banque et les vingt-neuf nombres du moteur. C'est ici qu'on vient pour
+  // refaire une banque, et `sampleDir` est ce qui y mène depuis le profil.
   const mesures = {
     definition,
+    engine: { id: moteur.id, label: moteur.label, definition: moteur.nommees },
     generatedAt: new Date().toISOString(),
     totalSeconds,
     reference: reference.name,

@@ -1,10 +1,8 @@
 {
   "name": "V8 croisé (généré)",
   "sampleDir": "v8-crossplane",
-  "base": "crossplaneV8",
-  "cylinders": 8,
+  "engine": "gm-ls",
   "idleRpm": 750,
-  "redlineRpm": 6500,
   "simulationHz": 10000,
   "impulseSamples": 10000,
   "exhaustResponse": "smooth_39",

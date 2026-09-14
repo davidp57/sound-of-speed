@@ -1,6 +1,6 @@
 {
-  "name": "Quatre cylindres (essai)",
-  "sampleDir": "i4-check",
+  "name": "Quatre cylindres (démonstration)",
+  "sampleDir": "demo",
   "engine": "subaru-ej25",
   "idleRpm": 800,
   "redlineRpm": 6300,
@@ -14,6 +14,6 @@
     "idleThrottle": 0.08,
     "limiterRpm": 0,
     "reliefCompression": 0.35,
-    "witnesses": true
+    "witnesses": false
   }
 }

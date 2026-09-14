@@ -19,6 +19,7 @@
 #include "engines.h"
 
 #include <chrono>
+#include <cstddef>
 #include <cmath>
 #include <cstdio>
 #include <cstdint>
@@ -27,6 +28,11 @@
 #include <cstring>
 #include <string>
 #include <vector>
+
+// Les constructeurs de moteur, le contrat et ses valeurs de reference sont dans
+// engines.h, partages avec la sonde : un moteur est un tableau de nombres, et ce
+// programme en construit un comme le fait le son en direct.
+using namespace engines;
 
 namespace {
 
@@ -264,12 +270,70 @@ std::vector<int16_t> readImpulseWav(const std::string &path) {
     return samples;
 }
 
-Bench *buildBench(const std::string &engineName, int simFrequency,
+
+/**
+ * La reponse d'un tube d'echappement.
+ *
+ * **Ce n'est pas un bruit.** La premiere version tirait un bruit blanc
+ * decroissant, avec ce commentaire : « le contenu importe peu, seule sa
+ * longueur pese sur le cout ». C'etait vrai tant qu'on mesurait le cout
+ * processeur ; c'est faux des qu'on produit du son a ecouter. Convoluer des
+ * explosions par du bruit rend du bruit : mesure sur la banque produite, le
+ * spectre remontait de 10 dB entre 2 et 8 kHz, la ou une prise faite sur une
+ * vraie voiture descend de 17.
+ *
+ * Un echappement est un tube. L'onde court jusqu'au bout, se reflechit sur
+ * l'extremite ouverte — en changeant de signe —, revient, et ainsi de suite en
+ * s'affaiblissant. Sa reponse est donc une suite d'echos espaces du temps
+ * d'aller-retour, adoucis a chaque reflexion.
+ *
+ * Miroir de `exhaustImpulse` dans `src/core/synth/impulse.ts`, qui fait la meme
+ * chose pour le son en direct. Toute correction portee la doit l'etre ici.
+ */
+std::vector<int16_t> makeImpulseResponse(
+        unsigned int samples, double sampleRate = 44100.0, double tubeHz = 57.0) {
+    std::vector<double> reponse(samples, 0.0);
+
+    const double period = sampleRate / (tubeHz > 1.0 ? tubeHz : 1.0);
+    for (unsigned int k = 0; k * period < (double)samples; ++k) {
+        const unsigned int position = (unsigned int)(k * period + 0.5);
+        if (position >= samples) break;
+        // Le signe alterne : l'extremite ouverte reflechit une onde de pression
+        // en onde de depression. C'est ce qui met la fondamentale a un demi-tour
+        // de tube et non a un tour entier.
+        const double sign = (k % 2 == 0) ? 1.0 : -1.0;
+        reponse[position] += sign * std::exp(-4.0 * (double)position / samples);
+    }
+
+    // Une reflexion reelle s'etale et perd ses aigus. Un train de pics nus
+    // sonnerait comme un tuyau d'orgue, pas comme un echappement.
+    const double a = 1.0 - std::exp(-2.0 * 3.14159265358979 * 2000.0 / sampleRate);
+    double state = 0.0;
+    double crete = 0.0;
+    for (unsigned int i = 0; i < samples; ++i) {
+        state += a * (reponse[i] - state);
+        reponse[i] = state;
+        const double abs = state < 0 ? -state : state;
+        if (abs > crete) crete = abs;
+    }
+
+    std::vector<int16_t> ir(samples);
+    const double echelle = crete > 0.0 ? 20000.0 / crete : 0.0;
+    for (unsigned int i = 0; i < samples; ++i) {
+        ir[i] = (int16_t)(reponse[i] * echelle);
+    }
+    // Le chargeur coupe la queue sous 100 en valeur absolue : on garantit que
+    // le dernier echantillon compte, sinon la reponse serait tronquee.
+    ir[samples - 1] = 1000;
+    return ir;
+}
+
+Bench *buildBench(const EngineDefinition &definition, int simFrequency,
                   unsigned int impulseSamples, const std::string &exhaustPath) {
     Bench *bench = new Bench;
-    bench->engine = (engineName == "inline4")
-        ? engines::buildInline4()
-        : engines::buildCrossplaneV8();
+    // Le nombre de cylindres est le seul parametre qui choisisse un
+    // constructeur ; tout le reste du moteur vient du tableau.
+    bench->engine = buildEngine(definition);
     bench->scratch.resize(4096);
 
     bench->vehicle = new Vehicle;
@@ -319,7 +383,7 @@ Bench *buildBench(const std::string &engineName, int simFrequency,
     // donnee — c'est ce que dit public/impulse/LISEZMOI.md : la resonance
     // fabriquee « ne sert que de repli ».
     const std::vector<int16_t> ir = exhaustPath.empty()
-        ? engines::makeImpulseResponse(impulseSamples, kAudioRate)
+        ? makeImpulseResponse(impulseSamples, kAudioRate)
         : readImpulseWav(exhaustPath);
     for (int i = 0; i < bench->engine->getExhaustSystemCount(); ++i) {
         bench->simulator->synthesizer().initializeImpulseResponse(
@@ -375,10 +439,60 @@ const char *argValue(int argc, char **argv, const char *flag, const char *fallba
     return fallback;
 }
 
+/**
+ * Lit la definition de moteur : un nombre par ligne, dans l'ordre du contrat.
+ *
+ * Pas de JSON, pour la meme raison que dans le module WebAssembly — il faudrait
+ * un analyseur, et l'ordre suffit. Le fichier est ecrit par l'outil qui pilote
+ * ce programme et reste dans `.brut/` : une banque se refait en le relisant.
+ *
+ * Un fichier plus court que le contrat laisse les valeurs de reference en place
+ * sur la fin, un fichier plus long voit sa queue ignoree. C'est ce qui permet a
+ * un binaire d'avance de tourner avec une definition d'hier, et l'inverse.
+ *
+ * Aucun repli silencieux : un fichier annonce et introuvable arrete le
+ * programme. Produire plusieurs minutes de son avec le mauvais moteur ne se voit
+ * pas a l'oeil.
+ */
+EngineDefinition readEngineDefinition(const std::string &path) {
+    if (path.empty()) return defaultDefinition(8);
+
+    FILE *f = std::fopen(path.c_str(), "r");
+    if (f == nullptr) {
+        std::fprintf(stderr, "definition de moteur introuvable : %s\n", path.c_str());
+        std::exit(1);
+    }
+
+    std::vector<double> lus;
+    char ligne[256];
+    while (std::fgets(ligne, sizeof(ligne), f) != nullptr) {
+        if (ligne[0] == '#' || ligne[0] == '\n' || ligne[0] == '\r') continue;
+        double valeur = 0.0;
+        if (std::sscanf(ligne, "%lf", &valeur) == 1) lus.push_back(valeur);
+    }
+    std::fclose(f);
+
+    if (lus.empty()) {
+        std::fprintf(stderr, "definition de moteur vide : %s\n", path.c_str());
+        std::exit(1);
+    }
+
+    // Le nombre de cylindres choisit la colonne de reference, comme dans
+    // `synth_create_from` : c'est le seul parametre qui decide d'un autre moteur
+    // plutot que d'un reglage.
+    const int cylindres = (int)lus[ENGINE_CYLINDERS];
+    EngineDefinition def = defaultDefinition(cylindres);
+    const size_t n = lus.size() < ENGINE_PARAM_COUNT ? lus.size() : (size_t)ENGINE_PARAM_COUNT;
+    for (size_t i = 0; i < n; ++i) def.v[i] = lus[i];
+    return def;
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
-    const std::string engineName = argValue(argc, argv, "--engine", "crossplaneV8");
+    // Le moteur arrive par fichier. Sans lui, le V8 de reference : c'est ce que
+    // ce programme a toujours construit.
+    const std::string enginePath = argValue(argc, argv, "--engine-def", "");
     const int simFrequency = std::atoi(argValue(argc, argv, "--sim-hz", "10000"));
     const int impulseSamples = std::atoi(argValue(argc, argv, "--impulse", "10000"));
     // Vide : le tube fabrique. Renseigne : la captation, qui est la norme.
@@ -404,12 +518,14 @@ int main(int argc, char **argv) {
     }
 
     const auto started = Clock::now();
+    const EngineDefinition definition = readEngineDefinition(enginePath);
     Bench *bench =
-        buildBench(engineName, simFrequency, (unsigned int)impulseSamples, exhaustPath);
+        buildBench(definition, simFrequency, (unsigned int)impulseSamples, exhaustPath);
 
     // En-tete du releve, lu par l'outil qui pilote ce programme.
     std::printf("# moteur %s cylindres %d echappements %d sim %d Hz echappement %s\n",
-        engineName.c_str(), bench->engine->getCylinderCount(),
+        enginePath.empty() ? "reference" : enginePath.c_str(),
+        bench->engine->getCylinderCount(),
         bench->engine->getExhaustSystemCount(), simFrequency,
         exhaustPath.empty() ? "tube fabrique" : exhaustPath.c_str());
     std::fflush(stdout);

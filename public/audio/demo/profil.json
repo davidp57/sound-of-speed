@@ -2,24 +2,35 @@
   "name": "Quatre cylindres (démonstration)",
   "soundSource": "prerendered",
   "engineDefinition": {
-    "name": "Quatre cylindres (démonstration)",
-    "sampleDir": "demo",
-    "base": "inline4",
     "cylinders": 4,
-    "idleRpm": 800,
-    "redlineRpm": 6300,
-    "simulationHz": 10000,
-    "impulseSamples": 10000,
-    "exhaustResponse": "smooth_39",
-    "bank": {
-      "spacingOctaves": 0.5,
-      "takeSeconds": 3,
-      "settleSeconds": 3,
-      "idleThrottle": 0.08,
-      "limiterRpm": 0,
-      "reliefCompression": 0.35,
-      "witnesses": true
-    }
+    "bore": 3.917,
+    "stroke": 3.11,
+    "rodLength": 5.142,
+    "chamberVolume": 67,
+    "intakeRunnerVolume": 149.6,
+    "intakeRunnerArea": 1.8225,
+    "exhaustRunnerVolume": 50,
+    "exhaustRunnerArea": 1.5625,
+    "lobeSeparation": 114,
+    "intakeLobeCenter": 117,
+    "exhaustLobeCenter": 112,
+    "intakeLift": 0.385,
+    "exhaustLift": 0.378,
+    "intakeDuration": 232,
+    "exhaustDuration": 236,
+    "plenumVolume": 1.325,
+    "intakeFlowRate": 800,
+    "idleThrottlePlate": 0.9985,
+    "primaryTubeLength": 10,
+    "primaryFlowRate": 200,
+    "outletFlowRate": 1000,
+    "collectorVolume": 100,
+    "exhaustAudioVolume": 4,
+    "revLimit": 6300,
+    "limiterDuration": 0.08,
+    "airNoise": 0.15,
+    "inputSampleNoise": 0,
+    "headerLength": 10
   },
   "sampleDir": "demo",
   "engine": {
@@ -42,7 +53,7 @@
       "file": "on-800.flac",
       "role": "on",
       "anchorRpm": 800,
-      "gain": 0.2248,
+      "gain": 0.2214,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -52,7 +63,7 @@
       "file": "off-800.flac",
       "role": "off",
       "anchorRpm": 800,
-      "gain": 0.218,
+      "gain": 0.1002,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -62,7 +73,7 @@
       "file": "on-1128.flac",
       "role": "on",
       "anchorRpm": 1128,
-      "gain": 0.3009,
+      "gain": 0.2892,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -72,7 +83,7 @@
       "file": "off-1128.flac",
       "role": "off",
       "anchorRpm": 1128,
-      "gain": 0.2605,
+      "gain": 0.144,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -82,7 +93,7 @@
       "file": "on-1592.flac",
       "role": "on",
       "anchorRpm": 1592,
-      "gain": 0.4561,
+      "gain": 0.4491,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -92,7 +103,7 @@
       "file": "off-1592.flac",
       "role": "off",
       "anchorRpm": 1592,
-      "gain": 0.3914,
+      "gain": 0.2304,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -102,7 +113,7 @@
       "file": "on-2245.flac",
       "role": "on",
       "anchorRpm": 2245,
-      "gain": 0.4559,
+      "gain": 0.4407,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -112,7 +123,7 @@
       "file": "off-2245.flac",
       "role": "off",
       "anchorRpm": 2245,
-      "gain": 0.367,
+      "gain": 0.2351,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -122,7 +133,7 @@
       "file": "on-3167.flac",
       "role": "on",
       "anchorRpm": 3167,
-      "gain": 0.5509,
+      "gain": 0.5665,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -132,7 +143,7 @@
       "file": "off-3167.flac",
       "role": "off",
       "anchorRpm": 3167,
-      "gain": 0.5277,
+      "gain": 0.3616,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -142,7 +153,7 @@
       "file": "on-4466.flac",
       "role": "on",
       "anchorRpm": 4467,
-      "gain": 0.6337,
+      "gain": 0.6423,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -152,7 +163,7 @@
       "file": "off-4466.flac",
       "role": "off",
       "anchorRpm": 4467,
-      "gain": 0.4525,
+      "gain": 0.4066,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -172,7 +183,7 @@
       "file": "off-6300.flac",
       "role": "off",
       "anchorRpm": 6300,
-      "gain": 0.4373,
+      "gain": 0.528,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true
@@ -182,7 +193,7 @@
       "file": "idle-800.flac",
       "role": "idle",
       "anchorRpm": 800,
-      "gain": 0.2227,
+      "gain": 0.1634,
       "minRate": 0.649,
       "maxRate": 1.544,
       "enabled": true

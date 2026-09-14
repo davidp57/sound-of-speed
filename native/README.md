@@ -19,6 +19,8 @@ une révision figée.
 | `patches/` | les correctifs de portabilité, un par sujet, appliqués dans l'ordre de leur numéro |
 | `build-native.sh` | compile les 70 fichiers du cœur avec `g++ -std=c++17 -O2` et produit `probe.exe`, puis le lance |
 | `probe.cpp` | la sonde : construit un moteur en dur, le fait tourner, chronomètre — et depuis le ticket 04, le **banc vivant** qui rend des échantillons pour l'application |
+| `engines.h` | les constructeurs de moteur et le contrat qu'ils lisent, partagés par la sonde et le banc hors ligne |
+| `generator.cpp` | le banc hors ligne : tient un régime au dynamomètre et enregistre une prise, pour [`scripts/generate-bank`](../scripts/generate-bank/README.md) |
 | `build-wasm.sh` | compile la même liste de fichiers avec Emscripten, produit `probe.mjs` + `probe.wasm` et les dépose dans `public/sonde/` |
 | `.work/`, `.build/` | plan de travail jetable, ignorés par git |
 

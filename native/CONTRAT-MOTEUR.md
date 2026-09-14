@@ -1,8 +1,10 @@
 # Le contrat de définition de moteur
 
 Ce fichier est la **source de vérité** de ce qui passe du profil au moteur
-simulé. Les deux côtés — le C++ de `probe.cpp` et le TypeScript de
-`core/synth/` — s'y réfèrent, et un test vérifie qu'ils ne divergent pas.
+simulé. Trois côtés s'y réfèrent — le C++ d'`engines.h`, qui construit les
+moteurs pour la sonde comme pour le banc hors ligne, et le TypeScript de
+`core/synth/` —, et un test vérifie qu'ils ne divergent pas
+(`core/preset/engine-contract.test.ts`).
 
 ## Pourquoi
 
@@ -48,8 +50,12 @@ int  synth_create_from(const double *values, int count);
 const values = ENGINE_FIELDS.map((f) => definition[f.key])
 ```
 
-Un test compare la liste TypeScript à l'énumération C++ extraite de la source :
-deux listes qui se désaccordent sans bruit sont exactement ce qu'on veut éviter.
+`core/preset/engine-contract.test.ts` compare la liste TypeScript à
+l'énumération C++ extraite de `native/engines.h` : deux listes qui se
+désaccordent sans bruit sont exactement ce qu'on veut éviter. Ce paragraphe a
+annoncé ce test avant qu'il existe — il a été écrit le 14 septembre 2026, en
+déplaçant l'énumération vers `engines.h` pour que le banc hors ligne la lise
+aussi.
 
 ## Les valeurs de référence, relevées et non déduites
 

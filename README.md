@@ -1732,9 +1732,12 @@ le son n'avait pas été activé, changer d'origine ne l'allume pas.
 d'échantillons comme un autre, produit par
 [`scripts/generate-bank/`](scripts/generate-bank/README.md). Le générateur
 charge la **même captation d'échappement** que le mode direct, choisie par
-`exhaustResponse` dans la définition de moteur : il fabriquait sa propre
+`exhaustResponse` dans la définition de banque : il fabriquait sa propre
 résonance, qui creusait le médium et laissait passer un souffle aigu battant à
-contretemps des explosions. *Généré en direct*,
+contretemps des explosions. Il construit aussi **le même moteur** : la
+définition de banque nomme un moteur de la bibliothèque, et le profil produit
+emporte ses vingt-neuf nombres — basculer une banque générée en *généré en
+direct* joue donc le moteur qui a fait ses échantillons. *Généré en direct*,
 lui, a besoin d'un `AudioWorklet` et du WebAssembly : un navigateur qui n'en a
 pas le dit dans l'écran de configuration, et la banque continue de jouer plutôt
 que de grésiller.
@@ -2552,7 +2555,7 @@ ses couches.
 **Une seule exception, `audio/demo/`** : la banque de démonstration, qui est
 livrée avec l'application. C'est un quatre cylindres **simulé**, produit au banc
 par [`scripts/generate-bank/`](scripts/generate-bank/README.md) — quinze prises,
-1,6 Mo en FLAC. Un profil d'usine la désigne, et c'est lui qui joue au tout
+1,2 Mo en FLAC. Un profil d'usine la désigne, et c'est lui qui joue au tout
 premier lancement : sans elle, une installation neuve serait muette jusqu'à ce
 qu'on ait déposé quelque chose.
 
