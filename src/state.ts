@@ -2,7 +2,6 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import { Loop } from './core/loop'
 import { AudioEngine, type AudioStatus } from './core/audio/engine'
-import { writeSetting, type SettingPath } from './core/calibration/settings'
 import { analyzeSample, type SampleAnalysis } from './core/audio/analyze'
 import { MediaSession, ScreenLock } from './core/session'
 import { Offline, type OfflineStatus } from './core/offline'
@@ -17,7 +16,7 @@ import {
   type EtatDeGarde,
 } from './core/garde'
 import { GeolocationSource } from './core/speed/geolocation'
-import { ReplaySource, TraceRecorder, type Trace } from './core/speed/replay'
+import { ReplaySource, type Trace } from './core/speed/replay'
 import { SimulatorSource } from './core/speed/simulator'
 import { GpsBench, DEFAULT_BENCH, type BenchOptions } from './core/speed/gps-bench'
 import { GamepadReader, type PadSnapshot } from './core/input/gamepad'
@@ -154,12 +153,10 @@ import {
   overridesFor,
   withCalibration,
 } from './core/calibration/onboard'
-import type { CalibrationStepId } from './core/calibration/protocol'
 import { TRACE_FOLDER, depositName, traceBody } from './core/deposit/deposit'
 import {
   loadCalibration,
   loadCarDecision,
-  saveCalibration,
   saveCarDecision,
   type CalibrationSession,
 } from './core/calibration/store'
@@ -182,9 +179,7 @@ import {
   loadTraces,
   missingFactoryProfiles,
   resetProfileSection,
-  saveTraces,
   type ProfileSection,
-  loadAdvancedMode,
   loadDriveMode,
   saveDriveMode,
   fromFile,
@@ -195,7 +190,6 @@ import {
   saveRealCar,
   newId,
   oublierLeCompteDeDepot,
-  saveAdvancedMode,
   saveProfiles,
   saveMasterVolume,
   saveSelectedId,
@@ -353,13 +347,6 @@ export const calibration = ref<CalibrationSession>(loadCalibration())
  * suffisait d'aller regarder l'écran de conduite — ce que fait forcément
  * quelqu'un qui roule — pour condamner l'écran jusqu'au rechargement.
  */
-export const calibrationStep = ref<CalibrationStepId | null>(null)
-
-export function setCalibration(session: CalibrationSession): boolean {
-  calibration.value = session
-  return saveCalibration(session)
-}
-
 const calibrationAnalyses = computed(() => analyzeSession(calibration.value, traces.value))
 
 /** Ce que la mesure impose au profil courant, en clair. */
@@ -507,7 +494,6 @@ const gearbox = new Gearbox(
   activeProfile.value.feel,
 )
 const engine = new Engine(activeProfile.value.engine, activeProfile.value.mix)
-const recorder = new TraceRecorder()
 const loop = new Loop()
 const audio = new AudioEngine()
 const synth = new SynthEngine()
@@ -750,10 +736,8 @@ if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
     })
 }
 export const isRecording = ref(false)
-export const recordedCount = ref(0)
 export const traces = ref<Trace[]>(loadTraces())
 /** Message d'échec de l'enregistrement des traces, quand le quota est atteint. */
-export const traceStorageError = ref('')
 export const replayProgress = ref(0)
 export const audioStatus = ref<AudioStatus>({ ...audio.status })
 
@@ -1002,20 +986,6 @@ saveMasterVolume(masterVolume.value)
 audio.setMasterVolume(masterVolume.value)
 synth.setMasterVolume(masterVolume.value)
 
-/**
- * Mode avancé de l'écran de configuration : une préférence de **cet appareil**.
- *
- * L'écran s'ouvre sur une vue courte — quelques curseurs globaux — et les
- * cinquante réglages détaillés attendent derrière cette bascule. Aucun n'est
- * supprimé : chacun a été ajouté pour une raison mesurée. Mais on ne les
- * parcourait plus, on les subissait.
- */
-export const advancedMode = ref(loadAdvancedMode())
-
-export function setAdvancedMode(value: boolean): void {
-  advancedMode.value = value
-  saveAdvancedMode(value)
-}
 
 /**
  * Visage de l'écran de conduite, et présence du décor.
@@ -2073,25 +2043,6 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * Une trace enregistrée part toute seule, au cran de la conduite.
- *
- * Le nom du fichier est celui du dépôt manuel : les deux voies produisent le
- * même fichier au même endroit, et l'identifiant de file porte le début de
- * l'enregistrement, ce qui empêche de déposer deux fois la même trace.
- */
-function queueTrace(trace: Trace): void {
-  if (!sendsAutomatically(uploadConsent.value, 'trace')) return
-  enqueue({
-    id: `trace:${trace.startedAt}`,
-    kind: 'trace',
-    folder: TRACE_FOLDER,
-    name: depositName(trace),
-    body: traceBody(trace),
-    queuedAt: Date.now(),
-  })
-}
-
-/**
  * Un profil modifié remonte dans la bibliothèque.
  *
  * Pas à la frappe : un curseur qu'on déplace produit des dizaines de valeurs
@@ -2245,10 +2196,6 @@ for (const source of [simulator, geolocation, replay]) {
     // Retenu, pas inscrit : la chaîne n'a pas encore tourné pour cet
     // échantillon, et la sortie qu'on écrirait serait celle du précédent.
     if (capturing.value) pendingSamples.push(sample)
-    if (recorder.isRecording) {
-      recorder.push(sample)
-      recordedCount.value = recorder.count
-    }
   })
   source.onStatus((status, detail) => {
     if (source !== currentSource()) return
@@ -3347,52 +3294,6 @@ function applyPad(dt: number): void {
 let padThrottleWasOn = false
 let padBrakeWasOn = false
 
-export function startRecording(): void {
-  recorder.start()
-  isRecording.value = true
-  recordedCount.value = 0
-}
-
-// Les traces sont conservées d'une session à l'autre : un trajet enregistré en
-// roulant doit survivre au rechargement, faute de quoi il n'aura jamais servi.
-watch(
-  traces,
-  (list) => {
-    traceStorageError.value = saveTraces(list)
-      ? ''
-      : "Les traces n'ont pas pu être enregistrées : espace de stockage insuffisant. En supprimer quelques-unes."
-  },
-  { deep: true },
-)
-
-/**
- * Arrête l'enregistrement et rend la trace obtenue, ou `null` si rien n'a été
- * capturé.
- *
- * La trace est rendue parce que l'étalonnage doit savoir **laquelle** vient
- * d'être enregistrée : il rattache une trace à une étape de son protocole, et
- * prendre la dernière de la liste serait une supposition.
- */
-export function stopRecording(name: string): Trace | null {
-  const trace = recorder.stop(name || `trace ${traces.value.length + 1}`)
-  isRecording.value = false
-  // L'étape d'étalonnage ne survit pas à l'arrêt, d'où qu'il vienne : un
-  // enregistrement arrêté depuis l'écran de télémétrie laissait sinon une étape
-  // annoncée en cours pour toujours.
-  calibrationStep.value = null
-  if (trace.samples.length === 0) return null
-  traces.value = [...traces.value, trace]
-  queueTrace(trace)
-  return trace
-}
-
-export function playTrace(trace: Trace): void {
-  replay.setTrace(trace)
-  setSource('replay')
-  conditioner.reset()
-  if (!isRunning.value) start()
-  else replay.start()
-}
 
 export function setReplayRate(rate: number): void {
   replay.rate = rate
@@ -3787,19 +3688,6 @@ export function setGearCount(count: number): void {
   gearbox.settleFor((gear) => rpmInGear(gear, telemetry.value.speed.kmh))
 }
 
-/**
- * Recopie une valeur mesurée par l'étalonnage dans le profil actif.
- *
- * Un réglage à la fois, sur un geste explicite : l'étalonnage propose, il
- * n'applique pas. Le profil garde son origine, donc « réinitialiser » sait
- * revenir à ce qu'il était avant la recopie.
- */
-export function applyCalibrationSetting(
-  path: SettingPath,
-  value: number | number[],
-): void {
-  editAssembled((profile) => writeSetting(profile, path, value))
-}
 
 export function duplicateActive(): void {
   const copy = duplicateProfile(activeProfile.value, `${activeProfile.value.name} (copie)`)

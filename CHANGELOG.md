@@ -6,6 +6,20 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Retiré
+
+- **Le panneau d'étalonnage manuel s'en va**, avec son protocole en six étapes.
+  Le serveur étalonne tout seul depuis les trajets ordinaires, et l'écran de
+  conduite propose le profil mesuré quand il a de quoi conclure. Ce qui
+  disparaît vraiment : le déclenchement manuel d'une trace et la liste locale
+  des traces — la capture démarre seule au démarrage du GPS, et le rejeu se
+  pilote depuis la télémétrie.
+
+  Le code du cœur qui sert à la mesure automatique est intact : rien n'a été
+  supprimé dans `core/calibration/`, dont les quatre modules du protocole
+  servent encore au calcul. Neuf exports devenus sans usage quittent
+  `src/state.ts`.
+
 ### Ajouté
 
 - **Les réglages de fond ont leur écran, et il ne s'ouvre qu'à l'arrêt.** Moteur,

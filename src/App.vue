@@ -12,18 +12,20 @@ import DriveView from './ui/DriveView.vue'
 import TelemetryView from './ui/TelemetryView.vue'
 
 /**
- * Les trois écrans qu'une voiture n'ouvre jamais, chargés à la demande.
+ * L'atelier, qu'une voiture n'ouvre jamais, chargé à la demande.
  *
- * **C'est la seule chose que le découpage peut rendre**, et c'est mesuré : les
- * autres écrans s'ouvrent au volant, donc les différer ne ferait que déplacer
- * leur téléchargement au premier appui, dans un endroit où il n'y a pas de
- * réseau.
+ * **C'est la seule chose que le découpage peut rendre**, et c'est mesuré : le
+ * morceau principal est tombé de 107,4 à 98,1 ko compressés le jour où celui-ci
+ * en est sorti. Les autres écrans s'ouvrent au volant, donc les différer ne
+ * ferait que déplacer leur téléchargement au premier appui, dans un endroit où
+ * il n'y a pas de réseau.
+ *
+ * Il emmène avec lui le banc et la synthèse, qui ont leurs propres morceaux.
  *
  * Le service worker les garde comme le reste de `/assets/`, dès la première
  * ouverture en ligne — un morceau jamais ouvert n'est pas en cache, mais un
  * écran qu'on n'ouvre pas ne manque à personne.
  */
-const CalibrationPanel = defineAsyncComponent(() => import('./ui/CalibrationPanel.vue'))
 const AtelierView = defineAsyncComponent(() => import('./ui/AtelierView.vue'))
 import type { Appareil } from './core/appareil'
 import type { Role } from './core/identity/roles'
@@ -83,7 +85,6 @@ type Tab =
   | 'telemetry'
   | 'config'
   | 'advanced'
-  | 'calibration'
   | 'account'
   | 'atelier'
 
@@ -324,7 +325,6 @@ const TABS: {
   // Les réglages de fond : ils demandent d'être posé, pas d'avoir un droit. Le
   // conducteur qui bricole chez lui est le même que celui qui roule.
   { id: 'advanced', label: 'Avancé', role: 'conduite', gardee: true },
-  { id: 'calibration', label: 'Étalonnage', role: 'conduite', sur: ['telephone', 'poste'] },
   // L'identité vit dans son propre écran depuis le 13 septembre 2026 : donner un
   // code, en recevoir un, et bientôt se faire un vrai compte. Ce n'est pas un
   // réglage de conduite, et la section qu'il occupait dans Configuration se
@@ -585,7 +585,6 @@ onBeforeUnmount(() => {
           <span v-if="attenteLisible">{{ attenteLisible }}</span>
         </p>
         <TelemetryView v-else-if="tab === 'telemetry'" />
-        <CalibrationPanel v-else-if="tab === 'calibration'" />
         <AtelierView v-else-if="tab === 'atelier' && ouverts.has('atelier')" />
         <AdvancedConfigView v-else-if="tab === 'advanced'" />
         <ConfigView v-else-if="tab === 'config'" />

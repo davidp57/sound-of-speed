@@ -232,19 +232,25 @@ l'application le sait de source sûre, là où reconnaître une voiture à la ch
 d'agent du navigateur reste un pari non vérifié.
 
 **Une bande de défilement longe le bord gauche de chaque écran qui se lit en
-colonne** — configuration, télémétrie, étalonnage, compte, aide : le glissement
+colonne** — paramètres, télémétrie, atelier, compte, aide : le glissement
 n'y dérègle rien. Elle ne paraît qu'en voiture et sur téléphone, l'appareil
 étant deviné au démarrage et corrigeable dans l'écran Compte ; au poste de
 travail on fait défiler à la molette. L'écran de conduite n'en a pas, faute de
 défiler. Les curseurs, eux, rendent partout le glissement vertical à la page et
 ne gardent que l'horizontal.
 
-**Étalonnage** — un protocole guidé en six étapes : rouler en ville, sur route,
-sur autoroute, puis une accélération franche, une décélération pied levé et un
-freinage franc. Chacune s'enregistre à part et **juge si elle a bien été
-faite** : une « accélération franche » qui n'atteint pas le critère est refusée,
-et la raison est dite, plutôt que de donner une charge fausse. Un récapitulatif
-met ensuite le mesuré face au réglé.
+**L'étalonnage n'a plus d'écran** depuis le 14 septembre 2026. Il en avait un —
+un protocole guidé en six étapes, à exécuter en roulant — et le serveur fait
+désormais la même chose tout seul, en relisant les trajets ordinaires. L'écran
+de conduite propose le profil mesuré quand il y a de quoi conclure.
+
+Ce qui disparaît avec ce panneau : le déclenchement manuel d'une trace et la
+liste locale des traces. La capture, elle, démarre seule au démarrage du GPS et
+se dépose par tranches, et c'est avec elle qu'on rejoue un trajet au bureau.
+
+Ce que les six étapes mesuraient — ville, route, autoroute, accélération
+franche, décélération pied levé, freinage franc — reste le vocabulaire du
+calcul, et le code qui l'exploite est intact.
 
 Ce que l'étalonnage mesure devient une **couche** par-dessus les profils. Un
 profil décrit un son — le caractère d'un moteur, sa boîte, son mixage ;
@@ -1445,7 +1451,7 @@ compte en porte zéro à trois.
 
 | Rôle | Ce qu'il ouvre |
 |---|---|
-| `conduite` | conduire, la télémétrie, les réglages simples et avancés, l'étalonnage |
+| `conduite` | conduire, la télémétrie, les réglages simples et avancés |
 | `atelier` | l'écran **Atelier** : créer et tenir les profils, régler le son, fabriquer des moteurs et des boîtes — et déposer sur `/engines/` et `/gearboxes/` |
 | `synthese` | le volet **Synthèse** de l'atelier : régler un timbre |
 
@@ -1484,12 +1490,11 @@ trois : le drapeau de construction qui cachait le banc a disparu le
 | Paramètres | ✅ | ✅ | ✅ |
 | Avancé | à l'arrêt | à l'arrêt | à l'arrêt |
 | Compte | ✅ | ✅ | ✅ |
-| Étalonnage | ❌ | ✅ | ✅ |
 | Banc et sources, dans Avancé | ❌ | à l'arrêt | à l'arrêt |
 | Atelier (rôle `atelier`) | ❌ | ❌ | à l'arrêt |
 
-L'étalonnage se fait tout seul depuis les traces ; son panneau manuel est un
-reste. L'atelier est un écran qu'on regarde à l'arrêt, un moteur à la main. Et
+L'étalonnage se fait tout seul depuis les traces, et son panneau manuel a été
+retiré. L'atelier est un écran qu'on regarde à l'arrêt, un moteur à la main. Et
 la rangée des sources de vitesse n'existe pas en voiture : il n'y reste que le
 GPS, et un seul bouton qu'on ne peut pas désactiver n'est pas un choix.
 
@@ -1561,8 +1566,8 @@ est déjà compressé —, et jamais une plage d'octets, le client demandant alo
 les octets d'un fichier et non d'un flux. Le serveur qui a remplacé nginx ne le
 faisait plus : la voiture tirait 310 ko de JavaScript là où gzip en fait 99.
 
-**Quatre écrans se chargent à la demande** : l'étalonnage, le banc, la synthèse
-et l'atelier, qu'une voiture n'ouvre jamais. Les autres arrivent d'emblée, et
+**Trois écrans se chargent à la demande** : le banc, la synthèse et l'atelier,
+qu'une voiture n'ouvre jamais. Les autres arrivent d'emblée, et
 c'est délibéré — ils s'ouvrent au volant, donc les différer déplacerait leur
 téléchargement là où il n'y a pas de réseau.
 
@@ -2186,10 +2191,14 @@ calcul, faute de savoir ce que fait la voiture. `fullLoadAccelMs2` vaut 2 m/s²
 sur le profil Route — une valeur raisonnée, jamais mesurée, sur un véhicule qui
 en fait bien davantage. L'étalonnage remplace ce raisonnement par un relevé.
 
-Il se trouve **en bas de l'écran Télémétrie**. Tout se passe dans la voiture :
-l'analyse ne demande que du calcul, et le résultat se voit tout de suite.
+**Il n'a plus d'écran** depuis le 14 septembre 2026 : le serveur relit les
+trajets ordinaires et en tire le profil de la vraie voiture, que l'écran de
+conduite propose quand il a de quoi conclure. La section qui suit décrit le
+protocole manuel tel qu'il a existé, parce que c'est lui qui a défini ce que le
+calcul cherche encore aujourd'hui — les six étapes, leurs critères, ce qu'elles
+mesurent.
 
-### La marche à suivre
+### La marche à suivre, quand elle était manuelle
 
 1. Démarrer l'application, source **GPS**.
 2. Lire la consigne de l'étape, et son **critère**. Le critère est annoncé avant
