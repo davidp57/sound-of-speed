@@ -70,8 +70,8 @@ const appVersion = __APP_VERSION__
           </li>
           <li>Autorisez la localisation quand il la demande, la première fois.</li>
           <li>
-            En arrivant, appuyez sur <b>P</b>. Tout s’arrête et le trajet part
-            vers le serveur.
+            En arrivant, appuyez sur <b>P</b>. Tout s’arrête, et ce qui n’est
+            pas encore parti au serveur y part.
           </li>
         </ol>
 

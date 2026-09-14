@@ -52,15 +52,16 @@ const appVersion = __APP_VERSION__
           reste bas pour la musique.
         </p>
         <p>
-          Si une autre application a pris le son — la musique de la voiture, un
-          appel —, c'est l'icône de haut-parleur, en haut à droite, qui le récupère.
+          Si une autre application a pris le contrôle du son — la musique de la
+          voiture, un appel —, c'est l'icône de haut-parleur, en haut à droite, qui
+          le récupère.
         </p>
 
         <h2>En roulant</h2>
         <p>
           Le bouton <b>Plein écran</b> masque la barre du haut : les chiffres
           occupent toute la hauteur et les commandes deviennent quatre grandes
-          touches. Pour en sortir, la croix en haut à droite.
+          touches. Pour en sortir, la flèche en bas à gauche.
         </p>
         <p>
           Pensez à <b>garder l'écran allumé</b> : l'interrupteur est sur l'écran de

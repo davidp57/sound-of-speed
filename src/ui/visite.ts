@@ -33,19 +33,19 @@ export const ETAPES_DE_CONDUITE: readonly EtapeDeVisite[] = [
     cible: 'marche',
     titre: 'D démarre',
     texte:
-      'Un appui met en route la localisation, le son et l’enregistrement du trajet. Une fois en route, la même touche affiche S : le mode sport, qui tient les rapports plus haut dans les tours.',
+      'Un appui met en route la localisation, le son et l’enregistrement du trajet. Une fois en route, la même touche affiche S : le mode sport, qui fait monter le moteur plus haut dans les tours.',
   },
   {
     cible: 'repos',
     titre: 'P met tout au repos',
     texte:
-      'Il fonctionne aussi en roulant : c’est le bouton d’arrêt de l’application, et c’est lui qui envoie le trajet au serveur.',
+      'Il fonctionne aussi en roulant : c’est le bouton d’arrêt de l’application. Le trajet, lui, part au serveur tout seul par tranches de cinq minutes ; P envoie ce qui reste.',
   },
   {
     cible: 'boite',
     titre: 'AUTO ou MAN',
     texte:
-      'Les deux colonnes montrent les deux boîtes. Les commandes de chacune sont au-dessus de son étiquette : la touche de marche pour l’automatique, + et − pour la manuelle. Les touches qui ne commandent plus rien sont estompées.',
+      'Les deux colonnes montrent les deux boîtes. Les commandes de chacune sont au-dessus de son étiquette : la touche de marche pour l’automatique, + et − pour la manuelle. Les touches désactivées sont estompées.',
   },
   {
     cible: 'volume',
@@ -70,13 +70,13 @@ export const ETAPES_DE_LA_BARRE: readonly EtapeDeVisite[] = [
     cible: 'onglets',
     titre: 'Les écrans',
     texte:
-      'On change d’écran ici. Il y en a plus ou moins selon le compte et selon l’appareil : la voiture n’a pas besoin de ceux qu’on regarde à l’arrêt, un moteur à la main.',
+      'On change d’écran ici. Il y en a plus ou moins selon le compte et selon l’appareil : certains écrans ne servent qu’au bureau et n’apparaissent pas dans la voiture.',
   },
   {
     cible: 'son',
-    titre: 'Couper et rendre le son',
+    titre: 'Couper et remettre le son',
     texte:
-      'Sans rien arrêter d’autre. Si une autre application le prend — la musique de la voiture, un appel —, c’est le même bouton qui le récupère.',
+      'Sans rien arrêter d’autre. Si une autre application prend le contrôle du son — la musique de la voiture, un appel —, c’est le même bouton qui le récupère.',
   },
   {
     cible: 'verrou',
@@ -88,7 +88,7 @@ export const ETAPES_DE_LA_BARRE: readonly EtapeDeVisite[] = [
     cible: 'plein-ecran',
     titre: 'Plein écran',
     texte:
-      'La barre disparaît : les chiffres prennent toute la hauteur et les commandes deviennent quatre grandes touches. On en sort par la croix, en haut à droite.',
+      'La barre disparaît : les chiffres prennent toute la hauteur et les commandes deviennent quatre grandes touches. On en sort par la flèche, en bas à gauche.',
   },
   {
     cible: 'aide',
