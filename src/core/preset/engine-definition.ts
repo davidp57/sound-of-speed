@@ -21,16 +21,33 @@ function clampValue(value: unknown, min: number, max: number, fallback: number):
 }
 
 /**
+ * Les trois architectures que `native/engines.h` sait bâtir.
+ *
+ * Ce ne sont pas des nombres de cylindres au sens d'un réglage : l'ordre
+ * d'allumage et les angles de manetons **définissent** un moteur, et chacun a
+ * son constructeur. Une valeur venue d'ailleurs — une main, une version
+ * antérieure — se range donc sur la plus proche des trois, plutôt que de
+ * construire un moteur qui n'existe pas.
+ */
+const ARCHITECTURES = [4, 6, 8] as const
+
+function architectureLaPlusProche(cylindres: number): number {
+  return ARCHITECTURES.reduce((meilleur, candidat) =>
+    Math.abs(candidat - cylindres) < Math.abs(meilleur - cylindres) ? candidat : meilleur,
+  )
+}
+
+/**
  * Ramène une définition dans son domaine, et la complète.
  *
  * Sert à deux endroits : la reprise d'un profil enregistré, dont la définition
  * peut venir d'une main ou d'une version antérieure, et la sérialisation, juste
  * avant que le tableau ne parte dans la mémoire du module.
  *
- * Le nombre de cylindres n'a que deux valeurs possibles : l'ordre d'allumage et
- * les angles de manetons sont écrits en dur dans `probe.cpp` pour un quatre en
- * ligne et un V8 croisé. Toute autre valeur est ramenée à la plus proche des
- * deux.
+ * Le nombre de cylindres n'a que trois valeurs possibles : l'ordre d'allumage et
+ * les angles de manetons sont écrits en dur dans `native/engines.h` pour un
+ * quatre en ligne, un six en ligne et un V8 croisé. Toute autre valeur est
+ * ramenée à la plus proche des trois.
  */
 export function clampEngineDefinition(definition: Partial<EngineDefinition>): EngineDefinition {
   const out = {} as Record<string, number>
@@ -39,7 +56,7 @@ export function clampEngineDefinition(definition: Partial<EngineDefinition>): En
     const key = field.key as keyof EngineDefinition
     out[key] = clampValue(definition[key], field.min, field.max, GM_LS_V8[key])
   }
-  out['cylinders'] = (definition.cylinders ?? GM_LS_V8.cylinders) < 6 ? 4 : 8
+  out['cylinders'] = architectureLaPlusProche(definition.cylinders ?? GM_LS_V8.cylinders)
   return out as unknown as EngineDefinition
 }
 

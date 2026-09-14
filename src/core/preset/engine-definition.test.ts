@@ -105,12 +105,19 @@ describe('clampEngineDefinition', () => {
     expect(clampEngineDefinition(SUBARU_EJ25)).toEqual(SUBARU_EJ25)
   })
 
-  it('ne connaît que quatre et huit cylindres', () => {
-    // L'ordre d'allumage et les angles de manetons sont écrits en dur pour ces
-    // deux moteurs-là : un six cylindres ne serait pas un six cylindres.
-    expect(clampEngineDefinition({ ...GM_LS_V8, cylinders: 6 }).cylinders).toBe(8)
-    expect(clampEngineDefinition({ ...GM_LS_V8, cylinders: 5 }).cylinders).toBe(4)
-    expect(clampEngineDefinition({ ...GM_LS_V8, cylinders: 4 }).cylinders).toBe(4)
+  it('ne connaît que les trois architectures du C++', () => {
+    // L'ordre d'allumage et les angles de manetons **définissent** un moteur, et
+    // chacun a son constructeur dans `native/engines.h`. Une valeur venue
+    // d'ailleurs se range sur la plus proche des trois, plutôt que de bâtir un
+    // moteur qui n'existe pas.
+    expect(clampEngineDefinition({ cylinders: 4 }).cylinders).toBe(4)
+    expect(clampEngineDefinition({ cylinders: 6 }).cylinders).toBe(6)
+    expect(clampEngineDefinition({ cylinders: 8 }).cylinders).toBe(8)
+
+    expect(clampEngineDefinition({ cylinders: 1 }).cylinders).toBe(4)
+    expect(clampEngineDefinition({ cylinders: 5 }).cylinders).toBe(4)
+    expect(clampEngineDefinition({ cylinders: 7 }).cylinders).toBe(6)
+    expect(clampEngineDefinition({ cylinders: 12 }).cylinders).toBe(8)
   })
 
   it('remplace une valeur non finie par celle du V8 de référence', () => {

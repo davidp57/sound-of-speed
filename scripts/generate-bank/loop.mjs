@@ -157,26 +157,32 @@ export function closeLoop(samples, sampleRate) {
  * de près de 3 dB d'un dixième de seconde à l'autre — c'est ce qui lui donne son
  * caractère, et c'est ce qui empêche n'importe quelle coupe de tomber juste. On
  * essaie donc toutes les fenêtres d'un nombre entier de cycles, à tous les
- * décalages d'un cycle.
+ * décalages d'un cycle, et l'on garde la plus longue dont le raccord tient sous
+ * le seuil.
  *
- * **Le critère est un seuil, et non une longueur.** On avait d'abord borné le
- * raccourcissement à une fraction de la prise, et le chiffre trouvé sur le
- * quatre cylindres ne valait pas pour le V8 : à neuf dixièmes, le premier reste
- * à 7,05 % quand le second remonte à 18,9 %. Ce qu'on veut n'est pas « couper
- * peu » mais « couper au bon endroit », donc on prend la **plus longue** fenêtre
- * dont le raccord tient sous le seuil, et à défaut la meilleure de toutes.
+ * **Deux garde-fous, et il en a fallu deux.** Le premier est le seuil : la
+ * longueur minimale, réglée seule, ne se généralisait pas d'un moteur à l'autre
+ * — à neuf dixièmes de la prise, le quatre cylindres restait à 7,05 % quand le
+ * V8 remontait à 18,9 %. Le second est le plancher, et son absence a coûté un
+ * verdict : sur le six en ligne, trois prises n'avaient **aucune** fenêtre sous
+ * le seuil, et la recherche est descendue jusqu'à trois cycles — 95 millisecondes,
+ * une boucle qui se répète dix fois par seconde. David : « c'est très
+ * synthétique ». Ce n'était pas le moteur, c'était la boucle.
  *
  * Le seuil est celui de la banque enregistrée, 10,8 % au pire, arrondi vers le
- * bas : ce qui est en service depuis des mois et que personne n'a signalé.
+ * bas : ce qui est en service depuis des mois et que personne n'a signalé. Le
+ * plancher garde les deux tiers de la prise, parce qu'un raccord parfait sur un
+ * motif qu'on entend tourner n'est pas un progrès.
  */
-export function bestWindow(samples, sampleRate, cycles, seuil = 0.08) {
+export function bestWindow(samples, sampleRate, cycles, seuil = 0.08, plancher = 2 / 3) {
   if (cycles < 2) return { samples, cycles, seam: closeLoop(samples, sampleRate).seam }
 
   const perCycle = samples.length / cycles
+  const minCycles = Math.max(2, Math.ceil(cycles * plancher))
   let meilleur = null
   let acceptable = null
 
-  for (let k = cycles; k >= 2; k -= 1) {
+  for (let k = cycles; k >= minCycles; k -= 1) {
     for (let start = 0; start + k <= cycles; start += 1) {
       const from = Math.round(start * perCycle)
       const to = Math.round((start + k) * perCycle)
@@ -191,5 +197,8 @@ export function bestWindow(samples, sampleRate, cycles, seuil = 0.08) {
     if (acceptable !== null) break
   }
 
+  // Aucune fenêtre ne passe le seuil : on rend la moins mauvaise de celles qui
+  // respectent le plancher, et non la meilleure de toutes. Une prise qui claque
+  // s'entend une fois par boucle ; une boucle trop courte s'entend tout le temps.
   return acceptable ?? meilleur
 }

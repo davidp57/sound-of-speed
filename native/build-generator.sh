@@ -43,7 +43,16 @@ for src in "${SOURCES[@]}"; do
     # Meme convention de nommage que la sonde : les objets du coeur sont donc
     # partages entre les deux binaires, et la seconde compilation est rapide.
     obj="$BUILD/$(echo "$src" | md5sum | cut -c1-8)-$(basename "$src" .cpp).o"
-    if [ ! -f "$obj" ] || [ "$src" -nt "$obj" ]; then
+    # Les en-tetes du dossier comptent autant que les sources : `engines.h`
+    # porte tous les constructeurs de moteur, et le comparer n'etait pas fait.
+    # Le 14 septembre 2026, deux essais de suite ont rendu des chiffres
+    # identiques au centieme — ils mesuraient le meme binaire, celui d'avant la
+    # modification. Un essai qui ne prouve rien coute plus cher qu'un essai rate.
+    stale=0
+    for header in "$HERE"/*.h; do
+        [ -f "$header" ] && [ "$header" -nt "$obj" ] && stale=1
+    done
+    if [ ! -f "$obj" ] || [ "$src" -nt "$obj" ] || [ "$stale" -eq 1 ]; then
         if ! "$CXX" $CXXFLAGS $INCLUDES -c "$src" -o "$obj"; then
             echo "ECHEC : $src" >&2
             failed=1

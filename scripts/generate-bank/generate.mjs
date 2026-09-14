@@ -367,6 +367,21 @@ async function main() {
     })
   }
 
+  // Une boucle beaucoup plus courte que prévu s'entend comme un bourdonnement,
+  // et aucun des chiffres du relevé ne la signale : le saut au bouclage d'une
+  // prise de trois cycles est excellent. C'est ce qui a fait juger « très
+  // synthétique » un six en ligne dont trois prises faisaient 95 ms.
+  const courtes = results.filter(
+    (r) => r.purpose === 'bank' && r.durationS < definition.bank.takeSeconds * 0.75,
+  )
+  if (courtes.length > 0) {
+    console.log('')
+    console.log(
+      `Attention : ${courtes.length} prise(s) nettement plus courte(s) que la cible —` +
+        ` ${courtes.map((r) => `${r.name} (${r.durationS.toFixed(2)} s)`).join(', ')}`,
+    )
+  }
+
   const clippedTakes = results.filter((r) => r.clipped)
   if (clippedTakes.length > 0) {
     console.log('')
