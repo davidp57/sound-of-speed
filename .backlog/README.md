@@ -66,7 +66,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [IMAGE-ARM64](IMAGE-ARM64/spec.md) — l'image du serveur échouait une fois sur deux en arm64 | ✅ la cause était une prémisse fausse : npm sait installer pour une autre architecture, et plus rien ne s'émule |
 | [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | 🔄 16/18 — le parcours d'appropriation est celui des autres applications, les deux axes ouvrent les écrans, et un fournisseur se connecte quand il est configuré ; Google est configuré sur le NAS et vérifié là-bas ; restent un essai hors réseau en voiture, « j'ai oublié » (attend un relais) et l'effacement d'un compte vide |
 | [DURCIR](DURCIR/spec.md) — sécuriser le code et les données : ce que les échanges réseau laissent voir, et ce qu'un compte peut atteindre de ce qu'un autre a déposé | ⬜ cadre posé le 13 septembre, pas découpé |
-| [ACCUEILLIR](ACCUEILLIR/spec.md) — l'écran d'aide du premier lancement, revu : plus clair, et le compte en premier, en gros | ⬜ cadre posé le 13 septembre, pas découpé |
+| [ACCUEILLIR](ACCUEILLIR/spec.md) — l'écran d'aide du premier lancement, revu : un accueil court le compte en tête, une visite à bulles sur l'interface, et une aide de référence derrière le `?` | ⬜ 0/5 — instruit et découpé le 14 septembre |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
