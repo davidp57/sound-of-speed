@@ -25,6 +25,25 @@ Toutes les évolutions notables du projet. Format
   la raison et le temps restant. Un onglet qui va et vient déplacerait ses
   voisins sous le doigt.
 
+- **Un écran Atelier, et le rôle `atelier` sert enfin à quelque chose.** Créer,
+  nommer, dupliquer, supprimer, exporter et partager un profil, régler le mixage
+  et les couches, fabriquer un moteur, tenir un timbre au banc de synthèse : tout
+  ce qui fabrique tient sous un onglet, avec sa navigation en trois volets. Le
+  rôle existait depuis le lot COMPTES — le serveur l'exigeait pour accepter un
+  dépôt, mais aucun écran ne le demandait. Le volet Synthèse demande `synthese`
+  en plus.
+
+  **La voiture y gagne 9 % de téléchargement**, mesuré : le morceau principal
+  passe de 107,4 à 98,1 ko compressés, l'atelier partant dans un morceau à part
+  qu'elle n'ouvre jamais. La barre du haut retombe à cinq onglets en voiture.
+
+  Ce qui reste dans **Paramètres** est ce qu'un conducteur fait de ce qu'on lui a
+  livré : choisir un profil, l'épingler, l'ajuster, le rendre tel qu'il était, en
+  recevoir de nouveaux depuis le serveur. Un bouton **« Revenir au profil
+  d'usine »** y remplace le sélecteur de sections, parti à l'atelier : c'est le
+  seul retour qui survive à un redémarrage, celui qui accompagne les curseurs ne
+  vivant que le temps d'une session.
+
 - **Le simulateur et le choix de la source rejoignent l'écran Avancé**, et
   n'apparaissent jamais sur l'appareil « voiture ». Régler une inertie ou un
   frein moteur sans l'entendre n'a pas de sens, et il n'y a rien à entendre à

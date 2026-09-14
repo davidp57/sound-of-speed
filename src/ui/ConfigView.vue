@@ -2,72 +2,36 @@
 import { computed, onMounted, ref } from 'vue'
 
 import NumberField from './components/NumberField.vue'
-import { ProfileImportError, fromFile, toFile } from '../core/preset/store'
-import type { ProfileSection } from '../core/preset/store'
-import { isComfortable, isReachableOrigin, shareUrl } from '../core/preset/share'
-import qrcode from 'qrcode-generator'
 import {
-  buildProfile,
   describeProfile,
-  type EngineKind,
-  type Temperament,
-  type Usage,
 } from '../core/preset/wizard'
 import { SIMPLE_GEAR_COUNTS } from '../core/preset/character'
 import { missingSentence } from '../core/calibration/coverage'
 import {
-  SOUND_SOURCES,
-  needsSimulatedEngine,
-  soundSourceOf,
-  type SoundSource,
-} from '../core/preset/schema'
-import {
-  ENGINE_LIBRARY,
-  ORIGIN_MAX_GAPS,
-  closestLibraryEngine,
-} from '../core/preset/engine-library'
-import {
-  DEFAULT_RENDERING,
-  MUFFLER_INSIDE_HZ,
-  MUFFLER_OUTSIDE_HZ,
-  type SynthRendering,
-} from '../core/synth/settings'
-import {
   editedProfile,
-  setSampleDir,
-  setSoundSource,
+  profileList,
+  resetActive,
+  selectProfile,
+  selectedProfileId,
+  toggleFavorite,
   addProfile,
-  applyLibraryEngine,
-  applySynthSettings,
-  synthSettings,
   backgroundAudio,
   setBackgroundAudio,
   offlineStatus,
   prepareOffline,
   promptInstall,
-  deleteProfile,
-  duplicateActive,
-  profileList,
-  renameActive,
-  resetActive,
-  restoreFactoryProfiles,
   canUndoGlobalChange,
   gearCount,
   responsiveness,
-  selectProfile,
-  selectedProfileId,
   setGearCount,
   setResponsiveness,
   setSportiness,
   sportiness,
-  toggleFavorite,
   undoGlobalChange,
   library,
   libraryLoading,
   refreshLibrary,
-  banks,
   refreshBanks,
-  missingBankFiles,
   forgetUnusedBanks,
   calibrationOverrides,
   calibrationMissing,
@@ -79,17 +43,6 @@ import {
   journalError,
   retryUploads,
   setUploadConsent,
-  synthSupported,
-  archiveProgress,
-  exportServerData,
-  engineList,
-  activeEngine,
-  engineUsage,
-  chooseEngine,
-  saveActiveAsEngine,
-  forgetEngine,
-  exportEngine,
-  importEngine,
   answerMeasuredCar,
   carDecision,
   driveFace,
@@ -116,7 +69,6 @@ import {
  * toujours le ralenti, il atterrit simplement dans le moteur.
  */
 const profile = editedProfile
-const importError = ref('')
 
 /**
  * Le clac, coupé et rendu d'un appui.
@@ -130,6 +82,29 @@ const importError = ref('')
 const CLAC_PAR_DEFAUT = 0.35
 const dernierClac = ref(0)
 
+/**
+ * Le retour au profil livré, en deux temps.
+ *
+ * Un premier appui demande confirmation, un second agit : écraser des réglages
+ * cherchés à l'oreille mérite une seconde d'hésitation, et un dialogue système
+ * serait plus lourd que le geste.
+ */
+const retourEnAttente = ref(false)
+const retourFait = ref('')
+
+function revenirAuProfilLivre(): void {
+  if (!retourEnAttente.value) {
+    retourEnAttente.value = true
+    return
+  }
+  resetActive('all')
+  retourEnAttente.value = false
+  retourFait.value = 'Profil rendu tel qu’il a été livré.'
+  setTimeout(() => {
+    retourFait.value = ''
+  }, 10_000)
+}
+
 const clacActif = computed(() => profile.value.feel.shiftJolt.clack > 0)
 
 function basculerLeClac(): void {
@@ -142,125 +117,9 @@ function basculerLeClac(): void {
   jolt.clack = dernierClac.value > 0 ? dernierClac.value : CLAC_PAR_DEFAUT
 }
 
-/**
- * Origine du son, avec son libellé.
- *
- * La lecture passe par `soundSourceOf` : un profil reçu par lien depuis une
- * version antérieure n'a pas le champ, et l'affichage ne doit pas rester vide.
- */
-const SOUND_SOURCE_LABELS: Record<SoundSource, string> = {
-  recorded: 'Enregistré',
-  live: 'Généré en direct',
-  prerendered: 'Généré à l’avance',
-}
-
-const soundSource = computed<SoundSource>({
-  get: () => soundSourceOf(profile.value),
-  set: (value) => {
-    setSoundSource(value)
-  },
-})
-
-/**
- * Les trois choix du moteur simulé, en conduisant.
- *
- * David : « la page de réglage des moteurs c'est pour nous, sur PC ; rien à
- * faire dans l'app en voiture. En voiture on peut choisir un profil de synthèse,
- * avec le choix du moteur, le choix de l'échappement et de l'endroit d'où on
- * écoute. On ajoutera des curseurs si besoin plus tard. »
- *
- * D'où des listes et pas des curseurs : on choisit, on ne règle pas. Chaque
- * liste garde une entrée « réglé à la main », qui n'apparaît que si la valeur du
- * profil ne tombe sur aucun palier — un réglage fin fait au banc ne doit pas se
- * faire écraser par le simple fait d'ouvrir cet écran.
- */
-const EXHAUSTS = [
-  { id: 'direct', label: 'Direct', mix: 0 },
-  { id: 'measured', label: 'Mesuré', mix: 0.45 },
-  { id: 'wrapped', label: 'Enveloppé', mix: 1 },
-] as const
-
-const rendering = computed(() => profile.value.rendering ?? DEFAULT_RENDERING)
-
-/**
- * D'où vient le moteur du profil, et s'il a été retouché depuis.
- *
- * Un moteur chargé puis affiné au banc ne correspond plus exactement à son
- * entrée de bibliothèque. Dire « Chevrolet 454, retouché » vaut mieux que
- * « réglé à la main » : en conduisant, savoir d'où l'on est parti est la seule
- * chose utile.
- */
-const closestEngine = computed(() => {
-  const mine = profile.value.engineDefinition
-  if (mine === undefined) return null
-  return closestLibraryEngine(mine, profile.value.engine.redlineRpm)
-})
-
-const currentEngineId = computed(() =>
-  closestEngine.value !== null && closestEngine.value.gaps === 0
-    ? closestEngine.value.engine.id
-    : '',
-)
-
-/** Ce qu'affiche l'entrée « aucun moteur reconnu » de la liste. */
-const engineDrift = computed(() => {
-  const near = closestEngine.value
-  // Au-delà du seuil, plus rien ne dit d'où l'on est parti : mieux vaut ne rien
-  // affirmer que désigner un départ au hasard.
-  if (near === null || near.gaps > ORIGIN_MAX_GAPS) return 'Réglé à la main'
-  const s = near.gaps > 1 ? 's' : ''
-  return `${near.engine.short}, retouché — ${near.gaps} valeur${s}`
-})
-
-const currentExhaust = computed(
-  () => EXHAUSTS.find((entry) => entry.mix === rendering.value.convolverMix)?.id ?? '',
-)
-
-const currentPlace = computed(() => {
-  if (rendering.value.mufflerHz >= MUFFLER_OUTSIDE_HZ) return 'outside'
-  if (rendering.value.mufflerHz === MUFFLER_INSIDE_HZ) return 'inside'
-  return ''
-})
-
-function onEngine(event: Event): void {
-  const id = (event.target as HTMLSelectElement).value
-  const entry = ENGINE_LIBRARY.find((candidate) => candidate.id === id)
-  if (entry !== undefined) void applyLibraryEngine(entry)
-}
-
-/** Écrit un réglage de rendu dans le profil, et le fait entendre. */
-function setRendering(patch: Partial<SynthRendering>): void {
-  void applySynthSettings({ ...synthSettings.value, ...patch })
-}
-
-function onExhaust(event: Event): void {
-  const id = (event.target as HTMLSelectElement).value
-  const entry = EXHAUSTS.find((candidate) => candidate.id === id)
-  if (entry !== undefined) setRendering({ convolverMix: entry.mix })
-}
-
-function onPlace(event: Event): void {
-  const id = (event.target as HTMLSelectElement).value
-  if (id === 'inside') setRendering({ mufflerHz: MUFFLER_INSIDE_HZ })
-  else if (id === 'outside') setRendering({ mufflerHz: MUFFLER_OUTSIDE_HZ })
-}
-
 // Les banques se lisent à l'ouverture de l'écran : c'est le seul endroit d'où
 // l'on en change, et une banque déposée entre-temps apparaît en y revenant.
 onMounted(() => void refreshBanks())
-
-/** La banque du profil, si le serveur l'a listée — sinon rien à sélectionner. */
-const knownBank = computed(() =>
-  banks.value.some((bank) => bank.name === profile.value.sampleDir) ? profile.value.sampleDir : '',
-)
-
-function onBank(event: Event): void {
-  const name = (event.target as HTMLSelectElement).value
-  // La ligne « réglée à la main » n'est pas un choix : elle dit seulement que la
-  // valeur tapée ne correspond à aucune banque listée.
-  // La banque appartient au moteur : elle ne se pose donc pas sur le profil.
-  if (name !== '') setSampleDir(name)
-}
 
 /** Le compte de dépôt se retient dès la frappe : il n'y a rien à valider. */
 /**
@@ -307,8 +166,6 @@ const enAttente = computed(() => {
   })
 })
 
-const fileInput = ref<HTMLInputElement | null>(null)
-
 
 /**
  * Curseurs globaux du mode simplifié.
@@ -330,167 +187,6 @@ const responsivenessPercent = computed<number>({
 const simplePreview = computed(() => describeProfile(profile.value))
 
 /**
- * Création guidée.
- *
- * Quatre choix décrits en langage de conducteur, dont on déduit la trentaine de
- * réglages qui ne s'accordent pas indépendamment. L'aperçu se recalcule à chaque
- * changement : on juge avant de créer.
- */
-const wizardOpen = ref(false)
-const wizard = ref<{
-  name: string
-  temperament: Temperament
-  usage: Usage
-  gearCount: number
-  engine: EngineKind
-}>({ name: '', temperament: 'equilibre', usage: 'route', gearCount: 6, engine: 'essence' })
-
-const TEMPERAMENTS: { id: Temperament; label: string; note: string }[] = [
-  { id: 'calme', label: 'Calme', note: 'Monte tôt, tourne bas, reste discret.' },
-  { id: 'equilibre', label: 'Équilibré', note: 'Le compromis ordinaire.' },
-  { id: 'sportif', label: 'Vif', note: 'Étire les rapports, monte dans les tours.' },
-]
-const USAGES: { id: Usage; label: string; note: string }[] = [
-  { id: 'ville', label: 'Ville', note: 'Rapports serrés, tout se joue sous 70 km/h.' },
-  { id: 'route', label: 'Route', note: 'Départementales et voies rapides.' },
-  { id: 'autoroute', label: 'Autoroute', note: 'Dernier rapport très long.' },
-]
-const ENGINE_KINDS: { id: EngineKind; label: string; note: string }[] = [
-  { id: 'diesel', label: 'Diesel', note: 'Rupteur bas, vers 4600 tr/min.' },
-  { id: 'essence', label: 'Essence', note: 'Vers 6600 tr/min.' },
-  { id: 'sportif', label: 'Haut régime', note: 'Au-delà de 8600 tr/min.' },
-]
-
-const wizardPreview = computed(() => describeProfile(buildProfile(wizard.value, profile.value)))
-
-function createFromWizard(): void {
-  addProfile(buildProfile(wizard.value, profile.value))
-  wizardOpen.value = false
-  wizard.value = { ...wizard.value, name: '' }
-}
-
-/**
- * Partage du profil courant.
- *
- * Le lien contient le profil lui-même, compressé : rien à héberger, rien à
- * inscrire. Le code à scanner évite d'avoir à recopier une adresse d'un écran à
- * l'autre — le geste naturel entre un poste de travail et un téléphone.
- */
-const shareLink = ref('')
-const shareQr = ref('')
-const shareNote = ref('')
-
-async function onShare(): Promise<void> {
-  if (shareLink.value) {
-    shareLink.value = ''
-    shareQr.value = ''
-    return
-  }
-  const url = await shareUrl(profile.value, window.location.origin)
-  shareLink.value = url
-  if (!isReachableOrigin(window.location.origin)) {
-    shareNote.value =
-      "Ce lien porte l'adresse à laquelle vous consultez l'application, qui n'est joignable que d'ici. Pour un lien utilisable ailleurs, refaire l'opération depuis l'adresse publique du serveur."
-  } else if (!isComfortable(url)) {
-    shareNote.value =
-      "Ce profil donne un lien très long : le code peut être difficile à lire. L'export en fichier est plus sûr."
-  } else {
-    shareNote.value = ''
-  }
-
-  // Correction moyenne : assez robuste pour un écran, sans gonfler le code.
-  const code = qrcode(0, 'M')
-  code.addData(url)
-  code.make()
-  shareQr.value = code.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
-}
-
-async function onCopyLink(): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(shareLink.value)
-    shareNote.value = 'Lien copié.'
-  } catch {
-    shareNote.value = 'Copie refusée par le navigateur : sélectionner le lien à la main.'
-  }
-}
-
-const restoreNote = ref('')
-
-/**
- * Réinitialisation par section.
- *
- * En deux temps : un premier clic demande confirmation, un second agit. Écraser
- * des réglages cherchés à l'oreille mérite une seconde d'hésitation, et un
- * dialogue système serait plus lourd que le geste lui-même.
- */
-const RESET_SECTIONS: { id: ProfileSection | 'all'; label: string }[] = [
-  { id: 'all', label: 'tout le profil' },
-  { id: 'engine', label: 'le moteur' },
-  { id: 'drivetrain', label: 'la transmission' },
-  { id: 'speed', label: 'le signal de vitesse' },
-  { id: 'mix', label: 'le mixage' },
-  { id: 'feel', label: 'le caractère' },
-  { id: 'layers', label: 'les couches et la banque' },
-]
-
-const resetSection = ref<ProfileSection | 'all'>('drivetrain')
-const resetPending = ref(false)
-
-function onReset(): void {
-  if (!resetPending.value) {
-    resetPending.value = true
-    return
-  }
-  resetActive(resetSection.value)
-  resetPending.value = false
-  const label = RESET_SECTIONS.find((s) => s.id === resetSection.value)?.label ?? ''
-  restoreNote.value = `Réinitialisé : ${label}.`
-}
-
-function onRestore(): void {
-  const added = restoreFactoryProfiles()
-  restoreNote.value =
-    added > 0
-      ? `${added} profil${added > 1 ? 's' : ''} rétabli${added > 1 ? 's' : ''}.`
-      : 'Tous les profils d’usine sont déjà présents.'
-}
-
-function onExport(): void {
-  const blob = new Blob([toFile(profile.value)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `${slug(profile.value.name)}.json`
-  anchor.click()
-  URL.revokeObjectURL(url)
-}
-
-async function onImport(event: Event): Promise<void> {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  importError.value = ''
-  try {
-    addProfile(fromFile(await file.text()))
-  } catch (error) {
-    importError.value =
-      error instanceof ProfileImportError ? error.message : 'Import impossible.'
-  } finally {
-    if (fileInput.value) fileInput.value.value = ''
-  }
-}
-
-function slug(name: string): string {
-  return (
-    name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') || 'profil'
-  )
-}
-
-/**
  * Une valeur d'étalonnage, avec son unité. Un tableau se lit d'une traite :
  * les seuils de passage n'ont de sens que les uns par rapport aux autres.
  */
@@ -506,61 +202,6 @@ function showOverride(
 /** Taille lisible, pour l'état du cache hors réseau. */
 function megabytes(bytes: number): string {
   return `${(bytes / 1048576).toFixed(1)} Mo`
-}
-
-/**
- * Les moteurs enregistrés.
- *
- * Le message dit ce qui vient de se passer et s'efface : enregistrer un moteur
- * ou reporter des écarts dedans sont des gestes dont on veut la confirmation, et
- * dont on ne veut pas la trace permanente.
- */
-const engineFileInput = ref<HTMLInputElement | null>(null)
-const newEngineName = ref('')
-const engineNote = ref('')
-function direMoteur(message: string): void {
-  engineNote.value = message
-  setTimeout(() => {
-    engineNote.value = ''
-  }, 10_000)
-}
-function onSaveEngine(): void {
-  direMoteur(saveActiveAsEngine(newEngineName.value))
-  newEngineName.value = ''
-}
-function onExportEngine(): void {
-  if (activeEngine.value) direMoteur(exportEngine(activeEngine.value.id))
-}
-async function onImportEngine(event: Event): Promise<void> {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) return
-  direMoteur(importEngine(await file.text()))
-}
-
-/**
- * Rapatriement des données du serveur.
- *
- * Le message reste affiché quelques secondes puis s'efface : il porte le compte
- * de fichiers et ce qui a manqué, ce qui n'a d'intérêt qu'au moment où le
- * téléchargement part.
- */
-const archiveBusy = ref(false)
-const archiveMessage = ref('')
-async function rapatrier(): Promise<void> {
-  archiveBusy.value = true
-  archiveMessage.value = ''
-  try {
-    archiveMessage.value = await exportServerData()
-  } catch (error) {
-    archiveMessage.value = error instanceof Error ? error.message : 'Rapatriement impossible.'
-  } finally {
-    archiveBusy.value = false
-  }
-  setTimeout(() => {
-    archiveMessage.value = ''
-  }, 12_000)
 }
 </script>
 
@@ -699,196 +340,58 @@ async function rapatrier(): Promise<void> {
       </p>
     </section>
 
-    <section class="panel wide creation">
-      <h2>Créer un profil</h2>
-      <div v-if="!wizardOpen" class="creation-pitch">
-        <p class="note">
-          Quatre questions suffisent : le tempérament, l'usage, le moteur et le
-          nombre de rapports. Les trente réglages en découlent, et vous pourrez
-          tout modifier ensuite.
-        </p>
-        <button class="is-active big" @click="wizardOpen = true">Créer un profil…</button>
-      </div>
-
-      <div v-if="wizardOpen" class="wizard">
-        <p class="note">
-          Quelques choix simples, dont découle l'ensemble des réglages. Rien n'est
-          figé : c'est un point de départ, que vous pourrez ajuster. Les sons du
-          profil actuel sont conservés.
-        </p>
-
-        <label class="inline">
-          Nom
-          <input v-model="wizard.name" type="text" placeholder="Ma voiture" />
-        </label>
-
-        <p class="choice-label">Tempérament</p>
-        <div class="choices">
-          <button
-            v-for="entry in TEMPERAMENTS"
-            :key="entry.id"
-            :aria-pressed="wizard.temperament === entry.id"
-            :title="entry.note"
-            @click="wizard.temperament = entry.id"
-          >
-            {{ entry.label }}
-          </button>
-        </div>
-        <p class="note">{{ TEMPERAMENTS.find((t) => t.id === wizard.temperament)?.note }}</p>
-
-        <p class="choice-label">Usage principal</p>
-        <div class="choices">
-          <button
-            v-for="entry in USAGES"
-            :key="entry.id"
-            :aria-pressed="wizard.usage === entry.id"
-            :title="entry.note"
-            @click="wizard.usage = entry.id"
-          >
-            {{ entry.label }}
-          </button>
-        </div>
-        <p class="note">{{ USAGES.find((u) => u.id === wizard.usage)?.note }}</p>
-
-        <p class="choice-label">Moteur</p>
-        <div class="choices">
-          <button
-            v-for="entry in ENGINE_KINDS"
-            :key="entry.id"
-            :aria-pressed="wizard.engine === entry.id"
-            :title="entry.note"
-            @click="wizard.engine = entry.id"
-          >
-            {{ entry.label }}
-          </button>
-        </div>
-        <p class="note">{{ ENGINE_KINDS.find((e) => e.id === wizard.engine)?.note }}</p>
-
-        <p class="choice-label">Nombre de rapports</p>
-        <div class="choices">
-          <button
-            v-for="n in [4, 5, 6, 7, 8]"
-            :key="n"
-            :aria-pressed="wizard.gearCount === n"
-            @click="wizard.gearCount = n"
-          >
-            {{ n }}
-          </button>
-        </div>
-
-        <div class="preview">
-          <p class="choice-label">Ce que ça donnera</p>
-          <p v-for="line in wizardPreview" :key="line">{{ line }}</p>
-        </div>
-
-        <div class="choices">
-          <button class="is-active" @click="createFromWizard()">Créer le profil</button>
-          <button @click="wizardOpen = false">Annuler</button>
-        </div>
-      </div>
-    </section>
 
     <section class="panel wide">
       <h2>Profils</h2>
+      <!--
+        Choisir et épingler, rien d'autre : créer, renommer, dupliquer,
+        supprimer, exporter et partager sont des gestes d'atelier. La voiture
+        reçoit ce qu'on lui a livré, elle ne le fabrique pas.
+      -->
       <div class="profiles">
-        <select :value="selectedProfileId" @change="selectProfile(($event.target as HTMLSelectElement).value)">
+        <select
+          :value="selectedProfileId"
+          @change="selectProfile(($event.target as HTMLSelectElement).value)"
+        >
           <option v-for="entry in profileList" :key="entry.id" :value="entry.id">
             {{ entry.name }}
           </option>
         </select>
-        <input
-          type="text"
-          :value="profile.name"
-          placeholder="Nom du profil"
-          @change="renameActive(($event.target as HTMLInputElement).value)"
-        />
         <button
           :aria-pressed="profile.favorite"
-          :title="profile.favorite ? 'Retirer de l’écran de conduite' : 'Épingler sur l’écran de conduite'"
+          :title="
+            profile.favorite
+              ? 'Retirer de l’écran de conduite'
+              : 'Épingler sur l’écran de conduite'
+          "
           @click="toggleFavorite(selectedProfileId)"
         >
           {{ profile.favorite ? '★ Épinglé' : '☆ Épingler' }}
         </button>
-        <button @click="duplicateActive()">Dupliquer</button>
-        <button :disabled="profileList.length <= 1" @click="deleteProfile(selectedProfileId)">
-          Supprimer
-        </button>
-        <button :title="'Réintroduit les profils livrés avec l’application'" @click="onRestore()">
-          Profils d'usine
-        </button>
-        <button :class="{ 'is-active': !!shareLink }" @click="onShare()">Partager…</button>
-        <button @click="onExport()">Exporter</button>
-        <button @click="fileInput?.click()">Importer</button>
-        <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="onImport" />
       </div>
-      <p v-if="importError" class="error">{{ importError }}</p>
-      <p v-else-if="restoreNote" class="note">{{ restoreNote }}</p>
-      <div v-if="shareLink" class="share">
-        <p class="note">
-          Ce lien contient tout le profil. Ouvrez-le sur un autre appareil et il
-          s'y installe, sans compte ni serveur. Les fichiers de son, eux, ne sont
-          pas transmis : l'autre appareil doit déjà avoir les mêmes.
-        </p>
-        <div class="qr" v-html="shareQr" />
-        <input :value="shareLink" readonly @focus="($event.target as HTMLInputElement).select()" />
-        <div class="choices">
-          <button @click="onCopyLink()">Copier le lien</button>
-          <button @click="onShare()">Fermer</button>
-        </div>
-        <p v-if="shareNote" class="note">{{ shareNote }}</p>
-      </div>
+      <!--
+        Le seul retour qui survit à un redémarrage.
 
-      <div class="engines">
-        <span class="note">Moteur</span>
-        <p class="note">
-          Un moteur, c'est ses réglages, sa banque de sons, ses couches et son
-          mixage, ses pétarades — tout ce qui fait qu'on le reconnaît. Il vit à
-          part du profil, qui ne fait que le désigner : on peut l'envoyer seul,
-          et le corriger une fois pour tous les profils qui le jouent.
-        </p>
-        <div class="choices">
-          <select
-            :value="activeEngine?.id ?? ''"
-            @change="chooseEngine(($event.target as HTMLSelectElement).value)"
-          >
-            <option value="" disabled>Aucun moteur désigné</option>
-            <option v-for="moteur in engineList" :key="moteur.id" :value="moteur.id">
-              {{ moteur.name }}{{ engineUsage(moteur.id) > 1 ? ` — ${engineUsage(moteur.id)} profils` : '' }}
-            </option>
-          </select>
-          <button :disabled="!activeEngine" @click="onExportEngine()">Exporter le moteur</button>
-          <button @click="engineFileInput?.click()">Importer un moteur</button>
-          <input
-            ref="engineFileInput"
-            type="file"
-            accept="application/json,.json"
-            hidden
-            @change="onImportEngine"
-          />
-        </div>
-        <p v-if="activeEngine?.source" class="note muted">{{ activeEngine.source }}</p>
-        <p v-if="engineUsage(activeEngine?.id ?? '') > 1" class="note warn">
-          « {{ activeEngine?.name }} » est joué par
-          {{ engineUsage(activeEngine?.id ?? '') }} profils : ce qu'on règle ici
-          s'entend dans tous. Pour n'en changer qu'un, enregistrez d'abord le
-          moteur sous un autre nom.
-        </p>
-        <div class="choices">
-          <input
-            v-model="newEngineName"
-            placeholder="Nom du moteur à enregistrer"
-            @keyup.enter="onSaveEngine()"
-          />
-          <button @click="onSaveEngine()">Enregistrer ce moteur</button>
-          <button
-            v-if="activeEngine && engineUsage(activeEngine.id) === 0"
-            @click="forgetEngine(activeEngine.id)"
-          >
-            Oublier
-          </button>
-        </div>
-        <p v-if="engineNote" class="note">{{ engineNote }}</p>
+        « Revenir aux réglages d'avant », sous les curseurs, ne s'enregistre pas :
+        il vit dans cette session et sur cet appareil. On bricole en roulant, on
+        coupe le contact, et le lendemain il n'y a plus rien. Celui-ci rend le
+        profil tel qu'il a été livré.
+
+        Un seul bouton, et non le sélecteur de sections qui est parti à
+        l'atelier : proposer « réinitialiser le mixage » à qui n'a jamais vu le
+        mixage ne l'aide pas.
+      -->
+      <div class="choices">
+        <button :class="{ 'is-active': retourEnAttente }" @click="revenirAuProfilLivre()">
+          {{ retourEnAttente ? 'Confirmer' : 'Revenir au profil d’usine' }}
+        </button>
+        <button v-if="retourEnAttente" @click="retourEnAttente = false">Annuler</button>
+        <span class="note">
+          Efface les ajustements faits ici et rend le profil tel qu'il a été
+          livré.
+        </span>
       </div>
+      <p v-if="retourFait" class="note">{{ retourFait }}</p>
 
       <div class="library">
         <div class="choices">
@@ -1046,122 +549,6 @@ async function rapatrier(): Promise<void> {
       <p v-if="uploadStorageError" class="note warn">{{ uploadStorageError }}</p>
       <p v-if="journalError" class="note warn">{{ journalError }}</p>
 
-      <p class="note">
-        Le chemin du retour : tout ce que le serveur porte — journal, traces,
-        relevés, profils — en un seul fichier compressé. À faire depuis un
-        téléphone ou un ordinateur, le navigateur de la voiture ne téléchargeant
-        rien.
-        <button :disabled="archiveBusy" @click="rapatrier()">
-          {{ archiveProgress || archiveMessage || 'Tout récupérer' }}
-        </button>
-      </p>
-
-      <div class="reset">
-        <span class="note">Réinitialiser</span>
-        <select v-model="resetSection" @change="resetPending = false">
-          <option v-for="entry in RESET_SECTIONS" :key="entry.id" :value="entry.id">
-            {{ entry.label }}
-          </option>
-        </select>
-        <button :class="{ 'is-active': resetPending }" @click="onReset()">
-          {{ resetPending ? 'Confirmer' : 'Aux valeurs d’usine' }}
-        </button>
-        <button v-if="resetPending" @click="resetPending = false">Annuler</button>
-      </div>
-
-      <label class="inline">
-        Origine du son
-        <select v-model="soundSource">
-          <option v-for="source in SOUND_SOURCES" :key="source" :value="source">
-            {{ SOUND_SOURCE_LABELS[source] }}
-          </option>
-        </select>
-      </label>
-      <p class="note">
-        D'où vient le son de ce profil. <strong>Enregistré</strong> joue la banque
-        d'échantillons en changeant sa vitesse de lecture, ce que fait l'application
-        depuis le début. <strong>Généré en direct</strong> simule le moteur pendant la
-        conduite, sans le moindre échantillon. <strong>Généré à l'avance</strong> rejoue
-        une banque que cette simulation a produite au bureau, une prise par plage de
-        régime.
-      </p>
-      <p v-if="needsSimulatedEngine(soundSource) && !synthSupported" class="note warn">
-        Ce navigateur ne sait pas faire tourner le moteur simulé : il lui manque
-        l'`AudioWorklet` ou le WebAssembly. Le profil garde son origine, mais le son
-        restera celui de la banque d'échantillons tant qu'il sera ouvert ici.
-      </p>
-
-      <template v-if="needsSimulatedEngine(soundSource)">
-        <label class="inline">
-          Moteur
-          <select :value="currentEngineId" @change="onEngine($event)">
-            <option v-if="currentEngineId === ''" value="">{{ engineDrift }}</option>
-            <option v-for="entry in ENGINE_LIBRARY" :key="entry.id" :value="entry.id">
-              {{ entry.label }}
-            </option>
-          </select>
-        </label>
-        <p class="note">
-          Le moteur simulé, avec son rupteur et son réglage de son. Seul le GM LS
-          est réglé à ce jour ; les autres sonnent avec le réglage par défaut, ce
-          qui s'entend. Les régler se fait au banc, sur un ordinateur.
-        </p>
-
-        <label class="inline">
-          Échappement
-          <select :value="currentExhaust" @change="onExhaust($event)">
-            <option v-if="currentExhaust === ''" value="">Réglé à la main</option>
-            <option v-for="entry in EXHAUSTS" :key="entry.id" :value="entry.id">
-              {{ entry.label }}
-            </option>
-          </select>
-        </label>
-        <p class="note">
-          Combien de résonance d'échappement passe par-dessus le son direct.
-          <strong>Direct</strong> ne garde que le son cru du moteur, et c'est là
-          que le grain s'entend le plus ; <strong>enveloppé</strong> ne laisse
-          plus que le son réverbéré, qui étale les fronts et adoucit tout.
-        </p>
-
-        <label class="inline">
-          On écoute
-          <select :value="currentPlace" @change="onPlace($event)">
-            <option v-if="currentPlace === ''" value="">Réglé à la main</option>
-            <option value="inside">De l'habitacle</option>
-            <option value="outside">De l'extérieur</option>
-          </select>
-        </label>
-        <p class="note">
-          Le silencieux, refermé bas, fait entendre la voiture à travers la tôle
-          et les vitres ; ouvert en grand, on l'entend de dehors.
-        </p>
-      </template>
-
-      <label v-if="banks.length > 0" class="inline">
-        Banque d'échantillons
-        <select :value="knownBank" @change="onBank($event)">
-          <option v-if="knownBank === ''" value="">Réglée à la main</option>
-          <option v-for="bank in banks" :key="bank.name" :value="bank.name">
-            {{ bank.name }} — {{ bank.files.length }} fichiers
-          </option>
-        </select>
-      </label>
-
-      <label class="inline">
-        Dossier d'échantillons
-        <input v-model="profile.sampleDir" type="text" />
-      </label>
-      <p class="note">
-        Un dossier par banque, dans le dossier d'échantillons du serveur. Il n'est
-        jamais versionné : y déposer un dossier suffit à ajouter une banque, sans
-        toucher au code. Le nom se tape aussi à la main, pour une banque que le
-        serveur ne sait pas lister.
-      </p>
-      <p v-if="missingBankFiles.length > 0" class="error">
-        Cette banque n'a pas {{ missingBankFiles.join(', ') }}. Une banque nouvelle
-        a rarement les mêmes noms de fichiers : ils se corrigent couche par couche,
-        plus bas.
-      </p>
     </section>
 
     <section class="panel wide">
@@ -1271,29 +658,6 @@ h2 {
   font-weight: 600;
 }
 
-.profiles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.profiles select,
-.profiles input[type='text'] {
-  flex: 1 1 12rem;
-  width: auto;
-}
-
-.inline {
-  display: block;
-  color: var(--muted);
-  margin-top: 0.6rem;
-}
-
-.inline input {
-  margin-top: 0.25rem;
-}
-
 .note {
   color: var(--muted);
   font-size: 0.82rem;
@@ -1345,26 +709,6 @@ td input[type='number'] {
   border-radius: 8px;
 }
 
-.share input {
-  margin: 0.6rem 0;
-  font-family: ui-monospace, monospace;
-  font-size: 0.8rem;
-}
-
-.qr {
-  background: #fff;
-  padding: 0.6rem;
-  border-radius: 6px;
-  max-width: 15rem;
-  margin: 0 auto;
-}
-
-.qr :deep(svg) {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
 .library-list {
   list-style: none;
   margin: 0.7rem 0 0;
@@ -1406,28 +750,9 @@ td input[type='number'] {
   margin: 0;
 }
 
-.creation-pitch {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
 .creation-pitch .note {
   flex: 1 1 18rem;
   margin: 0;
-}
-
-.big {
-  padding: 0.8rem 1.4rem;
-  font-size: 1rem;
-}
-
-.wizard {
-  margin-top: 0.8rem;
-  padding: 0.9rem;
-  background: var(--panel-alt);
-  border-radius: 8px;
 }
 
 .choice-label {
@@ -1493,21 +818,8 @@ td input[type='number'] {
   margin-top: 0.6rem;
 }
 
-.reset {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.7rem;
-}
-
 .reset .note {
   margin: 0;
-}
-
-.reset select {
-  width: auto;
-  flex: 0 1 14rem;
 }
 
 .toggle {

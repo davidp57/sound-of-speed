@@ -1446,8 +1446,8 @@ compte en porte zéro à trois.
 | Rôle | Ce qu'il ouvre |
 |---|---|
 | `conduite` | conduire, la télémétrie, les réglages simples et avancés, l'étalonnage |
-| `atelier` | fabriquer des moteurs et des boîtes — déposer sur `/engines/` et `/gearboxes/` |
-| `synthese` | régler un timbre |
+| `atelier` | l'écran **Atelier** : créer et tenir les profils, régler le son, fabriquer des moteurs et des boîtes — et déposer sur `/engines/` et `/gearboxes/` |
+| `synthese` | le volet **Synthèse** de l'atelier : régler un timbre |
 
 **Tout le monde a tout, et rien n'est encaissé.** Ce qui est offert à n'importe
 quel compte est une valeur, pas une règle :
@@ -1486,12 +1486,21 @@ trois : le drapeau de construction qui cachait le banc a disparu le
 | Compte | ✅ | ✅ | ✅ |
 | Étalonnage | ❌ | ✅ | ✅ |
 | Banc et sources, dans Avancé | ❌ | à l'arrêt | à l'arrêt |
-| Synthèse (timbre) | ❌ | ❌ | ✅ |
+| Atelier (rôle `atelier`) | ❌ | ❌ | à l'arrêt |
 
 L'étalonnage se fait tout seul depuis les traces ; son panneau manuel est un
-reste. La synthèse est un écran qu'on regarde à l'arrêt, un moteur à la main. Et
+reste. L'atelier est un écran qu'on regarde à l'arrêt, un moteur à la main. Et
 la rangée des sources de vitesse n'existe pas en voiture : il n'y reste que le
 GPS, et un seul bouton qu'on ne peut pas désactiver n'est pas un choix.
+
+**L'atelier** rassemble sous un onglet unique ce qui avait quatre onglets à lui
+seul : les profils — créer, nommer, dupliquer, exporter, partager —, le son
+(mixage et couches) et le banc de synthèse. Il porte sa navigation interne en
+trois volets, et la synthèse y demande le rôle `synthese` en plus.
+
+Ce qui reste dans **Paramètres**, c'est ce qu'un conducteur fait de ce qu'on lui
+a livré : choisir un profil, l'épingler, l'ajuster aux trois curseurs, le rendre
+tel qu'il était, en recevoir de nouveaux. Il ne fabrique pas.
 
 **L'appareil se devine, et se corrige** depuis l'écran du compte ; le choix reste
 sur cet appareil et survit à une réouverture. Le marqueur qui reconnaît le
@@ -1552,12 +1561,15 @@ est déjà compressé —, et jamais une plage d'octets, le client demandant alo
 les octets d'un fichier et non d'un flux. Le serveur qui a remplacé nginx ne le
 faisait plus : la voiture tirait 310 ko de JavaScript là où gzip en fait 99.
 
-**Trois écrans se chargent à la demande** : l'étalonnage, le banc et la
-synthèse, qu'une voiture n'ouvre jamais. Le banc l'est resté en déménageant dans
-l'écran Avancé, et c'est mesuré : le morceau principal n'a pas bougé. Les autres
-arrivent d'emblée, et c'est
-délibéré — ils s'ouvrent au volant, donc les différer déplacerait leur
+**Quatre écrans se chargent à la demande** : l'étalonnage, le banc, la synthèse
+et l'atelier, qu'une voiture n'ouvre jamais. Les autres arrivent d'emblée, et
+c'est délibéré — ils s'ouvrent au volant, donc les différer déplacerait leur
 téléchargement là où il n'y a pas de réseau.
+
+**Ce que ça pèse, mesuré le 14 septembre 2026.** Sortir l'atelier du morceau
+principal a fait tomber celui-ci de 107,4 à 98,1 ko compressés, soit 9 % de
+moins téléchargés par la voiture. L'atelier lui-même fait 12,4 ko, et elle ne
+les prend jamais.
 
 ### Ce qui n'a pas encore été mesuré
 

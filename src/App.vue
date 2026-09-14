@@ -24,7 +24,7 @@ import TelemetryView from './ui/TelemetryView.vue'
  * écran qu'on n'ouvre pas ne manque à personne.
  */
 const CalibrationPanel = defineAsyncComponent(() => import('./ui/CalibrationPanel.vue'))
-const SynthView = defineAsyncComponent(() => import('./ui/SynthView.vue'))
+const AtelierView = defineAsyncComponent(() => import('./ui/AtelierView.vue'))
 import type { Appareil } from './core/appareil'
 import type { Role } from './core/identity/roles'
 import {
@@ -85,8 +85,7 @@ type Tab =
   | 'advanced'
   | 'calibration'
   | 'account'
-  | 'synth'
-  | 'bench'
+  | 'atelier'
 
 const tab = ref<Tab>('drive')
 
@@ -331,14 +330,15 @@ const TABS: {
   // réglage de conduite, et la section qu'il occupait dans Configuration se
   // perdait au milieu du reste.
   { id: 'account', label: 'Compte' },
-  // Le banc de synthèse. Il a sa propre page depuis le 8 septembre 2026 : ses
-  // commandes vivaient sous les cadrans de l'écran de conduite, où elles
-  // prenaient la place de ce qu'on lit en roulant.
+  // L'atelier : un onglet pour tout ce qui fabrique — les profils, le son, le
+  // banc de synthèse. Il porte sa propre navigation interne, parce qu'une barre
+  // de neuf entrées n'est plus une barre : elle se replie sur trois rangs dès
+  // 375 pixels, et le raccord de l'onglet actif au contenu ne veut alors plus
+  // rien dire.
   //
-  // Le simulateur avait le sien à côté ; il a rejoint l'écran Avancé le
-  // 14 septembre, avec le choix de la source. Régler sans entendre n'a pas de
-  // sens, et il n'y a rien à entendre à l'arrêt sans lui.
-  { id: 'synth', label: 'Synthèse', role: 'synthese', sur: ['poste'] },
+  // C'est ce qui donne enfin son contenu au rôle `atelier`, que le serveur
+  // exigeait déjà pour accepter un dépôt sans qu'aucun écran ne le demande.
+  { id: 'atelier', label: 'Atelier', role: 'atelier', sur: ['poste'], gardee: true },
 ]
 
 /**
@@ -368,6 +368,11 @@ const attenteLisible = computed(() => {
   if (restant === 0 || isRunning.value) return ''
   return `Encore ${Math.ceil(restant / 1000)} s.`
 })
+
+/** L'onglet qu'on regarde est-il fermé par la garde ? */
+const gardeFermeeIci = computed(
+  () => !gardeOuverte.value && TABS.some((entree) => entree.id === tab.value && entree.gardee),
+)
 
 /** De quoi vérifier qu'un écran a le droit d'être rendu, et pas seulement listé. */
 const ouverts = computed(() => new Set(onglets.value.map((entree) => entree.id)))
@@ -573,18 +578,17 @@ onBeforeUnmount(() => {
         cadrans la largeur qui leur manque déjà.
       -->
       <div v-else class="ecran" :class="{ 'bande-defilement': bandeDeDefilement }">
-        <TelemetryView v-if="tab === 'telemetry'" />
+        <!-- La garde passe avant tout : un écran qu'elle ferme n'est pas monté,
+             et c'est ce qui dispense chacun d'eux de la vérifier lui-même. -->
+        <p v-if="gardeFermeeIci" class="garde-fermee">
+          Disponible uniquement à l'arrêt.
+          <span v-if="attenteLisible">{{ attenteLisible }}</span>
+        </p>
+        <TelemetryView v-else-if="tab === 'telemetry'" />
         <CalibrationPanel v-else-if="tab === 'calibration'" />
-        <SynthView v-else-if="tab === 'synth' && ouverts.has('synth')" />
-        <BenchView v-else-if="tab === 'bench' && ouverts.has('bench')" />
+        <AtelierView v-else-if="tab === 'atelier' && ouverts.has('atelier')" />
+        <AdvancedConfigView v-else-if="tab === 'advanced'" />
         <ConfigView v-else-if="tab === 'config'" />
-        <template v-else-if="tab === 'advanced'">
-          <AdvancedConfigView v-if="gardeOuverte" />
-          <p v-else class="garde-fermee">
-            Disponible uniquement à l'arrêt.
-            <span v-if="attenteLisible">{{ attenteLisible }}</span>
-          </p>
-        </template>
         <!-- Le compte ferme la liste : c'est le seul écran qu'aucun rôle ne peut
              refermer, donc le seul qui puisse servir de repli. -->
         <AccountView v-else />

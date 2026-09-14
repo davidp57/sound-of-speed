@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted } from 'vue'
+
 
 import NumberField from './components/NumberField.vue'
 import { finalDriveFor, rpmAtSpeed } from '../core/preset/defaults'
-import type { SampleAnalysis } from '../core/audio/analyze'
-import type { LayerRole } from '../core/preset/schema'
 import {
   appareil,
   editedProfile,
   tryClack,
-  analyzeLayerFile,
   setGearRatios,
   refreshBanks,
   setSource,
@@ -81,13 +79,6 @@ const SOURCES = computed<{ id: SourceKind; label: string }[]>(() =>
 // l'on en change, et une banque déposée entre-temps apparaît en y revenant.
 onMounted(() => void refreshBanks())
 
-const ROLES: { id: LayerRole; label: string }[] = [
-  { id: 'on', label: 'en charge' },
-  { id: 'off', label: 'pied levé' },
-  { id: 'idle', label: 'ralenti' },
-  { id: 'limiter', label: 'rupteur' },
-]
-
 /**
  * Vitesse à laquelle le rupteur tombe dans le dernier rapport. C'est le chiffre
  * parlant : le rapport de pont, seul, ne dit rien à personne. Le modifier
@@ -142,119 +133,6 @@ const delaysText = computed<string>({
     if (parsed.length > 0) profile.value.drivetrain.shiftDelaysS = parsed
   },
 })
-
-function addLayer(): void {
-  profile.value.layers.push({
-    key: `couche-${profile.value.layers.length + 1}`,
-    file: '',
-    role: 'on',
-    anchorRpm: 4000,
-    gain: 1,
-    minRate: 0.5,
-    maxRate: 2,
-    enabled: true,
-  })
-}
-
-function removeLayer(index: number): void {
-  profile.value.layers.splice(index, 1)
-  delete analyses.value[index]
-}
-
-/**
- * Analyse des échantillons.
- *
- * Le résultat n'est jamais appliqué d'office : l'ambiguïté d'octave est réelle
- * sur un spectre de moteur, et un chiffre imposé en silence serait parfois faux
- * sans qu'on sache pourquoi. On propose donc des candidats, et comme le son
- * tourne pendant l'édition, en essayer un se juge à l'oreille immédiatement.
- */
-const analyses = ref<Record<number, SampleAnalysis | { error: string }>>({})
-const analyzing = ref<number | null>(null)
-
-/** Résultat exploitable pour cette couche, ou `null` si absent ou en échec. */
-function analysisOf(index: number): SampleAnalysis | null {
-  const entry = analyses.value[index]
-  return entry && !('error' in entry) ? entry : null
-}
-
-/** Message d'échec pour cette couche, ou une chaîne vide. */
-function errorOf(index: number): string {
-  const entry = analyses.value[index]
-  return entry && 'error' in entry ? entry.error : ''
-}
-
-async function analyzeLayer(index: number): Promise<void> {
-  const layer = profile.value.layers[index]
-  if (!layer?.file) return
-  analyzing.value = index
-  try {
-    analyses.value = {
-      ...analyses.value,
-      [index]: await analyzeLayerFile(layer.file, profile.value.engine.cylinders),
-    }
-  } catch (error) {
-    analyses.value = {
-      ...analyses.value,
-      [index]: { error: error instanceof Error ? error.message : 'Analyse impossible.' },
-    }
-  } finally {
-    analyzing.value = null
-  }
-}
-
-async function analyzeAll(): Promise<void> {
-  for (let index = 0; index < profile.value.layers.length; index += 1) {
-    await analyzeLayer(index)
-  }
-}
-
-function candidateTitle(candidate: { firingHz: number; relativeScore: number }): string {
-  return `${candidate.firingHz.toFixed(0)} Hz d'allumage · score ${candidate.relativeScore.toFixed(2)}`
-}
-
-/**
- * Ancrages remplacés par un candidat, pour pouvoir revenir en arrière.
- *
- * Appliquer une proposition écrase un réglage parfois trouvé à l'oreille au
- * terme de plusieurs essais. Sans retour possible, la moindre fausse manœuvre —
- * ou un nombre de cylindres erroné, qui décale toutes les propositions — coûte
- * ce travail.
- */
-const previousAnchors = ref<Record<number, number>>({})
-
-function applyCandidate(index: number, rpm: number): void {
-  const layer = profile.value.layers[index]
-  if (!layer || layer.anchorRpm === rpm) return
-  previousAnchors.value = { ...previousAnchors.value, [index]: layer.anchorRpm }
-  layer.anchorRpm = rpm
-}
-
-function undoCandidate(index: number): void {
-  const previous = previousAnchors.value[index]
-  const layer = profile.value.layers[index]
-  if (previous === undefined || !layer) return
-  layer.anchorRpm = previous
-  const rest = { ...previousAnchors.value }
-  delete rest[index]
-  previousAnchors.value = rest
-}
-
-/**
- * Nombre de cylindres que suggère l'ancrage actuel, au vu de la raie détectée.
- *
- * Si l'ancrage en place est juste, ce nombre doit retomber sur celui du profil.
- * Un écart franc désigne l'un des deux comme faux — et c'est le seul moyen de
- * s'en apercevoir avant d'appliquer une proposition erronée.
- */
-function impliedCylinders(index: number): number | null {
-  const analysis = analysisOf(index)
-  const layer = profile.value.layers[index]
-  const best = analysis?.candidates[0]
-  if (!analysis || !layer || !best || best.rpm <= 0) return null
-  // La raie mesurée vaut régime ÷ 120 × cylindres ; on inverse avec l'ancrage en place.
-  return Math.round((best.firingHz * 120) / layer.anchorRpm)
-}
 </script>
 
 <template>
@@ -671,232 +549,6 @@ function impliedCylinders(index: number): number | null {
       </template>
     </section>
 
-    <section class="panel">
-      <h2>Mixage</h2>
-      
-      <NumberField
-        v-model="profile.mix.loadReliefDb"
-        label="Relief de charge"
-        :min="0"
-        :max="12"
-        :step="0.5"
-        unit="dB"
-        hint="Autant en moins pied levé, autant en plus pied au plancher. Sans lui, accélérer ne s'entend pas : les fondus sont à puissance constante, ils changent le timbre et jamais le volume. À 4, il y a 8 dB entre lever le pied et écraser."
-      />
-      <NumberField
-        v-model="profile.mix.rpmReliefDb"
-        label="Relief du régime"
-        :min="0"
-        :max="12"
-        :step="0.5"
-        unit="dB"
-        hint="Gain gagné entre le ralenti et le rupteur : c'est le rugissement qui monte avec les tours. Il s'ajoute aux 4 dB que la banque livrée donne déjà, sa prise haut régime étant enregistrée plus fort."
-      />
-      <NumberField
-        v-model="profile.mix.idleLevelDb"
-        label="Niveau au ralenti"
-        :min="-24"
-        :max="0"
-        :step="0.5"
-        unit="dB"
-        hint="Au ralenti, faute de couche dédiée dans la banque, on entend la prise « pied levé » jouée deux octaves plus bas. Sans ce réglage elle sonne aussi fort que tout le reste."
-      />
-      <NumberField
-        v-model="profile.mix.offLoadGain"
-        label="Gain pied levé"
-        :min="0"
-        :max="6"
-        :step="0.1"
-        hint="Curseur de goût sur toute la famille « pied levé ». La compensation des prises plus douces vit maintenant dans le gain de chaque couche, où le déficit se mesure : laisser 1 sauf pour forcer le trait."
-      />
-      <NumberField
-        v-model="profile.mix.loadContrast"
-        label="Contraste de charge"
-        :min="0"
-        :max="1"
-        :step="0.05"
-        hint="À 1, le fondu va d'un extrême à l'autre. Plus bas, les deux familles se mélangent et l'écart s'entend moins."
-      />
-      <NumberField
-        v-model="profile.mix.layerDetuneCents"
-        label="Désaccord des couches"
-        :min="0"
-        :max="50"
-        :step="1"
-        unit="centièmes"
-        hint="Écart de justesse entre les deux couches d'une même famille, en centièmes de demi-ton. Au rapport exact elles sont parfaitement justes l'une par rapport à l'autre, ce qui n'arrive sur aucun moteur : les inégalités entre cylindres et les deux lignes d'échappement produisent un battement lent. Mesuré, 12 centièmes donnent un battement à 2,4 Hz à 5100 tr/min et 1,5 Hz à 3200."
-      />
-      <NumberField
-        v-model="profile.mix.layerRefreshS"
-        label="Renouvellement de position"
-        :min="0"
-        :max="30"
-        :step="0.5"
-        unit="s"
-        hint="Intervalle moyen entre deux reprises de la lecture ailleurs dans l'enregistrement. Chaque couche est une boucle de trois à cinq secondes qui, sans cela, se répète à l'identique toutes les quatre à vingt secondes selon la vitesse de lecture. L'intervalle réel est tiré à quarante pour cent près, sinon on remplacerait une périodicité par une autre. À zéro, le comportement est celui d'avant ce réglage."
-      />
-      <NumberField
-        v-model="profile.mix.crossfadeLowRpm"
-        label="Début de bascule"
-        :min="500"
-        :max="12000"
-        :step="50"
-        unit="tr/min"
-        hint="Régime où la couche haute commence à entrer. Indépendant des régimes d'ancrage."
-      />
-      <NumberField v-model="profile.mix.crossfadeHighRpm" label="Fin de bascule" :min="500" :max="16000" :step="50" unit="tr/min"
-        hint="Régime au-delà duquel seule la couche haut régime joue. L'écart avec le début de bascule fixe la douceur de la transition."
-      />
-      <NumberField
-        v-model="profile.mix.fullLoadAccelMs2"
-        label="Accélération pleine charge"
-        :min="0.5"
-        :max="10"
-        :step="0.1"
-        unit="m/s²"
-        hint="Accélération au-delà de laquelle la charge est considérée maximale."
-      />
-      <NumberField
-        v-model="profile.mix.dragRefKmh"
-        label="Repère de traînée"
-        :min="60"
-        :max="250"
-        :step="5"
-        unit="km/h"
-        hint="Vitesse à laquelle tenir l'allure demande la moitié de l'effort maximal. Faute de pédale, tenir une allure vaudrait sinon toujours la même chose, à 30 comme à 130 km/h. Bas, tout devient chargé tôt ; haut, la traînée compte peu."
-      />
-      <NumberField v-model="profile.mix.loadSmoothingS" label="Lissage de la charge" :min="0.02" :max="1.5" :step="0.01" unit="s"
-        hint="Temps que met la charge à suivre la pédale. Trop court, le fondu papillonne ; trop long, le son traîne derrière la conduite."
-      />
-      <NumberField v-model="profile.mix.idleFadeOutRpm" label="Effacement du ralenti" :min="800" :max="4000" :step="50" unit="tr/min"
-        hint="Régime au-dessus duquel la couche de ralenti disparaît complètement, le moteur étant alors entraîné par les roues."
-      />
-      <NumberField v-model="profile.mix.highpassHz" label="Coupe-bas" :min="10" :max="200" :step="1" unit="Hz"
-        hint="Retire les fréquences les plus graves. Utile sur un petit haut-parleur, qui ne les reproduit pas et s'y fatigue."
-      />
-      <NumberField v-model="profile.mix.drive" label="Saturation" :min="0" :max="1" :step="0.01"
-        hint="Épaissit le son et le fait paraître plus fort. Trop poussé, il devient sale."
-      />
-      <NumberField v-model="profile.mix.limiterThresholdDb" label="Seuil du limiteur" :min="-24" :max="0" :step="0.5" unit="dB"
-        hint="Niveau à partir duquel le son est retenu pour éviter la saturation. Le baisser laisse monter le volume général, mais aplatit les nuances."
-      />
-    </section>
-
-    <section class="panel wide">
-      <h2>Couches</h2>
-      <p class="note">
-        Le régime d'ancrage est celui auquel l'échantillon a été enregistré : il détermine
-        la justesse, pas le point de bascule. Les bornes de lecture limitent l'étirement —
-        au-delà d'environ une octave, l'échantillon devient métallique vers le haut et
-        pâteux vers le bas.
-      </p>
-      <div class="table-scroll">
-      <table class="layers">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Clé</th>
-            <th>Fichier</th>
-            <th>Rôle</th>
-            <th>Ancrage</th>
-            <th>Gain</th>
-            <th>Lecture min</th>
-            <th>Lecture max</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-for="(layer, index) in profile.layers" :key="index">
-          <tr>
-            <td><input v-model="layer.enabled" type="checkbox" /></td>
-            <td><input v-model="layer.key" type="text" /></td>
-            <td><input v-model="layer.file" type="text" /></td>
-            <td>
-              <select v-model="layer.role">
-                <option v-for="role in ROLES" :key="role.id" :value="role.id">{{ role.label }}</option>
-              </select>
-            </td>
-            <td><input v-model.number="layer.anchorRpm" type="number" min="200" max="20000" step="10" /></td>
-            <td><input v-model.number="layer.gain" type="number" min="0" max="4" step="0.05" /></td>
-            <td><input v-model.number="layer.minRate" type="number" min="0.1" max="1" step="0.05" /></td>
-            <td><input v-model.number="layer.maxRate" type="number" min="1" max="4" step="0.05" /></td>
-            <td class="actions">
-              <button :disabled="!layer.file || analyzing !== null" @click="analyzeLayer(index)">
-                {{ analyzing === index ? 'Analyse…' : 'Analyser' }}
-              </button>
-              <button @click="removeLayer(index)">Retirer</button>
-            </td>
-          </tr>
-          <tr v-if="analyses[index]" class="analysis">
-            <td :colspan="9">
-              <span v-if="errorOf(index)" class="error">{{ errorOf(index) }}</span>
-              <template v-else-if="analysisOf(index)">
-                <div class="facts">
-                  <span>
-                    {{ analysisOf(index)!.durationS.toFixed(2) }} s ·
-                    {{ analysisOf(index)!.sampleRate }} Hz ·
-                    {{ analysisOf(index)!.channels }} canaux
-                  </span>
-                  <span :class="{ warn: analysisOf(index)!.seamRatio > 0.02 }">
-                    raccord {{ (analysisOf(index)!.seamRatio * 100).toFixed(1) }} %
-                  </span>
-                  <span>timbre {{ analysisOf(index)!.centroidHz.toFixed(0) }} Hz</span>
-                  <span :class="{ warn: !analysisOf(index)!.steady }">
-                    <template v-if="analysisOf(index)!.steady">régime stable</template>
-                    <template v-else>
-                      rampe {{ analysisOf(index)!.startRpm }} → {{ analysisOf(index)!.endRpm }} tr/min
-                    </template>
-                  </span>
-                </div>
-                <p
-                  v-if="impliedCylinders(index) && impliedCylinders(index) !== profile.engine.cylinders"
-                  class="error"
-                >
-                  L'ancrage en place correspondrait à {{ impliedCylinders(index) }} cylindres, non
-                  {{ profile.engine.cylinders }}. L'un des deux est faux : vérifier le nombre de
-                  cylindres avant d'appliquer une proposition, sans quoi elle sera décalée d'autant.
-                </p>
-                <div class="candidates">
-                  <span class="muted">Ancrage proposé :</span>
-                  <button
-                    v-for="candidate in analysisOf(index)!.candidates"
-                    :key="candidate.rpm"
-                    :aria-pressed="layer.anchorRpm === candidate.rpm"
-                    :title="candidateTitle(candidate)"
-                    @click="applyCandidate(index, candidate.rpm)"
-                  >
-                    {{ candidate.rpm }}
-                  </button>
-                  <button
-                    v-if="previousAnchors[index] !== undefined"
-                    class="undo"
-                    @click="undoCandidate(index)"
-                  >
-                    Revenir à {{ previousAnchors[index] }}
-                  </button>
-                </div>
-              </template>
-            </td>
-          </tr>
-          </template>
-        </tbody>
-      </table>
-      </div>
-      <div class="layer-actions">
-        <button class="add" @click="addLayer()">Ajouter une couche</button>
-        <button :disabled="analyzing !== null" @click="analyzeAll()">Analyser toutes les couches</button>
-      </div>
-      <p class="note">
-        Le régime d'ancrage est mesurable, mais un spectre de moteur se prête mal à
-        une réponse unique : la détection confond volontiers une fréquence avec sa
-        moitié, son tiers ou ses trois demis. Les propositions sont donc classées
-        et non appliquées d'office. Comme le son tourne pendant l'édition, les
-        essayer se juge à l'oreille — la bonne saute aux oreilles, les autres
-        sonnent une octave ou une quinte à côté. L'indication « timbre » aide à
-        recouper : d'un même moteur, la prise haut régime a forcément le timbre le
-        plus aigu.
-      </p>
-    </section>
   </div>
 </template>
 
@@ -984,28 +636,9 @@ h2 {
   color: var(--text);
 }
 
-.error {
-  color: var(--warn);
-  margin: 0.5rem 0 0;
-}
-
 table {
   width: 100%;
   border-collapse: collapse;
-}
-
-/*
- * Le tableau des couches est plus large qu'un téléphone en portrait — mesuré à
- * 687 pixels pour un écran de 375. Sans ce conteneur, c'est la page entière qui
- * défilait latéralement : on cherchait à faire défiler vers le bas et l'écran
- * partait de côté. Le tableau glisse maintenant dans sa propre boîte.
- *
- * Le défaut est antérieur à la bande de défilement : mesuré identique avec et
- * sans elle.
- */
-.table-scroll {
-  overflow-x: auto;
-  touch-action: pan-x pan-y;
 }
 
 th {
@@ -1057,57 +690,5 @@ td input[type='number'] {
 .toggle .note {
   margin: 0;
   flex: 1 1 12rem;
-}
-
-.offline-state .warn {
-  color: var(--warn);
-}
-
-.layer-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.7rem;
-}
-
-.actions {
-  display: flex;
-  gap: 0.3rem;
-  white-space: nowrap;
-}
-
-.analysis td {
-  background: var(--panel-alt);
-  padding: 0.5rem 0.6rem;
-}
-
-.facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.1rem;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.facts .warn {
-  color: var(--warn);
-}
-
-.candidates {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
-}
-
-.candidates .undo {
-  border-color: var(--warn);
-  color: var(--warn);
-  background: transparent;
-}
-
-.candidates button {
-  padding: 0.25rem 0.6rem;
-  font-variant-numeric: tabular-nums;
 }
 </style>
