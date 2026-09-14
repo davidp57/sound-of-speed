@@ -1,6 +1,6 @@
 # 03 — De vrais onglets, avec une découpe
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 14 septembre 2026
 
 ## D'où vient ce ticket
 
@@ -33,6 +33,20 @@ boîte : ce sont des boutons, et c'est justement ce qu'on veut lire.
 **La zone tactile ne rétrécit pas.** C'est un écran de voiture, touché en
 roulant : le remplissage vertical compense ce que la boîte perd. Mesuré avant et
 après, et écrit dans le commentaire.
+
+## Ce qui a été fait, et ce que ça coûte
+
+Mesuré le 14 septembre 2026 : l'onglet passe de **37,6 à 38,4 pixels** de haut —
+la zone tactile grandit au lieu de rétrécir, le remplissage reprenant ce que la
+bordure perd. La barre abandonne son remplissage bas, que les commandes de droite
+reprennent pour elles ; l'onglet actif le traverse et mange la ligne.
+
+**Le raccord ne vaut que sur une ligne**, donc dans la voiture et sur un poste.
+Sous 375 pixels les onglets s'empilent sur trois rangs et l'actif ne touche plus
+le contenu : il reste distingué par son fond et sa couleur, mais la découpe ne
+veut plus rien dire. C'est assumé — un rang d'onglets empilé n'est plus une barre
+d'onglets, et aucun remède en CSS seul ne tient sans figer une largeur de repli
+qui dépend du nombre d'onglets ouverts.
 
 ## Comment on vérifie
 

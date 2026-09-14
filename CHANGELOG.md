@@ -23,6 +23,12 @@ Toutes les évolutions notables du projet. Format
 
 ### Modifié
 
+- **Les onglets ont la forme d'onglets.** Ils étaient dessinés comme tous les
+  autres boutons de l'application, `Plein écran` et `?` compris, à quelques
+  pixels de là : rien ne disait lequel navigue et lequel agit. L'onglet actif se
+  raccorde désormais au contenu — coins arrondis en haut, bord bas qui mange la
+  ligne de la barre — et les autres sont nus. La zone tactile passe de 37,6 à
+  38,4 pixels. Le raccord ne vaut que tant que la barre tient sur une ligne.
 - **L'aide n'est plus le premier écran.** Elle reste entière derrière le bouton
   `?`, où elle répond à une question qu'on se pose ; l'accueil, lui, ne revient
   pas.

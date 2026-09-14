@@ -595,11 +595,11 @@ onBeforeUnmount(() => {
  */
 .bar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 1rem 0;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
 }
@@ -608,6 +608,51 @@ onBeforeUnmount(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+/*
+ * Les onglets ont la forme d'onglets, et les boutons celle de boutons.
+ *
+ * Ils étaient déjà une barre d'onglets au sens du balisage — `nav`,
+ * `aria-pressed`, l'actif plein couleur d'accent — mais **dessinés comme tous
+ * les autres boutons de l'application**, `Plein écran` et `?` compris, à
+ * quelques pixels de là. Rien ne disait lequel navigue et lequel agit ; David
+ * l'a relevé le 14 septembre 2026.
+ *
+ * L'actif se raccorde au contenu : il en prend le fond, ses coins ne sont
+ * arrondis qu'en haut, et son bord bas mange la ligne de la barre — c'est le
+ * `-1px` qui fait la découpe. Les autres sont nus.
+ *
+ * **La zone tactile ne rétrécit pas** : 37,6 pixels de haut avant, 38,4 après,
+ * mesuré. Ce qui disparaît en bordure est rendu en remplissage.
+ *
+ * **Le raccord ne vaut que sur une ligne** — donc dans la voiture et sur un
+ * poste. Sous 375 pixels les onglets s'empilent sur trois rangs et l'actif ne
+ * touche plus rien : il reste distingué par son fond et sa couleur, ce qui est
+ * l'essentiel, mais la découpe ne veut plus rien dire. Aucun remède en CSS seul
+ * ne tient là, et un rang d'onglets empilé n'est de toute façon plus une barre
+ * d'onglets.
+ */
+.tabs button {
+  margin-bottom: -1px;
+  padding: 0.55rem 0.9rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 6px 6px 0 0;
+  background: none;
+  color: var(--muted);
+}
+
+.tabs button:hover:not(:disabled) {
+  color: var(--text);
+  border-color: transparent;
+}
+
+.tabs button[aria-pressed='true'] {
+  background: var(--bg);
+  border-color: var(--line);
+  border-bottom-color: var(--bg);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 /*
@@ -620,6 +665,9 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 0.4rem;
   margin-left: auto;
+  /* La barre ne garde plus de remplissage en bas — il appartient aux onglets,
+     qui doivent toucher sa ligne. Les commandes le reprennent pour elles. */
+  margin-bottom: 0.6rem;
 }
 
 /* Les commandes d'appareil : une icône chacune, même gabarit que l'aide. */
