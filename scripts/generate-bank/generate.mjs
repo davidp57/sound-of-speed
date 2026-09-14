@@ -27,9 +27,10 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { buildPlan } from './plan.mjs'
-import { closeLoop, seamStep } from './loop.mjs'
+import { bestWindow, closeLoop, seamStep } from './loop.mjs'
 import { fichierMoteur, resoudreMoteur } from './moteur.mjs'
 import { buildProfile } from './profil.mjs'
+import { lireCaptation, poserEchappement } from './echappement.mjs'
 import { peak, rms, spectralCentroid } from './spectrum.mjs'
 import { readWav, writeWav } from './wav.mjs'
 
@@ -54,6 +55,19 @@ const IMPULSE_DIR = join(ROOT, 'public', 'impulse')
 function exhaustPath(definition) {
   const nom = definition.exhaustResponse ?? 'smooth_39'
   return nom === 'tube' ? '' : join(IMPULSE_DIR, `${nom}.wav`)
+}
+
+/**
+ * Part d'énergie réverbérée, comme dans le mode direct.
+ *
+ * `0.45` est la valeur que David tient depuis le 6 septembre 2026, étendue à
+ * toute la bibliothèque le 8 — voir `echappement.mjs` pour ce qu'elle corrige
+ * ici. `1` rend le comportement d'avant le 14 septembre, où toute la sortie
+ * passait par la réponse ; `0` donne le moteur sec.
+ */
+function exhaustMix(definition) {
+  const mix = definition.exhaustMix ?? 0.45
+  return Math.min(Math.max(mix, 0), 1)
 }
 const SAMPLE_RATE = 44100
 
@@ -93,7 +107,10 @@ function runBench(definition, enginePath, plan, rawDir) {
         '--engine-def', enginePath,
         '--sim-hz', String(definition.simulationHz),
         '--impulse', String(definition.impulseSamples),
-        ...(exhaustPath(definition) === '' ? [] : ['--exhaust', exhaustPath(definition)]),
+        // Le banc rend le son **sec** : l'échappement se pose ici, avec la part
+        // réverbérée du mode direct. Sauf pour le tube fabriqué, qui n'a plus
+        // que cet usage de comparaison et reste donc où il était.
+        ...(exhaustPath(definition) === '' ? [] : ['--exhaust', 'none']),
         '--out-dir', rawDir,
       ],
       { stdio: ['pipe', 'pipe', 'inherit'] },
@@ -279,6 +296,17 @@ async function main() {
   const output = await runBench(definition, enginePath, plan, rawDir)
   const { report, totalSeconds } = parseReport(output)
 
+  // La captation se lit une fois pour toutes les prises. `null` quand le tube
+  // fabriqué est demandé : c'est alors le banc qui l'a déjà appliqué, entier.
+  const mix = exhaustMix(definition)
+  const reponse = exhaustPath(definition) === '' ? null : lireCaptation(exhaustPath(definition))
+  if (reponse !== null) {
+    console.log(
+      `Échappement : ${definition.exhaustResponse ?? 'smooth_39'},` +
+        ` ${Math.round(mix * 100)} % de la sortie`,
+    )
+  }
+
   // --- Reprise de chaque prise : niveau, fermeture de boucle, mesures. ---
   //
   // Le fichier écrit garde sa longueur : un nombre entier de cycles moteur.
@@ -290,10 +318,23 @@ async function main() {
     const measured = report.get(take.name)
     if (measured === undefined) fail(`le banc n'a rien rendu pour ${take.name}`)
 
-    const { samples } = readWav(readFileSync(join(rawDir, take.name)))
+    const { samples: secs } = readWav(readFileSync(join(rawDir, take.name)))
+
+    // L'échappement, posé sur le son sec que le banc vient de rendre. Il vient
+    // **avant** la normalisation et les mesures : ce qu'on chiffre plus bas doit
+    // être ce qui est écrit dans le fichier, pas ce qui l'a précédé.
+    const melange = reponse === null ? secs : poserEchappement(secs, reponse, mix)
+
+    // Puis la fenêtre de cycles qui se referme le mieux. Sans elle, le son sec —
+    // aux transitoires plus raides que le convolué — doublait le saut au
+    // bouclage : 26,4 % contre 11,4 % sur le V8, mesuré le 14 septembre 2026.
+    const fenetre = bestWindow(melange, SAMPLE_RATE, take.cycles)
+    const samples = fenetre.samples
 
     // Normalisation en crête : elle n'efface rien du relief entre les prises,
-    // qui est repris plus bas par le gain de couche.
+    // qui est repris plus bas par le gain de couche. La convolution déplace le
+    // rapport crête/énergie, et différemment selon le régime — mesuré de ×1,2 à
+    // ×3,5 sur le quatre cylindres. C'est `fileRms` qui le rattrape, plus bas.
     const rawPeak = peak(samples)
     const scale = rawPeak > 0 ? TARGET_PEAK / rawPeak : 1
     const finalSamples = new Float32Array(samples.length)
@@ -314,6 +355,8 @@ async function main() {
       hottestK: measured.hottestK,
       clipped: measured.clipped,
       benchSeconds: measured.seconds,
+      cycles: fenetre.cycles,
+      cyclesEnregistres: take.cycles,
       durationS: finalSamples.length / SAMPLE_RATE,
       fileSeam: seamStep(finalSamples, SAMPLE_RATE),
       playedSeam: closed.seam,

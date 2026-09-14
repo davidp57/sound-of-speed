@@ -143,3 +143,53 @@ export function closeLoop(samples, sampleRate) {
   }
   return { samples: faded, seam: fadedSeam, method: 'fondu' }
 }
+
+/**
+ * La plus longue fenêtre de cycles entiers qui se referme proprement.
+ *
+ * Une prise fait un nombre entier de cycles moteur, donc ses deux bouts sont en
+ * phase **par construction**. Cela suffisait tant que le banc rendait un signal
+ * lissé par une convolution entière ; depuis que l'échappement n'en prend plus
+ * que 45 %, les transitoires sont raides et le raccord se voit : mesuré le
+ * 14 septembre 2026, le saut au bouclage du V8 passait de 11,4 % à 26,4 %.
+ *
+ * Or un cycle moteur ne vaut pas l'autre. Le ralenti d'un quatre cylindres varie
+ * de près de 3 dB d'un dixième de seconde à l'autre — c'est ce qui lui donne son
+ * caractère, et c'est ce qui empêche n'importe quelle coupe de tomber juste. On
+ * essaie donc toutes les fenêtres d'un nombre entier de cycles, à tous les
+ * décalages d'un cycle.
+ *
+ * **Le critère est un seuil, et non une longueur.** On avait d'abord borné le
+ * raccourcissement à une fraction de la prise, et le chiffre trouvé sur le
+ * quatre cylindres ne valait pas pour le V8 : à neuf dixièmes, le premier reste
+ * à 7,05 % quand le second remonte à 18,9 %. Ce qu'on veut n'est pas « couper
+ * peu » mais « couper au bon endroit », donc on prend la **plus longue** fenêtre
+ * dont le raccord tient sous le seuil, et à défaut la meilleure de toutes.
+ *
+ * Le seuil est celui de la banque enregistrée, 10,8 % au pire, arrondi vers le
+ * bas : ce qui est en service depuis des mois et que personne n'a signalé.
+ */
+export function bestWindow(samples, sampleRate, cycles, seuil = 0.08) {
+  if (cycles < 2) return { samples, cycles, seam: closeLoop(samples, sampleRate).seam }
+
+  const perCycle = samples.length / cycles
+  let meilleur = null
+  let acceptable = null
+
+  for (let k = cycles; k >= 2; k -= 1) {
+    for (let start = 0; start + k <= cycles; start += 1) {
+      const from = Math.round(start * perCycle)
+      const to = Math.round((start + k) * perCycle)
+      const fenetre = samples.subarray(from, to)
+      const seam = closeLoop(fenetre, sampleRate).seam
+      const candidat = { samples: fenetre, cycles: k, seam, start }
+      if (meilleur === null || seam < meilleur.seam) meilleur = candidat
+      // Les fenêtres sont parcourues de la plus longue à la plus courte : la
+      // première qui passe le seuil est la plus longue qui le passe.
+      if (acceptable === null && seam <= seuil) acceptable = candidat
+    }
+    if (acceptable !== null) break
+  }
+
+  return acceptable ?? meilleur
+}

@@ -53,8 +53,8 @@
       "headerLength": 10
     }
   },
-  "generatedAt": "2026-09-14T07:59:36.541Z",
-  "totalSeconds": 71.08,
+  "generatedAt": "2026-09-14T10:19:03.568Z",
+  "totalSeconds": 37.17,
   "reference": "on-6300.wav",
   "reliefCompression": 0.35,
   "rateSpan": {
@@ -68,43 +68,43 @@
       "ratio": 1.4105065061701048,
       "rateLow": 0.713855854329113,
       "rateHigh": 1.4032682896152864,
-      "worstTimbreSemitones": 4.986439585356565,
+      "worstTimbreSemitones": 5.942633121867196,
       "points": [
         {
           "rpm": 950,
-          "predictedHz": 346.9594201577562,
-          "trueHz": 331.1728517437292,
-          "semitones": 0.8061903130305537
+          "predictedHz": 359.3118946314252,
+          "trueHz": 357.79394287678366,
+          "semitones": 0.07329277074744116
         },
         {
           "rpm": 1340,
-          "predictedHz": 340.31499219766374,
-          "trueHz": 351.25510043968904,
-          "semitones": -0.5477815833408266
+          "predictedHz": 348.27196873559734,
+          "trueHz": 342.15102062426365,
+          "semitones": 0.3069733072425753
         },
         {
           "rpm": 1890,
-          "predictedHz": 346.21559184145906,
-          "trueHz": 348.13299784815894,
-          "semitones": -0.09561442340826273
+          "predictedHz": 340.3539512249047,
+          "trueHz": 350.9548084545251,
+          "semitones": -0.5309929446955528
         },
         {
           "rpm": 2666,
-          "predictedHz": 426.1344277842617,
-          "trueHz": 391.60549117339855,
-          "semitones": 1.4628914160498052
+          "predictedHz": 411.6143860812655,
+          "trueHz": 377.8102503354083,
+          "semitones": 1.4835787437055528
         },
         {
           "rpm": 3761,
-          "predictedHz": 390.6785967468635,
-          "trueHz": 397.9662571057947,
-          "semitones": -0.3199667080859645
+          "predictedHz": 393.17423325176765,
+          "trueHz": 363.2599003347747,
+          "semitones": 1.3699999161755088
         },
         {
           "rpm": 5305,
-          "predictedHz": 416.684569329365,
-          "trueHz": 312.4053246414668,
-          "semitones": 4.986439585356565
+          "predictedHz": 402.82275809193425,
+          "trueHz": 285.7841225430894,
+          "semitones": 5.942633121867196
         }
       ]
     },
@@ -114,61 +114,61 @@
       "ratio": 1.9895286039481959,
       "rateLow": 0.5095912599899434,
       "rateHigh": 1.975889646700822,
-      "worstTimbreSemitones": 6.072516962401122,
+      "worstTimbreSemitones": 7.332545281492292,
       "points": [
         {
           "rpm": 950,
-          "predictedHz": 366.77843694146844,
-          "trueHz": 331.1728517437292,
-          "semitones": 1.7678929631445268
+          "predictedHz": 381.908241921364,
+          "trueHz": 357.79394287678366,
+          "semitones": 1.1291650902289014
         },
         {
           "rpm": 1340,
-          "predictedHz": 308.11883558618683,
-          "trueHz": 351.25510043968904,
-          "semitones": -2.26838755155723
+          "predictedHz": 317.1659221155007,
+          "trueHz": 342.15102062426365,
+          "semitones": -1.3127457821855093
         },
         {
           "rpm": 1890,
-          "predictedHz": 326.50002162218664,
-          "trueHz": 348.13299784815894,
-          "semitones": -1.1106657520320464
+          "predictedHz": 333.3707359286795,
+          "trueHz": 350.9548084545251,
+          "semitones": -0.8898936440284761
         },
         {
           "rpm": 2666,
-          "predictedHz": 354.98280247507614,
-          "trueHz": 391.60549117339855,
-          "semitones": -1.699822337522681
+          "predictedHz": 363.6558577855232,
+          "trueHz": 377.8102503354083,
+          "semitones": -0.6610563407853605
         },
         {
           "rpm": 3761,
-          "predictedHz": 435.68819965705705,
-          "trueHz": 397.9662571057947,
-          "semitones": 1.5677991244299965
+          "predictedHz": 445.56067157309826,
+          "trueHz": 363.2599003347747,
+          "semitones": 3.535437332819547
         },
         {
           "rpm": 5305,
-          "predictedHz": 443.66234833924636,
-          "trueHz": 312.4053246414668,
-          "semitones": 6.072516962401122
+          "predictedHz": 436.4968389903021,
+          "trueHz": 285.7841225430894,
+          "semitones": 7.332545281492292
         },
         {
           "rpm": 1128,
-          "predictedHz": 363.1381302031582,
-          "trueHz": 352.1805148338986,
-          "semitones": 0.5304399932122624
+          "predictedHz": 376.84892916631014,
+          "trueHz": 360.8213363449297,
+          "semitones": 0.7524196992809566
         },
         {
           "rpm": 2245,
-          "predictedHz": 351.21067016630246,
-          "trueHz": 427.2093821916459,
-          "semitones": -3.3912798603679404
+          "predictedHz": 359.01799511868825,
+          "trueHz": 400.2965998761136,
+          "semitones": -1.8841584384623324
         },
         {
           "rpm": 4467,
-          "predictedHz": 458.2617817074035,
-          "trueHz": 370.23057877931524,
-          "semitones": 3.692974972611979
+          "predictedHz": 462.68215759413374,
+          "trueHz": 358.78774493124513,
+          "semitones": 4.402690226449673
         }
       ]
     },
@@ -178,67 +178,67 @@
       "ratio": 2.806243040080456,
       "rateLow": 0.36565942641968235,
       "rateHigh": 2.7774357957761113,
-      "worstTimbreSemitones": 7.986471875718307,
+      "worstTimbreSemitones": 7.9916586753746754,
       "points": [
         {
           "rpm": 950,
-          "predictedHz": 380.0319595314446,
-          "trueHz": 331.1728517437292,
-          "semitones": 2.3824360648634526
+          "predictedHz": 395.5290930596621,
+          "trueHz": 357.79394287678366,
+          "semitones": 1.7358582196769463
         },
         {
           "rpm": 1340,
-          "predictedHz": 455.0704192286133,
-          "trueHz": 351.25510043968904,
-          "semitones": 4.48284763304657
+          "predictedHz": 466.00346877669426,
+          "trueHz": 342.15102062426365,
+          "semitones": 5.348489315783801
         },
         {
           "rpm": 1890,
-          "predictedHz": 417.3006278349964,
-          "trueHz": 348.13299784815894,
-          "semitones": 3.1373822941212506
+          "predictedHz": 402.41156085686487,
+          "trueHz": 350.9548084545251,
+          "semitones": 2.368637789583509
         },
         {
           "rpm": 2666,
-          "predictedHz": 499.114747320454,
-          "trueHz": 391.60549117339855,
-          "semitones": 4.199646442327792
+          "predictedHz": 467.80660130904596,
+          "trueHz": 377.8102503354083,
+          "semitones": 3.699004513162162
         },
         {
           "rpm": 3761,
-          "predictedHz": 580.1078973996314,
-          "trueHz": 397.9662571057947,
-          "semitones": 6.524101771024254
+          "predictedHz": 545.7677264131462,
+          "trueHz": 363.2599003347747,
+          "semitones": 7.04741959904289
         },
         {
           "rpm": 5305,
-          "predictedHz": 474.63761016647413,
-          "trueHz": 312.4053246414668,
-          "semitones": 7.2408885702140875
+          "predictedHz": 453.4354926414584,
+          "trueHz": 285.7841225430894,
+          "semitones": 7.9916586753746754
         },
         {
           "rpm": 1128,
-          "predictedHz": 428.08442710250426,
-          "trueHz": 352.1805148338986,
-          "semitones": 3.378963154855055
+          "predictedHz": 443.3500486072689,
+          "trueHz": 360.8213363449297,
+          "semitones": 3.5659389853385415
         },
         {
           "rpm": 1592,
-          "predictedHz": 448.61898774300437,
-          "trueHz": 282.83317680737275,
-          "semitones": 7.986471875718307
+          "predictedHz": 449.2078570630234,
+          "trueHz": 288.69465629919733,
+          "semitones": 7.654065099774025
         },
         {
           "rpm": 3167,
-          "predictedHz": 557.1712437935058,
-          "trueHz": 379.67974146216847,
-          "semitones": 6.640053330702512
+          "predictedHz": 522.8099370478337,
+          "trueHz": 389.5758933437445,
+          "semitones": 5.0925858644721735
         },
         {
           "rpm": 4467,
-          "predictedHz": 548.4332054952357,
-          "trueHz": 370.23057877931524,
-          "semitones": 6.802702385052612
+          "predictedHz": 518.7878730591772,
+          "trueHz": 358.78774493124513,
+          "semitones": 6.384169716986992
         }
       ]
     },
@@ -248,73 +248,73 @@
       "ratio": 7.875,
       "rateLow": 0.13862452991651245,
       "rateHigh": 7.754051537734154,
-      "worstTimbreSemitones": 14.397544076240692,
+      "worstTimbreSemitones": 14.725766996656375,
       "points": [
         {
           "rpm": 950,
-          "predictedHz": 384.851123149086,
-          "trueHz": 331.1728517437292,
-          "semitones": 2.6005925578486253
+          "predictedHz": 401.0425007274347,
+          "trueHz": 357.79394287678366,
+          "semitones": 1.9755140542762997
         },
         {
           "rpm": 1340,
-          "predictedHz": 533.1170613874583,
-          "trueHz": 351.25510043968904,
-          "semitones": 7.223198150480386
+          "predictedHz": 555.3783210424065,
+          "trueHz": 342.15102062426365,
+          "semitones": 8.386051348565486
         },
         {
           "rpm": 1890,
-          "predictedHz": 707.7934097723046,
-          "trueHz": 348.13299784815894,
-          "semitones": 12.284277147816962
+          "predictedHz": 736.5700963688064,
+          "trueHz": 350.9548084545251,
+          "semitones": 12.83445068185284
         },
         {
           "rpm": 2666,
-          "predictedHz": 852.534576843129,
-          "trueHz": 391.60549117339855,
-          "semitones": 13.46828823439423
+          "predictedHz": 884.46747666666,
+          "trueHz": 377.8102503354083,
+          "semitones": 14.725766996656375
         },
         {
           "rpm": 3761,
-          "predictedHz": 824.6764069991367,
-          "trueHz": 397.9662571057947,
-          "semitones": 12.614184265673956
+          "predictedHz": 847.2870811374307,
+          "trueHz": 363.2599003347747,
+          "semitones": 14.662185050262423
         },
         {
           "rpm": 5305,
-          "predictedHz": 525.3990913796746,
-          "trueHz": 312.4053246414668,
-          "semitones": 8.99993594979499
+          "predictedHz": 519.4259079374901,
+          "trueHz": 285.7841225430894,
+          "semitones": 10.343906501821403
         },
         {
           "rpm": 1128,
-          "predictedHz": 454.4698504785632,
-          "trueHz": 352.1805148338986,
-          "semitones": 4.414433977791483
+          "predictedHz": 473.5451698656768,
+          "trueHz": 360.8213363449297,
+          "semitones": 4.706608733388215
         },
         {
           "rpm": 1592,
-          "predictedHz": 619.0563480774777,
-          "trueHz": 282.83317680737275,
-          "semitones": 13.561432470554028
+          "predictedHz": 644.6576187196122,
+          "trueHz": 288.69465629919733,
+          "semitones": 13.907864841348573
         },
         {
           "rpm": 2245,
-          "predictedHz": 790.551391691822,
-          "trueHz": 427.2093821916459,
-          "semitones": 10.654991043081804
+          "predictedHz": 821.7561762199775,
+          "trueHz": 400.2965998761136,
+          "semitones": 12.451692395499823
         },
         {
           "rpm": 3167,
-          "predictedHz": 872.1512569781609,
-          "trueHz": 379.67974146216847,
-          "semitones": 14.397544076240692
+          "predictedHz": 901.7435462935223,
+          "trueHz": 389.5758933437445,
+          "semitones": 14.529753425670817
         },
         {
           "rpm": 4467,
-          "predictedHz": 697.139109552325,
-          "trueHz": 370.23057877931524,
-          "semitones": 10.956270087321036
+          "predictedHz": 707.2337910365701,
+          "trueHz": 358.78774493124513,
+          "semitones": 11.748679127896564
         }
       ]
     }
@@ -328,18 +328,18 @@
       "measuredRpm": 800,
       "cycles": 20,
       "durationS": 3,
-      "fileSeam": 0.2232810454365983,
-      "playedSeam": 0.03116096338327867,
-      "seamMethod": "aligné",
-      "playedDurationS": 2.834467120181406,
-      "gain": 0.22140278487117968,
-      "measuredDb": -45.74685937037635,
-      "appliedDb": -16.01140077963172,
-      "centroidHz": 324.5400303383562,
-      "torqueFtLb": 88.4,
+      "fileSeam": 0.1834765702545965,
+      "playedSeam": 0.0035761838679259726,
+      "seamMethod": "fondu",
+      "playedDurationS": 2.97,
+      "gain": 0.19155853787388175,
+      "measuredDb": -43.81480565652997,
+      "appliedDb": -15.335181979785489,
+      "centroidHz": 338.20246976874387,
+      "torqueFtLb": 96.1,
       "hottestK": 2044,
       "clipped": false,
-      "benchSeconds": 2.99
+      "benchSeconds": 1.74
     },
     {
       "name": "off-800.wav",
@@ -349,18 +349,18 @@
       "measuredRpm": 800,
       "cycles": 20,
       "durationS": 3,
-      "fileSeam": 0.09466138291923046,
-      "playedSeam": 0.39676864164814074,
+      "fileSeam": 0.5007008555204439,
+      "playedSeam": 0.07300322524182856,
       "seamMethod": "aligné",
-      "playedDurationS": 2.684625850340136,
-      "gain": 0.1001564871472486,
-      "measuredDb": -65.71887503005632,
-      "appliedDb": -23.00160626051971,
-      "centroidHz": 349.2777852235269,
-      "torqueFtLb": 5.8,
-      "hottestK": 1468,
+      "playedDurationS": 2.6104761904761906,
+      "gain": 0.10160111706422115,
+      "measuredDb": -62.958824405273496,
+      "appliedDb": -22.035588541845723,
+      "centroidHz": 402.36664832379415,
+      "torqueFtLb": 4.2,
+      "hottestK": 1491,
       "clipped": false,
-      "benchSeconds": 2.93
+      "benchSeconds": 1.82
     },
     {
       "name": "on-1128.wav",
@@ -370,18 +370,18 @@
       "measuredRpm": 1128.4,
       "cycles": 28,
       "durationS": 2.9776643990929705,
-      "fileSeam": 0.0843222521814932,
-      "playedSeam": 0.06919570933360972,
-      "seamMethod": "aligné",
-      "playedDurationS": 2.866780045351474,
-      "gain": 0.28922301186218385,
-      "measuredDb": -36.286480028258026,
-      "appliedDb": -12.700268009890308,
-      "centroidHz": 352.1805148338986,
-      "torqueFtLb": 88.8,
-      "hottestK": 2265,
+      "fileSeam": 0.5268848880852893,
+      "playedSeam": 0.028015808930902202,
+      "seamMethod": "fondu",
+      "playedDurationS": 2.9476643990929707,
+      "gain": 0.3043354288185235,
+      "measuredDb": -34.64753393179215,
+      "appliedDb": -12.12663687612725,
+      "centroidHz": 360.8213363449297,
+      "torqueFtLb": 87.5,
+      "hottestK": 2214,
       "clipped": false,
-      "benchSeconds": 3.01
+      "benchSeconds": 1.75
     },
     {
       "name": "off-1128.wav",
@@ -391,18 +391,18 @@
       "measuredRpm": 1128.4,
       "cycles": 28,
       "durationS": 2.9776643990929705,
-      "fileSeam": 0.003458228418189281,
-      "playedSeam": 0.06739434009613297,
-      "seamMethod": "aligné",
-      "playedDurationS": 2.7605668934240364,
-      "gain": 0.14404556943052943,
-      "measuredDb": -54.305781550323,
-      "appliedDb": -19.007023542613048,
-      "centroidHz": 333.9196518606742,
-      "torqueFtLb": -4,
-      "hottestK": 1415,
+      "fileSeam": 0.5064602833946231,
+      "playedSeam": 0.05523619123111632,
+      "seamMethod": "fondu",
+      "playedDurationS": 2.9476643990929707,
+      "gain": 0.1776939307757543,
+      "measuredDb": -52.009742580743875,
+      "appliedDb": -18.203409903260354,
+      "centroidHz": 352.858413578796,
+      "torqueFtLb": -3.3,
+      "hottestK": 1438,
       "clipped": false,
-      "benchSeconds": 3.04
+      "benchSeconds": 1.81
     },
     {
       "name": "on-1592.wav",
@@ -410,20 +410,20 @@
       "purpose": "bank",
       "askedRpm": 1591.6228831585568,
       "measuredRpm": 1591.6,
-      "cycles": 40,
-      "durationS": 3.01578231292517,
-      "fileSeam": 0.03605305183097712,
-      "playedSeam": 0.08041283168946363,
+      "cycles": 39,
+      "durationS": 2.940385487528345,
+      "fileSeam": 0.06043884879901142,
+      "playedSeam": 0.0749959312979931,
       "seamMethod": "fondu",
-      "playedDurationS": 2.98578231292517,
-      "gain": 0.4491159837091572,
-      "measuredDb": -23.088149537741014,
-      "appliedDb": -8.080852338209354,
-      "centroidHz": 282.83317680737275,
-      "torqueFtLb": 100.2,
-      "hottestK": 2481,
+      "playedDurationS": 2.9103854875283446,
+      "gain": 0.37396498830152014,
+      "measuredDb": -24.320535796602037,
+      "appliedDb": -8.512187528810712,
+      "centroidHz": 288.69465629919733,
+      "torqueFtLb": 99.2,
+      "hottestK": 2469,
       "clipped": false,
-      "benchSeconds": 3.41
+      "benchSeconds": 1.66
     },
     {
       "name": "off-1592.wav",
@@ -431,20 +431,20 @@
       "purpose": "bank",
       "askedRpm": 1591.6228831585568,
       "measuredRpm": 1591.6,
-      "cycles": 40,
-      "durationS": 3.01578231292517,
-      "fileSeam": 0.04815245090588695,
-      "playedSeam": 0.003125537724416069,
-      "seamMethod": "aligné",
-      "playedDurationS": 2.792879818594104,
-      "gain": 0.23036121915754482,
-      "measuredDb": -40.15379658702706,
-      "appliedDb": -14.053828805459469,
-      "centroidHz": 358.1724396747337,
-      "torqueFtLb": -11.3,
-      "hottestK": 1398,
+      "cycles": 39,
+      "durationS": 2.940385487528345,
+      "fileSeam": 0.10361238471472325,
+      "playedSeam": 0.02046817089035694,
+      "seamMethod": "fondu",
+      "playedDurationS": 2.9103854875283446,
+      "gain": 0.17600377619923044,
+      "measuredDb": -41.52038985238873,
+      "appliedDb": -14.532136448336056,
+      "centroidHz": 375.5049336619888,
+      "torqueFtLb": -10.8,
+      "hottestK": 1399,
       "clipped": false,
-      "benchSeconds": 2.98
+      "benchSeconds": 1.75
     },
     {
       "name": "on-2245.wav",
@@ -454,18 +454,18 @@
       "measuredRpm": 2245,
       "cycles": 56,
       "durationS": 2.993333333333333,
-      "fileSeam": 0.05683257349031529,
-      "playedSeam": 0.0004300079017923109,
-      "seamMethod": "aligné",
-      "playedDurationS": 2.707981859410431,
-      "gain": 0.44070634998001684,
-      "measuredDb": -18.301644836619996,
-      "appliedDb": -6.405575692816998,
-      "centroidHz": 427.2093821916459,
-      "torqueFtLb": 127.1,
-      "hottestK": 2679,
+      "fileSeam": 0.596682363475056,
+      "playedSeam": 0.00783551671494563,
+      "seamMethod": "fondu",
+      "playedDurationS": 2.9633333333333334,
+      "gain": 0.556038366454256,
+      "measuredDb": -16.481534858761616,
+      "appliedDb": -5.768537200566565,
+      "centroidHz": 400.2965998761136,
+      "torqueFtLb": 127,
+      "hottestK": 2686,
       "clipped": false,
-      "benchSeconds": 3.4
+      "benchSeconds": 1.67
     },
     {
       "name": "off-2245.wav",
@@ -473,20 +473,20 @@
       "purpose": "bank",
       "askedRpm": 2244.994432064365,
       "measuredRpm": 2245,
-      "cycles": 56,
-      "durationS": 2.993333333333333,
-      "fileSeam": 0.045822545724677144,
-      "playedSeam": 0.04604690035892141,
+      "cycles": 55,
+      "durationS": 2.9398866213151926,
+      "fileSeam": 0.1358753868588936,
+      "playedSeam": 0.06528218576296174,
       "seamMethod": "aligné",
-      "playedDurationS": 2.6546031746031744,
-      "gain": 0.23505500929201364,
-      "measuredDb": -34.258978904529606,
-      "appliedDb": -11.990642616585362,
-      "centroidHz": 422.4527076728431,
+      "playedDurationS": 2.8684126984126985,
+      "gain": 0.2985760740501249,
+      "measuredDb": -33.16623491955474,
+      "appliedDb": -11.608182221844158,
+      "centroidHz": 397.75733299906835,
       "torqueFtLb": -18.6,
-      "hottestK": 1363,
+      "hottestK": 1352,
       "clipped": false,
-      "benchSeconds": 3.04
+      "benchSeconds": 1.76
     },
     {
       "name": "on-3167.wav",
@@ -494,20 +494,20 @@
       "purpose": "bank",
       "askedRpm": 3166.5792527424455,
       "measuredRpm": 3166.6,
-      "cycles": 79,
-      "durationS": 2.993764172335601,
-      "fileSeam": 0.006321123534440174,
-      "playedSeam": 0.026336437429275564,
-      "seamMethod": "aligné",
-      "playedDurationS": 2.7126303854875284,
-      "gain": 0.5665405264866548,
-      "measuredDb": -10.230510539106872,
-      "appliedDb": -3.5806786886874047,
-      "centroidHz": 379.67974146216847,
-      "torqueFtLb": 155.7,
-      "hottestK": 2760,
+      "cycles": 77,
+      "durationS": 2.917981859410431,
+      "fileSeam": 0.02898172405636996,
+      "playedSeam": 0.03855332793726461,
+      "seamMethod": "fondu",
+      "playedDurationS": 2.8879818594104307,
+      "gain": 0.6575933939760105,
+      "measuredDb": -10.651920332534168,
+      "appliedDb": -3.7281721163869586,
+      "centroidHz": 389.5758933437445,
+      "torqueFtLb": 156.2,
+      "hottestK": 2758,
       "clipped": false,
-      "benchSeconds": 3.54
+      "benchSeconds": 1.68
     },
     {
       "name": "off-3167.wav",
@@ -515,20 +515,20 @@
       "purpose": "bank",
       "askedRpm": 3166.5792527424455,
       "measuredRpm": 3166.6,
-      "cycles": 79,
-      "durationS": 2.993764172335601,
-      "fileSeam": 0.017400994793513695,
-      "playedSeam": 0.008211689504942114,
+      "cycles": 78,
+      "durationS": 2.9558730158730158,
+      "fileSeam": 0.09534950570701285,
+      "playedSeam": 0.03263993456235109,
       "seamMethod": "fondu",
-      "playedDurationS": 2.9637641723356007,
-      "gain": 0.36158984319967746,
-      "measuredDb": -22.34170813811207,
-      "appliedDb": -7.8195978483392246,
-      "centroidHz": 376.08933043988463,
-      "torqueFtLb": -27.3,
-      "hottestK": 1289,
+      "playedDurationS": 2.925873015873016,
+      "gain": 0.29401663297290176,
+      "measuredDb": -26.5523492879119,
+      "appliedDb": -9.293322250769164,
+      "centroidHz": 387.20018668953935,
+      "torqueFtLb": -27.2,
+      "hottestK": 1294,
       "clipped": false,
-      "benchSeconds": 3.44
+      "benchSeconds": 1.67
     },
     {
       "name": "on-4466.wav",
@@ -536,20 +536,20 @@
       "purpose": "bank",
       "askedRpm": 4466.480638296489,
       "measuredRpm": 4466.5,
-      "cycles": 112,
-      "durationS": 3.0090702947845807,
-      "fileSeam": 0.0026679890223955025,
-      "playedSeam": 0.017263574558899108,
+      "cycles": 111,
+      "durationS": 2.9821995464852606,
+      "fileSeam": 0.23199487419555515,
+      "playedSeam": 0.07478539236016614,
       "seamMethod": "fondu",
-      "playedDurationS": 2.9790702947845804,
-      "gain": 0.6422979893733586,
-      "measuredDb": -4.4008177843523395,
-      "appliedDb": -1.5402862245233186,
-      "centroidHz": 370.23057877931524,
+      "playedDurationS": 2.952199546485261,
+      "gain": 0.7002080672312111,
+      "measuredDb": -3.8284874690503043,
+      "appliedDb": -1.3399706141676064,
+      "centroidHz": 358.78774493124513,
       "torqueFtLb": 186.6,
-      "hottestK": 3188,
+      "hottestK": 3189,
       "clipped": false,
-      "benchSeconds": 3.67
+      "benchSeconds": 1.72
     },
     {
       "name": "off-4466.wav",
@@ -557,20 +557,20 @@
       "purpose": "bank",
       "askedRpm": 4466.480638296489,
       "measuredRpm": 4466.5,
-      "cycles": 112,
-      "durationS": 3.0090702947845807,
-      "fileSeam": 0.009293853056332289,
-      "playedSeam": 0.03945169650884137,
+      "cycles": 110,
+      "durationS": 2.955328798185941,
+      "fileSeam": 0.019447992732384938,
+      "playedSeam": 0.02577304994181706,
       "seamMethod": "aligné",
-      "playedDurationS": 2.8430385487528347,
-      "gain": 0.40662018014735524,
-      "measuredDb": -19.60608854278049,
-      "appliedDb": -6.8621309899731715,
-      "centroidHz": 418.48975239974686,
-      "torqueFtLb": -38.2,
-      "hottestK": 1452,
+      "playedDurationS": 2.863174603174603,
+      "gain": 0.4119906666819604,
+      "measuredDb": -20.82348892603872,
+      "appliedDb": -7.2882211241135515,
+      "centroidHz": 408.5522657383799,
+      "torqueFtLb": -38,
+      "hottestK": 1458,
       "clipped": false,
-      "benchSeconds": 3.39
+      "benchSeconds": 1.68
     },
     {
       "name": "on-6300.wav",
@@ -578,20 +578,20 @@
       "purpose": "bank",
       "askedRpm": 6300,
       "measuredRpm": 6300,
-      "cycles": 158,
-      "durationS": 3.0095238095238095,
-      "fileSeam": 0.021283630989018414,
-      "playedSeam": 0.020228066108591312,
+      "cycles": 157,
+      "durationS": 2.9904761904761905,
+      "fileSeam": 0.10094654118967152,
+      "playedSeam": 0.020465633665605196,
       "seamMethod": "aligné",
-      "playedDurationS": 2.736281179138322,
+      "playedDurationS": 2.9458956916099774,
       "gain": 1,
       "measuredDb": 0,
       "appliedDb": 0,
-      "centroidHz": 459.0538245941044,
-      "torqueFtLb": 166.5,
-      "hottestK": 3478,
+      "centroidHz": 442.1678154071753,
+      "torqueFtLb": 166.2,
+      "hottestK": 3376,
       "clipped": false,
-      "benchSeconds": 3.7
+      "benchSeconds": 1.73
     },
     {
       "name": "off-6300.wav",
@@ -599,20 +599,20 @@
       "purpose": "bank",
       "askedRpm": 6300,
       "measuredRpm": 6300,
-      "cycles": 158,
-      "durationS": 3.0095238095238095,
-      "fileSeam": 0.017900910832418057,
-      "playedSeam": 0.08002378782752904,
+      "cycles": 156,
+      "durationS": 2.9714285714285715,
+      "fileSeam": 0.00855883821238862,
+      "playedSeam": 0.07687493464163221,
       "seamMethod": "aligné",
-      "playedDurationS": 2.9648526077097506,
-      "gain": 0.5280495066247893,
-      "measuredDb": -15.698945755746328,
-      "appliedDb": -5.4946310145112145,
-      "centroidHz": 493.0030853870192,
-      "torqueFtLb": -52.2,
+      "playedDurationS": 2.798231292517007,
+      "gain": 0.516698768618988,
+      "measuredDb": -15.649626320170068,
+      "appliedDb": -5.477369212059523,
+      "centroidHz": 486.0567701354537,
+      "torqueFtLb": -52.3,
       "hottestK": 1771,
       "clipped": false,
-      "benchSeconds": 3.44
+      "benchSeconds": 1.7
     },
     {
       "name": "witness-950.wav",
@@ -620,20 +620,20 @@
       "purpose": "witness",
       "askedRpm": 950.1179737005648,
       "measuredRpm": 950.1,
-      "cycles": 24,
-      "durationS": 3.031201814058957,
-      "fileSeam": 0.2959724964075688,
-      "playedSeam": 0.017622859621807353,
-      "seamMethod": "aligné",
-      "playedDurationS": 2.800634920634921,
-      "gain": 0.2565424633255957,
-      "measuredDb": -40.84401810851251,
-      "appliedDb": -14.295406337979376,
-      "centroidHz": 331.1728517437292,
-      "torqueFtLb": 94.5,
-      "hottestK": 2091,
+      "cycles": 23,
+      "durationS": 2.9048979591836734,
+      "fileSeam": 0.7627098983656967,
+      "playedSeam": 0.06633225291799275,
+      "seamMethod": "fondu",
+      "playedDurationS": 2.8748979591836736,
+      "gain": 0.25977621656454997,
+      "measuredDb": -39.33588074717548,
+      "appliedDb": -13.767558261511418,
+      "centroidHz": 357.79394287678366,
+      "torqueFtLb": 90.9,
+      "hottestK": 2112,
       "clipped": false,
-      "benchSeconds": 2.97
+      "benchSeconds": 1.76
     },
     {
       "name": "witness-1340.wav",
@@ -641,20 +641,20 @@
       "purpose": "witness",
       "askedRpm": 1340.147583533803,
       "measuredRpm": 1340.1,
-      "cycles": 34,
-      "durationS": 3.0444444444444443,
-      "fileSeam": 0.026495031213237614,
-      "playedSeam": 0.05922572922663688,
+      "cycles": 33,
+      "durationS": 2.9548979591836733,
+      "fileSeam": 0.12118989145039298,
+      "playedSeam": 0.0159773422364966,
       "seamMethod": "fondu",
-      "playedDurationS": 3.0144444444444445,
-      "gain": 0.3293450480374092,
-      "measuredDb": -31.82424078900414,
-      "appliedDb": -11.138484276151448,
-      "centroidHz": 351.25510043968904,
-      "torqueFtLb": 86.3,
-      "hottestK": 2398,
+      "playedDurationS": 2.9248979591836735,
+      "gain": 0.3197267962668855,
+      "measuredDb": -29.51617623622555,
+      "appliedDb": -10.330661682678942,
+      "centroidHz": 342.15102062426365,
+      "torqueFtLb": 88.9,
+      "hottestK": 2376,
       "clipped": false,
-      "benchSeconds": 3.01
+      "benchSeconds": 1.65
     },
     {
       "name": "witness-1890.wav",
@@ -664,18 +664,18 @@
       "measuredRpm": 1890.3,
       "cycles": 47,
       "durationS": 2.983673469387755,
-      "fileSeam": 0.07145186454456501,
-      "playedSeam": 0.078401774069906,
-      "seamMethod": "aligné",
-      "playedDurationS": 2.6406802721088436,
-      "gain": 0.44880040205938376,
-      "measuredDb": -18.216095347937276,
-      "appliedDb": -6.375633371778046,
-      "centroidHz": 348.13299784815894,
-      "torqueFtLb": 116.5,
-      "hottestK": 2678,
+      "fileSeam": 0.7464790094046286,
+      "playedSeam": 0.07164453818310099,
+      "seamMethod": "fondu",
+      "playedDurationS": 2.953673469387755,
+      "gain": 0.41078955988739907,
+      "measuredDb": -19.33421370717227,
+      "appliedDb": -6.7669747975102945,
+      "centroidHz": 350.9548084545251,
+      "torqueFtLb": 115.9,
+      "hottestK": 2689,
       "clipped": false,
-      "benchSeconds": 3.38
+      "benchSeconds": 1.66
     },
     {
       "name": "witness-2666.wav",
@@ -683,20 +683,20 @@
       "purpose": "witness",
       "askedRpm": 2666.2619509525553,
       "measuredRpm": 2666.3,
-      "cycles": 67,
-      "durationS": 3.01546485260771,
-      "fileSeam": 0.03624734822678414,
-      "playedSeam": 0.06993784172856342,
+      "cycles": 66,
+      "durationS": 2.970453514739229,
+      "fileSeam": 0.05445266839760439,
+      "playedSeam": 0.009714325756561086,
       "seamMethod": "aligné",
-      "playedDurationS": 2.9249433106575964,
-      "gain": 0.45611906072064573,
-      "measuredDb": -11.765417499458263,
-      "appliedDb": -4.117896124810391,
-      "centroidHz": 391.60549117339855,
-      "torqueFtLb": 140.9,
-      "hottestK": 2673,
+      "playedDurationS": 2.8461904761904764,
+      "gain": 0.47961234637202027,
+      "measuredDb": -13.64145631013441,
+      "appliedDb": -4.774509708547043,
+      "centroidHz": 377.8102503354083,
+      "torqueFtLb": 141.7,
+      "hottestK": 2667,
       "clipped": false,
-      "benchSeconds": 3.55
+      "benchSeconds": 1.68
     },
     {
       "name": "witness-3761.wav",
@@ -704,20 +704,20 @@
       "purpose": "witness",
       "askedRpm": 3760.7798289723764,
       "measuredRpm": 3760.8,
-      "cycles": 94,
-      "durationS": 2.999387755102041,
-      "fileSeam": 0.07178157599739066,
-      "playedSeam": 0.11497835502539225,
+      "cycles": 92,
+      "durationS": 2.935578231292517,
+      "fileSeam": 0.08974284485801969,
+      "playedSeam": 0.06357041260551019,
       "seamMethod": "aligné",
-      "playedDurationS": 2.742199546485261,
-      "gain": 0.7206437360722382,
-      "measuredDb": -6.261457579567749,
-      "appliedDb": -2.191510152848712,
-      "centroidHz": 397.9662571057947,
-      "torqueFtLb": 174.9,
-      "hottestK": 2978,
+      "playedDurationS": 2.774126984126984,
+      "gain": 0.6908293501783919,
+      "measuredDb": -6.890159361821869,
+      "appliedDb": -2.411555776637654,
+      "centroidHz": 363.2599003347747,
+      "torqueFtLb": 174.5,
+      "hottestK": 2969,
       "clipped": false,
-      "benchSeconds": 3.72
+      "benchSeconds": 1.69
     },
     {
       "name": "witness-5305.wav",
@@ -725,20 +725,20 @@
       "purpose": "witness",
       "askedRpm": 5304.604417038831,
       "measuredRpm": 5304.6,
-      "cycles": 133,
-      "durationS": 3.0087074829931972,
-      "fileSeam": 0.002163734328746339,
-      "playedSeam": 0.08872484701852008,
+      "cycles": 131,
+      "durationS": 2.963469387755102,
+      "fileSeam": 0.0049906432332112545,
+      "playedSeam": 0.06682781357530371,
       "seamMethod": "aligné",
-      "playedDurationS": 2.9063038548752833,
-      "gain": 0.7877686760948818,
-      "measuredDb": 0.9409692517648718,
-      "appliedDb": 0.3293392381177051,
-      "centroidHz": 312.4053246414668,
-      "torqueFtLb": 184.1,
-      "hottestK": 3366,
+      "playedDurationS": 2.804512471655329,
+      "gain": 0.6419089590007998,
+      "measuredDb": -1.592294339416562,
+      "appliedDb": -0.5573030187957967,
+      "centroidHz": 285.7841225430894,
+      "torqueFtLb": 182.8,
+      "hottestK": 3369,
       "clipped": false,
-      "benchSeconds": 3.69
+      "benchSeconds": 1.72
     },
     {
       "name": "idle-800.wav",
@@ -748,18 +748,18 @@
       "measuredRpm": 800,
       "cycles": 20,
       "durationS": 3,
-      "fileSeam": 0.0483469606585733,
-      "playedSeam": 0.03131419102285305,
-      "seamMethod": "aligné",
-      "playedDurationS": 2.9095238095238094,
-      "gain": 0.16447348216218358,
-      "measuredDb": -53.47324406553909,
-      "appliedDb": -18.715635422938682,
-      "centroidHz": 341.88904333454275,
-      "torqueFtLb": 63.5,
-      "hottestK": 1997,
+      "fileSeam": 0.8954932548481087,
+      "playedSeam": 0.06123521500392383,
+      "seamMethod": "fondu",
+      "playedDurationS": 2.97,
+      "gain": 0.16522128745120496,
+      "measuredDb": -51.57837231561849,
+      "appliedDb": -18.05243031046647,
+      "centroidHz": 366.7023036658085,
+      "torqueFtLb": 61.7,
+      "hottestK": 1952,
       "clipped": false,
-      "benchSeconds": 2.98
+      "benchSeconds": 1.88
     }
   ]
 }

@@ -379,12 +379,33 @@ Bench *buildBench(const EngineDefinition &definition, int simFrequency,
     bench->simulator->synthesizer().m_levelingFilter.p_maxLevel = 1.0f;
     bench->simulator->synthesizer().m_levelingFilter.p_minLevel = 1.0f;
 
+    // `--exhaust none` : une impulsion unite, donc aucun filtrage. Le banc rend
+    // alors le son **sec** du moteur, et c'est `generate.mjs` qui pose
+    // l'echappement ensuite.
+    //
+    // Pourquoi deplacer ce calcul : la convolution d'engine-sim est entiere, et
+    // le son en direct n'en garde que 45 % — le reste est le son sec. Mesure du
+    // 14 septembre 2026 sur le quatre cylindres a 2 245 tr/min, part d'energie
+    // entre 1 et 4 kHz : -21,7 dB sec, -26,3 dB convolue entierement, -18,6 dB
+    // sur une prise reelle. Appliquee a cent pour cent, la reponse — celle d'un
+    // V8 Chevrolet — remplace le moteur par le corps d'un autre. David :
+    // « ca fait trop propre, trop synthetiseur ».
+    //
     // La captation d'abord, le tube fabrique seulement quand aucune n'est
     // donnee — c'est ce que dit public/impulse/LISEZMOI.md : la resonance
     // fabriquee « ne sert que de repli ».
-    const std::vector<int16_t> ir = exhaustPath.empty()
-        ? makeImpulseResponse(impulseSamples, kAudioRate)
-        : readImpulseWav(exhaustPath);
+    std::vector<int16_t> ir;
+    if (exhaustPath == "none") {
+        // Trois echantillons : le chargeur coupe la queue sous 100 en valeur
+        // absolue, donc une impulsion d'un seul echantillon serait tronquee.
+        ir = { 20000, 0, 1000 };
+    }
+    else if (exhaustPath.empty()) {
+        ir = makeImpulseResponse(impulseSamples, kAudioRate);
+    }
+    else {
+        ir = readImpulseWav(exhaustPath);
+    }
     for (int i = 0; i < bench->engine->getExhaustSystemCount(); ++i) {
         bench->simulator->synthesizer().initializeImpulseResponse(
             ir.data(), (unsigned int)ir.size(), 0.01f, i);

@@ -6,6 +6,46 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Corrigé
+
+- **Le banc faisait passer tout le son par la réponse d'échappement ; le mode
+  direct n'en prend que 45 %.** David, sur le quatre cylindres livré : « ça sonne
+  synthétique, électronique ». C'est la troisième correction trouvée à l'oreille
+  côté son direct qui n'avait jamais atteint le générateur, après la gigue
+  d'échantillonnage et la captation elle-même.
+
+  Mesuré sur le quatre cylindres à 2 245 tr/min, part d'énergie entre 1 et
+  4 kHz : **−21,7 dB** sec, **−26,3 dB** convolué entièrement, **−18,6 dB** sur
+  une prise réelle. Le sec colle presque à la vraie prise ; c'est la convolution
+  intégrale qui l'enfonce — et la réponse en question est celle d'un V8
+  Chevrolet, ce qui sous un quatre cylindres remplace le moteur par le corps d'un
+  autre.
+
+  Le banc rend désormais le son sec, et la captation se pose ensuite avec le
+  mélange de la chaîne du direct. Verdict de David sur l'essai : « c'est pas mal,
+  on garde ça ».
+
+  **Ce que ça ne corrige pas**, et il faut le dire : au-dessus de 4 kHz, tout ce
+  que produit le banc reste 30 à 45 dB sous une vraie prise, sec comme convolué.
+  Le modèle ne fabrique pas ce grain-là.
+
+- **Les boucles se referment trois à six fois mieux.** Le son sec a des
+  transitoires plus raides que le convolué, et le raccord s'est mis à s'entendre
+  — 26,4 % de saut d'énergie sur le V8 contre 11,4 %. Une prise fait un nombre
+  entier de cycles moteur, mais un cycle ne vaut pas l'autre : on essaie
+  maintenant toutes les fenêtres de cycles entiers, à tous les décalages, et l'on
+  garde la plus longue dont le raccord tient sous 8 %.
+
+  | Banque | Avant ce lot | Après |
+  |---|---|---|
+  | `gm-ls` | 11,4 % | **6,7 %** |
+  | `gm-ls-long-header` | 13,6 % | **5,7 %** |
+  | `subaru-ej25` | 39,7 % | **7,7 %** |
+
+  Les trois passent sous la banque enregistrée, qui est à 10,8 %, et les prises
+  gardent leur longueur — de 2,72 à 3,08 secondes pour trois visées.
+
+
 ### Ajouté
 
 - **« Profils d'usine » propose aussi les profils des banques déposées.** Un
