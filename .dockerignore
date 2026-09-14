@@ -6,8 +6,16 @@ dist
 # Les banques d'échantillons restent hors de l'image : elles sont montées en
 # volume, et une image qui les contiendrait se redistribuerait avec elles.
 #
-# Le contenu est exclu, et non le dossier lui-même, pour qu'on puisse ramener la
-# banque de démonstration ci-dessous. Elle, est produite par ce dépôt et n'a
+# Le contenu est exclu, et non le dossier lui-même, pour qu'on puisse ramener
+# ci-dessous les banques **produites au banc**. Elles n'appartiennent à personne,
 # donc aucune question de droits.
+#
+# Cette liste double celle du `.gitignore`, et les deux doivent dire la même
+# chose : une banque oubliée ici n'entre pas dans le contexte de construction, le
+# dossier arrive **vide** dans l'image — le `mv` du Dockerfile réussit quand
+# même, puisque le dossier existe — et nginx rend 404 sur une banque que le dépôt
+# contient pourtant. C'est exactement ce qui est arrivé le 14 septembre 2026.
 public/audio/*
-!public/audio/demo
+!public/audio/gm-ls
+!public/audio/gm-ls-long-header
+!public/audio/subaru-ej25
