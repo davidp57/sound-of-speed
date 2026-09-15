@@ -1,6 +1,6 @@
 # 19 — Un compte tiers rattaché continue de s'annoncer comme anonyme
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -23,16 +23,44 @@ Mais l'écran du compte continue d'afficher l'identité anonyme :
 
 L'écran du compte annonce l'adresse et l'avatar du compte réellement ouvert.
 
-Ce qui est affiché doit venir de la session, pas de ce que l'appareil portait
-avant : c'est cet écart qui rend le défaut visible, et c'est probablement lui
-qu'il faut chercher — **mais la cause n'a pas été instruite**, seulement
-l'observable.
+## La cause
+
+L'écran est hors de cause : il affiche l'adresse du compte, et c'est le serveur
+qui rendait celle-là.
+
+Le greffon anonyme fabrique une adresse de remplacement à la création —
+`<identifiant>@anonymous.placeholder.invalid`. Quand un fournisseur se rattache,
+un crochet lève l'anonymat en écrivant `is_anonymous = false`, **et ne touche pas
+à l'adresse**. Le compte devenait donc enregistré en gardant l'adresse fabriquée,
+que l'écran affichait fidèlement. Le portrait suivait : l'initiale se prend sur
+ce qui est écrit à côté.
+
+## Ce qui a été fait
+
+Le crochet lit maintenant ce que le fournisseur dit de la personne, dans le jeton
+d'identité qu'il a signé, et le pose sur le compte : l'adresse et le portrait.
+
+**Une adresse choisie ne se fait jamais remplacer.** Quelqu'un qui s'est
+enregistré avec la sienne puis rattache un compte tiers garde la sienne — un
+tiers est une preuve de plus, pas un remplacement. Seule une adresse de
+remplacement cède la place, et elle se reconnaît à son domaine `.invalid`, que
+la norme réserve. De même, un portrait déjà posé ne se fait pas remplacer par
+celui du fournisseur suivant.
+
+Le jeton est lu **sans revérifier sa signature**, et le module le dit : il vient
+d'être validé par la bibliothèque pour ouvrir la session. Le revérifier
+demanderait les clés publiques du fournisseur, donc un appel réseau, pour
+rejouer un contrôle déjà passé.
 
 ## Critères d'acceptation
 
-- [ ] Après connexion par un compte tiers, l'écran annonce l'adresse de ce compte
-- [ ] L'avatar suit la même identité
-- [ ] Le cas d'un compte resté anonyme est inchangé : l'adresse de remplacement
+- [x] Après connexion par un compte tiers, l'écran annonce l'adresse de ce compte
+- [x] L'avatar suit la même identité
+- [x] Le cas d'un compte resté anonyme est inchangé : l'adresse de remplacement
       ne s'affiche pas comme une adresse
-- [ ] Vérifié sur le parcours qui l'a montré — « Ouvrir un autre compte sur cet
-      appareil », puis Google
+- [ ] ~~Vérifié sur le parcours réel~~ — **non fait** : il demande le NAS et
+      Google configuré. Ce qui est vérifié est le crochet lui-même, sur une vraie
+      base, la preuve posée **par la bibliothèque** et non par une écriture
+      directe : cinq essais d'intégration, plus treize sur la lecture du jeton.
+      Une insertion en base n'aurait rien prouvé, le crochet ne s'y déclenchant
+      pas.

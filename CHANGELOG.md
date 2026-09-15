@@ -22,6 +22,15 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Un compte rattaché à Google annonce enfin son adresse.** Il cessait d'être
+  anonyme en gardant l'adresse de remplacement que la bibliothèque lui avait
+  fabriquée — `@anonymous.placeholder.invalid` —, et le portrait suivait, réduit
+  à l'initiale de cette adresse. Le rattachement lit désormais ce que le
+  fournisseur dit de la personne et le pose sur le compte.
+
+  Une adresse choisie n'est jamais remplacée : un compte tiers est une preuve de
+  plus, pas un remplacement. Seule une adresse de remplacement cède la place.
+
 - **Les profils épinglés se touchent en roulant.** La rangée de l'écran de
   conduite avait des cibles de 38 pixels de haut, sous le seuil recommandé pour
   un bouton visé au doigt. Portées à 44, et c'est gratuit : l'écran de conduite
