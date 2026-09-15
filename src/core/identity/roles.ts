@@ -69,21 +69,16 @@ export interface CopieDesRoles {
 export const VALIDITE_COPIE_MS = 30 * 24 * 60 * 60 * 1000
 
 /**
- * L'échéance se juge sur l'horloge de l'appareil, et c'est accepté.
- *
- * Reculer l'horloge rouvre donc un droit expiré, et empêche la copie de périmer.
- * **Ça ne donne rien**, et c'est ce qui rend la question close : la copie ne
- * protège rien, le serveur relit les droits en base à chaque requête, et ce qui
- * s'ouvrirait est un écran dont toutes les routes répondront non.
- *
- * L'alternative — juger sur une heure rendue par le serveur — coûterait
- * précisément ce qu'on refuse de payer : il faudrait le réseau pour savoir ce
- * qu'on ouvre, dans une application dont la règle est de démarrer et de faire du
- * son sans lui.
- */
-
-/**
  * Les rôles ouverts à cet instant.
+ *
+ * **L'échéance se juge sur l'horloge de l'appareil, et c'est accepté.** Reculer
+ * l'horloge rouvre donc un droit expiré, et empêche la copie de périmer. Ça ne
+ * donne rien, et c'est ce qui rend la question close : la copie ne protège rien,
+ * le serveur relit les droits en base à chaque requête, et ce qui s'ouvrirait est
+ * un écran dont toutes les routes répondront non. L'alternative — juger sur une
+ * heure rendue par le serveur — coûterait précisément ce qu'on refuse de payer :
+ * il faudrait le réseau pour savoir ce qu'on ouvre, dans une application dont la
+ * règle est de démarrer et de faire du son sans lui.
  *
  * Trois situations, et trois conduites :
  *
