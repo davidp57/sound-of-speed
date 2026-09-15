@@ -2,7 +2,7 @@
   "name": "sound-of-speed",
   "private": true,
   "license": "AGPL-3.0-only",
-  "version": "0.2.67",
+  "version": "0.2.68",
   "type": "module",
   "scripts": {
     "dev": "vite",
