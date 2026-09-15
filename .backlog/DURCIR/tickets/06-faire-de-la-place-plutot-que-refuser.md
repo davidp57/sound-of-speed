@@ -1,7 +1,17 @@
 # 06 — Prévenir avant le plafond, et faire de la place plutôt que refuser
 
-**Statut :** ⬜ prêt — conception posée par David le 15 septembre 2026, les
-points de conception sont tranchés ; reste à découper en tickets
+**Statut :** ✅ cadre — conception posée par David le 15 septembre 2026, tranchée
+et découpée le même jour en trois tickets. Ce fichier n'est plus un travail à
+faire : c'est le cadre que les trois suivants exécutent.
+
+| № | Ticket | Bloqué par |
+|---|---|---|
+| 07 | [Le serveur dit la place sur chaque dépôt](07-le-serveur-dit-la-place.md) | aucun |
+| 08 | [La rotation fait de la place, et le refus dit ce qui bloque](08-la-rotation-fait-de-la-place.md) | 07 |
+| 09 | [L'application prévient : bandeau et télémétrie](09-le-bandeau-et-la-telemetrie.md) | 07, 08 |
+
+La chaîne est linéaire, et c'est assumé : l'écran ne peut pas annoncer que la
+rotation est activée avant qu'elle existe, sinon il promet ce qui n'arrive pas.
 
 **Bloqué par :** rien ; le plafond lui-même est livré (REGIE, ticket 08)
 
