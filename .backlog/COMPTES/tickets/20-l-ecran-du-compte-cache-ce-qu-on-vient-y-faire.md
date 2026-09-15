@@ -40,24 +40,57 @@ rejoindre celui qu'on a.
 
 ## Ce qu'il faut obtenir
 
-Quelqu'un qui ouvre cet écran voit du premier coup d'œil ce qui mène à un compte
-enregistré — qu'il en ait déjà un ailleurs ou non.
+**Un seul geste : « s'authentifier avec Google ».** Tranché par David le
+15 septembre 2026. L'application résout ensuite, et demande validation avant
+d'agir :
 
-**La forme n'est pas tranchée** et mérite d'être cuisinée : faut-il fondre
-« enregistrer » et « se connecter » en un seul bloc, comme le font les autres
-applications avec un « continuer avec Google » qui fait les deux selon le cas ?
-Garder deux gestes distincts mais les monter tous les deux ? Le reste de l'écran
-— code à donner, code à recevoir, appareil, emporter, supprimer — mérite aussi
-d'être rangé au passage : c'est l'« agencement » que David vise.
+| Ce que Google rend | Ce qu'on fait |
+|---|---|
+| une adresse qui désigne un compte existant | on le dit, l'utilisateur valide, on **ouvre** ce compte |
+| une adresse inconnue | on le dit, l'utilisateur valide, on **rattache** l'adresse au compte que cet appareil porte |
+
+### La troisième branche n'est pas « créer », et c'est déjà instruit
+
+L'énoncé de départ disait « sinon on crée ». Le code l'interdit délibérément,
+et la raison est écrite dans `core/identity/tiers.ts` : « il n'en crée jamais
+aucun […]. Sans cela, ce bouton fabriquerait depuis la voiture un compte neuf et
+vide, et abandonnerait les réglages qu'on avait. »
+
+Le cas que cette raison protège est exactement celui qui a montré le défaut :
+**l'appareil porte déjà un compte anonyme avec des profils**. Créer les
+abandonnerait ; rattacher les garde, et c'est ce que fait déjà `link-social`.
+
+Pour l'utilisateur, ça reste un seul bouton : la différence est dans ce que
+l'application fait derrière.
+
+### Le point de séquence qui décide de la forme
+
+**On ne sait pas si l'adresse est connue avant d'être passé par Google.** La
+validation arrive donc **au retour** de la redirection, pas avant : Google →
+retour → « ce compte existe, l'ouvrir ? » ou « rattacher cette adresse à ce que
+porte cet appareil ? » → validation → action.
+
+C'est ce que la mise en œuvre doit trancher : tenter `sign-in/social` et retomber
+sur `link-social` quand le serveur refuse, ou une route qui décide côté serveur.
+Le second demande de sortir du chemin natif de la bibliothèque.
+
+### Ce qui reste à ranger
+
+Le reste de l'écran — code à donner, code à recevoir, appareil, emporter,
+supprimer — mérite d'être remis dans l'ordre de ce qu'on vient y faire : c'est
+l'« agencement » que David vise, au-delà du seul bouton d'authentification.
 
 ## Critères d'acceptation
 
-- [ ] Depuis un compte anonyme, se connecter à un compte existant se voit sans
-      déplier ni faire défiler
-- [ ] La distinction entre enregistrer l'anonyme local et rejoindre un compte qui
-      existe est claire pour qui ne connaît ni l'un ni l'autre
-- [ ] Le geste qui fait perdre le compte courant reste protégé d'un geste
-      distrait, sans être introuvable
+- [ ] Un seul bouton « s'authentifier avec Google », visible sans déplier ni
+      faire défiler
+- [ ] Une adresse qui désigne un compte existant l'ouvre, après validation, et
+      l'écran dit ce que devient le compte que l'appareil portait
+- [ ] Une adresse inconnue se rattache au compte courant, après validation :
+      **rien de ce qu'il portait n'est perdu**
+- [ ] Aucun chemin ne fabrique un compte neuf et vide en abandonnant des
+      réglages — c'est la garde que `tiers.ts` posait, et elle doit tenir
+- [ ] L'utilisateur voit ce qui va se passer **avant** de valider, pas après
 - [ ] L'ordre des sections suit ce qu'on vient y faire, du plus fréquent au plus
       rare
 - [ ] Vérifié sur les trois appareils : au volant, l'écran ne propose pas ce qui
