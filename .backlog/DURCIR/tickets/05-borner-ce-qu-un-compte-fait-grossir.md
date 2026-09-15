@@ -1,6 +1,9 @@
 # 05 — Borner ce qu'un compte peut faire grossir
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — livré par [REGIE, ticket 08](../../REGIE/tickets/08-les-gestes-de-la-fiche.md)
+le 15 septembre 2026, **sauf la valeur par défaut** : elle reste un nombre rond
+(10 Gio) et non les chiffres du ticket 04, qui n'ont pas été lus. La suite est
+dans le [ticket 06](06-faire-de-la-place-plutot-que-refuser.md).
 
 **Bloqué par :** 04 — Mesurer ce que le serveur dépense
 
@@ -18,13 +21,21 @@ y faire, et le journal du serveur en garde la trace.
 Le plafond se règle par la configuration, et sa valeur par défaut vient des
 chiffres du ticket 04 — pas d'un nombre rond choisi à la main.
 
+**Ce point n'est pas tenu.** La valeur livrée est 10 Gio, un nombre rond ; le
+relevé de dépense existe depuis le 14 septembre 2026 mais n'a pas été lu. À
+reprendre avec le ticket 06.
+
 ## Critères d'acceptation
 
-- [ ] Un compte au plafond voit son dépôt refusé, et le client ne rejoue pas ce
+- [x] Un compte au plafond voit son dépôt refusé, et le client ne rejoue pas ce
       refus.
-- [ ] L'écran dit ce qui se passe et ce qu'on peut faire : emporter ses trajets,
-      en effacer.
-- [ ] Le dépassement laisse une ligne dans le journal du serveur.
-- [ ] Effacer ou emporter un trajet rend de la place, et le dépôt suivant repasse.
-- [ ] Le plafond se règle sans reconstruire l'image.
-- [ ] Un compte sous le plafond ne voit aucune différence.
+- [x] L'écran dit ce qui se passe et ce qu'on peut faire. **Formulation
+      corrigée** : emporter ne rend aucune place — ça télécharge —, seul
+      l'effacement en rend. Le message le dit dans ce sens.
+- [x] Le dépassement laisse une ligne dans le journal du serveur.
+- [x] Effacer un trajet rend de la place, et le dépôt suivant repasse. Emporter,
+      non : voir ci-dessus.
+- [x] Le plafond se règle sans reconstruire l'image (`SPEED_PLAFOND_GIO`), et la
+      régie pose des exceptions par compte.
+- [x] Un compte sous le plafond ne voit aucune différence. Le contrôle coûte
+      0,44 ms sur les 8,6 ms d'un dépôt, mesuré sur 1 200 dépôts pesant 60 Mio.
