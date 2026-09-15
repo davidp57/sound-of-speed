@@ -1,9 +1,9 @@
 # 05 — Borner ce qu'un compte peut faire grossir
 
 **Statut :** ✅ fait — livré par [REGIE, ticket 08](../../REGIE/tickets/08-les-gestes-de-la-fiche.md)
-le 15 septembre 2026, **sauf la valeur par défaut** : elle reste un nombre rond
-(10 Gio) et non les chiffres du ticket 04, qui n'ont pas été lus. La suite est
-dans le [ticket 06](06-faire-de-la-place-plutot-que-refuser.md).
+le 15 septembre 2026. La valeur par défaut ne vient pas des chiffres du
+ticket 04, qui n'ont pas été lus : c'est **250 Mio**, décidés par David le même
+jour. La suite est dans le [ticket 06](06-faire-de-la-place-plutot-que-refuser.md).
 
 **Bloqué par :** 04 — Mesurer ce que le serveur dépense
 
@@ -21,8 +21,8 @@ y faire, et le journal du serveur en garde la trace.
 Le plafond se règle par la configuration, et sa valeur par défaut vient des
 chiffres du ticket 04 — pas d'un nombre rond choisi à la main.
 
-**Ce point n'est pas tenu.** La valeur livrée est 10 Gio, un nombre rond ; le
-relevé de dépense existe depuis le 14 septembre 2026 mais n'a pas été lu. À
+**Ce point n'est pas tenu.** La valeur livrée est 250 Mio, décidés à la main ;
+le relevé de dépense existe depuis le 14 septembre 2026 mais n'a pas été lu. À
 reprendre avec le ticket 06.
 
 ## Critères d'acceptation

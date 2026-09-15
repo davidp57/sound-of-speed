@@ -148,21 +148,21 @@ async function onReglerLAbandon(): Promise<void> {
   await recharger()
 }
 
-/** Le plafond qu'on pose, en gibioctets — l'unité dans laquelle on décide. */
-const plafondEnGio = ref('')
+/** Le plafond qu'on pose, en mébioctets — l'unité dans laquelle on décide ici. */
+const plafondEnMio = ref('')
 
 async function onPoserLePlafond(): Promise<void> {
-  const gio = Number(plafondEnGio.value.replace(',', '.'))
-  if (!Number.isFinite(gio) || gio <= 0) {
-    refus.value = 'Un plafond se donne en gibioctets, et il est positif.'
+  const mio = Number(plafondEnMio.value.replace(',', '.'))
+  if (!Number.isFinite(mio) || mio <= 0) {
+    refus.value = 'Un plafond se donne en mébioctets, et il est positif.'
     return
   }
-  const rendu = await poserUnPlafond(proprietes.compte, gio)
+  const rendu = await poserUnPlafond(proprietes.compte, mio)
   if (!rendu.fait) {
     refus.value = rendu.motif
     return
   }
-  plafondEnGio.value = ''
+  plafondEnMio.value = ''
   await recharger()
 }
 
@@ -337,11 +337,11 @@ async function basculerLeRole(role: string): Promise<void> {
     <h3>Agir sur ce compte</h3>
     <div class="gestes">
       <input
-        v-model="plafondEnGio"
+        v-model="plafondEnMio"
         type="text"
         inputmode="decimal"
-        placeholder="Plafond en Gio"
-        aria-label="Plafond en gibioctets"
+        placeholder="Plafond en Mio"
+        aria-label="Plafond en mébioctets"
       />
       <button type="button" @click="onPoserLePlafond()">Poser ce plafond</button>
       <button

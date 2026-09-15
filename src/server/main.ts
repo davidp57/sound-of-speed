@@ -62,9 +62,9 @@ const banques = {
 // **jamais par une route** — aucun appel ne peut donc fabriquer un
 // administrateur. Absente, personne n'administre et la régie répond 404.
 const admins = administrateursDeLEnvironnement(process.env['SPEED_ADMINS'])
-// Le plafond de volume commun, en gibioctets. Il **refuse** un dépôt, il
+// Le plafond de volume commun, en mébioctets. Il **refuse** un dépôt, il
 // n'efface jamais rien : c'est ce qui rend un chiffre provisoire acceptable.
-const plafond = plafondDeLEnvironnement(process.env['SPEED_PLAFOND_GIO'])
+const plafond = plafondDeLEnvironnement(process.env['SPEED_PLAFOND_MIO'])
 const delais: Delais = {
   traces: nombreOuRien(process.env['SPEED_RETENTION_TRACES']) ?? DELAIS_PAR_DEFAUT.traces,
   journal: nombreOuRien(process.env['SPEED_RETENTION_JOURNAL']) ?? DELAIS_PAR_DEFAUT.journal,

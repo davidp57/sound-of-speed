@@ -1750,14 +1750,18 @@ ne peut pas, c'est se retirer l'administration : elle vient de la configuration.
 
 | Variable | Défaut | Ce qu'elle règle |
 |---|---|---|
-| `SPEED_PLAFOND_GIO` | 10 | Combien un compte peut déposer en tout, en gibioctets. La régie pose des exceptions par compte. |
+| `SPEED_PLAFOND_MIO` | 250 | Combien un compte peut déposer en tout, en mébioctets. La régie pose des exceptions par compte. |
 
 **Le plafond refuse un envoi. Il n'efface jamais rien.** C'est ce qui rend un
 chiffre provisoire acceptable : un seuil inventé qui efface fait disparaître des
 données sans que rien ne rougisse, un seuil inventé qui refuse se corrige en
-changeant une valeur dans la pile. La valeur par défaut est un nombre rond,
-**proposé et non mesuré** ; elle sera revue quand le relevé de dépense quotidien
-aura dit ce qu'un compte coûte vraiment.
+changeant une valeur dans la pile. **250 Mio, décidés le 15 septembre 2026** — ce
+n'est pas une mesure, c'est un choix ; ce qu'il vaut en trajets se lira quand le
+relevé de dépense quotidien aura dit ce qu'un compte dépose.
+
+**Aujourd'hui, rien ne fait de place à la voiture** : le plafond atteint, les
+dépôts sont refusés jusqu'à ce qu'on efface des trajets à la main. La rotation
+automatique est le [ticket 06 de DURCIR](.backlog/DURCIR/tickets/06-faire-de-la-place-plutot-que-refuser.md).
 
 Un compte au-delà voit son dépôt refusé en **507**, un code que la voiture ne
 rejoue pas — un code de panne passagère la ferait réessayer indéfiniment pour un
