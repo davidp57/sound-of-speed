@@ -19,6 +19,7 @@ import { accounts, deposits, engines, measuredCars, profiles } from './base/sche
 import { ecrireDepot } from './depots'
 import {
   ANCIEN_COMPTE_UNIQUE,
+  ceQuePorte,
   faireHeriter,
   formaterHeritage,
   semerLAncienCompte,
@@ -175,5 +176,45 @@ describe('ce que le journal du conteneur en dira', () => {
     expect(ligne).toContain('94 dépôts (12345 octets)')
     expect(ligne).toContain('le profil mesuré')
     expect(ligne).toContain('appareil-1')
+  })
+})
+
+describe('un profil mesuré qu’on ne sait pas lire', () => {
+  it('compte pour un trajet, et non pour zéro', () => {
+    // Ce chiffre décide d'un effacement sans retour : le défaut doit pencher du
+    // côté qui garde. Un contenu de forme inconnue est peut-être des mois de
+    // conduite écrits par une version qu'on ne connaît plus.
+    return (async () => {
+      await semerLAncienCompte(base)
+      await base
+        .insert(measuredCars)
+        .values({ accountId: ANCIEN_COMPTE_UNIQUE, content: { forme: 'inconnue' } })
+
+      const porte = await ceQuePorte(base, ANCIEN_COMPTE_UNIQUE)
+
+      expect(porte.profilMesure).toBe(true)
+      expect(porte.trajetsMesures).toBe(1)
+    })()
+  })
+
+  it('compte pour zéro quand il n’y a pas de profil du tout', () => {
+    // La distinction qui compte : rien mesuré n'est pas la même chose qu'un
+    // contenu qu'on ne sait pas lire. Trois tests de l'abandon de compte
+    // l'avaient attrapée quand les deux cas ont été confondus.
+    return (async () => {
+      await semerLAncienCompte(base)
+      expect((await ceQuePorte(base, ANCIEN_COMPTE_UNIQUE)).trajetsMesures).toBe(0)
+    })()
+  })
+
+  it('compte pour zéro quand il dit lui-même n’avoir rien appris', () => {
+    return (async () => {
+      await semerLAncienCompte(base)
+      await base
+        .insert(measuredCars)
+        .values({ accountId: ANCIEN_COMPTE_UNIQUE, content: { aggregate: { tripCount: 0 } } })
+
+      expect((await ceQuePorte(base, ANCIEN_COMPTE_UNIQUE)).trajetsMesures).toBe(0)
+    })()
   })
 })

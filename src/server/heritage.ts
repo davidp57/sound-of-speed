@@ -131,6 +131,7 @@ export async function ceQuePorte(base: Base, compte: string): Promise<Heritage> 
     .from(measuredCars)
     .where(eq(measuredCars.accountId, compte))
   const cumul = mesure[0]?.contenu as { aggregate?: { tripCount?: number } } | undefined
+  const trajets = cumul?.aggregate?.tripCount
 
   return {
     profils: await combien(profiles),
@@ -140,8 +141,27 @@ export async function ceQuePorte(base: Base, compte: string): Promise<Heritage> 
     depots: lesDepots[0]?.n ?? 0,
     octets: lesDepots[0]?.octets ?? 0,
     profilMesure: mesure.length > 0,
-    trajetsMesures: cumul?.aggregate?.tripCount ?? 0,
+    // **Pas de profil du tout vaut zéro ; un profil qu'on ne sait pas lire vaut
+    // un.** Ce chiffre décide d'un effacement sans retour, et les deux cas n'ont
+    // rien à voir : un compte qui n'a jamais rien mesuré ne porte rien, tandis
+    // qu'un contenu de forme inconnue est peut-être des mois de conduite écrits
+    // par une version qu'on ne connaît plus. Là, le défaut doit pencher du côté
+    // qui garde.
+    trajetsMesures: trajetsMesuresDe(mesure.length > 0, trajets),
   }
+}
+
+/**
+ * Ce qu'un profil mesuré a appris, quand on arrive à le lire.
+ *
+ * Trois cas, et le troisième est celui qui compte : aucune ligne — rien
+ * n'a été mesuré ; une ligne lisible — son décompte ; une ligne illisible — un,
+ * parce que ce chiffre décide d'un effacement sans retour et qu'on ne jette pas
+ * ce qu'on ne sait pas lire.
+ */
+function trajetsMesuresDe(presente: boolean, trajets: unknown): number {
+  if (!presente) return 0
+  return typeof trajets === 'number' && Number.isFinite(trajets) ? trajets : 1
 }
 
 /**

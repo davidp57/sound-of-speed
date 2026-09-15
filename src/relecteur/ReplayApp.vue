@@ -278,15 +278,44 @@ const ALLURES: Record<string, string> = {
   accelerating: 'accélère',
 }
 
-const allureLue = computed(() => {
+/**
+ * Les bascules d'allure, extraites **une fois par session**.
+ *
+ * Et non à chaque déplacement du curseur : la lecture avance soixante fois par
+ * seconde, et parcourir tous les événements à chaque image ferait des centaines
+ * de milliers d'itérations par seconde pour retrouver le même résultat. Les
+ * autres relevés de ce fichier dépendent de la session seule ; celui-ci
+ * dépendait de l'instant, ce qui n'est pas le même chemin.
+ */
+const bascules = computed(() => {
   const events = session.value?.events
-  if (!events) return null
-  let dernier: { at: number; etat: string } | null = null
+  if (!events) return []
+  const suite: { at: number; etat: string }[] = []
   for (const event of events) {
-    if (event.kind !== 'pace' || event.at > at.value) continue
+    if (event.kind !== 'pace') continue
     const etat = event.data.to
-    if (typeof etat === 'string') dernier = { at: event.at, etat }
+    if (typeof etat === 'string') suite.push({ at: event.at, etat })
   }
+  return suite
+})
+
+const allureLue = computed(() => {
+  // Recherche dichotomique dans une suite déjà triée par instant : la dernière
+  // bascule qui précède l'endroit où l'on est.
+  const suite = bascules.value
+  let bas = 0
+  let haut = suite.length - 1
+  let trouve = -1
+  while (bas <= haut) {
+    const milieu = (bas + haut) >> 1
+    if (suite[milieu]!.at <= at.value) {
+      trouve = milieu
+      bas = milieu + 1
+    } else {
+      haut = milieu - 1
+    }
+  }
+  const dernier = trouve >= 0 ? suite[trouve]! : null
   if (dernier === null) return null
   return { texte: ALLURES[dernier.etat] ?? dernier.etat, depuisMs: at.value - dernier.at }
 })
