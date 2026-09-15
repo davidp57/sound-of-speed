@@ -1,6 +1,6 @@
 # 18 — Un compte vide doit pouvoir s'effacer
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 15 septembre 2026
 
 **Vient d'**un relevé fait sur la base de production le 13 septembre 2026, en
 cherchant autre chose.
@@ -29,3 +29,13 @@ Qu'un compte que rien ne distingue d'un compte neuf s'efface quand on le quitte.
   laisse.
 - Le relevé de production donne de quoi vérifier : deux comptes, dont un vide
   avec un profil mesuré à zéro trajet.
+
+## Ce qui a été fait
+
+`ceQuePorte` rend désormais **ce que le profil mesuré a appris** — `trajetsMesures`
+— à côté de sa présence, qui sert encore au journal d'héritage. La règle d'abandon
+regarde ce chiffre : un profil à zéro trajet ne retient plus le compte.
+
+Rien d'autre n'a bougé : profils, moteurs, boîtes, dépôts et droits comptent comme
+avant, et un profil mesuré qui a vu des trajets garde le compte. Deux tests le
+tiennent dans `compte.test.ts` — effacé à zéro trajet, gardé à sept.

@@ -45,7 +45,11 @@ export async function reglerLAncien(
     porte.boites === 0 &&
     porte.depots === 0 &&
     porte.droits === 0 &&
-    !porte.profilMesure
+    // Le profil mesuré se juge sur ce qu'il a appris, pas sur sa présence : le
+    // rattrapage du démarrage en écrit un à tout compte, y compris à celui qui
+    // n'a jamais déposé une trace. Relevé en production le 13 septembre 2026 —
+    // compte né à 20:43, profil mesuré à 20:46, zéro trajet.
+    porte.trajetsMesures === 0
   if (!vide) return 'garde'
 
   // La cascade emporte ses sessions et ses preuves. Rien d'autre ne pend à ce

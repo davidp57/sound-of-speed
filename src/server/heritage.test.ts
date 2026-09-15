@@ -61,7 +61,7 @@ async function garnirLAncienCompte(): Promise<void> {
   })
   await base
     .insert(measuredCars)
-    .values({ accountId: ANCIEN_COMPTE_UNIQUE, content: { reprise: 1 } })
+    .values({ accountId: ANCIEN_COMPTE_UNIQUE, content: { aggregate: { tripCount: 9 } } })
   await ecrireDepot(
     base,
     ANCIEN_COMPTE_UNIQUE,
@@ -95,6 +95,7 @@ describe('ce que portait le compte d’avant', () => {
       depots: 1,
       octets: 12,
       profilMesure: true,
+      trajetsMesures: 9,
       droits: 0,
     })
   })
@@ -158,7 +159,16 @@ describe('ce que le journal du conteneur en dira', () => {
     // C'est le seul endroit où l'on verra que l'héritage a eu lieu : après coup,
     // il n'y a plus de compte d'avant à regarder.
     const ligne = formaterHeritage(
-      { profils: 3, moteurs: 2, boites: 1, depots: 94, octets: 12345, profilMesure: true, droits: 0 },
+      {
+        profils: 3,
+        moteurs: 2,
+        boites: 1,
+        depots: 94,
+        octets: 12345,
+        profilMesure: true,
+        trajetsMesures: 41,
+        droits: 0,
+      },
       'appareil-1',
     )
 
