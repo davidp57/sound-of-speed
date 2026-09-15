@@ -1,7 +1,7 @@
 # 06 — Prévenir avant le plafond, et faire de la place plutôt que refuser
 
-**Statut :** 🧑 attend David — conception posée par lui le 15 septembre 2026,
-trois points à trancher avant de découper
+**Statut :** 🧑 attend David — conception posée par lui le 15 septembre 2026 ;
+deux points restent à trancher avant de découper
 
 **Bloqué par :** rien ; le plafond lui-même est livré (REGIE, ticket 08)
 
@@ -41,14 +41,20 @@ ce ticket : la rétention juge sur l'âge, donc elle ne libère rien quand tout 
 récent — exactement le cas d'une voiture qui roule beaucoup. La rotation, elle,
 juge sur la place : le plus ancien part, jusqu'à repasser sous le seuil.
 
-**Mais ce qui est protégé reste défini à un seul endroit.** Une épingle veut dire
-« ce trajet, je le garde » ; la notion vit dans `core/retention/regle.ts`, et la
-rotation la lit plutôt que d'en écrire une seconde. Deux déclencheurs — l'âge, la
-place —, une seule idée de ce qui ne part pas.
+**Seule l'épingle protège de la rotation.** Elle veut dire « ce trajet, je le
+garde », et c'est la seule chose qu'on ne peut pas prendre à quelqu'un pour faire
+de la place.
+
+L'exemption « archive » — les dépôts déménagés de l'ancien serveur de fichiers
+par la reprise — retient la **rétention**, qui juge sur l'âge, mais ne retient
+pas la rotation, qui manque de place. Tranché par David le 15 septembre 2026 :
+il est seul sur ce serveur, et le cas ne mérite pas un second garde-fou. Un
+compte qui n'a plus que des épingles tombe sur le refus.
 
 ## Les points à trancher
 
 ### 1. Sous quelle forme le serveur dit-il l'état ? — *désaccord à arbitrer*
+
 
 David a dit « un code ». Si c'est un **code HTTP**, j'y vois trois défauts :
 le client teste `response.ok` et traite tout le reste comme un échec, un proxy
@@ -70,14 +76,7 @@ chiffres sont là pour que l'écran dise « 7,6 Go sur 10 » plutôt qu'un adjec
 Le refus final, lui, garde son code : **507**, avec un message qui dit ce qui
 bloque — « tout est épinglé » et non plus « effacez des trajets ».
 
-### 2. Une trace reprise d'un ancien serveur peut-elle partir à la rotation ?
-
-Les trajets « archivés » sont les quatre-vingt-quatorze dépôts déménagés depuis
-l'ancien serveur de fichiers : les effacer un mois plus tard reviendrait à les
-avoir déplacés pour les perdre. Proposition : **ils sont protégés comme les
-épingles**, et un compte qui n'a plus qu'eux tombe sur le refus.
-
-### 3. Où l'application prévient-elle ?
+### 2. Où l'application prévient-elle ?
 
 L'écran du compte porte déjà « emporter ses données », donc l'endroit est tout
 trouvé pour le détail. Reste à savoir si l'écran de conduite doit en dire un mot
@@ -88,7 +87,8 @@ paramètres avant.
 ## Ce qu'on ne construit pas
 
 - Pas de sondage, pas de route à interroger : l'état voyage sur les dépôts.
-- Pas de seconde notion de « ce qui est protégé ».
+- Pas de second garde-fou pour les trajets repris de l'ancien serveur : seule
+  l'épingle protège de la rotation.
 - Pas d'effacement d'un trajet épinglé, à aucun seuil.
 
 ## Ce qui reste dû avant de régler des pourcentages
