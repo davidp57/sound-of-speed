@@ -8,6 +8,7 @@ import type { Role } from '../core/identity/roles'
 
 import { ouvrirBase, type Base } from './base/base'
 import { creerIdentite, type Identite } from './identite'
+import { compteurDeDepense } from './depense'
 import { ecrireDepot } from './depots'
 import { creerServeur } from './serveur'
 
@@ -431,6 +432,20 @@ describe('les trajets, vus du réseau', () => {
       const reponse = await avecBase([]).request('/audio/gm-ls/on-750.flac', { headers: ANNONCE })
 
       expect(reponse.status).toBe(200)
+    })
+
+    it('compte ce qu’un échantillon a coûté, et rien quand il est refusé', async () => {
+      // Le compteur ne vaut que s'il est branché sur le bon chemin : posé à côté,
+      // il rendrait zéro pour toujours sans que rien ne le dise.
+      const compteur = compteurDeDepense()
+      const app = creerServeur({ application, base, identite, depense: compteur })
+
+      expect((await app.request('/audio/gm-ls/on-750.flac')).status).toBe(401)
+      expect((await app.request('/audio/gm-ls/on-750.flac', { headers: ANNONCE })).status).toBe(200)
+
+      const releve = compteur.releverEtRepartir()
+      expect(releve.echantillons.demandes).toBe(1)
+      expect(releve.echantillons.octets).toBe(OCTETS_LIVRES.length)
     })
 
     it('sert sans rien demander quand aucune identité n’est montée', async () => {

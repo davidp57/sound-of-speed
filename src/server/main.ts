@@ -15,6 +15,12 @@ import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
 import { ANCIEN_COMPTE_UNIQUE, semerLAncienCompte } from './heritage'
 import { banquesAccordees, banquesRestreintes } from './banques'
+import {
+  compteurDeDepense,
+  formaterDepense,
+  poidsDesBanques,
+  poidsDesComptes,
+} from './depense'
 import { creerIdentite, secretPersistant } from './identite'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { appliquerLaRegle, DELAIS_PAR_DEFAUT, formaterPassage, type Delais } from './retention'
@@ -167,10 +173,40 @@ async function menageDeRetention(): Promise<void> {
   }
 }
 
+/**
+ * Ce que le serveur a dépensé depuis le dernier relevé.
+ *
+ * **Une différence, pas un cumul** : un compteur depuis le démarrage divisé par
+ * une durée montrerait une moyenne là où il faut une tendance. Le relevé remet
+ * donc les compteurs à zéro, et chaque ligne parle de la période qu'elle couvre.
+ *
+ * Il n'y a rien à décider ici : ces chiffres servent à poser la borne de volume
+ * par compte, qui sans eux serait inventée.
+ */
+const depense = compteurDeDepense()
+
+async function releveDeDepense(): Promise<void> {
+  try {
+    console.log(
+      formaterDepense(
+        depense.releverEtRepartir(),
+        poidsDesBanques(echantillons),
+        await poidsDesComptes(base, fichierDeBase),
+      ),
+    )
+  } catch (erreur) {
+    // Un relevé qui échoue ne doit pas emporter le ménage qui le suit.
+    console.error(`relevé de dépense : ${String(erreur)}`)
+  }
+}
+
 await menageDeRetention()
 
 const UN_JOUR = 24 * 60 * 60 * 1000
-const minuteurDuMenage = setInterval(() => void menageDeRetention(), UN_JOUR)
+const minuteurDuMenage = setInterval(() => {
+  void menageDeRetention()
+  void releveDeDepense()
+}, UN_JOUR)
 // Le minuteur ne doit pas retenir le processus : un conteneur qu'on remplace
 // envoie son signal, et le serveur doit pouvoir rendre la main tout de suite.
 minuteurDuMenage.unref()
@@ -216,6 +252,7 @@ const serveur = serve(
       roles,
       delais,
       banques,
+      depense,
       ...(echantillons === undefined ? {} : { echantillons }),
     }).fetch,
     port,

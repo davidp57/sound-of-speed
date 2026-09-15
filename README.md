@@ -2550,6 +2550,32 @@ navigateur ne sait pas compresser, la tranche part en clair. Les profils et les
 relevés de mesure, eux, restent en clair : l'application les retélécharge et les
 lit, et la bibliothèque de profils cesserait de fonctionner.
 
+### Ce qui dort sur le serveur, et ce qui n'est pas chiffré
+
+Tout vit dans un seul fichier de base, dans le volume de données. **Rien n'y est
+chiffré, sauf ce qui ne doit jamais être lisible** : un mot de passe et un code
+de liaison n'y sont rangés que sous forme d'empreinte, et le témoin de session
+est signé. Le reste — traces, journal, relevés, profils, adresse d'un compte —
+est en clair.
+
+**Le point sensible est un seul : les traces.** Une position par seconde sur
+plusieurs trajets, c'est le domicile, le lieu de travail et les habitudes. Les
+réglages de son, à côté, ne sont rien.
+
+**On ne chiffre pas dans l'application, et c'est délibéré.** Le serveur doit lire
+cette base à chaque requête : il lui faut la clé, donc la clé vit sur la même
+machine que les données, et qui obtient l'une obtient l'autre. Le seul risque
+qu'un chiffrement écarterait est le **vol du disque** — et celui-là se traite au
+niveau du NAS, par un dossier partagé chiffré, ce qui couvre du même coup les
+sauvegardes.
+
+Ce qui protège vraiment ces données existe déjà : elles ne partent qu'au dernier
+cran du réglage ci-dessus, la règle de rétention les efface après leur délai,
+chaque compte ne lit que les siennes, et l'on peut tout emporter puis tout
+effacer depuis l'écran du compte. **Le meilleur geste de confidentialité sur ce
+projet est un délai de rétention court**, pas un chiffrement : c'est une
+variable, pas du code.
+
 ### Le journal détaillé
 
 Sous les trois positions, un interrupteur à part : **« Journal détaillé »**. Il

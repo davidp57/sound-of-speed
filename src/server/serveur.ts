@@ -18,6 +18,7 @@ import type { Role } from '../core/identity/roles'
 
 import type { Base } from './base/base'
 import { banquesInterdites, peutJouer, type DroitsSurLesBanques } from './banques'
+import type { CompteurDeDepense } from './depense'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
 import { DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } from './retention'
 import {
@@ -74,6 +75,13 @@ export interface OptionsDuServeur {
    * qui fait qu'aucun appel ne peut s'accorder ce droit.
    */
   banques?: DroitsSurLesBanques
+  /**
+   * De quoi relever ce que le serveur dépense, quand on veut le savoir.
+   *
+   * Absent, on ne compte rien : les tests n'ont pas à traîner un compteur, et
+   * un serveur de développement non plus.
+   */
+  depense?: CompteurDeDepense
 }
 
 /**
@@ -517,7 +525,9 @@ export function creerServeur(options: OptionsDuServeur): Hono {
         // qu'on vient de recevoir serait pire que la mesurer plus tard.
         if (dossier === 'traces') {
           try {
+            const debut = Date.now()
             await reprendreApresDepot(base, compte, nom)
+            options.depense?.traceAnalysee(Date.now() - debut)
           } catch (erreur) {
             console.error(`reprise du profil mesuré : ${String(erreur)}`)
           }
@@ -593,7 +603,15 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       return c.json(entrees, 200, { 'Cache-Control': 'no-store' })
     }
 
-    return servirDepuisLesDeux(options, chemin, c.req.raw.headers, CACHE_ECHANTILLONS) ?? c.notFound()
+    const reponse = servirDepuisLesDeux(options, chemin, c.req.raw.headers, CACHE_ECHANTILLONS)
+    if (reponse === null) return c.notFound()
+
+    // Ce qu'on annonce plutôt que ce qui part vraiment : un client qui coupe en
+    // route fait la différence, et compter les octets d'un flux demanderait de
+    // l'envelopper. La marge est du bon côté — on ne sous-estime pas.
+    const annonce = Number(reponse.headers.get('content-length') ?? '0')
+    options.depense?.echantillonServi(Number.isFinite(annonce) ? annonce : 0)
+    return reponse
   })
 
   // --- Ce que l'application embarque ---------------------------------------

@@ -6,6 +6,22 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Le serveur dit une fois par jour ce qu'il a dépensé.** Une ligne dans le
+  journal du conteneur, à côté de celle du ménage de rétention : les octets
+  d'échantillons servis et le nombre de demandes, le poids des banques sur le
+  disque, celui de la base avec les trois comptes les plus lourds, et le temps
+  moyen d'analyse d'une trace.
+
+  **C'est une différence, jamais un cumul** : un compteur depuis le démarrage
+  divisé par une durée montre une moyenne là où il faut une tendance. Le relevé
+  remet ses compteurs à zéro à chaque ligne.
+
+  Ces chiffres n'ont aucun effet aujourd'hui. Ils servent à poser la borne de
+  volume par compte, qui sans eux serait inventée — et un mauvais seuil refuse
+  des dépôts ou laisse le disque se remplir sans que rien ne rougisse.
+
 ### Sécurité
 
 - **Une banque d'échantillons peut être réservée à quelques comptes.** Deux
