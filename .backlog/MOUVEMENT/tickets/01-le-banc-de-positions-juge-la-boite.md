@@ -1,6 +1,6 @@
 # 01 — Le banc de positions fabriquées juge la boîte
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 15 septembre 2026
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -30,12 +30,23 @@ rapport sans remonter.
 
 ## Critères d'acceptation
 
-- [ ] Une épreuve fait entrer des positions fabriquées et relève les passages de
-      rapport en sortie, en traversant toute la chaîne sans raccourci.
-- [ ] La cadence et le bruit des positions se règlent, et une scène au moins
-      reproduit ce que donne le récepteur de la voiture.
-- [ ] Deux scènes au moins : une vitesse tenue dans la plage où la boîte a
-      oscillé, une décélération lente.
-- [ ] Le nombre de passages de la boîte actuelle est relevé pour chaque scène et
-      **écrit dans le lot**, de façon qu'un changement se compare à un chiffre.
-- [ ] Contrôle qualité vert.
+- [x] Une épreuve fait entrer des positions fabriquées et relève les passages de
+      rapport en sortie, en traversant toute la chaîne sans raccourci —
+      `core/drivetrain/gearbox-gps.test.ts`.
+- [x] La cadence et le bruit des positions se règlent. Les scènes tournent à la
+      cadence de la voiture, dix mesures par seconde, et non aux trente
+      millisecondes du banc livré. **Réserve** : le bruit du récepteur de la
+      voiture n'a jamais été relevé, donc aucune scène ne peut se dire conforme
+      au sien. Le banc balaie le bruit à la place, ce qui rend une marge.
+- [x] Cinq vitesses tenues — 50, 60, 72, 85, 110 — et deux décélérations, pied
+      levé et frein appuyé.
+- [x] Le relevé est écrit dans la spécification du lot, avec la marge de bruit
+      par cadence.
+- [x] Contrôle qualité vert.
+
+## Ce que le relevé a donné
+
+Zéro passage partout sur un signal réaliste : le défaut entendu le 10 septembre
+ne se reproduit pas, PLANCHER l'ayant emporté. Ce qui se mesure est donc la
+**marge avant que ça recommence** — un quart de bruit en plus à la cadence de la
+voiture. Le tableau complet est dans la spécification.

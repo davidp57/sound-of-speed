@@ -2,18 +2,17 @@
 
 **Statut :** ⬜ prêt
 
-**Bloqué par :** 01 — Le banc de positions fabriquées juge la boîte. C'est lui
-qui dit si le remplacement améliore ou dégrade ; sans son relevé, ce ticket se
-juge de mémoire.
+**Bloqué par :** plus rien — 01 est livré le 15 septembre 2026, et son relevé est
+dans la spécification du lot.
 
 ## Ce qu'il faut obtenir
 
-**La boîte doit avoir un seul avis sur ce que fait la voiture.** Cinq
-mécanismes décrivent aujourd'hui le même fait — accélère, tient, ralentit —
-avec des seuils qui ne s'accordent pas : la bande de croisière tient l'allure
-pour stable jusqu'à −0,1 m/s² quand le compteur ajouté le 8 septembre déclare le
-ralentissement dès −0,05. Deux réponses contradictoires à la même question, et
-c'est la boîte qui arbitre au hasard de l'ordre des conditions.
+**La boîte doit avoir un seul avis sur ce que fait la voiture.** Cinq lectures
+décrivent aujourd'hui le même fait — accélère, tient, ralentit — avec cinq
+seuils qui ne s'accordent pas et trois formes de mémoire différentes. Le tableau
+exact est dans la spécification du lot ; il a été refait le 15 septembre 2026,
+PLANCHER ayant emporté deux des lectures d'origine et la relecture du code en
+ayant révélé deux autres.
 
 Une seule lecture, calculée à un endroit, avec une **hystérésis explicite** :
 elle dit dans quel état on est, et depuis combien de temps. La boîte ne consulte
@@ -37,8 +36,11 @@ changement est donc confiné, et il n'y a pas de migration à étaler.
       la bande ne compte pas comme un changement d'allure.
 - [ ] La boîte ne consulte plus qu'elle. Les cinq mécanismes concurrents et
       leurs seuils propres ont disparu du code.
-- [ ] Les scènes du ticket 01 donnent au moins aussi peu de passages qu'avant,
-      et le relevé est mis à jour avec les nouveaux chiffres.
+- [ ] **La marge de bruit augmente.** Les scènes du ticket 01 tiennent
+      aujourd'hui jusqu'à 1,25 km/h de bruit à la cadence de la voiture et
+      décrochent à 1,5 ; c'est ce chiffre qu'il faut battre, et non « zéro
+      passage », que la boîte actuelle obtient déjà sur un signal réaliste. Le
+      relevé de la spécification est mis à jour avec les nouveaux chiffres.
 - [ ] Les tests existants de la boîte passent sans être réécrits pour
       s'accommoder du changement — s'ils doivent l'être, la raison est dite.
 - [ ] La section « Comment ça marche » du README décrit la lecture unique.
