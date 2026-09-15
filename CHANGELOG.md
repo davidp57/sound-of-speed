@@ -6,7 +6,31 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Une régie, pour administrer les comptes depuis un écran.** Une troisième
+  page, `/regie`, qui liste les comptes du serveur — les derniers créés en haut,
+  avec nom, adresse, date, rôles et poids déposé — et une recherche par nom ou
+  par adresse.
+
+  **Qui administre se déclare dans la pile, jamais par une route** :
+  `SPEED_ADMINS`, des adresses séparées par des virgules. Aucun appel ne peut
+  donc fabriquer un administrateur. Un compte sans adresse enregistrée
+  n'administre pas.
+
+  Un refus se donne en **404**, y compris à un visiteur sans session : dire
+  « interdit » apprendrait qu'il y a quelque chose là. Le code de la régie est
+  une entrée de construction séparée, comme le relecteur : il ne part pas dans
+  ce que la voiture télécharge.
+
 ### Corrigé
+
+- **`SPEED_ROLES_OFFERTS` vide fermait tous les écrans de tout le monde.** La
+  variable est désormais déclarée dans la composition de la pile — et une
+  variable déclarée là et non saisie arrive **vide** au conteneur, pas absente.
+  Vide valait « aucun rôle » : un déploiement ordinaire aurait donc tout fermé.
+  Vide vaut maintenant le défaut, comme `SPEED_URL` le fait déjà ; pour tout
+  fermer, il faut une valeur qui ne nomme aucun rôle, `aucun` par exemple.
 
 - **Un compte rattaché à un fournisseur gardait son adresse de remplacement pour
   toujours.** Le rattrapage écrit le 14 septembre ne regardait le jeton qu'à la

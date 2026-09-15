@@ -14,6 +14,7 @@ import { listerLesComptes, ouvrirBase } from './base/base'
 import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
 import { ANCIEN_COMPTE_UNIQUE, semerLAncienCompte } from './heritage'
+import { administrateursDeLEnvironnement } from './administration'
 import { banquesAccordees, banquesRestreintes } from './banques'
 import {
   compteurDeDepense,
@@ -54,6 +55,10 @@ const banques = {
   restreintes: banquesRestreintes(process.env['SPEED_BANQUES_RESTREINTES']),
   accordees: banquesAccordees(process.env['SPEED_BANQUES_ACCORDEES']),
 }
+// Qui administre : des adresses séparées par des virgules. Déclarées ici et
+// **jamais par une route** — aucun appel ne peut donc fabriquer un
+// administrateur. Absente, personne n'administre et la régie répond 404.
+const admins = administrateursDeLEnvironnement(process.env['SPEED_ADMINS'])
 const delais: Delais = {
   traces: nombreOuRien(process.env['SPEED_RETENTION_TRACES']) ?? DELAIS_PAR_DEFAUT.traces,
   journal: nombreOuRien(process.env['SPEED_RETENTION_JOURNAL']) ?? DELAIS_PAR_DEFAUT.journal,
@@ -263,6 +268,7 @@ const serveur = serve(
       roles,
       delais,
       banques,
+      admins,
       depense,
       ...(echantillons === undefined ? {} : { echantillons }),
     }).fetch,

@@ -1576,7 +1576,7 @@ quel compte est une valeur, pas une règle :
 
 | Variable | Défaut | Ce qu'elle règle |
 |---|---|---|
-| `SPEED_ROLES_OFFERTS` | les trois | Les rôles accordés à tout compte, séparés par des virgules. Vide, aucun : plus rien ne s'ouvre que l'écran du compte, ce qui est la façon de vérifier la mécanique. |
+| `SPEED_ROLES_OFFERTS` | les trois | Les rôles accordés à tout compte, séparés par des virgules. Absente **ou vide**, les trois — une variable déclarée dans la pile et non saisie arrive vide. Pour tout fermer, saisir une valeur qui ne nomme aucun rôle (`aucun`) : plus rien ne s'ouvre alors que l'écran du compte, ce qui est la façon de vérifier la mécanique. |
 
 Ce qu'un compte porte **en propre** vit dans la table des droits, avec une
 échéance facultative : un droit sans échéance ne se périme pas, un droit daté se
@@ -1641,6 +1641,34 @@ navigateur de la voiture **reste à confirmer** : rien ici ne l'a mesuré sur la
 vraie voiture, le journal qu'elle dépose ne portant pas sa chaîne d'agent. C'est
 précisément pourquoi la correction existe — une détection ratée coûte un réglage,
 pas un écran perdu.
+
+### La régie : administrer les comptes depuis un écran
+
+Une troisième page, `/regie`, à côté de l'application et du relecteur. On y voit
+les comptes du serveur, les derniers créés en haut, avec pour chacun son nom, son
+adresse, sa date de création, ses rôles et ce qu'il a déposé ; une zone de
+recherche filtre par nom ou par adresse.
+
+**Qui administre se déclare dans la pile, jamais par une route.** C'est ce qui
+rend l'écran sûr : même un défaut dans la régie ne peut pas fabriquer un
+administrateur. C'est le principe déjà retenu pour les banques restreintes.
+
+| Variable | Défaut | Ce qu'elle règle |
+|---|---|---|
+| `SPEED_ADMINS` | personne | Les adresses qui administrent, séparées par des virgules. La comparaison ignore la casse. Absente, la régie répond 404 à tout le monde. |
+
+Un compte **sans adresse enregistrée** ne peut donc pas administrer — c'était déjà
+vrai des banques restreintes.
+
+**Un refus se donne en 404, jamais en 403**, et un visiteur sans session reçoit le
+même : l'existence de la régie n'a pas à être une information gratuite. Ce n'est
+pas ce qui protège — l'adresse se trouve, et le dépôt est public —, c'est le
+contrôle serveur qui garde ; ça retire seulement une carte à qui cherche. La page
+elle-même est servie à tout le monde et n'annonce rien.
+
+**Son code ne part jamais dans la voiture.** C'est une entrée de construction
+séparée, comme le relecteur : elle a son propre paquet, tiré seulement quand on
+ouvre `/regie.html`.
 
 ### Ce qui change, vu de l'application
 

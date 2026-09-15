@@ -69,6 +69,26 @@ export function cas({ nom }) {
       attend: (r) => egal(r.status, 200, 'statut'),
     },
     {
+      nom: 'la régie a sa propre page',
+      // Troisième entrée, même raison : son code n'a rien à faire dans ce que la
+      // voiture télécharge. Et c'est le seul contrôle qui regarde une vraie
+      // réponse — une image qui ne se construisait plus est passée à travers une
+      // pull request entièrement verte, faute de celui-ci.
+      requete: { chemin: '/regie.html' },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        vrai(corps.includes('Régie'), 'la page servie est bien la régie')
+      },
+    },
+    {
+      nom: 'la régie ne dit rien à qui n’administre pas',
+      // 404 comme une banque restreinte, et non 403 : l'existence de la régie
+      // n'a pas à être une information gratuite. Le jeu de requêtes s'annonce
+      // avec un compte ordinaire, donc sans administration.
+      requete: { chemin: '/api/regie/comptes' },
+      attend: (r) => egal(r.status, 404, 'statut'),
+    },
+    {
       nom: 'le manifeste',
       requete: { chemin: '/manifest.webmanifest' },
       attend: (r) => egal(r.status, 200, 'statut'),

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Régie — Sound of Speed</title>
+    <meta name="theme-color" content="#0d0f12" />
+    <meta name="description" content="Administration des comptes." />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+
+    <!--
+      Page à part, et non un onglet de l'application.
+
+      La régie ne sert qu'à administrer, depuis un poste de travail. Son code
+      n'a aucune raison d'être téléchargé par une application qui doit se
+      charger hors réseau dans une voiture. Une entrée séparée le met dans son
+      propre paquet, tiré seulement ici.
+    -->
+  </head>
+  <body>
+    <div id="regie"></div>
+    <script type="module" src="/src/regie/main.ts"></script>
+  </body>
+</html>

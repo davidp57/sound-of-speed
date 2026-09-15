@@ -152,6 +152,16 @@ describe('ce que le service worker garde', () => {
     expect(await horsReseau('/relecteur/quelque-chose', garde)).toEqual({ page: 'relecteur' })
   })
 
+  it('replie la régie sur la régie, et non sur la conduite', async () => {
+    const garde = new Map<string, unknown>([
+      ['/index.html', { page: 'conduite' }],
+      ['/regie.html', { page: 'regie' }],
+    ])
+
+    expect(await horsReseau('/regie.html', garde)).toEqual({ page: 'regie' })
+    expect(await horsReseau('/regie/un-compte', garde)).toEqual({ page: 'regie' })
+  })
+
   it('ne sert aucune donnée de compte depuis le cache, même hors réseau', async () => {
     // Le cas que le ticket 07 annonçait : une session resservie ferait croire à
     // un compte qui n'existe plus. Ici, le service worker ne répond pas du tout,

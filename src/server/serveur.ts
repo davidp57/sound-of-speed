@@ -34,6 +34,7 @@ import { archiveDuCompte } from './emporter'
 import { cheminSur, estUnNomSimple, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
+import { creerRegie } from './regie'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
 
 export interface OptionsDuServeur {
@@ -75,6 +76,14 @@ export interface OptionsDuServeur {
    * qui fait qu'aucun appel ne peut s'accorder ce droit.
    */
   banques?: DroitsSurLesBanques
+  /**
+   * Les adresses qui administrent ce serveur.
+   *
+   * Déclarées par l'environnement et **jamais par une route** : aucun appel ne
+   * peut donc fabriquer un administrateur. Absente, personne n'administre et la
+   * régie répond 404 à tout le monde.
+   */
+  admins?: ReadonlySet<string>
   /**
    * De quoi relever ce que le serveur dépense, quand on veut le savoir.
    *
@@ -261,6 +270,16 @@ export function creerServeur(options: OptionsDuServeur): Hono {
         { 'Cache-Control': 'no-store' },
       )
     })
+
+    // --- La régie ----------------------------------------------------------
+    //
+    // Montée ici parce qu'elle a besoin des deux : une base pour lire les
+    // comptes, une identité pour savoir qui appelle. Tout ce qu'elle porte
+    // répond 404 à qui n'administre pas — voir `regie.ts`.
+    app.route(
+      '/api/regie',
+      creerRegie({ base, admins: options.admins ?? new Set<string>(), compteDe, offerts }),
+    )
 
     app.on(['GET', 'PUT'], '/profiles/*', async (c) => {
       const compte = await compteAyantDroit(c.req.raw.headers, 'conduite')
@@ -638,9 +657,10 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // santé, un outil en ligne de commande — doit obtenir la page, pas un 404.
     if (chemin !== '/' && !ressembleAUneNavigation(c.req.header('accept'))) return c.notFound()
 
-    // Deux pages, deux replis : ouvrir le relecteur doit donner le relecteur, et
-    // non l'application de conduite, ce qui se lirait comme un bug.
-    const page = chemin.startsWith('/relecteur') ? '/relecteur.html' : '/index.html'
+    // Trois pages, trois replis : ouvrir le relecteur doit donner le relecteur,
+    // et la régie la régie, et non l'application de conduite, ce qui se lirait
+    // comme un bug.
+    const page = pageDeRepli(chemin)
     return servirDepuis(options.application, page, new Headers(), 'no-cache') ?? c.notFound()
   })
 
@@ -696,6 +716,20 @@ function sansCompte(): Response {
  */
 function sansDroit(role: string): Response {
   return new Response(`rôle requis : ${role}`, { status: 403 })
+}
+
+/**
+ * Quelle page rendre pour une navigation qui ne désigne aucun fichier.
+ *
+ * La régie et le relecteur sont des entrées séparées : leur code n'a aucune
+ * raison de partir dans ce que la voiture télécharge. Le repli doit donc rendre
+ * la bonne des trois, sans quoi ouvrir `/regie` donnerait l'application de
+ * conduite.
+ */
+function pageDeRepli(chemin: string): string {
+  if (chemin.startsWith('/relecteur')) return '/relecteur.html'
+  if (chemin.startsWith('/regie')) return '/regie.html'
+  return '/index.html'
 }
 
 function cachePour(chemin: string): string | undefined {

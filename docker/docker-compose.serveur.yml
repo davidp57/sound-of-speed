@@ -90,6 +90,29 @@ services:
       # lui avec ses propres enregistrements.
       SPEED_BANQUES_RESTREINTES: ${SPEED_BANQUES_RESTREINTES:-}
       SPEED_BANQUES_ACCORDEES: ${SPEED_BANQUES_ACCORDEES:-}
+      # Qui administre : des adresses de courrier séparées par des virgules.
+      #
+      # Un compte dont l'adresse enregistrée y figure ouvre la page `/regie`,
+      # où l'on donne et reprend les rôles, accorde une banque restreinte, pose
+      # un plafond, efface un compte. La comparaison ignore la casse.
+      #
+      # **Ça se déclare ici et jamais par une route** : aucun appel ne peut donc
+      # fabriquer un administrateur, et c'est ce qui rend l'écran sûr. Un compte
+      # sans adresse enregistrée ne peut pas administrer.
+      #
+      # Absente, personne n'administre et la régie répond 404 à tout le monde.
+      SPEED_ADMINS: ${SPEED_ADMINS:-}
+      # Les rôles offerts à n'importe quel compte, séparés par des virgules :
+      # `conduite`, `atelier`, `synthese`.
+      #
+      # Absente **ou vide**, les trois — tout le monde a tout, rien n'étant
+      # encaissé. Pour tout fermer, et vérifier ainsi qu'un écran se referme et
+      # qu'une route refuse, saisir une valeur qui ne nomme aucun rôle :
+      # `aucun`. Vide ne ferme rien, parce qu'une variable déclarée ici et non
+      # saisie arrive vide au conteneur.
+      #
+      # Un rôle donné depuis la régie s'ajoute à ceux-ci.
+      SPEED_ROLES_OFFERTS: ${SPEED_ROLES_OFFERTS:-}
       # Les comptes tenus ailleurs — Tesla, Google, Apple.
       #
       # **Les deux d'un fournisseur, ou aucune.** La moitié d'une paire ne monte

@@ -138,6 +138,17 @@ describe('le voisin ne voit rien', () => {
     expect(await reponse.json()).toEqual([])
   })
 
+  it('n’ouvre pas la régie, qui dirait tout de tout le monde', async () => {
+    // Ce serveur ne déclare aucun administrateur : personne n'administre, et la
+    // régie répond 404 — le même que reçoit un visiteur sans session.
+    expect((await serveur().request('/api/regie/comptes', { headers: boris.annonce })).status).toBe(
+      404,
+    )
+    expect((await serveur().request('/api/regie/comptes', { headers: anne.annonce })).status).toBe(
+      404,
+    )
+  })
+
   it('ne lit pas le profil mesuré d’Anne', async () => {
     // Anne en a un, et c'est ce qui donne du sens au refus opposé à Boris.
     const chemin = '/mesure-voiture/profil-voiture.json'
@@ -367,6 +378,11 @@ describe('l’inventaire des routes', () => {
 
   /** Ce qui touche aux données d'un compte, et que les cas ci-dessus couvrent. */
   const COUVERTES = [
+    // La régie touche aux données de **tous** les comptes, et c'est bien pour
+    // cela qu'elle est ici : sans administrateur déclaré, aucune de ses routes
+    // ne doit rien rendre à personne.
+    '/api/regie/*',
+    '/api/regie/comptes',
     '/profiles/*',
     '/:registre{engines|gearboxes}/*',
     '/mesure-voiture/profil-voiture.json',

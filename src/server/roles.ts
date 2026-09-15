@@ -25,12 +25,20 @@ export const ROLES_OFFERTS_PAR_DEFAUT: readonly Role[] = ROLES
 /**
  * Ce que `SPEED_ROLES_OFFERTS` désigne.
  *
- * Absente, les trois rôles. Vide, aucun — c'est la seule façon de vérifier pour
- * de bon qu'un écran se ferme et qu'une route refuse, sur un serveur qui tourne
- * plutôt que dans un test.
+ * Absente **ou vide**, les trois rôles. Une variable déclarée dans la
+ * composition d'une pile et non saisie arrive vide, et non absente : c'est ce
+ * qu'on obtient le plus souvent dans l'écran de Portainer, et l'idiome du dépôt
+ * est déjà de traiter les deux pareil — voir `SPEED_URL`. Faire de la valeur
+ * vide un « aucun rôle » fermerait tous les écrans de tout le monde le jour où
+ * la variable est déclarée sans être saisie.
+ *
+ * Pour tout fermer — et c'est la façon de vérifier sur un serveur qui tourne
+ * qu'un écran se referme et qu'une route refuse —, il faut donc une valeur qui
+ * ne nomme aucun rôle : `aucun` fait l'affaire, et n'importe quel autre mot
+ * aussi.
  */
 export function offertsDeLEnvironnement(brut: string | undefined): readonly Role[] {
-  if (brut === undefined) return ROLES_OFFERTS_PAR_DEFAUT
+  if (brut === undefined || brut.trim() === '') return ROLES_OFFERTS_PAR_DEFAUT
   const nommes = brut
     .split(',')
     .map((nom) => nom.trim())
