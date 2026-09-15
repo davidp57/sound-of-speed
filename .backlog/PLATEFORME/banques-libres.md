@@ -13,6 +13,14 @@ David, le 12 septembre 2026 :
 Elle se pose parce que la banque `procar` vient de l'application dribe.app :
 elle est jouable ici, elle ne peut pas partir dans un dépôt public.
 
+**Ce qu'elle fait ici, et jusqu'à quand.** Elle sert à faire tourner
+l'application pendant la mise au point, sur le poste de développement et sur le
+serveur d'essai. Elle n'est ni livrée avec l'application, ni servie à des tiers,
+et aucun échantillon n'est jamais entré dans le dépôt. Elle est destinée à
+disparaître au profit des moteurs produits par la synthèse, qui sont à nous :
+c'est l'objet du lot SYNTHESE, et c'est la raison pour laquelle ce relevé
+cherchait une alternative sous licence.
+
 ## Les deux critères, et pourquoi le second élimine presque tout
 
 **Redistribuable, pas « libre de droit ».** *Royalty-free* veut dire « pas de

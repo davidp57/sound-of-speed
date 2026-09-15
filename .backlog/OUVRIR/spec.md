@@ -30,7 +30,10 @@ l'application dribe.app : elle est jouable ici, elle n'a aucune licence qui nous
 autorise à la rediffuser. Vérifié le 12 septembre 2026 — aucun échantillon n'est
 jamais entré dans git, seuls `public/impulse/` et `silence.mp3` y sont, et le
 `.gitignore` posé pour le poids a tenu les droits à l'écart sans qu'on l'ait
-cherché. Rien à nettoyer, donc, mais rien à publier non plus.
+cherché. Rien à nettoyer, donc, mais rien à publier non plus. Elle sert à la mise
+au point en attendant les moteurs produits par la synthèse, et elle n'est ni
+livrée ni servie à des tiers — voir
+[le relevé sur les banques libres](../PLATEFORME/banques-libres.md).
 
 ## Ce qu'on construit
 
