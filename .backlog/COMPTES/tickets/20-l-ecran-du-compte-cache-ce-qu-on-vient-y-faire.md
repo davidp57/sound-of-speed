@@ -40,39 +40,44 @@ rejoindre celui qu'on a.
 
 ## Ce qu'il faut obtenir
 
-**Un seul geste : « s'authentifier avec Google ».** Tranché par David le
-15 septembre 2026. L'application résout ensuite, et demande validation avant
-d'agir :
+**Un seul geste : « s'authentifier avec Google ».** Tranché par David les 15 et
+16 septembre 2026. Une fois l'adresse connue, deux cas et deux seulement :
 
 | Ce que Google rend | Ce qu'on fait |
 |---|---|
-| une adresse qui désigne un compte existant | on le dit, l'utilisateur valide, on **ouvre** ce compte |
-| une adresse inconnue | on le dit, l'utilisateur valide, on **rattache** l'adresse au compte que cet appareil porte |
+| une adresse qui désigne un compte existant | on **ouvre** ce compte |
+| une adresse inconnue | on la **rattache** au compte que cet appareil porte |
 
-### La troisième branche n'est pas « créer », et c'est déjà instruit
+Le second se dit « créer un compte avec cette adresse » à l'écran : c'est ce que
+la personne croit faire, et c'est ce qui compte. Techniquement c'est un
+rattachement, et il faut que ç'en reste un — l'appareil porte déjà un compte
+anonyme avec des profils, et une vraie création les abandonnerait. C'est la garde
+que `disableSignUp` pose sur chaque fournisseur, pour la raison écrite dans
+`server/tiers.ts` : « cliquer *se connecter avec Google* depuis la voiture
+fabriquerait un compte neuf et vide, et abandonnerait les réglages qu'on avait ».
 
-L'énoncé de départ disait « sinon on crée ». Le code l'interdit délibérément,
-et la raison est écrite dans `core/identity/tiers.ts` : « il n'en crée jamais
-aucun […]. Sans cela, ce bouton fabriquerait depuis la voiture un compte neuf et
-vide, et abandonnerait les réglages qu'on avait. »
+### On annonce avant de partir, on applique au retour
 
-Le cas que cette raison protège est exactement celui qui a montré le défaut :
-**l'appareil porte déjà un compte anonyme avec des profils**. Créer les
-abandonnerait ; rattacher les garde, et c'est ce que fait déjà `link-social`.
+C'est le point qui décide de la forme, et il est tranché : **(a)**.
 
-Pour l'utilisateur, ça reste un seul bouton : la différence est dans ce que
-l'application fait derrière.
+La bibliothèque agit **au retour de la redirection**, pas sur validation.
+`sign-in/social` ouvre la session dès que Google répond ; `link-social` rattache
+dès que Google répond. Il n'existe pas de moment où l'on connaît l'adresse sans
+avoir déjà agi — et « revenir à l'anonyme » n'est pas toujours possible, un
+compte quitté vide étant effacé.
 
-### Le point de séquence qui décide de la forme
+Donc le bouton **annonce les deux cas avant de partir** — « si un compte existe
+avec cette adresse, il s'ouvrira ; sinon elle sera rattachée à ce compte-ci » —
+et le retour applique sans redemander.
 
-**On ne sait pas si l'adresse est connue avant d'être passé par Google.** La
-validation arrive donc **au retour** de la redirection, pas avant : Google →
-retour → « ce compte existe, l'ouvrir ? » ou « rattacher cette adresse à ce que
-porte cet appareil ? » → validation → action.
+Ce que ça coûte, et qui est assumé : on ne peut pas dire non après avoir vu
+l'adresse. Le consentement est donné en cliquant, en sachant ce qu'on déclenche.
 
-C'est ce que la mise en œuvre doit trancher : tenter `sign-in/social` et retomber
-sur `link-social` quand le serveur refuse, ou une route qui décide côté serveur.
-Le second demande de sortir du chemin natif de la bibliothèque.
+Les deux autres voies ont été écartées : une route de retour à nous, qui lirait
+l'identité sans rien faire et attendrait la validation, obligerait à écrire
+nous-mêmes le rappel OAuth — la partie pour laquelle on a pris la bibliothèque ;
+agir puis proposer de défaire n'est pas « ne rien faire », et le retour arrière
+est parfois impossible.
 
 ### Ce qui reste à ranger
 
@@ -84,13 +89,13 @@ l'« agencement » que David vise, au-delà du seul bouton d'authentification.
 
 - [ ] Un seul bouton « s'authentifier avec Google », visible sans déplier ni
       faire défiler
-- [ ] Une adresse qui désigne un compte existant l'ouvre, après validation, et
-      l'écran dit ce que devient le compte que l'appareil portait
-- [ ] Une adresse inconnue se rattache au compte courant, après validation :
-      **rien de ce qu'il portait n'est perdu**
+- [ ] Il annonce les deux cas **avant** de partir chez Google
+- [ ] Une adresse qui désigne un compte existant l'ouvre, et l'écran dit au
+      retour ce qu'est devenu le compte que l'appareil portait
+- [ ] Une adresse inconnue se rattache au compte courant : **rien de ce qu'il
+      portait n'est perdu**
 - [ ] Aucun chemin ne fabrique un compte neuf et vide en abandonnant des
-      réglages — c'est la garde que `tiers.ts` posait, et elle doit tenir
-- [ ] L'utilisateur voit ce qui va se passer **avant** de valider, pas après
+      réglages — c'est la garde que `disableSignUp` pose, et elle doit tenir
 - [ ] L'ordre des sections suit ce qu'on vient y faire, du plus fréquent au plus
       rare
 - [ ] Vérifié sur les trois appareils : au volant, l'écran ne propose pas ce qui
