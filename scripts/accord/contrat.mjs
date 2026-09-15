@@ -212,6 +212,19 @@ export function cas({ nom }) {
       requete: { chemin: '/traces/rien-du-tout.jsonl', compte: true },
       attend: (r) => egal(r.status, 404, 'statut'),
     },
+    {
+      nom: 'un nom qui compose un chemin n’entre pas',
+      part: 'depots',
+      // Le nom ressort concaténé dans l'archive du compte, et une remontée y
+      // produit une entrée qui s'écrit hors du dossier chez celui qui extrait.
+      requete: {
+        chemin: '/traces/..%2F..%2Fdehors.txt',
+        compte: true,
+        methode: 'PUT',
+        corps: 'charge',
+      },
+      attend: (r) => egal(r.status, 404, 'statut'),
+    },
 
     // --- Ce qui demande un compte -----------------------------------------
     {

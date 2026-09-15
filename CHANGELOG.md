@@ -8,6 +8,18 @@ Toutes les évolutions notables du projet. Format
 
 ### Sécurité
 
+- **Un nom déposé ne peut plus composer un chemin.** Déposer sous
+  `..%2F..%2Fdehors.txt` était accepté, et l'archive du compte portait alors
+  l'entrée `traces/../../dehors.txt` — qu'un extracteur ordinaire écrit **hors
+  du dossier** qu'on lui a désigné. Le nom ne touchait aucun disque sur le
+  serveur ; il en touchait un chez celui qui ouvre l'archive, sur son poste de
+  travail.
+
+  Refusé à l'entrée sur les profils, les registres et les dépôts, et écarté une
+  seconde fois au moment de l'archive — la base peut porter un nom entré avant
+  ce contrôle, ou versé par la reprise d'un ancien dossier. Aucun nom légitime
+  n'est concerné : la voiture dépose des noms plats.
+
 - **Les échantillons ne descendent plus sans compte.** C'est le plus gros poste
   de trafic du serveur — c'est pour leur poids que les banques vivent dans un
   volume et non dans l'image — et c'était la seule ressource que rien ne

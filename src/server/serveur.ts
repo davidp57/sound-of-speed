@@ -29,7 +29,7 @@ import {
 import { ecrireEntite, estUnRegistre, lireEntite, listerEntites } from './entites'
 import { CHEMIN_IDENTITE, type Identite } from './identite'
 import { archiveDuCompte } from './emporter'
-import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
+import { cheminSur, estUnNomSimple, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
@@ -199,6 +199,9 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       } catch {
         return c.notFound()
       }
+      // Un nom, et non un chemin : voir `estUnNomSimple`. Refusé ici, à l'entrée,
+      // plutôt que rattrapé plus tard par ce qui le relit.
+      if (!estUnNomSimple(nom)) return c.notFound()
 
       if (c.req.method === 'PUT') {
         const ecrit = await ecrireProfil(base, compte, nom, await c.req.text())
@@ -249,6 +252,9 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       } catch {
         return c.notFound()
       }
+      // Un nom, et non un chemin : voir `estUnNomSimple`. Refusé ici, à l'entrée,
+      // plutôt que rattrapé plus tard par ce qui le relit.
+      if (!estUnNomSimple(nom)) return c.notFound()
 
       if (c.req.method === 'PUT') {
         const ecrit = await ecrireEntite(base, registre, compte, nom, await c.req.text())
@@ -415,6 +421,9 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       } catch {
         return c.notFound()
       }
+      // Un nom, et non un chemin : voir `estUnNomSimple`. Refusé ici, à l'entrée,
+      // plutôt que rattrapé plus tard par ce qui le relit.
+      if (!estUnNomSimple(nom)) return c.notFound()
 
       if (c.req.method === 'PUT') {
         const octets = Buffer.from(await c.req.arrayBuffer())

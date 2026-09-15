@@ -23,6 +23,7 @@
 import { zipStream, type ZipEntry } from '../core/archive/zip'
 import type { Base } from './base/base'
 import { DOSSIERS, lireDepot, listerDepots } from './depots'
+import { estUnNomSimple } from './fichiers'
 import { REGISTRES, lireEntite, listerEntites } from './entites'
 import { lireProfilMesure } from './profil-mesure'
 import { lireProfil, listerProfils } from './profils'
@@ -42,6 +43,7 @@ export function archiveDuCompte(
 ): { nom: string; flux: ReadableStream<Uint8Array> } {
   async function* entrees(): AsyncGenerator<ZipEntry> {
     for (const entree of await listerProfils(base, compte)) {
+      if (!estUnNomSimple(entree.name)) continue
       const contenu = await lireProfil(base, compte, entree.name)
       if (contenu === null) continue
       yield { name: `profiles/${entree.name}`, bytes: enOctets(contenu), at: quand(entree.mtime) }
@@ -49,6 +51,7 @@ export function archiveDuCompte(
 
     for (const registre of REGISTRES) {
       for (const entree of await listerEntites(base, registre, compte)) {
+        if (!estUnNomSimple(entree.name)) continue
         const contenu = await lireEntite(base, registre, compte, entree.name)
         if (contenu === null) continue
         yield {
@@ -61,6 +64,11 @@ export function archiveDuCompte(
 
     for (const dossier of DOSSIERS) {
       for (const entree of await listerDepots(base, compte, dossier)) {
+        // La seconde barrière contre un nom qui remonte l'arborescence. La
+        // première est à l'entrée ; celle-ci couvre ce qui est déjà en base,
+        // versé avant elle ou par la reprise d'un ancien dossier.
+        if (!estUnNomSimple(entree.name)) continue
+
         const octets = await lireDepot(base, compte, dossier, entree.name)
         // Un dépôt disparu entre le listage et la lecture : l'archive porte ce
         // qui reste. C'est déjà ce que fait l'archive d'un trajet.

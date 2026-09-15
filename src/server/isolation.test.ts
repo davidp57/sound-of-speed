@@ -237,6 +237,119 @@ describe('le voisin n’écrit ni n’efface rien', () => {
 })
 
 /**
+ * Un nom déposé est un nom, et pas un chemin.
+ *
+ * Les noms arrivent de l'adresse et ressortent concaténés dans les entrées de
+ * l'archive du compte. Avant ce contrôle, déposer sous `..%2F..%2Fdehors.txt`
+ * était accepté et produisait l'entrée `traces/../../dehors.txt` — mesuré — que
+ * tout extracteur ordinaire écrit hors du dossier qu'on lui désigne.
+ */
+describe('un nom de travers n’entre pas', () => {
+  const DE_TRAVERS = ['..%2F..%2Fdehors.txt', '..%5C..%5Cdehors.txt', '%2Fabsolu.txt', '..']
+
+  it('refuse un nom qui compose un chemin, dans les trois familles', async () => {
+    for (const dossier of ['/traces/', '/profiles/', '/engines/']) {
+      for (const nom of DE_TRAVERS) {
+        const depot = await serveur().request(`${dossier}${nom}`, {
+          method: 'PUT',
+          headers: { ...anne.annonce, 'Content-Type': 'application/json' },
+          body: '{}',
+        })
+        expect(depot.status, `${dossier}${nom}`).toBe(404)
+      }
+    }
+  })
+
+  it('n’en laisse aucun dans l’archive du compte', async () => {
+    const reponse = await serveur().request('/mon-compte/archive.zip', { headers: anne.annonce })
+    const octets = Buffer.from(await reponse.arrayBuffer()).toString('latin1')
+
+    expect(reponse.status).toBe(200)
+    // Les noms d'entrée voyagent en clair dans les octets d'une archive.
+    expect(octets).not.toContain('../')
+    expect(octets).not.toContain('..\\')
+  })
+})
+
+/**
+ * Les gestes qui font changer un compte de mains, vus du voisin.
+ *
+ * `compte.test.ts` couvre déjà ces routes du point de vue de celui qui les
+ * appelle : l'adresse déjà prise, le mot de passe refusé, le compte abandonné
+ * qu'on garde. Ce qui n'était pas regardé, c'est **l'autre** : celui dont
+ * l'adresse ou l'identifiant sert de cible, et dont les affaires ne doivent pas
+ * bouger d'un pouce.
+ */
+describe('le voisin ne prend pas le compte d’Anne', () => {
+  /** Ce qu'Anne porte, relu par elle : le témoin que rien n'a bougé. */
+  async function affairesDAnne(): Promise<unknown> {
+    const reponse = await serveur().request('/profiles/', { headers: anne.annonce })
+    return reponse.json()
+  }
+
+  async function appeler(chemin: string, qui: Appareil, corps: unknown): Promise<Response> {
+    return serveur().request(`/api/auth${chemin}`, {
+      method: 'POST',
+      headers: { ...qui.annonce, 'Content-Type': 'application/json' },
+      body: JSON.stringify(corps),
+    })
+  }
+
+  beforeEach(async () => {
+    // Anne se donne une adresse : sans elle, il n'y a rien à convoiter.
+    const rattache = await appeler('/compte/rattacher', anne, {
+      email: 'anne@exemple.test',
+      motDePasse: 'un mot de passe assez long',
+    })
+    expect(rattache.status).toBe(200)
+  })
+
+  it('ne prend pas son adresse, et ne voit rien de plus après le refus', async () => {
+    const avant = await affairesDAnne()
+
+    const refus = await appeler('/compte/rattacher', boris, {
+      email: 'anne@exemple.test',
+      motDePasse: 'un autre mot de passe long',
+    })
+    expect(refus.status).toBe(409)
+
+    // Le refus ne doit pas avoir déplacé une ligne, ni ouvert quoi que ce soit.
+    expect(await affairesDAnne()).toEqual(avant)
+    expect(await (await serveur().request('/profiles/', { headers: boris.annonce })).json()).toEqual(
+      [],
+    )
+  })
+
+  it('n’ouvre pas son compte avec le mauvais mot de passe, et ne l’abîme pas', async () => {
+    const avant = await affairesDAnne()
+
+    const refus = await appeler('/compte/connexion', boris, {
+      email: 'anne@exemple.test',
+      motDePasse: 'ce n’est pas le sien',
+    })
+    expect(refus.status).toBe(401)
+
+    expect(await affairesDAnne()).toEqual(avant)
+    // Boris est toujours chez lui : une connexion refusée ne déplace personne.
+    expect(await (await serveur().request('/profiles/', { headers: boris.annonce })).json()).toEqual(
+      [],
+    )
+  })
+
+  it('n’efface pas son compte en le faisant passer pour un ancien', async () => {
+    // Le règlement de l'ancien n'efface qu'un compte anonyme **et** vide. Anne
+    // n'est ni l'un ni l'autre : deux raisons, et une seule suffirait.
+    const reponse = await appeler('/compte/regler-l-ancien', boris, { ancien: anne.compte })
+
+    expect(reponse.status).toBe(200)
+    expect(await reponse.json()).toEqual({ ancien: 'garde' })
+    expect((await serveur().request('/profiles/Sport.json', { headers: anne.annonce })).status).toBe(
+      200,
+    )
+  })
+})
+
+/**
  * L'inventaire : ce qui fait que cette vérification dure.
  *
  * Les routes sont relues dans l'application elle-même. Une route neuve qui
