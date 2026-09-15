@@ -196,10 +196,34 @@ choisi au jugé.
 **Et les oscillations résiduelles ne viennent plus de là.** À 50 km/h, la vitesse
 la plus fragile, les alternances restantes sont espacées de dix à trente-six
 secondes quand le bruit bat dix fois par seconde : c'est une dérive lente, pas un
-tremblement. La cause probable est la **charge**, que le moteur déduit de
-l'accélération brute et qui fait flotter le seuil de montée par la demande. Elle
-entre dans la boîte par l'entrée, donc elle n'est pas une lecture de la boîte —
-c'est un travail à part, pas un élargissement de celui-ci.
+tremblement.
+
+**La charge avait été accusée. La mesure la disculpe, et retourne la
+conclusion.** L'hypothèse était que la charge, déduite de l'accélération brute,
+fait flotter le seuil de montée par la demande, et que le régime finit par le
+croiser. Mesuré le 15 septembre 2026 en figeant la charge à une constante, tout
+le reste égal — à 3 km/h de bruit, croisière de deux minutes :
+
+| Vitesse tenue | Charge calculée | Charge figée à 0,3 |
+|---|---|---|
+| 50 km/h | 8 passages | **79** |
+| 60 km/h | 0 | **88** |
+| 72 km/h | 22 | 14 |
+| 85 km/h | 0 | **111** |
+| 110 km/h | 0 | 0 |
+
+**La charge variable n'est pas la cause : elle amortit.** Le seuil de montée suit
+la demande, donc il monte avec le régime quand le bruit le pousse — et le régime
+ne le rattrape pas. C'est un asservissement, et le figer laisse le régime bruité
+traverser librement un seuil immobile. Relevé à 50 km/h et 1,75 km/h de bruit :
+le seuil oscille entre 1 614 et 2 459 tr/min, le régime entre 1 353 et 2 128, et
+c'est ce chevauchement qui décide.
+
+Il n'y a donc **rien à corriger dans le moteur**, et pas de ticket à ouvrir : ce
+qui reste est la sensibilité au bruit elle-même, dont la marge est mesurée plus
+haut. 72 km/h fait exception — la charge y coûte plutôt qu'elle n'aide — et ce
+seul point ne justifie pas de toucher à un mécanisme qui protège partout
+ailleurs.
 
 ### L'allure se lit, depuis le 15 septembre 2026
 

@@ -83,7 +83,8 @@ Le ticket demandait qu'ils passent sans réécriture, ou que la raison soit dite
 
 Les oscillations résiduelles à 50 km/h ne viennent pas de cette lecture : elles
 sont espacées de dix à trente-six secondes, là où le bruit bat dix fois par
-seconde. La cause probable est la **charge**, que le moteur déduit de
-l'accélération brute et qui fait flotter le seuil de montée par la demande. Elle
-entre dans la boîte par l'entrée, ce n'est donc pas une lecture de la boîte — et
-le ticket disait de ne pas élargir.
+seconde. La **charge** avait été accusée — elle est déduite de l'accélération
+brute et fait flotter le seuil de montée. Mesurée le 15 septembre en la figeant,
+elle est disculpée : les oscillations sont alors bien pires. Elle amortit le
+bruit au lieu de le produire. Le détail est dans la spécification du lot ; il n'y
+a pas de ticket à ouvrir.
