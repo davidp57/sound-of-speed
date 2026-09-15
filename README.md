@@ -1058,6 +1058,26 @@ Une tranche n'est **jamais** perdue au profit d'un dépôt raté : elle revient 
 attente et se joint à la suivante, ce qui fait qu'un tunnel ne coûte pas un
 trajet.
 
+**Un envoi qui ne rend pas la main est abandonné au bout de trente secondes.**
+Un seul dépôt court à la fois, et sans cette échéance il bloquerait tous les
+suivants aussi longtemps qu'il dure : le 11 septembre 2026, la capture est
+restée pendue sur une seule requête pendant sept minutes. L'échéance se lit sur
+l'horloge murale et non sur le temps de session, pour la même raison que le
+dépôt à l'arrêt. Renoncer ne perd rien — la tranche revient en attente —, mais
+une requête abandonnée peut avoir abouti côté serveur, et la suivante déposerait
+alors le même contenu sous un autre rang. Un doublon se lit ; une attente de
+sept minutes ne se voit pas.
+
+**Et elle ne repart pas tout de suite.** Après un dépôt qui n'aboutit pas,
+l'application attend cinq secondes, puis le double à chaque nouvel échec, jusqu'à
+cinq minutes au plus ; une réussite remet le compteur à zéro. Sans cette attente,
+une tranche rendue redemandait à partir au tour de boucle suivant — le
+11 septembre 2026, une coupure de cent trente-sept secondes a coûté sept cent
+vingt-six tentatives, une toutes les 189 millisecondes. La même coupure en coûte
+cinq aujourd'hui, et la tranche repart dix-huit secondes après le retour du
+réseau. L'arrêt prolongé, lui, passe outre : c'est le dernier moment où
+l'application est encore là pour envoyer.
+
 > **En développement, le dépôt répond 404.** Il vise le serveur qui sert
 > l'application, et celui de Vite n'a pas ce dossier. C'est en production que la
 > chose se vérifie.
@@ -2688,6 +2708,13 @@ refusé, GPS mort. Absent si l'envoi est coupé : un rouge permanent pour un cho
 délibéré est une alarme qu'on apprend à ignorer. La frontière entre orange et
 rouge est la récupérabilité, pas la gravité ressentie. Le détail se lit sur
 l'écran de télémétrie.
+
+**Il couvre aussi le journal**, et prend le pire des deux. Le journal n'avait
+jamais eu de témoin : un trajet dont il n'est pas parti se revoit sans ce qui
+expliquait ce qu'on y voit — le profil en usage, les passages de rapport, les
+rejets du récepteur. Quand la capture va bien et que seul le journal cloche, le
+témoin le nomme, pour qu'on ne cherche pas un défaut de capture qui n'existe
+pas.
 
 Les tranches partent toutes les cinq minutes, et **ce qui reste part après
 quinze secondes à l'arrêt** : la dernière tranche n'a pas cinq minutes devant

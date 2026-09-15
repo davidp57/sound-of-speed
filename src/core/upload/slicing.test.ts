@@ -51,3 +51,25 @@ describe('le découpage en tranches', () => {
     expect(b.droppedCount).toBe(27)
   })
 })
+
+describe('une tranche rendue redemande à partir aussitôt', () => {
+  it('repasse le seuil de taille dès le restore', () => {
+    const b = tampon({ sliceAtBytes: 200 })
+    for (let i = 0; i < 30; i += 1) b.add({ at: i, n: i })
+    expect(b.shouldSlice(0)).toBe(true)
+
+    const slice = b.takeSlice(0)!
+    expect(b.shouldSlice(0)).toBe(false)
+
+    // Le dépôt échoue et la tranche revient. Le critère de durée est neutralisé
+    // — `takeSlice` vient de le remettre à zéro — mais celui de taille, lui, est
+    // rétabli par le retour du contenu.
+    b.restore(slice)
+    expect(b.shouldSlice(0)).toBe(true)
+
+    // C'est ce qui a consommé 726 rangs en 137 secondes le 11 septembre 2026 : le
+    // recul de `core/upload/backoff.ts` est ce qui tient la cadence, et rien
+    // dans cette pièce-ci ne la tient.
+    expect(b.takeSlice(0)!.name).not.toBe(slice.name)
+  })
+})

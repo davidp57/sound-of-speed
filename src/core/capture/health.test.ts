@@ -4,6 +4,7 @@ import { captureHealth, type CaptureHealthInput } from './health'
 const sain: CaptureHealthInput = {
   capturing: true,
   failure: '',
+  journalFailure: '',
   gpsActive: true,
   rejecting: false,
 }
@@ -57,5 +58,35 @@ describe('le témoin de session', () => {
     ]) {
       expect(captureHealth({ ...sain, ...cas }).why.length).toBeGreaterThan(20)
     }
+  })
+})
+
+describe('le journal entre dans le témoin', () => {
+  const verdict = (over: Partial<CaptureHealthInput> = {}) => captureHealth({ ...sain, ...over })
+
+  it('passe à l’orange quand seul le journal ne part plus', () => {
+    // Il n'avait aucun témoin : le 11 septembre 2026, il s'est répété sept cent
+    // vingt-six fois sans que rien ne le dise à l'écran.
+    expect(état({ journalFailure: 'network' })).toBe('warn')
+  })
+
+  it('dit que c’est le journal, pour qu’on ne cherche pas la capture', () => {
+    expect(verdict({ journalFailure: 'network' }).why).toContain('le journal')
+    expect(verdict({ failure: 'network' }).why).not.toContain('le journal')
+  })
+
+  it('prend le pire des deux dépôts', () => {
+    expect(état({ failure: 'network', journalFailure: 'refused' })).toBe('bad')
+    expect(état({ failure: 'refused', journalFailure: 'network' })).toBe('bad')
+  })
+
+  it('ne nomme pas le journal quand les deux sont en cause', () => {
+    // Les deux dépôts passent par le même réseau : le nommer donnerait à croire
+    // que la capture, elle, va bien.
+    expect(verdict({ failure: 'network', journalFailure: 'network' }).why).not.toContain('le journal')
+  })
+
+  it('reste éteint quand rien n’est capturé, même si le journal cloche', () => {
+    expect(état({ capturing: false, journalFailure: 'refused' })).toBe('off')
   })
 })

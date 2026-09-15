@@ -1,7 +1,8 @@
 # SUITE-ESSAI-11 — ce que l'essai du 11 septembre a laissé de côté
 
-**Statut :** 🔄 en cours — la relance de la localisation est livrée (commits
-`51b7af4` et `f2826d0`) ; les dépôts manqués à l'arrêt restent à instruire
+**Statut :** 🧑 attend David — les deux points sont livrés ; la relance de la
+localisation (commits `51b7af4` et `f2826d0`) et le recul entre deux dépôts
+restent à éprouver en roulant
 **Branche :** à ouvrir
 **Version visée :** à décider
 
@@ -11,7 +12,8 @@ soit : ce sont des défauts vus en passant.
 
 ## 01 — La numérotation des tranches saute
 
-Statut : 🔄 la numérotation est correcte ; ce qu'elle révèle ne l'est pas
+Statut : 🧑 attend David — cause trouvée et corrigée le 15 septembre 2026,
+reste à le constater sur un trajet
 
 Sur la session `2026-09-11-06-24-01_da2m`, les tranches déposées sont numérotées
 **001 à 015, puis 741, 742, 743**. Et côté traces, la même session va de 001 à
@@ -44,17 +46,90 @@ pu aboutir — une réponse perdue, un réseau qui coupe après l'écriture. Ré
 le rang échangerait une numérotation continue contre une perte de données
 possible.
 
-**Le vrai sujet est donc ailleurs, et il est plus sérieux :** le saut de 015 à
-741 dit que **sept cent vingt-six dépôts ont manqué** pendant les quarante-quatre
-minutes d'arrêt du 11 septembre. Et le 020 manquant côté traces en dit un de
-plus. Ce n'est pas la numérotation qui cloche, c'est ce qu'elle raconte.
+**Le vrai sujet est donc ailleurs :** le saut de 015 à 741 dit que le dépôt a
+été tenté sept cent vingt-six fois. Ce n'est pas la numérotation qui cloche,
+c'est ce qu'elle raconte.
 
-**Ce qu'il faut chercher maintenant :** pourquoi ces dépôts échouent à l'arrêt.
-Le témoin de capture aurait dû virer à l'orange — « ça se rattrapera tout seul »
-—, et la télémétrie compte les échecs. Les candidats : un réseau qui s'endort
-avec la voiture, une tranche vide refusée par le serveur, ou un dépôt forcé
-toutes les quinze secondes à l'arrêt qui repart en boucle sur la même tranche.
-Le journal du trajet porte de quoi trancher, il est rapatrié.
+**Et ce n'était pas « pendant les quarante-quatre minutes d'arrêt ».** Cette
+lecture, écrite ici le 13 septembre, est fausse : les tranches relues sur le NAS
+le 15 septembre montrent que la 741 reprend **1,008 seconde** après la fin de la
+015, à 76 km/h. Le saut s'est produit en roulant, sur une coupure de réseau de
+deux minutes, et non à l'arrêt.
+
+**Trouvé, et mesuré.** Ce ne sont pas sept cent vingt-six dépôts *manqués* :
+c'est **une seule tranche réessayée sept cent vingt-six fois**, à la cadence
+d'une requête qui n'aboutit pas.
+
+L'enchaînement, et il n'a rien d'accidentel :
+
+1. le dépôt échoue, la tranche revient en attente par `restore` ;
+2. son contenu pèse à nouveau plus que le seuil de découpage — trente
+   kilo-octets — donc `shouldSlice` redit « oui » **au tour de boucle suivant** ;
+3. `takeSlice` consomme un rang, le dépôt échoue, retour au point 1.
+
+Rien ne tenait la cadence. Le critère de durée ne pouvait pas : `takeSlice`
+venait de le remettre à zéro. Le critère de taille non plus : le retour de la
+tranche le rétablissait. Et le dépôt des tranches n'avait **aucun recul après
+échec**, là où la file des dépôts — `core/upload/queue.ts` — en avait un depuis
+toujours.
+
+**La mesure, faite sur les fichiers eux-mêmes.** Les tranches 001 à 015 partent
+toutes les 299,4 s, au découpage nominal. La 741 couvre **435,5 s** — 137,1 s de
+plus —, puis les 742 à 745 reprennent leur cadence. La coupure tient donc dans
+ces 137,1 secondes, et 726 rangs y ont été consommés : **une tentative toutes
+les 189 millisecondes**.
+
+**Rien n'a été perdu, et c'est prouvé.** Les vingt et une tranches de journal se
+recouvrent bout à bout, de 0,1 s à 6 136,0 s, sans un trou. Côté capture, les
+rangs 020 et 023 manquent aussi — deux échecs isolés, pas une boucle — et là non
+plus il n'y a pas de trou : la 019 finit à 4 714,9 s et la 021 commence à
+4 714,9 s.
+
+**Corrigé.** La politique de recul de la file est sortie dans
+`core/upload/backoff.ts`. Les tranches en prennent une plus courte que celle de
+la file — cinq secondes doublées, cinq minutes au plus — parce qu'une coupure en
+roulant se compte en secondes, pas en heures : sur les 137 s mesurées, cinq
+tentatives, et la tranche repart 18 s après le retour du réseau, là où le recul
+de la file l'aurait fait attendre 73 s. Le flush d'arrêt passe outre le recul
+sans le remettre à zéro.
+
+**Le rang reste consommé à chaque tentative, et c'est voulu** : le raisonnement
+du 13 septembre tient, deux fichiers de même nom seraient un dépôt qui en écrase
+un autre. Avec sept tentatives au lieu de sept cent, le saut devient lisible.
+
+**Ce qui n'est pas expliqué :** pourquoi le réseau a manqué pendant ces deux
+minutes. Ce n'est pas un défaut de l'application — deux minutes sans couverture
+sur une route en sont la cause ordinaire —, et la tranche est partie au retour du
+réseau : c'est le fichier `741`.
+
+**Un second défaut, trouvé en mesurant, et corrigé sur demande de David le
+15 septembre :** le dépôt n'avait **pas de délai d'expiration**, et un envoi en
+cours interdisait tout autre dépôt tant qu'il n'avait pas rendu la main. C'est ce
+qui explique l'asymétrie entre les deux : le journal, dont les tranches pèsent
+deux à cinq kilo-octets, échouait en 189 ms et rebouclait ; la capture, dont les
+tranches en pèsent près de cent, restait pendue sur une seule requête — un rang
+consommé au lieu de sept cents, mais aussi quatre cent quarante-quatre secondes
+sans qu'aucune tentative soit faite.
+
+Un envoi est maintenant abandonné au bout de trente secondes
+(`core/upload/inflight.ts`). L'échéance se lit sur l'horloge murale et non sur le
+temps de session — le pas de la boucle est plafonné à un quart de seconde — et
+elle est relue par la boucle plutôt que confiée à un minuteur, que le navigateur
+briderait dès la page masquée. Le compromis est écrit dans le module : une
+requête abandonnée peut avoir abouti, et la suivante déposerait le même contenu
+sous un autre rang. Un doublon se lit ; sept minutes d'attente ne se voient pas.
+
+**Un troisième défaut, corrigé en même temps :** le journal n'avait **aucun
+témoin** sur l'écran de conduite. Le 11 septembre, il s'est répété sept cent
+vingt-six fois sans que rien ne le dise. Il entre maintenant dans le témoin de
+session, qui prend le pire des deux — un seul voyant, comme le prescrit
+`core/capture/health.ts` — et qui nomme le journal quand la capture, elle, va
+bien.
+
+**Un défaut voisin, non corrigé et signalé :** le journal n'a pas de témoin sur
+l'écran de conduite. Son erreur de dépôt s'affiche dans *Configuration*, la
+capture a le sien dans *Télémétrie*. Un journal qui ne part plus ne se voit donc
+qu'en allant le chercher. Hors périmètre de ce point.
 
 ## 02 — Un interrupteur GPS sur l'écran de télémétrie
 

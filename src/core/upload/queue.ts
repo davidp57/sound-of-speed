@@ -1,3 +1,4 @@
+import { Backoff, DEFAULT_BACKOFF, type BackoffLimits } from './backoff'
 import type { UploadKind } from './consent'
 import type { PutOutcome } from './put'
 
@@ -44,7 +45,7 @@ export interface QueuedUpload {
   epingle?: boolean
 }
 
-export interface QueueLimits {
+export interface QueueLimits extends BackoffLimits {
   /** Nombre de dépôts gardés au plus. */
   maxItems: number
   /**
@@ -55,10 +56,6 @@ export interface QueueLimits {
    * à chaque ajout.
    */
   maxBytes: number
-  /** Attente après un premier échec, en millisecondes. Elle double ensuite. */
-  retryMs: number
-  /** Attente maximale entre deux tentatives, en millisecondes. */
-  maxRetryMs: number
 }
 
 export const DEFAULT_LIMITS: QueueLimits = {
@@ -66,23 +63,25 @@ export const DEFAULT_LIMITS: QueueLimits = {
   // Quatre mégaoctets : de quoi garder plusieurs traces d'un trajet sans
   // approcher le quota du stockage local, qui est de l'ordre de cinq.
   maxBytes: 4 * 1024 * 1024,
-  retryMs: 30_000,
-  maxRetryMs: 15 * 60_000,
+  // Le recul est celui de tous les dépôts : le tenir ici en double finirait par
+  // le faire diverger de celui des tranches.
+  ...DEFAULT_BACKOFF,
 }
 
 export type AddResult = 'queued' | 'duplicate'
 
 export class UploadQueue {
   private items: QueuedUpload[] = []
-  private failures = 0
-  private nextTryAt = 0
+  private readonly retry: Backoff
 
   /** Dernier échec, en clair, pour l'afficher tel quel. */
   lastError = ''
   /** Dépôts abandonnés faute de place, cumulés. */
   evicted = 0
 
-  constructor(private readonly limits: QueueLimits = DEFAULT_LIMITS) {}
+  constructor(private readonly limits: QueueLimits = DEFAULT_LIMITS) {
+    this.retry = new Backoff(limits)
+  }
 
   list(): readonly QueuedUpload[] {
     return this.items
@@ -136,7 +135,7 @@ export class UploadQueue {
 
   /** L'heure est-elle venue de réessayer ? */
   ready(at: number): boolean {
-    return this.items.length > 0 && at >= this.nextTryAt
+    return this.items.length > 0 && this.retry.ready(at)
   }
 
   /**
@@ -154,18 +153,14 @@ export class UploadQueue {
       const outcome = await send(item)
       if (outcome.ok) {
         this.remove(item.id)
-        this.failures = 0
-        this.nextTryAt = 0
+        this.retry.succeeded()
         this.lastError = ''
         sent += 1
         continue
       }
 
       this.lastError = outcome.detail
-      this.failures += 1
-      // Un refus ne se corrige pas tout seul : on attend l'attente maximale
-      // plutôt que de répéter une requête dont on connaît la réponse.
-      this.nextTryAt = at + (outcome.retry ? this.backoff() : this.limits.maxRetryMs)
+      this.retry.failed(at, outcome.retry)
       break
     }
     return sent
@@ -173,13 +168,7 @@ export class UploadQueue {
 
   /** Force la prochaine tentative, quand l'utilisateur la demande. */
   retryNow(): void {
-    this.nextTryAt = 0
-    this.failures = 0
-  }
-
-  private backoff(): number {
-    const wait = this.limits.retryMs * 2 ** Math.min(this.failures - 1, 8)
-    return Math.min(wait, this.limits.maxRetryMs)
+    this.retry.retryNow()
   }
 
   /**

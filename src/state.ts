@@ -51,6 +51,8 @@ import { captureHealth } from './core/capture/health'
 import { StandstillFlush } from './core/capture/standstill'
 import { JournalCollector, type SoundCost } from './core/journal/collect'
 import { detailActif, eteintA, type DetailActiveA } from './core/journal/detail'
+import { Backoff, SLICE_BACKOFF } from './core/upload/backoff'
+import { InFlight } from './core/upload/inflight'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
 import { toWav } from './bench/wav'
 import { archiveName, collectArchive } from './core/export/collect'
@@ -1289,8 +1291,27 @@ noterLAppareil()
 export const journalDeposits = ref<{ name: string; bytes: number }[]>([])
 /** Dernier échec de dépôt, à afficher tel quel. */
 export const journalError = ref('')
-/** Vrai pendant un dépôt : on n'en lance pas deux à la fois. */
-let journalBusy = false
+/**
+ * Pourquoi le dernier dépôt de journal a échoué.
+ *
+ * Distinct de `journalError`, qui porte la phrase : celui-ci entre dans le
+ * témoin de session, qui prend le pire du journal et de la capture.
+ */
+export const journalFailure = ref<'refused' | 'network' | ''>('')
+/**
+ * L'envoi en cours : on n'en lance pas deux à la fois, et on ne l'attend pas
+ * indéfiniment. Voir `core/upload/inflight.ts`.
+ */
+const journalFlight = new InFlight()
+/**
+ * Le recul entre deux tentatives, après un dépôt qui n'est pas parti.
+ *
+ * Sans lui, une tranche rendue par `restore` repasse aussitôt le seuil de
+ * taille et repart : le 11 septembre 2026, une coupure de cent trente-sept
+ * secondes a consommé sept cent vingt-six rangs de tranche, un toutes les 189
+ * millisecondes. Avec lui, la même coupure en coûte cinq.
+ */
+const journalRetry = new Backoff(SLICE_BACKOFF)
 
 /**
  * Dépose une tranche si l'heure est venue.
@@ -1301,27 +1322,40 @@ let journalBusy = false
  * personne ne garantit.
  */
 function depositJournalIfDue(nowMs: number): void {
-  if (journalBusy || !sendsAutomatically(uploadConsent.value, 'journal')) return
+  // L'échéance se relit à chaque passage : un envoi qui ne rend pas la main
+  // bloquerait sinon tout dépôt ultérieur.
+  journalFlight.sweep(Date.now())
+  if (!sendsAutomatically(uploadConsent.value, 'journal')) {
+    // Un journal qui ne tente plus rien n'a pas d'échec à montrer : sans cela le
+    // témoin resterait orange sur le souvenir du dernier dépôt raté.
+    journalFailure.value = ''
+    return
+  }
+  if (journalFlight.busy) return
+  if (!journalRetry.ready(nowMs)) return
   if (!journal.shouldSlice(nowMs)) return
 
   const slice = journal.takeSlice(nowMs)
   if (!slice) return
 
-  journalBusy = true
-  void depositSlice(slice)
+  void depositSlice(slice, fetch, journalFlight.begin(Date.now()))
     .then((outcome) => {
       if (outcome.ok) {
+        journalRetry.succeeded()
         journalError.value = ''
+        journalFailure.value = ''
         journalDeposits.value = [...journalDeposits.value, { name: outcome.name, bytes: outcome.bytes }]
         return
       }
+      journalRetry.failed(nowMs, outcome.retry)
       journalError.value = outcome.detail
+      journalFailure.value = outcome.reason
       // La tranche revient en attente et se joindra à la suivante : c'est ce qui
       // fait qu'un tunnel ne coûte pas un journal.
       if (outcome.retry) journal.restore(slice)
     })
     .finally(() => {
-      journalBusy = false
+      journalFlight.end()
     })
 }
 
@@ -1381,7 +1415,10 @@ let wasCapturing = false
  * éloigne, et le navigateur disparaît avec elle sans prévenir.
  */
 const standstill = new StandstillFlush()
-let captureBusy = false
+/** Le même envoi borné que pour le journal, et pour la même raison. */
+const captureFlight = new InFlight()
+/** Le même recul que le journal, et pour la même raison. */
+const captureRetry = new Backoff(SLICE_BACKOFF)
 
 /**
  * Les échantillons reçus depuis le dernier tour, en attente d'être inscrits.
@@ -1495,6 +1532,7 @@ export const captureStatus = computed(() =>
   captureHealth({
     capturing: capturing.value,
     failure: captureFailure.value,
+    journalFailure: journalFailure.value,
     gpsActive: sourceStatus.value === 'active',
     rejecting: rejectionCause.value !== null,
   }),
@@ -1507,16 +1545,22 @@ export const captureStatus = computed(() =>
  * dépôt à la fois, et la tranche revient en attente si elle n'a pas pu partir.
  */
 function depositCaptureIfDue(nowMs: number, force = false): void {
-  if (captureBusy || !sendsAutomatically(uploadConsent.value, 'trace')) return
+  captureFlight.sweep(Date.now())
+  if (captureFlight.busy || !sendsAutomatically(uploadConsent.value, 'trace')) return
+  // L'arrêt passe outre le recul : c'est le dernier moment où l'on est encore là
+  // pour envoyer. Il ne le **remet pas à zéro** pour autant — des arrêts répétés
+  // hors réseau, un embouteillage aux feux, rendraient sinon au recul sa cadence
+  // de départ à chaque redémarrage, ce qui est exactement ce qu'on corrige.
+  if (!force && !captureRetry.ready(nowMs)) return
   if (!force && !capture.shouldSlice(nowMs)) return
 
   const slice = capture.takeSlice(nowMs)
   if (!slice) return
 
-  captureBusy = true
-  void depositCaptureSlice(slice)
+  void depositCaptureSlice(slice, fetch, captureFlight.begin(Date.now()))
     .then((outcome) => {
       if (outcome.ok) {
+        captureRetry.succeeded()
         captureError.value = ''
         captureFailure.value = ''
         captureDeposits.value = [
@@ -1525,12 +1569,13 @@ function depositCaptureIfDue(nowMs: number, force = false): void {
         ]
         return
       }
+      captureRetry.failed(nowMs, outcome.retry)
       captureError.value = outcome.detail
       captureFailure.value = outcome.reason
       if (outcome.retry) capture.restore(slice)
     })
     .finally(() => {
-      captureBusy = false
+      captureFlight.end()
     })
 }
 

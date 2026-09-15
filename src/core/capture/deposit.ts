@@ -18,6 +18,7 @@ const FOLDER = '/traces/'
 export function depositCaptureSlice(
   slice: Slice,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<SliceOutcome> {
-  return putSlice(FOLDER, slice, fetchImpl)
+  return putSlice(FOLDER, slice, fetchImpl, signal)
 }
