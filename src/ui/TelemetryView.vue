@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import ValueRow from './components/ValueRow.vue'
 import { computeMix } from '../core/audio/mix'
 import { MotionProbe } from '../core/input/motion'
+import type { PaceState } from '../core/speed/pace'
 import { rpmAtSpeed } from '../core/preset/defaults'
 import {
   activeProfile,
@@ -124,6 +125,18 @@ const MOTS_DU_SON: Record<string, string> = {
 }
 
 const etatDuSon = computed(() => MOTS_DU_SON[soundState.value] ?? soundState.value)
+
+/** Ce que la boîte croit que la voiture fait, en clair. */
+function nomDeLAllure(state: PaceState): string {
+  return MOUVEMENT[state]
+}
+
+const MOUVEMENT: Record<PaceState, string> = {
+  braking: 'freine',
+  slowing: 'ralentit',
+  holding: 'tient',
+  accelerating: 'accélère',
+}
 
 const totalRatio = computed(
   () => telemetry.value.gearbox.ratio * activeProfile.value.drivetrain.finalDrive,
@@ -531,6 +544,11 @@ function onRateChange(event: Event): void {
         label="Montée en attente"
         :value="telemetry.gearbox.isShiftReady ? 'oui' : '—'"
         hint="La condition est remplie, la temporisation du rapport court encore."
+      />
+      <ValueRow
+        label="Mouvement"
+        :value="`${nomDeLAllure(telemetry.gearbox.pace.state)} depuis ${fixed(telemetry.gearbox.pace.forS, 1)} s`"
+        hint="Ce que la boîte croit que la voiture fait. Toutes ses décisions le lisent, et lui seul : quand un rapport passe au mauvais moment, c'est ici qu'on voit pourquoi."
       />
 
       <table class="ladder">

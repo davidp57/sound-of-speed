@@ -1,6 +1,6 @@
 # MOUVEMENT — une seule notion de « est-ce qu'on ralentit ? »
 
-**Statut :** 🔄 en cours — 2/4, la lecture est unifiée et la marge mesurée
+**Statut :** 🔄 en cours — 3/4, il ne reste que l'essai en roulant
 **Branche :** `feature/mouvement`, à ouvrir
 **Version visée :** à décider
 
@@ -200,6 +200,19 @@ tremblement. La cause probable est la **charge**, que le moteur déduit de
 l'accélération brute et qui fait flotter le seuil de montée par la demande. Elle
 entre dans la boîte par l'entrée, donc elle n'est pas une lecture de la boîte —
 c'est un travail à part, pas un élargissement de celui-ci.
+
+### L'allure se lit, depuis le 15 septembre 2026
+
+Ticket 03 livré. La boîte rend son allure, l'écran Télémétrie la montre avec le
+temps passé dedans, le journal inscrit une ligne à chaque bascule — ce qu'on
+quitte, ce qu'on prend, la durée de l'état quitté, la vitesse et l'accélération —
+et le relecteur la rend à l'instant lu, sous le rapport. Elle n'entre pas dans la
+barre des faits marquants, pour la raison qui valait déjà pour les passages :
+elle bascule plus souvent qu'un rapport ne passe.
+
+La pièce a été renommée `core/speed/pace.ts` — l'**allure** — en la branchant à
+l'écran : `core/input/motion.ts` existe déjà, et c'est la sonde de
+l'accéléromètre.
 
 **Ce que ce relevé ne dit pas, et qui manque pour conclure : le bruit réel du
 récepteur de la voiture.** Il n'a jamais été relevé. Il se calcule pourtant sur

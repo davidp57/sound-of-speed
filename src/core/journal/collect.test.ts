@@ -24,6 +24,8 @@ const BASE: JournalSnapshot = {
   rpm: 2400,
   gear: 5,
   load: 0.5,
+  pace: 'holding',
+  paceForS: 12,
   fixRestarts: 0,
   rejected: { implausible: 0, tooClose: 0, inaccurate: 0 },
   audioState: 'running',
@@ -292,5 +294,33 @@ describe('le rapport est inscrit à l’instant où il change', () => {
     collector.observe(snapshot({ at: 900, gear: 5 }))
 
     expect(events()).toHaveLength(0)
+  })
+})
+
+describe('l’état du mouvement est inscrit à chaque bascule', () => {
+  it('dit ce qu’on quitte, ce qu’on prend, et depuis combien de temps', () => {
+    const { collector, events } = setup()
+    collector.observe(snapshot({ at: 0, pace: 'holding', paceForS: 12 }))
+    collector.observe(snapshot({ at: 1000, pace: 'slowing', paceForS: 0, accelMs2: -0.8 }))
+
+    const bascule = events().find((e) => e.kind === 'pace')
+    expect(bascule?.at).toBe(1000)
+    expect(bascule?.data).toMatchObject({
+      from: 'holding',
+      to: 'slowing',
+      heldS: 12,
+      accel: -0.8,
+    })
+  })
+
+  it('se tait tant que l’état tient', () => {
+    // Une ligne par bascule, pas une par image : c'est ce qui rend le journal
+    // lisible sur un trajet d'une demi-heure.
+    const { collector, events } = setup()
+    collector.observe(snapshot({ at: 0, pace: 'slowing', paceForS: 1 }))
+    collector.observe(snapshot({ at: 500, pace: 'slowing', paceForS: 1.5 }))
+    collector.observe(snapshot({ at: 1000, pace: 'slowing', paceForS: 2 }))
+
+    expect(events().filter((e) => e.kind === 'pace')).toHaveLength(0)
   })
 })

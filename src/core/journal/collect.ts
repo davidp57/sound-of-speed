@@ -1,3 +1,4 @@
+import type { PaceState } from '../speed/pace'
 import type { UploadConsent } from '../upload/consent'
 import type { Journal } from './journal'
 
@@ -45,6 +46,15 @@ export interface JournalSnapshot {
   rpm: number
   gear: number
   load: number
+  /**
+   * Ce que la boîte croit que la voiture fait, et depuis combien de temps.
+   *
+   * Vient de la boîte, qui le calcule pour décider : le journal le recopie, il
+   * ne le recalcule pas. Une seconde lecture du même signal serait un second
+   * avis, ce que le lot MOUVEMENT a précisément supprimé.
+   */
+  pace: PaceState
+  paceForS: number
   /** Relances du suivi de position, cumulées. */
   fixRestarts: number
   /** Rejets de la source, cumulés, par motif. */
@@ -200,6 +210,22 @@ export class JournalCollector {
         kmh: round(now.kmh, 1),
         rpm: Math.round(now.rpm),
         load: round(now.load, 2),
+      })
+    }
+
+    // L'état du mouvement, à l'instant où il bascule.
+    //
+    // La durée inscrite est celle de l'état qu'on **quitte** : c'est elle qui
+    // dit si la boîte a cru à un ralentissement pendant deux dixièmes de
+    // seconde ou pendant dix, et la relecture n'aurait aucun moyen de la
+    // reconstituer autrement.
+    if (before.pace !== now.pace) {
+      this.journal.add(now.at, 'pace', {
+        from: before.pace,
+        to: now.pace,
+        heldS: round(before.paceForS, 1),
+        kmh: round(now.kmh, 1),
+        accel: round(now.accelMs2, 2),
       })
     }
   }

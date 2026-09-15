@@ -1,4 +1,4 @@
-import { MotionReader, isSlowing, type Motion } from '../speed/motion'
+import { PaceReader, isSlowing, type Pace } from '../speed/pace'
 
 import type { DrivetrainPreset, EnginePreset, FeelPreset } from '../preset/schema'
 import {
@@ -75,7 +75,7 @@ const KICKDOWN_COOLDOWN_S = 3
 /**
  * Ce que la boîte demande à la lecture du mouvement, et pourquoi.
  *
- * Elle ne fixe plus ses seuils : ils vivent dans `core/speed/motion.ts`, en un
+ * Elle ne fixe plus ses seuils : ils vivent dans `core/speed/pace.ts`, en un
  * seul endroit, avec l'hystérésis qui va avec. Ce qui reste ici est ce que
  * **cette** décision exige de cette lecture — une durée, pas un seuil.
  */
@@ -166,6 +166,15 @@ export interface GearboxState {
   downshiftBlocked: boolean
   /** Nombre de rapports descendus par le dernier rétrogradage forcé. */
   kickdownGears: number
+  /**
+   * Ce que la boîte croit que la voiture fait, et depuis combien de temps.
+   *
+   * Rendu parce que c'est la question qu'on s'est posée tout l'été sans pouvoir
+   * y répondre : le rapport monte pendant qu'on ralentit, mais la boîte
+   * pensait-elle qu'on ralentissait ? L'écran et le journal le montrent, ils ne
+   * le recalculent pas — une seconde lecture serait un second avis.
+   */
+  pace: Pace
 }
 
 export class Gearbox {
@@ -226,7 +235,7 @@ export class Gearbox {
    * seuils différents. Le seuil de freinage lui vient du profil, les autres sont
    * les siens, et l'hystérésis est écrite une fois pour toutes chez elle.
    */
-  private readonly motion = new MotionReader()
+  private readonly pace = new PaceReader()
   /** Temps depuis la dernière descente, en secondes. */
   private sinceDownshiftS = Number.POSITIVE_INFINITY
 
@@ -290,7 +299,7 @@ export class Gearbox {
     this.currentLoad = 0
     this.elapsedS = 0
     this.sinceKickdownS = Number.POSITIVE_INFINITY
-    this.motion.reset()
+    this.pace.reset()
     this.sinceDownshiftS = Number.POSITIVE_INFINITY
   }
 
@@ -387,13 +396,13 @@ export class Gearbox {
    * tôt — et reste sous le seuil de montée du même rapport, ce qui interdit
    * l'aller-retour.
    */
-  private downshiftThreshold(motion: Motion): number {
+  private downshiftThreshold(pace: Pace): number {
     return downshiftFloorRpm(
       this.driveMode,
       // L'accélération que la lecture a retenue, et non celle de l'image : ce
       // plancher descend avec le ralentissement, et le faire suivre un signal
       // bruité le faisait trembler autant que lui.
-      motion.accelMs2,
+      pace.accelMs2,
       this.engine.idleRpm,
       this.upshiftThreshold(this.gear),
     )
@@ -477,23 +486,23 @@ export class Gearbox {
     // prend l'accélération qu'elle a retenue. Rien ne relit l'accélération
     // brute — c'est la règle du lot, et c'est ce qui rendait les décisions
     // dépendantes de l'ordre des conditions.
-    this.motion.setOptions({ brakingMs2: this.drivetrain.brakeDownshiftAccelMs2 })
-    const motion = this.motion.tick(dt, accelMs2)
+    this.pace.setOptions({ brakingMs2: this.drivetrain.brakeDownshiftAccelMs2 })
+    const pace = this.pace.tick(dt, accelMs2)
 
     // Ralentir interdit la montée. Sans cela, lever le pied juste avant un
     // passage le laisse se produire alors que la voiture ralentit déjà. David :
     // « si j'arrête d'accélérer juste avant que la boîte ne monte un rapport,
     // elle le monte quand même ».
-    const slowing = isSlowing(motion.state)
+    const slowing = isSlowing(pace.state)
     // Freiner la permet de descendre, mais seulement quand cela dure : c'est la
     // seule chose que cette décision ajoute à la lecture commune — une durée,
     // pas un seuil de plus.
-    const braking = motion.state === 'braking' && motion.forS >= BRAKE_HOLD_S
+    const braking = pace.state === 'braking' && pace.forS >= BRAKE_HOLD_S
 
     let ready = false
     let blocked = false
     let upThresholdSeen = this.upshiftThreshold(this.gear)
-    const downThresholdSeen = this.downshiftThreshold(motion)
+    const downThresholdSeen = this.downshiftThreshold(pace)
     const auto = this.mode === 'auto' && this.hasGearbox && this.shiftRemainingS === 0
 
     // La première se conduit comme les autres : on y accélère jusqu'au seuil de
@@ -576,7 +585,7 @@ export class Gearbox {
         // « En accélérant » est la même lecture que partout ailleurs, et non un
         // sixième avis tiré du signe de l'accélération.
         const overshot =
-          motion.state === 'accelerating' && rpm >= upThreshold + UPSHIFT_OVERSHOOT_RPM
+          pace.state === 'accelerating' && rpm >= upThreshold + UPSHIFT_OVERSHOOT_RPM
         if (this.readyForS >= delay || overshot) this.applyShift(1)
       } else if (
         rpm <= downThresholdSeen &&
@@ -715,6 +724,7 @@ export class Gearbox {
       downshiftThresholdRpm: downThreshold,
       downshiftBlocked: blocked,
       kickdownGears,
+      pace: this.pace.current,
     }
   }
 }

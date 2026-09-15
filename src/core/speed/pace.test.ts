@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_MOTION, MotionReader, isSlowing, type MotionState } from './motion'
+import { DEFAULT_PACE, PaceReader, isSlowing, type PaceState } from './pace'
 
 /**
  * Ce que ces tests tiennent : la lecture du mouvement dit le bon état, ne
@@ -13,8 +13,8 @@ import { DEFAULT_MOTION, MotionReader, isSlowing, type MotionState } from './mot
 const FRAME_S = 1 / 60
 
 /** Fait lire une accélération constante pendant une durée. */
-function tenir(lecteur: MotionReader, accelMs2: number, secondes: number): MotionState {
-  let etat: MotionState = lecteur.current.state
+function tenir(lecteur: PaceReader, accelMs2: number, secondes: number): PaceState {
+  let etat: PaceState = lecteur.current.state
   for (let i = 0; i < Math.round(secondes / FRAME_S); i += 1) {
     etat = lecteur.tick(FRAME_S, accelMs2).state
   }
@@ -36,14 +36,14 @@ function bruit(graine: number): () => number {
 
 describe('la lecture du mouvement', () => {
   it('part de la vitesse tenue', () => {
-    expect(new MotionReader().current.state).toBe('holding')
+    expect(new PaceReader().current.state).toBe('holding')
   })
 
   it('nomme les quatre états', () => {
-    expect(tenir(new MotionReader(), 1.5, 2)).toBe('accelerating')
-    expect(tenir(new MotionReader(), 0, 2)).toBe('holding')
-    expect(tenir(new MotionReader(), -0.3, 2)).toBe('slowing')
-    expect(tenir(new MotionReader(), -1.5, 2)).toBe('braking')
+    expect(tenir(new PaceReader(), 1.5, 2)).toBe('accelerating')
+    expect(tenir(new PaceReader(), 0, 2)).toBe('holding')
+    expect(tenir(new PaceReader(), -0.3, 2)).toBe('slowing')
+    expect(tenir(new PaceReader(), -1.5, 2)).toBe('braking')
   })
 
   it('voit un lever de pied sans attendre', () => {
@@ -51,7 +51,7 @@ describe('la lecture du mouvement', () => {
     // route : « si j'arrête d'accélérer juste avant que la boîte ne monte un
     // rapport, elle le monte quand même ». Une perte d'un demi-km/h par seconde
     // — 0,14 m/s² — doit être vue avant qu'un passage ne s'engage.
-    const lecteur = new MotionReader()
+    const lecteur = new PaceReader()
     tenir(lecteur, 1.2, 3)
 
     const etat = tenir(lecteur, -0.14, 0.8)
@@ -65,7 +65,7 @@ describe('la lecture du mouvement', () => {
     // de ralentissement, et pourtant la lecture ne doit pas bouger — c'est
     // exactement ce que le compteur qu'elle remplace n'obtenait qu'à force de
     // décroître deux fois plus vite qu'il ne montait.
-    const lecteur = new MotionReader()
+    const lecteur = new PaceReader()
     const tirage = bruit(11)
     let changements = 0
     let precedent = lecteur.current.state
@@ -83,22 +83,22 @@ describe('la lecture du mouvement', () => {
     // La bande morte : on entre en ralentissement au seuil, on n'en sort qu'une
     // bande morte plus haut. Une accélération posée entre les deux garde l'état,
     // là où elle n'aurait pas suffi à le faire prendre.
-    const entre = DEFAULT_MOTION.slowingMs2
-    const sort = DEFAULT_MOTION.slowingMs2 + DEFAULT_MOTION.releaseMs2
+    const entre = DEFAULT_PACE.slowingMs2
+    const sort = DEFAULT_PACE.slowingMs2 + DEFAULT_PACE.releaseMs2
     const milieu = (entre + sort) / 2
 
-    const lecteur = new MotionReader()
+    const lecteur = new PaceReader()
     expect(tenir(lecteur, -0.3, 2)).toBe('slowing')
     expect(tenir(lecteur, milieu, 2)).toBe('slowing')
     expect(tenir(lecteur, 0.3, 2)).toBe('accelerating')
 
     // Et le même milieu ne fait pas entrer en ralentissement depuis la croisière.
-    const neuf = new MotionReader()
+    const neuf = new PaceReader()
     expect(tenir(neuf, milieu, 2)).toBe('holding')
   })
 
   it('compte le temps passé dans l état', () => {
-    const lecteur = new MotionReader()
+    const lecteur = new PaceReader()
     tenir(lecteur, -1.5, 3)
     const avant = lecteur.current.forS
 
@@ -108,7 +108,7 @@ describe('la lecture du mouvement', () => {
   })
 
   it('remet le compteur à zéro en changeant d état', () => {
-    const lecteur = new MotionReader()
+    const lecteur = new PaceReader()
     tenir(lecteur, -1.5, 5)
     expect(lecteur.current.forS).toBeGreaterThan(4)
 
@@ -119,16 +119,16 @@ describe('la lecture du mouvement', () => {
   })
 
   it('confirme avant d adopter', () => {
-    const lecteur = new MotionReader()
+    const lecteur = new PaceReader()
     tenir(lecteur, 0, 2)
 
     // Un franchissement modeste — juste au-delà du seuil, bien en deçà de la
     // marge qui dispense de confirmer. Plus court que le délai, il ne change
     // rien ; tenu, il passe.
-    const modeste = DEFAULT_MOTION.slowingMs2 - DEFAULT_MOTION.frankMs2 / 2
+    const modeste = DEFAULT_PACE.slowingMs2 - DEFAULT_PACE.frankMs2 / 2
 
-    expect(tenir(lecteur, modeste, DEFAULT_MOTION.confirmS / 3)).toBe('holding')
-    expect(tenir(lecteur, modeste, DEFAULT_MOTION.confirmS)).toBe('slowing')
+    expect(tenir(lecteur, modeste, DEFAULT_PACE.confirmS / 3)).toBe('holding')
+    expect(tenir(lecteur, modeste, DEFAULT_PACE.confirmS)).toBe('slowing')
   })
 
   it('n attend pas quand le franchissement ne laisse aucun doute', () => {
@@ -136,18 +136,18 @@ describe('la lecture du mouvement', () => {
     // l'attendre laisse le temps à un passage de rapport de s'engager. C'est le
     // lever de pied que David avait relevé : « accélération jusqu'à 4 800 tr/min
     // en 4ᵉ, arrêt de l'accélération, le simu passe la 5 et la 6 ».
-    const lecteur = new MotionReader()
+    const lecteur = new PaceReader()
     tenir(lecteur, 0, 2)
 
-    const franc = DEFAULT_MOTION.slowingMs2 - DEFAULT_MOTION.frankMs2 * 2
-    expect(tenir(lecteur, franc, DEFAULT_MOTION.confirmS / 3)).toBe('slowing')
+    const franc = DEFAULT_PACE.slowingMs2 - DEFAULT_PACE.frankMs2 * 2
+    expect(tenir(lecteur, franc, DEFAULT_PACE.confirmS / 3)).toBe('slowing')
   })
 
   it('prend le seuil de freinage du profil', () => {
     // Sport freine plus tard que Route : c'est le réglage `brakeDownshiftAccelMs2`
     // qui le dit, et la lecture ne le remplace pas.
-    const route = new MotionReader({ brakingMs2: -0.7 })
-    const sport = new MotionReader({ brakingMs2: -1 })
+    const route = new PaceReader({ brakingMs2: -0.7 })
+    const sport = new PaceReader({ brakingMs2: -1 })
 
     expect(tenir(route, -0.85, 2)).toBe('braking')
     expect(tenir(sport, -0.85, 2)).toBe('slowing')
@@ -156,7 +156,7 @@ describe('la lecture du mouvement', () => {
   it('lisse l accélération qu elle rend', () => {
     // Une seule grandeur continue pour tout le monde : ce qui a besoin d'un
     // chiffre prend celui-là, et non une seconde estimation du même signal.
-    const lecteur = new MotionReader()
+    const lecteur = new PaceReader()
     const tirage = bruit(3)
     for (let i = 0; i < Math.round(20 / FRAME_S); i += 1) lecteur.tick(FRAME_S, -1 + tirage() * 0.5)
 
@@ -168,7 +168,7 @@ describe('la lecture du mouvement', () => {
     // La page en veille bat au ralenti, jusqu'à vingt secondes par tour. Le
     // compteur qu'on remplace y accumulait 2 706 secondes de dette ; celui-ci
     // borne le pas comme le moteur le fait.
-    const lecteur = new MotionReader()
+    const lecteur = new PaceReader()
     tenir(lecteur, 0, 1)
 
     lecteur.tick(20, -0.3)

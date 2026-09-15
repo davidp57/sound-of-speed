@@ -1,5 +1,11 @@
 /**
- * Une seule réponse à « qu'est-ce que la voiture est en train de faire ? ».
+ * L'allure : une seule réponse à « qu'est-ce que la voiture est en train de
+ * faire ? ».
+ *
+ * **Allure et non mouvement**, bien que le lot s'appelle MOUVEMENT : `motion.ts`
+ * existe déjà dans `core/input/`, et c'est la sonde de l'accéléromètre. Deux
+ * fichiers du même nom pour deux notions voisines auraient coûté plus cher que
+ * ce paragraphe.
  *
  * La boîte posait cette question cinq fois, de cinq façons, avec cinq seuils qui
  * ne s'accordaient pas : un seuil de freinage tenu une seconde, un compteur de
@@ -33,17 +39,17 @@
  * ce qui permet à chaque usage de prendre le palier qui le concerne au lieu
  * d'avoir son propre seuil.
  */
-export type MotionState = 'braking' | 'slowing' | 'holding' | 'accelerating'
+export type PaceState = 'braking' | 'slowing' | 'holding' | 'accelerating'
 
 /** Rang d'un état sur l'échelle, du plus freiné au plus accéléré. */
-const RANK: Record<MotionState, number> = {
+const RANK: Record<PaceState, number> = {
   braking: 0,
   slowing: 1,
   holding: 2,
   accelerating: 3,
 }
 
-export interface MotionOptions {
+export interface PaceOptions {
   /**
    * Décélération à partir de laquelle on freine, en m/s², négative.
    *
@@ -118,7 +124,7 @@ export interface MotionOptions {
  * `core/drivetrain/gearbox-gps.test.ts`, qui dit combien de bruit la boîte
  * supporte avant de se remettre à osciller.
  */
-export const DEFAULT_MOTION: MotionOptions = {
+export const DEFAULT_PACE: PaceOptions = {
   brakingMs2: -0.7,
   slowingMs2: -0.1,
   acceleratingMs2: 0.1,
@@ -128,8 +134,8 @@ export const DEFAULT_MOTION: MotionOptions = {
   smoothS: 0.1,
 }
 
-export interface Motion {
-  state: MotionState
+export interface Pace {
+  state: PaceState
   /** Temps passé dans cet état, en secondes. */
   forS: number
   /**
@@ -147,20 +153,20 @@ export interface Motion {
  * Vérifiable seule, sans boîte et sans navigateur : elle ne connaît qu'une
  * accélération et un pas de temps.
  */
-export class MotionReader {
-  private options: MotionOptions
-  private state: MotionState = 'holding'
+export class PaceReader {
+  private options: PaceOptions
+  private state: PaceState = 'holding'
   private forS = 0
   private smoothed = 0
   /** État vu mais pas encore adopté, et depuis combien de temps il est vu. */
-  private candidate: MotionState | null = null
+  private candidate: PaceState | null = null
   private candidateForS = 0
 
-  constructor(options: Partial<MotionOptions> = {}) {
-    this.options = { ...DEFAULT_MOTION, ...options }
+  constructor(options: Partial<PaceOptions> = {}) {
+    this.options = { ...DEFAULT_PACE, ...options }
   }
 
-  setOptions(options: Partial<MotionOptions>): void {
+  setOptions(options: Partial<PaceOptions>): void {
     this.options = { ...this.options, ...options }
   }
 
@@ -173,11 +179,11 @@ export class MotionReader {
   }
 
   /** L'état courant, sans rien avancer. */
-  get current(): Motion {
+  get current(): Pace {
     return { state: this.state, forS: this.forS, accelMs2: this.smoothed }
   }
 
-  tick(dt: number, accelMs2: number): Motion {
+  tick(dt: number, accelMs2: number): Pace {
     const step = Math.max(0, Math.min(dt, 0.25))
 
     // Lissage exponentiel, à pas de temps quelconque : la boucle ne bat pas
@@ -219,7 +225,7 @@ export class MotionReader {
   }
 
   /** Vrai si l'état courant est au moins aussi marqué que celui demandé. */
-  atMost(state: MotionState): boolean {
+  atMost(state: PaceState): boolean {
     return RANK[this.state] <= RANK[state]
   }
 }
@@ -231,8 +237,8 @@ export class MotionReader {
  * nominaux ; ceux qui en font sortir sont décalés de la bande morte. C'est toute
  * l'hystérésis, et elle tient en trois comparaisons.
  */
-function classify(accelMs2: number, current: MotionState, options: MotionOptions): MotionState {
-  const sortie = (seuil: number, etat: MotionState): number =>
+function classify(accelMs2: number, current: PaceState, options: PaceOptions): PaceState {
+  const sortie = (seuil: number, etat: PaceState): number =>
     RANK[current] <= RANK[etat] ? seuil + options.releaseMs2 : seuil
 
   if (accelMs2 <= sortie(options.brakingMs2, 'braking')) return 'braking'
@@ -248,6 +254,6 @@ function classify(accelMs2: number, current: MotionState, options: MotionOptions
 }
 
 /** Vrai si cet état décrit une voiture qui perd de la vitesse. */
-export function isSlowing(state: MotionState): boolean {
+export function isSlowing(state: PaceState): boolean {
   return state === 'slowing' || state === 'braking'
 }

@@ -2994,6 +2994,19 @@ franchi si largement qu'il n'y a plus de doute à lever. Cette dernière réserv
 n'est pas un ornement : sans elle, un lever de pied franc arrive après qu'un
 passage s'est engagé, ce qui était précisément le défaut relevé en roulant.
 
+**L'allure se lit en roulant, et se relit après coup.** L'écran Télémétrie la
+montre sous la transmission — « ralentit depuis 0,8 s » —, et le journal inscrit
+une ligne à chaque bascule, avec la vitesse, l'accélération et la durée de
+l'état qu'on quitte. Le relecteur la rend à l'instant où l'on est, sous le
+rapport. C'est la question qu'on s'est posée tout l'été sans pouvoir y répondre :
+le rapport monte pendant qu'on ralentit, mais la boîte pensait-elle qu'on
+ralentissait ?
+
+Une ligne par bascule et non une par image, et l'allure ne figure pas parmi les
+faits marquants du relecteur : elle bascule plus souvent qu'un rapport ne passe,
+et la barre serait illisible. C'est la réponse qu'on avait déjà donnée pour les
+passages.
+
 Ce que cela change se mesure, et le banc qui le mesure fait entrer des positions
 fabriquées dans la vraie source de géolocalisation, jusqu'à la boîte
 (`core/drivetrain/gearbox-gps.test.ts`). À la cadence du récepteur de la voiture,
@@ -3438,7 +3451,7 @@ suit pas.
 | 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **19 tickets sur 20 ; Google est configuré sur le NAS et vérifié, et un compte qui s'y rattache annonce son adresse ; l'écran du compte mène avec les deux gestes qu'on vient y faire, et un compte vide s'efface ; restent l'essai hors réseau en voiture et « j'ai oublié »** |
 | 52 | Accueillir au premier lancement : un écran court le compte en tête, une visite à bulles sur l'interface, de vrais onglets, et une aide qui répond au lieu d'accueillir | **livré ; reste l'essai au volant** |
 | 53 | Trois niveaux d'écran, et ce qui les sépare n'est pas un droit : conduire, régler à l'arrêt, fabriquer en atelier. La voiture télécharge 9 % de moins et montre cinq onglets | **livré ; reste l'essai au volant** |
-| 54 | Une seule notion de « est-ce qu'on ralentit ? » : cinq lectures de l'accélération cohabitaient dans la boîte, avec cinq seuils qui ne s'accordaient pas | **unifiée en une lecture, mesurée au banc de positions fabriquées : la boîte encaisse une moitié de bruit en plus avant d'osciller, contre un quart** |
+| 54 | Une seule notion de « est-ce qu'on ralentit ? » : cinq lectures de l'accélération cohabitaient dans la boîte, avec cinq seuils qui ne s'accordaient pas | **unifiée en une lecture, mesurée au banc : la boîte encaisse une moitié de bruit en plus avant d'osciller, contre un quart ; l'allure se lit à l'écran, au journal et au relecteur — reste l'essai en roulant** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

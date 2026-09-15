@@ -86,6 +86,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **L'allure de la voiture se lit, en roulant et après coup.** Ce que la boîte
+  croit que la voiture fait — freine, ralentit, tient son allure, accélère — et
+  depuis combien de temps : l'écran Télémétrie le montre sous la transmission, le
+  journal inscrit une ligne à chaque bascule avec la vitesse et l'accélération de
+  l'instant, et le relecteur le rend à l'instant où l'on est, sous le rapport.
+
+  C'est la question qui manquait : un rapport passe au mauvais moment, et rien ne
+  disait ce que la boîte croyait à cet instant. Une ligne par bascule, pas une
+  par image — et l'allure ne rejoint pas les faits marquants du relecteur, qui
+  serait illisible : c'est la réponse déjà donnée pour les passages de rapport.
+
 - **Les réglages de fond ont leur écran, et il ne s'ouvre qu'à l'arrêt.** Moteur,
   transmission, signal de vitesse, caractère, mixage et couches quittent l'écran
   de configuration pour un onglet **Avancé**. La bascule *Simplifié / Avancé*

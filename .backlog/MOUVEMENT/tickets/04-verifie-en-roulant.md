@@ -1,9 +1,10 @@
 # 04 — Vérifié en roulant
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — le code des trois précédents est en place
 
-**Bloqué par :** 03 — L'état du mouvement se lit en roulant. C'est ce qui rend
-l'essai lisible après coup.
+**Bloqué par :** plus rien — 03 est livré le 15 septembre 2026, et le journal
+inscrit désormais chaque bascule d'allure, ce qui rend l'essai lisible après
+coup.
 
 ## Ce qu'il faut obtenir
 
