@@ -25,9 +25,12 @@ import { APPAREILS, lireLAppareilChoisi, NOMS_DAPPAREIL, type Appareil } from '.
 import {
   fermerLAssistance,
   lireLAssistance,
+  lireSaTrace,
   ouvrirLAssistance,
   type Assistance,
+  type LigneDeTrace,
 } from '../core/identity/assistance'
+import { phraseDuGeste } from '../core/identity/gestes'
 import { empreinteDeLAdresse, initialeDe, lienDeGravatar } from '../core/identity/avatar'
 import { demanderUnCode } from '../core/identity/client'
 import {
@@ -581,6 +584,9 @@ async function onBasculerLAssistance(): Promise<void> {
     const rendu =
       assistance.value?.ouverte === true ? await fermerLAssistance() : await ouvrirLAssistance()
     assistance.value = rendu
+    // Le geste vient de s'inscrire : la relire tout de suite montre que ce qui
+    // se passe ici se voit ici.
+    await rafraichirLaTrace()
     if (rendu === null) {
       noteDeTenue.value = 'Sans réseau, on ne change pas cette autorisation : elle vit sur le serveur.'
     }
@@ -589,8 +595,22 @@ async function onBasculerLAssistance(): Promise<void> {
   }
 }
 
+/**
+ * Ce qui a été fait sur ce compte, et par qui.
+ *
+ * C'est ce qui rend l'autorisation sérieuse : celui qui accorde peut vérifier ce
+ * qu'on en a fait. `null` veut dire qu'on n'a pas pu demander — hors réseau,
+ * l'écran ne prétend pas afficher une trace qu'il n'a pas.
+ */
+const trace = ref<LigneDeTrace[] | null>(null)
+
+async function rafraichirLaTrace(): Promise<void> {
+  trace.value = await lireSaTrace()
+}
+
 onMounted(async () => {
   assistance.value = await lireLAssistance()
+  await rafraichirLaTrace()
 })
 
 onUnmounted(() => {
@@ -808,9 +828,31 @@ onUnmounted(() => {
     </p>
     <p v-else-if="assistance.ouverte && assistance.jusquau !== null" class="note">
       <strong>Ouvert jusqu’au {{ quandLisible(assistance.jusquau) }}.</strong> Ce
-      qui sera regardé s’inscrira, et vous pourrez le relire.
+      qui sera regardé s’inscrit juste en dessous.
     </p>
     <p v-else class="note">Fermé. Rien de ce compte n’est visible d’ailleurs.</p>
+
+    <!--
+      Ce qui a été fait ici. Sous l'interrupteur, parce que c'est ce qui le rend
+      sérieux : autoriser sans pouvoir vérifier reviendrait à demander de faire
+      confiance sans en donner les moyens.
+    -->
+    <p v-if="trace === null" class="note">
+      Sans réseau, on ne sait pas ce qui a été fait sur ce compte : cela vit sur
+      le serveur.
+    </p>
+    <p v-else-if="trace.length === 0" class="note">
+      Rien n’a été fait sur ce compte depuis la régie.
+    </p>
+    <ul v-else class="trace">
+      <li v-for="(ligne, rang) in trace" :key="rang">
+        <span class="numeric">{{ quandLisible(ligne.quand) }}</span> —
+        {{ phraseDuGeste(ligne.geste, ligne.detail) }}
+        <template v-if="ligne.admin.id !== ligne.cible.id">
+          par {{ ligne.admin.nom ?? 'un compte effacé' }}
+        </template>
+      </li>
+    </ul>
 
     <h3>Emporter ses données</h3>
     <p class="note">
@@ -999,6 +1041,15 @@ h3 {
 .note.warn {
   opacity: 1;
   color: var(--warn, #e06060);
+}
+
+/* Ce qui a été fait sur ce compte : lu, pas parcouru — quelques lignes par an. */
+.trace {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.85;
 }
 
 /* Qui l'on est : un portrait et un nom, comme partout ailleurs. */

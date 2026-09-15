@@ -2,8 +2,9 @@
  * Ce qu'une ligne de trace dit, en français.
  *
  * La base garde des mots courts et stables ; l'écran les rend lisibles. Les deux
- * écrans qui montrent une trace — la régie, et l'écran du compte concerné —
- * passent par ici, pour ne pas en avoir deux traductions.
+ * écrans qui montrent une trace — la régie, et l'écran du compte concerné — sont
+ * dans deux paquets différents et passent par ici, pour ne pas en avoir deux
+ * traductions qui finiraient par ne plus dire la même chose.
  */
 
 /** Le geste, dit à quelqu'un qui le lit. Le détail complète, quand il y en a un. */

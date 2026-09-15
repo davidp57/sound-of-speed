@@ -14,6 +14,8 @@ import type { IdentityOptions } from './client'
 
 /** Le chemin de l'accord, du côté du serveur. */
 export const CHEMIN_ASSISTANCE = '/mon-compte/assistance'
+/** Ce qui a été fait chez soi : le même filtre que la régie, borné à son compte. */
+export const CHEMIN_TRACE = '/mon-compte/trace'
 
 /** L'état de l'accord, tel que l'écran le montre. */
 export interface Assistance {
@@ -38,6 +40,32 @@ export async function ouvrirLAssistance(options: IdentityOptions = {}): Promise<
 
 export async function fermerLAssistance(options: IdentityOptions = {}): Promise<Assistance | null> {
   return appeler('DELETE', options)
+}
+
+/** Une ligne de ce qui a été fait chez soi. */
+export interface LigneDeTrace {
+  quand: string
+  geste: string
+  detail: string | null
+  admin: { id: string; nom: string | null }
+  cible: { id: string; nom: string | null }
+}
+
+/**
+ * Ce qui a été fait sur ce compte, la plus récente en haut.
+ *
+ * `null` quand le serveur n'a pas répondu : hors réseau, l'écran ne doit pas
+ * prétendre afficher une trace qu'il n'a pas pu relever.
+ */
+export async function lireSaTrace(options: IdentityOptions = {}): Promise<LigneDeTrace[] | null> {
+  const { fetchImpl = fetch } = options
+  try {
+    const reponse = await fetchImpl(CHEMIN_TRACE, { headers: { Accept: 'application/json' } })
+    if (!reponse.ok) return null
+    return (await reponse.json()) as LigneDeTrace[]
+  } catch {
+    return null
+  }
 }
 
 async function appeler(

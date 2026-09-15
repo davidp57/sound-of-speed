@@ -868,6 +868,74 @@ describe('la trace', () => {
   })
 })
 
+describe('ce que le conducteur voit de son côté', () => {
+  async function saTrace(qui: Appareil): Promise<LigneDeTrace[]> {
+    const reponse = await serveur().request('/mon-compte/trace', { headers: qui.annonce })
+    expect(reponse.status).toBe(200)
+    return (await reponse.json()) as LigneDeTrace[]
+  }
+
+  it('voit les rôles qu’on lui a donnés et repris, la plus récente en haut', async () => {
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/roles/conduite`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/roles/conduite`, {
+      method: 'DELETE',
+      headers: patronne.annonce,
+    })
+
+    const lignes = await saTrace(conducteur)
+
+    expect(lignes.map((ligne) => ligne.geste)).toEqual(['role-repris', 'role-donne'])
+    expect(lignes[0]?.admin.nom).not.toBeNull()
+  })
+
+  it('voit la consultation de ses données, avec son instant', async () => {
+    await serveur().request('/mon-compte/assistance', {
+      method: 'PUT',
+      headers: conducteur.annonce,
+    })
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/donnees`, {
+      headers: patronne.annonce,
+    })
+
+    const lues = (await saTrace(conducteur)).filter((ligne) => ligne.geste === 'donnees-lues')
+
+    expect(lues).toHaveLength(1)
+    expect(Date.parse(lues[0]?.quand ?? '')).toBeGreaterThan(0)
+  })
+
+  it('ne voit jamais une ligne qui concerne un autre compte', async () => {
+    const voisin = await ouvrirUnCompte()
+    await serveur().request(`/api/regie/comptes/${voisin.compte}/roles/conduite`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+
+    expect(await saTrace(conducteur)).toEqual([])
+    expect(await saTrace(voisin)).toHaveLength(1)
+  })
+
+  it('lit sa propre trace sans aucun rôle : ce sont ses données', async () => {
+    const ferme = creerServeur({
+      application,
+      base,
+      identite,
+      admins: administrateursDeLEnvironnement(ADRESSE_ADMIN),
+      roles: [],
+    })
+
+    const reponse = await ferme.request('/mon-compte/trace', { headers: conducteur.annonce })
+
+    expect(reponse.status).toBe(200)
+  })
+
+  it('exige quand même un compte', async () => {
+    expect((await serveur().request('/mon-compte/trace')).status).toBe(401)
+  })
+})
+
 describe('la page', () => {
   it('sert la régie sur son adresse, et non l’application de conduite', async () => {
     const reponse = await serveur().request('/regie', { headers: { Accept: 'text/html' } })

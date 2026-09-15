@@ -50,6 +50,12 @@ Toutes les évolutions notables du projet. Format
   d'heure** : une ligne par fichier ouvert noierait ce que le conducteur vient y
   lire.
 
+- **Le conducteur lit ce qui a été fait sur son compte**, sur son écran de
+  compte, sous l'autorisation d'assistance : les consultations de ses données,
+  les rôles donnés ou repris. C'est ce qui rend l'accord sérieux au lieu d'être
+  une case à cocher. Il ne voit que ce qui le concerne, et lire sa propre trace
+  n'exige aucun rôle.
+
 ### Modifié
 
 - **Les accords de banque réservée passent en base.** Ils se posaient par

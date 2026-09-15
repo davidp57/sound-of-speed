@@ -402,6 +402,7 @@ describe('l’inventaire des routes', () => {
     '/sessions/:cle/archive.zip',
     '/mon-compte/archive.zip',
     '/mon-compte/assistance',
+    '/mon-compte/trace',
     '/retention',
     '/sessions/:cle/epingle',
     '/sessions/:cle',

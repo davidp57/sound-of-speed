@@ -4,7 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import FicheDuCompte from './FicheDuCompte.vue'
 import { chargerLaTrace, chargerLesComptes, type LigneDeCompte, type LigneDeTrace } from './api'
 import { dateLisible, normaliser, poidsLisible } from './format'
-import { phraseDuGeste } from './gestes'
+import { phraseDuGeste } from '../core/identity/gestes'
 
 /**
  * La régie : administrer les comptes depuis un écran.

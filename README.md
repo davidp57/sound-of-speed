@@ -1711,6 +1711,21 @@ Chaque consultation s'inscrit, **au plus une fois par quart d'heure** : regarder
 un compte, c'est ouvrir son inventaire puis une dizaine de fichiers, et une ligne
 par requête noierait ce que le conducteur vient y lire.
 
+#### Ce qui a été fait, lisible des deux côtés
+
+Chaque geste d'administration écrit une ligne : quand, quel administrateur, quel
+compte, quoi. Elle se lit dans la régie, **et sur l'écran du compte concerné** —
+un compte ne voit jamais une ligne qui en concerne un autre, et lire la sienne
+n'exige aucun rôle.
+
+La trace se garde **sans limite** : quelques dizaines de lignes par an, et son
+intérêt est justement de retrouver tard qui a effacé un compte. Quand un compte
+est effacé, ses lignes gardent son identifiant et **perdent le nom et
+l'adresse** : la trace dit toujours qu'un compte a été effacé, par qui et quand,
+sans conserver l'identité de quelqu'un qu'on vient d'effacer. Ce n'est pas une
+discipline — la table ne stocke que des identifiants, et les noms se résolvent à
+la lecture.
+
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même

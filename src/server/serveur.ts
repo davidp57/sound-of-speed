@@ -37,7 +37,7 @@ import { ecrireProfil, listerProfils, lireProfil } from './profils'
 import { assistanceDuCompte, fermerLAssistance, ouvrirLAssistance } from './assistance'
 import { creerRegie } from './regie'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
-import { inscrire } from './trace'
+import { inscrire, lireLaTrace } from './trace'
 
 export interface OptionsDuServeur {
   /** L'application construite : `dist/`. */
@@ -486,6 +486,25 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       }
 
       return c.json(await assistanceDuCompte(base, compte), 200, { 'Cache-Control': 'no-store' })
+    })
+
+    /**
+     * Ce qui a été fait **chez lui**, lisible par lui.
+     *
+     * C'est ce qui rend l'accord sérieux au lieu d'être une case à cocher : celui
+     * qui autorise doit pouvoir vérifier ce qu'on en a fait, sinon on lui demande
+     * de faire confiance sans lui donner les moyens de contrôler.
+     *
+     * **Aucun rôle exigé** — ce sont ses données —, et le filtre est dans la
+     * requête : un compte ne voit jamais une ligne qui en concerne un autre.
+     */
+    app.get('/mon-compte/trace', async (c) => {
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
+
+      return c.json(await lireLaTrace(base, { cible: compte }), 200, {
+        'Cache-Control': 'no-store',
+      })
     })
 
     // Ce que la règle emporterait, sans rien effacer.
