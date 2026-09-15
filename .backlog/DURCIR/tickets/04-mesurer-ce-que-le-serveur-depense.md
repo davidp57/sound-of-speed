@@ -1,6 +1,7 @@
 # 04 — Mesurer ce que le serveur dépense
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — le serveur relève les quatre chiffres tout seul,
+une fois par jour ; il reste à tirer l’image et à lire une ligne du journal
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -26,6 +27,32 @@ qui s'en sert.
 
 - [ ] Les quatre chiffres sont relevés sur le serveur de production, datés, et
       écrits dans le lot.
-- [ ] La mesure se refait : ce qui l'a produite est reproductible, pas un relevé
+- [x] La mesure se refait : ce qui l'a produite est reproductible, pas un relevé
       à la main perdu dans une conversation.
 - [ ] Le poste dominant est nommé, avec son écart aux autres.
+
+## Comment les chiffres arrivent
+
+Deux des quatre se relèvent en une commande — le poids des banques et celui de la
+base. **Les deux autres ne se mesurent pas sans instrumenter le serveur** : rien
+ne comptait les octets d'échantillons servis, rien ne chronométrait l'analyse
+d'une trace.
+
+Le serveur les compte donc lui-même, et inscrit **une seule ligne par jour** dans
+le journal du conteneur, à côté de celle du ménage de rétention. Elle porte les
+quatre chiffres : ce qui a été servi et en combien de demandes, le poids des
+banques sur le disque, celui de la base avec les trois comptes les plus lourds,
+et le temps moyen d'analyse d'une trace.
+
+**C'est une différence, jamais un cumul.** Un compteur depuis le démarrage divisé
+par une durée montre une moyenne là où il faut une tendance — un serveur allumé
+depuis trois mois ne dirait plus rien de sa semaine. Le relevé remet donc ses
+compteurs à zéro, et chaque ligne parle de la période qu'elle couvre.
+
+**La première ligne arrive après vingt-quatre heures** — ou au premier
+redéploiement : le relevé part aussi à l'arrêt du conteneur, sinon une pile qu'on
+remplace plus souvent que ça n'en montrerait jamais une, et le silence se lirait
+comme « rien à signaler ».
+
+Reste à tirer l'image sur le NAS, laisser rouler quelques jours, et relire une
+ligne. C'est ce que le premier critère attend.
