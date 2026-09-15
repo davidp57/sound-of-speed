@@ -1,6 +1,6 @@
 # 01 — La porte et la liste des comptes
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -23,21 +23,21 @@ ne doit jamais partir dans ce que la voiture télécharge.
 
 ## Critères d'acceptation
 
-- [ ] Un compte dont l'adresse figure dans la configuration voit la liste ; la
+- [x] Un compte dont l'adresse figure dans la configuration voit la liste ; la
       comparaison ignore la casse.
-- [ ] Un compte dont l'adresse n'y figure pas reçoit 404 sur chaque route de
+- [x] Un compte dont l'adresse n'y figure pas reçoit 404 sur chaque route de
       régie, et sa page n'annonce rien.
-- [ ] Un visiteur sans session reçoit le même 404, pas un 401 qui le
+- [x] Un visiteur sans session reçoit le même 404, pas un 401 qui le
       renseignerait.
-- [ ] Un compte sans adresse enregistrée n'est jamais administrateur.
-- [ ] Aucune route n'écrit la liste des administrateurs — vérifié, pas
+- [x] Un compte sans adresse enregistrée n'est jamais administrateur.
+- [x] Aucune route n'écrit la liste des administrateurs — vérifié, pas
       seulement affirmé.
-- [ ] La liste est triée par date de création décroissante, et la recherche
+- [x] La liste est triée par date de création décroissante, et la recherche
       filtre par nom et par adresse.
-- [ ] La construction produit une troisième page ; le poids de l'application que
+- [x] La construction produit une troisième page ; le poids de l'application que
       la voiture télécharge n'augmente pas.
-- [ ] La variable des rôles offerts, jusqu'ici absente de la composition de la
+- [x] La variable des rôles offerts, jusqu'ici absente de la composition de la
       pile, y est déclarée elle aussi.
-- [ ] Le contrat rejoué en HTTP vérifie que la page de régie est servie, à côté
+- [x] Le contrat rejoué en HTTP vérifie que la page de régie est servie, à côté
       du cas qui existe déjà pour le relecteur.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

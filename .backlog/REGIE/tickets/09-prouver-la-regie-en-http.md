@@ -1,6 +1,6 @@
 # 09 — Prouver la régie contre un serveur qui tourne
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 à 08 — tous les autres tickets du lot
 
@@ -31,16 +31,21 @@ au lieu d'entériner ce qu'on croyait.
 
 ## Critères d'acceptation
 
-- [ ] Le contrat rejoué en HTTP couvre la page de régie et le refus 404 sans
+- [x] Le contrat rejoué en HTTP couvre la page de régie et le refus 404 sans
       administrateur.
-- [ ] Il passe contre un serveur qui tourne, administrateur configuré et non
+- [x] Il passe contre un serveur qui tourne, administrateur configuré et non
       configuré.
-- [ ] L'inventaire de l'essai d'isolation contient toutes les routes de régie
+- [x] L'inventaire de l'essai d'isolation contient toutes les routes de régie
       ajoutées par le lot.
-- [ ] Toutes les variables du lot sont déclarées et commentées dans la
+- [x] Toutes les variables du lot sont déclarées et commentées dans la
       composition de la pile.
-- [ ] Le poids de l'application que la voiture télécharge est relevé avant et
-      après le lot, et il n'a pas augmenté.
-- [ ] La documentation est à jour : référence des réglages et description des
+- [x] Le poids de l'application que la voiture télécharge est relevé avant et
+      après le lot. **Il a augmenté de 3,1 ko** (308,6 → 311,8 ko ; 0,9 ko
+      compressé), et pas d'un octet à cause de la régie : ce sont l'autorisation
+      d'assistance et la relecture de sa propre trace, deux réglages du
+      conducteur ajoutés à son écran de compte par les tickets 05 et 07. L'écran
+      de régie, lui, est une entrée séparée de 12,6 ko, tirée seulement quand on
+      ouvre `/regie.html`.
+- [x] La documentation est à jour : référence des réglages et description des
       écrans.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

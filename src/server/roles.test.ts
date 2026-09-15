@@ -3,7 +3,8 @@
  *
  * Un droit daté disparaît de lui-même quand l'heure passe — personne n'efface
  * la ligne, c'est la lecture qui l'écarte. Et la valeur par défaut est bien une
- * valeur : la vider ferme tout, ce qui est ce qu'on fera le jour où l'on ouvre.
+ * valeur : la remplacer par un mot qui ne nomme aucun rôle ferme tout, ce qui
+ * est ce qu'on fera le jour où l'on ouvre.
  */
 
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -110,9 +111,16 @@ describe('les rôles offerts par l’environnement', () => {
     expect(offertsDeLEnvironnement(undefined)).toEqual(['conduite', 'atelier', 'synthese'])
   })
 
-  it('vaut aucun quand elle est vide, ce qui ferme tout', () => {
-    expect(offertsDeLEnvironnement('')).toEqual([])
-    expect(offertsDeLEnvironnement('   ')).toEqual([])
+  it('vaut les trois quand elle est vide, parce qu’une pile la déclare vide', () => {
+    // Une variable déclarée dans la composition d'une pile et non saisie arrive
+    // vide au conteneur. Y lire « aucun rôle » fermerait tous les écrans de
+    // tout le monde le jour où on la déclare.
+    expect(offertsDeLEnvironnement('')).toEqual(['conduite', 'atelier', 'synthese'])
+    expect(offertsDeLEnvironnement('   ')).toEqual(['conduite', 'atelier', 'synthese'])
+  })
+
+  it('ferme tout sur une valeur qui ne nomme aucun rôle', () => {
+    expect(offertsDeLEnvironnement('aucun')).toEqual([])
   })
 
   it('lit une liste, dans l’ordre des rôles et sans les inconnus', () => {

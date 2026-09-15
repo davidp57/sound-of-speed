@@ -372,7 +372,143 @@ export const deposits = sqliteTable(
     // fichiers : c'est ce que la voiture attend quand elle rejoue un envoi.
     uniqueIndex('deposits_folder_name').on(table.accountId, table.folder, table.name),
     index('deposits_folder').on(table.accountId, table.folder),
+    /**
+     * Peser un compte sans lire ce qu'il a déposé.
+     *
+     * Un index qui porte la taille **à côté** du compte : la somme se calcule en
+     * parcourant l'index, et non la table. Sans lui, additionner les tailles
+     * oblige à lire chaque ligne — donc chaque blob : sur une table de 1 200
+     * dépôts pesant 60 Mio, la mesure prenait 36,9 ms et représentait les trois
+     * quarts du temps d'un dépôt. Avec, elle tombe sous la milliseconde.
+     *
+     * Le plafond la fait à chaque dépôt, et la régie à chaque ouverture de la
+     * liste des comptes.
+     */
+    index('deposits_account_bytes').on(table.accountId, table.bytes),
   ],
+)
+
+/**
+ * Le plafond de volume particulier d'un compte, quand il en a un.
+ *
+ * Le plafond **commun** vit dans la configuration de la pile : un compte neuf est
+ * donc borné dès sa création sans que personne ait rien à faire, et c'est le cas
+ * qui compte — le risque est une voiture qui boucle, pas un compte connu. Cette
+ * table ne porte que les exceptions, posées depuis la régie.
+ *
+ * **Le plafond refuse un envoi ; il n'efface jamais rien.**
+ */
+export const storageQuotas = sqliteTable('storage_quotas', {
+  accountId: text('account_id')
+    .primaryKey()
+    .references(() => accounts.id, { onDelete: 'cascade' }),
+  /** En octets, pour que la borne se compare à ce qu'on mesure. */
+  bytes: integer('bytes').notNull(),
+  createdAt: integer('created_at').notNull().default(maintenant),
+})
+
+/**
+ * L'assistance qu'un conducteur a autorisée, et jusqu'à quand.
+ *
+ * **Une date d'échéance, et rien d'autre.** Le droit de regarder ses données
+ * tombe dès qu'elle est dépassée, sans qu'aucun passage périodique n'ait à
+ * s'exécuter : c'est la lecture qui écarte, comme pour les droits.
+ *
+ * **Pas de ligne, pas de droit** — l'absence est l'état normal, et c'est
+ * pourquoi l'échéance est obligatoire ici. Dans la table des droits, une échéance
+ * nulle veut dire « sans échéance » ; deux colonnes qui se ressemblent diraient
+ * alors le contraire, et la seconde s'écrirait un jour en copiant la première.
+ * Une table à part, avec une colonne obligatoire, retire la question.
+ */
+export const assistanceGrants = sqliteTable('assistance_grants', {
+  accountId: text('account_id')
+    .primaryKey()
+    .references(() => accounts.id, { onDelete: 'cascade' }),
+  /** Jusqu'à quand, en secondes. Jamais nulle : une ligne est un accord ouvert. */
+  expiresAt: integer('expires_at').notNull(),
+  createdAt: integer('created_at').notNull().default(maintenant),
+})
+
+/**
+ * Qui a le droit d'écouter quelle banque réservée.
+ *
+ * **Les accords sont en base, le drapeau reste dans la pile.** C'est la
+ * défaillance qui commande : une table de drapeaux vide — base neuve, migration
+ * ratée — ouvrirait toutes les banques à tout le monde, ce qui est exactement le
+ * trou qu'on vient de fermer. Une table d'accords vide, elle, ne fait que
+ * refuser. Quelles banques sont réservées se déclare donc par l'environnement, et
+ * les accords se posent ici.
+ *
+ * Par identifiant de compte, et non par adresse : le compte est la bonne unité,
+ * et l'adresse était un pis-aller. Un compte sans adresse peut désormais écouter
+ * une banque réservée.
+ *
+ * La cascade est ici le bon comportement, contrairement à la trace : un accord
+ * donné à un compte qui n'existe plus ne veut rien dire.
+ */
+export const bankGrants = sqliteTable(
+  'bank_grants',
+  {
+    id: text('id').primaryKey(),
+    accountId: text('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    /** Le nom du dossier de la banque, tel que la pile le déclare réservé. */
+    bank: text('bank').notNull(),
+    createdAt: integer('created_at').notNull().default(maintenant),
+  },
+  (table) => [uniqueIndex('bank_grants_account_bank').on(table.accountId, table.bank)],
+)
+
+/**
+ * Les gestes d'administration : quand, qui, sur qui, quoi.
+ *
+ * **Sans clé étrangère vers le compte, et c'est le point.** Toutes les tables
+ * liées à un compte s'effacent en cascade avec lui ; une trace rattachée
+ * disparaîtrait donc exactement au moment où l'on voudrait la relire — « qui a
+ * effacé ce compte, et quand ? » est la question qui se pose six mois plus tard.
+ *
+ * **Rien ici ne porte un nom ni une adresse.** Seulement des identifiants
+ * opaques, résolus à la lecture quand le compte existe encore. Un compte effacé
+ * laisse donc une ligne qui dit toujours ce qui s'est passé, sans conserver
+ * l'identité de quelqu'un qu'on vient d'effacer — c'est la raison d'être des
+ * identifiants opaques.
+ *
+ * Elle se garde **sans limite** : quelques dizaines de lignes par an, et son
+ * intérêt est justement de répondre tard.
+ */
+export const adminActions = sqliteTable(
+  'admin_actions',
+  {
+    id: text('id').primaryKey(),
+    /** L'administrateur qui a agi. Identifiant en clair, jamais son adresse. */
+    adminId: text('admin_id').notNull(),
+    /** Le compte visé. Lui aussi en clair : il peut ne plus exister. */
+    targetId: text('target_id').notNull(),
+    /** La nature du geste — voir `trace.ts` pour la liste. */
+    action: text('action').notNull(),
+    /**
+     * Ce que le geste précise : le rôle donné, la banque accordée, le plafond.
+     *
+     * Jamais un nom de personne, jamais une adresse, jamais un nom de fichier :
+     * ce serait rentrer par la fenêtre ce que la table ne garde pas par la porte.
+     */
+    detail: text('detail'),
+    /**
+     * L'instant, en **millisecondes** — et c'est la seule date de cette base qui
+     * ne se compte pas en secondes.
+     *
+     * Les gestes d'administration arrivent en salve : donner trois rôles depuis
+     * la même fiche tombe dans la même seconde, et la trace se lit « la plus
+     * récente en haut ». À la seconde, cet ordre devient arbitraire.
+     *
+     * Écrite par le code, donc sans valeur par défaut : une insertion qui
+     * l'oublierait doit échouer plutôt que d'inscrire une date en secondes qui
+     * se lirait comme janvier 1970.
+     */
+    happenedAt: integer('happened_at').notNull(),
+  },
+  (table) => [index('admin_actions_target').on(table.targetId)],
 )
 
 /**

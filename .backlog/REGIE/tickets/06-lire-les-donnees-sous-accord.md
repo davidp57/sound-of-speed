@@ -1,6 +1,6 @@
 # 06 — La régie lit les données d'un compte sous accord
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 05 — le conducteur autorise l'assistance ; 03 — la trace
 
@@ -30,18 +30,18 @@ Chaque consultation s'inscrit dans la trace.
 
 ## Critères d'acceptation
 
-- [ ] Accord ouvert : la régie lit les profils, les moteurs, les boîtes, les
+- [x] Accord ouvert : la régie lit les profils, les moteurs, les boîtes, les
       trajets et le journal du compte visé.
-- [ ] Accord fermé, ou date passée, ou aucune date : le serveur refuse, et
+- [x] Accord fermé, ou date passée, ou aucune date : le serveur refuse, et
       l'écran ne montre plus rien.
-- [ ] Aucune route de régie n'écrit dans les données d'un compte — vérifié route
+- [x] Aucune route de régie n'écrit dans les données d'un compte — vérifié route
       par route.
-- [ ] La régie ne peut pas obtenir de session au nom d'un autre compte.
-- [ ] La route de l'archive n'est pas ouverte à l'administrateur.
-- [ ] Chaque consultation écrit une ligne de trace nommant le compte visé et
+- [x] La régie ne peut pas obtenir de session au nom d'un autre compte.
+- [x] La route de l'archive n'est pas ouverte à l'administrateur.
+- [x] Chaque consultation écrit une ligne de trace nommant le compte visé et
       l'instant.
-- [ ] Un administrateur sans accord ouvert ne distingue pas un compte qui
+- [x] Un administrateur sans accord ouvert ne distingue pas un compte qui
       n'existe pas d'un compte qui n'a pas accordé.
-- [ ] Les routes ajoutées sont inscrites dans l'inventaire de l'essai
+- [x] Les routes ajoutées sont inscrites dans l'inventaire de l'essai
       d'isolation.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

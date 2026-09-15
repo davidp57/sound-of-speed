@@ -1576,7 +1576,7 @@ quel compte est une valeur, pas une règle :
 
 | Variable | Défaut | Ce qu'elle règle |
 |---|---|---|
-| `SPEED_ROLES_OFFERTS` | les trois | Les rôles accordés à tout compte, séparés par des virgules. Vide, aucun : plus rien ne s'ouvre que l'écran du compte, ce qui est la façon de vérifier la mécanique. |
+| `SPEED_ROLES_OFFERTS` | les trois | Les rôles accordés à tout compte, séparés par des virgules. Absente **ou vide**, les trois — une variable déclarée dans la pile et non saisie arrive vide. Pour tout fermer, saisir une valeur qui ne nomme aucun rôle (`aucun`) : plus rien ne s'ouvre alors que l'écran du compte, ce qui est la façon de vérifier la mécanique. |
 
 Ce qu'un compte porte **en propre** vit dans la table des droits, avec une
 échéance facultative : un droit sans échéance ne se périme pas, un droit daté se
@@ -1642,6 +1642,150 @@ vraie voiture, le journal qu'elle dépose ne portant pas sa chaîne d'agent. C'e
 précisément pourquoi la correction existe — une détection ratée coûte un réglage,
 pas un écran perdu.
 
+### La régie : administrer les comptes depuis un écran
+
+Une troisième page, `/regie`, à côté de l'application et du relecteur. On y voit
+les comptes du serveur, les derniers créés en haut, avec pour chacun son nom, son
+adresse, sa date de création, ses rôles et ce qu'il a déposé ; une zone de
+recherche filtre par nom ou par adresse.
+
+**Qui administre se déclare dans la pile, jamais par une route.** C'est ce qui
+rend l'écran sûr : même un défaut dans la régie ne peut pas fabriquer un
+administrateur. C'est le principe déjà retenu pour les banques restreintes.
+
+| Variable | Défaut | Ce qu'elle règle |
+|---|---|---|
+| `SPEED_ADMINS` | personne | Les adresses qui administrent, séparées par des virgules. La comparaison ignore la casse. Absente, la régie répond 404 à tout le monde. |
+
+Un compte **sans adresse enregistrée** ne peut donc pas administrer — c'était déjà
+vrai des banques restreintes.
+
+**Déclarer une adresse après que son titulaire a ouvert son compte, et pas
+avant.** Une adresse n'est pas vérifiée sur ce serveur — aucun courriel ne part —
+et tant qu'aucun compte ne la porte, n'importe quel visiteur peut se la donner
+depuis son écran de compte : il deviendrait administrateur avec elle. La même
+faiblesse vaut depuis toujours pour les banques restreintes, qui se nomment aussi
+par adresse ; ce qui change ici est ce qu'elle ouvre. La refermer demanderait
+d'exiger une adresse prouvée — donc un relais de courriel, ou un compte tenu
+ailleurs —, et **ce n'est pas tranché**.
+
+**Un refus se donne en 404, jamais en 403**, et un visiteur sans session reçoit le
+même : l'existence de la régie n'a pas à être une information gratuite. Ce n'est
+pas ce qui protège — l'adresse se trouve, et le dépôt est public —, c'est le
+contrôle serveur qui garde ; ça retire seulement une carte à qui cherche. La page
+elle-même est servie à tout le monde et n'annonce rien.
+
+**Son code ne part jamais dans la voiture.** C'est une entrée de construction
+séparée, comme le relecteur : elle a son propre paquet — 12,6 ko — tiré seulement
+quand on ouvre `/regie.html`.
+
+**On s'y connecte par l'application**, sur l'écran du compte : la page et la
+régie sont sur la même origine, donc le même témoin de connexion vaut pour les
+deux. La régie n'a pas d'écran de connexion à elle, et c'est voulu — il
+annoncerait qu'il y a quelque chose là.
+
+#### Autoriser l'assistance
+
+Quand quelque chose ne marche pas chez quelqu'un, le serveur ne sait lire que le
+compte de la session en cours : il n'existe **aucun** moyen de regarder ce qu'un
+autre compte porte. La seule sortie était de lui demander d'exporter son archive
+et de l'envoyer — ce qui lui livre tout, sans durée et sans trace.
+
+Sur son écran de compte, le conducteur trouve donc un interrupteur : **autoriser
+l'assistance**, pour 24 heures, refermable à tout moment. L'écran dit en clair
+jusqu'à quand.
+
+**Il n'y a aucun canal de demande**, et c'est délibéré : le serveur ne sait pas
+parler à une voiture — pas de sondage, pas de connexion ouverte —, et la voiture
+roule souvent hors réseau. Construire ce canal coûterait du trafic permanent dans
+l'application qui en veut le moins. On demande de vive voix.
+
+**Un seul interrupteur, tout ou rien** : celui qui accorde n'a aucun choix à
+faire, donc aucun mauvais choix à faire. L'accord est une date d'échéance, et
+rien d'autre : le droit tombe dès qu'elle est dépassée, sans qu'aucun passage
+périodique n'ait à s'exécuter. **Pas de date, pas de droit.**
+
+La régie voit l'état de l'accord sur la fiche, et **ne peut pas se l'accorder** :
+elle n'a aucune route pour l'ouvrir.
+
+Tant que l'accord est ouvert, la fiche montre ce que le compte porte pour de
+bon — ses profils, ses moteurs, ses boîtes, ses trajets, son journal — par des
+routes **en lecture seule**. L'échéance passe, le serveur refuse, et l'écran se
+vide.
+
+**La régie n'emprunte jamais l'identité de quelqu'un.** Une session empruntée
+serait une session complète, donc en écriture : la régie pourrait modifier ou
+effacer en se faisant passer pour le conducteur, et la trace attribuerait ces
+gestes au conducteur. La séparation est structurelle, pas une discipline.
+L'archive du compte n'est pas une porte non plus — elle n'exige aucun rôle
+délibérément, parce que ce sont ses données, et l'ouvrir à l'administrateur en
+ferait la porte dérobée qui contourne l'accord.
+
+Chaque consultation s'inscrit, **au plus une fois par quart d'heure** : regarder
+un compte, c'est ouvrir son inventaire puis une dizaine de fichiers, et une ligne
+par requête noierait ce que le conducteur vient y lire.
+
+#### Les quatre gestes de la fiche
+
+Depuis la fiche d'un compte, la régie peut aussi :
+
+- **effacer le compte**, avec une confirmation et rien d'autre — pas de délai de
+  grâce, pas de nom à recopier : le bouton que l'utilisateur a déjà sur son
+  propre écran est immédiat, et on ne fabrique pas un second comportement pour le
+  même mot. La ligne de trace s'écrit **avant** — non pas à cause de la cascade,
+  cette table n'ayant délibérément pas de clé étrangère, mais parce qu'un serveur
+  qui tombe entre les deux doit laisser la trace d'un effacement qui n'a pas eu
+  lieu plutôt qu'un effacement dont il ne reste rien ;
+- **forcer un passage de rétention**, après avoir lu le verdict — ce que la règle
+  emporterait, et ce qu'elle retiendrait. Ça n'invente aucun effacement : ça
+  avance une horloge qui tourne déjà toutes les vingt-quatre heures ;
+- **régler l'abandon**, c'est-à-dire appliquer à un compte la règle qui efface un
+  compte anonyme ne portant rien ;
+- **poser un plafond de volume particulier**, ou revenir au plafond commun.
+
+L'administrateur n'a aucune exception sur son propre compte. La seule chose qu'il
+ne peut pas, c'est se retirer l'administration : elle vient de la configuration.
+
+#### Le plafond de volume
+
+| Variable | Défaut | Ce qu'elle règle |
+|---|---|---|
+| `SPEED_PLAFOND_GIO` | 10 | Combien un compte peut déposer en tout, en gibioctets. La régie pose des exceptions par compte. |
+
+**Le plafond refuse un envoi. Il n'efface jamais rien.** C'est ce qui rend un
+chiffre provisoire acceptable : un seuil inventé qui efface fait disparaître des
+données sans que rien ne rougisse, un seuil inventé qui refuse se corrige en
+changeant une valeur dans la pile. La valeur par défaut est un nombre rond,
+**proposé et non mesuré** ; elle sera revue quand le relevé de dépense quotidien
+aura dit ce qu'un compte coûte vraiment.
+
+Un compte au-delà voit son dépôt refusé en **507**, un code que la voiture ne
+rejoue pas — un code de panne passagère la ferait réessayer indéfiniment pour un
+envoi qui ne passera jamais. L'écran lui dit quoi faire : emporter ses trajets,
+ou en effacer. La borne par requête, à 16 Mio, ne change pas : celle-ci porte sur
+le total déposé.
+
+**Ce que la mesure coûte au dépôt : 0,44 ms sur 8,6 ms**, sur une table de
+1 200 dépôts pesant 60 Mio. Écrite naïvement — une somme avec une condition sur
+le nom du fichier —, elle prenait **36,9 ms**, les trois quarts du temps d'un
+dépôt : SQLite lisait chaque ligne, donc chaque blob. Un index qui porte la
+taille à côté du compte, et deux lectures au lieu d'une, ont réglé ça.
+
+#### Ce qui a été fait, lisible des deux côtés
+
+Chaque geste d'administration écrit une ligne : quand, quel administrateur, quel
+compte, quoi. Elle se lit dans la régie, **et sur l'écran du compte concerné** —
+un compte ne voit jamais une ligne qui en concerne un autre, et lire la sienne
+n'exige aucun rôle.
+
+La trace se garde **sans limite** : quelques dizaines de lignes par an, et son
+intérêt est justement de retrouver tard qui a effacé un compte. Quand un compte
+est effacé, ses lignes gardent son identifiant et **perdent le nom et
+l'adresse** : la trace dit toujours qu'un compte a été effacé, par qui et quand,
+sans conserver l'identité de quelqu'un qu'on vient d'effacer. Ce n'est pas une
+discipline — la table ne stocke que des identifiants, et les noms se résolvent à
+la lecture.
+
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
@@ -1687,6 +1831,13 @@ transfère — et non ce que la construction annonce.
 | Avant le 13 septembre 2026 | 459 ko |
 | Les trois écrans d'atelier chargés à la demande | 423 ko |
 | Les réponses compressées | **142 ko** |
+
+**Ce que la régie a coûté à la voiture : rien.** Son écran est une entrée
+séparée, tirée seulement quand on ouvre `/regie.html`. Le paquet de conduite est
+passé de 308,6 à 311,8 ko entre le début et la fin du lot — ces **3,1 ko** sont
+l'autorisation d'assistance et la relecture de sa propre trace, qui sont des
+réglages du conducteur, sur son écran de compte. Compressés, l'écart est de
+0,9 ko.
 
 **Le serveur compresse ce qui se compresse**, comme nginx le faisait avant lui :
 les types textuels au-delà d'un kilo-octet. Jamais les échantillons — du FLAC
@@ -2919,13 +3070,21 @@ confirmerait l'existence de ce qu'on cherche à taire.
 | `SPEED_BANQUES_RESTREINTES` | aucune | Les dossiers de banques qui demandent un droit, séparés par des virgules. |
 | `SPEED_BANQUES_ACCORDEES` | personne | Qui a le droit de quoi : `adresse=banque,banque;adresse=banque`. `*` à la place des banques les accorde toutes. |
 
-**Ça se déclare dans la pile, jamais par une route** : aucun appel ne peut donc
-s'accorder ce droit, et c'est ce qui rend le contrôle sûr sans écran
-d'administration. L'adresse plutôt que l'identifiant du compte, parce qu'un
-identifiant fait trente-deux caractères tirés au sort et se recopie de travers.
+**Ce qui est restreint se déclare dans la pile, jamais par une route**, et c'est
+la défaillance qui commande : une table de drapeaux vide — base neuve, migration
+ratée — ouvrirait toutes les banques à tout le monde, alors qu'une table
+d'accords vide ne fait que refuser.
 
-Un compte sans adresse rattachée n'a jamais droit à une banque restreinte : il
-n'y a rien pour le nommer.
+**Les accords, eux, vivent en base**, posés depuis la régie, par identifiant de
+compte. La variable reste la façon de les poser sans écran, et **s'ajoute** à ce
+que la régie a accordé — comme les rôles offerts s'ajoutent à la table des
+droits. Elle désigne par l'adresse, parce qu'un identifiant fait trente-deux
+caractères tirés au sort et se recopie de travers.
+
+Un compte sans adresse rattachée peut donc désormais écouter une banque
+réservée : le compte est la bonne unité, l'adresse était un pis-aller. Il lui
+faut un accord posé depuis la régie, la variable ne sachant nommer que des
+adresses.
 
 Dans l'image, elles sont rangées **hors de** `audio/`, et nginx les ramène sous
 `/audio/<banque>/` par un alias, un par banque. Le volume des échantillons se

@@ -34,7 +34,15 @@ import { archiveDuCompte } from './emporter'
 import { cheminSur, estUnNomSimple, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
+import { assistanceDuCompte, fermerLAssistance, ouvrirLAssistance } from './assistance'
+import {
+  depasseraitLePlafond,
+  PLAFOND_PAR_DEFAUT,
+  plafondDuCompte,
+} from './plafond'
+import { creerRegie } from './regie'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
+import { inscrire, lireLaTrace } from './trace'
 
 export interface OptionsDuServeur {
   /** L'application construite : `dist/`. */
@@ -75,6 +83,22 @@ export interface OptionsDuServeur {
    * qui fait qu'aucun appel ne peut s'accorder ce droit.
    */
   banques?: DroitsSurLesBanques
+  /**
+   * Les adresses qui administrent ce serveur.
+   *
+   * Déclarées par l'environnement et **jamais par une route** : aucun appel ne
+   * peut donc fabriquer un administrateur. Absente, personne n'administre et la
+   * régie répond 404 à tout le monde.
+   */
+  admins?: ReadonlySet<string>
+  /**
+   * Le plafond de volume commun, en octets.
+   *
+   * Un compte neuf est borné dès sa création sans que personne ait rien à
+   * faire — c'est le cas qui compte, le risque étant une voiture qui boucle. La
+   * régie pose des exceptions par compte.
+   */
+  plafond?: number
   /**
    * De quoi relever ce que le serveur dépense, quand on veut le savoir.
    *
@@ -262,6 +286,24 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       )
     })
 
+    // --- La régie ----------------------------------------------------------
+    //
+    // Montée ici parce qu'elle a besoin des deux : une base pour lire les
+    // comptes, une identité pour savoir qui appelle. Tout ce qu'elle porte
+    // répond 404 à qui n'administre pas — voir `regie.ts`.
+    app.route(
+      '/api/regie',
+      creerRegie({
+        base,
+        admins: options.admins ?? new Set<string>(),
+        compteDe,
+        offerts,
+        banques: droitsSurLesBanques,
+        plafond: options.plafond ?? PLAFOND_PAR_DEFAUT,
+        delais: options.delais ?? DELAIS_PAR_DEFAUT,
+      }),
+    )
+
     app.on(['GET', 'PUT'], '/profiles/*', async (c) => {
       const compte = await compteAyantDroit(c.req.raw.headers, 'conduite')
       if (compte instanceof Response) return compte
@@ -433,6 +475,53 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       })
     })
 
+    // --- L'assistance : « regardez ce qui cloche chez moi » -----------------
+    //
+    // **Aucun rôle n'est exigé ici, et seul le titulaire décide.** C'est le
+    // pendant de l'archive : ce sont ses données, et l'autorisation de les
+    // regarder est à lui seul. La régie ne peut pas se l'accorder — elle n'a
+    // aucune route pour écrire là-dedans, et c'est la séparation qui le garantit,
+    // pas une discipline.
+    app.on(['GET', 'PUT', 'DELETE'], '/mon-compte/assistance', async (c) => {
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
+
+      if (c.req.method === 'PUT') {
+        const accord = await ouvrirLAssistance(base, compte)
+        // L'administrateur de la ligne est le conducteur lui-même : c'est lui
+        // qui a agi, et la trace doit le dire.
+        await inscrire(base, 'assistance-ouverte', compte, compte, accord.jusquau ?? undefined)
+        return c.json(accord, 200, { 'Cache-Control': 'no-store' })
+      }
+
+      if (c.req.method === 'DELETE') {
+        await fermerLAssistance(base, compte)
+        await inscrire(base, 'assistance-fermee', compte, compte)
+        return c.json({ ouverte: false, jusquau: null }, 200, { 'Cache-Control': 'no-store' })
+      }
+
+      return c.json(await assistanceDuCompte(base, compte), 200, { 'Cache-Control': 'no-store' })
+    })
+
+    /**
+     * Ce qui a été fait **chez lui**, lisible par lui.
+     *
+     * C'est ce qui rend l'accord sérieux au lieu d'être une case à cocher : celui
+     * qui autorise doit pouvoir vérifier ce qu'on en a fait, sinon on lui demande
+     * de faire confiance sans lui donner les moyens de contrôler.
+     *
+     * **Aucun rôle exigé** — ce sont ses données —, et le filtre est dans la
+     * requête : un compte ne voit jamais une ligne qui en concerne un autre.
+     */
+    app.get('/mon-compte/trace', async (c) => {
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
+
+      return c.json(await lireLaTrace(base, { cible: compte }), 200, {
+        'Cache-Control': 'no-store',
+      })
+    })
+
     // Ce que la règle emporterait, sans rien effacer.
     //
     // Aucun contrôle ne dira qu'un délai est trop court : un mauvais seuil
@@ -509,6 +598,22 @@ export function creerServeur(options: OptionsDuServeur): Hono {
 
       if (c.req.method === 'PUT') {
         const octets = Buffer.from(await c.req.arrayBuffer())
+
+        // Le plafond de volume : il refuse, il n'efface jamais rien. Mesuré ici
+        // plutôt qu'au ménage, parce qu'un seuil qui efface fait disparaître des
+        // données sans que rien ne rougisse.
+        const plafond = await plafondDuCompte(base, compte, options.plafond ?? PLAFOND_PAR_DEFAUT)
+        if (await depasseraitLePlafond(base, compte, dossier, nom, octets.length, plafond.octets)) {
+          // 507, et le client ne le rejoue pas : un code de panne passagère
+          // ferait réessayer la voiture indéfiniment pour un envoi qui ne
+          // passera jamais — c'est exactement ce qui a produit 726 tentatives en
+          // 137 secondes le 11 septembre 2026.
+          console.warn(
+            `plafond atteint pour ${compte} : ${plafond.octets} octets` +
+              `${plafond.particulier ? ' (plafond particulier)' : ''}, dépôt refusé`,
+          )
+          return c.text('compte plein', 507)
+        }
         // `?reprise=1` dit « ceci n'est pas un dépôt du jour, c'est un
         // déménagement » : le fichier entre archivé, comme ceux que la reprise
         // des anciens dossiers verse elle-même.
@@ -638,9 +743,10 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // santé, un outil en ligne de commande — doit obtenir la page, pas un 404.
     if (chemin !== '/' && !ressembleAUneNavigation(c.req.header('accept'))) return c.notFound()
 
-    // Deux pages, deux replis : ouvrir le relecteur doit donner le relecteur, et
-    // non l'application de conduite, ce qui se lirait comme un bug.
-    const page = chemin.startsWith('/relecteur') ? '/relecteur.html' : '/index.html'
+    // Trois pages, trois replis : ouvrir le relecteur doit donner le relecteur,
+    // et la régie la régie, et non l'application de conduite, ce qui se lirait
+    // comme un bug.
+    const page = pageDeRepli(chemin)
     return servirDepuis(options.application, page, new Headers(), 'no-cache') ?? c.notFound()
   })
 
@@ -696,6 +802,20 @@ function sansCompte(): Response {
  */
 function sansDroit(role: string): Response {
   return new Response(`rôle requis : ${role}`, { status: 403 })
+}
+
+/**
+ * Quelle page rendre pour une navigation qui ne désigne aucun fichier.
+ *
+ * La régie et le relecteur sont des entrées séparées : leur code n'a aucune
+ * raison de partir dans ce que la voiture télécharge. Le repli doit donc rendre
+ * la bonne des trois, sans quoi ouvrir `/regie` donnerait l'application de
+ * conduite.
+ */
+function pageDeRepli(chemin: string): string {
+  if (chemin.startsWith('/relecteur')) return '/relecteur.html'
+  if (chemin.startsWith('/regie')) return '/regie.html'
+  return '/index.html'
 }
 
 function cachePour(chemin: string): string | undefined {

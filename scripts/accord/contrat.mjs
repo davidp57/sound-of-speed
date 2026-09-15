@@ -36,7 +36,7 @@ const TYPES_JS = ['application/javascript', 'text/javascript', 'application/ecma
  * réponse et son corps, et lève quand quelque chose ne va pas — un message qui
  * dit ce qu'on espérait, pas « échec ».
  */
-export function cas({ nom }) {
+export function cas({ nom, administre = false }) {
   const profil = `${nom}.json`
   const tranche = `${nom}.jsonl.gz`
   // Une tranche au nom que la voiture donne : date, identifiant de session, rang.
@@ -68,6 +68,61 @@ export function cas({ nom }) {
       requete: { chemin: '/relecteur.html' },
       attend: (r) => egal(r.status, 200, 'statut'),
     },
+    {
+      nom: 'la régie a sa propre page',
+      // Troisième entrée, même raison : son code n'a rien à faire dans ce que la
+      // voiture télécharge. Et c'est le seul contrôle qui regarde une vraie
+      // réponse — une image qui ne se construisait plus est passée à travers une
+      // pull request entièrement verte, faute de celui-ci.
+      part: 'durcissement',
+      requete: { chemin: '/regie.html' },
+      attend: (r, corps) => {
+        egal(r.status, 200, 'statut')
+        vrai(corps.includes('Régie'), 'la page servie est bien la régie')
+      },
+    },
+    {
+      nom: 'la régie ne dit rien à qui n’administre pas',
+      // 404 comme une banque restreinte, et non 403 : l'existence de la régie
+      // n'a pas à être une information gratuite. Le jeu s'annonce avec un compte
+      // ordinaire, donc sans administration.
+      part: 'durcissement',
+      requete: { chemin: '/api/regie/comptes', compte: true },
+      attend: (r) => egal(r.status, 404, 'statut'),
+    },
+    {
+      nom: 'la régie ne dit rien non plus sans session',
+      // Le même 404, et jamais un 401 qui renseignerait.
+      part: 'durcissement',
+      requete: { chemin: '/api/regie/comptes' },
+      attend: (r) => egal(r.status, 404, 'statut'),
+    },
+
+    // --- Ce qu'un administrateur obtient, quand on en donne un ---------------
+    //
+    // Sautés sans `--admin` : le jeu prend un compte anonyme, qui ne peut pas
+    // être administrateur — l'administration vient d'une adresse déclarée dans
+    // la pile. Avec l'option, on vérifie l'autre moitié du contrôle : que la
+    // porte s'ouvre pour qui est déclaré.
+    ...(administre
+      ? [
+          {
+            nom: 'la régie s’ouvre à l’administrateur déclaré',
+            part: 'regie',
+            requete: { chemin: '/api/regie/comptes', administrateur: true },
+            attend: (r, corps) => {
+              egal(r.status, 200, 'statut')
+              vrai(String(corps).trimStart().startsWith('['), 'une liste de comptes')
+            },
+          },
+          {
+            nom: 'la trace d’administration se lit',
+            part: 'regie',
+            requete: { chemin: '/api/regie/trace', administrateur: true },
+            attend: (r) => egal(r.status, 200, 'statut'),
+          },
+        ]
+      : []),
     {
       nom: 'le manifeste',
       requete: { chemin: '/manifest.webmanifest' },

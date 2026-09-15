@@ -57,6 +57,34 @@
       "when": 1789292198861,
       "tag": "0007_un-compte-sait-s-il-est-anonyme",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789497554852,
+      "tag": "0008_la-trace-et-les-accords-de-banque",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789497637417,
+      "tag": "0009_l-accord-d-assistance",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1789498525604,
+      "tag": "0010_le-plafond-de-volume",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1789499131688,
+      "tag": "0011_peser-un-compte-sans-lire-ses-depots",
+      "breakpoints": true
     }
   ]
 }

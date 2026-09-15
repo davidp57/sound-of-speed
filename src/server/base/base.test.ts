@@ -204,14 +204,17 @@ describe('ce que le schéma garantit', () => {
           order by m.name`,
     )
     expect(attaches.map((lien) => lien.table)).toEqual([
+      'assistance_grants',
       'auth_identities',
       'auth_sessions',
+      'bank_grants',
       'deposits',
       'engines',
       'gearboxes',
       'measured_cars',
       'profiles',
       'rights',
+      'storage_quotas',
     ])
   })
 

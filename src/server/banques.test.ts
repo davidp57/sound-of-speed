@@ -15,8 +15,9 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { banquesAccordees, banquesRestreintes } from './banques'
+import { banquesAccordees, banquesRestreintes, peutJouer } from './banques'
 import { ouvrirBase, type Base } from './base/base'
+import { bankGrants } from './base/schema'
 import { creerIdentite, type Identite } from './identite'
 import { creerServeur } from './serveur'
 
@@ -150,6 +151,67 @@ describe('une banque restreinte', () => {
       200,
     )
     expect(await listage(app, quidam)).toEqual([ORDINAIRE, RESTREINTE].sort())
+  })
+})
+
+describe('un accord posé en base', () => {
+  /** Accorde comme la régie le ferait, sans passer par elle : c'est la table qu'on juge. */
+  async function accorder(compte: string, banque: string): Promise<void> {
+    await base
+      .insert(bankGrants)
+      .values({ id: crypto.randomUUID(), accountId: compte, bank: banque })
+  }
+
+  /** Le compte de cet appareil, lu dans sa session. */
+  async function compteDe(annonce: Record<string, string>): Promise<string> {
+    const reponse = await serveur().request('/api/auth/get-session', { headers: annonce })
+    const session = (await reponse.json()) as { user: { id: string } }
+    return session.user.id
+  }
+
+  it('ouvre la banque à un compte sans adresse, et la lui montre', async () => {
+    // Le passage de l'adresse au compte lève une conséquence acquise : un compte
+    // anonyme pouvait tout sauf écouter une banque réservée.
+    const app = serveur(RESTREINTE, undefined)
+    const anonyme = await appareil()
+    expect(
+      (await app.request(`/audio/${RESTREINTE}/on-750.flac`, { headers: anonyme })).status,
+    ).toBe(404)
+
+    await accorder(await compteDe(anonyme), RESTREINTE)
+
+    expect(
+      (await app.request(`/audio/${RESTREINTE}/on-750.flac`, { headers: anonyme })).status,
+    ).toBe(200)
+    expect(await listage(app, anonyme)).toEqual([ORDINAIRE, RESTREINTE].sort())
+  })
+
+  it('s’ajoute à ce que la pile accorde, au lieu de le remplacer', async () => {
+    const app = serveur(`${RESTREINTE},${ORDINAIRE}`, `ayant-droit@exemple.test=${ORDINAIRE}`)
+    const ayantDroit = await appareil('ayant-droit@exemple.test')
+    await accorder(await compteDe(ayantDroit), RESTREINTE)
+
+    // Celle de la pile marche encore, celle de la table aussi.
+    expect(
+      (await app.request(`/audio/${ORDINAIRE}/on-750.flac`, { headers: ayantDroit })).status,
+    ).toBe(200)
+    expect(
+      (await app.request(`/audio/${RESTREINTE}/on-750.flac`, { headers: ayantDroit })).status,
+    ).toBe(200)
+  })
+
+  it('ne coûte aucune requête quand la banque n’est pas restreinte', async () => {
+    // La décision de jouer est sur le chemin le plus chargé du serveur : une
+    // banque ordinaire ne doit rien demander à la base. Mesuré en donnant une
+    // base qui refuse d'être interrogée.
+    const baseQuiRefuse = {
+      select() {
+        throw new Error('la base a été interrogée pour une banque ordinaire')
+      },
+    } as unknown as Base
+    const droits = { restreintes: new Set([RESTREINTE]), accordees: new Map() }
+
+    await expect(peutJouer(baseQuiRefuse, droits, 'peu-importe', ORDINAIRE)).resolves.toBe(true)
   })
 })
 

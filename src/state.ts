@@ -1352,7 +1352,12 @@ function depositJournalIfDue(nowMs: number): void {
       journalFailure.value = outcome.reason
       // La tranche revient en attente et se joindra à la suivante : c'est ce qui
       // fait qu'un tunnel ne coûte pas un journal.
-      if (outcome.retry) journal.restore(slice)
+      //
+      // **`garder`, et non `retry`.** Les deux ne posent pas la même question :
+      // un serveur plein ne veut pas d'un rejeu dans la minute, mais le
+      // conducteur peut faire de la place, et jeter en attendant perdrait le
+      // journal de tout ce qui suit.
+      if (outcome.garder) journal.restore(slice)
     })
     .finally(() => {
       journalFlight.end()
@@ -1572,7 +1577,9 @@ function depositCaptureIfDue(nowMs: number, force = false): void {
       captureRetry.failed(nowMs, outcome.retry)
       captureError.value = outcome.detail
       captureFailure.value = outcome.reason
-      if (outcome.retry) capture.restore(slice)
+      // `garder`, et non `retry` — voir le dépôt du journal plus haut : un
+      // serveur plein ne veut pas d'un rejeu, mais la tranche vaut d'être gardée.
+      if (outcome.garder) capture.restore(slice)
     })
     .finally(() => {
       captureFlight.end()

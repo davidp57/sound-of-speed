@@ -22,6 +22,15 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import qrcode from 'qrcode-generator'
 
 import { APPAREILS, lireLAppareilChoisi, NOMS_DAPPAREIL, type Appareil } from '../core/appareil'
+import {
+  fermerLAssistance,
+  lireLAssistance,
+  lireSaTrace,
+  ouvrirLAssistance,
+  type Assistance,
+  type LigneDeTrace,
+} from '../core/identity/assistance'
+import { phraseDuGeste } from '../core/identity/gestes'
 import { empreinteDeLAdresse, initialeDe, lienDeGravatar } from '../core/identity/avatar'
 import { demanderUnCode } from '../core/identity/client'
 import {
@@ -544,6 +553,66 @@ async function onSupprimer(): Promise<void> {
   }
 }
 
+/**
+ * Autoriser l'assistance : ouvrir ses données à qui administre, pour 24 heures.
+ *
+ * **On ne reçoit aucune demande** : le serveur ne sait pas parler à une voiture,
+ * et la voiture roule souvent hors réseau. C'est donc de vive voix qu'on nous
+ * l'aura demandé, et ce bouton-ci est la réponse.
+ *
+ * `null` veut dire « on ne sait pas » — hors réseau, l'écran ne doit pas
+ * affirmer que rien n'est ouvert.
+ */
+const assistance = ref<Assistance | null>(null)
+const assistanceEnCours = ref(false)
+
+/** Une échéance dite comme on la lit : le jour et l'heure, pas la seconde. */
+function quandLisible(iso: string): string {
+  return new Date(iso).toLocaleString('fr-FR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+async function onBasculerLAssistance(): Promise<void> {
+  if (assistanceEnCours.value) return
+  assistanceEnCours.value = true
+  try {
+    const rendu =
+      assistance.value?.ouverte === true ? await fermerLAssistance() : await ouvrirLAssistance()
+    assistance.value = rendu
+    // Le geste vient de s'inscrire : la relire tout de suite montre que ce qui
+    // se passe ici se voit ici.
+    await rafraichirLaTrace()
+    if (rendu === null) {
+      noteDeTenue.value = 'Sans réseau, on ne change pas cette autorisation : elle vit sur le serveur.'
+    }
+  } finally {
+    assistanceEnCours.value = false
+  }
+}
+
+/**
+ * Ce qui a été fait sur ce compte, et par qui.
+ *
+ * C'est ce qui rend l'autorisation sérieuse : celui qui accorde peut vérifier ce
+ * qu'on en a fait. `null` veut dire qu'on n'a pas pu demander — hors réseau,
+ * l'écran ne prétend pas afficher une trace qu'il n'a pas.
+ */
+const trace = ref<LigneDeTrace[] | null>(null)
+
+async function rafraichirLaTrace(): Promise<void> {
+  trace.value = await lireSaTrace()
+}
+
+onMounted(async () => {
+  assistance.value = await lireLAssistance()
+  await rafraichirLaTrace()
+})
+
 onUnmounted(() => {
   masquerLeCode()
 })
@@ -733,6 +802,58 @@ onUnmounted(() => {
       <template v-if="!appareilCorrige">Deviné d’après ce navigateur.</template>
     </p>
 
+    <!--
+      Autoriser l'assistance. Placée avant « emporter » et « supprimer », parce
+      qu'elle se coche le jour où l'on vient de signaler un défaut.
+    -->
+    <h3>Autoriser l’assistance</h3>
+    <p class="note">
+      Quand quelque chose ne marche pas et qu’on nous le signale, personne ne
+      peut regarder ce que ce compte porte : il n’y a pas de porte pour ça. Ce
+      bouton en ouvre une pour <strong>24 heures</strong>, et elle se referme
+      toute seule.
+    </p>
+    <div class="choices">
+      <button
+        :aria-pressed="assistance?.ouverte === true"
+        :disabled="assistanceEnCours"
+        @click="onBasculerLAssistance()"
+      >
+        {{ assistance?.ouverte === true ? 'Refermer maintenant' : 'Autoriser pour 24 heures' }}
+      </button>
+    </div>
+    <p v-if="assistance === null" class="note">
+      Sans réseau, on ne sait pas si c’est ouvert : cette autorisation vit sur le
+      serveur.
+    </p>
+    <p v-else-if="assistance.ouverte && assistance.jusquau !== null" class="note">
+      <strong>Ouvert jusqu’au {{ quandLisible(assistance.jusquau) }}.</strong> Ce
+      qui sera regardé s’inscrit juste en dessous.
+    </p>
+    <p v-else class="note">Fermé. Rien de ce compte n’est visible d’ailleurs.</p>
+
+    <!--
+      Ce qui a été fait ici. Sous l'interrupteur, parce que c'est ce qui le rend
+      sérieux : autoriser sans pouvoir vérifier reviendrait à demander de faire
+      confiance sans en donner les moyens.
+    -->
+    <p v-if="trace === null" class="note">
+      Sans réseau, on ne sait pas ce qui a été fait sur ce compte : cela vit sur
+      le serveur.
+    </p>
+    <p v-else-if="trace.length === 0" class="note">
+      Rien n’a été fait sur ce compte depuis la régie.
+    </p>
+    <ul v-else class="trace">
+      <li v-for="(ligne, rang) in trace" :key="rang">
+        <span class="numeric">{{ quandLisible(ligne.quand) }}</span> —
+        {{ phraseDuGeste(ligne.geste, ligne.detail) }}
+        <template v-if="ligne.admin.id !== ligne.cible.id">
+          par {{ ligne.admin.nom ?? 'un compte effacé' }}
+        </template>
+      </li>
+    </ul>
+
     <h3>Emporter ses données</h3>
     <p class="note">
       Un fichier avec tout ce que ce compte porte sur le serveur : profils,
@@ -920,6 +1041,15 @@ h3 {
 .note.warn {
   opacity: 1;
   color: var(--warn, #e06060);
+}
+
+/* Ce qui a été fait sur ce compte : lu, pas parcouru — quelques lignes par an. */
+.trace {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.85;
 }
 
 /* Qui l'on est : un portrait et un nom, comme partout ailleurs. */

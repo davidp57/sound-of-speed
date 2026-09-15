@@ -14,6 +14,7 @@ import { listerLesComptes, ouvrirBase } from './base/base'
 import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
 import { ANCIEN_COMPTE_UNIQUE, semerLAncienCompte } from './heritage'
+import { administrateursDeLEnvironnement } from './administration'
 import { banquesAccordees, banquesRestreintes } from './banques'
 import {
   compteurDeDepense,
@@ -24,6 +25,7 @@ import {
 import { creerIdentite, reprendreLesAdressesDesTiers, secretPersistant } from './identite'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { appliquerLaRegle, DELAIS_PAR_DEFAUT, formaterPassage, type Delais } from './retention'
+import { plafondDeLEnvironnement } from './plafond'
 import { offertsDeLEnvironnement } from './roles'
 import { creerServeur } from './serveur'
 import { comptesTenusAilleurs } from './tiers'
@@ -40,9 +42,11 @@ const anciensDossiers = process.env['SPEED_REPRISE']
 const adressePublique = process.env['SPEED_URL']?.trim() || undefined
 const secretDIdentite = process.env['SPEED_AUTH_SECRET']
 const epingles = nombreOuRien(process.env['SPEED_EPINGLES'])
-// Les rôles offerts à n'importe quel compte. Absente, les trois : tout le monde
-// a tout, rien n'étant encaissé. Vide, aucun — ce qui ferme tout, et c'est la
-// façon de vérifier la mécanique sur un serveur qui tourne.
+// Les rôles offerts à n'importe quel compte. Absente **ou vide**, les trois :
+// tout le monde a tout, rien n'étant encaissé — et une variable déclarée dans
+// une pile sans être saisie arrive vide. Pour tout fermer et vérifier la
+// mécanique sur un serveur qui tourne, il faut une valeur qui ne nomme aucun
+// rôle : `aucun`.
 const roles = offertsDeLEnvironnement(process.env['SPEED_ROLES_OFFERTS'])
 // Les comptes tenus ailleurs : deux variables par fournisseur, et rien du tout
 // par défaut. Voir `tiers.ts` pour les noms.
@@ -54,6 +58,13 @@ const banques = {
   restreintes: banquesRestreintes(process.env['SPEED_BANQUES_RESTREINTES']),
   accordees: banquesAccordees(process.env['SPEED_BANQUES_ACCORDEES']),
 }
+// Qui administre : des adresses séparées par des virgules. Déclarées ici et
+// **jamais par une route** — aucun appel ne peut donc fabriquer un
+// administrateur. Absente, personne n'administre et la régie répond 404.
+const admins = administrateursDeLEnvironnement(process.env['SPEED_ADMINS'])
+// Le plafond de volume commun, en gibioctets. Il **refuse** un dépôt, il
+// n'efface jamais rien : c'est ce qui rend un chiffre provisoire acceptable.
+const plafond = plafondDeLEnvironnement(process.env['SPEED_PLAFOND_GIO'])
 const delais: Delais = {
   traces: nombreOuRien(process.env['SPEED_RETENTION_TRACES']) ?? DELAIS_PAR_DEFAUT.traces,
   journal: nombreOuRien(process.env['SPEED_RETENTION_JOURNAL']) ?? DELAIS_PAR_DEFAUT.journal,
@@ -263,6 +274,8 @@ const serveur = serve(
       roles,
       delais,
       banques,
+      admins,
+      plafond,
       depense,
       ...(echantillons === undefined ? {} : { echantillons }),
     }).fetch,

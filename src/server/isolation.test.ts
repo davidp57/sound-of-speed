@@ -138,6 +138,22 @@ describe('le voisin ne voit rien', () => {
     expect(await reponse.json()).toEqual([])
   })
 
+  it('n’ouvre pas la régie, qui dirait tout de tout le monde', async () => {
+    // Ce serveur ne déclare aucun administrateur : personne n'administre, et la
+    // régie répond 404 — le même que reçoit un visiteur sans session.
+    expect((await serveur().request('/api/regie/comptes', { headers: boris.annonce })).status).toBe(
+      404,
+    )
+    expect((await serveur().request('/api/regie/comptes', { headers: anne.annonce })).status).toBe(
+      404,
+    )
+    expect(
+      (
+        await serveur().request(`/api/regie/comptes/${anne.compte}`, { headers: boris.annonce })
+      ).status,
+    ).toBe(404)
+  })
+
   it('ne lit pas le profil mesuré d’Anne', async () => {
     // Anne en a un, et c'est ce qui donne du sens au refus opposé à Boris.
     const chemin = '/mesure-voiture/profil-voiture.json'
@@ -367,12 +383,30 @@ describe('l’inventaire des routes', () => {
 
   /** Ce qui touche aux données d'un compte, et que les cas ci-dessus couvrent. */
   const COUVERTES = [
+    // La régie touche aux données de **tous** les comptes, et c'est bien pour
+    // cela qu'elle est ici : sans administrateur déclaré, aucune de ses routes
+    // ne doit rien rendre à personne.
+    '/api/regie/*',
+    '/api/regie/comptes',
+    '/api/regie/comptes/:compte',
+    '/api/regie/comptes/:compte/roles/:role',
+    '/api/regie/comptes/:compte/banques/:banque',
+    '/api/regie/trace',
+    '/api/regie/comptes/:compte/retention',
+    '/api/regie/comptes/:compte/abandon',
+    '/api/regie/comptes/:compte/plafond/:gio',
+    '/api/regie/comptes/:compte/plafond',
+    '/api/regie/comptes/:compte/donnees',
+    '/api/regie/comptes/:compte/donnees/:registre{profils|moteurs|boites}/:nom',
+    '/api/regie/comptes/:compte/donnees/:dossier{traces|journal|mesures}/:nom',
     '/profiles/*',
     '/:registre{engines|gearboxes}/*',
     '/mesure-voiture/profil-voiture.json',
     '/sessions/',
     '/sessions/:cle/archive.zip',
     '/mon-compte/archive.zip',
+    '/mon-compte/assistance',
+    '/mon-compte/trace',
     '/retention',
     '/sessions/:cle/epingle',
     '/sessions/:cle',

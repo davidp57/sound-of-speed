@@ -154,18 +154,21 @@ export default defineConfig({
   },
   build: {
     /**
-     * Deux pages, et c'est ce qui garde le relecteur hors de la voiture.
+     * Trois pages, et c'est ce qui garde le relecteur et la régie hors de la
+     * voiture.
      *
-     * Il ne sert qu'au bureau : sa carte, sa bibliothèque de cartographie et
-     * son code de lecture n'ont aucune raison d'être téléchargés par une
+     * Ni l'un ni l'autre ne servent au volant : la carte du relecteur, sa
+     * bibliothèque de cartographie, son code de lecture, et tout l'écran
+     * d'administration n'ont aucune raison d'être téléchargés par une
      * application qui doit se charger hors réseau sur un téléphone. Une entrée
      * séparée les met dans leur propre paquet, tiré seulement quand on ouvre
-     * `/relecteur.html`.
+     * `/relecteur.html` ou `/regie.html`.
      */
     rollupOptions: {
       input: {
         index: fileURLToPath(new URL('./index.html', import.meta.url)),
         relecteur: fileURLToPath(new URL('./relecteur.html', import.meta.url)),
+        regie: fileURLToPath(new URL('./regie.html', import.meta.url)),
       },
     },
   },

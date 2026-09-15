@@ -6,7 +6,116 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **Une régie, pour administrer les comptes depuis un écran.** Une troisième
+  page, `/regie`, qui liste les comptes du serveur — les derniers créés en haut,
+  avec nom, adresse, date, rôles et poids déposé — et une recherche par nom ou
+  par adresse.
+
+  **Qui administre se déclare dans la pile, jamais par une route** :
+  `SPEED_ADMINS`, des adresses séparées par des virgules. Aucun appel ne peut
+  donc fabriquer un administrateur. Un compte sans adresse enregistrée
+  n'administre pas.
+
+  Un refus se donne en **404**, y compris à un visiteur sans session : dire
+  « interdit » apprendrait qu'il y a quelque chose là. Le code de la régie est
+  une entrée de construction séparée, comme le relecteur : il ne part pas dans
+  ce que la voiture télécharge.
+
+  Depuis la fiche d'un compte, on **donne et reprend un rôle** — l'écran
+  correspondant s'ouvre ou se referme tout de suite, contrôle serveur compris —
+  et on **accorde ou retire une banque réservée**, sans redéployer. Chaque geste
+  laisse une ligne de trace : quand, quel administrateur, quel compte, quoi.
+
+- **Le conducteur peut autoriser l'assistance, pour 24 heures.** Sur son écran
+  de compte, un interrupteur ouvre ses données à qui administre le serveur, et
+  dit en clair jusqu'à quand ; il se referme à tout moment, et tout seul à
+  l'échéance.
+
+  **Aucun canal de demande** : le serveur ne sait pas parler à une voiture, et
+  la voiture roule souvent hors réseau. On demande de vive voix. **Un seul
+  interrupteur, tout ou rien** — celui qui accorde n'a aucun choix à faire, donc
+  aucun mauvais choix à faire. Et la régie ne peut pas se l'accorder : elle n'a
+  aucune route pour l'ouvrir.
+
+- **Sous accord, la régie lit ce que le compte porte** : profils, moteurs,
+  boîtes, trajets, journal. Des routes dédiées, **en lecture seule** — la régie
+  n'emprunte jamais l'identité de quelqu'un, et l'archive du compte n'est pas
+  une porte dérobée. L'échéance passe, le serveur refuse, sans qu'aucune tâche
+  périodique n'ait à tourner. Sans accord, le refus est celui d'un compte qui
+  n'existe pas : rien ne distingue les deux.
+
+  Chaque consultation s'inscrit dans la trace, **au plus une fois par quart
+  d'heure** : une ligne par fichier ouvert noierait ce que le conducteur vient y
+  lire.
+
+- **Le conducteur lit ce qui a été fait sur son compte**, sur son écran de
+  compte, sous l'autorisation d'assistance : les consultations de ses données,
+  les rôles donnés ou repris. C'est ce qui rend l'accord sérieux au lieu d'être
+  une case à cocher. Il ne voit que ce qui le concerne, et lire sa propre trace
+  n'exige aucun rôle.
+
+- **Quatre gestes sur la fiche d'un compte** : effacer le compte, forcer un
+  passage de rétention après en avoir lu le verdict, régler l'abandon, poser un
+  plafond de volume particulier ou revenir au plafond commun. Chacun écrit sa
+  ligne de trace, et l'administrateur n'a aucune exception sur son propre compte.
+
+- **Un plafond de volume par compte, réglé par `SPEED_PLAFOND_GIO`.** Il
+  **refuse** un envoi, il n'efface jamais rien : un compte au-delà voit son dépôt
+  refusé en 507, un code que la voiture ne rejoue pas, et l'écran lui dit quoi
+  faire. Dix gibioctets par défaut — un nombre rond, proposé et non mesuré, à
+  revoir quand le relevé de dépense aura dit ce qu'un compte coûte.
+
+  **La mesure coûte 0,44 ms sur les 8,6 ms d'un dépôt**, sur une table de 1 200
+  dépôts pesant 60 Mio. Écrite naïvement elle prenait 36,9 ms — les trois quarts
+  du temps d'un dépôt, parce que SQLite lisait chaque ligne donc chaque blob.
+  Un index qui porte la taille à côté du compte l'a réglé, et la liste des
+  comptes de la régie en profite aussi.
+
+- **Le contrat rejoué en HTTP couvre la régie** : sa page est bien servie, et
+  ses routes répondent 404 sans administrateur — y compris sans session. Une
+  option `--admin` ouvre les deux cas qui demandent un administrateur déclaré,
+  que le jeu ne peut pas être lui-même : il prend un compte anonyme, et
+  l'administration vient d'une adresse listée dans la pile. Soixante-cinq cas
+  passent contre un serveur qui tourne.
+
+### Modifié
+
+- **Les accords de banque réservée passent en base.** Ils se posaient par
+  adresse dans une variable de la pile ; ils se posent maintenant par
+  identifiant de compte, depuis la régie. La variable **reste et s'ajoute** à ce
+  que la régie accorde : c'est la façon de faire sans écran.
+
+  **Le drapeau qui marque une banque comme réservée, lui, reste dans la pile.**
+  C'est la défaillance qui commande : une table de drapeaux vide ouvrirait
+  toutes les banques à tout le monde, une table d'accords vide ne fait que
+  refuser.
+
+  Conséquence voulue : **un compte sans adresse peut désormais écouter une
+  banque réservée.** Le compte est la bonne unité, l'adresse était un pis-aller.
+  Une banque ordinaire, elle, ne coûte toujours aucune requête — c'est le chemin
+  le plus chargé du serveur, et c'est mesuré.
+
 ### Corrigé
+
+- **Un serveur plein faisait jeter le journal de la voiture.** Le refus de dépôt
+  répondait « ne pas réessayer », et le dépôt de tranche lisait cette réponse
+  comme « ne pas garder » : la tranche prise en mémoire n'existait alors plus
+  nulle part. Une heure de route après avoir atteint le plafond, c'était une
+  heure de journal et de capture perdue — y compris une fois la place faite.
+
+  Les deux questions sont désormais distinctes : **faut-il réessayer bientôt**,
+  et **faut-il garder ce qu'on n'a pas pu envoyer**. Elles ont la même réponse
+  pour un compte disparu, des réponses opposées pour un serveur plein. Trouvé en
+  relisant la branche, avant que ça roule.
+
+- **`SPEED_ROLES_OFFERTS` vide fermait tous les écrans de tout le monde.** La
+  variable est désormais déclarée dans la composition de la pile — et une
+  variable déclarée là et non saisie arrive **vide** au conteneur, pas absente.
+  Vide valait « aucun rôle » : un déploiement ordinaire aurait donc tout fermé.
+  Vide vaut maintenant le défaut, comme `SPEED_URL` le fait déjà ; pour tout
+  fermer, il faut une valeur qui ne nomme aucun rôle, `aucun` par exemple.
 
 - **Un compte rattaché à un fournisseur gardait son adresse de remplacement pour
   toujours.** Le rattrapage écrit le 14 septembre ne regardait le jeton qu'à la

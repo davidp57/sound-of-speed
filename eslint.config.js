@@ -107,7 +107,19 @@ export default ts.config(
     },
   },
   {
-    files: ['src/ui/**/*.ts', 'src/ui/**/*.vue', 'src/*.ts', 'src/*.vue'],
+    // Les trois pages construites : l'application, le relecteur, la régie. Les
+    // deux dernières n'étaient pas couvertes, et rien n'empêchait un import de
+    // serveur d'y entrer — elles parlent pourtant au serveur toute la journée.
+    files: [
+      'src/ui/**/*.ts',
+      'src/ui/**/*.vue',
+      'src/relecteur/**/*.ts',
+      'src/relecteur/**/*.vue',
+      'src/regie/**/*.ts',
+      'src/regie/**/*.vue',
+      'src/*.ts',
+      'src/*.vue',
+    ],
     rules: {
       'no-restricted-imports': ['error', { patterns: [
         {

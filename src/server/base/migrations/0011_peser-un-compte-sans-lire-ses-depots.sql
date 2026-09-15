@@ -1,0 +1,1 @@
+CREATE INDEX `deposits_account_bytes` ON `deposits` (`account_id`,`bytes`);
