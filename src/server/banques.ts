@@ -5,20 +5,24 @@
  * doivent atteindre qu'une poignée de comptes nommés, et c'est le serveur qui
  * doit le faire respecter — l'écran ne protège rien.
  *
- * **Ce qui est restreint et qui y a droit se déclare par l'environnement, jamais
- * par une route.** C'est ce qui rend le contrôle sûr : aucun appel ne peut
- * s'accorder un droit qui n'existe que dans la configuration de la pile. L'écran
- * qui gérera ça vit dans le lot RÉGIE ; il s'appuiera sur une table, et ce module
- * restera la façon de le faire sans écran.
+ * **Ce qui est restreint se déclare par l'environnement, jamais par une route.**
+ * C'est la défaillance qui commande : une table de drapeaux vide — base neuve,
+ * migration ratée — ouvrirait tout à tout le monde, alors qu'une table d'accords
+ * vide ne fait que refuser. Le drapeau reste donc dans la pile, et les accords
+ * sont en base, posés par l'écran de régie.
+ *
+ * **La variable d'accords reste, et se cumule avec la table.** C'est la façon
+ * d'accorder sans écran, comme les rôles offerts se cumulent déjà avec la table
+ * des droits.
  *
  * **Rien ici ne nomme une banque.** Les noms vivent dans la configuration du
  * serveur, et le dépôt ne doit pas dire laquelle est concernée.
  */
 
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import type { Base } from './base/base'
-import { accounts } from './base/schema'
+import { accounts, bankGrants } from './base/schema'
 
 /**
  * Ce qui demande un droit pour descendre.
@@ -74,6 +78,11 @@ export interface DroitsSurLesBanques {
  * la base. C'est le cas de presque toutes les requêtes, et les échantillons sont
  * le plus gros poste de trafic du serveur — y ajouter une requête par fichier se
  * paierait à chaque tour de roue.
+ *
+ * Deux sources d'accord, et elles **se cumulent** : la table, que l'écran de
+ * régie écrit, et la variable d'environnement, qui reste la façon d'accorder sans
+ * écran. La table d'abord, parce qu'elle se lit par identifiant de compte et que
+ * l'autre demande d'aller chercher l'adresse.
  */
 export async function peutJouer(
   base: Base,
@@ -82,6 +91,8 @@ export async function peutJouer(
   banque: string,
 ): Promise<boolean> {
   if (!droits.restreintes.has(banque)) return true
+
+  if (await accordeeEnBase(base, compte, banque)) return true
   if (droits.accordees.size === 0) return false
 
   const adresse = await adresseDuCompte(base, compte)
@@ -90,6 +101,24 @@ export async function peutJouer(
   const siennes = droits.accordees.get(adresse)
   if (siennes === undefined) return false
   return siennes.has('*') || siennes.has(banque)
+}
+
+/** Les banques que la table accorde à ce compte. */
+export async function accordsDuCompte(base: Base, compte: string): Promise<Set<string>> {
+  const lignes = await base
+    .select({ banque: bankGrants.bank })
+    .from(bankGrants)
+    .where(eq(bankGrants.accountId, compte))
+  return new Set(lignes.map((ligne) => ligne.banque))
+}
+
+async function accordeeEnBase(base: Base, compte: string, banque: string): Promise<boolean> {
+  const [ligne] = await base
+    .select({ id: bankGrants.id })
+    .from(bankGrants)
+    .where(and(eq(bankGrants.accountId, compte), eq(bankGrants.bank, banque)))
+    .limit(1)
+  return ligne !== undefined
 }
 
 /**
@@ -106,11 +135,17 @@ export async function banquesInterdites(
 ): Promise<Set<string>> {
   if (droits.restreintes.size === 0) return new Set()
 
+  const enBase = await accordsDuCompte(base, compte)
+
   const adresse = droits.accordees.size === 0 ? null : await adresseDuCompte(base, compte)
   const siennes = adresse === null ? undefined : droits.accordees.get(adresse)
   if (siennes?.has('*') === true) return new Set()
 
-  return new Set([...droits.restreintes].filter((banque) => siennes?.has(banque) !== true))
+  return new Set(
+    [...droits.restreintes].filter(
+      (banque) => !enBase.has(banque) && siennes?.has(banque) !== true,
+    ),
+  )
 }
 
 async function adresseDuCompte(base: Base, compte: string): Promise<string | null> {

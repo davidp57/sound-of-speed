@@ -19,9 +19,9 @@ import { Hono } from 'hono'
 import { estUnRole, type Role } from '../core/identity/roles'
 
 import { estAdministrateur } from './administration'
-import type { DroitsSurLesBanques } from './banques'
+import { accordsDuCompte, peutJouer, type DroitsSurLesBanques } from './banques'
 import type { Base } from './base/base'
-import { accounts, authIdentities, authSessions, deposits, rights } from './base/schema'
+import { accounts, authIdentities, authSessions, bankGrants, deposits, rights } from './base/schema'
 import { ceQuePorte } from './heritage'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
 import { nomDuFournisseur } from './tiers'
@@ -166,8 +166,15 @@ export interface Fiche {
   /** Les sessions encore ouvertes — combien d'appareils, et jusqu'à quand. */
   sessions: { ouverteLe: string; expireLe: string }[]
   roles: { role: Role; expireLe: string | null }[]
-  /** Les banques restreintes que ce compte peut écouter. */
+  /** Les banques restreintes que ce compte peut écouter, des deux sources. */
   banques: string[]
+  /**
+   * Toutes les banques que la pile déclare réservées.
+   *
+   * L'écran a besoin de savoir ce qu'il peut accorder ; sans cette liste il ne
+   * pourrait proposer que ce qui est déjà accordé.
+   */
+  banquesReservees: string[]
   /** Ce qu'il porte, en nombres. */
   porte: {
     profils: number
@@ -248,7 +255,12 @@ export async function ficheDuCompte(
       role,
       expireLe: expireLe === null ? null : new Date(expireLe).toISOString(),
     })),
-    banques: banquesDuCompte(options.banques, adresse),
+    banques: banquesDuCompte(
+      options.banques,
+      adresse,
+      await accordsDuCompte(base, compte),
+    ),
+    banquesReservees: [...(options.banques?.restreintes ?? [])].sort(),
     porte: {
       profils: porte.profils,
       moteurs: porte.moteurs,
@@ -261,18 +273,37 @@ export async function ficheDuCompte(
 }
 
 /**
- * Les banques restreintes que ce compte peut écouter.
+ * Les banques restreintes que ce compte peut écouter, **des deux sources**.
  *
- * Elles se lisent dans la configuration, par adresse, tant que les accords n'ont
- * pas de table. Un compte sans adresse n'en a donc aucune, et `*` les accorde
- * toutes.
+ * Celles que la table accorde, et celles que la pile accorde à son adresse — un
+ * compte sans adresse n'a que les premières, et `*` accorde toutes les secondes.
+ * Les cumuler ici évite que la fiche dise le contraire de ce que le serveur fait.
  */
-function banquesDuCompte(droits: DroitsSurLesBanques | undefined, adresse: string | null): string[] {
-  if (droits === undefined || adresse === null) return []
-  const siennes = droits.accordees.get(adresse.toLowerCase())
-  if (siennes === undefined) return []
-  if (siennes.has('*')) return [...droits.restreintes].sort()
-  return [...droits.restreintes].filter((banque) => siennes.has(banque)).sort()
+function banquesDuCompte(
+  droits: DroitsSurLesBanques | undefined,
+  adresse: string | null,
+  enBase: ReadonlySet<string>,
+): string[] {
+  if (droits === undefined) return []
+  const siennes = adresse === null ? undefined : droits.accordees.get(adresse.toLowerCase())
+  if (siennes?.has('*') === true) return [...droits.restreintes].sort()
+  return [...droits.restreintes]
+    .filter((banque) => enBase.has(banque) || siennes?.has(banque) === true)
+    .sort()
+}
+
+/**
+ * Le nom de banque que ce morceau d'adresse désigne.
+ *
+ * Il voyage encodé, comme partout où une banque se nomme dans ce serveur. Une
+ * suite d'octets qui n'en est pas une ne désigne rien.
+ */
+function nomDeBanque(brut: string): string | null {
+  try {
+    return decodeURIComponent(brut)
+  } catch {
+    return null
+  }
 }
 
 /** Ce compte existe-t-il ? La fiche d'un compte inconnu se refuse comme le reste. */
@@ -295,6 +326,11 @@ export async function compteExiste(base: Base, compte: string): Promise<boolean>
 export function creerRegie(options: OptionsDeLaRegie): RegieHono {
   const regie: RegieHono = new Hono<{ Variables: VariablesDeLaRegie }>()
   const offerts = options.offerts ?? ROLES_OFFERTS_PAR_DEFAUT
+  const droitsSurLesBanques: DroitsSurLesBanques = options.banques ?? {
+    restreintes: new Set<string>(),
+    accordees: new Map<string, ReadonlySet<string>>(),
+  }
+  const banquesReservees = droitsSurLesBanques.restreintes
 
   regie.use('*', async (c, next) => {
     const compte = await options.compteDe(c.req.raw.headers)
@@ -349,6 +385,46 @@ export function creerRegie(options: OptionsDeLaRegie): RegieHono {
     // offert vient de la configuration de la pile, pas de la table des droits. La
     // réponse le dit plutôt que de laisser croire à un geste sans effet.
     return c.json({ role, repris: true, offertAtous: offerts.includes(role) })
+  })
+
+  /**
+   * Accorder une banque réservée, et retirer l'accord.
+   *
+   * **Seulement une banque que la pile déclare réservée** : accorder ce qui n'est
+   * pas réservé n'ouvrirait rien et laisserait une ligne qui ment. Le nom voyage
+   * encodé, comme partout où une banque se nomme.
+   */
+  regie.put('/comptes/:compte/banques/:banque', async (c) => {
+    const compte = c.req.param('compte')
+    const banque = nomDeBanque(c.req.param('banque'))
+    if (banque === null || !banquesReservees.has(banque)) return c.notFound()
+    if (!(await compteExiste(options.base, compte))) return c.notFound()
+
+    await options.base
+      .insert(bankGrants)
+      .values({ id: crypto.randomUUID(), accountId: compte, bank: banque })
+      .onConflictDoNothing()
+
+    await inscrire(options.base, 'banque-accordee', c.get('admin'), compte, banque)
+    return c.json({ banque, accordee: true })
+  })
+
+  regie.delete('/comptes/:compte/banques/:banque', async (c) => {
+    const compte = c.req.param('compte')
+    const banque = nomDeBanque(c.req.param('banque'))
+    if (banque === null || !banquesReservees.has(banque)) return c.notFound()
+    if (!(await compteExiste(options.base, compte))) return c.notFound()
+
+    await options.base
+      .delete(bankGrants)
+      .where(and(eq(bankGrants.accountId, compte), eq(bankGrants.bank, banque)))
+
+    await inscrire(options.base, 'banque-retiree', c.get('admin'), compte, banque)
+    // Un accord posé par la variable d'environnement ne se retire pas d'ici : il
+    // vient de la pile. On relit donc ce que le compte peut vraiment, plutôt que
+    // de laisser croire à un retrait qui n'a pas eu lieu.
+    const peutEncore = await peutJouer(options.base, droitsSurLesBanques, compte, banque)
+    return c.json({ banque, retiree: true, peutEncore })
   })
 
   /** Tout ce que la régie a fait, la plus récente en haut. */

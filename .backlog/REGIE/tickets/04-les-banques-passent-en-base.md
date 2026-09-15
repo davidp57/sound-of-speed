@@ -1,6 +1,6 @@
 # 04 — Les banques réservées passent en base
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 03 — donner et reprendre un rôle, et la trace qui l'inscrit
 
@@ -30,19 +30,19 @@ devenir plus coûteuse pour une banque ordinaire.
 
 ## Critères d'acceptation
 
-- [ ] Une banque accordée depuis la fiche devient écoutable pour ce compte, sans
+- [x] Une banque accordée depuis la fiche devient écoutable pour ce compte, sans
       redéploiement.
-- [ ] L'accord retiré referme l'accès.
-- [ ] Un accord posé par la variable d'environnement continue de valoir, et
+- [x] L'accord retiré referme l'accès.
+- [x] Un accord posé par la variable d'environnement continue de valoir, et
       s'ajoute à ceux de la table plutôt que de les remplacer.
-- [ ] Une banque non marquée réservée reste jouable sans qu'aucune requête
+- [x] Une banque non marquée réservée reste jouable sans qu'aucune requête
       supplémentaire ne soit faite — la mesure le montre.
-- [ ] Un refus se donne en 404, comme aujourd'hui, et le listage continue de
+- [x] Un refus se donne en 404, comme aujourd'hui, et le listage continue de
       cacher les banques auxquelles le compte n'a pas droit.
-- [ ] Un compte sans adresse peut recevoir un accord et l'exercer.
-- [ ] Chaque accord et chaque retrait écrit sa ligne de trace.
-- [ ] Les essais existants sur la décision de jouer une banque passent
+- [x] Un compte sans adresse peut recevoir un accord et l'exercer.
+- [x] Chaque accord et chaque retrait écrit sa ligne de trace.
+- [x] Les essais existants sur la décision de jouer une banque passent
       inchangés, ou leur changement est justifié dans le message de commit.
-- [ ] Les routes ajoutées sont inscrites dans l'inventaire de l'essai
+- [x] Les routes ajoutées sont inscrites dans l'inventaire de l'essai
       d'isolation.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

@@ -446,6 +446,112 @@ describe('donner et reprendre un rôle', () => {
   })
 })
 
+describe('accorder une banque réservée', () => {
+  const RESERVEE = 'banque-a-part'
+
+  /** Un serveur qui déclare une banque réservée, et personne dans la variable. */
+  function avecBanque(accordees = new Map<string, ReadonlySet<string>>()) {
+    return creerServeur({
+      application,
+      base,
+      identite,
+      admins: administrateursDeLEnvironnement(ADRESSE_ADMIN),
+      banques: { restreintes: new Set([RESERVEE]), accordees },
+    })
+  }
+
+  it('la rend écoutable tout de suite, et le retrait la referme', async () => {
+    mkdirSync(join(application, 'audio', RESERVEE), { recursive: true })
+    writeFileSync(join(application, 'audio', RESERVEE, 'on-750.flac'), 'des octets')
+    const echantillon = `/audio/${RESERVEE}/on-750.flac`
+
+    expect((await avecBanque().request(echantillon, { headers: conducteur.annonce })).status).toBe(
+      404,
+    )
+
+    const accord = await avecBanque().request(
+      `/api/regie/comptes/${conducteur.compte}/banques/${RESERVEE}`,
+      { method: 'PUT', headers: patronne.annonce },
+    )
+    expect(accord.status).toBe(200)
+    expect((await avecBanque().request(echantillon, { headers: conducteur.annonce })).status).toBe(
+      200,
+    )
+
+    const retrait = await avecBanque().request(
+      `/api/regie/comptes/${conducteur.compte}/banques/${RESERVEE}`,
+      { method: 'DELETE', headers: patronne.annonce },
+    )
+    expect(retrait.status).toBe(200)
+    expect(((await retrait.json()) as { peutEncore: boolean }).peutEncore).toBe(false)
+    expect((await avecBanque().request(echantillon, { headers: conducteur.annonce })).status).toBe(
+      404,
+    )
+  })
+
+  it('dit qu’un accord de la pile tient encore après le retrait', async () => {
+    const app = avecBanque(new Map([[ADRESSE_CONDUCTEUR, new Set([RESERVEE])]]))
+    const retrait = await app.request(
+      `/api/regie/comptes/${conducteur.compte}/banques/${RESERVEE}`,
+      { method: 'DELETE', headers: patronne.annonce },
+    )
+
+    expect(((await retrait.json()) as { peutEncore: boolean }).peutEncore).toBe(true)
+  })
+
+  it('refuse d’accorder ce que la pile ne déclare pas réservé', async () => {
+    const reponse = await avecBanque().request(
+      `/api/regie/comptes/${conducteur.compte}/banques/une-banque-ordinaire`,
+      { method: 'PUT', headers: patronne.annonce },
+    )
+
+    expect(reponse.status).toBe(404)
+  })
+
+  it('montre sur la fiche ce qui est accordé et ce qui peut l’être', async () => {
+    await avecBanque().request(`/api/regie/comptes/${conducteur.compte}/banques/${RESERVEE}`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+
+    const fiche = (await (
+      await avecBanque().request(`/api/regie/comptes/${conducteur.compte}`, {
+        headers: patronne.annonce,
+      })
+    ).json()) as { banques: string[]; banquesReservees: string[] }
+
+    expect(fiche.banques).toEqual([RESERVEE])
+    expect(fiche.banquesReservees).toEqual([RESERVEE])
+  })
+
+  it('inscrit l’accord et le retrait dans la trace', async () => {
+    await avecBanque().request(`/api/regie/comptes/${conducteur.compte}/banques/${RESERVEE}`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+    await avecBanque().request(`/api/regie/comptes/${conducteur.compte}/banques/${RESERVEE}`, {
+      method: 'DELETE',
+      headers: patronne.annonce,
+    })
+
+    const lignes = (await (
+      await serveur().request('/api/regie/trace', { headers: patronne.annonce })
+    ).json()) as LigneDeTrace[]
+
+    expect(lignes.map((ligne) => ligne.geste)).toEqual(['banque-retiree', 'banque-accordee'])
+    expect(lignes[0]?.detail).toBe(RESERVEE)
+  })
+
+  it('refuse l’accord à qui n’administre pas', async () => {
+    const reponse = await avecBanque().request(
+      `/api/regie/comptes/${patronne.compte}/banques/${RESERVEE}`,
+      { method: 'PUT', headers: conducteur.annonce },
+    )
+
+    expect(reponse.status).toBe(404)
+  })
+})
+
 describe('la trace', () => {
   async function tracer(): Promise<LigneDeTrace[]> {
     const reponse = await serveur().request('/api/regie/trace', { headers: patronne.annonce })

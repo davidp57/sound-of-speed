@@ -23,6 +23,28 @@ Toutes les évolutions notables du projet. Format
   une entrée de construction séparée, comme le relecteur : il ne part pas dans
   ce que la voiture télécharge.
 
+  Depuis la fiche d'un compte, on **donne et reprend un rôle** — l'écran
+  correspondant s'ouvre ou se referme tout de suite, contrôle serveur compris —
+  et on **accorde ou retire une banque réservée**, sans redéployer. Chaque geste
+  laisse une ligne de trace : quand, quel administrateur, quel compte, quoi.
+
+### Modifié
+
+- **Les accords de banque réservée passent en base.** Ils se posaient par
+  adresse dans une variable de la pile ; ils se posent maintenant par
+  identifiant de compte, depuis la régie. La variable **reste et s'ajoute** à ce
+  que la régie accorde : c'est la façon de faire sans écran.
+
+  **Le drapeau qui marque une banque comme réservée, lui, reste dans la pile.**
+  C'est la défaillance qui commande : une table de drapeaux vide ouvrirait
+  toutes les banques à tout le monde, une table d'accords vide ne fait que
+  refuser.
+
+  Conséquence voulue : **un compte sans adresse peut désormais écouter une
+  banque réservée.** Le compte est la bonne unité, l'adresse était un pis-aller.
+  Une banque ordinaire, elle, ne coûte toujours aucune requête — c'est le chemin
+  le plus chargé du serveur, et c'est mesuré.
+
 ### Corrigé
 
 - **`SPEED_ROLES_OFFERTS` vide fermait tous les écrans de tout le monde.** La

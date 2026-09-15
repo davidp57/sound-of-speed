@@ -2947,13 +2947,21 @@ confirmerait l'existence de ce qu'on cherche à taire.
 | `SPEED_BANQUES_RESTREINTES` | aucune | Les dossiers de banques qui demandent un droit, séparés par des virgules. |
 | `SPEED_BANQUES_ACCORDEES` | personne | Qui a le droit de quoi : `adresse=banque,banque;adresse=banque`. `*` à la place des banques les accorde toutes. |
 
-**Ça se déclare dans la pile, jamais par une route** : aucun appel ne peut donc
-s'accorder ce droit, et c'est ce qui rend le contrôle sûr sans écran
-d'administration. L'adresse plutôt que l'identifiant du compte, parce qu'un
-identifiant fait trente-deux caractères tirés au sort et se recopie de travers.
+**Ce qui est restreint se déclare dans la pile, jamais par une route**, et c'est
+la défaillance qui commande : une table de drapeaux vide — base neuve, migration
+ratée — ouvrirait toutes les banques à tout le monde, alors qu'une table
+d'accords vide ne fait que refuser.
 
-Un compte sans adresse rattachée n'a jamais droit à une banque restreinte : il
-n'y a rien pour le nommer.
+**Les accords, eux, vivent en base**, posés depuis la régie, par identifiant de
+compte. La variable reste la façon de les poser sans écran, et **s'ajoute** à ce
+que la régie a accordé — comme les rôles offerts s'ajoutent à la table des
+droits. Elle désigne par l'adresse, parce qu'un identifiant fait trente-deux
+caractères tirés au sort et se recopie de travers.
+
+Un compte sans adresse rattachée peut donc désormais écouter une banque
+réservée : le compte est la bonne unité, l'adresse était un pis-aller. Il lui
+faut un accord posé depuis la régie, la variable ne sachant nommer que des
+adresses.
 
 Dans l'image, elles sont rangées **hors de** `audio/`, et nginx les ramène sous
 `/audio/<banque>/` par un alias, un par banque. Le volume des échantillons se

@@ -30,6 +30,7 @@ export interface Fiche {
   sessions: { ouverteLe: string; expireLe: string }[]
   roles: { role: string; expireLe: string | null }[]
   banques: string[]
+  banquesReservees: string[]
   porte: {
     profils: number
     moteurs: number
@@ -106,4 +107,18 @@ export function donnerUnRole(compte: string, role: string) {
 
 export function reprendreUnRole(compte: string, role: string) {
   return agir(`/api/regie/comptes/${encodeURIComponent(compte)}/roles/${role}`, 'DELETE')
+}
+
+export function accorderUneBanque(compte: string, banque: string) {
+  return agir(
+    `/api/regie/comptes/${encodeURIComponent(compte)}/banques/${encodeURIComponent(banque)}`,
+    'PUT',
+  )
+}
+
+export function retirerUneBanque(compte: string, banque: string) {
+  return agir(
+    `/api/regie/comptes/${encodeURIComponent(compte)}/banques/${encodeURIComponent(banque)}`,
+    'DELETE',
+  )
 }

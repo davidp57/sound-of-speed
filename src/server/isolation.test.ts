@@ -390,6 +390,7 @@ describe('l’inventaire des routes', () => {
     '/api/regie/comptes',
     '/api/regie/comptes/:compte',
     '/api/regie/comptes/:compte/roles/:role',
+    '/api/regie/comptes/:compte/banques/:banque',
     '/api/regie/trace',
     '/profiles/*',
     '/:registre{engines|gearboxes}/*',

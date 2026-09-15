@@ -81,10 +81,13 @@ services:
       # de quoi : `adresse=banque,banque;adresse=banque`, avec `*` à la place
       # des banques pour les accorder toutes.
       #
-      # **Ça se déclare ici et jamais par une route** : aucun appel ne peut donc
-      # s'accorder ce droit, et c'est ce qui rend le contrôle sûr tant qu'il n'y
-      # a pas d'écran d'administration. Une banque restreinte disparaît aussi du
-      # listage des comptes qui n'y ont pas droit.
+      # **Ce qui est restreint se déclare ici et jamais par une route** : une
+      # table de drapeaux vide — base neuve, migration ratée — ouvrirait tout à
+      # tout le monde, alors qu'une table d'accords vide ne fait que refuser.
+      # Les accords, eux, se posent depuis la régie et vivent en base ; cette
+      # variable reste la façon de les poser sans écran, et **s'ajoute** à ce
+      # que la régie a accordé. Une banque restreinte disparaît aussi du listage
+      # des comptes qui n'y ont pas droit.
       #
       # Absentes, aucune banque n'est restreinte — le cas de qui déploie chez
       # lui avec ses propres enregistrements.

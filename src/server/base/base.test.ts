@@ -206,6 +206,7 @@ describe('ce que le schéma garantit', () => {
     expect(attaches.map((lien) => lien.table)).toEqual([
       'auth_identities',
       'auth_sessions',
+      'bank_grants',
       'deposits',
       'engines',
       'gearboxes',

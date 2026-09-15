@@ -376,6 +376,37 @@ export const deposits = sqliteTable(
 )
 
 /**
+ * Qui a le droit d'écouter quelle banque réservée.
+ *
+ * **Les accords sont en base, le drapeau reste dans la pile.** C'est la
+ * défaillance qui commande : une table de drapeaux vide — base neuve, migration
+ * ratée — ouvrirait toutes les banques à tout le monde, ce qui est exactement le
+ * trou qu'on vient de fermer. Une table d'accords vide, elle, ne fait que
+ * refuser. Quelles banques sont réservées se déclare donc par l'environnement, et
+ * les accords se posent ici.
+ *
+ * Par identifiant de compte, et non par adresse : le compte est la bonne unité,
+ * et l'adresse était un pis-aller. Un compte sans adresse peut désormais écouter
+ * une banque réservée.
+ *
+ * La cascade est ici le bon comportement, contrairement à la trace : un accord
+ * donné à un compte qui n'existe plus ne veut rien dire.
+ */
+export const bankGrants = sqliteTable(
+  'bank_grants',
+  {
+    id: text('id').primaryKey(),
+    accountId: text('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    /** Le nom du dossier de la banque, tel que la pile le déclare réservé. */
+    bank: text('bank').notNull(),
+    createdAt: integer('created_at').notNull().default(maintenant),
+  },
+  (table) => [uniqueIndex('bank_grants_account_bank').on(table.accountId, table.bank)],
+)
+
+/**
  * Les gestes d'administration : quand, qui, sur qui, quoi.
  *
  * **Sans clé étrangère vers le compte, et c'est le point.** Toutes les tables
@@ -409,7 +440,19 @@ export const adminActions = sqliteTable(
      * ce serait rentrer par la fenêtre ce que la table ne garde pas par la porte.
      */
     detail: text('detail'),
-    happenedAt: integer('happened_at').notNull().default(maintenant),
+    /**
+     * L'instant, en **millisecondes** — et c'est la seule date de cette base qui
+     * ne se compte pas en secondes.
+     *
+     * Les gestes d'administration arrivent en salve : donner trois rôles depuis
+     * la même fiche tombe dans la même seconde, et la trace se lit « la plus
+     * récente en haut ». À la seconde, cet ordre devient arbitraire.
+     *
+     * Écrite par le code, donc sans valeur par défaut : une insertion qui
+     * l'oublierait doit échouer plutôt que d'inscrire une date en secondes qui
+     * se lirait comme janvier 1970.
+     */
+    happenedAt: integer('happened_at').notNull(),
   },
   (table) => [index('admin_actions_target').on(table.targetId)],
 )

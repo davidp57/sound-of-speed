@@ -71,7 +71,7 @@ export async function inscrire(
     targetId: cible,
     action: geste,
     ...(detail === undefined ? {} : { detail }),
-    happenedAt: Math.floor(Date.now() / 1000),
+    happenedAt: Date.now(),
   })
 }
 
@@ -97,10 +97,8 @@ export async function lireLaTrace(
     })
     .from(adminActions)
     .where(options.cible === undefined ? undefined : eq(adminActions.targetId, options.cible))
-    // L'instant se compte en secondes, comme toutes les dates de cette base :
-    // deux gestes de la même seconde se départagent par leur identifiant, ce qui
-    // ne dit rien de leur ordre mais donne une liste qui ne change pas d'une
-    // lecture à l'autre.
+    // À la milliseconde : les gestes arrivent en salve, et « la plus récente en
+    // haut » ne veut rien dire si trois d'entre eux partagent la même seconde.
     .orderBy(desc(adminActions.happenedAt), desc(adminActions.id))
     .limit(options.combien ?? 500)
 
@@ -136,7 +134,7 @@ async function avecLesNoms(
   }
 
   return lignes.map((ligne) => ({
-    quand: new Date(ligne.quand * 1000).toISOString(),
+    quand: new Date(ligne.quand).toISOString(),
     geste: ligne.geste,
     detail: ligne.detail,
     admin: { id: ligne.admin, nom: noms.get(ligne.admin) ?? null },

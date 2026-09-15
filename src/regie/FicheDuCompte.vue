@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-import { chargerLaFiche, donnerUnRole, reprendreUnRole, type Fiche } from './api'
+import {
+  accorderUneBanque,
+  chargerLaFiche,
+  donnerUnRole,
+  reprendreUnRole,
+  retirerUneBanque,
+  type Fiche,
+} from './api'
 import { dateLisible, poidsLisible } from './format'
 
 /** Les trois rôles, dans l'ordre où l'application les range. */
@@ -45,6 +52,22 @@ const refus = ref('')
 /** Ce compte porte-t-il ce rôle, à l'instant ? */
 function porte(role: string): boolean {
   return fiche.value?.roles.some((droit) => droit.role === role) === true
+}
+
+async function basculerLaBanque(banque: string): Promise<void> {
+  refus.value = ''
+  const accordee = fiche.value?.banques.includes(banque) === true
+  const rendu = accordee
+    ? await retirerUneBanque(proprietes.compte, banque)
+    : await accorderUneBanque(proprietes.compte, banque)
+  if (!rendu.fait) {
+    refus.value = rendu.motif
+    return
+  }
+  // On relit : un accord posé par la pile tient même après un retrait, et
+  // l'écran doit dire ce que le serveur fait, pas ce qu'on a demandé.
+  await recharger()
+  emet('change')
 }
 
 async function basculerLeRole(role: string): Promise<void> {
@@ -114,7 +137,20 @@ async function basculerLeRole(role: string): Promise<void> {
       </dd>
 
       <dt>Banques réservées</dt>
-      <dd>{{ fiche.banques.join(', ') || '—' }}</dd>
+      <dd v-if="fiche.banquesReservees.length === 0" class="muet">
+        la pile n’en déclare aucune
+      </dd>
+      <dd v-else class="roles">
+        <button
+          v-for="banque in fiche.banquesReservees"
+          :key="banque"
+          type="button"
+          :aria-pressed="fiche.banques.includes(banque)"
+          @click="basculerLaBanque(banque)"
+        >
+          {{ banque }}
+        </button>
+      </dd>
     </dl>
 
     <p v-if="refus !== ''" class="refus">{{ refus }}</p>
