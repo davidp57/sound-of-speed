@@ -67,6 +67,43 @@ export interface OptionsDuServeur {
   echantillons?: string
 }
 
+/**
+ * La politique de contenu, et pourquoi chaque morceau est là.
+ *
+ * Une politique posée à l'aveugle coupe le son **sans rien dire** : le navigateur
+ * refuse en silence et l'application démarre muette. Chaque desserrage ci-dessous
+ * a donc une raison nommée, et le jeu de requêtes d'accord plus l'essai dans un
+ * navigateur sont ce qui a permis de l'écrire.
+ *
+ * - `'wasm-unsafe-eval'` — le moteur simulé est un module WebAssembly, et sans
+ *   ce mot il ne s'instancie pas du tout.
+ * - `blob:` dans `script-src` — **l'horloge audio et le joueur de synthèse sont
+ *   fabriqués à la volée** et chargés par `audioWorklet.addModule` depuis une
+ *   adresse `blob:`. C'est le desserrage qui coûte le plus cher, et le retirer
+ *   demanderait de livrer ces deux modules en fichiers, ce qui touche une pièce
+ *   délicate du projet. À reprendre le jour où l'on y touchera pour autre chose.
+ * - `'unsafe-inline'` dans `style-src` — les liaisons de style de Vue posent des
+ *   attributs `style`. Le risque est sans commune mesure avec celui d'un script.
+ * - `https:` dans `img-src` — le portrait d'un compte tenu ailleurs vient de chez
+ *   le fournisseur.
+ * - `frame-ancestors 'none'` — rien n'a de raison d'encadrer cette application,
+ *   et l'encadrer est la moitié d'un détournement de clic.
+ */
+const POLITIQUE_DE_CONTENU = [
+  "default-src 'self'",
+  "script-src 'self' blob: 'wasm-unsafe-eval'",
+  "worker-src 'self' blob:",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' data: blob:",
+  "connect-src 'self'",
+  "font-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ')
+
 /** Une semaine, avec revalidation : un échantillon se remplace sans changer de nom. */
 const CACHE_ECHANTILLONS = 'public, must-revalidate, max-age=604800'
 /** Un an : les ressources construites portent leur empreinte dans leur nom. */
@@ -111,6 +148,23 @@ export function creerServeur(options: OptionsDuServeur): Hono {
    * lire, et rien ne peut être gardé.
    */
   const sessionDe = options.identite === undefined ? null : lecteurDeCompte(options.identite)
+
+  // --- Ce que le serveur dit de lui-même ------------------------------------
+  //
+  // **En premier, et sur tout** : une réponse servie par une route déclarée plus
+  // bas doit les porter aussi, et il n'y a pas de raison d'en exempter une.
+  //
+  // `nosniff` n'est pas décoratif ici : le serveur annonce des types que le
+  // navigateur **exige** — un module WebAssembly deviné autrement ne démarre
+  // pas — et un navigateur qui devine finit par deviner de travers.
+  app.use('*', async (c, next) => {
+    await next()
+    c.header('Content-Security-Policy', POLITIQUE_DE_CONTENU)
+    c.header('X-Content-Type-Options', 'nosniff')
+    // L'adresse complète ne part pas chez un tiers : un profil partagé voyage
+    // dans l'adresse, et elle n'a rien à faire dans le journal de quelqu'un.
+    c.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+  })
 
   // --- L'identité -----------------------------------------------------------
   //

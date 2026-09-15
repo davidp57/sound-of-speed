@@ -1504,6 +1504,25 @@ grossit — elle y est installée comme dépendance de production.
 seul, dans le volume de données : il survit au remplacement du conteneur, ce qui
 est la condition pour qu'une connexion survive à une mise à jour.
 
+#### Ce que le serveur annonce de lui-même
+
+Toutes les réponses portent une **politique de contenu**, `nosniff`, et une
+politique de provenance qui ne laisse pas partir l'adresse complète chez un tiers
+— un profil partagé voyage dans l'adresse. La politique refuse l'encadrement de
+la page, donc la moitié d'un détournement de clic.
+
+Deux desserrages la rendent viable, et ils sont vérifiés nommément par le jeu de
+requêtes d'accord : **le WebAssembly** reste permis, sans quoi le moteur simulé ne
+s'instancie pas du tout ; et les **modules de worklet fabriqués à la volée**
+aussi, l'horloge audio et le joueur de synthèse étant chargés depuis une adresse
+`blob:`. Le second est celui qui coûte le plus, et le retirer demanderait de
+livrer ces deux modules en fichiers — à reprendre le jour où l'on y touchera pour
+autre chose.
+
+Une politique posée à l'aveugle **coupe le son sans rien dire** : le navigateur
+refuse en silence et l'application démarre muette. Elle a donc été mesurée dans
+un navigateur avant d'être écrite ici.
+
 `SPEED_URL` n'est pas obligatoire non plus, mais elle se renseigne dans l'écran
 de la pile dès qu'on sait sous quel nom on atteindra le serveur : **derrière un
 proxy inversé, l'adresse publique ne se devine pas** depuis le conteneur, qui ne
@@ -1516,6 +1535,13 @@ Sans elle, l'origine annoncée est comparée à l'**hôte** de la requête, ce q
 le bon contrôle mais dépend de l'hôte que le proxy inversé transmet ; avec elle,
 la comparaison se fait sur une adresse connue et ne dépend plus de rien. Le
 serveur signale son absence à chaque démarrage.
+
+**Et surtout, elle décide du témoin de connexion.** Mesuré le même jour : avec une
+`SPEED_URL` en `https`, le témoin part en `__Secure-better-auth.session_token`,
+avec `Secure`, `HttpOnly` et `SameSite=Lax`. Sans elle, le conteneur ne voit
+qu'un port local en clair et le témoin **n'obtient pas `Secure`** — il pourrait
+alors repartir sur une requête non chiffrée. C'est la meilleure raison de la
+renseigner.
 
 ### Deux axes pour ouvrir un écran
 

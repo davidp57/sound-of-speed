@@ -128,6 +128,26 @@ export function cas({ nom }) {
       attend: (r) => egal(r.status, 200, 'statut'),
     },
 
+    {
+      nom: 'le serveur dit ce qu’il autorise, et refuse d’être encadré',
+      // Une politique de contenu posée à l'aveugle coupe le son sans rien dire :
+      // le navigateur refuse en silence et l'application démarre muette. Les
+      // deux desserrages qui la rendent viable sont donc vérifiés nommément.
+      requete: { chemin: '/', entetes: { Accept: 'text/html' } },
+      attend: (r) => {
+        egal(r.status, 200, 'statut')
+        egal(r.headers.get('x-content-type-options'), 'nosniff', 'nosniff')
+        vrai(r.headers.get('referrer-policy') !== null, 'une politique de provenance est servie')
+        const politique = r.headers.get('content-security-policy') ?? ''
+        vrai(politique.includes("frame-ancestors 'none'"), 'l’encadrement est refusé')
+        vrai(politique.includes("object-src 'none'"), 'les objets sont refusés')
+        // Sans lui, le moteur simulé ne s'instancie pas du tout.
+        vrai(politique.includes("'wasm-unsafe-eval'"), 'le WebAssembly reste permis')
+        // Sans lui, l'horloge audio et le joueur de synthèse ne se chargent pas.
+        vrai(/script-src[^;]*blob:/.test(politique), 'les modules de worklet restent permis')
+      },
+    },
+
     // --- Les banques -------------------------------------------------------
     {
       nom: 'un échantillon ne descend pas sans compte',

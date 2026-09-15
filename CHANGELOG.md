@@ -8,6 +8,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Sécurité
 
+- **Le serveur annonce enfin ce qu'il autorise.** Toutes les réponses portent une
+  politique de contenu, `nosniff`, et une politique de provenance qui retient
+  l'adresse complète — un profil partagé y voyage. La page refuse d'être encadrée
+  dans une autre, donc la moitié d'un détournement de clic.
+
+  Deux desserrages la rendent viable, et le jeu de requêtes d'accord les vérifie
+  nommément parce que les perdre couperait le son **en silence** : le
+  WebAssembly, sans quoi le moteur simulé ne s'instancie pas, et les modules de
+  worklet fabriqués à la volée, sans quoi l'horloge audio et le joueur de
+  synthèse ne se chargent pas. Mesuré dans un navigateur avant d'être écrit.
+
 - **Un seul code de liaison vivant par compte.** Chaque demande ajoutait un code,
   et tous restaient ouverts vingt-quatre heures : un code aperçu par-dessus une
   épaule survivait à sa régénération, et l'écran qui en montrait un nouveau
