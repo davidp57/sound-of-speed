@@ -298,12 +298,34 @@ Les propositions, elles, restent affichées étape par étape et se recopient à
 main.
 
 **Compte** — tout ce qui touche à l'identité, et nulle part ailleurs. En haut,
-qui l'on est : un portrait et un nom. En dessous, **enregistrer ce compte** tant
-qu'il ne l'est pas, **donner un code** pour qu'un autre appareil ouvre le même
-compte, **recopier un code** venu d'un autre, et de quoi **tenir son compte** :
-changer son mot de passe, emporter ses données, le supprimer. Ouvrir un autre
-compte ici est rangé en bas, replié : c'est le geste rare, et le seul qui fasse
-perdre quelque chose.
+qui l'on est : un portrait et un nom. En dessous, **deux boutons d'intention**
+tant que le compte n'est pas enregistré — « Je n'ai pas encore de compte » et
+« J'ai déjà un compte » —, puis **donner un code** pour qu'un autre appareil
+ouvre le même compte, **recopier un code** venu d'un autre, et de quoi **tenir
+son compte** : changer son mot de passe, emporter ses données, le supprimer.
+
+### L'intention d'abord, le moyen ensuite
+
+Les deux boutons ouvrent **la même fenêtre**, qui ne demande que le moyen : un
+compte tenu ailleurs, ou une adresse et un mot de passe. Un fournisseur de plus
+n'y ajoutera qu'un bouton.
+
+**Ce n'est pas qu'une affaire d'écran.** La bibliothèque d'identité agit au
+retour de la redirection, pas sur validation, et aucune de ses deux routes ne
+sait faire les deux cas : l'une ouvre un compte existant et refuse les inconnus,
+l'autre rattache et refuse les connus. Dire son intention avant de partir
+supprime le besoin de deviner — sans deux allers-retours chez le fournisseur, et
+sans reprendre son rappel.
+
+Se tromper d'intention se rattrape : un refus propose l'autre plutôt qu'un
+message d'erreur. Et « J'ai déjà un compte » dit dans la fenêtre, **avant**
+d'agir, que l'appareil quittera le compte qu'il porte — effacé s'il est vide,
+gardé sinon.
+
+Ce geste était replié tout en bas jusqu'au 15 septembre 2026, au motif qu'il
+était rare et le seul à faire perdre quelque chose. Il ne l'est pas pour qui
+arrive sur un poste neuf avec un compte qui existe déjà : c'est le premier. Ce
+qui le protège d'un geste distrait est désormais la fenêtre, pas d'être caché.
 
 Il est apparu le 13 septembre 2026, quand la section du compte a quitté
 **Paramètres** : le chemin normal va de la voiture au poste de travail, et

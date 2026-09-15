@@ -196,8 +196,8 @@ const saisieComplete = computed(
   () => adresse.value.includes('@') && motDePasse.value.length >= MOT_DE_PASSE_MINIMUM,
 )
 
-async function onRattacher(): Promise<void> {
-  if (enCours.value || !saisieComplete.value) return
+async function onRattacher(): Promise<boolean> {
+  if (enCours.value || !saisieComplete.value) return false
   enCours.value = true
   noteDuCompte.value = ''
   try {
@@ -205,38 +205,40 @@ async function onRattacher(): Promise<void> {
     if (rendu.state === 'sans-reseau') {
       noteDuCompte.value =
         'Sans réseau, on ne peut pas enregistrer ce compte : l’adresse se range sur le serveur.'
-      return
+      return false
     }
     if (rendu.state === 'refusee') {
       noteDuCompte.value = rendu.detail
-      return
+      return false
     }
     motDePasse.value = ''
     noteDuCompte.value = `Ce compte est maintenant celui de ${rendu.email}. Rien n’a bougé de ce qu’il portait.`
     await rafraichirLesPreuves()
+    return true
   } finally {
     enCours.value = false
   }
 }
 
-async function onSeConnecter(): Promise<void> {
-  if (enCours.value || !saisieComplete.value) return
+async function onSeConnecter(): Promise<boolean> {
+  if (enCours.value || !saisieComplete.value) return false
   enCours.value = true
   noteDuCompte.value = ''
   try {
     const rendu = await seConnecterAUnCompte(adresse.value, motDePasse.value)
     if (rendu.state === 'sans-reseau') {
       noteDuCompte.value = 'Sans réseau, on ne peut pas se connecter : le mot de passe se vérifie sur le serveur.'
-      return
+      return false
     }
     if (rendu.state === 'refusee') {
       noteDuCompte.value = rendu.detail
-      return
+      return false
     }
     motDePasse.value = ''
     adresse.value = ''
     masquerLeCode()
     await rafraichirLesPreuves()
+    return true
   } finally {
     enCours.value = false
   }
@@ -381,6 +383,68 @@ watch(
  */
 const noteDuTiers = ref('')
 const tiersEnCours = ref(false)
+
+/**
+ * L'intention se déclare **avant** de choisir le moyen.
+ *
+ * C'est ce qui rend ce parcours possible, et non un détail d'écran. La
+ * bibliothèque agit au retour de la redirection, pas sur validation : on ne
+ * saurait pas, au moment de partir chez le fournisseur, si son adresse désigne
+ * un compte existant. Aucune de ses deux routes ne sait faire les deux cas —
+ * l'une ouvre et refuse les inconnus, l'autre rattache et refuse les connus.
+ *
+ * Demander l'intention lève l'inconnue : on sait laquelle appeler, sans deviner,
+ * sans deux allers-retours, et sans reprendre le rappel OAuth.
+ *
+ * Les libellés sont des **états** et non des opérations : « rattacher un compte
+ * existant » se lisait à l'envers, comme une fusion.
+ */
+type Intention = 'jai-un-compte' | 'jen-ai-pas'
+
+const intention = ref<Intention | null>(null)
+const fenetre = ref<HTMLDialogElement | null>(null)
+
+/**
+ * Les comptes tenus ailleurs qu'on peut proposer, selon l'intention.
+ *
+ * Pour ouvrir, tous ceux que le serveur a montés ; pour créer, seulement ceux
+ * qui ne sont pas déjà rattachés — en proposer un qui l'est n'ouvrirait rien.
+ */
+const moyensTiers = computed(() =>
+  intention.value === 'jai-un-compte' ? possibilites.value.fournisseurs : fournisseursARattacher.value,
+)
+
+function ouvrirLaFenetre(voulu: Intention): void {
+  intention.value = voulu
+  noteDuTiers.value = ''
+  noteDuCompte.value = ''
+  motDePasse.value = ''
+  fenetre.value?.showModal()
+}
+
+function fermerLaFenetre(): void {
+  fenetre.value?.close()
+  intention.value = null
+}
+
+/** Le moyen choisi appelle la route que l'intention désigne. */
+function onMoyenTiers(fournisseur: string): void {
+  // Pas de fermeture ici : la page s'en va chez le fournisseur, et tout ce qui
+  // suivrait ne s'afficherait jamais.
+  void onTiers(fournisseur, intention.value === 'jai-un-compte' ? 'connecter' : 'rattacher')
+}
+
+/**
+ * Le moyen par adresse, et la fenêtre qui se ferme quand c'est fait.
+ *
+ * Elle reste ouverte sur un échec — c'est là qu'on corrige sa saisie —, et se
+ * referme sur un succès : l'écran derrière a changé, et laisser « Créer votre
+ * compte » par-dessus un compte qui vient d'être créé se lit comme un échec.
+ */
+async function onMoyenAdresse(): Promise<void> {
+  const fait = await (intention.value === 'jai-un-compte' ? onSeConnecter() : onRattacher())
+  if (fait) fermerLaFenetre()
+}
 
 async function onTiers(fournisseur: string, geste: 'rattacher' | 'connecter'): Promise<void> {
   if (tiersEnCours.value) return
@@ -540,48 +604,24 @@ onUnmounted(() => {
           on ne le perd plus en nettoyant un navigateur.
         </p>
 
-        <div v-if="fournisseursARattacher.length > 0" class="choices">
-          <button
-            v-for="fournisseur in fournisseursARattacher"
-            :key="fournisseur.id"
-            :disabled="tiersEnCours"
-            @click="onTiers(fournisseur.id, 'rattacher')"
-          >
-            Continuer avec {{ fournisseur.nom }}
+        <!--
+          L'intention d'abord, le moyen ensuite. Deux états et non deux
+          opérations : « rattacher un compte existant » se lisait comme une
+          fusion. Ce que chacun déclenche est dit dans la fenêtre.
+        -->
+        <div class="choices intentions">
+          <button class="is-active big" @click="ouvrirLaFenetre('jen-ai-pas')">
+            Je n’ai pas encore de compte
+          </button>
+          <button class="big" @click="ouvrirLaFenetre('jai-un-compte')">
+            J’ai déjà un compte
           </button>
         </div>
-        <p v-if="noteDuTiers" class="note">{{ noteDuTiers }}</p>
-        <p v-if="fournisseursARattacher.length > 0" class="ou">ou</p>
-
-        <div class="choices">
-          <input
-            v-model="adresse"
-            type="email"
-            inputmode="email"
-            autocomplete="username"
-            spellcheck="false"
-            placeholder="Adresse"
-          />
-          <input
-            v-model="motDePasse"
-            type="password"
-            autocomplete="new-password"
-            :placeholder="`Mot de passe (${MOT_DE_PASSE_MINIMUM} caractères au moins)`"
-          />
-          <button :disabled="!saisieComplete || enCours" @click="onRattacher()">
-            Enregistrer ce compte
-          </button>
-        </div>
-        <p class="note">
-          Rien ne bouge de ce que ce compte porte déjà : l’enregistrer lui ajoute
-          une adresse, il ne le remplace pas.
-        </p>
         <p class="note">
           Aucun courriel n’est envoyé, et l’adresse n’est pas vérifiée : il n’y a
           pas de relais à configurer, et celui qui déploie chez lui n’en fournira
           pas. Tant qu’il n’y en a pas, un mot de passe perdu l’est pour de bon.
         </p>
-        <p v-if="noteDuCompte" class="note">{{ noteDuCompte }}</p>
       </template>
     </template>
 
@@ -771,17 +811,53 @@ onUnmounted(() => {
     <p v-if="noteDeTenue" class="note">{{ noteDeTenue }}</p>
 
     <!--
-      Ouvrir un autre compte ici : le geste rare, et le seul qui fasse perdre
-      quelque chose. Replié, donc — visible pour qui le cherche, invisible pour
-      qui ne le cherche pas.
+      Ouvrir un autre compte, pour qui a déjà enregistré celui-ci. Le bouton
+      remplace le repli qui logeait ce geste tout en bas : ce qui le protège
+      d'un geste distrait n'est plus d'être caché, mais la fenêtre — elle
+      demande un choix explicite et dit ce que ça coûte.
     -->
-    <details class="repli">
-      <summary>Ouvrir un autre compte sur cet appareil</summary>
-      <p class="note">
-        Cet appareil quittera le compte qu’il porte aujourd’hui pour en ouvrir un
-        autre. Le compte quitté est effacé s’il est vide, gardé sinon — et il ne
-        se rouvre que s’il a été enregistré.
+    <template v-if="approprie && !auVolant">
+      <h3>Ouvrir un autre compte sur cet appareil</h3>
+      <div class="choices">
+        <button @click="ouvrirLaFenetre('jai-un-compte')">J’ai un autre compte…</button>
+      </div>
+    </template>
+
+    <!--
+      Le moyen, une fois l'intention dite.
+
+      `<dialog>` natif : aucune bibliothèque, et le piégeage du focus vient
+      avec. Le même contenu sert les deux intentions — seul change ce que le
+      moyen déclenche, et ce que la fenêtre annonce.
+    -->
+    <dialog v-if="!auVolant" ref="fenetre" class="fenetre" @close="intention = null">
+      <h3>
+        {{ intention === 'jai-un-compte' ? 'Ouvrir votre compte' : 'Créer votre compte' }}
+      </h3>
+
+      <p v-if="intention === 'jai-un-compte'" class="note">
+        Cet appareil <strong>quittera</strong> le compte qu’il porte aujourd’hui
+        pour ouvrir le vôtre. Le compte quitté est effacé s’il est vide, gardé
+        sinon — et il ne se rouvre que s’il a été enregistré.
       </p>
+      <p v-else class="note">
+        Rien ne bouge de ce que ce compte porte déjà : lui donner une adresse ne
+        le remplace pas, ses profils et ses trajets restent les siens.
+      </p>
+
+      <div v-if="moyensTiers.length > 0" class="choices">
+        <button
+          v-for="fournisseur in moyensTiers"
+          :key="fournisseur.id"
+          :disabled="tiersEnCours"
+          @click="onMoyenTiers(fournisseur.id)"
+        >
+          Continuer avec {{ fournisseur.nom }}
+        </button>
+      </div>
+      <p v-if="noteDuTiers" class="note">{{ noteDuTiers }}</p>
+      <p v-if="moyensTiers.length > 0" class="ou">ou</p>
+
       <div class="choices">
         <input
           v-model="adresse"
@@ -794,31 +870,23 @@ onUnmounted(() => {
         <input
           v-model="motDePasse"
           type="password"
-          autocomplete="current-password"
-          placeholder="Mot de passe"
+          :autocomplete="intention === 'jai-un-compte' ? 'current-password' : 'new-password'"
+          :placeholder="
+            intention === 'jai-un-compte'
+              ? 'Mot de passe'
+              : `Mot de passe (${MOT_DE_PASSE_MINIMUM} caractères au moins)`
+          "
         />
-        <button :disabled="!saisieComplete || enCours" @click="onSeConnecter()">
-          Ouvrir ce compte ici
+        <button :disabled="!saisieComplete || enCours" @click="onMoyenAdresse()">
+          {{ intention === 'jai-un-compte' ? 'Ouvrir ce compte ici' : 'Créer ce compte' }}
         </button>
       </div>
-      <div v-if="possibilites.fournisseurs.length > 0" class="choices">
-        <button
-          v-for="fournisseur in possibilites.fournisseurs"
-          :key="fournisseur.id"
-          :disabled="tiersEnCours"
-          @click="onTiers(fournisseur.id, 'connecter')"
-        >
-          Ouvrir le compte tenu par {{ fournisseur.nom }}
-        </button>
-      </div>
-      <p class="note">
-        Un compte tenu ailleurs n’ouvre que ce à quoi il a <strong>déjà</strong>
-        été rattaché : il ne crée jamais de compte neuf, sans quoi ce bouton,
-        pressé depuis la voiture, fabriquerait un compte vide et laisserait les
-        réglages derrière.
-      </p>
       <p v-if="noteDuCompte" class="note">{{ noteDuCompte }}</p>
-    </details>
+
+      <div class="choices">
+        <button @click="fermerLaFenetre()">Fermer</button>
+      </div>
+    </dialog>
   </section>
 </template>
 
@@ -940,15 +1008,43 @@ input {
   color: inherit;
 }
 
-/* Le geste rare, rangé : visible pour qui le cherche, discret pour les autres. */
-.repli {
-  margin-top: 1rem;
-  font-size: 0.85rem;
+/*
+ * Les deux intentions, côte à côte et de même poids.
+ *
+ * Elles se répartissent la largeur plutôt que de se suivre : deux boutons de
+ * tailles différentes se lisent comme un principal et un secondaire, alors
+ * qu'ici aucun des deux n'est le bon par défaut — cela dépend de qui regarde.
+ */
+.intentions button {
+  flex: 1;
+  min-width: 12rem;
 }
 
-.repli summary {
-  cursor: pointer;
-  color: var(--accent, #e0a020);
+/*
+ * La fenêtre du moyen.
+ *
+ * `<dialog>` porte le fond, le centrage et le piégeage du focus ; il ne reste
+ * qu'à lui donner la mise en page de l'écran. Une largeur bornée en `min()`
+ * pour qu'elle tienne sur un téléphone sans déborder, et un défilement propre
+ * si le clavier virtuel mange la hauteur.
+ */
+.fenetre {
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.fenetre::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
+.fenetre h3 {
+  margin-top: 0;
 }
 
 .share {
