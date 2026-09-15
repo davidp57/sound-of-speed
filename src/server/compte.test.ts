@@ -16,7 +16,7 @@ import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { ouvrirBase, type Base } from './base/base'
-import { accounts, authIdentities, deposits, profiles } from './base/schema'
+import { accounts, authIdentities, deposits, measuredCars, profiles } from './base/schema'
 import { creerIdentite, type Identite } from './identite'
 import { creerServeur } from './serveur'
 import { comptesTenusAilleurs } from './tiers'
@@ -243,6 +243,40 @@ describe('le compte que l’appareil abandonne', () => {
     await rattacher(ici, 'aussi.reel@exemple.fr')
 
     const rendu = await seConnecter('cible@exemple.fr', MOT_DE_PASSE, ici)
+
+    expect(rendu.ancien).toBe('garde')
+    expect(await base.select().from(accounts).where(eq(accounts.id, abandonne))).toHaveLength(1)
+  })
+
+  it('est effacé quand son profil mesuré n’a rien appris', async () => {
+    // Le rattrapage du démarrage écrit un profil mesuré à tous les comptes, y
+    // compris ceux qui n'ont jamais déposé la moindre trace. Le compte relevé en
+    // production le 13 septembre 2026 était dans ce cas : né à 20:43, profil
+    // mesuré à 20:46, zéro trajet. La présence de la ligne ne dit rien.
+    await unCompteAilleurs('neuf@exemple.fr')
+    const ici = await appareilNeuf()
+    const abandonne = (await compteDe(ici)) ?? ''
+    await base
+      .insert(measuredCars)
+      .values({ accountId: abandonne, content: { aggregate: { tripCount: 0 } } })
+
+    const rendu = await seConnecter('neuf@exemple.fr', MOT_DE_PASSE, ici)
+
+    expect(rendu.ancien).toBe('efface')
+    expect(await base.select().from(accounts).where(eq(accounts.id, abandonne))).toHaveLength(0)
+  })
+
+  it('est gardé quand son profil mesuré a vu des trajets', async () => {
+    // Des mois de conduite tiennent dans cette seule ligne : c'est ce qu'elle a
+    // appris qui la rend précieuse, pas le fait qu'elle existe.
+    await unCompteAilleurs('appris@exemple.fr')
+    const ici = await appareilNeuf()
+    const abandonne = (await compteDe(ici)) ?? ''
+    await base
+      .insert(measuredCars)
+      .values({ accountId: abandonne, content: { aggregate: { tripCount: 7 } } })
+
+    const rendu = await seConnecter('appris@exemple.fr', MOT_DE_PASSE, ici)
 
     expect(rendu.ancien).toBe('garde')
     expect(await base.select().from(accounts).where(eq(accounts.id, abandonne))).toHaveLength(1)

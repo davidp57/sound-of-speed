@@ -46,6 +46,15 @@ export interface Heritage {
   depots: number
   octets: number
   profilMesure: boolean
+  /**
+   * Combien de trajets ce profil mesuré a vus.
+   *
+   * Séparé de sa présence, parce que les deux ne disent pas la même chose : le
+   * rattrapage du démarrage écrit une ligne à tout compte, même à celui qui n'a
+   * jamais déposé une trace. Ce qui distingue un profil qui vaut d'un profil
+   * qui ne vaut rien est ce qu'il a appris.
+   */
+  trajetsMesures: number
   droits: number
 }
 
@@ -118,9 +127,10 @@ export async function ceQuePorte(base: Base, compte: string): Promise<Heritage> 
     .where(eq(deposits.accountId, compte))
 
   const mesure = await base
-    .select({ n: sql<number>`count(*)` })
+    .select({ contenu: measuredCars.content })
     .from(measuredCars)
     .where(eq(measuredCars.accountId, compte))
+  const cumul = mesure[0]?.contenu as { aggregate?: { tripCount?: number } } | undefined
 
   return {
     profils: await combien(profiles),
@@ -129,7 +139,8 @@ export async function ceQuePorte(base: Base, compte: string): Promise<Heritage> 
     droits: await combien(rights),
     depots: lesDepots[0]?.n ?? 0,
     octets: lesDepots[0]?.octets ?? 0,
-    profilMesure: (mesure[0]?.n ?? 0) > 0,
+    profilMesure: mesure.length > 0,
+    trajetsMesures: cumul?.aggregate?.tripCount ?? 0,
   }
 }
 

@@ -22,6 +22,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Un compte que rien ne distingue d'un compte neuf s'efface enfin quand on le
+  quitte.** Il était gardé, et personne ne l'aurait rouvert : le serveur écrit un
+  profil mesuré à **tout** compte au démarrage, ce qui suffisait à le faire passer
+  pour un compte qui porte quelque chose. Relevé sur la base de production le
+  13 septembre 2026 — un compte né à 20:43, son profil mesuré à 20:46, zéro
+  trajet.
+
+  Ce qui change est la question posée, pas la règle : un profil mesuré compte
+  pour ce qu'il a **appris**, et non pour la ligne qu'il occupe. Un profil qui a
+  vu des trajets garde le compte, comme avant.
+
 - **S'enregistrer ou se connecter se voit du premier coup d'œil.** Le geste était
   replié tout en bas de l'écran du compte — et c'était celui qu'on venait y
   faire. Deux boutons le remplacent, en tête : **« Je n'ai pas encore de

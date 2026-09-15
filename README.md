@@ -1317,7 +1317,9 @@ Trois conséquences, toutes assumées :
   ordinateur, et le code était mort dans une voiture éteinte.
 - **Le compte que l'appareil portait avant** est effacé s'il était vide, gardé
   sinon — et l'écran le dit, parce qu'un compte anonyme gardé n'a pas de mot de
-  passe pour y revenir.
+  passe pour y revenir. *Vide* se juge sur ce que le compte a appris, pas sur les
+  lignes qu'il a en base : le serveur écrit un profil mesuré à tout compte au
+  démarrage, et un profil à zéro trajet ne retient rien.
 - **Hors réseau, on ne relie pas** : le code vient du serveur, et s'y vérifie.
   L'écran le dit au lieu de faire attendre.
 
@@ -3408,7 +3410,7 @@ suit pas.
 | 48 | Un seul service TypeScript à la place de nginx et du profileur, avec une base et des migrations, à compte unique | spécifié |
 | 49 | Les réglages quittent le stockage du navigateur et les cinq dossiers du NAS pour la base | **livré** |
 | 50 | Analyser puis oublier, sauf ce qu'on épingle ou qu'on emporte : effacer devient enfin possible | **livré ; reste à lire le verdict de la règle sur la base de production** |
-| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **18 tickets sur 20 ; Google est configuré sur le NAS et vérifié, et un compte qui s'y rattache annonce son adresse ; l'écran du compte mène avec les deux gestes qu'on vient y faire ; restent l'essai hors réseau en voiture, « j'ai oublié » et l'effacement d'un compte vide** |
+| 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **19 tickets sur 20 ; Google est configuré sur le NAS et vérifié, et un compte qui s'y rattache annonce son adresse ; l'écran du compte mène avec les deux gestes qu'on vient y faire, et un compte vide s'efface ; restent l'essai hors réseau en voiture et « j'ai oublié »** |
 | 52 | Accueillir au premier lancement : un écran court le compte en tête, une visite à bulles sur l'interface, de vrais onglets, et une aide qui répond au lieu d'accueillir | **livré ; reste l'essai au volant** |
 | 53 | Trois niveaux d'écran, et ce qui les sépare n'est pas un droit : conduire, régler à l'arrêt, fabriquer en atelier. La voiture télécharge 9 % de moins et montre cinq onglets | **livré ; reste l'essai au volant** |
 
