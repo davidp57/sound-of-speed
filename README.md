@@ -203,6 +203,19 @@ elle a rejetées. Ces comptes ne sont pas décoratifs : une source qui reçoit d
 positions sans en tirer aucune vitesse donne le même écran qu'une source muette,
 et c'est ce qui a rendu un défaut invisible pendant une semaine.
 
+Elle affiche le **bruit du récepteur**, en km/h : de combien les mesures
+s'écartent de la droite qui sert à estimer la pente. C'est le chiffre qui dit si
+la boîte a de la marge — mesuré au banc, elle encaisse jusqu'à 1,5 km/h avant de
+se remettre à faire des allers-retours de rapport à vitesse tenue, et elle
+décroche à 1,75.
+
+**Ce n'est pas celui que le serveur établit après coup**, et les deux ne se
+comparent pas. Le calcul d'étalonnage ajuste une fenêtre **centrée** : il voit
+les mesures avant et après chaque point. Dans la voiture, on n'a que le passé, et
+la fenêtre est celle du profil. Les valeurs sont voisines, jamais égales. Elle
+s'annonce absente — et non nulle — tant que la fenêtre ne porte pas de quoi
+conclure : zéro se lirait « récepteur parfait ».
+
 Elle affiche aussi la **précision** que le navigateur annonce avec chaque
 position, la courante et les douze dernières. C'est ce relevé, et non une
 supposition, qui doit servir à régler le seuil *Précision GPS acceptée* : le
@@ -2464,6 +2477,40 @@ navigateur ne sait pas compresser, la tranche part en clair. Les profils et les
 relevés de mesure, eux, restent en clair : l'application les retélécharge et les
 lit, et la bibliothèque de profils cesserait de fonctionner.
 
+### Le journal détaillé
+
+Sous les trois positions, un interrupteur à part : **« Journal détaillé »**. Il
+sert à un essai en voiture, et son libellé le dit — *à n'activer que si on vous
+l'a demandé*.
+
+**Ce n'est pas un quatrième cran, et c'est délibéré.** Les trois positions sont
+une échelle de **vie privée** : ce qu'on accepte de laisser partir. La finesse du
+journal est une échelle **technique**. En faire un quatrième cran se lirait comme
+« le dernier, donc le plus complet », et forcerait qui veut du détail à accepter
+aussi sa position.
+
+Il **densifie ce qui part au cran déjà choisi**, et n'ouvre aucune nature de
+fichier : à « Le minimum », toujours ni position ni trace. Il ne demande donc pas
+de confirmation, puisqu'il n'élargit rien.
+
+Ce qu'il change :
+
+- le relevé périodique passe de **dix secondes à une seconde** ;
+- il porte en plus les **seuils de la boîte** — montée et descente —, la
+  **demande**, et l'**accélération avant lissage** à côté de celle qu'emploie
+  toute la chaîne.
+
+Ces quatre grandeurs sont celles dont l'absence a laissé des questions ouvertes
+après l'essai du 10 septembre 2026 : un rapport qui monte au mauvais moment
+s'explique par le croisement d'un régime et d'un seuil, et aucun des deux n'était
+inscrit.
+
+**Il s'éteint tout seul vingt-quatre heures après son activation**, à l'heure
+près et non à la fin de la journée : activé à 23 h 30, il tient jusqu'au
+lendemain 23 h 30. Une expiration au changement de date couperait en plein essai
+de nuit. L'écran dit jusqu'à quand il tient, et l'écran de conduite le rappelle
+tant qu'il est actif.
+
 ### Le relecteur
 
 Une page à part, `/relecteur.html`, pour revoir un trajet au bureau au lieu de
@@ -3452,6 +3499,7 @@ suit pas.
 | 52 | Accueillir au premier lancement : un écran court le compte en tête, une visite à bulles sur l'interface, de vrais onglets, et une aide qui répond au lieu d'accueillir | **livré ; reste l'essai au volant** |
 | 53 | Trois niveaux d'écran, et ce qui les sépare n'est pas un droit : conduire, régler à l'arrêt, fabriquer en atelier. La voiture télécharge 9 % de moins et montre cinq onglets | **livré ; reste l'essai au volant** |
 | 54 | Une seule notion de « est-ce qu'on ralentit ? » : cinq lectures de l'accélération cohabitaient dans la boîte, avec cinq seuils qui ne s'accordaient pas | **unifiée en une lecture, mesurée au banc : la boîte encaisse une moitié de bruit en plus avant d'osciller, contre un quart ; l'allure se lit à l'écran, au journal et au relecteur — reste l'essai en roulant** |
+| 55 | Savoir ce que le récepteur donne : le bruit du GPS mesuré à bord et inscrit au journal, et un journal détaillé qui s'éteint tout seul au bout de vingt-quatre heures | **livré ; reste le chiffre à relever en roulant, qui dira si la boîte a de la marge** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

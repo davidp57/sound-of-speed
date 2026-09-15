@@ -178,3 +178,29 @@ describe('la lecture à un instant', () => {
     expect(trackAt(track, 500)?.lon).toBeCloseTo(5)
   })
 })
+
+describe('un journal détaillé se lit comme un autre', () => {
+  it('ignore les grandeurs qu il ne connaît pas', () => {
+    // Le relevé détaillé porte des champs de diagnostic que le relecteur n'a
+    // rien à montrer. Il doit les ignorer, pas s'y arrêter — sans quoi activer
+    // la mise au point rendrait le trajet illisible au retour.
+    const session = buildSession('dtl', 0, [
+      fichier('2026-09-15-10-00-00_dtl_001.jsonl', 'journal', [
+        {
+          at: 1000,
+          kind: 'sample',
+          data: { kmh: 50, accel: 0.1, noise: 1.3, rpm: 2000, gear: 3, load: 0.5, accuracyM: 5, up: 2010, down: 1620, demand: 0.47, rawAccel: -0.31 },
+        },
+        {
+          at: 2000,
+          kind: 'sample',
+          data: { kmh: 52, accel: 0.2, noise: 1.4, rpm: 2100, gear: 3, load: 0.5, accuracyM: 5, up: 2010, down: 1620, demand: 0.5, rawAccel: 0.2 },
+        },
+      ]),
+    ])
+
+    expect(session.states).toHaveLength(2)
+    expect(session.states[0]).toMatchObject({ at: 1000, kmh: 50, rpm: 2000, gear: 3 })
+    expect(session.states[1]).toMatchObject({ at: 2000, kmh: 52 })
+  })
+})

@@ -1,6 +1,6 @@
 # 01 — Le bruit du récepteur se lit dans la voiture
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 15 septembre 2026
 
 **Bloqué par :** aucun, peut démarrer tout de suite.
 
@@ -43,12 +43,27 @@ et entre dans le relevé périodique du journal — donc il part dès le cran
 
 ## Critères d'acceptation
 
-- [ ] Le conditionneur rend le bruit de mesure, en km/h, avec ses autres sorties.
-- [ ] Sur un signal fabriqué sans bruit, la valeur est nulle — **rampe comprise**.
-- [ ] Sur un signal fabriqué avec un bruit connu, elle le retrouve à la tolérance
+- [x] Le conditionneur rend le bruit de mesure, en km/h, avec ses autres sorties.
+- [x] Sur un signal fabriqué sans bruit, la valeur est nulle — **rampe comprise**.
+- [x] Sur un signal fabriqué avec un bruit connu, elle le retrouve à la tolérance
       près, et elle suit quand ce bruit change.
-- [ ] Elle s'annonce absente quand la fenêtre ne porte pas de quoi conclure.
-- [ ] La télémétrie l'affiche à côté de la cadence typique, et dit qu'il est
+- [x] Elle s'annonce absente quand la fenêtre ne porte pas de quoi conclure.
+- [x] La télémétrie l'affiche à côté de la cadence typique, et dit qu'il est
       mesuré à bord — donc différent de celui que le serveur établit après coup.
-- [ ] Le relevé périodique du journal le porte, dès le cran « Le minimum ».
-- [ ] Contrôle qualité vert.
+- [x] Le relevé périodique du journal le porte, dès le cran « Le minimum ».
+- [x] Contrôle qualité vert.
+
+## Ce qui a été fait
+
+Le conditionneur rend `noiseKmh` avec ses autres sorties : mêmes points, même
+droite, on publie le résidu au lieu de le jeter, divisé par `n − 2` parce que la
+droite consomme deux degrés de liberté.
+
+**Vérifié dans l'application** : au simulateur, qui injecte exactement 1 km/h de
+bruit, l'écran affiche **1,01 km/h**.
+
+**Un test a été corrigé, pas le calcul.** Le premier jet comparait la mesure à la
+valeur *nominale* du bruit injecté ; sur la graine employée, soixante tirages
+d'écart-type un rendent 0,788. Le test compare maintenant à l'écart-type
+réellement injecté, et moyenne les relevés — un estimateur sur dix points se
+disperse de trente pour cent.

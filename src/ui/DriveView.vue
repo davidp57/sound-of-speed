@@ -33,6 +33,8 @@ import {
   sourceKind,
   sourceStatus,
   telemetry,
+  journalDetaille,
+  journalDetailleJusqua,
 } from '../state'
 
 withDefaults(defineProps<{ immersive?: boolean }>(), { immersive: false })
@@ -69,6 +71,14 @@ const STATUS_LABELS: Record<string, string> = {
  * croire à un point mort qui n'existe pas ici, et à un moyen d'y aller.
  */
 /** « un trajet », « dix-sept trajets » : le pluriel se dit. */
+/** Ce que le témoin du journal détaillé dit au survol, et aux lecteurs d'écran. */
+const detailTitre = computed(() => {
+  const fin = journalDetailleJusqua.value
+  if (fin === null) return 'Journal détaillé'
+  const heure = new Date(fin).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return `Journal détaillé — s'éteint à ${heure}`
+})
+
 const trajetsMesures = computed(() => {
   const count = measuredCar.value?.aggregate.tripCount ?? 0
   return count === 1 ? '1 trajet' : `${count} trajets`
@@ -253,6 +263,17 @@ const SPEED_STEP_KMH = 20
         :title="captureStatus.why"
         :aria-label="captureStatus.why"
       ></span>
+
+      <!--
+        Le journal détaillé, quand il est allumé.
+
+        Il rappelle qu'un réglage exceptionnel est en cours, et jusqu'à quand.
+        Sans lui, on partirait rouler sans savoir qu'on enregistre dix fois plus,
+        ou l'on croirait enregistrer alors qu'il s'est éteint dans la nuit.
+      -->
+      <span v-if="journalDetaille" class="detail-light" role="status" :title="detailTitre">
+        détaillé
+      </span>
 
       <!--
         Le choix de la source vit dans la configuration : on ne le fait pas en
@@ -541,6 +562,21 @@ const SPEED_STEP_KMH = 20
 
 .capture-light.bad {
   background: #c62828;
+}
+
+/*
+  Le témoin du journal détaillé : lisible, jamais criard.
+
+  Il n'annonce aucun danger — on dépose un journal plus gros, rien de plus — donc
+  pas de couleur d'alerte, qui attirerait l'œil du conducteur pour rien.
+*/
+.detail-light {
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  color: var(--muted);
+  flex: none;
+  font-size: 0.7rem;
+  padding: 0 0.3rem;
 }
 
 .status {

@@ -48,6 +48,9 @@ import {
   measuredCar,
   measuredOverrides,
   setDriveFace,
+  journalDetaille,
+  journalDetailleJusqua,
+  setJournalDetaille,
 } from '../state'
 
 /**
@@ -107,6 +110,20 @@ onMounted(() => void refreshBanks())
  * même geste distrait qu'un curseur qu'on déplace.
  */
 const consentPending = ref<'minimal' | 'extended' | null>(null)
+
+/**
+ * L'heure à laquelle le journal détaillé s'éteindra, en clair.
+ *
+ * Le jour n'est dit que s'il change : « à 23 h 30 » quand c'est aujourd'hui,
+ * « demain à 11 h 30 » sinon. C'est ce que la personne a besoin de savoir avant
+ * de partir rouler.
+ */
+function heureDeFin(fin: number): string {
+  const date = new Date(fin)
+  const heure = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  const memeJour = date.toDateString() === new Date().toDateString()
+  return memeJour ? `à ${heure}` : `demain à ${heure}`
+}
 
 function onConsent(consent: 'none' | 'minimal' | 'extended'): void {
   if (consent === 'none') {
@@ -501,6 +518,39 @@ function megabytes(bytes: number): string {
           {{ Math.round(journalDeposits.reduce((total, entry) => total + entry.bytes, 0) / 1024) }} Ko.
         </span>
       </p>
+      <!--
+        Le journal détaillé : un réglage de mise au point, **hors** de la rangée
+        des trois crans.
+
+        Hors de la rangée parce que les crans sont une échelle de vie privée et
+        que ceci est une échelle technique : en faire un quatrième cran le ferait
+        lire comme « le dernier, donc le plus complet », et forcerait qui veut du
+        détail à accepter aussi sa position.
+
+        Discret, et sans couleur d'alerte : le rouge attire l'œil plus qu'il ne
+        dissuade, et annonce un danger qui n'existe pas — on dépose un journal
+        plus gros, on ne dérègle rien.
+      -->
+      <p class="note mise-au-point">
+        <label>
+          <input
+            type="checkbox"
+            :checked="journalDetaille"
+            @change="setJournalDetaille(($event.target as HTMLInputElement).checked)"
+          />
+          <strong>Journal détaillé</strong> — à n’activer que si on vous l’a
+          demandé.
+        </label>
+        <span v-if="journalDetaille && journalDetailleJusqua">
+          Le relevé passe de dix secondes à une seconde, et ce réglage s’éteint
+          tout seul <strong>{{ heureDeFin(journalDetailleJusqua) }}</strong>.
+        </span>
+        <span v-else>
+          Il densifie ce qui part au cran choisi ci-dessus — il n’envoie rien de
+          plus — et s’éteint tout seul au bout de vingt-quatre heures.
+        </span>
+      </p>
+
       <p v-if="enAttente.length > 0" class="note">
         En attente de dépôt : <strong>{{ enAttente.join(', ') }}</strong>.
         <button @click="retryUploads()">Réessayer</button>
@@ -740,6 +790,25 @@ td input[type='number'] {
   margin: 0.2rem 0;
   color: var(--text);
   font-size: 0.9rem;
+}
+
+/*
+ * Le réglage de mise au point : délibérément terne.
+ *
+ * Il ne doit pas se disputer l'attention avec les trois crans au-dessus, qui
+ * sont le vrai choix de l'utilisateur.
+ */
+.mise-au-point label {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.mise-au-point span {
+  display: block;
+  margin-top: 0.25rem;
+  opacity: 0.8;
 }
 
 .journal {

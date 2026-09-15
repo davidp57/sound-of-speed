@@ -86,6 +86,37 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Le bruit du récepteur se lit en roulant.** L'écran Télémétrie l'affiche sous
+  la qualité du signal, et le journal le porte dès le premier cran de remontée.
+  Il se calculait jusqu'ici sur le serveur, à partir d'une trace complète et
+  après coup : il fallait donc accepter la remontée de la conduite pour
+  l'obtenir, puis aller le lire en base.
+
+  Il ne coûte rien de plus : le conditionneur ajuste déjà une droite sur ses
+  dernières mesures pour en tirer la pente, et l'écart des mesures à cette droite
+  **est** le bruit. Une accélération franche et régulière n'y ajoute rien — une
+  droite suit exactement une rampe —, ce qui est la preuve qu'il mesure le
+  récepteur et non le mouvement.
+
+  Le chiffre du bord et celui du serveur sont voisins sans être égaux : le
+  serveur voit les mesures avant et après chaque point, la voiture n'a que le
+  passé. L'écran le dit.
+
+- **Un journal détaillé, pour le jour d'un essai.** Un interrupteur à part, sous
+  les trois crans de remontée : le relevé passe de dix secondes à une seconde et
+  porte en plus les seuils de la boîte, la demande et l'accélération avant
+  lissage.
+
+  **Ce n'est pas un quatrième cran** : les trois sont une échelle de vie privée,
+  la finesse du journal est une échelle technique. Il densifie ce qui part au
+  cran déjà choisi et n'ouvre aucune nature de fichier — à « Le minimum »,
+  toujours ni position ni trace.
+
+  Il s'éteint tout seul vingt-quatre heures après son activation, à l'heure près :
+  allumé à 23 h 30, il tient jusqu'au lendemain 23 h 30, là où une expiration au
+  changement de date couperait en plein essai. L'écran dit jusqu'à quand, et
+  l'écran de conduite le rappelle tant qu'il est actif.
+
 - **L'allure de la voiture se lit, en roulant et après coup.** Ce que la boîte
   croit que la voiture fait — freine, ralentit, tient son allure, accélère — et
   depuis combien de temps : l'écran Télémétrie le montre sous la transmission, le
