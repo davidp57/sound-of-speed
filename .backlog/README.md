@@ -67,7 +67,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [COMPTES](COMPTES/spec.md) — 5/5 · un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | 🔄 19/20 — le parcours d'appropriation est celui des autres applications, les deux axes ouvrent les écrans, et un fournisseur se connecte quand il est configuré ; Google est configuré sur le NAS, vérifié là-bas, et un compte qui s'y rattache annonce son adresse ; l'écran du compte met en tête les deux gestes qu'on vient y faire, et un compte vide s'efface quand on le quitte ; restent un essai hors réseau en voiture et « j'ai oublié » (attend un relais) |
 | [DURCIR](DURCIR/spec.md) — sécuriser le code et les données : ce que les échanges réseau laissent voir, et ce qu'un compte peut atteindre de ce qu'un autre a déposé | ⬜ cadre posé le 13 septembre, pas découpé |
 | [ACCUEILLIR](ACCUEILLIR/spec.md) — l'écran d'aide du premier lancement, revu : un accueil court le compte en tête, une visite à bulles sur l'interface, et une aide de référence derrière le `?` | 🧑 5/5 — instruit, découpé et livré le 14 septembre ; reste l'essai au volant |
-| [INSTRUMENTER](INSTRUMENTER/spec.md) — savoir ce que le récepteur donne, et pouvoir en demander plus le jour d'un essai : le bruit du GPS mesuré à bord, et un journal détaillé qui s'éteint tout seul | ⬜ |
+| [INSTRUMENTER](INSTRUMENTER/spec.md) — savoir ce que le récepteur donne, et pouvoir en demander plus le jour d'un essai : le bruit du GPS mesuré à bord, et un journal détaillé qui s'éteint tout seul | ⬜ 4 tickets, les deux premiers indépendants |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,
