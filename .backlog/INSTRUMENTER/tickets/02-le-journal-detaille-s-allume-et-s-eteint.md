@@ -71,3 +71,16 @@ Un cas n'était pas au ticket et a été ajouté : **une date d'activation dans 
 futur éteint le réglage** au lieu de le prolonger. L'horloge d'un navigateur se
 règle, parfois de plusieurs heures, et un réglage de mise au point ne doit pas
 pouvoir se rendre permanent par un changement d'heure.
+
+## Un défaut trouvé à la relecture, et pas par la CI
+
+L'extinction était branchée sur le **mauvais battement**. Le bloc qui la constate
+s'était glissé dans le minuteur de la garde d'écran — lequel ne tourne qu'à
+l'arrêt, écran de réglage fermé, source GPS — au lieu de la boucle. Le réglage ne
+serait donc jamais mort **pendant un trajet**, c'est-à-dire exactement au moment
+où il sert.
+
+Rien ne pouvait l'attraper : le typecheck, le lint et les 1 679 tests passaient
+tous. La règle d'extinction est vérifiée seule, et elle était juste ; c'est son
+branchement qui ne l'était pas, et `state.ts` — l'assemblage — n'est testé nulle
+part dans ce dépôt. C'est une limite connue, pas un oubli de ce ticket.

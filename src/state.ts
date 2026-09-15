@@ -701,18 +701,6 @@ watch(
     if (enAttente && gardeMinuteur === null) {
       gardeMinuteur = setInterval(() => {
         gardeHorlogeMs.value = Date.now()
-  // L'extinction du journal détaillé se constate ici : sans ce rafraîchissement,
-  // le réglage resterait allumé jusqu'au prochain geste de l'utilisateur, et
-  // l'écran afficherait une heure de fin dépassée.
-  if (detailActiveA.value !== null) {
-    const etaitAllume = journalDetaille.value
-    detailMaintenantMs.value = gardeHorlogeMs.value
-    if (etaitAllume && !journalDetaille.value) {
-      detailActiveA.value = null
-      writePreference(JOURNAL_DETAIL_KEY, '')
-      collector.setDetailed(false)
-    }
-  }
       }, 1_000)
     } else if (!enAttente && gardeMinuteur !== null) {
       clearInterval(gardeMinuteur)
@@ -1209,6 +1197,26 @@ export const journalDetaille = computed(() =>
 export const journalDetailleJusqua = computed(() =>
   eteintA(detailActiveA.value, detailMaintenantMs.value),
 )
+
+/**
+ * Constate l'extinction du journal détaillé, s'il est l'heure.
+ *
+ * Appelée par la boucle, et **par elle seule** : c'est le seul battement qui
+ * tourne en roulant. Une première version s'était glissée dans le minuteur de la
+ * garde d'écran, qui ne bat qu'à l'arrêt, écran de réglage fermé — le réglage
+ * n'y serait donc jamais mort pendant un trajet, ce qui est exactement le moment
+ * où il tourne.
+ */
+function eteindreLeDetailSiDu(maintenantMs: number): void {
+  if (detailActiveA.value === null) return
+  const etaitAllume = journalDetaille.value
+  detailMaintenantMs.value = maintenantMs
+  if (etaitAllume && !journalDetaille.value) {
+    detailActiveA.value = null
+    writePreference(JOURNAL_DETAIL_KEY, '')
+    collector.setDetailed(false)
+  }
+}
 
 export function setJournalDetaille(actif: boolean): void {
   detailMaintenantMs.value = Date.now()
@@ -2475,6 +2483,7 @@ function step(dt: number): void {
   // La garde se nourrit du même arrêt que la boîte : deux notions d'immobilité
   // finiraient par diverger sans qu'on sache laquelle croire.
   gardeHorlogeMs.value = Date.now()
+  eteindreLeDetailSiDu(gardeHorlogeMs.value)
   garde.value = observer(garde.value, {
     auGps: sourceKind.value === 'geolocation',
     alArret: speed.atStandstill,
