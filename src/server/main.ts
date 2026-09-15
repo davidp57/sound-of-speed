@@ -21,7 +21,7 @@ import {
   poidsDesBanques,
   poidsDesComptes,
 } from './depense'
-import { creerIdentite, secretPersistant } from './identite'
+import { creerIdentite, reprendreLesAdressesDesTiers, secretPersistant } from './identite'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { appliquerLaRegle, DELAIS_PAR_DEFAUT, formaterPassage, type Delais } from './retention'
 import { offertsDeLEnvironnement } from './roles'
@@ -220,6 +220,17 @@ const identite = creerIdentite({
   ...(adressePublique === undefined ? {} : { adresse: adressePublique }),
   tiers,
 })
+
+// Les comptes rattachés à un tiers avant que le rattrapage de l'adresse existe
+// gardent l'adresse de remplacement du greffon anonyme. On relit une fois ce que
+// leur fournisseur avait dit ; sans effet au démarrage suivant.
+try {
+  const repris = await reprendreLesAdressesDesTiers(base)
+  if (repris > 0) console.log(`adresse reprise chez le fournisseur pour ${repris} compte(s)`)
+} catch (erreur) {
+  // Se rattrape au démarrage suivant, ou à la prochaine reconnexion.
+  console.error(`reprise des adresses de tiers : ${String(erreur)}`)
+}
 
 // Un fournisseur doit revenir sur le site, et le conteneur ne voit qu'un port
 // local : sans adresse publique, l'adresse de retour qu'il annoncera sera fausse

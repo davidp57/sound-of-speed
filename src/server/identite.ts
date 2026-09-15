@@ -28,10 +28,10 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { betterAuth } from 'better-auth'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNotNull, ne } from 'drizzle-orm'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { anonymous } from 'better-auth/plugins'
-import { adresseARetenir, lireLeJeton } from './jeton-tiers'
+import { adresseARetenir, estUneAdresseDeRemplacement, lireLeJeton } from './jeton-tiers'
 import { genericOAuth } from 'better-auth/plugins/generic-oauth'
 
 import { tirerUneEtiquette } from '../core/identity/etiquette'
@@ -256,53 +256,24 @@ export function creerIdentite({ base, secret, adresse, tiers }: OptionsDIdentite
            * Le rattachement d'une adresse, lui, le fait déjà de son côté — voir
            * `compte.ts` —, et le refaire ici ne coûte qu'une écriture pour rien.
            */
-          after: async (preuve) => {
-            // `userId`, et surtout pas `accountId` : dans le vocabulaire de la
-            // bibliothèque, `accountId` est l'identifiant **chez le
-            // fournisseur**. C'est le renommage qui piège, et il est déjà
-            // signalé plus bas.
-            const compteVise = preuve.userId
-            try {
-              // Écrit dans la table plutôt que par la bibliothèque : le contexte
-              // d'appel qu'elle passe à ce crochet vaut `null` dès que la preuve
-              // se pose hors d'une requête, et on ne veut pas d'un anonymat qui
-              // se lève seulement quand la pile a la bonne forme.
-              // Ce que le fournisseur dit de la personne : son adresse, son
-              // portrait. Sans cela le compte cessait d'être anonyme en gardant
-              // l'adresse de remplacement que le greffon lui avait fabriquée —
-              // David, le 14 septembre 2026 : « j'ai mes profils mais pas mon
-              // email ni mon gravatar ».
-              //
-              // Une adresse choisie ne se fait jamais remplacer : un tiers est
-              // une preuve de plus, pas un remplacement. C'est
-              // `adresseARetenir` qui tranche.
-              const dit = lireLeJeton(preuve.idToken)
-              const [avant] = await base
-                .select({ email: accounts.email, image: accounts.image })
-                .from(accounts)
-                .where(eq(accounts.id, compteVise))
-                .limit(1)
-
-              const adresse = adresseARetenir(avant?.email, dit)
-
-              await base
-                .update(accounts)
-                .set({
-                  isAnonymous: false,
-                  ...(adresse !== null ? { email: adresse } : {}),
-                  // Le portrait ne s'impose qu'à un compte qui n'en a pas : on
-                  // ne remplace pas celui d'un fournisseur déjà rattaché par
-                  // celui du suivant.
-                  ...(dit.image !== null && !avant?.image ? { image: dit.image } : {}),
-                })
-                .where(eq(accounts.id, compteVise))
-            } catch (erreur) {
-              // Un compte resté marqué anonyme reste utilisable : ce qui est en
-              // jeu est son effacement au passage d'un autre appareil, pas son
-              // fonctionnement. Faire échouer le rattachement coûterait plus.
-              console.error(`fin de l'anonymat du compte ${compteVise} : ${String(erreur)}`)
-            }
-          },
+          after: (preuve) => reprendreCeQueLeTiersDit(base, preuve),
+        },
+        /**
+         * **Et à chaque reconnexion, pas seulement à la première.**
+         *
+         * Une preuve ne se crée qu'une fois : se reconnecter chez le même
+         * fournisseur **met à jour** la ligne avec des jetons frais. Un compte
+         * rattaché avant que ce rattrapage existe gardait donc son adresse de
+         * remplacement pour toujours, et s'y reconnecter n'y changeait rien —
+         * David, le 15 septembre 2026, après avoir posé les droits de banque sur
+         * son adresse : « mon compte n'est pas associé à dpierron@gmail.com
+         * alors que je me suis connecté avec Google ».
+         *
+         * Le même crochet couvre l'autre lecture possible du symptôme : une
+         * preuve créée avant que la bibliothèque ait rangé son jeton.
+         */
+        update: {
+          after: (preuve) => reprendreCeQueLeTiersDit(base, preuve),
         },
       },
       user: {
@@ -370,4 +341,103 @@ export function secretPersistant(fichierDeBase: string): string {
   // lecture pour tous vaut un secret publié.
   writeFileSync(fichier, `${neuf}\n`, { mode: 0o600 })
   return neuf
+}
+
+/**
+ * Ce que le fournisseur dit de la personne, repris sur le compte.
+ *
+ * Deux choses, et la seconde a mis un jour à se voir :
+ *
+ * 1. **Le compte cesse d'être anonyme.** `is_anonymous` ne dit pas « sans nom »
+ *    mais « s'est créé tout seul, et rien ne permet d'y revenir » : dès qu'un
+ *    tiers y est rattaché, il y a un chemin de retour. Le laisser anonyme a une
+ *    conséquence bien réelle — `reglerLAncien` efface les comptes anonymes qui
+ *    ne portent rien.
+ * 2. **Son adresse et son portrait sont repris**, s'il en donne. Sans ça le
+ *    compte gardait l'adresse de remplacement que le greffon lui avait
+ *    fabriquée.
+ *
+ * **Une adresse choisie ne se fait jamais remplacer** : un tiers est une preuve
+ * de plus, pas un remplacement. C'est `adresseARetenir` qui tranche. Le portrait
+ * suit la même règle et ne s'impose qu'à un compte qui n'en a pas.
+ *
+ * Écrit dans la table plutôt que par la bibliothèque : le contexte d'appel
+ * qu'elle passe à ces crochets vaut `null` dès que la preuve se pose hors d'une
+ * requête, et on ne veut pas d'un anonymat qui ne se lève que quand la pile a la
+ * bonne forme.
+ */
+async function reprendreCeQueLeTiersDit(
+  base: Base,
+  preuve: { userId: string; idToken?: string | null | undefined },
+): Promise<void> {
+  // `userId`, et surtout pas `accountId` : dans le vocabulaire de la
+  // bibliothèque, `accountId` est l'identifiant **chez le fournisseur**. C'est
+  // le renommage qui piège.
+  const compteVise = preuve.userId
+
+  try {
+    const dit = lireLeJeton(preuve.idToken)
+    const [avant] = await base
+      .select({ email: accounts.email, image: accounts.image })
+      .from(accounts)
+      .where(eq(accounts.id, compteVise))
+      .limit(1)
+
+    const adresse = adresseARetenir(avant?.email, dit)
+
+    await base
+      .update(accounts)
+      .set({
+        isAnonymous: false,
+        ...(adresse !== null ? { email: adresse } : {}),
+        ...(dit.image !== null && !avant?.image ? { image: dit.image } : {}),
+      })
+      .where(eq(accounts.id, compteVise))
+  } catch (erreur) {
+    // Un compte resté marqué anonyme reste utilisable : ce qui est en jeu est
+    // son effacement au passage d'un autre appareil, pas son fonctionnement.
+    // Faire échouer le rattachement coûterait plus.
+    console.error(`fin de l'anonymat du compte ${compteVise} : ${String(erreur)}`)
+  }
+}
+
+/**
+ * Les comptes rattachés à un tiers avant que ce rattrapage existe.
+ *
+ * Ils gardent l'adresse de remplacement que le greffon anonyme leur a
+ * fabriquée : le crochet de création n'existait pas encore quand leur preuve a
+ * été posée, et une preuve ne se crée qu'une fois. Se reconnecter les répare
+ * désormais — mais seulement si l'on se reconnecte, et un compte qui roule tous
+ * les jours n'a aucune raison de le faire.
+ *
+ * On relit donc, une fois au démarrage, ce que leur fournisseur avait dit. Le
+ * jeton est déjà en base : il a été vérifié quand il y est entré, et on ne s'en
+ * sert que pour lire ce qui est acquis.
+ *
+ * Sans effet au second démarrage : un compte dont l'adresse a été reprise ne
+ * correspond plus au filtre.
+ */
+export async function reprendreLesAdressesDesTiers(base: Base): Promise<number> {
+  const candidats = await base
+    .select({ userId: authIdentities.accountId, idToken: authIdentities.idToken })
+    .from(authIdentities)
+    .innerJoin(accounts, eq(accounts.id, authIdentities.accountId))
+    .where(and(ne(authIdentities.providerId, 'credential'), isNotNull(authIdentities.idToken)))
+
+  let repris = 0
+  for (const candidat of candidats) {
+    // Le filtre sur l'adresse se fait ici plutôt qu'en SQL : c'est la même règle
+    // que partout ailleurs, et la dupliquer en clause `like` la ferait diverger.
+    const [compte] = await base
+      .select({ email: accounts.email })
+      .from(accounts)
+      .where(eq(accounts.id, candidat.userId))
+      .limit(1)
+    if (!estUneAdresseDeRemplacement(compte?.email)) continue
+
+    await reprendreCeQueLeTiersDit(base, candidat)
+    repris += 1
+  }
+
+  return repris
 }

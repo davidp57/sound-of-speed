@@ -6,6 +6,24 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Corrigé
+
+- **Un compte rattaché à un fournisseur gardait son adresse de remplacement pour
+  toujours.** Le rattrapage écrit le 14 septembre ne regardait le jeton qu'à la
+  **création** de la preuve — et une preuve ne se crée qu'une fois. Un compte
+  rattaché avant ce correctif restait donc avec son adresse en `.invalid`, et se
+  reconnecter n'y changeait rien : la reconnexion met la preuve à jour, elle ne
+  la recrée pas.
+
+  Le rattrapage court maintenant aussi à la mise à jour, donc à chaque
+  reconnexion. Et une reprise au démarrage relit une fois ce que le fournisseur
+  avait dit, pour les comptes qui n'ont aucune raison de refaire le tour —
+  sans effet au démarrage suivant.
+
+  Trouvé par David le 15 septembre 2026 en posant les droits de banque sur son
+  adresse : « mon compte n'est pas associé à dpierron@gmail.com alors que je me
+  suis connecté avec Google ». Ça bloquait tout contrôle fondé sur l'adresse.
+
 ### Ajouté
 
 - **Le serveur dit une fois par jour ce qu'il a dépensé.** Une ligne dans le
