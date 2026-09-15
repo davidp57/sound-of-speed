@@ -1524,9 +1524,10 @@ export const captureStatus = computed(() =>
 function depositCaptureIfDue(nowMs: number, force = false): void {
   if (captureBusy || !sendsAutomatically(uploadConsent.value, 'trace')) return
   // L'arrêt passe outre le recul : c'est le dernier moment où l'on est encore là
-  // pour envoyer, et `StandstillFlush` ne le demande qu'une fois par arrêt.
-  if (force) captureRetry.retryNow()
-  if (!captureRetry.ready(nowMs)) return
+  // pour envoyer. Il ne le **remet pas à zéro** pour autant — des arrêts répétés
+  // hors réseau, un embouteillage aux feux, rendraient sinon au recul sa cadence
+  // de départ à chaque redémarrage, ce qui est exactement ce qu'on corrige.
+  if (!force && !captureRetry.ready(nowMs)) return
   if (!force && !capture.shouldSlice(nowMs)) return
 
   const slice = capture.takeSlice(nowMs)
