@@ -53,6 +53,14 @@ export async function putSlice(
   folder: string,
   slice: Slice,
   fetchImpl: typeof fetch = fetch,
+  /**
+   * De quoi renoncer à une requête qui ne rend pas la main.
+   *
+   * Un abandon rejette le `fetch` : il ressort d'ici comme une indisponibilité
+   * ordinaire, avec `retry`, et la tranche revient en attente. Voir
+   * `core/upload/inflight.ts` pour le pourquoi de l'échéance.
+   */
+  signal?: AbortSignal,
 ): Promise<SliceOutcome> {
   const packed = await pack(slice.name, slice.body)
 
@@ -63,6 +71,10 @@ export async function putSlice(
         'Content-Type': packed.compressed ? 'application/gzip' : 'application/x-ndjson',
       },
       body: packed.body,
+      // `null` et non `undefined` : le dépôt compile avec
+      // `exactOptionalPropertyTypes`, qui refuse l'absence sur une propriété
+      // dont le type ne la prévoit pas.
+      signal: signal ?? null,
     })
 
     if (response.ok) {

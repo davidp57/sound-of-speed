@@ -102,14 +102,29 @@ minutes. Ce n'est pas un défaut de l'application — deux minutes sans couvertu
 sur une route en sont la cause ordinaire —, et la tranche est partie au retour du
 réseau : c'est le fichier `741`.
 
-**Un second défaut, trouvé en mesurant et non corrigé :** le dépôt n'a **pas de
-délai d'expiration**, et `captureBusy` interdit tout autre dépôt tant que la
-requête en cours n'a pas rendu la main. C'est ce qui explique l'asymétrie entre
-les deux : le journal, dont les tranches pèsent deux à cinq kilo-octets, échouait
-en 189 ms et rebouclait ; la capture, dont les tranches en pèsent près de cent,
-restait pendue sur une seule requête — un rang consommé au lieu de sept cents,
-mais aussi quatre cent quarante-quatre secondes sans qu'aucune tentative soit
-faite. Le recul ne traite pas ce cas-là.
+**Un second défaut, trouvé en mesurant, et corrigé sur demande de David le
+15 septembre :** le dépôt n'avait **pas de délai d'expiration**, et un envoi en
+cours interdisait tout autre dépôt tant qu'il n'avait pas rendu la main. C'est ce
+qui explique l'asymétrie entre les deux : le journal, dont les tranches pèsent
+deux à cinq kilo-octets, échouait en 189 ms et rebouclait ; la capture, dont les
+tranches en pèsent près de cent, restait pendue sur une seule requête — un rang
+consommé au lieu de sept cents, mais aussi quatre cent quarante-quatre secondes
+sans qu'aucune tentative soit faite.
+
+Un envoi est maintenant abandonné au bout de trente secondes
+(`core/upload/inflight.ts`). L'échéance se lit sur l'horloge murale et non sur le
+temps de session — le pas de la boucle est plafonné à un quart de seconde — et
+elle est relue par la boucle plutôt que confiée à un minuteur, que le navigateur
+briderait dès la page masquée. Le compromis est écrit dans le module : une
+requête abandonnée peut avoir abouti, et la suivante déposerait le même contenu
+sous un autre rang. Un doublon se lit ; sept minutes d'attente ne se voient pas.
+
+**Un troisième défaut, corrigé en même temps :** le journal n'avait **aucun
+témoin** sur l'écran de conduite. Le 11 septembre, il s'est répété sept cent
+vingt-six fois sans que rien ne le dise. Il entre maintenant dans le témoin de
+session, qui prend le pire des deux — un seul voyant, comme le prescrit
+`core/capture/health.ts` — et qui nomme le journal quand la capture, elle, va
+bien.
 
 **Un défaut voisin, non corrigé et signalé :** le journal n'a pas de témoin sur
 l'écran de conduite. Son erreur de dépôt s'affiche dans *Configuration*, la

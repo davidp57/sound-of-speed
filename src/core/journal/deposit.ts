@@ -20,6 +20,7 @@ export type { SliceOutcome } from '../upload/slice-put'
 export function depositSlice(
   slice: JournalSlice,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<SliceOutcome> {
-  return putSlice(FOLDER, slice, fetchImpl)
+  return putSlice(FOLDER, slice, fetchImpl, signal)
 }

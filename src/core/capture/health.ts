@@ -18,11 +18,24 @@
 
 export type CaptureHealth = 'off' | 'ok' | 'warn' | 'bad'
 
+/** Pourquoi un dépôt a échoué, s'il a échoué. */
+export type DepositFailure = 'no-credentials' | 'refused' | 'network' | ''
+
 export interface CaptureHealthInput {
   /** La capture tourne-t-elle ? */
   capturing: boolean
-  /** Pourquoi le dernier dépôt a échoué, s'il a échoué. */
-  failure: 'no-credentials' | 'refused' | 'network' | ''
+  /** Pourquoi le dernier dépôt de capture a échoué, s'il a échoué. */
+  failure: DepositFailure
+  /**
+   * Pourquoi le dernier dépôt de **journal** a échoué, s'il a échoué.
+   *
+   * Le journal compte autant que la capture : un trajet dont le journal n'est
+   * pas parti se revoit sans ce qui expliquait ce qu'on y voit — le profil en
+   * usage, les passages de rapport, les rejets du récepteur. Il n'a pourtant
+   * jamais eu de témoin, et le 11 septembre 2026 il s'est répété sept cent
+   * vingt-six fois sans que rien ne le dise à l'écran.
+   */
+  journalFailure: DepositFailure
   /** Le GPS livre-t-il des positions ? */
   gpsActive: boolean
   /** Motif dominant de rejet des positions, quand le veilleur en voit un. */
@@ -35,7 +48,32 @@ export interface CaptureVerdict {
   why: string
 }
 
+/** Du plus grave au moins grave. Ce qui ne se corrige pas tout seul passe devant. */
+const GRAVITE: DepositFailure[] = ['no-credentials', 'refused', 'network', '']
+
+/**
+ * Le pire des deux dépôts.
+ *
+ * Un seul témoin, qui prend le pire : une rangée de voyants sur un écran qu'on
+ * lit en conduisant est une rangée qu'on ne lit pas.
+ */
+function pire(a: DepositFailure, b: DepositFailure): DepositFailure {
+  // Une valeur hors liste vaut « rien à signaler » plutôt que « le plus grave » :
+  // `indexOf` rend -1, qui gagnerait sur tout le reste.
+  const rang = (f: DepositFailure) => {
+    const i = GRAVITE.indexOf(f)
+    return i < 0 ? GRAVITE.length : i
+  }
+  return rang(a) <= rang(b) ? a : b
+}
+
 export function captureHealth(input: CaptureHealthInput): CaptureVerdict {
+  const failure = pire(input.failure, input.journalFailure)
+  // Quand la capture va bien et que seul le journal cloche, il faut le dire :
+  // sans cela, on chercherait un défaut de capture qui n'existe pas.
+  const seulLeJournal = input.failure === '' && input.journalFailure !== ''
+  const quoi = seulLeJournal ? ' (le journal)' : ''
+
   if (!input.capturing) {
     return {
       state: 'off',
@@ -45,18 +83,18 @@ export function captureHealth(input: CaptureHealthInput): CaptureVerdict {
 
   // Ce qui ne se corrigera pas tout seul passe devant : réessayer un compte
   // refusé donnera le même refus au prochain trajet comme à celui-ci.
-  if (input.failure === 'refused') {
-    return { state: 'bad', why: 'Le serveur refuse le compte de dépôt : rien ne partira.' }
+  if (failure === 'refused') {
+    return { state: 'bad', why: `Le serveur refuse le compte de dépôt${quoi} : rien ne partira.` }
   }
-  if (input.failure === 'no-credentials') {
-    return { state: 'bad', why: "Aucun compte de dépôt n'est réglé : rien ne partira." }
+  if (failure === 'no-credentials') {
+    return { state: 'bad', why: `Aucun compte de dépôt n'est réglé${quoi} : rien ne partira.` }
   }
   if (!input.gpsActive) {
     return { state: 'bad', why: 'Le GPS ne livre plus de position : la capture est vide.' }
   }
 
-  if (input.failure === 'network') {
-    return { state: 'warn', why: "Pas de réseau : ce qui attend partira à son retour." }
+  if (failure === 'network') {
+    return { state: 'warn', why: `Pas de réseau${quoi} : ce qui attend partira à son retour.` }
   }
   if (input.rejecting) {
     return { state: 'warn', why: 'Le GPS livre des positions trop imprécises pour être gardées.' }

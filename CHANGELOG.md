@@ -22,6 +22,25 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Un envoi de dépôt qui ne rend pas la main est abandonné au bout de trente
+  secondes.** Un seul dépôt court à la fois, et rien ne bornait sa durée : le
+  11 septembre 2026, la capture est restée pendue sur **une seule requête
+  pendant quatre cent quarante-quatre secondes** — sept minutes sans qu'une
+  tentative soit faite. C'est ce qui explique l'asymétrie avec le journal, dont
+  les tranches pèsent vingt fois moins et qui échouait, lui, en 189
+  millisecondes.
+
+  L'échéance se lit sur l'horloge murale et non sur le temps de session : le pas
+  de la boucle est plafonné à un quart de seconde, et trente secondes de session
+  feraient deux minutes d'attente écran éteint. Un minuteur n'aurait pas
+  convenu non plus, le navigateur les bridant dès que la page n'est plus
+  visible.
+
+- **Le témoin de session couvre aussi le journal**, et prend le pire des deux.
+  Le journal n'en avait jamais eu : le 11 septembre, il s'est répété sept cent
+  vingt-six fois sans que rien ne le dise à l'écran de conduite. Quand la
+  capture va bien et que seul le journal cloche, le témoin le nomme.
+
 - **Un dépôt qui échoue ne repart plus en boucle.** Le 11 septembre 2026, le
   journal a consommé **sept cent vingt-six rangs de tranche en cent trente-sept
   secondes** — une tentative toutes les 189 millisecondes. Une tranche rendue à
