@@ -22,6 +22,27 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **La boîte n'a plus qu'un avis sur ce que fait la voiture.** Elle posait cinq
+  fois la même question — accélère, tient, ralentit — de cinq façons, avec cinq
+  seuils qui ne s'accordaient pas et trois formes de mémoire différentes ; c'est
+  l'ordre des conditions qui arbitrait. Une seule pièce répond maintenant, une
+  fois par image : elle rend un état, le temps passé dedans, et l'accélération
+  qui a servi à décider.
+
+  Ce que ça change s'entend sur une croisière bruitée. Mesuré au banc de
+  positions fabriquées, à la cadence du récepteur de la voiture : la boîte
+  encaissait jusqu'à 1,25 km/h de bruit de mesure avant de se remettre à faire
+  des allers-retours de rapport, elle encaisse maintenant 1,5. Le reste de la
+  marge est borné par la réactivité et non par cette lecture — un lissage plus
+  long tiendrait 1,75, au prix d'un lever de pied vu après qu'un passage s'est
+  engagé.
+
+  Un cas change à l'usage : un régime bien au-dessus du seuil de montée ne
+  court-circuite plus la temporisation quand la vitesse est **tenue**. La règle
+  le disait déjà — « le dépassement ne vaut qu'en accélérant » — mais son
+  écriture acceptait l'accélération nulle. Le passage se fait toujours, à son
+  heure.
+
 - **Un compte que rien ne distingue d'un compte neuf s'efface enfin quand on le
   quitte.** Il était gardé, et personne ne l'aurait rouvert : le serveur écrit un
   profil mesuré à **tout** compte au démarrage, ce qui suffisait à le faire passer

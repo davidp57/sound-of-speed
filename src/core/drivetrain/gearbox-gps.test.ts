@@ -217,18 +217,20 @@ describe('la boîte sur un signal de récepteur', () => {
     }
   })
 
-  it('tient jusqu à un quart de bruit en plus, et décroche au-delà', () => {
+  it('tient jusqu à moitié de bruit en plus, et décroche au-delà', () => {
     // **Le chiffre de référence du lot.** À la cadence de la voiture, la boîte
-    // tient une croisière bruitée à 1,25 km/h et décroche à 1,5 : la marge sur
-    // le bruit de référence est d'un quart. C'est elle que l'unification de la
-    // lecture du mouvement doit augmenter — un banc qui ne dirait que « zéro
-    // passage » ne montrerait aucun progrès.
-    const tient = VITESSES_TENUES.map((kmh) => passagesEnCroisiere(kmh, { noiseKmh: 1.25 }))
+    // tient une croisière bruitée à 1,5 km/h et décroche à 1,75.
+    //
+    // Elle décrochait à 1,5 avant que la lecture du mouvement ne soit unifiée :
+    // la marge est passée d'un quart à une moitié. Elle est bornée par la
+    // réactivité et non par cette lecture — voir `smoothS` dans
+    // `core/speed/motion.ts`, qui gagnerait encore un cran au prix d'un lever de
+    // pied vu trop tard.
+    const tient = VITESSES_TENUES.map((kmh) => passagesEnCroisiere(kmh, { noiseKmh: 1.5 }))
     expect(tient).toEqual([0, 0, 0, 0, 0])
 
-    // Et le banc reproduit bien le défaut, sans quoi il ne prouverait rien : à
-    // une fois et demie le bruit de référence, la boîte se remet à osciller.
-    const decroche = VITESSES_TENUES.map((kmh) => passagesEnCroisiere(kmh, { noiseKmh: 1.5 }))
+    // Et le banc reproduit toujours le défaut, sans quoi il ne prouverait rien.
+    const decroche = VITESSES_TENUES.map((kmh) => passagesEnCroisiere(kmh, { noiseKmh: 1.75 }))
     expect(decroche.reduce((a, b) => a + b, 0)).toBeGreaterThan(0)
   })
 

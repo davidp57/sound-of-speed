@@ -2865,8 +2865,9 @@ src/
       geolocation.ts     GPS réel, repli haversine, rejet des aberrations
       replay.ts          rejeu d'une trace enregistrée, et son enregistreur
       conditioner.ts     fenêtre glissante, extrapolation, ressort amorti
+      motion.ts          l'état du mouvement : freine, ralentit, tient, accélère
     engine/engine.ts     régime, charge, rupteur
-    drivetrain/gearbox.ts  rapports, passages automatiques et manuels, croisière
+    drivetrain/gearbox.ts  rapports, passages automatiques et manuels
     audio/
       mix.ts             gains et vitesses de lecture des couches (fonction pure)
       engine.ts          graphe Web Audio, chargement, horloge sur le fil audio
@@ -2961,21 +2962,45 @@ travail, et chacune répondait à une question différente :
 
 Et **on ne monte pas non plus pendant qu'on ralentit**, ce qui n'est pas la même
 chose que pendant qu'on freine — lever le pied ne franchit pas le seuil de
-freinage. Cela vaut pour les deux façons de monter, et il a fallu les traiter
-l'une après l'autre : la montée en croisière, puis la montée au régime. Cette
-dernière lance un compte à rebours dès que le seuil est franchi, et plus rien ne
-l'annulait : le seuil atteint, un lever de pied dans la foulée, et le passage se
-produisait une demi-seconde plus tard alors que la voiture ralentissait déjà. Le
-compte à rebours est maintenant abandonné, pas suspendu — reprendre les gaz
-repart d'un compte neuf. La bande de croisière juge sur la dérive de la
-vitesse mesurée sur trois secondes : robuste au bruit, mais lente. Quand on lève
-le pied après une longue croisière, la stabilité est déjà acquise et la dérive
-met plus d'une seconde à voir le ralentissement — assez pour laisser passer un
-rapport de plus. Mesuré : un passage du quatrième au cinquième une seconde après
-le lever de pied, sur une perte de 0,5 km/h par seconde. L'accélération
-instantanée le sait tout de suite mais elle est bruitée ; on la cumule donc dans
-un compteur qui monte en ralentissant et redescend deux fois plus vite sinon, si
-bien qu'une croisière qui tremble autour de zéro ne l'atteint jamais.
+freinage. Cette règle lance un compte à rebours dès que le seuil de régime est
+franchi, et plus rien ne l'annulait : le seuil atteint, un lever de pied dans la
+foulée, et le passage se produisait une demi-seconde plus tard alors que la
+voiture ralentissait déjà. Le compte à rebours est maintenant abandonné, pas
+suspendu — reprendre les gaz repart d'un compte neuf.
+
+### Une seule lecture du mouvement
+
+La boîte posait cinq fois la question « qu'est-ce que la voiture est en train de
+faire ? », de cinq façons, avec cinq seuils qui ne s'accordaient pas : un seuil
+de freinage tenu une seconde, un compteur de ralentissement qui montait deux
+fois moins vite qu'il ne descendait, un raccourci pour les décélérations
+franches, une rampe continue sur le plancher de descente, et un « est-ce qu'on
+accélère ? » réduit au signe de l'accélération. Chacun avait sa raison, aucun ne
+connaissait les autres, et c'est l'ordre des conditions qui arbitrait.
+
+Une seule pièce répond désormais, une fois par image : `core/speed/motion.ts`.
+Elle rend un **état** — freine, ralentit, tient, accélère —, le **temps passé
+dedans**, et l'**accélération qui a servi à décider**. Les quatre états sont
+ordonnés, si bien que chaque usage prend le palier qui le concerne au lieu
+d'avoir son propre seuil : la montée est interdite dès qu'on ralentit, le
+rétrogradage au freinage demande qu'on freine depuis une seconde, le plancher de
+descente prend l'accélération retenue, et le passage immédiat demande qu'on
+accélère.
+
+**L'hystérésis, en une phrase** : chaque frontière a deux seuils — celui qui fait
+entrer dans l'état le plus marqué, et un plus doux qui en fait sortir — et tout
+changement se confirme pendant trois dixièmes de seconde, sauf quand le seuil est
+franchi si largement qu'il n'y a plus de doute à lever. Cette dernière réserve
+n'est pas un ornement : sans elle, un lever de pied franc arrive après qu'un
+passage s'est engagé, ce qui était précisément le défaut relevé en roulant.
+
+Ce que cela change se mesure, et le banc qui le mesure fait entrer des positions
+fabriquées dans la vraie source de géolocalisation, jusqu'à la boîte
+(`core/drivetrain/gearbox-gps.test.ts`). À la cadence du récepteur de la voiture,
+la boîte tenait une croisière bruitée jusqu'à 1,25 km/h de bruit de mesure et
+décrochait à 1,5 ; elle tient maintenant 1,5 et décroche à 1,75. La marge n'est
+pas bornée par cette lecture mais par la réactivité : un lissage plus long la
+porterait à 1,75, au prix d'un lever de pied vu trop tard.
 
 Et surtout, **le seuil de montée suit la demande et non la charge de l'instant**.
 
@@ -3413,7 +3438,7 @@ suit pas.
 | 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **19 tickets sur 20 ; Google est configuré sur le NAS et vérifié, et un compte qui s'y rattache annonce son adresse ; l'écran du compte mène avec les deux gestes qu'on vient y faire, et un compte vide s'efface ; restent l'essai hors réseau en voiture et « j'ai oublié »** |
 | 52 | Accueillir au premier lancement : un écran court le compte en tête, une visite à bulles sur l'interface, de vrais onglets, et une aide qui répond au lieu d'accueillir | **livré ; reste l'essai au volant** |
 | 53 | Trois niveaux d'écran, et ce qui les sépare n'est pas un droit : conduire, régler à l'arrêt, fabriquer en atelier. La voiture télécharge 9 % de moins et montre cinq onglets | **livré ; reste l'essai au volant** |
-| 54 | Une seule notion de « est-ce qu'on ralentit ? » : cinq lectures de l'accélération cohabitent dans la boîte, avec cinq seuils qui ne s'accordent pas | **le banc juge maintenant la boîte sur un vrai signal de récepteur : plus d'aller-retour, mais la marge n'est que d'un quart de bruit** |
+| 54 | Une seule notion de « est-ce qu'on ralentit ? » : cinq lectures de l'accélération cohabitaient dans la boîte, avec cinq seuils qui ne s'accordaient pas | **unifiée en une lecture, mesurée au banc de positions fabriquées : la boîte encaisse une moitié de bruit en plus avant d'osciller, contre un quart** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

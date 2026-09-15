@@ -292,12 +292,40 @@ describe('Gearbox — montée des rapports', () => {
     // Bien au-delà du seuil : la temporisation de cinq secondes est ignorée.
     const kmh = kmhForRpm(p, 1, p.drivetrain.upshiftRpm[1]! + 600)
     const rpmInGear = rpmInGearAt(p, kmh)
+    // **L'accélération est déclarée, et ce n'est pas un détail de banc.** La
+    // règle dit « le dépassement ne vaut qu'en accélérant : sinon c'est le seuil
+    // qui est descendu sous le régime, pas le régime qui est monté au-dessus ».
+    // Ce test la vérifiait avec l'accélération nulle du banc, que l'ancienne
+    // écriture — le signe de l'accélération — acceptait tout juste. La lecture
+    // unifiée du mouvement ne confond plus « tient sa vitesse » et « accélère »,
+    // et le cas que ce test décrit demande bien un régime qui monte.
+    const entree = { rpmInGear, atStandstill: false, load: 0.5, kmh, accelMs2: 1 }
     // La première cède la place à la vitesse de lancement ; on laisse ce
     // passage s'achever avant de mesurer celui qui nous intéresse.
-    for (let f = 0; f * FRAME_S < 0.2; f += 1) gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 0.5, kmh: kmh, accelMs2 })
-    const state = gearbox.tick(FRAME_S, { rpmInGear: rpmInGear, atStandstill: false, load: 0.5, kmh: kmh, accelMs2 })
+    for (let f = 0; f * FRAME_S < 0.2; f += 1) gearbox.tick(FRAME_S, entree)
+    const state = gearbox.tick(FRAME_S, entree)
 
     expect(state.gear).toBeGreaterThan(1)
+  })
+
+  it('n ignore pas la temporisation quand la vitesse est tenue', () => {
+    // Le revers de la règle, et il n'était pas vérifié : à vitesse tenue, un
+    // régime au-dessus du seuil ne dit rien d'une intention de monter — c'est le
+    // seuil qui est descendu, la demande étant retombée. Le passage se fait,
+    // mais après sa temporisation.
+    const p = profile({ shiftDelaysS: [5, 5, 5, 5, 5, 5] })
+    const gearbox = makeGearbox(p)
+
+    const kmh = kmhForRpm(p, 1, p.drivetrain.upshiftRpm[1]! + 600)
+    const entree = { rpmInGear: rpmInGearAt(p, kmh), atStandstill: false, load: 0.5, kmh, accelMs2: 0 }
+    for (let f = 0; f * FRAME_S < 0.2; f += 1) gearbox.tick(FRAME_S, entree)
+    expect(gearbox.tick(FRAME_S, entree).gear).toBe(0)
+
+    // Elle passe quand même, mais à son heure : les cinq secondes de la
+    // temporisation, et non le dépassement du régime.
+    let dernier = gearbox.tick(FRAME_S, entree)
+    for (let f = 0; f * FRAME_S < 6; f += 1) dernier = gearbox.tick(FRAME_S, entree)
+    expect(dernier.gear).toBeGreaterThan(0)
   })
 
   it('quitte la première dès que la deuxième tient au-dessus du ralenti', () => {

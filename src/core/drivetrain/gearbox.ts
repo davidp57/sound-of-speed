@@ -1,3 +1,5 @@
+import { MotionReader, isSlowing, type Motion } from '../speed/motion'
+
 import type { DrivetrainPreset, EnginePreset, FeelPreset } from '../preset/schema'
 import {
   downshiftFloorRpm,
@@ -71,63 +73,13 @@ const KICKDOWN_COOLDOWN_S = 3
 /** Accélération au-delà de laquelle la vitesse n'est plus tenue, en m/s². */
 
 /**
- * Décélération à partir de laquelle on considère que la voiture ralentit
- * vraiment, en m/s², et durée qu'il faut la tenir pour interdire une montée.
+ * Ce que la boîte demande à la lecture du mouvement, et pourquoi.
  *
- * La bande de croisière regarde la **dérive** de la vitesse sur trois secondes,
- * ce qui la rend robuste au bruit mais lente : quand on lève le pied après une
- * longue croisière, la stabilité est déjà acquise et la dérive met plus d'une
- * seconde à voir le ralentissement. La boîte a le temps de monter un rapport de
- * plus — mesuré : un passage du quatrième au cinquième une seconde après le
- * lever de pied, sur une perte de 0,5 km/h par seconde.
- *
- * L'accélération instantanée, elle, le sait tout de suite, mais elle est bruitée
- * à un dixième de m/s². On la cumule donc : le compteur monte pendant qu'on
- * ralentit et redescend deux fois plus vite sinon, si bien qu'une croisière qui
- * tremble autour de zéro ne l'atteint jamais et qu'un vrai ralentissement le
- * franchit en un tiers de seconde.
- *
- * Ce délai s'ajoute à la durée du passage lui-même : une montée décidée juste
- * avant un lever de pied s'engage quand même, et son coup de gaz tombe six
- * dixièmes de seconde plus tard, alors que la voiture ralentit déjà. C'est
- * pourquoi le seuil est court — et pourquoi, en montée, le coup de gaz suit
- * l'effort du moment plutôt que le réglage seul.
+ * Elle ne fixe plus ses seuils : ils vivent dans `core/speed/motion.ts`, en un
+ * seul endroit, avec l'hystérésis qui va avec. Ce qui reste ici est ce que
+ * **cette** décision exige de cette lecture — une durée, pas un seuil.
  */
-const CRUISE_SLOWING_MS2 = 0.05
-const CRUISE_SLOWING_HOLD_S = 0.35
-
-/**
- * Plafond du compteur de ralentissement, en secondes.
- *
- * Le compteur ne sert qu'à franchir `CRUISE_SLOWING_HOLD_S` : au-delà, chaque
- * seconde de plus n'ajoute rien à la décision et ne fait qu'allonger le temps
- * qu'il faudra pour la défaire. Sans plafond il devient une dette.
- *
- * Relevé en roulant le 11 septembre 2026 : après quarante-quatre minutes de
- * stationnement, il valait **2 706 secondes** pour un seuil de 0,35. La page en
- * veille bat au ralenti — jusqu'à vingt secondes par tour — et le conditionneur
- * prêtait alors à une voiture immobile une décélération de trois dixièmes ;
- * chaque tour versait donc vingt secondes au compteur. Il décroît deux fois
- * plus vite qu'il ne monte, mais rendre 2 706 secondes demandait vingt-deux
- * minutes d'accélération continue : l'inhibition de montée ne retombait jamais.
- * La boîte a tenu la deuxième de 22 à 108 km/h, jusqu'au rupteur, et n'a plus
- * passé un seul rapport de tout le trajet.
- *
- * Trois fois le seuil laisse la marge utile — une croisière bruitée n'y arrive
- * pas — et se rend en un peu plus d'une demi-seconde.
- */
-const SLOWING_CEILING_S = CRUISE_SLOWING_HOLD_S * 3
-
-/**
- * Décélération au-delà de laquelle on ne cumule plus rien : on ralentit, point.
- *
- * Le cumul existe pour ne pas confondre le bruit de la mesure avec un
- * ralentissement, et un dixième de m/s² est bien dans ce bruit. Un demi-m/s²
- * ne l'est pas — la traînée du simulateur en donne déjà 1,4 à cent kilomètres à
- * l'heure. Attendre un tiers de seconde de plus n'apporte alors aucune
- * certitude et laisse le temps à un passage de se déclencher.
- */
-const CLEARLY_SLOWING_MS2 = 0.5
+const BRAKE_HOLD_S = 1
 
 /**
  * Vitesse à laquelle la demande retombe vers la charge, par seconde.
@@ -162,8 +114,6 @@ const CLEARLY_SLOWING_MS2 = 0.5
  * demande la remplace, en disant *pourquoi* il ne doit pas descendre.
  */
 const DEMAND_FALL_PER_S = 1 / 3
-/** Durée de décélération soutenue avant de descendre, en secondes. */
-const BRAKE_HOLD_S = 1
 
 /**
  * Ce que la boîte a besoin de savoir pour décider.
@@ -269,22 +219,16 @@ export class Gearbox {
   private currentLoad = 0
   /** Temps depuis le dernier rétrogradage forcé, en secondes. */
   private sinceKickdownS = Number.POSITIVE_INFINITY
-  /** Durée pendant laquelle la vitesse est restée stable, en secondes. */
   /**
-   * Temps passé à ralentir, en secondes, moins ce qui a été rendu.
+   * La seule lecture de ce que fait la voiture.
    *
-   * Ce n'est pas une durée continue : elle décroît deux fois plus vite qu'elle
-   * ne monte, pour qu'une croisière bruitée ne la fasse jamais franchir le
-   * seuil. Et elle est **plafonnée** — voir `SLOWING_CEILING_S` : au-delà de ce
-   * qu'il faut pour décider, chaque seconde de plus n'est qu'une dette à rendre.
+   * Elle remplace cinq mécanismes qui répondaient à la même question avec cinq
+   * seuils différents. Le seuil de freinage lui vient du profil, les autres sont
+   * les siens, et l'hystérésis est écrite une fois pour toutes chez elle.
    */
-  private slowingForS = 0
-  /** Durée pendant laquelle la décélération est restée soutenue, en secondes. */
-  private brakingForS = 0
+  private readonly motion = new MotionReader()
   /** Temps depuis la dernière descente, en secondes. */
   private sinceDownshiftS = Number.POSITIVE_INFINITY
-  /** Durée passée hors de la bande de croisière, en secondes. */
-  /** Vitesses récentes, pour mesurer la dérive sur la fenêtre déclarée. */
 
   constructor(
     private drivetrain: DrivetrainPreset,
@@ -346,8 +290,7 @@ export class Gearbox {
     this.currentLoad = 0
     this.elapsedS = 0
     this.sinceKickdownS = Number.POSITIVE_INFINITY
-    this.slowingForS = 0
-    this.brakingForS = 0
+    this.motion.reset()
     this.sinceDownshiftS = Number.POSITIVE_INFINITY
   }
 
@@ -444,10 +387,13 @@ export class Gearbox {
    * tôt — et reste sous le seuil de montée du même rapport, ce qui interdit
    * l'aller-retour.
    */
-  private downshiftThreshold(accelMs2: number): number {
+  private downshiftThreshold(motion: Motion): number {
     return downshiftFloorRpm(
       this.driveMode,
-      accelMs2,
+      // L'accélération que la lecture a retenue, et non celle de l'image : ce
+      // plancher descend avec le ralentissement, et le faire suivre un signal
+      // bruité le faisait trembler autant que lui.
+      motion.accelMs2,
       this.engine.idleRpm,
       this.upshiftThreshold(this.gear),
     )
@@ -524,31 +470,30 @@ export class Gearbox {
     this.demand =
       load >= this.demand ? load : Math.max(load, this.demand - DEMAND_FALL_PER_S * dt)
 
-    // Ce qui reste des compteurs d'allure, et pourquoi il en reste.
+    // Une seule question posée, une seule fois par image.
     //
-    // La croisière n'a plus de mécanisme à elle : le plancher fait entrer le
-    // rapport long tout seul. Mais **inhiber la montée quand on ralentit** est
-    // une autre affaire, et elle tient toujours : sans elle, lever le pied
-    // juste avant un passage le laisse se produire alors que la voiture
-    // ralentit déjà. David : « si j'arrête d'accélérer juste avant que la boîte
-    // ne monte un rapport, elle le monte quand même ».
-    //
-    // Ces deux-là seront unifiés avec le reste par le lot MOUVEMENT ; ils sont
-    // gardés tels quels ici pour que ce lot ne fasse qu'une chose.
-    this.brakingForS =
-      accelMs2 <= this.drivetrain.brakeDownshiftAccelMs2 ? this.brakingForS + dt : 0
-    this.slowingForS =
-      accelMs2 < -CRUISE_SLOWING_MS2
-        ? Math.min(SLOWING_CEILING_S, this.slowingForS + dt)
-        : Math.max(0, this.slowingForS - dt * 2)
-    const slowing =
-      accelMs2 <= -CLEARLY_SLOWING_MS2 || this.slowingForS >= CRUISE_SLOWING_HOLD_S
-    const braking = this.brakingForS >= BRAKE_HOLD_S
+    // Tout ce qui suit s'y réfère : l'inhibition de montée prend l'état, le
+    // rétrogradage au freinage y ajoute une durée, et le plancher de descente
+    // prend l'accélération qu'elle a retenue. Rien ne relit l'accélération
+    // brute — c'est la règle du lot, et c'est ce qui rendait les décisions
+    // dépendantes de l'ordre des conditions.
+    this.motion.setOptions({ brakingMs2: this.drivetrain.brakeDownshiftAccelMs2 })
+    const motion = this.motion.tick(dt, accelMs2)
+
+    // Ralentir interdit la montée. Sans cela, lever le pied juste avant un
+    // passage le laisse se produire alors que la voiture ralentit déjà. David :
+    // « si j'arrête d'accélérer juste avant que la boîte ne monte un rapport,
+    // elle le monte quand même ».
+    const slowing = isSlowing(motion.state)
+    // Freiner la permet de descendre, mais seulement quand cela dure : c'est la
+    // seule chose que cette décision ajoute à la lecture commune — une durée,
+    // pas un seuil de plus.
+    const braking = motion.state === 'braking' && motion.forS >= BRAKE_HOLD_S
 
     let ready = false
     let blocked = false
     let upThresholdSeen = this.upshiftThreshold(this.gear)
-    const downThresholdSeen = this.downshiftThreshold(accelMs2)
+    const downThresholdSeen = this.downshiftThreshold(motion)
     const auto = this.mode === 'auto' && this.hasGearbox && this.shiftRemainingS === 0
 
     // La première se conduit comme les autres : on y accélère jusqu'au seuil de
@@ -628,7 +573,10 @@ export class Gearbox {
         const delay = this.drivetrain.shiftDelaysS[this.gear] ?? 0.8
         // Le dépassement ne vaut qu'en accélérant : sinon c'est le seuil qui
         // est descendu sous le régime, pas le régime qui est monté au-dessus.
-        const overshot = accelMs2 >= 0 && rpm >= upThreshold + UPSHIFT_OVERSHOOT_RPM
+        // « En accélérant » est la même lecture que partout ailleurs, et non un
+        // sixième avis tiré du signe de l'accélération.
+        const overshot =
+          motion.state === 'accelerating' && rpm >= upThreshold + UPSHIFT_OVERSHOOT_RPM
         if (this.readyForS >= delay || overshot) this.applyShift(1)
       } else if (
         rpm <= downThresholdSeen &&
