@@ -22,6 +22,18 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le journal n'est plus noyé par l'allure.** Elle bascule **cent vingt-quatre
+  fois par minute** en croisière tenue — mesuré au banc —, soit quatre mille cinq
+  cents lignes sur un trajet de trente-six minutes contre deux cent seize relevés
+  ordinaires : le journal aurait été fait à quatre-vingt-quinze pour cent d'un
+  papillotement que personne n'a demandé.
+
+  Une bascule n'est inscrite que si l'état qu'elle quitte a tenu au moins une
+  seconde ; les autres sont comptées, et la ligne suivante dit combien. Rien
+  n'est perdu — une allure qui papillote est elle-même un renseignement sur le
+  signal. La boîte, elle, garde sa finesse : elle décide à chaque image, et un
+  ralentissement vu trop tard s'entend.
+
 - **La boîte n'a plus qu'un avis sur ce que fait la voiture.** Elle posait cinq
   fois la même question — accélère, tient, ralentit — de cinq façons, avec cinq
   seuils qui ne s'accordaient pas et trois formes de mémoire différentes ; c'est

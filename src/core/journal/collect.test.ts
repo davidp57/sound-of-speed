@@ -314,6 +314,45 @@ describe('l’état du mouvement est inscrit à chaque bascule', () => {
     })
   })
 
+  it('avale les bascules trop brèves, et dit combien', () => {
+    // Mesuré au banc : sans ce filtre, l'allure bascule cent vingt-quatre fois
+    // par minute en croisière tenue, et le journal serait fait à quatre-vingt-
+    // quinze pour cent de papillotement. La boîte a besoin de cette finesse pour
+    // décider ; la relecture cherche ce qui a duré.
+    // La règle regarde l'état **quitté** : c'est lui qui a duré, ou non.
+    const { collector, events } = setup()
+    collector.observe(snapshot({ at: 0, pace: 'holding', paceForS: 5 }))
+    // Celle-ci quitte un holding de cinq secondes : elle mérite sa ligne.
+    collector.observe(snapshot({ at: 100, pace: 'slowing', paceForS: 0.2 }))
+    expect(events().filter((e) => e.kind === 'pace')).toHaveLength(1)
+
+    // Les trois suivantes quittent des états de deux dixièmes : rien.
+    collector.observe(snapshot({ at: 200, pace: 'holding', paceForS: 0.2 }))
+    collector.observe(snapshot({ at: 300, pace: 'slowing', paceForS: 0.2 }))
+    collector.observe(snapshot({ at: 400, pace: 'holding', paceForS: 0.2 }))
+    expect(events().filter((e) => e.kind === 'pace')).toHaveLength(0)
+
+    // L'état tient, et le cliché suivant porte la durée atteinte : c'est lui
+    // qui sera l'état quitté.
+    collector.observe(snapshot({ at: 1900, pace: 'holding', paceForS: 1.5 }))
+    // Celle-ci quitte donc un état qui a tenu : elle passe, et rapporte les
+    // trois avalées.
+    collector.observe(snapshot({ at: 2000, pace: 'braking', paceForS: 0 }))
+    expect(events().find((e) => e.kind === 'pace')?.data).toMatchObject({
+      from: 'holding',
+      to: 'braking',
+      breves: 3,
+    })
+  })
+
+  it('n inscrit pas le compte quand il n y a rien eu à avaler', () => {
+    const { collector, events } = setup()
+    collector.observe(snapshot({ at: 0, pace: 'holding', paceForS: 5 }))
+    collector.observe(snapshot({ at: 2000, pace: 'slowing', paceForS: 2 }))
+
+    expect(events().find((e) => e.kind === 'pace')?.data).not.toHaveProperty('breves')
+  })
+
   it('se tait tant que l’état tient', () => {
     // Une ligne par bascule, pas une par image : c'est ce qui rend le journal
     // lisible sur un trajet d'une demi-heure.

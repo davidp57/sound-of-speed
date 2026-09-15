@@ -157,6 +157,27 @@ const SAMPLE_EVERY_MS = 10_000
 const SAMPLE_EVERY_DETAILED_MS = 1_000
 
 /**
+ * Durée qu'un état d'allure doit avoir tenue pour mériter sa ligne, en
+ * millisecondes.
+ *
+ * **Mesuré au banc le 15 septembre 2026 : sans ce filtre, l'allure bascule cent
+ * vingt-quatre fois par minute en croisière tenue** — quatre mille cinq cents
+ * lignes sur un trajet de trente-six minutes, contre deux cent seize relevés
+ * ordinaires. Le journal aurait été fait à quatre-vingt-quinze pour cent d'un
+ * papillotement que personne n'a demandé.
+ *
+ * La boîte, elle, a besoin de cette finesse : elle décide à chaque image, et un
+ * ralentissement vu une demi-seconde trop tard s'entend. La **relecture** n'en a
+ * pas besoin — elle cherche ce qui a duré. Les deux cadences n'ont aucune raison
+ * d'être la même.
+ *
+ * Ce qui est avalé n'est pas perdu : la ligne suivante dit combien de bascules
+ * brèves l'ont précédée, et c'est une information de diagnostic à part entière —
+ * une allure qui papillote dit quelque chose du signal.
+ */
+const PACE_MIN_HOLD_MS = 1_000
+
+/**
  * Décimation de la position au cran étendu, en millisecondes.
  *
  * Un point par seconde, ce qui est la résolution habituelle d'une trace
@@ -178,6 +199,8 @@ export class JournalCollector {
    * `core/journal/detail.ts`.
    */
   private detailed = false
+  /** Bascules d'allure trop brèves pour mériter leur ligne, depuis la dernière inscrite. */
+  private paceSkipped = 0
 
   constructor(
     private readonly journal: Journal,
@@ -296,13 +319,22 @@ export class JournalCollector {
     // seconde ou pendant dix, et la relecture n'aurait aucun moyen de la
     // reconstituer autrement.
     if (before.pace !== now.pace) {
-      this.journal.add(now.at, 'pace', {
-        from: before.pace,
-        to: now.pace,
-        heldS: round(before.paceForS, 1),
-        kmh: round(now.kmh, 1),
-        accel: round(now.accelMs2, 2),
-      })
+      // Une bascule trop brève ne gagne pas sa ligne : elle est comptée, et la
+      // prochaine ligne dira combien il y en a eu. Voir `PACE_MIN_HOLD_MS`.
+      if (before.paceForS * 1000 < PACE_MIN_HOLD_MS) {
+        this.paceSkipped += 1
+      } else {
+        this.journal.add(now.at, 'pace', {
+          from: before.pace,
+          to: now.pace,
+          heldS: round(before.paceForS, 1),
+          kmh: round(now.kmh, 1),
+          accel: round(now.accelMs2, 2),
+          // Zéro n'est pas inscrit : une ligne sur deux le porterait pour rien.
+          ...(this.paceSkipped > 0 ? { breves: this.paceSkipped } : {}),
+        })
+        this.paceSkipped = 0
+      }
     }
   }
 
