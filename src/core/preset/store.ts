@@ -400,8 +400,33 @@ export function duplicateProfile(profile: Profile, name: string): Profile {
   return { ...copie, id: newId(), name, origin: copie.origin ?? captureOrigin(copie) }
 }
 
+/**
+ * Un identifiant de profil : l'instant, et du hasard.
+ *
+ * **Deux profils créés dans la même milliseconde ne se distinguent que par le
+ * hasard**, donc c'est lui qui décide de l'unicité. Il en tenait cinq caractères
+ * tirés de `Math.random`, soit soixante millions de possibilités : assez pour
+ * l'usage — on ne crée pas deux profils dans la même milliseconde —, pas assez
+ * pour le test qui en tire deux cents d'affilée, et qui rougissait une fois sur
+ * cinq mille cinq cents. Mesuré sur cinquante mille exécutions.
+ *
+ * Dix caractères maintenant, et tirés de `getRandomValues` plutôt que découpés
+ * dans un flottant : la longueur y est constante, alors que `Math.random()` rend
+ * parfois trop peu de décimales pour en donner dix. Trois millions six cent mille
+ * milliards de possibilités.
+ */
 export function newId(): string {
-  return `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+  return `p-${Date.now().toString(36)}-${hasard(10)}`
+}
+
+/** Des caractères tirés au sort, en nombre voulu. */
+function hasard(combien: number): string {
+  const octets = new Uint8Array(combien)
+  crypto.getRandomValues(octets)
+  // Le reste modulo trente-six penche très légèrement vers les quatre premiers
+  // caractères — 256 n'est pas un multiple de 36. Sans conséquence : on cherche
+  // de l'unicité, pas de l'imprévisibilité, et rien ici ne se devine.
+  return Array.from(octets, (octet) => (octet % 36).toString(36)).join('')
 }
 
 /** Sérialise un profil dans le format de fichier, prêt à être téléchargé. */
