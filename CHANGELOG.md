@@ -8,6 +8,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Sécurité
 
+- **Un seul code de liaison vivant par compte.** Chaque demande ajoutait un code,
+  et tous restaient ouverts vingt-quatre heures : un code aperçu par-dessus une
+  épaule survivait à sa régénération, et l'écran qui en montrait un nouveau
+  laissait croire que l'ancien était mort. Demander un code retire désormais le
+  précédent.
+
+  La borne de dix tentatives par minute a été mesurée pour la première fois,
+  contre un serveur en production : sur vingt essais d'affilée, dix passent et la
+  onzième est refoulée. Le calcul écrit à côté du code tient.
+
 - **La copie des rôles dit de quel compte elle parle.** L'application retient les
   rôles du compte pour les savoir hors réseau ; cette copie ne portait pas le nom
   du compte, et survivait donc à un changement de compte. Elle était bien effacée

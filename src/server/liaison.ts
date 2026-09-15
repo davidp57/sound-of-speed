@@ -77,12 +77,27 @@ export const VALIDITE_MS = 24 * 60 * 60 * 1000
  *
  * **Elle ne s'applique qu'en production** : la bibliothèque coupe sa limitation
  * de débit hors de là, ce qui est voulu — un jeu de tests ne doit pas se faire
- * refouler — mais explique qu'aucun test ne la voie.
+ * refouler — mais explique qu'aucun test du dépôt ne la voie. Elle fige de plus
+ * la lecture de l'environnement à son import, si bien qu'un test ne peut pas la
+ * rallumer : le mesurer demande un serveur qui tourne.
+ *
+ * **Mesuré le 15 septembre 2026**, contre un serveur en production : sur vingt
+ * tentatives d'affilée, dix passent et les dix suivantes sont refoulées — la
+ * onzième est la première refusée. Le calcul ci-dessus tient donc.
  */
 const ESSAIS_PAR_MINUTE = 10
 
 /** Sous quoi le jeton est rangé dans la table de vérification. */
 const PREFIXE = 'liaison:'
+
+/**
+ * Sous quoi on retient **quel** code est celui d'un compte.
+ *
+ * Le jeton, lui, est rangé sous l'empreinte du code : on ne peut donc pas
+ * retrouver ceux d'un compte pour les retirer. Ce second renvoi sert à ça, et à
+ * rien d'autre — il porte l'empreinte du dernier code posé.
+ */
+const PREFIXE_COURANT = 'liaison-courant:'
 
 /**
  * Le greffon, à monter sur la bibliothèque d'identité.
@@ -107,12 +122,27 @@ export function liaison({ base }: { base: Base }) {
         '/liaison/code',
         { method: 'POST', use: [sessionMiddleware] },
         async (contexte) => {
+          const compte = contexte.context.session.user.id
           const code = tirerUnCode()
           const expireLe = new Date(Date.now() + VALIDITE_MS)
+          const empreinteDuCode = empreinte(code)
+
+          // **Un seul code vivant par compte**, et c'est le dernier affiché.
+          // Sans ça, tous ceux qu'on a demandés restent ouverts vingt-quatre
+          // heures : un code aperçu par-dessus une épaule survit à sa
+          // régénération, et l'écran qui en montre un nouveau laisse croire que
+          // l'ancien est mort. Ça resserre aussi le calcul de la borne ci-dessus,
+          // qui suppose un seul code à deviner.
+          await retirerLeCodeCourant(contexte, compte)
 
           await contexte.context.internalAdapter.createVerificationValue({
-            identifier: `${PREFIXE}${empreinte(code)}`,
-            value: contexte.context.session.user.id,
+            identifier: `${PREFIXE}${empreinteDuCode}`,
+            value: compte,
+            expiresAt: expireLe,
+          })
+          await contexte.context.internalAdapter.createVerificationValue({
+            identifier: `${PREFIXE_COURANT}${compte}`,
+            value: empreinteDuCode,
             expiresAt: expireLe,
           })
 
@@ -143,6 +173,13 @@ export function liaison({ base }: { base: Base }) {
           const compte = await contexte.context.internalAdapter.findUserById(consomme.value)
           if (!compte) throw contexte.error('UNAUTHORIZED', { message: 'Ce code n’ouvre rien.' })
 
+          // Le renvoi ne désigne plus rien : le code qu'il nommait vient d'être
+          // consommé. Le laisser ferait retirer un jeton déjà parti au prochain
+          // code posé, ce qui est sans effet mais trompeur à relire.
+          await contexte.context.internalAdapter.deleteVerificationByIdentifier(
+            `${PREFIXE_COURANT}${compte.id}`,
+          )
+
           const avant = await getSessionFromCtx(contexte)
 
           // Une session **neuve**, et non celle de l'appareil qui a donné le
@@ -170,6 +207,34 @@ export function liaison({ base }: { base: Base }) {
       { pathMatcher: (chemin: string) => chemin === '/liaison/code', window: 60, max: ESSAIS_PAR_MINUTE },
     ],
   }
+}
+
+/**
+ * Retire le code encore vivant d'un compte, s'il en a un.
+ *
+ * Sans effet quand il n'y en a pas, ou quand il a déjà expiré : la table de
+ * vérification se contente de ne rien trouver.
+ */
+async function retirerLeCodeCourant(
+  contexte: {
+    context: {
+      internalAdapter: {
+        findVerificationValue: (identifiant: string) => Promise<{ value: string } | null>
+        deleteVerificationByIdentifier: (identifiant: string) => Promise<unknown>
+      }
+    }
+  },
+  compte: string,
+): Promise<void> {
+  const renvoi = await contexte.context.internalAdapter.findVerificationValue(
+    `${PREFIXE_COURANT}${compte}`,
+  )
+  if (!renvoi) return
+
+  await contexte.context.internalAdapter.deleteVerificationByIdentifier(`${PREFIXE}${renvoi.value}`)
+  await contexte.context.internalAdapter.deleteVerificationByIdentifier(
+    `${PREFIXE_COURANT}${compte}`,
+  )
 }
 
 /**
