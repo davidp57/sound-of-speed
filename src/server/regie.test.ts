@@ -993,7 +993,7 @@ describe('les gestes de la fiche', () => {
       headers: patronne.annonce,
     })
     expect(await fiche()).toMatchObject({
-      plafond: { octets: 2 * 1024 * 1024 * 1024, particulier: true },
+      plafond: { octets: 2 * 1024 * 1024, particulier: true },
     })
 
     await serveur().request(`/api/regie/comptes/${conducteur.compte}/plafond`, {
@@ -1047,12 +1047,12 @@ describe('les gestes de la fiche', () => {
   })
 
   it('applique le plafond particulier plutôt que le commun', async () => {
-    await serveur().request(`/api/regie/comptes/${conducteur.compte}/plafond/0.000000001`, {
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/plafond/0.00001`, {
       method: 'PUT',
       headers: patronne.annonce,
     })
 
-    // Un peu plus d'un octet : tout dépôt réel dépasse.
+    // Une dizaine d'octets : tout dépôt réel dépasse.
     const refuse = await deposer(conducteur, 'releve.json', '{"mesure":1}')
 
     expect(refuse.status).toBe(507)
@@ -1091,7 +1091,7 @@ describe('les gestes de la fiche', () => {
       'plafond-retire',
       'plafond-pose',
     ])
-    expect(lignes[4]?.detail).toBe('3 Gio')
+    expect(lignes[4]?.detail).toBe('3 Mio')
   })
 
   it('refuse les quatre gestes à qui n’administre pas', async () => {

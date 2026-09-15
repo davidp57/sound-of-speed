@@ -619,23 +619,24 @@ export function creerRegie(options: OptionsDeLaRegie): RegieHono {
   /**
    * Poser un plafond particulier, ou revenir au plafond commun.
    *
-   * En gibioctets, parce que c'est l'unité dans laquelle on décide ; le serveur
-   * les garde en octets, l'unité dans laquelle il mesure.
+   * En mébioctets, parce que c'est l'unité dans laquelle on décide ici — le
+   * plafond commun vaut 250 Mio ; le serveur les garde en octets, l'unité dans
+   * laquelle il mesure.
    */
-  regie.put('/comptes/:compte/plafond/:gio', async (c) => {
+  regie.put('/comptes/:compte/plafond/:mio', async (c) => {
     const compte = c.req.param('compte')
     if (!(await compteExiste(options.base, compte))) return c.notFound()
 
-    const gio = Number(c.req.param('gio'))
-    if (!Number.isFinite(gio) || gio <= 0) return c.notFound()
-    const octets = Math.round(gio * 1024 * 1024 * 1024)
+    const mio = Number(c.req.param('mio'))
+    if (!Number.isFinite(mio) || mio <= 0) return c.notFound()
+    const octets = Math.round(mio * 1024 * 1024)
 
     await options.base
       .insert(storageQuotas)
       .values({ accountId: compte, bytes: octets })
       .onConflictDoUpdate({ target: storageQuotas.accountId, set: { bytes: octets } })
 
-    await inscrire(options.base, 'plafond-pose', c.get('admin'), compte, `${gio} Gio`)
+    await inscrire(options.base, 'plafond-pose', c.get('admin'), compte, `${mio} Mio`)
     return c.json({ octets })
   })
 

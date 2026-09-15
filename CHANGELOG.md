@@ -61,11 +61,11 @@ Toutes les évolutions notables du projet. Format
   plafond de volume particulier ou revenir au plafond commun. Chacun écrit sa
   ligne de trace, et l'administrateur n'a aucune exception sur son propre compte.
 
-- **Un plafond de volume par compte, réglé par `SPEED_PLAFOND_GIO`.** Il
+- **Un plafond de volume par compte, réglé par `SPEED_PLAFOND_MIO`.** Il
   **refuse** un envoi, il n'efface jamais rien : un compte au-delà voit son dépôt
   refusé en 507, un code que la voiture ne rejoue pas, et l'écran lui dit quoi
-  faire. Dix gibioctets par défaut — un nombre rond, proposé et non mesuré, à
-  revoir quand le relevé de dépense aura dit ce qu'un compte coûte.
+  faire. **250 Mio par défaut**, en mébioctets parce que c'est l'ordre de grandeur
+  dans lequel on décide ici.
 
   **La mesure coûte 0,44 ms sur les 8,6 ms d'un dépôt**, sur une table de 1 200
   dépôts pesant 60 Mio. Écrite naïvement elle prenait 36,9 ms — les trois quarts

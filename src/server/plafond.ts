@@ -6,10 +6,11 @@
  * que rien ne rougisse, un seuil inventé qui refuse se corrige en changeant une
  * valeur dans la pile.
  *
- * **La valeur par défaut est un nombre rond, proposé et non mesuré : 10 Gio.**
- * Elle sera revue quand le relevé de dépense quotidien aura dit ce qu'un compte
- * coûte vraiment. Le chiffre est annoncé comme proposé, à la façon des délais de
- * rétention.
+ * **La valeur par défaut est 250 Mio, posée par David le 15 septembre 2026.**
+ * Elle remplace un nombre rond de 10 Gio, quarante fois plus grand, qui n'avait
+ * été ni mesuré ni choisi. Celle-ci ne l'est pas davantage : elle est décidée.
+ * Ce qu'elle vaut en trajets se lira quand le relevé de dépense quotidien aura
+ * dit ce qu'un compte dépose vraiment.
  *
  * La borne par requête, à 16 Mio, ne change pas : celle-ci porte sur le **total**
  * déposé par le compte.
@@ -20,20 +21,23 @@ import { and, eq, sql } from 'drizzle-orm'
 import type { Base } from './base/base'
 import { deposits, storageQuotas } from './base/schema'
 
-/** Dix gibioctets : un nombre rond, proposé et non mesuré. */
-export const PLAFOND_PAR_DEFAUT = 10 * 1024 * 1024 * 1024
+/** Deux cent cinquante mébioctets. */
+export const PLAFOND_PAR_DEFAUT = 250 * 1024 * 1024
 
 /**
- * Ce que `SPEED_PLAFOND_GIO` désigne, en octets.
+ * Ce que `SPEED_PLAFOND_MIO` désigne, en octets.
+ *
+ * **En mébioctets, et non en gibioctets** : c'est l'ordre de grandeur dans lequel
+ * on décide ici, et un plafond de 250 Mio s'écrirait `0.244` dans l'autre unité.
  *
  * Absente, vide ou illisible : le défaut. Une valeur de travers vaut mieux
  * ignorée que prise pour zéro — zéro refuserait tout dépôt dès le premier.
  */
 export function plafondDeLEnvironnement(brut: string | undefined): number {
   if (brut === undefined) return PLAFOND_PAR_DEFAUT
-  const gio = Number(brut.trim())
-  if (!Number.isFinite(gio) || gio <= 0) return PLAFOND_PAR_DEFAUT
-  return Math.round(gio * 1024 * 1024 * 1024)
+  const mio = Number(brut.trim())
+  if (!Number.isFinite(mio) || mio <= 0) return PLAFOND_PAR_DEFAUT
+  return Math.round(mio * 1024 * 1024)
 }
 
 /** Le plafond de ce compte : le sien s'il en a un, sinon le commun. */

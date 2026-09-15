@@ -91,9 +91,15 @@ paramètres avant.
   l'épingle protège de la rotation.
 - Pas d'effacement d'un trajet épinglé, à aucun seuil.
 
-## Ce qui reste dû avant de régler des pourcentages
+## Ce que le plafond vaut, et ce que ça rend urgent
 
-Le plafond vaut 10 Gio, **un nombre rond proposé et non mesuré**. Le relevé de
-dépense quotidien tourne sur le NAS depuis le 14 septembre 2026 et n'a jamais été
-lu. Poser 75 % et 95 % d'un chiffre inventé, c'est empiler deux approximations :
-une ligne du journal du conteneur suffit à le remplacer.
+**250 Mio**, décidés par David le 15 septembre 2026 — quarante fois moins que le
+nombre rond d'avant. Ce n'est pas une mesure, c'est un choix.
+
+Cela rend ce ticket plus pressant qu'il ne l'était : à 10 Gio, le refus était
+lointain ; à 250 Mio, il arrivera. Et **aujourd'hui rien ne fait de place** — le
+plafond atteint, les dépôts sont refusés jusqu'à ce qu'on efface à la main.
+
+Le relevé de dépense quotidien tourne sur le NAS depuis le 14 septembre 2026 et
+n'a pas été lu : c'est lui qui dira combien de trajets tiennent dans 250 Mio, et
+donc si les seuils de 75 % et 95 % laissent le temps de réagir.

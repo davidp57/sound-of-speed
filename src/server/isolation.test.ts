@@ -394,7 +394,7 @@ describe('l’inventaire des routes', () => {
     '/api/regie/trace',
     '/api/regie/comptes/:compte/retention',
     '/api/regie/comptes/:compte/abandon',
-    '/api/regie/comptes/:compte/plafond/:gio',
+    '/api/regie/comptes/:compte/plafond/:mio',
     '/api/regie/comptes/:compte/plafond',
     '/api/regie/comptes/:compte/donnees',
     '/api/regie/comptes/:compte/donnees/:registre{profils|moteurs|boites}/:nom',

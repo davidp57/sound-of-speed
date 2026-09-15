@@ -136,8 +136,8 @@ export function reglerLAbandon(compte: string) {
   return agir<{ sort: SortDeLAbandon }>(`${surLeCompte(compte)}/abandon`, 'POST')
 }
 
-export function poserUnPlafond(compte: string, gio: number) {
-  return agir(`${surLeCompte(compte)}/plafond/${gio}`, 'PUT')
+export function poserUnPlafond(compte: string, mio: number) {
+  return agir<{ octets: number }>(`${surLeCompte(compte)}/plafond/${mio}`, 'PUT')
 }
 
 export function retirerLePlafond(compte: string) {
