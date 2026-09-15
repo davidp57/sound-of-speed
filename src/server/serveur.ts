@@ -608,7 +608,12 @@ export function creerServeur(options: OptionsDuServeur): Hono {
 
     // Ce qu'on annonce plutôt que ce qui part vraiment : un client qui coupe en
     // route fait la différence, et compter les octets d'un flux demanderait de
-    // l'envelopper. La marge est du bon côté — on ne sous-estime pas.
+    // l'envelopper pour un gain qui ne vaut pas ce prix.
+    //
+    // **Une réponse comprimée n'annonce pas sa taille** et compterait donc zéro.
+    // Le cas ne se présente pas : aucun format d'échantillon n'est dans la liste
+    // des compressibles. Si l'on y ajoutait un jour un format textuel, ce
+    // compteur le manquerait en silence.
     const annonce = Number(reponse.headers.get('content-length') ?? '0')
     options.depense?.echantillonServi(Number.isFinite(annonce) ? annonce : 0)
     return reponse

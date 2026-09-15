@@ -49,5 +49,10 @@ par une durée montre une moyenne là où il faut une tendance — un serveur al
 depuis trois mois ne dirait plus rien de sa semaine. Le relevé remet donc ses
 compteurs à zéro, et chaque ligne parle de la période qu'elle couvre.
 
+**La première ligne arrive après vingt-quatre heures** — ou au premier
+redéploiement : le relevé part aussi à l'arrêt du conteneur, sinon une pile qu'on
+remplace plus souvent que ça n'en montrerait jamais une, et le silence se lirait
+comme « rien à signaler ».
+
 Reste à tirer l'image sur le NAS, laisser rouler quelques jours, et relire une
 ligne. C'est ce que le premier critère attend.

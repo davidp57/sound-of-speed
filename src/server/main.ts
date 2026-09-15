@@ -269,9 +269,15 @@ const serveur = serve(
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
     clearInterval(minuteurDuMenage)
-    serveur.close(() => {
-      fermer()
-      process.exit(0)
+    // **Le relevé part avant la fermeture**, sinon un conteneur qu'on remplace
+    // emporte ses compteurs sans rien dire. Une pile qu'on redéploie plus
+    // souvent que toutes les vingt-quatre heures ne montrerait alors **jamais**
+    // une ligne, et le silence se lirait comme « rien à signaler ».
+    void releveDeDepense().finally(() => {
+      serveur.close(() => {
+        fermer()
+        process.exit(0)
+      })
     })
   })
 }
