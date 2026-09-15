@@ -99,6 +99,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Un identifiant de profil tenait sur cinq caractères de hasard.** Deux profils
+  créés dans la même milliseconde ne se distinguent que par eux : soixante
+  millions de possibilités, assez pour l'usage, pas assez pour le test qui en
+  tire deux cents d'affilée — il rougissait une fois sur cinq mille cinq cents,
+  mesuré sur cinquante mille exécutions, et il vient de le faire en intégration.
+
+  Dix caractères maintenant, tirés de `getRandomValues` plutôt que découpés dans
+  un flottant : la longueur y est constante, alors que `Math.random()` rendait
+  parfois trop peu de décimales pour en donner dix — entre sept et dix, mesuré.
+  Les identifiants déjà posés ne changent pas.
+
 - **Un serveur plein faisait jeter le journal de la voiture.** Le refus de dépôt
   répondait « ne pas réessayer », et le dépôt de tranche lisait cette réponse
   comme « ne pas garder » : la tranche prise en mémoire n'existait alors plus

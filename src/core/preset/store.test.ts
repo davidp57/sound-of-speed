@@ -472,10 +472,24 @@ describe('profils d’usine et duplication', () => {
     expect(original.layers[0]?.gain).not.toBe(0.01)
   })
 
-  it('produit des identifiants distincts', () => {
-    const ids = new Set(Array.from({ length: 200 }, () => newId()))
+  it('produit des identifiants distincts, même tirés d’affilée', () => {
+    // Deux cents identifiants tombent dans la même milliseconde : seul le hasard
+    // les distingue. Le test rougissait une fois sur cinq mille cinq cents avec
+    // cinq caractères ; il en faut dix pour qu'il cesse d'être un tirage.
+    const ids = new Set(Array.from({ length: 5000 }, () => newId()))
 
-    expect(ids.size).toBe(200)
+    expect(ids.size).toBe(5000)
+  })
+
+  it('donne toujours un suffixe de la même longueur', () => {
+    // `Math.random().toString(36)` rend parfois trop peu de décimales, et le
+    // suffixe raccourcissait sans prévenir : mesuré entre sept et dix caractères
+    // sur deux cent mille tirages. Ce qui décide de l'unicité ne doit pas varier.
+    const longueurs = new Set(
+      Array.from({ length: 2000 }, () => newId().split('-')[2]?.length),
+    )
+
+    expect([...longueurs]).toEqual([10])
   })
 })
 
