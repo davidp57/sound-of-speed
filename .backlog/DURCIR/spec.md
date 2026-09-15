@@ -1,7 +1,7 @@
 # DURCIR — sécuriser le code et les données
 
 **Statut :** 🔄 en cours — cadre posé le 13 septembre 2026, découpé et attaqué le
-15 septembre. 10 tickets faits, 3 en attente de David, 1 restant.
+15 septembre. 11 tickets faits, 2 en attente de David, 1 restant.
 **Branche :** `feature/durcir`
 **Version visée :** avant la 1.0
 
@@ -10,7 +10,7 @@
 | Ticket | État |
 |---|---|
 | 01 les échantillons demandent un compte | 🧑 le cache hors réseau reste à confirmer en voiture |
-| 02 la banque restreinte | 🧑 le mécanisme est fait ; les deux variables sont à poser sur la pile |
+| 02 la banque restreinte | ✅ vérifié sur le serveur ; un défaut d'adresse trouvé en le vérifiant, corrigé à part |
 | 03 identifiants opaques | ✅ le renommage était fait le 14 septembre ; les étiquettes audio sont mesurées et propres, le reste ne paie pas |
 | 04 mesurer ce que le serveur dépense | 🧑 le serveur relève ses quatre chiffres tout seul, une ligne par jour ; reste à tirer l'image et à lire |
 | 05 borner le volume par compte | ⬜ attend les chiffres du 04 |

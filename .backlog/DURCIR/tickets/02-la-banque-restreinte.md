@@ -1,7 +1,6 @@
 # 02 — Une banque restreinte ne descend que chez qui y a droit
 
-**Statut :** 🧑 attend David — le mécanisme est fait ; ce qu'il faut y mettre
-n'est pas dans le dépôt
+**Statut :** ✅ fait — vérifié sur le serveur le 15 septembre 2026
 
 **Bloqué par :** 01 — La banque d'échantillons ne descend plus sans compte
 
@@ -63,12 +62,19 @@ quand rien n'est déclaré. Plus la lecture de la déclaration — espaces, entr
 sans forme, et une adresse qui revient deux fois et dont les droits s'ajoutent
 au lieu de s'écraser.
 
-## Ce qui attend David
+## Vérifié sur le serveur
 
-**Rien à écrire dans le dépôt, et c'est voulu.** Il reste à poser les deux
-variables dans l'écran de la pile : le dossier de la banque concernée, et les
-adresses qui y ont droit. C'est le seul endroit où ces noms doivent exister.
+Les deux variables posées sur la pile, David le 15 septembre 2026 : la banque est
+servie à son compte et absente pour les autres.
 
-Le ticket 03 — les identifiants opaques — n'est pas fait, et il porte le reste du
-sujet : le nom voyage encore dans un profil partagé, dans une archive exportée et
-dans le journal, là où cette porte-ci ne ferme rien.
+**Un défaut a été trouvé en le vérifiant, et il ne venait pas d'ici.** Le
+contrôle se fonde sur l'adresse du compte, et celle de David était restée
+l'adresse de remplacement du greffon anonyme alors qu'il s'était connecté avec
+Google : le rattrapage écrit la veille ne regardait le jeton qu'à la **création**
+de la preuve, et une preuve ne se crée qu'une fois. Corrigé à part — le
+rattrapage court désormais aussi à la mise à jour, et une reprise au démarrage
+répare les comptes déjà rattachés.
+
+Sans ce correctif, ce ticket restait bloqué sans que rien n'indique pourquoi :
+les variables étaient bonnes, et le compte ne correspondait simplement à aucune
+adresse.
