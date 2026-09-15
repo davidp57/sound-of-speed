@@ -1,6 +1,6 @@
 # MOUVEMENT — une seule notion de « est-ce qu'on ralentit ? »
 
-**Statut :** ⬜ prêt — découpé en quatre tickets
+**Statut :** 🔄 en cours — 1/4, le relevé de référence est fait
 **Branche :** `feature/mouvement`, à ouvrir
 **Version visée :** à décider
 
@@ -103,15 +103,78 @@ celui-ci : ici, on unifie la notion de mouvement sur laquelle elle s'appuiera.
 
 ### Une seule notion de l'état du mouvement
 
-Le défaut de conception tient, même s'il n'était pas le coupable : quatre
-mécanismes décrivent le même fait — `inBand`, `slowing`, `slowingForS`,
-`braking`, `CLEARLY_SLOWING_MS2` — avec des seuils qui ne s'accordent pas. Une
-seule lecture, calculée à un endroit, avec une hystérésis explicite, remplace
-tout cela. Monter un seuil déplacerait la contradiction sans la lever.
+Le défaut de conception tient, même s'il n'était pas le coupable. **La liste a
+changé depuis que cette spécification a été écrite, le décompte non** : PLANCHER
+a emporté la bande de croisière et la montée en croisière — donc `inBand` et sa
+contradiction avec `slowing` —, et deux autres lectures se sont révélées en
+relisant le code le 15 septembre 2026. Cinq lectures de « est-ce qu'on
+ralentit ? » cohabitent aujourd'hui dans `core/drivetrain/gearbox.ts` :
+
+| Lecture | Ce qu'elle regarde | Forme |
+|---|---|---|
+| `braking` | `accelMs2 ≤ brakeDownshiftAccelMs2` (−0,7 en Route) tenu 1 s | seuil + maintien |
+| `slowing` | `accelMs2 < −0,05` cumulé jusqu'à 0,35 s, plafonné à 1,05 s | seuil + compteur à deux vitesses |
+| `CLEARLY_SLOWING_MS2` | `accelMs2 ≤ −0,5` | raccourci immédiat du précédent |
+| `downshiftFloorRpm` | `−accelMs2 / 2`, borné à 1 | rampe continue, sans seuil ni hystérésis |
+| `overshot` | `accelMs2 ≥ 0` | seuil nu, sans maintien |
+
+Cinq seuils qui ne s'accordent pas — −0,7, −0,05, −0,5, une rampe, et zéro — et
+trois formes différentes de mémoire : un maintien, un compteur asymétrique, et
+rien. Une seule lecture, calculée à un endroit, avec une hystérésis explicite,
+remplace tout cela. Monter un seuil déplacerait la contradiction sans la lever.
 
 FIX-BOITE avait déjà conclu « **un compteur, un usage** » : sa troisième
 oscillation venait d'un compteur à deux sens. La même erreur est revenue deux
 jours plus tard sous une autre forme.
+
+### Le relevé de référence, mesuré le 15 septembre 2026
+
+Ticket 01 livré : `core/drivetrain/gearbox-gps.test.ts` fait entrer des positions
+fabriquées dans la vraie source de géolocalisation, les fait traverser le
+conditionneur, le moteur et la boîte, et relève les passages. La charge s'y
+déduit de l'accélération mesurée, comme en voiture — le banc ne dit jamais ce que
+fait le pied. Profil Route sur le V8, dispersion du seuil de montée à zéro,
+croisière de deux minutes après quarante secondes d'établissement.
+
+**Sur un signal réaliste, la boîte ne fait plus d'aller-retour.** Ni à 50, 60,
+72, 85 ou 110 km/h tenus, ni en décélération — pied levé comme frein appuyé, elle
+descend rapport par rapport sans jamais remonter. Ce que David a entendu le
+10 septembre ne se reproduit pas : PLANCHER l'a emporté, et l'écoute du
+11 septembre au soir le disait déjà.
+
+**Ce qui se mesure, c'est donc la marge avant que ça recommence**, et elle est
+mince. Nombre de passages pendant deux minutes de croisière, par bruit de mesure
+et par cadence, sur les cinq vitesses tenues :
+
+| Bruit (km/h) | 30 ms | 100 ms — la voiture | 1 000 ms |
+|---|---|---|---|
+| 1,00 | 0 | 0 | 0 |
+| 1,25 | 0 | 0 | 10 |
+| 1,50 | 0 | 5 | 14 |
+| 1,75 | 0 | 17 | 34 |
+| 2,00 | 0 | 22 | 36 |
+| 3,00 | 23 | 24 | 111 |
+
+Trois choses s'y lisent :
+
+- **La marge est d'un quart de bruit** à la cadence de la voiture : ça tient à
+  1,25 km/h et ça décroche à 1,5. C'est le chiffre que l'unification doit
+  augmenter.
+- **La cadence pèse autant que le bruit.** À 1,25 km/h, un récepteur à 30 ms ne
+  bronche pas et un récepteur à la seconde a déjà décroché : moins de points sous
+  la fenêtre, c'est une pente moins moyennée, donc une accélération plus bruitée
+  à bruit de mesure égal.
+- **50 km/h est la vitesse la plus fragile** des cinq, et décroche la première
+  dans les trois cadences. 72 km/h — la plage que David a entendue — vient
+  ensuite.
+
+**Ce que ce relevé ne dit pas, et qui manque pour conclure : le bruit réel du
+récepteur de la voiture.** Il n'a jamais été relevé. Il se calcule pourtant sur
+chaque trajet — `core/calibration/measure.ts`, champ `noiseKmh` — et il vit dans
+le profil mesuré, sur le serveur. **Blocage non bloquant** : le travail continue
+sans lui, mais tant qu'il n'est pas lu, ce banc dit une marge et non un verdict.
+Si le récepteur de la voiture est au-dessus de 1,25 km/h, le défaut n'a jamais
+été corrigé — seulement déplacé hors de portée de l'écoute du 11 septembre.
 
 ### Les seuils qui suivent le moteur : livré
 

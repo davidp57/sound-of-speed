@@ -3413,6 +3413,7 @@ suit pas.
 | 51 | Un compte anonyme d'abord, une adresse quand elle sert, et des droits qui ouvrent les écrans | **19 tickets sur 20 ; Google est configuré sur le NAS et vérifié, et un compte qui s'y rattache annonce son adresse ; l'écran du compte mène avec les deux gestes qu'on vient y faire, et un compte vide s'efface ; restent l'essai hors réseau en voiture et « j'ai oublié »** |
 | 52 | Accueillir au premier lancement : un écran court le compte en tête, une visite à bulles sur l'interface, de vrais onglets, et une aide qui répond au lieu d'accueillir | **livré ; reste l'essai au volant** |
 | 53 | Trois niveaux d'écran, et ce qui les sépare n'est pas un droit : conduire, régler à l'arrêt, fabriquer en atelier. La voiture télécharge 9 % de moins et montre cinq onglets | **livré ; reste l'essai au volant** |
+| 54 | Une seule notion de « est-ce qu'on ralentit ? » : cinq lectures de l'accélération cohabitent dans la boîte, avec cinq seuils qui ne s'accordent pas | **le banc juge maintenant la boîte sur un vrai signal de récepteur : plus d'aller-retour, mais la marge n'est que d'un quart de bruit** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
