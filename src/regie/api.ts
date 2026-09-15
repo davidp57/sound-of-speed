@@ -64,6 +64,26 @@ export function chargerLaFiche(compte: string): Promise<Rendu<Fiche>> {
   return demander<Fiche>(`/api/regie/comptes/${encodeURIComponent(compte)}`)
 }
 
+/** Une entrée nommée, comme les listages du serveur les rendent. */
+export interface Entree {
+  name: string
+  mtime?: string
+}
+
+/** Ce qu'un compte porte, quand il a autorisé qu'on le regarde. */
+export interface Donnees {
+  profils: Entree[]
+  moteurs: Entree[]
+  boites: Entree[]
+  trajets: { cle: string; octets: number; tranches: unknown[] }[]
+  journal: Entree[]
+  mesures: Entree[]
+}
+
+export function chargerLesDonnees(compte: string): Promise<Rendu<Donnees>> {
+  return demander<Donnees>(`/api/regie/comptes/${encodeURIComponent(compte)}/donnees`)
+}
+
 /** Une ligne de trace, telle que le serveur la rend. */
 export interface LigneDeTrace {
   quand: string

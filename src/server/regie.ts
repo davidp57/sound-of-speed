@@ -23,10 +23,15 @@ import { assistanceDuCompte, type Assistance } from './assistance'
 import { accordsDuCompte, peutJouer, type DroitsSurLesBanques } from './banques'
 import type { Base } from './base/base'
 import { accounts, authIdentities, authSessions, bankGrants, deposits, rights } from './base/schema'
+import { estUnDossier, lireDepot, listerDepots } from './depots'
+import { lireEntite, listerEntites } from './entites'
+import { estUnNomSimple, typeDe } from './fichiers'
 import { ceQuePorte } from './heritage'
+import { lireProfil, listerProfils } from './profils'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
 import { nomDuFournisseur } from './tiers'
-import { inscrire, lireLaTrace } from './trace'
+import { listerSessions } from './sessions'
+import { inscrire, inscrireUneConsultation, lireLaTrace } from './trace'
 
 /** Ce que la garde d'entrée range pour les routes qui suivent. */
 export interface VariablesDeLaRegie {
@@ -176,7 +181,7 @@ export interface Fiche {
    * pourrait proposer que ce qui est déjà accordé.
    */
   banquesReservees: string[]
-  /** L'assistance qu'il a autorisée, et jusqu'à quand. Rien ne se lit encore ici. */
+  /** L'assistance qu'il a autorisée, et jusqu'à quand : ce qui ouvre ses données. */
   assistance: Assistance
   /** Ce qu'il porte, en nombres. */
   porte: {
@@ -294,6 +299,16 @@ function banquesDuCompte(
   return [...droits.restreintes]
     .filter((banque) => enBase.has(banque) || siennes?.has(banque) === true)
     .sort()
+}
+
+/**
+ * Ce compte a-t-il ouvert son assistance, à cet instant ?
+ *
+ * **Sans accord, le refus est celui d'un compte inconnu** : distinguer les deux
+ * apprendrait qui existe et qui a accordé, ce qui n'est l'affaire de personne.
+ */
+async function sousAccord(base: Base, compte: string): Promise<boolean> {
+  return (await assistanceDuCompte(base, compte)).ouverte
 }
 
 /**
@@ -429,6 +444,77 @@ export function creerRegie(options: OptionsDeLaRegie): RegieHono {
     // de laisser croire à un retrait qui n'a pas eu lieu.
     const peutEncore = await peutJouer(options.base, droitsSurLesBanques, compte, banque)
     return c.json({ banque, retiree: true, peutEncore })
+  })
+
+  /**
+   * Ce que le compte porte pour de bon, **quand il l'a autorisé**.
+   *
+   * Deux contrôles, et le second est l'objet du ticket : administrateur, **et**
+   * accord non échu. Sans accord, le même 404 que pour un compte qui n'existe
+   * pas — l'un ne doit pas se distinguer de l'autre.
+   *
+   * **En lecture seule, et sans jamais emprunter l'identité de quelqu'un.** Une
+   * session empruntée serait une session complète, donc en écriture : la régie
+   * pourrait alors modifier ou effacer en se faisant passer pour le conducteur,
+   * et la trace attribuerait ces gestes au conducteur. La séparation est
+   * structurelle — ces routes-ci ne savent que lire.
+   */
+  regie.get('/comptes/:compte/donnees', async (c) => {
+    const compte = c.req.param('compte')
+    if (!(await sousAccord(options.base, compte))) return c.notFound()
+
+    const inventaire = {
+      profils: await listerProfils(options.base, compte),
+      moteurs: await listerEntites(options.base, 'engines', compte),
+      boites: await listerEntites(options.base, 'gearboxes', compte),
+      trajets: await listerSessions(options.base, compte),
+      journal: await listerDepots(options.base, compte, 'journal'),
+      mesures: await listerDepots(options.base, compte, 'mesures'),
+    }
+
+    await inscrireUneConsultation(options.base, c.get('admin'), compte)
+    return c.json(inventaire, 200, { 'Cache-Control': 'no-store' })
+  })
+
+  /** Le contenu d'un profil, d'un moteur ou d'une boîte. */
+  regie.get('/comptes/:compte/donnees/:registre{profils|moteurs|boites}/:nom', async (c) => {
+    const compte = c.req.param('compte')
+    if (!(await sousAccord(options.base, compte))) return c.notFound()
+
+    const nom = nomDeBanque(c.req.param('nom'))
+    if (nom === null || !estUnNomSimple(nom)) return c.notFound()
+
+    const registre = c.req.param('registre')
+    const contenu =
+      registre === 'profils'
+        ? await lireProfil(options.base, compte, nom)
+        : await lireEntite(options.base, registre === 'moteurs' ? 'engines' : 'gearboxes', compte, nom)
+    if (contenu === null) return c.notFound()
+
+    await inscrireUneConsultation(options.base, c.get('admin'), compte)
+    return c.text(contenu, 200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+    })
+  })
+
+  /** Les octets d'un dépôt : une tranche de journal, une trace, un relevé. */
+  regie.get('/comptes/:compte/donnees/:dossier{traces|journal|mesures}/:nom', async (c) => {
+    const compte = c.req.param('compte')
+    if (!(await sousAccord(options.base, compte))) return c.notFound()
+
+    const dossier = c.req.param('dossier')
+    const nom = nomDeBanque(c.req.param('nom'))
+    if (nom === null || !estUnNomSimple(nom) || !estUnDossier(dossier)) return c.notFound()
+
+    const octets = await lireDepot(options.base, compte, dossier, nom)
+    if (octets === null) return c.notFound()
+
+    await inscrireUneConsultation(options.base, c.get('admin'), compte)
+    return new Response(new Uint8Array(octets), {
+      status: 200,
+      headers: { 'Content-Type': typeDe(nom), 'Cache-Control': 'no-store' },
+    })
   })
 
   /** Tout ce que la régie a fait, la plus récente en haut. */

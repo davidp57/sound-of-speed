@@ -13,7 +13,7 @@
  * opaques, et ce n'est pas une discipline mais une conséquence du schéma.
  */
 
-import { desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 
 import type { Base } from './base/base'
 import { accounts, adminActions } from './base/schema'
@@ -73,6 +73,44 @@ export async function inscrire(
     ...(detail === undefined ? {} : { detail }),
     happenedAt: Date.now(),
   })
+}
+
+/**
+ * Une consultation de données, inscrite **au plus une fois par quart d'heure**.
+ *
+ * Regarder un compte, c'est ouvrir son inventaire puis une dizaine de ses
+ * fichiers : une ligne par requête noierait la trace, et le conducteur y
+ * chercherait en vain ce qui s'est passé. Ce qu'il veut lire est « vos données
+ * ont été consultées le 14 à 21 h », pas quarante lignes de la même minute.
+ *
+ * La fenêtre est volontairement large : deux séances vraiment distinctes sont
+ * séparées de plus d'un quart d'heure, et deux clics de la même séance ne le
+ * sont jamais.
+ */
+export const FENETRE_DE_CONSULTATION = 15 * 60 * 1000
+
+export async function inscrireUneConsultation(
+  base: Base,
+  admin: string,
+  cible: string,
+  maintenant: number = Date.now(),
+): Promise<void> {
+  const [derniere] = await base
+    .select({ quand: adminActions.happenedAt })
+    .from(adminActions)
+    .where(
+      and(
+        eq(adminActions.adminId, admin),
+        eq(adminActions.targetId, cible),
+        eq(adminActions.action, 'donnees-lues'),
+      ),
+    )
+    .orderBy(desc(adminActions.happenedAt))
+    .limit(1)
+
+  if (derniere !== undefined && maintenant - derniere.quand < FENETRE_DE_CONSULTATION) return
+
+  await inscrire(base, 'donnees-lues', admin, cible)
 }
 
 /**

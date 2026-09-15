@@ -4,9 +4,11 @@ import { ref, watch } from 'vue'
 import {
   accorderUneBanque,
   chargerLaFiche,
+  chargerLesDonnees,
   donnerUnRole,
   reprendreUnRole,
   retirerUneBanque,
+  type Donnees,
   type Fiche,
 } from './api'
 import { dateLisible, poidsLisible } from './format'
@@ -25,6 +27,7 @@ const ROLES = ['conduite', 'atelier', 'synthese'] as const
 const proprietes = defineProps<{ compte: string }>()
 
 const fiche = ref<Fiche | null>(null)
+const donnees = ref<Donnees | null>(null)
 const etat = ref<'chargement' | 'ouverte' | 'absente' | 'panne'>('chargement')
 const panne = ref('')
 
@@ -42,6 +45,14 @@ async function recharger(): Promise<void> {
   }
   fiche.value = rendu.valeur
   etat.value = 'ouverte'
+
+  // Sous accord seulement : sans lui le serveur refuse, et une demande faite
+  // pour rien inscrirait une consultation qui n'a rien consulté.
+  donnees.value = null
+  if (rendu.valeur.assistance.ouverte) {
+    const detail = await chargerLesDonnees(proprietes.compte)
+    if (detail.etat === 'ouverte') donnees.value = detail.valeur
+  }
 }
 
 watch(() => proprietes.compte, recharger, { immediate: true })
@@ -181,6 +192,34 @@ async function basculerLeRole(role: string): Promise<void> {
       <dt>Trajets mesurés</dt>
       <dd class="numeric">{{ fiche.porte.trajetsMesures }}</dd>
     </dl>
+
+    <!--
+      Ce que le compte porte pour de bon, et seulement sous accord. Le serveur
+      refuse tant que l'assistance est fermée ; l'écran ne demande donc rien
+      dans ce cas, plutôt que de montrer un vide ambigu.
+    -->
+    <template v-if="fiche.assistance.ouverte">
+      <h3>Ce qu’il porte, en détail</h3>
+      <p v-if="donnees === null" class="muet">Chargement…</p>
+      <dl v-else>
+        <dt>Profils</dt>
+        <dd>{{ donnees.profils.map((entree) => entree.name).join(', ') || '—' }}</dd>
+        <dt>Moteurs</dt>
+        <dd>{{ donnees.moteurs.map((entree) => entree.name).join(', ') || '—' }}</dd>
+        <dt>Boîtes</dt>
+        <dd>{{ donnees.boites.map((entree) => entree.name).join(', ') || '—' }}</dd>
+        <dt>Trajets</dt>
+        <dd>{{ donnees.trajets.map((trajet) => trajet.cle).join(', ') || '—' }}</dd>
+        <dt>Journal</dt>
+        <dd class="muet">{{ donnees.journal.length }} tranches</dd>
+        <dt>Relevés</dt>
+        <dd class="muet">{{ donnees.mesures.length }} fichiers</dd>
+      </dl>
+      <p class="note">
+        Cette consultation est inscrite, et le conducteur peut la relire.
+      </p>
+    </template>
+
   </section>
 
   <p v-else-if="etat === 'chargement'" class="muet">Chargement…</p>
@@ -253,6 +292,12 @@ ul {
 .refus {
   color: var(--warn);
   margin-top: 0.75rem;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
 }
 
 .muet {

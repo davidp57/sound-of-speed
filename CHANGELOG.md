@@ -39,6 +39,17 @@ Toutes les évolutions notables du projet. Format
   aucun mauvais choix à faire. Et la régie ne peut pas se l'accorder : elle n'a
   aucune route pour l'ouvrir.
 
+- **Sous accord, la régie lit ce que le compte porte** : profils, moteurs,
+  boîtes, trajets, journal. Des routes dédiées, **en lecture seule** — la régie
+  n'emprunte jamais l'identité de quelqu'un, et l'archive du compte n'est pas
+  une porte dérobée. L'échéance passe, le serveur refuse, sans qu'aucune tâche
+  périodique n'ait à tourner. Sans accord, le refus est celui d'un compte qui
+  n'existe pas : rien ne distingue les deux.
+
+  Chaque consultation s'inscrit dans la trace, **au plus une fois par quart
+  d'heure** : une ligne par fichier ouvert noierait ce que le conducteur vient y
+  lire.
+
 ### Modifié
 
 - **Les accords de banque réservée passent en base.** Ils se posaient par

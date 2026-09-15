@@ -652,6 +652,167 @@ describe('l’accord d’assistance', () => {
   })
 })
 
+describe('lire les données sous accord', () => {
+  const TRANCHE = '2026-09-11-06-24-01_da2m_001.jsonl.gz'
+
+  async function garnirLeConducteur(): Promise<void> {
+    for (const [chemin, corps] of [
+      ['/profiles/Sport.json', '{"id":"sport","name":"Sport"}'],
+      ['/engines/V8.json', '{"id":"v8","name":"V8"}'],
+      ['/gearboxes/Auto.json', '{"id":"auto","name":"Auto"}'],
+      [`/journal/${TRANCHE}`, 'le journal du conducteur'],
+    ] as const) {
+      const depot = await serveur().request(chemin, {
+        method: 'PUT',
+        headers: { ...conducteur.annonce, 'Content-Type': 'application/json' },
+        body: corps,
+      })
+      expect(depot.status, chemin).toBe(201)
+    }
+  }
+
+  async function ouvrirLAssistance(): Promise<void> {
+    const reponse = await serveur().request('/mon-compte/assistance', {
+      method: 'PUT',
+      headers: conducteur.annonce,
+    })
+    expect(reponse.status).toBe(200)
+  }
+
+  const chemin = (suite = '') => `/api/regie/comptes/${conducteur.compte}/donnees${suite}`
+
+  it('ne rend rien tant que rien n’est accordé, et pas davantage qu’un compte inconnu', async () => {
+    await garnirLeConducteur()
+
+    expect((await serveur().request(chemin(), { headers: patronne.annonce })).status).toBe(404)
+    expect(
+      (
+        await serveur().request('/api/regie/comptes/personne/donnees', {
+          headers: patronne.annonce,
+        })
+      ).status,
+    ).toBe(404)
+  })
+
+  it('rend l’inventaire quand l’accord est ouvert', async () => {
+    await garnirLeConducteur()
+    await ouvrirLAssistance()
+
+    const reponse = await serveur().request(chemin(), { headers: patronne.annonce })
+    const porte = (await reponse.json()) as Record<string, { name: string }[]>
+
+    expect(reponse.status).toBe(200)
+    expect(porte['profils']?.map((entree) => entree.name)).toEqual(['Sport.json'])
+    expect(porte['moteurs']).toHaveLength(1)
+    expect(porte['boites']).toHaveLength(1)
+    expect(porte['journal']?.map((entree) => entree.name)).toEqual([TRANCHE])
+  })
+
+  it('rend le contenu d’un profil et les octets d’une tranche', async () => {
+    await garnirLeConducteur()
+    await ouvrirLAssistance()
+
+    const profil = await serveur().request(chemin('/profils/Sport.json'), {
+      headers: patronne.annonce,
+    })
+    expect(profil.status).toBe(200)
+    expect(await profil.text()).toContain('"name":"Sport"')
+
+    const tranche = await serveur().request(chemin(`/journal/${TRANCHE}`), {
+      headers: patronne.annonce,
+    })
+    expect(tranche.status).toBe(200)
+    expect(await tranche.text()).toBe('le journal du conducteur')
+  })
+
+  it('refuse dès que l’heure est passée, sans qu’aucune tâche n’ait tourné', async () => {
+    await garnirLeConducteur()
+    await ouvrirLAssistance()
+    expect((await serveur().request(chemin(), { headers: patronne.annonce })).status).toBe(200)
+
+    await base
+      .update(assistanceGrants)
+      .set({ expiresAt: Math.floor(Date.now() / 1000) - 1 })
+      .where(eq(assistanceGrants.accountId, conducteur.compte))
+
+    expect((await serveur().request(chemin(), { headers: patronne.annonce })).status).toBe(404)
+    expect((await serveur().request(chemin('/profils/Sport.json'), { headers: patronne.annonce })).status).toBe(
+      404,
+    )
+  })
+
+  it('referme aussi quand le conducteur retire son accord', async () => {
+    await garnirLeConducteur()
+    await ouvrirLAssistance()
+
+    await serveur().request('/mon-compte/assistance', {
+      method: 'DELETE',
+      headers: conducteur.annonce,
+    })
+
+    expect((await serveur().request(chemin(), { headers: patronne.annonce })).status).toBe(404)
+  })
+
+  it('ne sait que lire : aucune route de régie n’écrit dans les données', () => {
+    // Vérifié route par route, et non affirmé : les routes de données de la
+    // régie sont toutes en lecture.
+    const ecrivent = serveur()
+      .routes.filter((route) => route.path.includes('/donnees') && route.method !== 'GET')
+      .map((route) => `${route.method} ${route.path}`)
+
+    expect(ecrivent).toEqual([])
+  })
+
+  it('n’emprunte l’identité de personne : aucune réponse ne pose de témoin', async () => {
+    await garnirLeConducteur()
+    await ouvrirLAssistance()
+
+    for (const adresse of ['/api/regie/comptes', `/api/regie/comptes/${conducteur.compte}`, chemin()]) {
+      const reponse = await serveur().request(adresse, { headers: patronne.annonce })
+      expect(reponse.headers.get('set-cookie'), adresse).toBeNull()
+    }
+  })
+
+  it('n’ouvre pas l’archive d’un autre compte : elle ne sert que la sienne', async () => {
+    await garnirLeConducteur()
+    await ouvrirLAssistance()
+
+    // L'archive n'exige aucun rôle — ce sont ses données — et ne prend aucun
+    // compte en paramètre : l'administrateur y obtient la sienne, vide.
+    const reponse = await serveur().request('/mon-compte/archive.zip', {
+      headers: patronne.annonce,
+    })
+    const octets = Buffer.from(await reponse.arrayBuffer()).toString('latin1')
+
+    expect(reponse.status).toBe(200)
+    expect(octets).not.toContain('Sport.json')
+    expect(octets).not.toContain(TRANCHE)
+  })
+
+  it('inscrit la consultation, sans noyer la trace sous une ligne par fichier', async () => {
+    await garnirLeConducteur()
+    await ouvrirLAssistance()
+
+    await serveur().request(chemin(), { headers: patronne.annonce })
+    await serveur().request(chemin('/profils/Sport.json'), { headers: patronne.annonce })
+    await serveur().request(chemin(`/journal/${TRANCHE}`), { headers: patronne.annonce })
+
+    const lignes = (await (
+      await serveur().request('/api/regie/trace', { headers: patronne.annonce })
+    ).json()) as LigneDeTrace[]
+    const lues = lignes.filter((ligne) => ligne.geste === 'donnees-lues')
+
+    expect(lues).toHaveLength(1)
+    expect(lues[0]?.cible.id).toBe(conducteur.compte)
+  })
+
+  it('refuse à qui n’administre pas, accord ouvert ou non', async () => {
+    await ouvrirLAssistance()
+
+    expect((await serveur().request(chemin(), { headers: conducteur.annonce })).status).toBe(404)
+  })
+})
+
 describe('la trace', () => {
   async function tracer(): Promise<LigneDeTrace[]> {
     const reponse = await serveur().request('/api/regie/trace', { headers: patronne.annonce })

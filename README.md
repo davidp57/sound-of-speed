@@ -1694,6 +1694,23 @@ périodique n'ait à s'exécuter. **Pas de date, pas de droit.**
 La régie voit l'état de l'accord sur la fiche, et **ne peut pas se l'accorder** :
 elle n'a aucune route pour l'ouvrir.
 
+Tant que l'accord est ouvert, la fiche montre ce que le compte porte pour de
+bon — ses profils, ses moteurs, ses boîtes, ses trajets, son journal — par des
+routes **en lecture seule**. L'échéance passe, le serveur refuse, et l'écran se
+vide.
+
+**La régie n'emprunte jamais l'identité de quelqu'un.** Une session empruntée
+serait une session complète, donc en écriture : la régie pourrait modifier ou
+effacer en se faisant passer pour le conducteur, et la trace attribuerait ces
+gestes au conducteur. La séparation est structurelle, pas une discipline.
+L'archive du compte n'est pas une porte non plus — elle n'exige aucun rôle
+délibérément, parce que ce sont ses données, et l'ouvrir à l'administrateur en
+ferait la porte dérobée qui contourne l'accord.
+
+Chaque consultation s'inscrit, **au plus une fois par quart d'heure** : regarder
+un compte, c'est ouvrir son inventaire puis une dizaine de fichiers, et une ligne
+par requête noierait ce que le conducteur vient y lire.
+
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même
