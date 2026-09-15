@@ -61,3 +61,49 @@ export function chargerLesComptes(): Promise<Rendu<LigneDeCompte[]>> {
 export function chargerLaFiche(compte: string): Promise<Rendu<Fiche>> {
   return demander<Fiche>(`/api/regie/comptes/${encodeURIComponent(compte)}`)
 }
+
+/** Une ligne de trace, telle que le serveur la rend. */
+export interface LigneDeTrace {
+  quand: string
+  geste: string
+  detail: string | null
+  admin: { id: string; nom: string | null }
+  cible: { id: string; nom: string | null }
+}
+
+export function chargerLaTrace(): Promise<Rendu<LigneDeTrace[]>> {
+  return demander<LigneDeTrace[]>('/api/regie/trace')
+}
+
+/**
+ * Un geste qui change quelque chose.
+ *
+ * Rend le motif quand le serveur refuse : un bouton qui ne fait rien sans rien
+ * dire envoie chercher la panne au mauvais endroit.
+ */
+export async function agir(
+  chemin: string,
+  methode: 'PUT' | 'DELETE' | 'POST',
+  corps?: unknown,
+): Promise<{ fait: true } | { fait: false; motif: string }> {
+  try {
+    const reponse = await fetch(chemin, {
+      method: methode,
+      ...(corps === undefined
+        ? {}
+        : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }),
+    })
+    if (!reponse.ok) return { fait: false, motif: `le serveur a répondu ${reponse.status}` }
+    return { fait: true }
+  } catch (erreur) {
+    return { fait: false, motif: String(erreur) }
+  }
+}
+
+export function donnerUnRole(compte: string, role: string) {
+  return agir(`/api/regie/comptes/${encodeURIComponent(compte)}/roles/${role}`, 'PUT')
+}
+
+export function reprendreUnRole(compte: string, role: string) {
+  return agir(`/api/regie/comptes/${encodeURIComponent(compte)}/roles/${role}`, 'DELETE')
+}

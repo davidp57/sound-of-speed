@@ -2,8 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 
 import FicheDuCompte from './FicheDuCompte.vue'
-import { chargerLesComptes, type LigneDeCompte } from './api'
+import { chargerLaTrace, chargerLesComptes, type LigneDeCompte, type LigneDeTrace } from './api'
 import { dateLisible, normaliser, poidsLisible } from './format'
+import { phraseDuGeste } from './gestes'
 
 /**
  * La régie : administrer les comptes depuis un écran.
@@ -31,6 +32,8 @@ const filtres = computed(() => {
   )
 })
 
+const trace = ref<LigneDeTrace[]>([])
+
 async function recharger(): Promise<void> {
   const rendu = await chargerLesComptes()
   if (rendu.etat === 'fermee') {
@@ -44,6 +47,9 @@ async function recharger(): Promise<void> {
   }
   comptes.value = rendu.valeur
   etat.value = 'ouverte'
+
+  const lignes = await chargerLaTrace()
+  if (lignes.etat === 'ouverte') trace.value = lignes.valeur
 }
 
 onMounted(recharger)
@@ -95,7 +101,26 @@ onMounted(recharger)
         </tbody>
       </table>
 
-      <FicheDuCompte v-if="choisi !== null" :key="choisi" :compte="choisi" class="detail" />
+      <FicheDuCompte
+        v-if="choisi !== null"
+        :key="choisi"
+        :compte="choisi"
+        class="detail"
+        @change="recharger"
+      />
+
+      <section class="trace">
+        <h2>Ce qui a été fait</h2>
+        <p v-if="trace.length === 0" class="vide">Rien encore.</p>
+        <ul v-else>
+          <li v-for="(ligne, rang) in trace" :key="rang">
+            <span class="numeric muet">{{ dateLisible(ligne.quand) }}</span>
+            — {{ ligne.admin.nom ?? 'un compte effacé' }} :
+            {{ phraseDuGeste(ligne.geste, ligne.detail) }}
+            <span class="muet">sur {{ ligne.cible.nom ?? 'un compte effacé' }}</span>
+          </li>
+        </ul>
+      </section>
     </template>
 
     <!--
@@ -171,5 +196,24 @@ h1 {
 
 .detail {
   margin-top: 1.5rem;
+}
+
+.trace {
+  margin-top: 2rem;
+}
+
+.trace h2 {
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.trace ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.trace li {
+  padding: 0.15rem 0;
 }
 </style>

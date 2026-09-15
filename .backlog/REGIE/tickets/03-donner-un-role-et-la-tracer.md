@@ -1,6 +1,6 @@
 # 03 — Donner et reprendre un rôle, et la trace qui l'inscrit
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 02 — la fiche d'un compte
 
@@ -27,20 +27,20 @@ intérêt est de répondre à une question posée tard.
 
 ## Critères d'acceptation
 
-- [ ] Un rôle donné depuis la fiche ouvre immédiatement l'écran correspondant
+- [x] Un rôle donné depuis la fiche ouvre immédiatement l'écran correspondant
       pour ce compte, contrôle serveur compris.
-- [ ] Un rôle repris le referme.
-- [ ] Le rôle de synthèse s'attribue comme les autres, sans qu'on lui donne un
+- [x] Un rôle repris le referme.
+- [x] Le rôle de synthèse s'attribue comme les autres, sans qu'on lui donne un
       pouvoir de route qu'il n'a pas.
-- [ ] Chaque attribution et chaque reprise écrit une ligne de trace : instant,
+- [x] Chaque attribution et chaque reprise écrit une ligne de trace : instant,
       administrateur, compte visé, nature du geste.
-- [ ] La trace se lit dans la régie, la plus récente en haut.
-- [ ] La table de trace ne porte pas de clé étrangère vers le compte — vérifié
+- [x] La trace se lit dans la régie, la plus récente en haut.
+- [x] La table de trace ne porte pas de clé étrangère vers le compte — vérifié
       en effaçant un compte et en relisant la trace.
-- [ ] Rien n'efface les lignes de trace, ni le passage de rétention ni autre
+- [x] Rien n'efface les lignes de trace, ni le passage de rétention ni autre
       chose.
-- [ ] Un compte non administrateur reçoit 404 sur les routes d'attribution et de
+- [x] Un compte non administrateur reçoit 404 sur les routes d'attribution et de
       trace.
-- [ ] Les routes ajoutées sont inscrites dans l'inventaire de l'essai
+- [x] Les routes ajoutées sont inscrites dans l'inventaire de l'essai
       d'isolation.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

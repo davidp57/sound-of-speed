@@ -23,7 +23,9 @@ import { administrateursDeLEnvironnement } from './administration'
 import { ouvrirBase, type Base } from './base/base'
 import { accounts } from './base/schema'
 import { creerIdentite, type Identite } from './identite'
+import { appliquerLaRegle } from './retention'
 import { creerServeur } from './serveur'
+import type { LigneDeTrace } from './trace'
 
 const SECRET = 'Qw3rT7yU1iO5pA9sD2fG6hJ0kL4zX8cV-essai-regie'
 const ADRESSE_ADMIN = 'patronne@exemple.test'
@@ -340,6 +342,162 @@ describe('la fiche d’un compte', () => {
     expect(
       (await serveur().request('/api/regie/comptes/personne', { headers: patronne.annonce })).status,
     ).toBe(404)
+  })
+})
+
+describe('donner et reprendre un rôle', () => {
+  /** Un serveur où rien n'est offert : sans ça, tout le monde a déjà tout. */
+  function ferme() {
+    return creerServeur({
+      application,
+      base,
+      identite,
+      admins: administrateursDeLEnvironnement(ADRESSE_ADMIN),
+      roles: [],
+    })
+  }
+
+  it('ouvre l’écran correspondant, contrôle serveur compris', async () => {
+    // Avant : la route de conduite refuse, faute de rôle.
+    expect((await ferme().request('/profiles/', { headers: conducteur.annonce })).status).toBe(403)
+
+    const donne = await ferme().request(
+      `/api/regie/comptes/${conducteur.compte}/roles/conduite`,
+      { method: 'PUT', headers: patronne.annonce },
+    )
+    expect(donne.status).toBe(200)
+
+    expect((await ferme().request('/profiles/', { headers: conducteur.annonce })).status).toBe(200)
+  })
+
+  it('referme ce qu’elle a ouvert', async () => {
+    await ferme().request(`/api/regie/comptes/${conducteur.compte}/roles/conduite`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+    const repris = await ferme().request(
+      `/api/regie/comptes/${conducteur.compte}/roles/conduite`,
+      { method: 'DELETE', headers: patronne.annonce },
+    )
+
+    expect(repris.status).toBe(200)
+    expect((await ferme().request('/profiles/', { headers: conducteur.annonce })).status).toBe(403)
+  })
+
+  it('attribue la synthèse comme les autres, sans lui donner un pouvoir de route', async () => {
+    const donne = await ferme().request(
+      `/api/regie/comptes/${conducteur.compte}/roles/synthese`,
+      { method: 'PUT', headers: patronne.annonce },
+    )
+    expect(donne.status).toBe(200)
+
+    const fiche = (await (
+      await ferme().request(`/api/regie/comptes/${conducteur.compte}`, { headers: patronne.annonce })
+    ).json()) as { roles: { role: string }[] }
+    expect(fiche.roles.map((droit) => droit.role)).toEqual(['synthese'])
+
+    // Le rôle de synthèse est un verrou d'affichage : il n'ouvre aucune route,
+    // et la conduite reste fermée.
+    expect((await ferme().request('/profiles/', { headers: conducteur.annonce })).status).toBe(403)
+  })
+
+  it('dit qu’un rôle repris reste offert à tout le monde quand il l’est', async () => {
+    const repris = await serveur().request(
+      `/api/regie/comptes/${conducteur.compte}/roles/conduite`,
+      { method: 'DELETE', headers: patronne.annonce },
+    )
+
+    expect(((await repris.json()) as { offertAtous: boolean }).offertAtous).toBe(true)
+    // Et la route reste ouverte, puisque c'est la pile qui l'offre.
+    expect((await serveur().request('/profiles/', { headers: conducteur.annonce })).status).toBe(200)
+  })
+
+  it('ignore un rôle qui n’en est pas un, et un compte inconnu', async () => {
+    expect(
+      (
+        await serveur().request(`/api/regie/comptes/${conducteur.compte}/roles/banc`, {
+          method: 'PUT',
+          headers: patronne.annonce,
+        })
+      ).status,
+    ).toBe(404)
+    expect(
+      (
+        await serveur().request('/api/regie/comptes/personne/roles/conduite', {
+          method: 'PUT',
+          headers: patronne.annonce,
+        })
+      ).status,
+    ).toBe(404)
+  })
+
+  it('refuse l’attribution et la trace à qui n’administre pas', async () => {
+    expect(
+      (
+        await serveur().request(`/api/regie/comptes/${patronne.compte}/roles/conduite`, {
+          method: 'PUT',
+          headers: conducteur.annonce,
+        })
+      ).status,
+    ).toBe(404)
+    expect((await serveur().request('/api/regie/trace', { headers: conducteur.annonce })).status).toBe(
+      404,
+    )
+  })
+})
+
+describe('la trace', () => {
+  async function tracer(): Promise<LigneDeTrace[]> {
+    const reponse = await serveur().request('/api/regie/trace', { headers: patronne.annonce })
+    expect(reponse.status).toBe(200)
+    return (await reponse.json()) as LigneDeTrace[]
+  }
+
+  it('inscrit chaque attribution et chaque reprise, la plus récente en haut', async () => {
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/roles/conduite`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/roles/atelier`, {
+      method: 'DELETE',
+      headers: patronne.annonce,
+    })
+
+    const lignes = await tracer()
+
+    expect(lignes).toHaveLength(2)
+    expect(lignes[0]?.geste).toBe('role-repris')
+    expect(lignes[0]?.detail).toBe('atelier')
+    expect(lignes[0]?.admin.id).toBe(patronne.compte)
+    expect(lignes[0]?.cible.id).toBe(conducteur.compte)
+    expect(lignes[1]?.geste).toBe('role-donne')
+  })
+
+  it('survit à l’effacement du compte visé, en perdant son nom', async () => {
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/roles/conduite`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+    expect((await tracer())[0]?.cible.nom).not.toBeNull()
+
+    // La cascade emporte tout ce qui pend au compte ; la trace n'y pend pas.
+    await base.delete(accounts).where(eq(accounts.id, conducteur.compte))
+
+    const lignes = await tracer()
+    expect(lignes).toHaveLength(1)
+    expect(lignes[0]?.cible.id).toBe(conducteur.compte)
+    expect(lignes[0]?.cible.nom).toBeNull()
+  })
+
+  it('n’est effacée ni par le ménage de rétention ni par rien d’autre', async () => {
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/roles/conduite`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+
+    await appliquerLaRegle(base, conducteur.compte, Date.now())
+
+    expect(await tracer()).toHaveLength(1)
   })
 })
 

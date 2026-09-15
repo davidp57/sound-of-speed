@@ -13,18 +13,19 @@
  * `administration.ts`.
  */
 
-import { desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 
-import type { Role } from '../core/identity/roles'
+import { estUnRole, type Role } from '../core/identity/roles'
 
 import { estAdministrateur } from './administration'
 import type { DroitsSurLesBanques } from './banques'
 import type { Base } from './base/base'
-import { accounts, authIdentities, authSessions, deposits } from './base/schema'
+import { accounts, authIdentities, authSessions, deposits, rights } from './base/schema'
 import { ceQuePorte } from './heritage'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
 import { nomDuFournisseur } from './tiers'
+import { inscrire, lireLaTrace } from './trace'
 
 /** Ce que la garde d'entrée range pour les routes qui suivent. */
 export interface VariablesDeLaRegie {
@@ -305,6 +306,54 @@ export function creerRegie(options: OptionsDeLaRegie): RegieHono {
 
   regie.get('/comptes', async (c) =>
     c.json(await listerLesComptes(options.base, offerts), 200, { 'Cache-Control': 'no-store' }),
+  )
+
+  /**
+   * Donner un rôle, et le reprendre.
+   *
+   * **Sans échéance** : ce que la régie ouvre, elle le referme à la main. Une
+   * date de fin appartient à ce qui s'encaisse, et rien ne s'encaisse.
+   */
+  regie.put('/comptes/:compte/roles/:role', async (c) => {
+    const compte = c.req.param('compte')
+    const role = c.req.param('role')
+    if (!estUnRole(role)) return c.notFound()
+    if (!(await compteExiste(options.base, compte))) return c.notFound()
+
+    await options.base
+      .insert(rights)
+      .values({ id: crypto.randomUUID(), accountId: compte, scope: role })
+      // Donner deux fois ne fait rien de plus, et surtout ne pose pas d'échéance
+      // là où il n'y en avait pas.
+      .onConflictDoUpdate({
+        target: [rights.accountId, rights.scope],
+        set: { expiresAt: null },
+      })
+
+    await inscrire(options.base, 'role-donne', c.get('admin'), compte, role)
+    return c.json({ role, donne: true })
+  })
+
+  regie.delete('/comptes/:compte/roles/:role', async (c) => {
+    const compte = c.req.param('compte')
+    const role = c.req.param('role')
+    if (!estUnRole(role)) return c.notFound()
+    if (!(await compteExiste(options.base, compte))) return c.notFound()
+
+    await options.base
+      .delete(rights)
+      .where(and(eq(rights.accountId, compte), eq(rights.scope, role)))
+
+    await inscrire(options.base, 'role-repris', c.get('admin'), compte, role)
+    // Reprendre un rôle **offert à tout le monde** ne le referme pas : ce qui est
+    // offert vient de la configuration de la pile, pas de la table des droits. La
+    // réponse le dit plutôt que de laisser croire à un geste sans effet.
+    return c.json({ role, repris: true, offertAtous: offerts.includes(role) })
+  })
+
+  /** Tout ce que la régie a fait, la plus récente en haut. */
+  regie.get('/trace', async (c) =>
+    c.json(await lireLaTrace(options.base), 200, { 'Cache-Control': 'no-store' }),
   )
 
   regie.get('/comptes/:compte', async (c) => {

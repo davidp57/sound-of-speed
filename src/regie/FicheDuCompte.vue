@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-import { chargerLaFiche, type Fiche } from './api'
+import { chargerLaFiche, donnerUnRole, reprendreUnRole, type Fiche } from './api'
 import { dateLisible, poidsLisible } from './format'
+
+/** Les trois rôles, dans l'ordre où l'application les range. */
+const ROLES = ['conduite', 'atelier', 'synthese'] as const
 
 /**
  * La fiche d'un compte : tout ce que le serveur sait de lui.
@@ -35,6 +38,29 @@ async function recharger(): Promise<void> {
 }
 
 watch(() => proprietes.compte, recharger, { immediate: true })
+
+const emet = defineEmits<{ change: [] }>()
+const refus = ref('')
+
+/** Ce compte porte-t-il ce rôle, à l'instant ? */
+function porte(role: string): boolean {
+  return fiche.value?.roles.some((droit) => droit.role === role) === true
+}
+
+async function basculerLeRole(role: string): Promise<void> {
+  refus.value = ''
+  const rendu = porte(role)
+    ? await reprendreUnRole(proprietes.compte, role)
+    : await donnerUnRole(proprietes.compte, role)
+  if (!rendu.fait) {
+    refus.value = rendu.motif
+    return
+  }
+  // On relit plutôt que de deviner : ce que le serveur accorde vraiment dépend
+  // aussi de ce que la pile offre à tout le monde.
+  await recharger()
+  emet('change')
+}
 </script>
 
 <template>
@@ -75,21 +101,23 @@ watch(() => proprietes.compte, recharger, { immediate: true })
       </dd>
 
       <dt>Rôles</dt>
-      <dd>
-        <span v-if="fiche.roles.length === 0">aucun</span>
-        <ul v-else>
-          <li v-for="droit in fiche.roles" :key="droit.role">
-            {{ droit.role }}
-            <span v-if="droit.expireLe !== null" class="muet numeric">
-              jusqu’au {{ dateLisible(droit.expireLe) }}
-            </span>
-          </li>
-        </ul>
+      <dd class="roles">
+        <button
+          v-for="role in ROLES"
+          :key="role"
+          type="button"
+          :aria-pressed="porte(role)"
+          @click="basculerLeRole(role)"
+        >
+          {{ role }}
+        </button>
       </dd>
 
       <dt>Banques réservées</dt>
       <dd>{{ fiche.banques.join(', ') || '—' }}</dd>
     </dl>
+
+    <p v-if="refus !== ''" class="refus">{{ refus }}</p>
 
     <h3>Ce qu’il porte</h3>
     <dl>
@@ -167,6 +195,17 @@ dd {
 ul {
   margin: 0;
   padding-left: 1rem;
+}
+
+.roles {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.refus {
+  color: var(--warn);
+  margin-top: 0.75rem;
 }
 
 .muet {

@@ -57,6 +57,13 @@
       "when": 1789292198861,
       "tag": "0007_un-compte-sait-s-il-est-anonyme",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789496983824,
+      "tag": "0008_la-trace-des-gestes-d-administration",
+      "breakpoints": true
     }
   ]
 }

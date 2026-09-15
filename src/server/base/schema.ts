@@ -376,6 +376,45 @@ export const deposits = sqliteTable(
 )
 
 /**
+ * Les gestes d'administration : quand, qui, sur qui, quoi.
+ *
+ * **Sans clé étrangère vers le compte, et c'est le point.** Toutes les tables
+ * liées à un compte s'effacent en cascade avec lui ; une trace rattachée
+ * disparaîtrait donc exactement au moment où l'on voudrait la relire — « qui a
+ * effacé ce compte, et quand ? » est la question qui se pose six mois plus tard.
+ *
+ * **Rien ici ne porte un nom ni une adresse.** Seulement des identifiants
+ * opaques, résolus à la lecture quand le compte existe encore. Un compte effacé
+ * laisse donc une ligne qui dit toujours ce qui s'est passé, sans conserver
+ * l'identité de quelqu'un qu'on vient d'effacer — c'est la raison d'être des
+ * identifiants opaques.
+ *
+ * Elle se garde **sans limite** : quelques dizaines de lignes par an, et son
+ * intérêt est justement de répondre tard.
+ */
+export const adminActions = sqliteTable(
+  'admin_actions',
+  {
+    id: text('id').primaryKey(),
+    /** L'administrateur qui a agi. Identifiant en clair, jamais son adresse. */
+    adminId: text('admin_id').notNull(),
+    /** Le compte visé. Lui aussi en clair : il peut ne plus exister. */
+    targetId: text('target_id').notNull(),
+    /** La nature du geste — voir `trace.ts` pour la liste. */
+    action: text('action').notNull(),
+    /**
+     * Ce que le geste précise : le rôle donné, la banque accordée, le plafond.
+     *
+     * Jamais un nom de personne, jamais une adresse, jamais un nom de fichier :
+     * ce serait rentrer par la fenêtre ce que la table ne garde pas par la porte.
+     */
+    detail: text('detail'),
+    happenedAt: integer('happened_at').notNull().default(maintenant),
+  },
+  (table) => [index('admin_actions_target').on(table.targetId)],
+)
+
+/**
  * Ce que le serveur a appris de la vraie voiture.
  *
  * Un seul enregistrement par compte : c'est un cumul, pas une collection. Il

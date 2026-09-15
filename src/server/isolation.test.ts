@@ -389,6 +389,8 @@ describe('l’inventaire des routes', () => {
     '/api/regie/*',
     '/api/regie/comptes',
     '/api/regie/comptes/:compte',
+    '/api/regie/comptes/:compte/roles/:role',
+    '/api/regie/trace',
     '/profiles/*',
     '/:registre{engines|gearboxes}/*',
     '/mesure-voiture/profil-voiture.json',
