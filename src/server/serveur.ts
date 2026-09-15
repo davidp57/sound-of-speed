@@ -278,7 +278,13 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // répond 404 à qui n'administre pas — voir `regie.ts`.
     app.route(
       '/api/regie',
-      creerRegie({ base, admins: options.admins ?? new Set<string>(), compteDe, offerts }),
+      creerRegie({
+        base,
+        admins: options.admins ?? new Set<string>(),
+        compteDe,
+        offerts,
+        banques: droitsSurLesBanques,
+      }),
     )
 
     app.on(['GET', 'PUT'], '/profiles/*', async (c) => {

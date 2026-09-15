@@ -1,6 +1,6 @@
 # 02 — La fiche d'un compte
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 01 — la porte et la liste des comptes
 
@@ -23,16 +23,16 @@ La fiche est en lecture seule à ce stade. Les boutons viennent ensuite.
 
 ## Critères d'acceptation
 
-- [ ] La fiche montre l'identité complète, les rattachements, les sessions, les
+- [x] La fiche montre l'identité complète, les rattachements, les sessions, les
       rôles et les banques accordées.
-- [ ] Elle montre les compteurs de ce que le compte porte, y compris le poids en
+- [x] Elle montre les compteurs de ce que le compte porte, y compris le poids en
       octets et le nombre de trajets mesurés.
-- [ ] Elle ne montre aucun nom de profil, aucune date de trajet, aucun nom de
+- [x] Elle ne montre aucun nom de profil, aucune date de trajet, aucun nom de
       fichier.
-- [ ] La fiche d'un compte anonyme s'affiche correctement, sans inventer
+- [x] La fiche d'un compte anonyme s'affiche correctement, sans inventer
       d'adresse : l'adresse de remplacement en domaine invalide ne s'affiche
       pas.
-- [ ] Un compte non administrateur reçoit 404 sur la route de la fiche.
-- [ ] La route de la fiche est inscrite dans l'inventaire de l'essai
+- [x] Un compte non administrateur reçoit 404 sur la route de la fiche.
+- [x] La route de la fiche est inscrite dans l'inventaire de l'essai
       d'isolation.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

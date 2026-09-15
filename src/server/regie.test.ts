@@ -218,6 +218,131 @@ describe('la liste des comptes', () => {
   })
 })
 
+describe('la fiche d’un compte', () => {
+  it('montre l’identité, les rattachements, les sessions et les rôles', async () => {
+    const reponse = await serveur().request(`/api/regie/comptes/${conducteur.compte}`, {
+      headers: patronne.annonce,
+    })
+    const fiche = (await reponse.json()) as {
+      id: string
+      adresse: string | null
+      anonyme: boolean
+      motDePasse: boolean
+      fournisseurs: unknown[]
+      sessions: { ouverteLe: string; expireLe: string }[]
+      roles: { role: string; expireLe: string | null }[]
+      banques: string[]
+    }
+
+    expect(reponse.status).toBe(200)
+    expect(fiche.id).toBe(conducteur.compte)
+    expect(fiche.adresse).toBe(ADRESSE_CONDUCTEUR)
+    expect(fiche.anonyme).toBe(false)
+    expect(fiche.motDePasse).toBe(true)
+    expect(fiche.fournisseurs).toEqual([])
+    expect(fiche.sessions).toHaveLength(1)
+    expect(fiche.roles.map((droit) => droit.role)).toEqual(['conduite', 'atelier', 'synthese'])
+  })
+
+  it('montre ce que le compte porte, en nombres', async () => {
+    for (const [chemin, corps] of [
+      ['/profiles/Sport.json', '{"id":"sport","name":"Sport"}'],
+      ['/engines/V8.json', '{"id":"v8","name":"V8"}'],
+      ['/mesures/releve.json', '{"mesure":1}'],
+    ] as const) {
+      const depot = await serveur().request(chemin, {
+        method: 'PUT',
+        headers: { ...conducteur.annonce, 'Content-Type': 'application/json' },
+        body: corps,
+      })
+      expect(depot.status).toBe(201)
+    }
+
+    const reponse = await serveur().request(`/api/regie/comptes/${conducteur.compte}`, {
+      headers: patronne.annonce,
+    })
+    const fiche = (await reponse.json()) as { porte: Record<string, number> }
+
+    expect(fiche.porte).toEqual({
+      profils: 1,
+      moteurs: 1,
+      boites: 0,
+      depots: 1,
+      octets: 12,
+      trajetsMesures: 0,
+    })
+  })
+
+  it('ne montre aucun nom de profil, aucun nom de fichier, aucune date de trajet', async () => {
+    const depot = await serveur().request('/traces/2026-09-11-06-24-01_da2m_001.jsonl.gz', {
+      method: 'PUT',
+      headers: { ...conducteur.annonce, 'Content-Type': 'application/json' },
+      body: 'la trace du conducteur',
+    })
+    expect(depot.status).toBe(201)
+    const profil = await serveur().request('/profiles/Sport.json', {
+      method: 'PUT',
+      headers: { ...conducteur.annonce, 'Content-Type': 'application/json' },
+      body: '{"id":"sport","name":"Sport"}',
+    })
+    expect(profil.status).toBe(201)
+
+    const reponse = await serveur().request(`/api/regie/comptes/${conducteur.compte}`, {
+      headers: patronne.annonce,
+    })
+    const texte = await reponse.text()
+
+    expect(texte).not.toContain('Sport')
+    expect(texte).not.toContain('2026-09-11-06-24-01')
+    expect(texte).not.toContain('.jsonl.gz')
+  })
+
+  it('n’invente pas d’adresse à un compte anonyme', async () => {
+    const anonyme = await ouvrirUnCompte()
+    const reponse = await serveur().request(`/api/regie/comptes/${anonyme.compte}`, {
+      headers: patronne.annonce,
+    })
+    const fiche = (await reponse.json()) as { adresse: string | null; anonyme: boolean }
+
+    expect(reponse.status).toBe(200)
+    expect(fiche.anonyme).toBe(true)
+    expect(fiche.adresse).toBeNull()
+  })
+
+  it('dit les banques restreintes que ce compte peut écouter', async () => {
+    const avecBanques = creerServeur({
+      application,
+      base,
+      identite,
+      admins: administrateursDeLEnvironnement(ADRESSE_ADMIN),
+      banques: {
+        restreintes: new Set(['gm-ls', 'ferrari']),
+        accordees: new Map([[ADRESSE_CONDUCTEUR, new Set(['ferrari'])]]),
+      },
+    })
+
+    const reponse = await avecBanques.request(`/api/regie/comptes/${conducteur.compte}`, {
+      headers: patronne.annonce,
+    })
+    const fiche = (await reponse.json()) as { banques: string[] }
+
+    expect(fiche.banques).toEqual(['ferrari'])
+  })
+
+  it('refuse la fiche à qui n’administre pas, et le compte inconnu de la même façon', async () => {
+    expect(
+      (
+        await serveur().request(`/api/regie/comptes/${patronne.compte}`, {
+          headers: conducteur.annonce,
+        })
+      ).status,
+    ).toBe(404)
+    expect(
+      (await serveur().request('/api/regie/comptes/personne', { headers: patronne.annonce })).status,
+    ).toBe(404)
+  })
+})
+
 describe('la page', () => {
   it('sert la régie sur son adresse, et non l’application de conduite', async () => {
     const reponse = await serveur().request('/regie', { headers: { Accept: 'text/html' } })

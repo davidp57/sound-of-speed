@@ -19,9 +19,12 @@ import { Hono } from 'hono'
 import type { Role } from '../core/identity/roles'
 
 import { estAdministrateur } from './administration'
+import type { DroitsSurLesBanques } from './banques'
 import type { Base } from './base/base'
-import { accounts, deposits } from './base/schema'
+import { accounts, authIdentities, authSessions, deposits } from './base/schema'
+import { ceQuePorte } from './heritage'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
+import { nomDuFournisseur } from './tiers'
 
 /** Ce que la garde d'entrée range pour les routes qui suivent. */
 export interface VariablesDeLaRegie {
@@ -39,6 +42,13 @@ export interface OptionsDeLaRegie {
   compteDe: (entetes: Headers) => Promise<string | null>
   /** Les rôles offerts à tout le monde, pour dire ce qu'un compte porte vraiment. */
   offerts?: readonly Role[]
+  /**
+   * Les banques restreintes et ce que la configuration accorde.
+   *
+   * La fiche dit ce qu'un compte peut écouter ; tant que les accords vivent dans
+   * l'environnement, c'est là qu'elle les lit.
+   */
+  banques?: DroitsSurLesBanques
 }
 
 /** Une ligne de la liste des comptes. */
@@ -133,6 +143,137 @@ export async function poidsParCompte(
   return new Map(lignes.map((ligne) => [ligne.compte, ligne.octets]))
 }
 
+/**
+ * Tout ce que le serveur sait d'un compte, sauf ce qu'il a déposé.
+ *
+ * **Aucun contenu nommé** : ni nom de profil, ni date de trajet, ni nom de
+ * fichier. Un nom de profil ou une date de dépôt disent où et quand quelqu'un a
+ * roulé ; ça ne s'ouvre qu'avec son accord, et c'est ailleurs.
+ */
+export interface Fiche {
+  id: string
+  nom: string
+  adresse: string | null
+  /** L'image que le fournisseur d'identité a donnée, quand il y en a une. */
+  portrait: string | null
+  anonyme: boolean
+  creeLe: string
+  /** Les comptes tenus ailleurs qui mènent ici : leur nom, et rien d'autre. */
+  fournisseurs: { id: string; nom: string }[]
+  /** Un mot de passe est-il rangé sur ce compte ? Par oui ou par non. */
+  motDePasse: boolean
+  /** Les sessions encore ouvertes — combien d'appareils, et jusqu'à quand. */
+  sessions: { ouverteLe: string; expireLe: string }[]
+  roles: { role: Role; expireLe: string | null }[]
+  /** Les banques restreintes que ce compte peut écouter. */
+  banques: string[]
+  /** Ce qu'il porte, en nombres. */
+  porte: {
+    profils: number
+    moteurs: number
+    boites: number
+    depots: number
+    octets: number
+    trajetsMesures: number
+  }
+}
+
+export async function ficheDuCompte(
+  base: Base,
+  compte: string,
+  options: { offerts?: readonly Role[]; banques?: DroitsSurLesBanques; maintenant?: number } = {},
+): Promise<Fiche | null> {
+  const [ligne] = await base
+    .select({
+      id: accounts.id,
+      nom: accounts.name,
+      adresse: accounts.email,
+      portrait: accounts.image,
+      anonyme: accounts.isAnonymous,
+      creeLe: accounts.createdAt,
+    })
+    .from(accounts)
+    .where(eq(accounts.id, compte))
+    .limit(1)
+  if (ligne === undefined) return null
+
+  const preuves = await base
+    .select({ fournisseur: authIdentities.providerId, motDePasse: authIdentities.password })
+    .from(authIdentities)
+    .where(eq(authIdentities.accountId, compte))
+
+  const sessions = await base
+    .select({ ouverteLe: authSessions.createdAt, expireLe: authSessions.expiresAt })
+    .from(authSessions)
+    .where(eq(authSessions.accountId, compte))
+    .orderBy(desc(authSessions.createdAt))
+
+  const droits = await droitsDuCompte(
+    base,
+    compte,
+    options.maintenant ?? Date.now(),
+    options.offerts ?? ROLES_OFFERTS_PAR_DEFAUT,
+  )
+  const porte = await ceQuePorte(base, compte)
+  const adresse = adresseVisible(ligne.adresse, ligne.anonyme)
+
+  return {
+    id: ligne.id,
+    nom: ligne.nom,
+    adresse,
+    portrait: ligne.portrait,
+    anonyme: ligne.anonyme,
+    creeLe: ligne.creeLe.toISOString(),
+    // Le mot de passe se dit par oui ou par non, et les comptes tenus ailleurs
+    // par le nom de leur fournisseur. Rien d'autre ne sort : ni empreinte, ni
+    // jeton, ni identifiant chez le fournisseur.
+    fournisseurs: preuves
+      .filter((preuve) => preuve.fournisseur !== 'credential')
+      .map((preuve) => ({ id: preuve.fournisseur, nom: nomDuFournisseur(preuve.fournisseur) })),
+    motDePasse: preuves.some(
+      (preuve) =>
+        preuve.fournisseur === 'credential' &&
+        preuve.motDePasse !== null &&
+        preuve.motDePasse !== '',
+    ),
+    // Ni l'adresse réseau ni la chaîne d'agent : savoir combien d'appareils sont
+    // connectés et jusqu'à quand répond à la question, le reste ne fait que
+    // ramasser des renseignements sur quelqu'un.
+    sessions: sessions.map((session) => ({
+      ouverteLe: session.ouverteLe.toISOString(),
+      expireLe: session.expireLe.toISOString(),
+    })),
+    roles: droits.map(({ role, expireLe }) => ({
+      role,
+      expireLe: expireLe === null ? null : new Date(expireLe).toISOString(),
+    })),
+    banques: banquesDuCompte(options.banques, adresse),
+    porte: {
+      profils: porte.profils,
+      moteurs: porte.moteurs,
+      boites: porte.boites,
+      depots: porte.depots,
+      octets: porte.octets,
+      trajetsMesures: porte.trajetsMesures,
+    },
+  }
+}
+
+/**
+ * Les banques restreintes que ce compte peut écouter.
+ *
+ * Elles se lisent dans la configuration, par adresse, tant que les accords n'ont
+ * pas de table. Un compte sans adresse n'en a donc aucune, et `*` les accorde
+ * toutes.
+ */
+function banquesDuCompte(droits: DroitsSurLesBanques | undefined, adresse: string | null): string[] {
+  if (droits === undefined || adresse === null) return []
+  const siennes = droits.accordees.get(adresse.toLowerCase())
+  if (siennes === undefined) return []
+  if (siennes.has('*')) return [...droits.restreintes].sort()
+  return [...droits.restreintes].filter((banque) => siennes.has(banque)).sort()
+}
+
 /** Ce compte existe-t-il ? La fiche d'un compte inconnu se refuse comme le reste. */
 export async function compteExiste(base: Base, compte: string): Promise<boolean> {
   const [ligne] = await base
@@ -165,6 +306,17 @@ export function creerRegie(options: OptionsDeLaRegie): RegieHono {
   regie.get('/comptes', async (c) =>
     c.json(await listerLesComptes(options.base, offerts), 200, { 'Cache-Control': 'no-store' }),
   )
+
+  regie.get('/comptes/:compte', async (c) => {
+    const fiche = await ficheDuCompte(options.base, c.req.param('compte'), {
+      offerts,
+      ...(options.banques === undefined ? {} : { banques: options.banques }),
+    })
+    // Un compte inconnu se refuse comme le reste : le même 404, et rien qui
+    // distingue « il n'existe pas » de « vous n'administrez pas ».
+    if (fiche === null) return c.notFound()
+    return c.json(fiche, 200, { 'Cache-Control': 'no-store' })
+  })
 
   return regie
 }

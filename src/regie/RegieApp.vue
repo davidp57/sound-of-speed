@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
+import FicheDuCompte from './FicheDuCompte.vue'
 import { chargerLesComptes, type LigneDeCompte } from './api'
+import { dateLisible, normaliser, poidsLisible } from './format'
 
 /**
  * La régie : administrer les comptes depuis un écran.
@@ -15,48 +17,21 @@ import { chargerLesComptes, type LigneDeCompte } from './api'
 
 const comptes = ref<LigneDeCompte[]>([])
 const recherche = ref('')
+const choisi = ref<string | null>(null)
 const etat = ref<'chargement' | 'ouverte' | 'fermee' | 'panne'>('chargement')
 const panne = ref('')
 
-/** Le filtre porte sur le nom et sur l'adresse, sans accent ni casse. */
+/** Le filtre porte sur le nom et sur l'adresse. */
 const filtres = computed(() => {
   const cherche = normaliser(recherche.value)
   if (cherche === '') return comptes.value
   return comptes.value.filter(
     (compte) =>
-      normaliser(compte.nom).includes(cherche) ||
-      normaliser(compte.adresse ?? '').includes(cherche),
+      normaliser(compte.nom).includes(cherche) || normaliser(compte.adresse ?? '').includes(cherche),
   )
 })
 
-function normaliser(texte: string): string {
-  return texte
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim()
-}
-
-/** Une date lisible d'un coup d'œil, à la minute : on cherche « celui de tout à l'heure ». */
-function dateLisible(iso: string): string {
-  return new Date(iso).toLocaleString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-/** Le poids déposé, dans l'unité qui se lit : on repère un compte qui grossit. */
-function poidsLisible(octets: number): string {
-  if (octets === 0) return '—'
-  if (octets < 1024 * 1024) return `${Math.round(octets / 1024)} Kio`
-  if (octets < 1024 * 1024 * 1024) return `${(octets / (1024 * 1024)).toFixed(1)} Mio`
-  return `${(octets / (1024 * 1024 * 1024)).toFixed(2)} Gio`
-}
-
-onMounted(async () => {
+async function recharger(): Promise<void> {
   const rendu = await chargerLesComptes()
   if (rendu.etat === 'fermee') {
     etat.value = 'fermee'
@@ -67,9 +42,11 @@ onMounted(async () => {
     panne.value = rendu.motif
     return
   }
-  comptes.value = rendu.comptes
+  comptes.value = rendu.valeur
   etat.value = 'ouverte'
-})
+}
+
+onMounted(recharger)
 </script>
 
 <template>
@@ -100,7 +77,12 @@ onMounted(async () => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="compte in filtres" :key="compte.id">
+          <tr
+            v-for="compte in filtres"
+            :key="compte.id"
+            :class="{ 'est-choisi': compte.id === choisi }"
+            @click="choisi = compte.id === choisi ? null : compte.id"
+          >
             <td>
               {{ compte.nom }}
               <span v-if="compte.anonyme" class="muet">(anonyme)</span>
@@ -112,6 +94,8 @@ onMounted(async () => {
           </tr>
         </tbody>
       </table>
+
+      <FicheDuCompte v-if="choisi !== null" :key="choisi" :compte="choisi" class="detail" />
     </template>
 
     <!--
@@ -165,6 +149,14 @@ h1 {
   font-size: 0.85rem;
 }
 
+.comptes tbody tr {
+  cursor: pointer;
+}
+
+.comptes tbody tr.est-choisi {
+  background: var(--panel-alt);
+}
+
 .nombre {
   text-align: right;
 }
@@ -175,5 +167,9 @@ h1 {
 
 .vide {
   color: var(--muted);
+}
+
+.detail {
+  margin-top: 1.5rem;
 }
 </style>

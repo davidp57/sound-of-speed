@@ -147,6 +147,11 @@ describe('le voisin ne voit rien', () => {
     expect((await serveur().request('/api/regie/comptes', { headers: anne.annonce })).status).toBe(
       404,
     )
+    expect(
+      (
+        await serveur().request(`/api/regie/comptes/${anne.compte}`, { headers: boris.annonce })
+      ).status,
+    ).toBe(404)
   })
 
   it('ne lit pas le profil mesuré d’Anne', async () => {
@@ -383,6 +388,7 @@ describe('l’inventaire des routes', () => {
     // ne doit rien rendre à personne.
     '/api/regie/*',
     '/api/regie/comptes',
+    '/api/regie/comptes/:compte',
     '/profiles/*',
     '/:registre{engines|gearboxes}/*',
     '/mesure-voiture/profil-voiture.json',
