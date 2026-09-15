@@ -43,6 +43,15 @@ export interface JournalSnapshot {
   derived: boolean
   kmh: number
   accelMs2: number
+  /**
+   * Bruit du récepteur, en km/h, tel que le conditionneur le mesure — ou `null`
+   * quand la fenêtre ne porte pas de quoi conclure.
+   *
+   * Au journal et non seulement à l'écran : c'est le chiffre qui dit si la boîte
+   * a de la marge, et il devait jusqu'ici se lire dans le profil mesuré, donc
+   * au cran de la conduite et après coup.
+   */
+  noiseKmh: number | null
   rpm: number
   gear: number
   load: number
@@ -55,6 +64,18 @@ export interface JournalSnapshot {
    */
   pace: PaceState
   paceForS: number
+  /**
+   * Ce que le relevé détaillé inscrit en plus, et rien d'autre ne lit.
+   *
+   * **Groupé plutôt qu'éparpillé, et c'est la contrainte du ticket** : le jour
+   * où un essai demande une grandeur de plus, elle s'ajoute ici et dans
+   * `champsDetailles`, à un seul endroit. Éparpillée dans le cliché, elle
+   * obligerait à retrouver les trois points de couture.
+   *
+   * Absent quand la chaîne ne l'a pas encore produit — au premier tour, par
+   * exemple : c'est un supplément de diagnostic, pas un contrat.
+   */
+  detail?: DetailDeConduite | null
   /** Relances du suivi de position, cumulées. */
   fixRestarts: number
   /** Rejets de la source, cumulés, par motif. */
@@ -77,6 +98,33 @@ export interface JournalSnapshot {
   sound?: SoundCost | null
 }
 
+/**
+ * Ce que le relevé détaillé porte en plus des grandeurs ordinaires.
+ *
+ * Ces quatre-là sont exactement celles dont l'absence a laissé des questions
+ * ouvertes après l'essai du 10 septembre 2026 : un rapport qui monte au mauvais
+ * moment s'explique par le croisement d'un régime et d'un seuil, et aucun des
+ * deux n'était inscrit nulle part.
+ */
+export interface DetailDeConduite {
+  /** Régime auquel le rapport engagé cédera la place au suivant. */
+  upshiftRpm: number
+  /** Régime sous lequel la boîte cherchera à rétrograder. */
+  downshiftRpm: number
+  /**
+   * La demande, qui n'est pas la charge : elle monte avec elle et n'en redescend
+   * qu'en trois secondes, et c'est elle qui déplace le seuil de montée.
+   */
+  demand: number
+  /**
+   * L'accélération avant lissage, à côté de celle que toute la chaîne emploie.
+   *
+   * C'est l'écart entre les deux qui dit ce que le conditionnement a absorbé —
+   * et c'est lui qu'on cherchera le jour où le son suivra mal la conduite.
+   */
+  rawAccelMs2: number
+}
+
 /** Ce que le son a coûté sur la dernière fenêtre de mesure. */
 export interface SoundCost {
   /** Secondes de son produites par seconde de processeur. */
@@ -97,6 +145,18 @@ export interface SoundCost {
 const SAMPLE_EVERY_MS = 10_000
 
 /**
+ * Intervalle entre deux relevés quand le journal détaillé est allumé.
+ *
+ * Dix fois plus souvent. C'est ce qui a manqué à l'essai du 10 septembre 2026 :
+ * dix-neuf allers-retours de rapport repérés sur trente-six minutes, sans
+ * pouvoir dire leur fréquence réelle, donc sans pouvoir distinguer une boîte qui
+ * hésite d'une boîte qui oscille.
+ *
+ * Le poids n'est pas un obstacle : les tranches partent compressées.
+ */
+const SAMPLE_EVERY_DETAILED_MS = 1_000
+
+/**
  * Décimation de la position au cran étendu, en millisecondes.
  *
  * Un point par seconde, ce qui est la résolution habituelle d'une trace
@@ -110,14 +170,29 @@ export class JournalCollector {
   private lastSampleAt = Number.NEGATIVE_INFINITY
   private lastPositionAt = Number.NEGATIVE_INFINITY
   private previous: JournalSnapshot | null = null
+  /**
+   * Le journal détaillé est-il allumé ?
+   *
+   * Séparé du consentement, et ce n'est pas une commodité : le consentement dit
+   * **ce qui** part, celui-ci dit à **quelle finesse**. Voir
+   * `core/journal/detail.ts`.
+   */
+  private detailed = false
 
   constructor(
     private readonly journal: Journal,
     private consent: JournalConsent,
-  ) {}
+    detailed = false,
+  ) {
+    this.detailed = detailed
+  }
 
   setConsent(consent: JournalConsent): void {
     this.consent = consent
+  }
+
+  setDetailed(detailed: boolean): void {
+    this.detailed = detailed
   }
 
   /**
@@ -153,7 +228,8 @@ export class JournalCollector {
 
     this.transitions(before, snapshot)
 
-    if (snapshot.at - this.lastSampleAt >= SAMPLE_EVERY_MS) this.sample(snapshot)
+    const every = this.detailed ? SAMPLE_EVERY_DETAILED_MS : SAMPLE_EVERY_MS
+    if (snapshot.at - this.lastSampleAt >= every) this.sample(snapshot)
     if (this.consent === 'extended') this.position(snapshot)
   }
 
@@ -235,11 +311,13 @@ export class JournalCollector {
     this.journal.add(snapshot.at, 'sample', {
       kmh: round(snapshot.kmh, 1),
       accel: round(snapshot.accelMs2, 2),
+      noise: snapshot.noiseKmh === null ? null : round(snapshot.noiseKmh, 2),
       rpm: Math.round(snapshot.rpm),
       gear: snapshot.gear,
       load: round(snapshot.load, 2),
       accuracyM: snapshot.accuracyM,
       ...soundFields(snapshot.sound),
+      ...(this.detailed ? champsDetailles(snapshot.detail) : {}),
     })
   }
 
@@ -282,6 +360,27 @@ function round(value: number, digits: number): number {
  * Rend un objet vide quand le profil ne synthétise pas : inscrire des zéros
  * ferait croire à un son parfait là où il n'y a pas de son du tout.
  */
+/**
+ * Les champs que le relevé détaillé ajoute.
+ *
+ * **C'est l'endroit unique** : ajouter une grandeur au journal détaillé, c'est
+ * une ligne ici et un champ dans `DetailDeConduite`. Un test le tient, plutôt
+ * qu'un commentaire qui vieillirait.
+ *
+ * Les noms restent courts : il y a dix fois plus de lignes qu'au cran ordinaire.
+ */
+function champsDetailles(
+  detail: DetailDeConduite | null | undefined,
+): Record<string, number> {
+  if (!detail) return {}
+  return {
+    up: Math.round(detail.upshiftRpm),
+    down: Math.round(detail.downshiftRpm),
+    demand: round(detail.demand, 2),
+    rawAccel: round(detail.rawAccelMs2, 2),
+  }
+}
+
 function soundFields(
   sound: SoundCost | null | undefined,
 ): Record<string, number> {

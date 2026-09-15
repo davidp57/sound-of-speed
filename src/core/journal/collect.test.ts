@@ -21,6 +21,7 @@ const BASE: JournalSnapshot = {
   derived: false,
   kmh: 90,
   accelMs2: 0,
+  noiseKmh: 1.2,
   rpm: 2400,
   gear: 5,
   load: 0.5,
@@ -36,9 +37,9 @@ function snapshot(over: Partial<JournalSnapshot> = {}): JournalSnapshot {
   return { ...BASE, ...over }
 }
 
-function setup(consent: 'none' | 'minimal' | 'extended' = 'minimal') {
+function setup(consent: 'none' | 'minimal' | 'extended' = 'minimal', detailed = false) {
   const journal = new Journal({ sessionId: 'k7bq', startedAt: 0 })
-  const collector = new JournalCollector(journal, consent)
+  const collector = new JournalCollector(journal, consent, detailed)
   const events = () => {
     const slice = journal.takeSlice(1e9)
     if (!slice) return []
@@ -322,5 +323,128 @@ describe('l’état du mouvement est inscrit à chaque bascule', () => {
     collector.observe(snapshot({ at: 1000, pace: 'slowing', paceForS: 2 }))
 
     expect(events().filter((e) => e.kind === 'pace')).toHaveLength(0)
+  })
+})
+
+describe('le bruit du récepteur entre au relevé', () => {
+  it('est inscrit avec les autres grandeurs', () => {
+    const { collector, events } = setup()
+    collector.observe(snapshot({ at: 0, noiseKmh: 1.37 }))
+
+    expect(events().find((e) => e.kind === 'sample')?.data).toMatchObject({ noise: 1.37 })
+  })
+
+  it('s inscrit absent plutôt que nul quand il n y a rien à conclure', () => {
+    // Zéro se lirait « récepteur parfait », ce qui est faux : c'est « on ne sait
+    // pas encore ».
+    const { collector, events } = setup()
+    collector.observe(snapshot({ at: 0, noiseKmh: null }))
+
+    expect(events().find((e) => e.kind === 'sample')?.data.noise).toBeNull()
+  })
+})
+
+describe('le journal détaillé change la cadence du relevé', () => {
+  /** Fait observer une suite d'instantanés régulièrement espacés. */
+  function observer(collector: JournalCollector, durationMs: number, pasMs = 100): void {
+    for (let at = 0; at <= durationMs; at += pasMs) collector.observe(snapshot({ at }))
+  }
+
+  it('relève toutes les dix secondes quand il est éteint', () => {
+    const { collector, events } = setup()
+    observer(collector, 30_000)
+
+    // Zéro, dix, vingt, trente secondes.
+    expect(events().filter((e) => e.kind === 'sample')).toHaveLength(4)
+  })
+
+  it('relève toutes les secondes quand il est allumé', () => {
+    const { collector, events } = setup('minimal', true)
+    observer(collector, 30_000)
+
+    expect(events().filter((e) => e.kind === 'sample')).toHaveLength(31)
+  })
+
+  it('change de cadence sans redémarrer', () => {
+    // On l'allume en roulant : la suite du trajet est dense, le début ne l'est
+    // pas, et rien ne se perd entre les deux. Chaque lecture vide le journal,
+    // donc la seconde ne porte que ce qui a suivi l'allumage.
+    const { collector, events } = setup()
+    observer(collector, 20_000)
+    expect(events().filter((e) => e.kind === 'sample')).toHaveLength(3)
+
+    collector.setDetailed(true)
+    for (let at = 20_100; at <= 30_000; at += 100) collector.observe(snapshot({ at }))
+
+    // Dix secondes de plus, un relevé par seconde.
+    expect(events().filter((e) => e.kind === 'sample')).toHaveLength(10)
+  })
+
+  it('n envoie rien de plus quand rien n est accordé', () => {
+    // Le détail densifie ce qui part ; il n'ouvre pas ce qui ne part pas.
+    const { collector, events } = setup('none', true)
+    observer(collector, 30_000)
+
+    expect(events()).toHaveLength(0)
+  })
+
+  it('n inscrit pas de position au cran minimal, même détaillé', () => {
+    const { collector, events } = setup('minimal', true)
+    for (let at = 0; at <= 10_000; at += 100) {
+      collector.observe(snapshot({ at, latitude: 45.75, longitude: 4.85 }))
+    }
+
+    expect(events().some((e) => e.kind === 'position')).toBe(false)
+  })
+})
+
+describe('ce que le relevé détaillé porte en plus', () => {
+  const detail = { upshiftRpm: 2010, downshiftRpm: 1620, demand: 0.47, rawAccelMs2: -0.31 }
+
+  it('inscrit les seuils, la demande et l accélération brute', () => {
+    const { collector, events } = setup('minimal', true)
+    collector.observe(snapshot({ at: 0, detail }))
+
+    expect(events().find((e) => e.kind === 'sample')?.data).toMatchObject({
+      up: 2010,
+      down: 1620,
+      demand: 0.47,
+      rawAccel: -0.31,
+    })
+  })
+
+  it('ne change rien au cran ordinaire', () => {
+    // La promesse qui compte pour le relecteur et pour le calcul d'étalonnage :
+    // un journal ordinaire garde exactement la forme qu'il avait.
+    const ordinaire = setup('minimal', false)
+    ordinaire.collector.observe(snapshot({ at: 0, detail }))
+    const champs = Object.keys(ordinaire.events().find((e) => e.kind === 'sample')?.data ?? {})
+
+    expect(champs).not.toContain('up')
+    expect(champs).not.toContain('down')
+    expect(champs).not.toContain('demand')
+    expect(champs).not.toContain('rawAccel')
+    expect(champs).toEqual(['kmh', 'accel', 'noise', 'rpm', 'gear', 'load', 'accuracyM'])
+  })
+
+  it('ajouter une grandeur se fait à un seul endroit', () => {
+    // Ce test est la garde de la contrainte : les champs du relevé détaillé
+    // sont exactement ceux que `DetailDeConduite` déclare, ni plus ni moins.
+    // Le jour où l'un s'ajoute là sans être inscrit ici, il rougit.
+    const { collector, events } = setup('minimal', true)
+    collector.observe(snapshot({ at: 0, detail }))
+    const champs = Object.keys(events().find((e) => e.kind === 'sample')?.data ?? {})
+    const enPlus = champs.filter(
+      (c) => !['kmh', 'accel', 'noise', 'rpm', 'gear', 'load', 'accuracyM'].includes(c),
+    )
+
+    expect(enPlus).toHaveLength(Object.keys(detail).length)
+  })
+
+  it('se passe du détail quand la chaîne ne l a pas encore produit', () => {
+    const { collector, events } = setup('minimal', true)
+    collector.observe(snapshot({ at: 0, detail: null }))
+
+    expect(events().find((e) => e.kind === 'sample')?.data).not.toHaveProperty('up')
   })
 })

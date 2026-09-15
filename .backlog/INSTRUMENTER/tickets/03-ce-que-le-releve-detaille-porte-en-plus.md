@@ -1,9 +1,8 @@
 # 03 — Ce que le relevé détaillé porte en plus
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 15 septembre 2026
 
-**Bloqué par :** 02 — Le journal détaillé s'allume, et s'éteint tout seul. Il n'y
-a rien à densifier tant qu'aucun réglage ne le demande.
+**Bloqué par :** plus rien — 02 est livré le 15 septembre 2026.
 
 ## Ce qu'il faut obtenir
 
@@ -39,10 +38,22 @@ ouvertes depuis l'essai du 10 septembre.
 
 ## Critères d'acceptation
 
-- [ ] Au cran détaillé, le relevé porte les deux seuils de la boîte, la demande
+- [x] Au cran détaillé, le relevé porte les deux seuils de la boîte, la demande
       et l'accélération brute.
-- [ ] Au cran ordinaire, les champs sont inchangés — mêmes noms, même nombre.
-- [ ] Ajouter une grandeur au relevé détaillé se fait à un seul endroit, et un
+- [x] Au cran ordinaire, les champs sont inchangés — mêmes noms, même nombre.
+- [x] Ajouter une grandeur au relevé détaillé se fait à un seul endroit, et un
       test le montre plutôt qu'un commentaire.
-- [ ] Le relecteur ouvre sans erreur un journal enregistré au cran détaillé.
-- [ ] Contrôle qualité vert.
+- [x] Le relecteur ouvre sans erreur un journal enregistré au cran détaillé.
+- [x] Contrôle qualité vert.
+
+## Ce qui a été fait
+
+Les quatre grandeurs sont groupées dans un seul type porté par le cliché, et un
+seul endroit les met en forme. **Un test tient la contrainte** plutôt qu'un
+commentaire : les champs ajoutés au relevé détaillé sont exactement ceux que le
+type déclare, ni plus ni moins. Le jour où l'un s'ajoute d'un côté sans l'autre,
+il rougit.
+
+Le cran ordinaire est vérifié par la liste exacte de ses champs, dans l'ordre :
+un journal relu par le relecteur ou par le calcul d'étalonnage garde la forme
+qu'il avait.

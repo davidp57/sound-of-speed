@@ -50,6 +50,7 @@ import { depositCaptureSlice } from './core/capture/deposit'
 import { captureHealth } from './core/capture/health'
 import { StandstillFlush } from './core/capture/standstill'
 import { JournalCollector, type SoundCost } from './core/journal/collect'
+import { detailActif, eteintA, type DetailActiveA } from './core/journal/detail'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
 import { toWav } from './bench/wav'
 import { archiveName, collectArchive } from './core/export/collect'
@@ -700,6 +701,18 @@ watch(
     if (enAttente && gardeMinuteur === null) {
       gardeMinuteur = setInterval(() => {
         gardeHorlogeMs.value = Date.now()
+  // L'extinction du journal détaillé se constate ici : sans ce rafraîchissement,
+  // le réglage resterait allumé jusqu'au prochain geste de l'utilisateur, et
+  // l'écran afficherait une heure de fin dépassée.
+  if (detailActiveA.value !== null) {
+    const etaitAllume = journalDetaille.value
+    detailMaintenantMs.value = gardeHorlogeMs.value
+    if (etaitAllume && !journalDetaille.value) {
+      detailActiveA.value = null
+      writePreference(JOURNAL_DETAIL_KEY, '')
+      collector.setDetailed(false)
+    }
+  }
       }, 1_000)
     } else if (!enAttente && gardeMinuteur !== null) {
       clearInterval(gardeMinuteur)
@@ -1095,6 +1108,11 @@ export type DriveFace = 'dials' | 'numbers'
 
 const FACE_KEY = 'speed.driveFace.v1'
 const JOURNAL_KEY = 'speed.journal.v1'
+/**
+ * Quand le journal détaillé a été allumé. Une date, pas un booléen : c'est elle
+ * qui porte l'extinction au bout de vingt-quatre heures.
+ */
+const JOURNAL_DETAIL_KEY = 'speed.journal.detail.v1'
 
 function readPreference(key: string): string | null {
   try {
@@ -1161,6 +1179,45 @@ export function setUploadConsent(consent: UploadConsent): void {
 }
 
 /**
+ * Le journal détaillé : un réglage de mise au point, qui s'éteint tout seul.
+ *
+ * **Ce n'est pas un quatrième cran de remontée.** Il densifie ce qui part au cran
+ * déjà choisi et n'ouvre aucune nature de fichier : à « Le minimum », toujours ni
+ * position ni trace. La règle et son extinction vivent dans
+ * `core/journal/detail.ts` ; ici on ne fait que la ranger et la relire.
+ */
+const detailActiveA = ref<DetailActiveA>(readDetail())
+/**
+ * Horloge de l'extinction, rafraîchie par la boucle.
+ *
+ * Une valeur réactive plutôt qu'un `Date.now()` lu à l'affichage : sans elle,
+ * l'écran garderait « s'éteint à 23 h 30 » une heure après l'extinction.
+ */
+const detailMaintenantMs = ref(Date.now())
+
+function readDetail(): DetailActiveA {
+  const stored = Number(readPreference(JOURNAL_DETAIL_KEY))
+  return Number.isFinite(stored) && stored > 0 ? stored : null
+}
+
+/** Le journal détaillé est-il allumé, à cet instant ? */
+export const journalDetaille = computed(() =>
+  detailActif(detailActiveA.value, detailMaintenantMs.value),
+)
+
+/** L'instant où il s'éteindra, ou `null` s'il est éteint. */
+export const journalDetailleJusqua = computed(() =>
+  eteintA(detailActiveA.value, detailMaintenantMs.value),
+)
+
+export function setJournalDetaille(actif: boolean): void {
+  detailMaintenantMs.value = Date.now()
+  detailActiveA.value = actif ? detailMaintenantMs.value : null
+  writePreference(JOURNAL_DETAIL_KEY, actif ? String(detailActiveA.value) : '')
+  collector.setDetailed(journalDetaille.value)
+}
+
+/**
  * Le journal de la session en cours.
  *
  * Une session couvre l'ouverture de la page, et non un trajet : le navigateur de
@@ -1186,7 +1243,11 @@ const journal = new Journal({ sessionId, startedAt: journalStartedAt })
  * date réelle sert encore à nommer les fichiers, ce qui est son emploi juste.
  */
 let journalElapsedMs = 0
-const collector = new JournalCollector(journal, readConsent())
+const collector = new JournalCollector(
+  journal,
+  readConsent(),
+  detailActif(readDetail(), Date.now()),
+)
 
 /**
  * Ce que le navigateur dit de lui-même, écrit **une fois** en tête de session.
@@ -2227,6 +2288,7 @@ export const telemetry = shallowRef<Telemetry>({
     sinceLastSampleMs: 0,
     recentGapsMs: [],
     slopeSamples: 0,
+    noiseKmh: null,
     atStandstill: true,
   },
   engine: {
@@ -2254,6 +2316,7 @@ export const telemetry = shallowRef<Telemetry>({
     downshiftThresholdRpm: 0,
     downshiftBlocked: false,
     kickdownGears: 0,
+    demand: 0,
     pace: { state: 'holding', forS: 0, accelMs2: 0 },
   },
   frameMs: 0,
@@ -2581,11 +2644,20 @@ function step(dt: number): void {
     derived: speed.derived,
     kmh: speed.kmh,
     accelMs2: speed.accelMs2,
+    noiseKmh: speed.noiseKmh,
     rpm: engineState.rpm,
     gear: gearboxState.gear + 1,
     load: engineState.load,
     pace: gearboxState.pace.state,
     paceForS: gearboxState.pace.forS,
+    detail: {
+      upshiftRpm: gearboxState.upshiftThresholdRpm,
+      downshiftRpm: gearboxState.downshiftThresholdRpm,
+      demand: gearboxState.demand,
+      // La pente que le conditionneur estime, avant que le ressort ne la lisse :
+      // c'est l'écart entre les deux qui dit ce qui a été absorbé.
+      rawAccelMs2: speed.slopeKmhS / 3.6,
+    },
     fixRestarts: fixWatchdog.restarts,
     rejected: {
       implausible: geolocation.stats.rejected.implausible,

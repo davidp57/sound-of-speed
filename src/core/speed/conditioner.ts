@@ -74,8 +74,36 @@ export interface ConditionedSpeed {
    * GPS n'était pas celle qu'on croyait.
    */
   slopeSamples: number
+  /**
+   * Bruit de mesure du récepteur, en km/h d'écart-type, ou `null`.
+   *
+   * **Il ne coûte rien de plus.** La pente vient d'une droite ajustée par les
+   * moindres carrés sur la fenêtre glissante ; l'écart des mesures à cette
+   * droite **est** le bruit. On le rend au lieu de le jeter.
+   *
+   * **Ce n'est pas le chiffre que le serveur établit après coup.** Le calcul
+   * d'étalonnage ajuste une fenêtre **centrée** — il voit les mesures avant et
+   * après chaque point. Ici on n'a que le passé, et la fenêtre est celle du
+   * profil. Les deux valeurs sont voisines, jamais égales : les comparer
+   * aveuglément ferait conclure à un défaut là où il n'y a qu'une différence de
+   * méthode.
+   *
+   * `null` quand la fenêtre ne porte pas de quoi conclure — à l'arrêt, avec trop
+   * peu de mesures, ou sur une fenêtre trop courte. Une valeur nulle se lirait
+   * comme « récepteur parfait ».
+   */
+  noiseKmh: number | null
   atStandstill: boolean
 }
+
+/**
+ * Nombre minimum de mesures pour que le bruit ait un sens.
+ *
+ * Trois points ajustent une droite en laissant un seul degré de liberté, ce qui
+ * donne un écart-type dominé par le hasard du tirage. Le calcul d'étalonnage
+ * pose le même plancher.
+ */
+const NOISE_MIN_SAMPLES = 5
 
 interface HistoryEntry {
   at: number
@@ -94,6 +122,7 @@ export class SpeedConditioner {
   private rawKmh = 0
   private derived = false
   private slopeKmhS = 0
+  private noiseKmh: number | null = null
   private targetKmh = 0
   private smoothedKmh = 0
   /** Vitesse de la masse du ressort, en km/h par seconde. */
@@ -149,6 +178,7 @@ export class SpeedConditioner {
     this.rawKmh = 0
     this.derived = false
     this.slopeKmhS = 0
+    this.noiseKmh = null
     this.targetKmh = 0
     this.smoothedKmh = 0
     this.springRate = 0
@@ -197,6 +227,7 @@ export class SpeedConditioner {
     this.prune(at)
 
     this.slopeKmhS = this.estimateSlope(at)
+    this.noiseKmh = this.estimateNoise(at)
   }
 
   /**
@@ -311,6 +342,60 @@ export class SpeedConditioner {
     return false
   }
 
+  /**
+   * Bruit de mesure, par les résidus de la droite qui donne la pente.
+   *
+   * La même droite, la même fenêtre : on regarde de combien chaque mesure s'en
+   * écarte. La somme des carrés est divisée par `n − 2` et non par `n` — la
+   * droite consomme deux degrés de liberté, et diviser par `n` sous-estimerait
+   * l'écart-type.
+   *
+   * **Une droite suit exactement une rampe.** Une accélération franche et
+   * régulière n'ajoute donc rien à ce chiffre, et c'est ce qui prouve qu'il
+   * mesure le récepteur et non le mouvement. Ce qu'il contient en trop, c'est la
+   * **courbure** : un changement d'allure dans la fenêtre, qu'une droite ne peut
+   * pas suivre. C'est une borne haute, et c'est le bon sens de l'erreur — mieux
+   * vaut croire le récepteur plus bruyant qu'il n'est.
+   */
+  private estimateNoise(at: number): number | null {
+    const points = this.history
+    const n = points.length
+    if (n < NOISE_MIN_SAMPLES) return null
+    if (!this.measuresShowMotion()) return null
+
+    const oldest = points[0]
+    if (!oldest || (at - oldest.at) / 1000 <= 0.15) return null
+
+    let sx = 0
+    let sy = 0
+    let sxx = 0
+    let sxy = 0
+    for (const point of points) {
+      const x = (point.at - at) / 1000
+      sx += x
+      sy += point.kmh
+      sxx += x * x
+      sxy += x * point.kmh
+    }
+
+    const spread = n * sxx - sx * sx
+    if (!(Math.abs(spread) > 1e-9)) return null
+
+    const slope = (n * sxy - sx * sy) / spread
+    const intercept = (sy - slope * sx) / n
+    if (!Number.isFinite(slope) || !Number.isFinite(intercept)) return null
+
+    let squares = 0
+    for (const point of points) {
+      const x = (point.at - at) / 1000
+      const residual = point.kmh - (intercept + slope * x)
+      squares += residual * residual
+    }
+
+    const noise = Math.sqrt(squares / (n - 2))
+    return Number.isFinite(noise) ? noise : null
+  }
+
   private estimateSlope(at: number): number {
     const points = this.history
     const n = points.length
@@ -421,6 +506,7 @@ export class SpeedConditioner {
       sinceLastSampleMs,
       recentGapsMs: [...this.gaps],
       slopeSamples: this.history.length,
+      noiseKmh: this.noiseKmh,
       atStandstill: this.smoothedKmh < STANDSTILL_KMH,
     }
   }

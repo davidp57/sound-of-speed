@@ -1,6 +1,6 @@
 # 02 — Le journal détaillé s'allume, et s'éteint tout seul
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 15 septembre 2026
 
 **Bloqué par :** aucun, peut démarrer tout de suite. Il ne touche pas au bruit du
 ticket 01 et peut être mené en parallèle.
@@ -46,14 +46,28 @@ secondes à une seconde**. Ce qu'il porte en plus est le ticket 03.
 
 ## Critères d'acceptation
 
-- [ ] Un interrupteur « Journal détaillé » existe, **hors** de la rangée des trois
+- [x] Un interrupteur « Journal détaillé » existe, **hors** de la rangée des trois
       crans, avec un libellé qui dit de ne l'activer que si on vous l'a demandé.
-- [ ] Il n'ouvre aucune nature de fichier nouvelle : à « Le minimum », ni position
+- [x] Il n'ouvre aucune nature de fichier nouvelle : à « Le minimum », ni position
       ni trace ne partent, avant comme après.
-- [ ] Il s'éteint vingt-quatre heures après son activation, à l'heure près.
-- [ ] Activé à 23 h 30, il est encore actif à 0 h 30 — vérifié sans attendre.
-- [ ] L'écran dit jusqu'à quand il tient, avec l'heure.
-- [ ] L'écran de conduite le signale tant qu'il est actif.
-- [ ] Quand il est actif, le relevé périodique passe à une seconde ; quand il ne
+- [x] Il s'éteint vingt-quatre heures après son activation, à l'heure près.
+- [x] Activé à 23 h 30, il est encore actif à 0 h 30 — vérifié sans attendre.
+- [x] L'écran dit jusqu'à quand il tient, avec l'heure.
+- [x] L'écran de conduite le signale tant qu'il est actif.
+- [x] Quand il est actif, le relevé périodique passe à une seconde ; quand il ne
       l'est pas, la cadence et les champs sont exactement ceux d'aujourd'hui.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.
+
+## Ce qui a été fait
+
+La règle vit dans `core/journal/detail.ts` : une fonction pure de (activé à,
+maintenant), vérifiée sans attendre un jour. Ce qui est rangé est **la date
+d'activation**, pas un booléen — c'est elle qui porte l'extinction.
+
+**Vérifié dans l'application** : l'écran annonce « s'éteint tout seul demain à
+11:06 », et le témoin de conduite porte le même horaire.
+
+Un cas n'était pas au ticket et a été ajouté : **une date d'activation dans le
+futur éteint le réglage** au lieu de le prolonger. L'horloge d'un navigateur se
+règle, parfois de plusieurs heures, et un réglage de mise au point ne doit pas
+pouvoir se rendre permanent par un changement d'heure.

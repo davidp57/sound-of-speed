@@ -1,10 +1,9 @@
 # 04 — Le chiffre, relevé en roulant
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — le code du ticket 01 est livré
 
-**Bloqué par :** 01 — Le bruit du récepteur se lit dans la voiture. Les tickets 02
-et 03 rendent l'essai plus riche, mais ils ne le gardent pas : le bruit se lit
-sans eux.
+**Bloqué par :** plus rien — les trois autres tickets sont livrés le 15 septembre
+2026.
 
 ## Ce qu'il faut obtenir
 

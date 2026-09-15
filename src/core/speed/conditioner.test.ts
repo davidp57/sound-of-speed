@@ -698,3 +698,131 @@ describe('accélération à l’arrêt', () => {
     expect(maximum).toBe(0)
   })
 })
+
+/**
+ * Le bruit du récepteur, mesuré à bord.
+ *
+ * Ce qu'on vérifie est une **propriété**, pas une valeur : un signal parfait
+ * doit rendre zéro — rampe comprise, puisqu'une droite suit exactement une
+ * rampe —, et un signal bruité doit retrouver le bruit qu'on y a mis.
+ *
+ * C'est ce contrôle-là qui prouve que le calcul mesure le récepteur et non le
+ * mouvement.
+ *
+ * **On compare au bruit réellement injecté, et non à la valeur nominale.** Un
+ * tirage de soixante nombres d'écart-type un a rendu 0,788 sur la graine de ces
+ * tests : comparer à un ferait échouer un calcul juste. Et l'on moyenne les
+ * relevés sur toute la durée, la fenêtre glissante n'en portant qu'une dizaine —
+ * un estimateur sur dix points se disperse de trente pour cent.
+ */
+describe('le bruit du récepteur', () => {
+  /** Bruit reproductible, d'écart-type unité, comme celui du simulateur. */
+  function tirage(graine: number): () => number {
+    let etat = graine >>> 0
+    const suivant = (): number => {
+      etat = (etat + 0x6d2b79f5) >>> 0
+      let t = etat
+      t = Math.imul(t ^ (t >>> 15), t | 1)
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+    }
+    return () => (suivant() + suivant() - 1) * Math.sqrt(6)
+  }
+
+  interface Releve {
+    /** Moyenne des valeurs rendues, une fois la fenêtre garnie. */
+    mesure: number | null
+    /** Écart-type des erreurs réellement injectées. */
+    injecte: number
+  }
+
+  function bruitApres(
+    vitesse: (t: number) => number,
+    bruitKmh: number,
+    secondes = 30,
+    cadenceMs = 100,
+  ): Releve {
+    const conditioner = new SpeedConditioner(preset())
+    const bruit = tirage(17)
+    const erreurs: number[] = []
+    const rendus: number[] = []
+    let prochaineMesureMs = 0
+
+    for (let frame = 0; frame * FRAME_S <= secondes; frame += 1) {
+      const t = frame * FRAME_S
+      const ms = t * 1000
+      if (ms >= prochaineMesureMs) {
+        const erreur = bruitKmh === 0 ? 0 : bruit() * bruitKmh
+        erreurs.push(erreur)
+        conditioner.push(mesure(Math.max(0, vitesse(t) + erreur), ms))
+        prochaineMesureMs += cadenceMs
+      }
+      const rendu = conditioner.tick(FRAME_S).noiseKmh
+      // Les deux premières secondes garnissent la fenêtre : on ne les compte pas.
+      if (rendu !== null && t > 2) rendus.push(rendu)
+    }
+
+    const moyenne = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
+    const centre = erreurs.length > 0 ? moyenne(erreurs) : 0
+    return {
+      mesure: rendus.length > 0 ? moyenne(rendus) : null,
+      injecte:
+        erreurs.length > 1
+          ? Math.sqrt(moyenne(erreurs.map((e) => (e - centre) ** 2)))
+          : 0,
+    }
+  }
+
+  it('est nul sur une vitesse parfaitement tenue', () => {
+    expect(bruitApres(() => 72, 0).mesure).toBeCloseTo(0, 3)
+  })
+
+  it('est nul sur une rampe, parce qu une droite suit une rampe', () => {
+    // Le contrôle qui compte : une accélération franche et régulière ne doit
+    // rien ajouter. Sans lui, on mesurerait le mouvement en croyant mesurer le
+    // récepteur — et l'on conclurait que le GPS est mauvais dès qu'on accélère.
+    expect(bruitApres((t) => 20 + 2 * t, 0).mesure).toBeCloseTo(0, 3)
+  })
+
+  it('retrouve le bruit qu on y a mis', () => {
+    const { mesure: rendu, injecte } = bruitApres(() => 72, 1)
+    expect(rendu).not.toBeNull()
+    expect(rendu!).toBeGreaterThan(injecte * 0.8)
+    expect(rendu!).toBeLessThan(injecte * 1.2)
+  })
+
+  it('suit quand le bruit change', () => {
+    const faible = bruitApres(() => 72, 0.5).mesure
+    const fort = bruitApres(() => 72, 2).mesure
+    expect(faible).not.toBeNull()
+    expect(fort).not.toBeNull()
+    expect(fort!).toBeGreaterThan(faible! * 3)
+  })
+
+  it('ne se laisse pas gonfler par une accélération bruitée', () => {
+    // Bruit égal, mouvement différent : le chiffre doit rester le même à peu
+    // près. La courbure que la droite ne suit pas est le seul écart admis, et
+    // elle joue dans le sens prudent.
+    const tenue = bruitApres(() => 72, 1).mesure
+    const rampe = bruitApres((t) => 20 + 2 * t, 1).mesure
+    expect(tenue).not.toBeNull()
+    expect(rampe).not.toBeNull()
+    expect(Math.abs(rampe! - tenue!)).toBeLessThan(0.2)
+  })
+
+  it('s annonce absent tant qu il n y a rien à conclure', () => {
+    const conditioner = new SpeedConditioner(preset())
+    expect(conditioner.tick(FRAME_S).noiseKmh).toBeNull()
+
+    // Deux mesures ajustent une droite exacte : aucun résidu, donc rien à dire.
+    conditioner.push(mesure(50, 0))
+    conditioner.push(mesure(50, 100))
+    expect(conditioner.tick(FRAME_S).noiseKmh).toBeNull()
+  })
+
+  it('s annonce absent à l arrêt', () => {
+    // À l'arrêt, la source espace ses mesures et la vitesse ne bouge pas : il
+    // n'y a pas de bruit de récepteur à lire là-dedans.
+    expect(bruitApres(() => 0, 0).mesure).toBeNull()
+  })
+})

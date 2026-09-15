@@ -433,6 +433,12 @@ function onRateChange(event: Event): void {
         hint="Intervalle médian entre deux mesures. Il varie beaucoup d'un appareil à l'autre, et selon qu'on roule ou non : quelques dizaines de millisecondes en mouvement dans une Tesla, plusieurs secondes à l'arrêt, une seconde sur un GPS ordinaire."
       />
       <ValueRow
+        label="Bruit du récepteur"
+        :value="telemetry.speed.noiseKmh === null ? '—' : fixed(telemetry.speed.noiseKmh, 2)"
+        unit="km/h"
+        hint="De combien les mesures s'écartent de la droite qui sert à estimer la pente. Mesuré ici, sur les mesures passées uniquement — le serveur en donne un autre, calculé après coup sur les mesures qui précèdent et suivent chaque point : les deux sont voisins, jamais égaux."
+      />
+      <ValueRow
         label="Intervalles récents"
         :value="telemetry.speed.recentGapsMs.join(' · ') || '—'"
         unit="ms"

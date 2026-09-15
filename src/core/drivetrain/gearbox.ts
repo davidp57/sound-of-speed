@@ -167,6 +167,14 @@ export interface GearboxState {
   /** Nombre de rapports descendus par le dernier rétrogradage forcé. */
   kickdownGears: number
   /**
+   * La demande du conducteur, de 0 à 1 — la charge qui ne retombe que lentement.
+   *
+   * Rendue pour le diagnostic : c'est elle qui déplace le seuil de montée, et
+   * elle explique un passage que la charge de l'instant ne suffit pas à
+   * expliquer.
+   */
+  demand: number
+  /**
    * Ce que la boîte croit que la voiture fait, et depuis combien de temps.
    *
    * Rendu parce que c'est la question qu'on s'est posée tout l'été sans pouvoir
@@ -724,6 +732,7 @@ export class Gearbox {
       downshiftThresholdRpm: downThreshold,
       downshiftBlocked: blocked,
       kickdownGears,
+      demand: this.demand,
       pace: this.pace.current,
     }
   }

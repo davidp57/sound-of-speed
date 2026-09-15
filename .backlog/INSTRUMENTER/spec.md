@@ -1,7 +1,7 @@
 # INSTRUMENTER — savoir ce que le récepteur donne, et pouvoir en demander plus le jour d'un essai
 
-**Statut :** ⬜ prêt
-**Branche :** `feature/instrumenter`, à ouvrir
+**Statut :** 🧑 attend David — 3/4 livrés le 15 septembre 2026, reste le chiffre à relever en roulant
+**Branche :** `feature/instrumenter`
 **Version visée :** 0.2.63
 
 ## Ce qu'il faut obtenir
@@ -167,12 +167,12 @@ la règle — activé à 23 h 30, encore actif à 0 h 30.
 
 ## Les tickets
 
-| # | Ticket | Bloqué par |
-|---|---|---|
-| 01 | [Le bruit du récepteur se lit dans la voiture](tickets/01-le-bruit-se-lit-dans-la-voiture.md) | aucun |
-| 02 | [Le journal détaillé s'allume, et s'éteint tout seul](tickets/02-le-journal-detaille-s-allume-et-s-eteint.md) | aucun |
-| 03 | [Ce que le relevé détaillé porte en plus](tickets/03-ce-que-le-releve-detaille-porte-en-plus.md) | 02 |
-| 04 | [Le chiffre, relevé en roulant](tickets/04-le-chiffre-releve-en-roulant.md) | 01 |
+| # | Ticket | Bloqué par | Statut |
+|---|---|---|---|
+| 01 | [Le bruit du récepteur se lit dans la voiture](tickets/01-le-bruit-se-lit-dans-la-voiture.md) | aucun | ✅ |
+| 02 | [Le journal détaillé s'allume, et s'éteint tout seul](tickets/02-le-journal-detaille-s-allume-et-s-eteint.md) | aucun | ✅ |
+| 03 | [Ce que le relevé détaillé porte en plus](tickets/03-ce-que-le-releve-detaille-porte-en-plus.md) | 02 | ✅ |
+| 04 | [Le chiffre, relevé en roulant](tickets/04-le-chiffre-releve-en-roulant.md) | 01 | 🧑 |
 
 Les deux premiers sont indépendants et peuvent être menés en parallèle.
 
