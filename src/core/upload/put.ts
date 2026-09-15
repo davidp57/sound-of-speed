@@ -17,6 +17,16 @@
  */
 
 /**
+ * Ce qu'on dit quand le serveur est plein pour ce compte.
+ *
+ * Le message part vers l'écran de configuration, qui l'affiche tel quel : il
+ * doit donc dire quoi faire, et non seulement ce qui s'est passé. Il vit ici
+ * parce que les deux façons de déposer — un fichier, une tranche — le donnent.
+ */
+export const PLEIN =
+  'Le serveur est plein pour ce compte : emportez vos trajets, ou effacez-en, depuis l’écran du compte.'
+
+/**
  * Pourquoi cela n'est pas parti.
  *
  * La distinction n'est pas cosmétique : `refused` veut dire que cet appareil n'a
@@ -81,6 +91,11 @@ export async function putFile(
         // repris un compte. Réessayer en boucle ne ferait que masquer le message.
         retry: false,
       }
+    }
+    // Le compte est plein : ni une panne, ni une charge trop grosse. Réessayer
+    // ne passera jamais tant que rien n'est libéré.
+    if (response.status === 507) {
+      return { ok: false, reason: 'refused', detail: PLEIN, retry: false }
     }
     return {
       ok: false,

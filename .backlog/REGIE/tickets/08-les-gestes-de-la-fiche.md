@@ -1,6 +1,6 @@
 # 08 — Les gestes de la fiche : effacer, forcer, régler, plafonner
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 03 — donner et reprendre un rôle, et la trace qui l'inscrit
 
@@ -40,27 +40,27 @@ route de dépôt, sur le chemin chaud du serveur.
 
 ## Critères d'acceptation
 
-- [ ] Un compte effacé depuis la fiche disparaît avec tout ce qu'il portait.
-- [ ] Sa ligne de trace existe encore après l'effacement, et ne porte plus ni
+- [x] Un compte effacé depuis la fiche disparaît avec tout ce qu'il portait.
+- [x] Sa ligne de trace existe encore après l'effacement, et ne porte plus ni
       nom ni adresse.
-- [ ] Le verdict de rétention se lit avant de forcer, et dit ce qui serait
+- [x] Le verdict de rétention se lit avant de forcer, et dit ce qui serait
       effacé comme ce qui serait retenu.
-- [ ] Forcer un passage efface exactement ce que le verdict annonçait.
-- [ ] Régler l'abandon d'un compte anonyme vide l'efface ; un compte qui porte
+- [x] Forcer un passage efface exactement ce que le verdict annonçait.
+- [x] Régler l'abandon d'un compte anonyme vide l'efface ; un compte qui porte
       quelque chose est gardé, et un compte non anonyme aussi.
-- [ ] Un dépôt qui ferait dépasser le plafond est refusé ; rien de déjà déposé
+- [x] Un dépôt qui ferait dépasser le plafond est refusé ; rien de déjà déposé
       n'est effacé.
-- [ ] Le refus arrive avec un code que le client ne rejoue pas, et l'écran de la
+- [x] Le refus arrive avec un code que le client ne rejoue pas, et l'écran de la
       voiture dit quoi faire.
-- [ ] Le plafond commun se règle par la configuration, sans reconstruire
+- [x] Le plafond commun se règle par la configuration, sans reconstruire
       l'image, et il est déclaré dans la composition de la pile.
-- [ ] Une surcharge posée sur un compte prime sur le plafond commun, et se
+- [x] Une surcharge posée sur un compte prime sur le plafond commun, et se
       retire.
-- [ ] La mesure du poids d'un compte ne rend pas le dépôt sensiblement plus
+- [x] La mesure du poids d'un compte ne rend pas le dépôt sensiblement plus
       coûteux — chiffre à l'appui.
-- [ ] Chacun des quatre gestes écrit sa ligne de trace.
-- [ ] L'administrateur peut exercer ces gestes sur son propre compte comme sur
+- [x] Chacun des quatre gestes écrit sa ligne de trace.
+- [x] L'administrateur peut exercer ces gestes sur son propre compte comme sur
       un autre.
-- [ ] Les routes ajoutées sont inscrites dans l'inventaire de l'essai
+- [x] Les routes ajoutées sont inscrites dans l'inventaire de l'essai
       d'isolation.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

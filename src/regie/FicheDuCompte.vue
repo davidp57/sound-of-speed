@@ -4,12 +4,19 @@ import { ref, watch } from 'vue'
 import {
   accorderUneBanque,
   chargerLaFiche,
+  chargerLeVerdict,
   chargerLesDonnees,
   donnerUnRole,
+  effacerLeCompte,
+  forcerLaRetention,
+  poserUnPlafond,
+  reglerLAbandon,
   reprendreUnRole,
+  retirerLePlafond,
   retirerUneBanque,
   type Donnees,
   type Fiche,
+  type Verdict,
 } from './api'
 import { dateLisible, poidsLisible } from './format'
 
@@ -57,8 +64,98 @@ async function recharger(): Promise<void> {
 
 watch(() => proprietes.compte, recharger, { immediate: true })
 
-const emet = defineEmits<{ change: [] }>()
+const emet = defineEmits<{ change: []; efface: [] }>()
 const refus = ref('')
+const note = ref('')
+
+/**
+ * Le verdict de rétention, lu **avant** de forcer.
+ *
+ * Aucun contrôle ne dira qu'un délai est trop court : un mauvais seuil efface
+ * des données et rien ne rougit. La seule façon de le savoir est de regarder ce
+ * qui partirait.
+ */
+const verdict = ref<Verdict | null>(null)
+
+async function voirLeVerdict(): Promise<void> {
+  const rendu = await chargerLeVerdict(proprietes.compte)
+  verdict.value = rendu.etat === 'ouverte' ? rendu.valeur : null
+}
+
+async function onForcerLaRetention(): Promise<void> {
+  const rendu = await forcerLaRetention(proprietes.compte)
+  if (!rendu.fait) {
+    refus.value = rendu.motif
+    return
+  }
+  await voirLeVerdict()
+  await recharger()
+  emet('change')
+}
+
+async function onReglerLAbandon(): Promise<void> {
+  const rendu = await reglerLAbandon(proprietes.compte)
+  if (!rendu.fait) {
+    refus.value = rendu.motif
+    return
+  }
+  // Le compte anonyme et vide a disparu ; les autres sont gardés, et la fiche
+  // le dira d'elle-même en se rechargeant.
+  emet('efface')
+  emet('change')
+}
+
+/** Le plafond qu'on pose, en gibioctets — l'unité dans laquelle on décide. */
+const plafondEnGio = ref('')
+
+async function onPoserLePlafond(): Promise<void> {
+  const gio = Number(plafondEnGio.value.replace(',', '.'))
+  if (!Number.isFinite(gio) || gio <= 0) {
+    refus.value = 'Un plafond se donne en gibioctets, et il est positif.'
+    return
+  }
+  const rendu = await poserUnPlafond(proprietes.compte, gio)
+  if (!rendu.fait) {
+    refus.value = rendu.motif
+    return
+  }
+  plafondEnGio.value = ''
+  await recharger()
+}
+
+async function onRetirerLePlafond(): Promise<void> {
+  const rendu = await retirerLePlafond(proprietes.compte)
+  if (!rendu.fait) {
+    refus.value = rendu.motif
+    return
+  }
+  await recharger()
+}
+
+/**
+ * Effacer, en deux temps.
+ *
+ * Un premier clic demande confirmation, un second agit — c'est le motif déjà
+ * retenu pour le bouton que l'utilisateur a sur son propre écran. Pas de délai
+ * de grâce, pas de nom à recopier : on ne fabrique pas un second comportement
+ * pour le même mot.
+ */
+const effacementEnAttente = ref(false)
+
+async function onEffacer(): Promise<void> {
+  if (!effacementEnAttente.value) {
+    effacementEnAttente.value = true
+    return
+  }
+  const rendu = await effacerLeCompte(proprietes.compte)
+  if (!rendu.fait) {
+    refus.value = rendu.motif
+    return
+  }
+  effacementEnAttente.value = false
+  emet('efface')
+  emet('change')
+}
 
 /** Ce compte porte-t-il ce rôle, à l'instant ? */
 function porte(role: string): boolean {
@@ -173,8 +270,60 @@ async function basculerLeRole(role: string): Promise<void> {
         aucune route pour l'ouvrir. On le lui demande de vive voix.
       -->
       <dd v-else class="muet">fermée — à demander au conducteur</dd>
+
+      <dt>Plafond</dt>
+      <dd>
+        <span class="numeric">{{ poidsLisible(fiche.plafond.octets) }}</span>
+        <span class="muet">{{ fiche.plafond.particulier ? ' — particulier' : ' — commun' }}</span>
+      </dd>
     </dl>
 
+    <h3>Agir sur ce compte</h3>
+    <div class="gestes">
+      <input
+        v-model="plafondEnGio"
+        type="text"
+        inputmode="decimal"
+        placeholder="Plafond en Gio"
+        aria-label="Plafond en gibioctets"
+      />
+      <button type="button" @click="onPoserLePlafond()">Poser ce plafond</button>
+      <button
+        type="button"
+        :disabled="!fiche.plafond.particulier"
+        @click="onRetirerLePlafond()"
+      >
+        Revenir au plafond commun
+      </button>
+    </div>
+
+    <div class="gestes">
+      <button type="button" @click="voirLeVerdict()">Voir ce que la rétention emporterait</button>
+      <button type="button" :disabled="verdict === null" @click="onForcerLaRetention()">
+        Forcer le passage
+      </button>
+      <button type="button" @click="onReglerLAbandon()">Régler l’abandon</button>
+    </div>
+
+    <p v-if="verdict !== null" class="note">
+      <template v-if="verdict.aEffacer.length === 0">Rien ne partirait.</template>
+      <template v-else>
+        {{ verdict.aEffacer.length }} trajets partiraient
+        ({{ poidsLisible(verdict.octets) }}) ; {{ verdict.retenus.length }} seraient retenus.
+      </template>
+    </p>
+
+    <div class="gestes">
+      <button type="button" class="danger" @click="onEffacer()">
+        {{ effacementEnAttente ? 'Confirmer : effacer définitivement' : 'Effacer ce compte' }}
+      </button>
+    </div>
+    <p class="note">
+      L’effacement emporte tout ce que ce compte porte, sans retour. La ligne de
+      trace reste, sans son nom ni son adresse.
+    </p>
+
+    <p v-if="note !== ''" class="note">{{ note }}</p>
     <p v-if="refus !== ''" class="refus">{{ refus }}</p>
 
     <h3>Ce qu’il porte</h3>
@@ -283,10 +432,25 @@ ul {
   padding-left: 1rem;
 }
 
-.roles {
+.roles,
+.gestes {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.gestes {
+  margin-top: 0.6rem;
+}
+
+.gestes input {
+  width: 10rem;
+}
+
+.danger {
+  border-color: var(--warn);
+  color: var(--warn);
 }
 
 .refus {

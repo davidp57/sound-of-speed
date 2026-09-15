@@ -1,4 +1,4 @@
-import { byteLength } from './put'
+import { byteLength, PLEIN } from './put'
 import { pack } from './compress'
 import type { Slice } from './slicing'
 
@@ -90,6 +90,20 @@ export async function putSlice(
             ? "Refusé : cet appareil n'a plus de compte reconnu par le serveur."
             : "Le serveur reconnaît cet appareil mais lui refuse l'écriture ici.",
         // Réessayer donnerait le même refus tant qu'aucun compte n'est repris.
+        retry: false,
+      }
+    }
+
+    // **507 : le compte est plein sur le serveur.** Ni une panne, ni une tranche
+    // trop grosse : le total déposé a atteint son plafond. Réessayer ne passera
+    // jamais tant que rien n'est libéré — et c'est exactement le cas qui a
+    // produit 726 tentatives en 137 secondes le 11 septembre 2026. On le dit en
+    // clair, avec ce qu'il y a à faire.
+    if (response.status === 507) {
+      return {
+        ok: false,
+        reason: 'refused',
+        detail: PLEIN,
         retry: false,
       }
     }

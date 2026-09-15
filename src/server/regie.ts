@@ -22,12 +22,23 @@ import { estAdministrateur } from './administration'
 import { assistanceDuCompte, type Assistance } from './assistance'
 import { accordsDuCompte, peutJouer, type DroitsSurLesBanques } from './banques'
 import type { Base } from './base/base'
-import { accounts, authIdentities, authSessions, bankGrants, deposits, rights } from './base/schema'
+import {
+  accounts,
+  authIdentities,
+  authSessions,
+  bankGrants,
+  deposits,
+  rights,
+  storageQuotas,
+} from './base/schema'
 import { estUnDossier, lireDepot, listerDepots } from './depots'
 import { lireEntite, listerEntites } from './entites'
 import { estUnNomSimple, typeDe } from './fichiers'
+import { reglerLAncien } from './abandon'
 import { ceQuePorte } from './heritage'
+import { PLAFOND_PAR_DEFAUT, plafondDuCompte } from './plafond'
 import { lireProfil, listerProfils } from './profils'
+import { appliquerLaRegle, DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } from './retention'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
 import { nomDuFournisseur } from './tiers'
 import { listerSessions } from './sessions'
@@ -56,6 +67,10 @@ export interface OptionsDeLaRegie {
    * l'environnement, c'est là qu'elle les lit.
    */
   banques?: DroitsSurLesBanques
+  /** Le plafond de volume commun, en octets : ce que la fiche montre et surcharge. */
+  plafond?: number
+  /** Les délais de rétention, pour que le verdict de la régie soit celui du serveur. */
+  delais?: Delais
 }
 
 /** Une ligne de la liste des comptes. */
@@ -183,6 +198,8 @@ export interface Fiche {
   banquesReservees: string[]
   /** L'assistance qu'il a autorisée, et jusqu'à quand : ce qui ouvre ses données. */
   assistance: Assistance
+  /** Le plafond qui s'applique à lui, et s'il lui est particulier. */
+  plafond: { octets: number; particulier: boolean }
   /** Ce qu'il porte, en nombres. */
   porte: {
     profils: number
@@ -197,7 +214,12 @@ export interface Fiche {
 export async function ficheDuCompte(
   base: Base,
   compte: string,
-  options: { offerts?: readonly Role[]; banques?: DroitsSurLesBanques; maintenant?: number } = {},
+  options: {
+    offerts?: readonly Role[]
+    banques?: DroitsSurLesBanques
+    plafond?: number
+    maintenant?: number
+  } = {},
 ): Promise<Fiche | null> {
   const [ligne] = await base
     .select({
@@ -270,6 +292,7 @@ export async function ficheDuCompte(
     ),
     banquesReservees: [...(options.banques?.restreintes ?? [])].sort(),
     assistance: await assistanceDuCompte(base, compte, options.maintenant ?? Date.now()),
+    plafond: await plafondDuCompte(base, compte, options.plafond ?? PLAFOND_PAR_DEFAUT),
     porte: {
       profils: porte.profils,
       moteurs: porte.moteurs,
@@ -350,6 +373,8 @@ export function creerRegie(options: OptionsDeLaRegie): RegieHono {
     accordees: new Map<string, ReadonlySet<string>>(),
   }
   const banquesReservees = droitsSurLesBanques.restreintes
+  const plafondCommun = options.plafond ?? PLAFOND_PAR_DEFAUT
+  const delais = options.delais ?? DELAIS_PAR_DEFAUT
 
   regie.use('*', async (c, next) => {
     const compte = await options.compteDe(c.req.raw.headers)
@@ -517,6 +542,107 @@ export function creerRegie(options: OptionsDeLaRegie): RegieHono {
     })
   })
 
+  /**
+   * Effacer un compte, et tout ce qu'il portait.
+   *
+   * **La ligne de trace s'écrit avant**, sinon la cascade l'emporte. Une
+   * confirmation suffit, et il n'y a ni délai de grâce ni nom à recopier : le
+   * bouton que l'utilisateur a déjà sur son propre écran est immédiat, et on ne
+   * fabrique pas un second comportement pour le même mot. La confirmation est à
+   * l'écran ; le serveur, lui, fait ce qu'on lui demande.
+   *
+   * L'administrateur n'a aucune exception sur son propre compte.
+   */
+  regie.delete('/comptes/:compte', async (c) => {
+    const compte = c.req.param('compte')
+    if (!(await compteExiste(options.base, compte))) return c.notFound()
+
+    await inscrire(options.base, 'compte-efface', c.get('admin'), compte)
+    await options.base.delete(accounts).where(eq(accounts.id, compte))
+
+    return c.json({ efface: true })
+  })
+
+  /**
+   * Ce que la règle de rétention emporterait, et le passage qui l'applique.
+   *
+   * **On lit le verdict avant d'agir** : aucun contrôle ne dira qu'un délai est
+   * trop court, un mauvais seuil efface des données et rien ne rougit. Forcer
+   * n'invente aucun effacement — ça avance une horloge qui tourne déjà toutes les
+   * vingt-quatre heures.
+   */
+  regie.get('/comptes/:compte/retention', async (c) => {
+    const compte = c.req.param('compte')
+    if (!(await compteExiste(options.base, compte))) return c.notFound()
+
+    const verdict = await verdictDuCompte(options.base, compte, Date.now(), delais)
+    return c.json({ ...verdict, delais }, 200, { 'Cache-Control': 'no-store' })
+  })
+
+  regie.post('/comptes/:compte/retention', async (c) => {
+    const compte = c.req.param('compte')
+    if (!(await compteExiste(options.base, compte))) return c.notFound()
+
+    const passage = await appliquerLaRegle(options.base, compte, Date.now(), delais)
+    await inscrire(
+      options.base,
+      'retention-forcee',
+      c.get('admin'),
+      compte,
+      `${passage.trajets} trajets, ${passage.tranches} tranches`,
+    )
+    return c.json({ trajets: passage.trajets, tranches: passage.tranches })
+  })
+
+  /**
+   * Régler l'abandon : effacer un compte anonyme qui ne porte rien.
+   *
+   * La règle est celle qui tourne déjà quand un appareil rejoint un autre
+   * compte — un compte anonyme **et** vide s'efface, les autres se gardent. Rien
+   * n'est réécrit ici, sans quoi deux règles finiraient par ne plus dire la même
+   * chose.
+   */
+  regie.post('/comptes/:compte/abandon', async (c) => {
+    const compte = c.req.param('compte')
+    if (!(await compteExiste(options.base, compte))) return c.notFound()
+
+    const sort = await reglerLAncien(options.base, compte, undefined)
+    await inscrire(options.base, 'abandon-regle', c.get('admin'), compte, sort)
+    return c.json({ sort })
+  })
+
+  /**
+   * Poser un plafond particulier, ou revenir au plafond commun.
+   *
+   * En gibioctets, parce que c'est l'unité dans laquelle on décide ; le serveur
+   * les garde en octets, l'unité dans laquelle il mesure.
+   */
+  regie.put('/comptes/:compte/plafond/:gio', async (c) => {
+    const compte = c.req.param('compte')
+    if (!(await compteExiste(options.base, compte))) return c.notFound()
+
+    const gio = Number(c.req.param('gio'))
+    if (!Number.isFinite(gio) || gio <= 0) return c.notFound()
+    const octets = Math.round(gio * 1024 * 1024 * 1024)
+
+    await options.base
+      .insert(storageQuotas)
+      .values({ accountId: compte, bytes: octets })
+      .onConflictDoUpdate({ target: storageQuotas.accountId, set: { bytes: octets } })
+
+    await inscrire(options.base, 'plafond-pose', c.get('admin'), compte, `${gio} Gio`)
+    return c.json({ octets })
+  })
+
+  regie.delete('/comptes/:compte/plafond', async (c) => {
+    const compte = c.req.param('compte')
+    if (!(await compteExiste(options.base, compte))) return c.notFound()
+
+    await options.base.delete(storageQuotas).where(eq(storageQuotas.accountId, compte))
+    await inscrire(options.base, 'plafond-retire', c.get('admin'), compte)
+    return c.json({ octets: plafondCommun })
+  })
+
   /** Tout ce que la régie a fait, la plus récente en haut. */
   regie.get('/trace', async (c) =>
     c.json(await lireLaTrace(options.base), 200, { 'Cache-Control': 'no-store' }),
@@ -525,6 +651,7 @@ export function creerRegie(options: OptionsDeLaRegie): RegieHono {
   regie.get('/comptes/:compte', async (c) => {
     const fiche = await ficheDuCompte(options.base, c.req.param('compte'), {
       offerts,
+      plafond: plafondCommun,
       ...(options.banques === undefined ? {} : { banques: options.banques }),
     })
     // Un compte inconnu se refuse comme le reste : le même 404, et rien qui

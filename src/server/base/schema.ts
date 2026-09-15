@@ -372,8 +372,40 @@ export const deposits = sqliteTable(
     // fichiers : c'est ce que la voiture attend quand elle rejoue un envoi.
     uniqueIndex('deposits_folder_name').on(table.accountId, table.folder, table.name),
     index('deposits_folder').on(table.accountId, table.folder),
+    /**
+     * Peser un compte sans lire ce qu'il a déposé.
+     *
+     * Un index qui porte la taille **à côté** du compte : la somme se calcule en
+     * parcourant l'index, et non la table. Sans lui, additionner les tailles
+     * oblige à lire chaque ligne — donc chaque blob : sur une table de 1 200
+     * dépôts pesant 60 Mio, la mesure prenait 36,9 ms et représentait les trois
+     * quarts du temps d'un dépôt. Avec, elle tombe sous la milliseconde.
+     *
+     * Le plafond la fait à chaque dépôt, et la régie à chaque ouverture de la
+     * liste des comptes.
+     */
+    index('deposits_account_bytes').on(table.accountId, table.bytes),
   ],
 )
+
+/**
+ * Le plafond de volume particulier d'un compte, quand il en a un.
+ *
+ * Le plafond **commun** vit dans la configuration de la pile : un compte neuf est
+ * donc borné dès sa création sans que personne ait rien à faire, et c'est le cas
+ * qui compte — le risque est une voiture qui boucle, pas un compte connu. Cette
+ * table ne porte que les exceptions, posées depuis la régie.
+ *
+ * **Le plafond refuse un envoi ; il n'efface jamais rien.**
+ */
+export const storageQuotas = sqliteTable('storage_quotas', {
+  accountId: text('account_id')
+    .primaryKey()
+    .references(() => accounts.id, { onDelete: 'cascade' }),
+  /** En octets, pour que la borne se compare à ce qu'on mesure. */
+  bytes: integer('bytes').notNull(),
+  createdAt: integer('created_at').notNull().default(maintenant),
+})
 
 /**
  * L'assistance qu'un conducteur a autorisée, et jusqu'à quand.

@@ -23,6 +23,7 @@ import { administrateursDeLEnvironnement } from './administration'
 import { ouvrirBase, type Base } from './base/base'
 import { accounts, assistanceGrants } from './base/schema'
 import { creerIdentite, type Identite } from './identite'
+import { PLAFOND_PAR_DEFAUT } from './plafond'
 import { appliquerLaRegle } from './retention'
 import { creerServeur } from './serveur'
 import type { LigneDeTrace } from './trace'
@@ -865,6 +866,250 @@ describe('la trace', () => {
     await appliquerLaRegle(base, conducteur.compte, Date.now())
 
     expect(await tracer()).toHaveLength(1)
+  })
+})
+
+describe('les gestes de la fiche', () => {
+  async function deposer(qui: Appareil, nom: string, corps: string): Promise<Response> {
+    return serveur().request(`/mesures/${nom}`, {
+      method: 'PUT',
+      headers: { ...qui.annonce, 'Content-Type': 'application/json' },
+      body: corps,
+    })
+  }
+
+  it('efface un compte avec tout ce qu’il portait, et sa ligne survit sans son nom', async () => {
+    expect((await deposer(conducteur, 'releve.json', '{"mesure":1}')).status).toBe(201)
+
+    const efface = await serveur().request(`/api/regie/comptes/${conducteur.compte}`, {
+      method: 'DELETE',
+      headers: patronne.annonce,
+    })
+    expect(efface.status).toBe(200)
+
+    // Le compte a disparu, et ses dépôts avec lui.
+    const comptes = (await (
+      await serveur().request('/api/regie/comptes', { headers: patronne.annonce })
+    ).json()) as { id: string }[]
+    expect(comptes.map((compte) => compte.id)).not.toContain(conducteur.compte)
+
+    // La ligne, elle, est là — et elle a perdu le nom.
+    const lignes = (await (
+      await serveur().request('/api/regie/trace', { headers: patronne.annonce })
+    ).json()) as LigneDeTrace[]
+    expect(lignes[0]?.geste).toBe('compte-efface')
+    expect(lignes[0]?.cible.id).toBe(conducteur.compte)
+    expect(lignes[0]?.cible.nom).toBeNull()
+  })
+
+  it('efface aussi le compte de l’administrateur qui le demande', async () => {
+    // Aucune exception sur son propre compte : la seule chose qu'il ne peut pas,
+    // c'est se retirer l'administration, qui vient de la pile.
+    const reponse = await serveur().request(`/api/regie/comptes/${patronne.compte}`, {
+      method: 'DELETE',
+      headers: patronne.annonce,
+    })
+
+    expect(reponse.status).toBe(200)
+  })
+
+  it('lit le verdict de rétention avant de forcer, puis efface ce qu’il annonçait', async () => {
+    // Une trace d'un trajet ancien : la règle l'emporte, rien ne la retient.
+    const vieille = '2020-01-01-06-24-01_da2m_001.jsonl.gz'
+    expect(
+      (
+        await serveur().request(`/traces/${vieille}`, {
+          method: 'PUT',
+          headers: { ...conducteur.annonce, 'Content-Type': 'application/json' },
+          body: 'une vieille trace',
+        })
+      ).status,
+    ).toBe(201)
+
+    const verdict = (await (
+      await serveur().request(`/api/regie/comptes/${conducteur.compte}/retention`, {
+        headers: patronne.annonce,
+      })
+    ).json()) as { aEffacer: { cle: string }[]; retenus: unknown[] }
+    expect(verdict.aEffacer).toHaveLength(1)
+    expect(verdict.retenus).toEqual([])
+
+    const passage = await serveur().request(
+      `/api/regie/comptes/${conducteur.compte}/retention`,
+      { method: 'POST', headers: patronne.annonce },
+    )
+    expect(((await passage.json()) as { trajets: number }).trajets).toBe(1)
+
+    // Et il n'en reste rien.
+    const apres = (await (
+      await serveur().request(`/api/regie/comptes/${conducteur.compte}/retention`, {
+        headers: patronne.annonce,
+      })
+    ).json()) as { aEffacer: unknown[] }
+    expect(apres.aEffacer).toEqual([])
+  })
+
+  it('efface un compte anonyme vide en réglant l’abandon, et garde les autres', async () => {
+    const anonyme = await ouvrirUnCompte()
+
+    const regle = await serveur().request(`/api/regie/comptes/${anonyme.compte}/abandon`, {
+      method: 'POST',
+      headers: patronne.annonce,
+    })
+    expect(((await regle.json()) as { sort: string }).sort).toBe('efface')
+
+    // Le conducteur, lui, n'est pas anonyme : il est gardé.
+    const garde = await serveur().request(`/api/regie/comptes/${conducteur.compte}/abandon`, {
+      method: 'POST',
+      headers: patronne.annonce,
+    })
+    expect(((await garde.json()) as { sort: string }).sort).toBe('garde')
+  })
+
+  it('garde un compte anonyme qui porte quelque chose', async () => {
+    const anonyme = await ouvrirUnCompte()
+    expect((await deposer(anonyme, 'releve.json', '{"mesure":1}')).status).toBe(201)
+
+    const regle = await serveur().request(`/api/regie/comptes/${anonyme.compte}/abandon`, {
+      method: 'POST',
+      headers: patronne.annonce,
+    })
+
+    expect(((await regle.json()) as { sort: string }).sort).toBe('garde')
+  })
+
+  it('pose un plafond particulier, qui prime, et le retire', async () => {
+    const fiche = async () =>
+      (await (
+        await serveur().request(`/api/regie/comptes/${conducteur.compte}`, {
+          headers: patronne.annonce,
+        })
+      ).json()) as { plafond: { octets: number; particulier: boolean } }
+
+    expect((await fiche()).plafond).toEqual({ octets: PLAFOND_PAR_DEFAUT, particulier: false })
+
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/plafond/2`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+    expect(await fiche()).toMatchObject({
+      plafond: { octets: 2 * 1024 * 1024 * 1024, particulier: true },
+    })
+
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/plafond`, {
+      method: 'DELETE',
+      headers: patronne.annonce,
+    })
+    expect((await fiche()).plafond).toEqual({ octets: PLAFOND_PAR_DEFAUT, particulier: false })
+  })
+
+  it('refuse un dépôt qui dépasserait le plafond, sans rien effacer de déposé', async () => {
+    const etroit = creerServeur({
+      application,
+      base,
+      identite,
+      admins: administrateursDeLEnvironnement(ADRESSE_ADMIN),
+      // Vingt octets : le premier dépôt passe, le second non.
+      plafond: 20,
+    })
+    const depot = async (nom: string, corps: string) =>
+      etroit.request(`/mesures/${nom}`, {
+        method: 'PUT',
+        headers: { ...conducteur.annonce, 'Content-Type': 'application/json' },
+        body: corps,
+      })
+
+    expect((await depot('un.json', '{"a":1}')).status).toBe(201)
+
+    const refuse = await depot('deux.json', '{"b":222222222222}')
+    expect(refuse.status).toBe(507)
+
+    // Rien de déjà déposé n'a bougé : le plafond refuse, il n'efface jamais.
+    const liste = (await (
+      await etroit.request('/mesures/', { headers: conducteur.annonce })
+    ).json()) as { name: string }[]
+    expect(liste.map((entree) => entree.name)).toEqual(['un.json'])
+  })
+
+  it('laisse passer un dépôt qui en remplace un autre au même nom', async () => {
+    const etroit = creerServeur({ application, base, identite, plafond: 20 })
+    const depot = async (corps: string) =>
+      etroit.request('/mesures/rejeu.json', {
+        method: 'PUT',
+        headers: { ...conducteur.annonce, 'Content-Type': 'application/json' },
+        body: corps,
+      })
+
+    expect((await depot('{"a":12345678}')).status).toBe(201)
+    // La voiture rejoue son envoi : il ne fait rien grossir, et compter les deux
+    // refuserait un dépôt qui prend la place qu'il rend.
+    expect((await depot('{"a":12345678}')).status).toBe(201)
+  })
+
+  it('applique le plafond particulier plutôt que le commun', async () => {
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/plafond/0.000000001`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+
+    // Un peu plus d'un octet : tout dépôt réel dépasse.
+    const refuse = await deposer(conducteur, 'releve.json', '{"mesure":1}')
+
+    expect(refuse.status).toBe(507)
+  })
+
+  it('inscrit les quatre gestes dans la trace', async () => {
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/plafond/3`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/plafond`, {
+      method: 'DELETE',
+      headers: patronne.annonce,
+    })
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/retention`, {
+      method: 'POST',
+      headers: patronne.annonce,
+    })
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}/abandon`, {
+      method: 'POST',
+      headers: patronne.annonce,
+    })
+    await serveur().request(`/api/regie/comptes/${conducteur.compte}`, {
+      method: 'DELETE',
+      headers: patronne.annonce,
+    })
+
+    const lignes = (await (
+      await serveur().request('/api/regie/trace', { headers: patronne.annonce })
+    ).json()) as LigneDeTrace[]
+
+    expect(lignes.map((ligne) => ligne.geste)).toEqual([
+      'compte-efface',
+      'abandon-regle',
+      'retention-forcee',
+      'plafond-retire',
+      'plafond-pose',
+    ])
+    expect(lignes[4]?.detail).toBe('3 Gio')
+  })
+
+  it('refuse les quatre gestes à qui n’administre pas', async () => {
+    const gestes: [string, 'DELETE' | 'POST' | 'PUT'][] = [
+      [`/api/regie/comptes/${patronne.compte}`, 'DELETE'],
+      [`/api/regie/comptes/${patronne.compte}/retention`, 'POST'],
+      [`/api/regie/comptes/${patronne.compte}/abandon`, 'POST'],
+      [`/api/regie/comptes/${patronne.compte}/plafond/1`, 'PUT'],
+      [`/api/regie/comptes/${patronne.compte}/plafond`, 'DELETE'],
+    ]
+
+    for (const [chemin, methode] of gestes) {
+      const reponse = await serveur().request(chemin, {
+        method: methode,
+        headers: conducteur.annonce,
+      })
+      expect(reponse.status, `${methode} ${chemin}`).toBe(404)
+    }
   })
 })
 

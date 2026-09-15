@@ -107,6 +107,7 @@ onMounted(recharger)
         :compte="choisi"
         class="detail"
         @change="recharger"
+        @efface="choisi = null"
       />
 
       <section class="trace">

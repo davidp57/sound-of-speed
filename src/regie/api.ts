@@ -32,6 +32,7 @@ export interface Fiche {
   banques: string[]
   banquesReservees: string[]
   assistance: { ouverte: boolean; jusquau: string | null }
+  plafond: { octets: number; particulier: boolean }
   porte: {
     profils: number
     moteurs: number
@@ -82,6 +83,39 @@ export interface Donnees {
 
 export function chargerLesDonnees(compte: string): Promise<Rendu<Donnees>> {
   return demander<Donnees>(`/api/regie/comptes/${encodeURIComponent(compte)}/donnees`)
+}
+
+/** Ce que la règle de rétention emporterait, sans rien effacer. */
+export interface Verdict {
+  aEffacer: { cle: string; octets: number; enregistreLe: number }[]
+  retenus: { cle: string; raison: string }[]
+  octets: number
+}
+
+export function chargerLeVerdict(compte: string): Promise<Rendu<Verdict>> {
+  return demander<Verdict>(`/api/regie/comptes/${encodeURIComponent(compte)}/retention`)
+}
+
+const surLeCompte = (compte: string) => `/api/regie/comptes/${encodeURIComponent(compte)}`
+
+export function effacerLeCompte(compte: string) {
+  return agir(surLeCompte(compte), 'DELETE')
+}
+
+export function forcerLaRetention(compte: string) {
+  return agir(`${surLeCompte(compte)}/retention`, 'POST')
+}
+
+export function reglerLAbandon(compte: string) {
+  return agir(`${surLeCompte(compte)}/abandon`, 'POST')
+}
+
+export function poserUnPlafond(compte: string, gio: number) {
+  return agir(`${surLeCompte(compte)}/plafond/${gio}`, 'PUT')
+}
+
+export function retirerLePlafond(compte: string) {
+  return agir(`${surLeCompte(compte)}/plafond`, 'DELETE')
 }
 
 /** Une ligne de trace, telle que le serveur la rend. */

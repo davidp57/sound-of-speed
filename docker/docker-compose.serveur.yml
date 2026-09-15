@@ -116,6 +116,17 @@ services:
       #
       # Un rôle donné depuis la régie s'ajoute à ceux-ci.
       SPEED_ROLES_OFFERTS: ${SPEED_ROLES_OFFERTS:-}
+      # Combien un compte peut déposer en tout, en gibioctets.
+      #
+      # **Ça refuse un envoi, ça n'efface jamais rien** : un compte au-delà voit
+      # son dépôt refusé avec un code que la voiture ne rejoue pas, et l'écran
+      # lui dit quoi faire — emporter ses trajets, ou en effacer. La borne par
+      # requête, à 16 Mio, ne change pas : celle-ci porte sur le total.
+      #
+      # Absente, vide ou illisible : 10 Gio. C'est un nombre rond, proposé et
+      # non mesuré, à revoir quand le relevé de dépense quotidien aura dit ce
+      # qu'un compte coûte vraiment. La régie pose des exceptions par compte.
+      SPEED_PLAFOND_GIO: ${SPEED_PLAFOND_GIO:-}
       # Les comptes tenus ailleurs — Tesla, Google, Apple.
       #
       # **Les deux d'un fournisseur, ou aucune.** La moitié d'une paire ne monte

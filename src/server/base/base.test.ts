@@ -214,6 +214,7 @@ describe('ce que le schéma garantit', () => {
       'measured_cars',
       'profiles',
       'rights',
+      'storage_quotas',
     ])
   })
 

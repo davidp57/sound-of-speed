@@ -35,6 +35,11 @@ import { cheminSur, estUnNomSimple, fichierOuRien, servirFichier, typeDe } from 
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
 import { assistanceDuCompte, fermerLAssistance, ouvrirLAssistance } from './assistance'
+import {
+  depasseraitLePlafond,
+  PLAFOND_PAR_DEFAUT,
+  plafondDuCompte,
+} from './plafond'
 import { creerRegie } from './regie'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
 import { inscrire, lireLaTrace } from './trace'
@@ -86,6 +91,14 @@ export interface OptionsDuServeur {
    * régie répond 404 à tout le monde.
    */
   admins?: ReadonlySet<string>
+  /**
+   * Le plafond de volume commun, en octets.
+   *
+   * Un compte neuf est borné dès sa création sans que personne ait rien à
+   * faire — c'est le cas qui compte, le risque étant une voiture qui boucle. La
+   * régie pose des exceptions par compte.
+   */
+  plafond?: number
   /**
    * De quoi relever ce que le serveur dépense, quand on veut le savoir.
    *
@@ -286,6 +299,8 @@ export function creerServeur(options: OptionsDuServeur): Hono {
         compteDe,
         offerts,
         banques: droitsSurLesBanques,
+        plafond: options.plafond ?? PLAFOND_PAR_DEFAUT,
+        delais: options.delais ?? DELAIS_PAR_DEFAUT,
       }),
     )
 
@@ -583,6 +598,22 @@ export function creerServeur(options: OptionsDuServeur): Hono {
 
       if (c.req.method === 'PUT') {
         const octets = Buffer.from(await c.req.arrayBuffer())
+
+        // Le plafond de volume : il refuse, il n'efface jamais rien. Mesuré ici
+        // plutôt qu'au ménage, parce qu'un seuil qui efface fait disparaître des
+        // données sans que rien ne rougisse.
+        const plafond = await plafondDuCompte(base, compte, options.plafond ?? PLAFOND_PAR_DEFAUT)
+        if (await depasseraitLePlafond(base, compte, dossier, nom, octets.length, plafond.octets)) {
+          // 507, et le client ne le rejoue pas : un code de panne passagère
+          // ferait réessayer la voiture indéfiniment pour un envoi qui ne
+          // passera jamais — c'est exactement ce qui a produit 726 tentatives en
+          // 137 secondes le 11 septembre 2026.
+          console.warn(
+            `plafond atteint pour ${compte} : ${plafond.octets} octets` +
+              `${plafond.particulier ? ' (plafond particulier)' : ''}, dépôt refusé`,
+          )
+          return c.text('compte plein', 507)
+        }
         // `?reprise=1` dit « ceci n'est pas un dépôt du jour, c'est un
         // déménagement » : le fichier entre archivé, comme ceux que la reprise
         // des anciens dossiers verse elle-même.

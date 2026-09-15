@@ -1711,6 +1711,49 @@ Chaque consultation s'inscrit, **au plus une fois par quart d'heure** : regarder
 un compte, c'est ouvrir son inventaire puis une dizaine de fichiers, et une ligne
 par requête noierait ce que le conducteur vient y lire.
 
+#### Les quatre gestes de la fiche
+
+Depuis la fiche d'un compte, la régie peut aussi :
+
+- **effacer le compte**, avec une confirmation et rien d'autre — pas de délai de
+  grâce, pas de nom à recopier : le bouton que l'utilisateur a déjà sur son
+  propre écran est immédiat, et on ne fabrique pas un second comportement pour le
+  même mot. La ligne de trace s'écrit **avant**, sinon la cascade l'emporte ;
+- **forcer un passage de rétention**, après avoir lu le verdict — ce que la règle
+  emporterait, et ce qu'elle retiendrait. Ça n'invente aucun effacement : ça
+  avance une horloge qui tourne déjà toutes les vingt-quatre heures ;
+- **régler l'abandon**, c'est-à-dire appliquer à un compte la règle qui efface un
+  compte anonyme ne portant rien ;
+- **poser un plafond de volume particulier**, ou revenir au plafond commun.
+
+L'administrateur n'a aucune exception sur son propre compte. La seule chose qu'il
+ne peut pas, c'est se retirer l'administration : elle vient de la configuration.
+
+#### Le plafond de volume
+
+| Variable | Défaut | Ce qu'elle règle |
+|---|---|---|
+| `SPEED_PLAFOND_GIO` | 10 | Combien un compte peut déposer en tout, en gibioctets. La régie pose des exceptions par compte. |
+
+**Le plafond refuse un envoi. Il n'efface jamais rien.** C'est ce qui rend un
+chiffre provisoire acceptable : un seuil inventé qui efface fait disparaître des
+données sans que rien ne rougisse, un seuil inventé qui refuse se corrige en
+changeant une valeur dans la pile. La valeur par défaut est un nombre rond,
+**proposé et non mesuré** ; elle sera revue quand le relevé de dépense quotidien
+aura dit ce qu'un compte coûte vraiment.
+
+Un compte au-delà voit son dépôt refusé en **507**, un code que la voiture ne
+rejoue pas — un code de panne passagère la ferait réessayer indéfiniment pour un
+envoi qui ne passera jamais. L'écran lui dit quoi faire : emporter ses trajets,
+ou en effacer. La borne par requête, à 16 Mio, ne change pas : celle-ci porte sur
+le total déposé.
+
+**Ce que la mesure coûte au dépôt : 0,44 ms sur 8,6 ms**, sur une table de
+1 200 dépôts pesant 60 Mio. Écrite naïvement — une somme avec une condition sur
+le nom du fichier —, elle prenait **36,9 ms**, les trois quarts du temps d'un
+dépôt : SQLite lisait chaque ligne, donc chaque blob. Un index qui porte la
+taille à côté du compte, et deux lectures au lieu d'une, ont réglé ça.
+
 #### Ce qui a été fait, lisible des deux côtés
 
 Chaque geste d'administration écrit une ligne : quand, quel administrateur, quel
