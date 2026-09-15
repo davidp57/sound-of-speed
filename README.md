@@ -1524,11 +1524,19 @@ donc l'appareil ne fait que ranger l'écran, et le serveur l'ignore.
 Un compte porte des **rôles**, et un rôle ouvre des écrans. Ils se cumulent : un
 compte en porte zéro à trois.
 
-| Rôle | Ce qu'il ouvre |
-|---|---|
-| `conduite` | conduire, la télémétrie, les réglages simples et avancés |
-| `atelier` | l'écran **Atelier** : créer et tenir les profils, régler le son, fabriquer des moteurs et des boîtes — et déposer sur `/engines/` et `/gearboxes/` |
-| `synthese` | le volet **Synthèse** de l'atelier : régler un timbre |
+| Rôle | Ce qu'il ouvre | Gardé par le serveur |
+|---|---|---|
+| `conduite` | conduire, la télémétrie, les réglages simples et avancés | oui |
+| `atelier` | l'écran **Atelier** : créer et tenir les profils, régler le son, fabriquer des moteurs et des boîtes — et déposer sur `/engines/` et `/gearboxes/` | oui |
+| `synthese` | le volet **Synthèse** de l'atelier : régler un timbre | **non** |
+
+**Le troisième n'est pas gardé, et c'est délibéré.** Le volet Synthèse ne parle
+pas au serveur : tout son calcul se fait dans le navigateur. Il n'y a donc aucune
+route à refuser, et rien à garder — c'est un **verrou d'affichage**. Effacer la
+copie des rôles rangée par le navigateur suffit à ouvrir ce volet, et ça ne donne
+accès à aucune donnée ni à aucune ressource du serveur. Prétendre le garder
+serait du théâtre : le dépôt est public, et le code de cet écran se lit. Le jour
+où un rôle se vendra, c'est à savoir avant de le vendre.
 
 **Tout le monde a tout, et rien n'est encaissé.** Ce qui est offert à n'importe
 quel compte est une valeur, pas une règle :
@@ -1551,6 +1559,18 @@ est offert à tout le monde. Un appareil qui n'a jamais rien pu relever n'interd
 rien : ce qui protège est le refus du serveur, pas l'écran. Cette copie est
 contournable par qui veut — le code est public — et c'est assumé : l'objectif est
 de ne pas perdre d'argent, pas d'en gagner.
+
+**La copie dit de quel compte elle parle**, et une copie qui parle d'un autre est
+écartée. Sans ce nom, elle survivait à un changement de compte : elle était bien
+effacée aux trois endroits où l'on change de compte, mais par discipline, et une
+quatrième route finirait par l'oublier. Le contrôle est maintenant sur le chemin
+que tout le monde emprunte.
+
+**L'échéance se juge sur l'horloge de l'appareil**, et c'est accepté. Reculer
+l'horloge rouvre donc un droit expiré — et ça n'ouvre rien : le serveur relit les
+droits à chaque requête, et l'écran ainsi rouvert n'obtiendra que des refus. La
+juger sur une heure rendue par le serveur coûterait exactement ce qu'on refuse de
+payer : il faudrait le réseau pour savoir ce qu'on ouvre.
 
 #### L'appareil
 

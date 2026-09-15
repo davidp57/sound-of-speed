@@ -20,8 +20,29 @@ const MIDI = Date.parse('2026-09-13T12:00:00Z')
 const UNE_HEURE = 60 * 60 * 1000
 
 function copie(partielle: Partial<CopieDesRoles> = {}): CopieDesRoles {
-  return { droits: [], offerts: [], releveLe: MIDI, ...partielle }
+  return { compte: 'anne', droits: [], offerts: [], releveLe: MIDI, ...partielle }
 }
+
+describe('une copie qui parle d’un autre compte', () => {
+  it('est écartée, et n’interdit alors rien', () => {
+    // Elle était effacée aux trois endroits où le compte change, mais par
+    // discipline. Ici la discordance se voit sur le chemin que tout le monde
+    // emprunte, donc une route ajoutée plus tard ne peut pas l'oublier.
+    const retenue = copie({ compte: 'anne', droits: [], offerts: ['conduite'] })
+
+    expect(rolesOuverts(retenue, MIDI, 'boris')).toEqual(['conduite', 'atelier', 'synthese'])
+  })
+
+  it('sert encore tant qu’on ne sait pas à qui on a affaire', () => {
+    // Le démarrage : l'identité n'est pas redescendue, et c'est exactement la
+    // situation hors réseau. Se priver de la copie là reviendrait à ne rien
+    // retenir du tout.
+    const retenue = copie({ compte: 'anne', droits: [], offerts: ['conduite'] })
+
+    expect(rolesOuverts(retenue, MIDI, null)).toEqual(['conduite'])
+    expect(rolesOuverts(retenue, MIDI, 'anne')).toEqual(['conduite'])
+  })
+})
 
 describe('les rôles ouverts', () => {
   it('n’interdit rien tant qu’aucune copie n’a été relevée', () => {

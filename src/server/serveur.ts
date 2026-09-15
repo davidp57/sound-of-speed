@@ -169,6 +169,12 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       const droits = await droitsDuCompte(base, compte, Date.now(), offerts)
       return c.json(
         {
+          // À qui appartiennent ces droits. L'écran range la réponse et s'en
+          // sert hors réseau : sans ce nom, une copie survit à un changement de
+          // compte et parle de l'autre. Elle était effacée aux trois endroits où
+          // le compte change, mais par discipline — et une quatrième route
+          // arrivera. Ici, la discordance se voit toute seule.
+          compte,
           droits: droits.map(({ role, expireLe }) => ({
             role,
             expireLe: expireLe === null ? null : new Date(expireLe).toISOString(),

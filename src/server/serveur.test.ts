@@ -282,6 +282,10 @@ describe('les trajets, vus du réseau', () => {
 
       expect(reponse.status).toBe(200)
       expect(await reponse.json()).toEqual({
+        // Le compte est dit : l'écran range cette réponse et s'en sert hors
+        // réseau, et une copie qui ne saurait pas de qui elle parle survivrait à
+        // un changement de compte.
+        compte: COMPTE,
         droits: [
           { role: 'conduite', expireLe: null },
           { role: 'atelier', expireLe: null },
@@ -328,6 +332,70 @@ describe('les trajets, vus du réseau', () => {
 
     it('ne dit rien des droits à qui ne s’annonce pas', async () => {
       expect((await avecBase().request('/api/droits')).status).toBe(401)
+    })
+
+    /**
+     * Quel rôle le serveur garde-t-il vraiment ?
+     *
+     * L'écran retient une copie des rôles pour les savoir hors réseau, et cette
+     * copie ne protège rien : le serveur relit les droits à chaque requête.
+     * **Sauf pour un rôle**, et c'est ce que cette table dit en toutes lettres.
+     */
+    describe('rôle par rôle, ce que le serveur refuse', () => {
+      const GARDES: Record<Role, { methode: string; chemin: string }[]> = {
+        conduite: [
+          { methode: 'GET', chemin: '/sessions/' },
+          { methode: 'GET', chemin: '/profiles/' },
+          { methode: 'GET', chemin: '/traces/' },
+          { methode: 'GET', chemin: '/retention' },
+          { methode: 'GET', chemin: '/engines/' },
+          { methode: 'PUT', chemin: '/profiles/Sport.json' },
+          { methode: 'PUT', chemin: '/traces/tranche.jsonl' },
+        ],
+        atelier: [
+          { methode: 'PUT', chemin: '/engines/V8.json' },
+          { methode: 'PUT', chemin: '/gearboxes/Auto.json' },
+        ],
+        // **Vide, et c'est arbitré.** Ce rôle n'ouvre qu'un écran dont tout le
+        // calcul se fait dans le navigateur : il n'y a aucune route à refuser,
+        // donc rien à garder côté serveur. C'est un verrou d'affichage, assumé —
+        // voir CONTEXT.md, entrée « Rôle ».
+        synthese: [],
+      }
+
+      for (const [role, routes] of Object.entries(GARDES) as [Role, typeof GARDES.conduite][]) {
+        it(`refuse ${routes.length} route(s) à un compte sans « ${role} »`, async () => {
+          // Tous les rôles sauf celui-ci : c'est son absence qu'on mesure.
+          const sansLui = (['conduite', 'atelier', 'synthese'] as Role[]).filter((r) => r !== role)
+
+          for (const { methode, chemin } of routes) {
+            const reponse = await avecBase(sansLui).request(chemin, {
+              method: methode,
+              headers: { ...ANNONCE, 'Content-Type': 'application/json' },
+              ...(methode === 'PUT' ? { body: '{}' } : {}),
+            })
+            expect(reponse.status, `${methode} ${chemin}`).toBe(403)
+          }
+        })
+      }
+
+      it('laisse tout passer à un compte privé du seul rôle d’affichage', async () => {
+        // La preuve que la table ci-dessus est complète du côté vide : retirer ce
+        // rôle ne ferme aucune route. Si quelqu'un en garde une un jour, ce cas
+        // rougit — et il faudra corriger la table **et** le verdict écrit.
+        const sansSynthese = await avecBase(['conduite', 'atelier'])
+
+        for (const routes of Object.values(GARDES)) {
+          for (const { methode, chemin } of routes) {
+            const reponse = await sansSynthese.request(chemin, {
+              method: methode,
+              headers: { ...ANNONCE, 'Content-Type': 'application/json' },
+              ...(methode === 'PUT' ? { body: '{}' } : {}),
+            })
+            expect(reponse.status, `${methode} ${chemin}`).not.toBe(403)
+          }
+        }
+      })
     })
   })
 

@@ -2167,7 +2167,9 @@ const instantDesRoles = ref(Date.now())
 
 /** Les rôles ouverts à cet instant. Tout est ouvert tant qu'on ne sait rien. */
 export const roles = computed<Role[]>(() =>
-  calculerLesRoles(copieDesRoles.value, instantDesRoles.value),
+  // Le compte en troisième : une copie qui parle d'un autre est écartée là, et
+  // non par un appel à oublier qu'une route ajoutée plus tard pourrait manquer.
+  calculerLesRoles(copieDesRoles.value, instantDesRoles.value, identity.value?.id ?? null),
 )
 
 /** Ce que l'écran demande : cet onglet, ce bouton, ce panneau. */

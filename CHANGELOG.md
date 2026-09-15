@@ -8,6 +8,20 @@ Toutes les évolutions notables du projet. Format
 
 ### Sécurité
 
+- **La copie des rôles dit de quel compte elle parle.** L'application retient les
+  rôles du compte pour les savoir hors réseau ; cette copie ne portait pas le nom
+  du compte, et survivait donc à un changement de compte. Elle était bien effacée
+  aux trois endroits où l'on change de compte, mais par discipline — et une
+  quatrième route finirait par l'oublier. Une copie qui parle d'un autre compte
+  est maintenant écartée sur le chemin que tout le monde emprunte.
+
+  Écrit au passage, parce que ça ne se devinait nulle part : **`synthese` n'est
+  pas gardé par le serveur**, et c'est délibéré. Le volet Synthèse ne lui parle
+  pas — tout son calcul est dans le navigateur —, il n'y a donc aucune route à
+  refuser. C'est un verrou d'affichage, et il n'ouvre aucune donnée ni aucune
+  ressource. Une table de tests tient l'inventaire rôle par rôle et rougit si
+  l'un change de camp.
+
 - **Un nom déposé ne peut plus composer un chemin.** Déposer sous
   `..%2F..%2Fdehors.txt` était accepté, et l'archive du compte portait alors
   l'entrée `traces/../../dehors.txt` — qu'un extracteur ordinaire écrit **hors

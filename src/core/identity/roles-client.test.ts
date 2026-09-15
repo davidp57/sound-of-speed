@@ -35,8 +35,18 @@ beforeEach(() => {
   })
 })
 
-/** Un serveur qui répond ce qu'on lui dit de répondre. */
+/**
+ * Un serveur qui répond ce qu'on lui dit de répondre.
+ *
+ * Le compte est ajouté d'office quand la charge est un objet qui n'en porte pas :
+ * une réponse sans compte n'est plus rangée — voir `releverLesRoles` —, et ce
+ * n'est pas ce que chaque cas cherche à mesurer. Le cas qui le mesure, lui,
+ * donne sa charge en toutes lettres.
+ */
 function serveur(charge: unknown, status = 200) {
+  if (typeof charge === 'object' && charge !== null && !('compte' in charge)) {
+    charge = { compte: 'anne', ...charge }
+  }
   return vi.fn(async () =>
     Promise.resolve(
       new Response(typeof charge === 'string' ? charge : JSON.stringify(charge), { status }),
@@ -57,6 +67,7 @@ describe('relever les rôles', () => {
     const copie = await releverLesRoles({ fetchImpl, now: () => MIDI })
 
     expect(copie).toEqual({
+      compte: 'anne',
       droits: [
         { role: 'conduite', expireLe: null },
         { role: 'atelier', expireLe: MIDI + UNE_HEURE },
@@ -68,7 +79,12 @@ describe('relever les rôles', () => {
   })
 
   it('ne rend rien hors réseau, et laisse la copie d’avant intacte', async () => {
-    rangerLaCopie({ droits: [{ role: 'conduite', expireLe: null }], offerts: [], releveLe: MIDI })
+    rangerLaCopie({
+      compte: 'anne',
+      droits: [{ role: 'conduite', expireLe: null }],
+      offerts: [],
+      releveLe: MIDI,
+    })
 
     const fetchImpl = vi.fn(async () => Promise.reject(new Error('réseau'))) as unknown as typeof fetch
     expect(await releverLesRoles({ fetchImpl })).toBeNull()
@@ -105,12 +121,12 @@ describe('relever les rôles', () => {
   })
 
   it('ignore une copie abîmée, et se comporte comme s’il n’y en avait pas', () => {
-    localStorage.setItem('speed.roles.v1', '{"droits":[{"role":42}],"offerts":[],"releveLe":0}')
+    localStorage.setItem('speed.roles.v2', '{"droits":[{"role":42}],"offerts":[],"releveLe":0}')
     expect(lireLaCopie()).toBeNull()
   })
 
   it('oublie ce qui a été retenu, un autre compte n’ayant pas les mêmes rôles', () => {
-    rangerLaCopie({ droits: [], offerts: ['conduite'], releveLe: MIDI })
+    rangerLaCopie({ compte: 'anne', droits: [], offerts: ['conduite'], releveLe: MIDI })
     oublierLaCopie()
     expect(lireLaCopie()).toBeNull()
   })
