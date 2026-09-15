@@ -1,8 +1,28 @@
 # DURCIR — sécuriser le code et les données
 
-**Statut :** ⬜ prêt — cadre posé le 13 septembre 2026, découpé le 15 septembre
-**Branche :** à ouvrir
+**Statut :** 🔄 en cours — cadre posé le 13 septembre 2026, découpé et attaqué le
+15 septembre. 8 tickets faits, 2 en attente de David, 4 qui demandent le NAS.
+**Branche :** `feature/durcir`
 **Version visée :** avant la 1.0
+
+## Où ça en est
+
+| Ticket | État |
+|---|---|
+| 01 les échantillons demandent un compte | 🧑 le cache hors réseau reste à confirmer en voiture |
+| 02 la banque restreinte | 🧑 le mécanisme est fait ; les deux variables sont à poser sur la pile |
+| 03 identifiants opaques | ⬜ demande un renommage sur le NAS et une reprise des profils enregistrés |
+| 04 mesurer ce que le serveur dépense | ⬜ les quatre chiffres se relèvent sur le NAS |
+| 05 borner le volume par compte | ⬜ bloqué par 04 |
+| 06 isolation entre comptes | ✅ dix routes, deux comptes ; l'isolation était juste |
+| 07 changer un compte de mains | ✅ trois cas manquaient, vus du compte cible |
+| 08 l'archive du compte | ✅ un nom déposé pouvait composer un chemin |
+| 09 la copie des rôles | ✅ rattachée au compte ; le rôle de synthèse est un verrou d'affichage, écrit |
+| 10 les en-têtes | ✅ politique de contenu mesurée dans un navigateur |
+| 11 l'origine d'une requête | ✅ la prémisse du ticket était fausse : la garde mordait déjà |
+| 12 le code de liaison | ✅ borne mesurée, un seul code vivant par compte |
+| 13 les données en clair | ⬜ demande des faits sur le NAS et ses sauvegardes |
+| 14 offrir la source | ✅ c'était déjà en place |
 
 ## D'où vient ce lot
 
