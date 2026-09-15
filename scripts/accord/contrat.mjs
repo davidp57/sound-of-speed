@@ -130,6 +130,7 @@ export function cas({ nom }) {
 
     {
       nom: 'le serveur dit ce qu’il autorise, et refuse d’être encadré',
+      part: 'durcissement',
       // Une politique de contenu posée à l'aveugle coupe le son sans rien dire :
       // le navigateur refuse en silence et l'application démarre muette. Les
       // deux desserrages qui la rendent viable sont donc vérifiés nommément.
@@ -151,6 +152,7 @@ export function cas({ nom }) {
     // --- Les banques -------------------------------------------------------
     {
       nom: 'un échantillon ne descend pas sans compte',
+      part: 'durcissement',
       // Les échantillons sont le plus gros poste de trafic du serveur, et ils se
       // servaient à qui connaissait l'adresse. Un compte suffit — l'application
       // s'en crée un au démarrage — mais il en faut un.
@@ -159,6 +161,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'le listage des banques ne se lit pas sans compte',
+      part: 'durcissement',
       // Le fermer aussi : le listage dit quelles banques existent, et cacher les
       // octets en laissant les noms ne cacherait rien.
       requete: { chemin: '/audio/', entetes: { Accept: 'application/json' } },
@@ -234,7 +237,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'un nom qui compose un chemin n’entre pas',
-      part: 'depots',
+      part: 'durcissement',
       // Le nom ressort concaténé dans l'archive du compte, et une remontée y
       // produit une entrée qui s'écrit hors du dossier chez celui qui extrait.
       requete: {
