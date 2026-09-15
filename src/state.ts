@@ -2254,6 +2254,7 @@ export const telemetry = shallowRef<Telemetry>({
     downshiftThresholdRpm: 0,
     downshiftBlocked: false,
     kickdownGears: 0,
+    pace: { state: 'holding', forS: 0, accelMs2: 0 },
   },
   frameMs: 0,
 })
@@ -2583,6 +2584,8 @@ function step(dt: number): void {
     rpm: engineState.rpm,
     gear: gearboxState.gear + 1,
     load: engineState.load,
+    pace: gearboxState.pace.state,
+    paceForS: gearboxState.pace.forS,
     fixRestarts: fixWatchdog.restarts,
     rejected: {
       implausible: geolocation.stats.rejected.implausible,

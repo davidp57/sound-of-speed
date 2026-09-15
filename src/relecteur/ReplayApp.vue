@@ -208,6 +208,10 @@ const marks = computed(() => {
     // par trajet, et ils ont déjà leurs deux représentations — le relief les
     // dessine tous, la barre ne retient que les enchaînements.
     if (event.kind === 'shift') continue
+    // L'allure non plus, et pour la même raison : elle bascule encore plus
+    // souvent qu'un rapport ne passe. Elle se lit à l'instant où l'on est, sous
+    // le rapport, là où elle explique ce que la boîte vient de faire.
+    if (event.kind === 'pace') continue
     // Un centième de la durée : deux rejets à deux secondes d'écart sur une
     // heure de trajet sont le même moment, et deux marques superposées ne se
     // distinguent pas.
@@ -259,6 +263,34 @@ const inscrits = computed(() =>
  * fait mille, et pas trente-six mille points pour un dessin de vingt pixels de
  * haut.
  */
+/**
+ * L'allure à l'instant lu : ce que la boîte croyait que la voiture faisait.
+ *
+ * C'est la question qui manquait tout l'été — le rapport monte pendant qu'on
+ * ralentit, mais la boîte pensait-elle qu'on ralentissait ? Le journal inscrit
+ * une ligne par bascule depuis le 15 septembre 2026 ; un trajet enregistré
+ * avant n'en a pas, et la ligne se tait alors plutôt que d'inventer.
+ */
+const ALLURES: Record<string, string> = {
+  braking: 'freine',
+  slowing: 'ralentit',
+  holding: 'tient son allure',
+  accelerating: 'accélère',
+}
+
+const allureLue = computed(() => {
+  const events = session.value?.events
+  if (!events) return null
+  let dernier: { at: number; etat: string } | null = null
+  for (const event of events) {
+    if (event.kind !== 'pace' || event.at > at.value) continue
+    const etat = event.data.to
+    if (typeof etat === 'string') dernier = { at: event.at, etat }
+  }
+  if (dernier === null) return null
+  return { texte: ALLURES[dernier.etat] ?? dernier.etat, depuisMs: at.value - dernier.at }
+})
+
 const barWidth = ref(600)
 const relief = computed(() =>
   session.value ? accelProfile(session.value.states, duration.value, barWidth.value) : null,
@@ -1142,6 +1174,9 @@ void refresh()
           </div>
 
           <p class="appoint">{{ reading.value.accelMs2.toFixed(2) }} m/s²</p>
+          <p v-if="allureLue" class="appoint">
+            la boîte : {{ allureLue.texte }} depuis {{ ecart(allureLue.depuisMs) }}
+          </p>
         </div>
 
         <div class="cadran">

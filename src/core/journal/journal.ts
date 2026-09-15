@@ -51,6 +51,15 @@ export type JournalEventKind =
   | 'sample'
   /** Un rapport vient d'être engagé, montée ou descente. */
   | 'shift'
+  /**
+   * Ce que la boîte croit que la voiture fait vient de changer.
+   *
+   * Une ligne par bascule, pas une par image : c'est ce qui permet de répondre
+   * à « le rapport est monté pendant que je ralentissais, mais la boîte
+   * pensait-elle que je ralentissais ? ». Sans cela, la question restait
+   * ouverte tout un été.
+   */
+  | 'pace'
   /** Un profil a été choisi, ou un réglage global déplacé. */
   | 'profile'
   /** Une erreur, avec ce qu'on en sait. */

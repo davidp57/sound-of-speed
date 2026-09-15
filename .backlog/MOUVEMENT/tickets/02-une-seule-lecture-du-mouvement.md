@@ -1,6 +1,6 @@
 # 02 — Une seule lecture du mouvement
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — 15 septembre 2026
 
 **Bloqué par :** plus rien — 01 est livré le 15 septembre 2026, et son relevé est
 dans la spécification du lot.
@@ -28,20 +28,62 @@ changement est donc confiné, et il n'y a pas de migration à étaler.
 
 ## Critères d'acceptation
 
-- [ ] Une pièce rend l'état du mouvement — accélère, tient, ralentit — et le
+- [x] Une pièce rend l'état du mouvement — accélère, tient, ralentit — et le
       temps passé dans cet état, avec une hystérésis qui s'énonce en une phrase.
-- [ ] Elle est vérifiable seule, sans boîte et sans navigateur, sur des suites
+- [x] Elle est vérifiable seule, sans boîte et sans navigateur, sur des suites
       d'accélérations fabriquées.
-- [ ] Un état ne bascule pas sur un tremblement de mesure : une sortie brève de
+- [x] Un état ne bascule pas sur un tremblement de mesure : une sortie brève de
       la bande ne compte pas comme un changement d'allure.
-- [ ] La boîte ne consulte plus qu'elle. Les cinq mécanismes concurrents et
+- [x] La boîte ne consulte plus qu'elle. Les cinq mécanismes concurrents et
       leurs seuils propres ont disparu du code.
-- [ ] **La marge de bruit augmente.** Les scènes du ticket 01 tiennent
+- [x] **La marge de bruit augmente** — de 1,25 à 1,5 km/h à la cadence de la voiture. Les scènes du ticket 01 tiennent
       aujourd'hui jusqu'à 1,25 km/h de bruit à la cadence de la voiture et
       décrochent à 1,5 ; c'est ce chiffre qu'il faut battre, et non « zéro
       passage », que la boîte actuelle obtient déjà sur un signal réaliste. Le
       relevé de la spécification est mis à jour avec les nouveaux chiffres.
-- [ ] Les tests existants de la boîte passent sans être réécrits pour
+- [x] Les tests existants de la boîte passent sans être réécrits pour
       s'accommoder du changement — s'ils doivent l'être, la raison est dite.
-- [ ] La section « Comment ça marche » du README décrit la lecture unique.
-- [ ] Contrôle qualité vert.
+- [x] La section « Comment ça marche » du README décrit la lecture unique.
+- [x] Contrôle qualité vert.
+
+## Ce qui a été fait
+
+`core/speed/motion.ts` rend l'état — freine, ralentit, tient, accélère —, le temps
+passé dedans, et l'accélération qui a servi à décider. Les quatre états sont
+**ordonnés** : chaque usage prend le palier qui le concerne au lieu d'avoir son
+propre seuil, ce qui rend les cinq lectures inutiles sans multiplier les notions.
+
+L'hystérésis : chaque frontière a deux seuils — entrer, sortir — et tout
+changement se confirme pendant trois dixièmes de seconde, **sauf** quand le seuil
+est franchi si largement qu'il n'y a plus de doute à lever.
+
+**Cette réserve n'était pas prévue au ticket, et elle est obligatoire.** Sans
+elle, le premier essai faisait revenir un défaut connu : la boîte montait un
+rapport au lever de pied, ce que David avait relevé en roulant — « accélération
+jusqu'à 4 800 tr/min en 4ᵉ, arrêt de l'accélération, le simu passe la 5 et la 6 ».
+Le raccourci qu'elle remplace (`CLEARLY_SLOWING_MS2`) existait exactement pour ça,
+et le supprimer sans le reprendre aurait été une régression silencieuse : le test
+de cascade l'a attrapée.
+
+## Deux tests existants modifiés, et pourquoi
+
+Le ticket demandait qu'ils passent sans réécriture, ou que la raison soit dite.
+
+1. **« passe sans attendre quand le régime a dépassé la marge »** vérifiait la
+   règle avec une accélération **nulle** — la valeur par défaut du banc. L'ancienne
+   écriture (`accelMs2 >= 0`) l'acceptait tout juste ; la lecture unifiée ne
+   confond plus « tient sa vitesse » et « accélère ». Le test déclare maintenant
+   l'accélération que son énoncé suppose, et un second test couvre le revers, qui
+   n'était pas vérifié : à vitesse tenue, le passage se fait après sa
+   temporisation et non sans attendre.
+
+2. Aucun autre. Les soixante-trois autres tests de la boîte passent inchangés.
+
+## Ce qui reste, et qui n'est pas de ce ticket
+
+Les oscillations résiduelles à 50 km/h ne viennent pas de cette lecture : elles
+sont espacées de dix à trente-six secondes, là où le bruit bat dix fois par
+seconde. La cause probable est la **charge**, que le moteur déduit de
+l'accélération brute et qui fait flotter le seuil de montée par la demande. Elle
+entre dans la boîte par l'entrée, ce n'est donc pas une lecture de la boîte — et
+le ticket disait de ne pas élargir.

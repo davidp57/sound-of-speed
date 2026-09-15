@@ -1,6 +1,6 @@
 # MOUVEMENT — une seule notion de « est-ce qu'on ralentit ? »
 
-**Statut :** 🔄 en cours — 1/4, le relevé de référence est fait
+**Statut :** 🔄 en cours — 3/4, il ne reste que l'essai en roulant
 **Branche :** `feature/mouvement`, à ouvrir
 **Version visée :** à décider
 
@@ -167,6 +167,52 @@ Trois choses s'y lisent :
 - **50 km/h est la vitesse la plus fragile** des cinq, et décroche la première
   dans les trois cadences. 72 km/h — la plage que David a entendue — vient
   ensuite.
+
+### Ce que l'unification a donné, mesuré le 15 septembre 2026
+
+Ticket 02 livré : `core/speed/motion.ts` remplace les cinq lectures. Le même
+balayage, refait :
+
+| Bruit (km/h) | 30 ms | 100 ms — la voiture | 1 000 ms |
+|---|---|---|---|
+| 1,25 | 0 → 0 | 0 → 0 | 10 → 10 |
+| 1,50 | 0 → 0 | 5 → **0** | 14 → 14 |
+| 1,75 | 0 → 0 | 17 → **8** | 34 → 34 |
+| 2,00 | 0 → 0 | 22 → **14** | 40 → 40 |
+| 3,00 | 23 → **4** | 30 → 30 | 117 → 117 |
+
+**La marge passe d'un quart à une moitié** à la cadence de la voiture : ça tient
+maintenant à 1,5 km/h de bruit. À 30 ms le gain est plus net encore — quatre
+passages au lieu de vingt-trois à trois km/h de bruit. À la seconde, rien ne
+change : à cette cadence la pente est trop peu moyennée pour qu'une lecture, si
+unifiée soit-elle, rattrape quoi que ce soit.
+
+**La marge n'est pas bornée par cette lecture, mais par la réactivité.** Un
+lissage de trois dixièmes au lieu d'un porterait la tenue à 1,75 km/h ; à deux
+dixièmes déjà, le lever de pied arrive après qu'un passage s'est engagé — le
+défaut que David avait relevé en roulant. Le compromis est mesuré, il n'est pas
+choisi au jugé.
+
+**Et les oscillations résiduelles ne viennent plus de là.** À 50 km/h, la vitesse
+la plus fragile, les alternances restantes sont espacées de dix à trente-six
+secondes quand le bruit bat dix fois par seconde : c'est une dérive lente, pas un
+tremblement. La cause probable est la **charge**, que le moteur déduit de
+l'accélération brute et qui fait flotter le seuil de montée par la demande. Elle
+entre dans la boîte par l'entrée, donc elle n'est pas une lecture de la boîte —
+c'est un travail à part, pas un élargissement de celui-ci.
+
+### L'allure se lit, depuis le 15 septembre 2026
+
+Ticket 03 livré. La boîte rend son allure, l'écran Télémétrie la montre avec le
+temps passé dedans, le journal inscrit une ligne à chaque bascule — ce qu'on
+quitte, ce qu'on prend, la durée de l'état quitté, la vitesse et l'accélération —
+et le relecteur la rend à l'instant lu, sous le rapport. Elle n'entre pas dans la
+barre des faits marquants, pour la raison qui valait déjà pour les passages :
+elle bascule plus souvent qu'un rapport ne passe.
+
+La pièce a été renommée `core/speed/pace.ts` — l'**allure** — en la branchant à
+l'écran : `core/input/motion.ts` existe déjà, et c'est la sonde de
+l'accéléromètre.
 
 **Ce que ce relevé ne dit pas, et qui manque pour conclure : le bruit réel du
 récepteur de la voiture.** Il n'a jamais été relevé. Il se calcule pourtant sur
