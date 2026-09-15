@@ -22,6 +22,21 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Un dépôt qui échoue ne repart plus en boucle.** Le 11 septembre 2026, le
+  journal a consommé **sept cent vingt-six rangs de tranche en quarante-quatre
+  minutes d'arrêt** — une tentative toutes les 3,6 secondes, la durée d'une
+  requête qui n'aboutit pas. Une tranche rendue à la file repassait aussitôt le
+  seuil de taille, et le découpage redisait « oui » au tour suivant : rien ne
+  tenait la cadence, ni le critère de durée que le découpage venait de remettre
+  à zéro, ni celui de taille que le retour du contenu rétablissait.
+
+  Le dépôt des tranches recule maintenant comme la file des dépôts le faisait
+  déjà : trente secondes après le premier échec, le double ensuite, au plus un
+  quart d'heure. La même coupure coûte sept tentatives au lieu de sept cent
+  trente-quatre, mesuré. Le rang de tranche reste consommé à chaque tentative —
+  c'est voulu, deux fichiers de même nom seraient un dépôt qui en écrase un
+  autre.
+
 - **Le journal n'est plus noyé par l'allure.** Elle bascule **cent vingt-quatre
   fois par minute** en croisière tenue — mesuré au banc —, soit quatre mille cinq
   cents lignes sur un trajet de trente-six minutes contre deux cent seize relevés

@@ -51,6 +51,7 @@ import { captureHealth } from './core/capture/health'
 import { StandstillFlush } from './core/capture/standstill'
 import { JournalCollector, type SoundCost } from './core/journal/collect'
 import { detailActif, eteintA, type DetailActiveA } from './core/journal/detail'
+import { Backoff } from './core/upload/backoff'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
 import { toWav } from './bench/wav'
 import { archiveName, collectArchive } from './core/export/collect'
@@ -1291,6 +1292,15 @@ export const journalDeposits = ref<{ name: string; bytes: number }[]>([])
 export const journalError = ref('')
 /** Vrai pendant un dépôt : on n'en lance pas deux à la fois. */
 let journalBusy = false
+/**
+ * Le recul entre deux tentatives, après un dépôt qui n'est pas parti.
+ *
+ * Sans lui, une tranche rendue par `restore` repasse aussitôt le seuil de
+ * taille et repart : le 11 septembre 2026, quarante-quatre minutes d'arrêt hors
+ * réseau ont consommé sept cent vingt-six rangs de tranche, un toutes les 3,6
+ * secondes. Avec lui, la même coupure en coûte sept.
+ */
+const journalRetry = new Backoff()
 
 /**
  * Dépose une tranche si l'heure est venue.
@@ -1302,6 +1312,7 @@ let journalBusy = false
  */
 function depositJournalIfDue(nowMs: number): void {
   if (journalBusy || !sendsAutomatically(uploadConsent.value, 'journal')) return
+  if (!journalRetry.ready(nowMs)) return
   if (!journal.shouldSlice(nowMs)) return
 
   const slice = journal.takeSlice(nowMs)
@@ -1311,10 +1322,12 @@ function depositJournalIfDue(nowMs: number): void {
   void depositSlice(slice)
     .then((outcome) => {
       if (outcome.ok) {
+        journalRetry.succeeded()
         journalError.value = ''
         journalDeposits.value = [...journalDeposits.value, { name: outcome.name, bytes: outcome.bytes }]
         return
       }
+      journalRetry.failed(nowMs, outcome.retry)
       journalError.value = outcome.detail
       // La tranche revient en attente et se joindra à la suivante : c'est ce qui
       // fait qu'un tunnel ne coûte pas un journal.
@@ -1382,6 +1395,8 @@ let wasCapturing = false
  */
 const standstill = new StandstillFlush()
 let captureBusy = false
+/** Le même recul que le journal, et pour la même raison. */
+const captureRetry = new Backoff()
 
 /**
  * Les échantillons reçus depuis le dernier tour, en attente d'être inscrits.
@@ -1508,6 +1523,10 @@ export const captureStatus = computed(() =>
  */
 function depositCaptureIfDue(nowMs: number, force = false): void {
   if (captureBusy || !sendsAutomatically(uploadConsent.value, 'trace')) return
+  // L'arrêt passe outre le recul : c'est le dernier moment où l'on est encore là
+  // pour envoyer, et `StandstillFlush` ne le demande qu'une fois par arrêt.
+  if (force) captureRetry.retryNow()
+  if (!captureRetry.ready(nowMs)) return
   if (!force && !capture.shouldSlice(nowMs)) return
 
   const slice = capture.takeSlice(nowMs)
@@ -1517,6 +1536,7 @@ function depositCaptureIfDue(nowMs: number, force = false): void {
   void depositCaptureSlice(slice)
     .then((outcome) => {
       if (outcome.ok) {
+        captureRetry.succeeded()
         captureError.value = ''
         captureFailure.value = ''
         captureDeposits.value = [
@@ -1525,6 +1545,7 @@ function depositCaptureIfDue(nowMs: number, force = false): void {
         ]
         return
       }
+      captureRetry.failed(nowMs, outcome.retry)
       captureError.value = outcome.detail
       captureFailure.value = outcome.reason
       if (outcome.retry) capture.restore(slice)
