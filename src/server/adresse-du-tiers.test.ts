@@ -18,8 +18,8 @@ import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { ouvrirBase, type Base } from './base/base'
-import { accounts } from './base/schema'
-import { creerIdentite, type Identite } from './identite'
+import { accounts, authIdentities } from './base/schema'
+import { creerIdentite, reprendreLesAdressesDesTiers, type Identite } from './identite'
 import { creerServeur } from './serveur'
 
 const MIGRATIONS = 'src/server/base/migrations'
@@ -79,6 +79,24 @@ async function rattacher(compte: string, idToken: string | undefined): Promise<v
   })
 }
 
+/**
+ * Une reconnexion chez le même fournisseur.
+ *
+ * La preuve ne se recrée pas : la bibliothèque la **met à jour** avec les jetons
+ * frais. C'est ce chemin-là qu'un compte déjà rattaché emprunte, et c'est celui
+ * qui manquait.
+ */
+async function reconnecter(compte: string, idToken: string): Promise<void> {
+  const contexte = await identite.$context
+  const [preuve] = await base
+    .select({ id: authIdentities.id })
+    .from(authIdentities)
+    .where(eq(authIdentities.accountId, compte))
+    .limit(1)
+
+  await contexte.internalAdapter.updateAccount(preuve?.id ?? '', { idToken })
+}
+
 async function lireLeCompte(id: string) {
   const [trouve] = await base
     .select({ email: accounts.email, image: accounts.image, anonyme: accounts.isAnonymous })
@@ -116,6 +134,52 @@ describe('un fournisseur qui se rattache', () => {
     await rattacher(compte, jeton({ email: 'david@example.com' }))
 
     expect((await lireLeCompte(compte))?.anonyme).toBe(false)
+  })
+
+  it('reprend l’adresse quand elle arrive sur une preuve déjà posée', async () => {
+    // **Le cas de David, le 15 septembre 2026** : son compte était rattaché à
+    // Google avant que ce rattrapage existe, et il gardait l'adresse de
+    // remplacement. Se reconnecter n'y changeait rien — la preuve ne se crée
+    // qu'une fois, et seul le crochet de création regardait le jeton.
+    //
+    // Ça couvre du même coup l'autre lecture possible du même symptôme : une
+    // preuve créée avant que la bibliothèque ait rangé son jeton.
+    const compte = await unCompteAnonyme()
+    await rattacher(compte, undefined)
+
+    expect((await lireLeCompte(compte))?.email).toMatch(/\.invalid$/)
+
+    await reconnecter(compte, jeton({ email: 'David@Example.com' }))
+
+    expect((await lireLeCompte(compte))?.email).toBe('david@example.com')
+  })
+
+  it('se rattrape au démarrage, pour qui n’a aucune raison de se reconnecter', async () => {
+    // Le compte de David roule tous les jours et n'a aucune raison de refaire
+    // le tour du fournisseur. Le rattrapage relit ce que le jeton déjà rangé
+    // disait, une fois, au démarrage.
+    const compte = await unCompteAnonyme()
+    await rattacher(compte, undefined)
+    // Le jeton arrive en base sans passer par un crochet : c'est l'état d'un
+    // compte rattaché avant que ce rattrapage existe.
+    await base
+      .update(authIdentities)
+      .set({ idToken: jeton({ email: 'David@Example.com' }) })
+      .where(eq(authIdentities.accountId, compte))
+
+    expect(await reprendreLesAdressesDesTiers(base)).toBe(1)
+    expect((await lireLeCompte(compte))?.email).toBe('david@example.com')
+
+    // Sans effet au démarrage suivant : l'adresse n'est plus une adresse de
+    // remplacement, donc le compte ne correspond plus au filtre.
+    expect(await reprendreLesAdressesDesTiers(base)).toBe(0)
+  })
+
+  it('laisse tranquille un compte anonyme qu’aucun tiers ne tient', async () => {
+    const compte = await unCompteAnonyme()
+
+    expect(await reprendreLesAdressesDesTiers(base)).toBe(0)
+    expect((await lireLeCompte(compte))?.anonyme).toBe(true)
   })
 
   it('ne remplace pas une adresse choisie', async () => {
