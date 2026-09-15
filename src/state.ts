@@ -51,7 +51,7 @@ import { captureHealth } from './core/capture/health'
 import { StandstillFlush } from './core/capture/standstill'
 import { JournalCollector, type SoundCost } from './core/journal/collect'
 import { detailActif, eteintA, type DetailActiveA } from './core/journal/detail'
-import { Backoff } from './core/upload/backoff'
+import { Backoff, SLICE_BACKOFF } from './core/upload/backoff'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
 import { toWav } from './bench/wav'
 import { archiveName, collectArchive } from './core/export/collect'
@@ -1296,11 +1296,11 @@ let journalBusy = false
  * Le recul entre deux tentatives, après un dépôt qui n'est pas parti.
  *
  * Sans lui, une tranche rendue par `restore` repasse aussitôt le seuil de
- * taille et repart : le 11 septembre 2026, quarante-quatre minutes d'arrêt hors
- * réseau ont consommé sept cent vingt-six rangs de tranche, un toutes les 3,6
- * secondes. Avec lui, la même coupure en coûte sept.
+ * taille et repart : le 11 septembre 2026, une coupure de cent trente-sept
+ * secondes a consommé sept cent vingt-six rangs de tranche, un toutes les 189
+ * millisecondes. Avec lui, la même coupure en coûte cinq.
  */
-const journalRetry = new Backoff()
+const journalRetry = new Backoff(SLICE_BACKOFF)
 
 /**
  * Dépose une tranche si l'heure est venue.
@@ -1396,7 +1396,7 @@ let wasCapturing = false
 const standstill = new StandstillFlush()
 let captureBusy = false
 /** Le même recul que le journal, et pour la même raison. */
-const captureRetry = new Backoff()
+const captureRetry = new Backoff(SLICE_BACKOFF)
 
 /**
  * Les échantillons reçus depuis le dernier tour, en attente d'être inscrits.

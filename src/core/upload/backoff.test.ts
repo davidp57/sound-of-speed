@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Backoff } from './backoff'
+import { Backoff, SLICE_BACKOFF } from './backoff'
 
 const LIMITS = { retryMs: 30_000, maxRetryMs: 15 * 60_000 }
 
@@ -41,26 +41,27 @@ describe('Backoff', () => {
     expect(b.ready(0)).toBe(true)
   })
 
-  it('tient la cadence du 11 septembre 2026 : sept tentatives, pas sept cents', () => {
-    // Quarante-quatre minutes d'arrêt hors réseau, la boucle interrogeant le
-    // recul à chaque tour et chaque tentative coûtant les 3,6 s d'une requête
-    // qui n'aboutit pas. Sans recul, la même simulation consommait 734 rangs.
-    const b = new Backoff(LIMITS)
-    const FIN = 44 * 60_000
-    const ECHEC_MS = 3600
+  it('tient la cadence du 11 septembre 2026 : cinq tentatives, pas sept cents', () => {
+    // La coupure mesurée sur les tranches déposées ce jour-là : 137,1 s, pendant
+    // lesquelles le journal a consommé 726 rangs — un toutes les 189 ms.
+    const COUPURE_MS = 137_100
+    const PAR_TENTATIVE_MS = 189
+    const b = new Backoff(SLICE_BACKOFF)
+
     let tentatives = 0
     let now = 0
-    let busyUntil = 0
-
-    while (now < FIN) {
-      if (now >= busyUntil && b.ready(now)) {
+    while (now < COUPURE_MS) {
+      if (b.ready(now)) {
         tentatives += 1
-        busyUntil = now + ECHEC_MS
-        b.failed(busyUntil, true)
+        now += PAR_TENTATIVE_MS
+        b.failed(now, true)
       }
       now += 16
     }
 
-    expect(tentatives).toBe(7)
+    expect(tentatives).toBe(5)
+    // Et la tranche repart peu après le retour du réseau, non des minutes plus
+    // tard : c'est ce que le recul court achète sur celui de la file.
+    expect(b.readyAt - COUPURE_MS).toBeLessThan(20_000)
   })
 })

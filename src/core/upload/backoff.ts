@@ -5,12 +5,17 @@
  * seul au retour. Entre les deux, la question est : à quelle cadence réessayer ?
  *
  * **Elle n'est pas libre.** Le 11 septembre 2026, le journal a consommé
- * **sept cent vingt-six rangs de tranche en quarante-quatre minutes d'arrêt** —
- * un toutes les 3,6 secondes, la durée d'une requête qui n'aboutit pas. La
- * tranche revenait en attente par `restore`, pesait à nouveau plus que le seuil
- * de découpage, et `shouldSlice` redisait « oui » au tour suivant. Rien ne
- * tenait la cadence : ni le critère de durée, remis à zéro par `takeSlice`, ni
- * le critère de taille, que le retour de la tranche rétablissait aussitôt.
+ * **sept cent vingt-six rangs de tranche en cent trente-sept secondes** — un
+ * toutes les 189 millisecondes. La tranche revenait en attente par `restore`,
+ * pesait à nouveau plus que le seuil de découpage, et `shouldSlice` redisait
+ * « oui » au tour suivant. Rien ne tenait la cadence : ni le critère de durée,
+ * remis à zéro par `takeSlice`, ni le critère de taille, que le retour de la
+ * tranche rétablissait aussitôt.
+ *
+ * Les chiffres viennent des tranches déposées ce jour-là, relues sur le NAS :
+ * la quinzième couvre jusqu'à 4 500,1 s de session, la suivante — numérotée
+ * 741 — jusqu'à 4 936,6 s, soit 435,5 s de contenu au lieu des 299,4 s d'un
+ * découpage nominal. La coupure tient dans ces 137,1 s de dépassement.
  *
  * Cette politique existait déjà dans `queue.ts`, pour la file des dépôts. Elle
  * est sortie ici parce que le dépôt des tranches en avait besoin à l'identique,
@@ -29,6 +34,24 @@ export interface BackoffLimits {
 export const DEFAULT_BACKOFF: BackoffLimits = {
   retryMs: 30_000,
   maxRetryMs: 15 * 60_000,
+}
+
+/**
+ * Le recul des tranches, plus court que celui de la file des dépôts.
+ *
+ * Une file porte des fichiers entiers dont rien ne presse ; une tranche, elle,
+ * doit repartir vite, parce qu'une coupure en roulant se compte en secondes ou
+ * en minutes, pas en heures. Mesuré sur la coupure de 137 s du 11 septembre
+ * 2026 : avec trente secondes doublées, la tranche serait repartie 73 s après
+ * le retour du réseau ; avec cinq, 18 s après. Cinq tentatives contre trois —
+ * un coût qui ne se compare pas aux sept cent vingt-six d'alors.
+ *
+ * Le plafond est la période de découpage : au-delà, on attendrait plus
+ * longtemps que le temps qu'il faut pour remplir la tranche suivante.
+ */
+export const SLICE_BACKOFF: BackoffLimits = {
+  retryMs: 5_000,
+  maxRetryMs: 5 * 60_000,
 }
 
 export class Backoff {

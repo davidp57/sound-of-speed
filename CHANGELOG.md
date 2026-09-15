@@ -23,19 +23,22 @@ Toutes les évolutions notables du projet. Format
 ### Corrigé
 
 - **Un dépôt qui échoue ne repart plus en boucle.** Le 11 septembre 2026, le
-  journal a consommé **sept cent vingt-six rangs de tranche en quarante-quatre
-  minutes d'arrêt** — une tentative toutes les 3,6 secondes, la durée d'une
-  requête qui n'aboutit pas. Une tranche rendue à la file repassait aussitôt le
-  seuil de taille, et le découpage redisait « oui » au tour suivant : rien ne
-  tenait la cadence, ni le critère de durée que le découpage venait de remettre
-  à zéro, ni celui de taille que le retour du contenu rétablissait.
+  journal a consommé **sept cent vingt-six rangs de tranche en cent trente-sept
+  secondes** — une tentative toutes les 189 millisecondes. Une tranche rendue à
+  la file repassait aussitôt le seuil de taille, et le découpage redisait « oui »
+  au tour suivant : rien ne tenait la cadence, ni le critère de durée que le
+  découpage venait de remettre à zéro, ni celui de taille que le retour du
+  contenu rétablissait.
 
-  Le dépôt des tranches recule maintenant comme la file des dépôts le faisait
-  déjà : trente secondes après le premier échec, le double ensuite, au plus un
-  quart d'heure. La même coupure coûte sept tentatives au lieu de sept cent
-  trente-quatre, mesuré. Le rang de tranche reste consommé à chaque tentative —
-  c'est voulu, deux fichiers de même nom seraient un dépôt qui en écrase un
-  autre.
+  Le dépôt des tranches recule maintenant après un échec : cinq secondes, le
+  double ensuite, au plus cinq minutes. La même coupure coûte **cinq**
+  tentatives, et la tranche repart dix-huit secondes après le retour du réseau.
+  Le rang de tranche reste consommé à chaque tentative — c'est voulu, deux
+  fichiers de même nom seraient un dépôt qui en écrase un autre.
+
+  Rien n'avait été perdu ce jour-là, et les vingt et une tranches du trajet le
+  montrent : elles se recouvrent bout à bout, de la première seconde à la
+  cent deuxième minute, sans un trou.
 
 - **Le journal n'est plus noyé par l'allure.** Elle bascule **cent vingt-quatre
   fois par minute** en croisière tenue — mesuré au banc —, soit quatre mille cinq

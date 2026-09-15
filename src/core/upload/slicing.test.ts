@@ -67,7 +67,7 @@ describe('une tranche rendue redemande à partir aussitôt', () => {
     b.restore(slice)
     expect(b.shouldSlice(0)).toBe(true)
 
-    // C'est ce qui a consommé 726 rangs en 44 minutes le 11 septembre 2026 : le
+    // C'est ce qui a consommé 726 rangs en 137 secondes le 11 septembre 2026 : le
     // recul de `core/upload/backoff.ts` est ce qui tient la cadence, et rien
     // dans cette pièce-ci ne la tient.
     expect(b.takeSlice(0)!.name).not.toBe(slice.name)

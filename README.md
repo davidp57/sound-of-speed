@@ -1059,13 +1059,14 @@ attente et se joint à la suivante, ce qui fait qu'un tunnel ne coûte pas un
 trajet.
 
 **Et elle ne repart pas tout de suite.** Après un dépôt qui n'aboutit pas,
-l'application attend trente secondes, puis le double à chaque nouvel échec,
-jusqu'à un quart d'heure au plus ; une réussite remet le compteur à zéro. Sans
-cette attente, une tranche rendue redemandait à partir au tour de boucle suivant
-— le 11 septembre 2026, quarante-quatre minutes d'arrêt hors réseau ont coûté
-sept cent vingt-six tentatives, une toutes les 3,6 secondes. La même coupure en
-coûte sept aujourd'hui. L'arrêt prolongé, lui, passe outre : c'est le dernier
-moment où l'application est encore là pour envoyer.
+l'application attend cinq secondes, puis le double à chaque nouvel échec, jusqu'à
+cinq minutes au plus ; une réussite remet le compteur à zéro. Sans cette attente,
+une tranche rendue redemandait à partir au tour de boucle suivant — le
+11 septembre 2026, une coupure de cent trente-sept secondes a coûté sept cent
+vingt-six tentatives, une toutes les 189 millisecondes. La même coupure en coûte
+cinq aujourd'hui, et la tranche repart dix-huit secondes après le retour du
+réseau. L'arrêt prolongé, lui, passe outre : c'est le dernier moment où
+l'application est encore là pour envoyer.
 
 > **En développement, le dépôt répond 404.** Il vise le serveur qui sert
 > l'application, et celui de Vite n'a pas ce dossier. C'est en production que la

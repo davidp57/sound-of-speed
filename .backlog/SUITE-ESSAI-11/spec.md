@@ -46,10 +46,15 @@ pu aboutir — une réponse perdue, un réseau qui coupe après l'écriture. Ré
 le rang échangerait une numérotation continue contre une perte de données
 possible.
 
-**Le vrai sujet est donc ailleurs, et il est plus sérieux :** le saut de 015 à
-741 dit que **sept cent vingt-six dépôts ont manqué** pendant les quarante-quatre
-minutes d'arrêt du 11 septembre. Et le 020 manquant côté traces en dit un de
-plus. Ce n'est pas la numérotation qui cloche, c'est ce qu'elle raconte.
+**Le vrai sujet est donc ailleurs :** le saut de 015 à 741 dit que le dépôt a
+été tenté sept cent vingt-six fois. Ce n'est pas la numérotation qui cloche,
+c'est ce qu'elle raconte.
+
+**Et ce n'était pas « pendant les quarante-quatre minutes d'arrêt ».** Cette
+lecture, écrite ici le 13 septembre, est fausse : les tranches relues sur le NAS
+le 15 septembre montrent que la 741 reprend **1,008 seconde** après la fin de la
+015, à 76 km/h. Le saut s'est produit en roulant, sur une coupure de réseau de
+deux minutes, et non à l'arrêt.
 
 **Trouvé, et mesuré.** Ce ne sont pas sept cent vingt-six dépôts *manqués* :
 c'est **une seule tranche réessayée sept cent vingt-six fois**, à la cadence
@@ -68,28 +73,43 @@ tranche le rétablissait. Et le dépôt des tranches n'avait **aucun recul aprè
 échec**, là où la file des dépôts — `core/upload/queue.ts` — en avait un depuis
 toujours.
 
-**La mesure :** une simulation des quarante-quatre minutes d'arrêt, avec 3,6 s
-par requête qui échoue, consomme **734 rangs** contre 726 observés. L'écart de
-1 % vient du choix de la durée de requête ; inversement, les 726 rangs réels
-donnent cette durée : 2 640 s / 726 ≈ **3,6 s**.
+**La mesure, faite sur les fichiers eux-mêmes.** Les tranches 001 à 015 partent
+toutes les 299,4 s, au découpage nominal. La 741 couvre **435,5 s** — 137,1 s de
+plus —, puis les 742 à 745 reprennent leur cadence. La coupure tient donc dans
+ces 137,1 secondes, et 726 rangs y ont été consommés : **une tentative toutes
+les 189 millisecondes**.
+
+**Rien n'a été perdu, et c'est prouvé.** Les vingt et une tranches de journal se
+recouvrent bout à bout, de 0,1 s à 6 136,0 s, sans un trou. Côté capture, les
+rangs 020 et 023 manquent aussi — deux échecs isolés, pas une boucle — et là non
+plus il n'y a pas de trou : la 019 finit à 4 714,9 s et la 021 commence à
+4 714,9 s.
 
 **Corrigé.** La politique de recul de la file est sortie dans
-`core/upload/backoff.ts` et sert aux deux : trente secondes après le premier
-échec, le double ensuite, au plus un quart d'heure. La même coupure coûte
-**sept** tentatives. Le flush d'arrêt, lui, passe outre — c'est le dernier
-moment où l'on est encore là pour envoyer, et il ne se déclenche qu'une fois par
-arrêt.
+`core/upload/backoff.ts`. Les tranches en prennent une plus courte que celle de
+la file — cinq secondes doublées, cinq minutes au plus — parce qu'une coupure en
+roulant se compte en secondes, pas en heures : sur les 137 s mesurées, cinq
+tentatives, et la tranche repart 18 s après le retour du réseau, là où le recul
+de la file l'aurait fait attendre 73 s. Le flush d'arrêt passe outre le recul
+sans le remettre à zéro.
 
 **Le rang reste consommé à chaque tentative, et c'est voulu** : le raisonnement
 du 13 septembre tient, deux fichiers de même nom seraient un dépôt qui en écrase
 un autre. Avec sept tentatives au lieu de sept cent, le saut devient lisible.
 
-**Ce qui n'est pas expliqué, et ne l'était pas non plus avant :** pourquoi le
-réseau manquait pendant ces quarante-quatre minutes. Ce n'est pas un défaut de
-l'application — une voiture garée hors couverture suffit —, et rien n'a été
-perdu : la tranche est partie au retour du réseau, c'est le fichier `741`. Le
-journal du trajet n'a pas été relu ici, il n'est pas présent sur ce poste ; la
-cause a été établie sur le code et vérifiée par la mesure.
+**Ce qui n'est pas expliqué :** pourquoi le réseau a manqué pendant ces deux
+minutes. Ce n'est pas un défaut de l'application — deux minutes sans couverture
+sur une route en sont la cause ordinaire —, et la tranche est partie au retour du
+réseau : c'est le fichier `741`.
+
+**Un second défaut, trouvé en mesurant et non corrigé :** le dépôt n'a **pas de
+délai d'expiration**, et `captureBusy` interdit tout autre dépôt tant que la
+requête en cours n'a pas rendu la main. C'est ce qui explique l'asymétrie entre
+les deux : le journal, dont les tranches pèsent deux à cinq kilo-octets, échouait
+en 189 ms et rebouclait ; la capture, dont les tranches en pèsent près de cent,
+restait pendue sur une seule requête — un rang consommé au lieu de sept cents,
+mais aussi quatre cent quarante-quatre secondes sans qu'aucune tentative soit
+faite. Le recul ne traite pas ce cas-là.
 
 **Un défaut voisin, non corrigé et signalé :** le journal n'a pas de témoin sur
 l'écran de conduite. Son erreur de dépôt s'affiche dans *Configuration*, la
