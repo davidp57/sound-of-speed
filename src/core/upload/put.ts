@@ -24,7 +24,7 @@
  * parce que les deux façons de déposer — un fichier, une tranche — le donnent.
  */
 export const PLEIN =
-  'Le serveur est plein pour ce compte : emportez vos trajets, ou effacez-en, depuis l’écran du compte.'
+  'Le serveur est plein pour ce compte : effacez des trajets depuis l’écran du compte — en les emportant d’abord si vous voulez les garder. Emporter seul ne libère rien.'
 
 /**
  * Pourquoi cela n'est pas parti.

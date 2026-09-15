@@ -7,6 +7,18 @@
  * traductions qui finiraient par ne plus dire la même chose.
  */
 
+/** Un instant ISO, dit comme on le lit : le jour et l'heure, pas la seconde. */
+function quand(iso: string): string {
+  const instant = new Date(iso)
+  if (Number.isNaN(instant.getTime())) return iso
+  return instant.toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 /** Le geste, dit à quelqu'un qui le lit. Le détail complète, quand il y en a un. */
 export function phraseDuGeste(geste: string, detail: string | null): string {
   const quoi = detail === null ? '' : ` ${detail}`
@@ -20,7 +32,10 @@ export function phraseDuGeste(geste: string, detail: string | null): string {
     case 'banque-retiree':
       return `banque${quoi} retirée`
     case 'assistance-ouverte':
-      return detail === null ? 'assistance ouverte' : `assistance ouverte jusqu’au ${detail}`
+      // L'échéance est rangée en ISO — c'est une donnée, pas une phrase. Elle se
+      // lit ici, faute de quoi la seule ligne que le conducteur écrit lui-même
+      // est la moins lisible de toutes.
+      return detail === null ? 'assistance ouverte' : `assistance ouverte jusqu’au ${quand(detail)}`
     case 'assistance-fermee':
       return 'assistance refermée'
     case 'donnees-lues':

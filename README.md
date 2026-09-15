@@ -1723,7 +1723,10 @@ Depuis la fiche d'un compte, la régie peut aussi :
 - **effacer le compte**, avec une confirmation et rien d'autre — pas de délai de
   grâce, pas de nom à recopier : le bouton que l'utilisateur a déjà sur son
   propre écran est immédiat, et on ne fabrique pas un second comportement pour le
-  même mot. La ligne de trace s'écrit **avant**, sinon la cascade l'emporte ;
+  même mot. La ligne de trace s'écrit **avant** — non pas à cause de la cascade,
+  cette table n'ayant délibérément pas de clé étrangère, mais parce qu'un serveur
+  qui tombe entre les deux doit laisser la trace d'un effacement qui n'a pas eu
+  lieu plutôt qu'un effacement dont il ne reste rien ;
 - **forcer un passage de rétention**, après avoir lu le verdict — ce que la règle
   emporterait, et ce qu'elle retiendrait. Ça n'invente aucun effacement : ça
   avance une horloge qui tourne déjà toutes les vingt-quatre heures ;

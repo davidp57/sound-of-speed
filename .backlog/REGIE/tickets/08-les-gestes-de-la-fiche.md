@@ -11,8 +11,11 @@ Quatre boutons sur la fiche, tous tracés de la même façon.
 **Effacer un compte.** Une confirmation, et c'est fait. Pas de délai de grâce,
 pas de nom à recopier : le bouton que l'utilisateur a déjà sur son propre écran
 est immédiat, et on ne fabrique pas un second comportement pour le même mot. La
-ligne de trace s'écrit **avant** l'effacement, sinon la cascade l'emporte ; et
-elle perd le nom et l'adresse en même temps que le compte disparaît. Elle dit
+ligne de trace s'écrit **avant** l'effacement — non par crainte de la cascade,
+cette table n'ayant pas de clé étrangère, mais parce qu'un serveur qui tombe
+entre les deux doit laisser la trace d'un effacement qui n'a pas eu lieu plutôt
+qu'un effacement dont il ne reste rien ; et elle perd le nom et l'adresse en même
+temps que le compte disparaît. Elle dit
 toujours qu'un compte a été effacé, par qui et quand, sans garder l'identité de
 quelqu'un qu'on vient d'effacer.
 

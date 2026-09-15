@@ -117,7 +117,11 @@ Une confirmation, et c'est fait. Pas de délai de grâce, pas de nom à recopier
 le bouton de l'utilisateur sur son propre écran est déjà immédiat, et on ne
 fabrique pas un second comportement pour le même mot.
 
-**La ligne de trace s'écrit avant l'effacement**, sinon la cascade l'emporte.
+**La ligne de trace s'écrit avant l'effacement.** Non pas à cause de la cascade —
+la table de trace n'a pas de clé étrangère, c'est tout son intérêt —, mais parce
+qu'un serveur qui tombe entre les deux doit laisser la trace d'un effacement qui
+n'a pas eu lieu plutôt qu'un effacement dont il ne reste rien. *(Corrigé le
+15 septembre 2026 : la spec disait la cascade, et c'était faux.)*
 
 L'administrateur n'a aucune exception sur son propre compte : il peut y faire ce
 qu'il fait sur les autres. La seule chose qu'il ne peut pas, c'est se retirer

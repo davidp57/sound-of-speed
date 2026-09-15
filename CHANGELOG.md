@@ -99,6 +99,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Un serveur plein faisait jeter le journal de la voiture.** Le refus de dépôt
+  répondait « ne pas réessayer », et le dépôt de tranche lisait cette réponse
+  comme « ne pas garder » : la tranche prise en mémoire n'existait alors plus
+  nulle part. Une heure de route après avoir atteint le plafond, c'était une
+  heure de journal et de capture perdue — y compris une fois la place faite.
+
+  Les deux questions sont désormais distinctes : **faut-il réessayer bientôt**,
+  et **faut-il garder ce qu'on n'a pas pu envoyer**. Elles ont la même réponse
+  pour un compte disparu, des réponses opposées pour un serveur plein. Trouvé en
+  relisant la branche, avant que ça roule.
+
 - **`SPEED_ROLES_OFFERTS` vide fermait tous les écrans de tout le monde.** La
   variable est désormais déclarée dans la composition de la pile — et une
   variable déclarée là et non saisie arrive **vide** au conteneur, pas absente.

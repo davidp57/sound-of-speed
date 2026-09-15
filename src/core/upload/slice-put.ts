@@ -36,8 +36,22 @@ export type SliceOutcome =
        */
       reason: 'refused' | 'network'
       detail: string
-      /** Vrai quand il vaut la peine de réessayer avec la même tranche. */
+      /** Vrai quand il vaut la peine de réessayer **bientôt** avec la même tranche. */
       retry: boolean
+      /**
+       * Vrai quand la tranche doit être remise en attente plutôt que jetée.
+       *
+       * **Ce n'est pas la même question que `retry`**, et les confondre perd des
+       * données : « faut-il réessayer tout de suite ? » et « faut-il garder ce
+       * qu'on n'a pas pu envoyer ? » ont des réponses différentes quand le
+       * serveur est plein. Là, rejouer dans la minute ne passerait pas — mais le
+       * conducteur peut faire de la place, et jeter son journal en attendant
+       * serait le perdre pour de bon.
+       *
+       * Faux quand rien ne repartira jamais : plus de compte reconnu, ou une
+       * tranche que le serveur refuse par sa taille.
+       */
+      garder: boolean
     }
 
 /**
@@ -91,6 +105,9 @@ export async function putSlice(
             : "Le serveur reconnaît cet appareil mais lui refuse l'écriture ici.",
         // Réessayer donnerait le même refus tant qu'aucun compte n'est repris.
         retry: false,
+        // Et rien ne repartira jamais sous ce compte-là : la garder ferait
+        // grossir une file qui ne se videra pas.
+        garder: false,
       }
     }
 
@@ -104,7 +121,13 @@ export async function putSlice(
         ok: false,
         reason: 'refused',
         detail: PLEIN,
+        // Pas de rejeu serré : tant que rien n'est libéré, la réponse ne
+        // changera pas, et c'est ce qui a produit 726 tentatives en 137 s.
         retry: false,
+        // **Mais on garde la tranche** : le conducteur peut effacer deux trajets
+        // et tout repart. La jeter perdrait le journal de l'heure qui suit, y
+        // compris une fois la place faite.
+        garder: true,
       }
     }
 
@@ -117,6 +140,9 @@ export async function putSlice(
       reason: 'network',
       detail: `Le serveur a répondu ${response.status}.`,
       retry: response.status !== 413,
+      // Un 413 ne repassera pas tel quel : la tranche est trop grosse pour ce
+      // serveur, et la garder n'y changerait rien.
+      garder: response.status !== 413,
     }
   } catch (error) {
     return {
@@ -124,6 +150,7 @@ export async function putSlice(
       reason: 'network',
       detail: error instanceof Error ? error.message : 'Dépôt impossible.',
       retry: true,
+      garder: true,
     }
   }
 }

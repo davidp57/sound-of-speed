@@ -6,6 +6,7 @@ import {
   chargerLaFiche,
   chargerLeVerdict,
   chargerLesDonnees,
+  chargerUnContenu,
   donnerUnRole,
   effacerLeCompte,
   forcerLaRetention,
@@ -35,6 +36,16 @@ const proprietes = defineProps<{ compte: string }>()
 
 const fiche = ref<Fiche | null>(null)
 const donnees = ref<Donnees | null>(null)
+/** Pourquoi le détail n'est pas là, quand il n'y est pas. */
+const donneesEnPanne = ref('')
+
+/**
+ * Le contenu d'un profil, d'un moteur ou d'une boîte.
+ *
+ * C'est ce pour quoi l'accord existe : lire le réglage qui cloche plutôt que de
+ * demander à quelqu'un de nous envoyer toute son archive.
+ */
+const contenu = ref<{ nom: string; texte: string } | null>(null)
 const etat = ref<'chargement' | 'ouverte' | 'absente' | 'panne'>('chargement')
 const panne = ref('')
 
@@ -56,9 +67,15 @@ async function recharger(): Promise<void> {
   // Sous accord seulement : sans lui le serveur refuse, et une demande faite
   // pour rien inscrirait une consultation qui n'a rien consulté.
   donnees.value = null
+  donneesEnPanne.value = ''
+  contenu.value = null
   if (rendu.valeur.assistance.ouverte) {
     const detail = await chargerLesDonnees(proprietes.compte)
     if (detail.etat === 'ouverte') donnees.value = detail.valeur
+    // Sans ça, un accord expiré entre deux requêtes laisse « Chargement… »
+    // pour toujours, et on cherche la panne là où il n'y en a pas.
+    else if (detail.etat === 'fermee') donneesEnPanne.value = 'l’accord vient de se refermer'
+    else donneesEnPanne.value = detail.motif
   }
 }
 
@@ -77,32 +94,58 @@ const note = ref('')
  */
 const verdict = ref<Verdict | null>(null)
 
+async function ouvrirUnContenu(
+  registre: 'profils' | 'moteurs' | 'boites',
+  nom: string,
+): Promise<void> {
+  refus.value = ''
+  const rendu = await chargerUnContenu(proprietes.compte, registre, nom)
+  if (rendu.etat !== 'ouverte') {
+    refus.value =
+      rendu.etat === 'fermee' ? 'Ce fichier n’est plus lisible : l’accord s’est refermé.' : rendu.motif
+    return
+  }
+  contenu.value = { nom, texte: rendu.valeur }
+}
+
 async function voirLeVerdict(): Promise<void> {
   const rendu = await chargerLeVerdict(proprietes.compte)
   verdict.value = rendu.etat === 'ouverte' ? rendu.valeur : null
 }
 
 async function onForcerLaRetention(): Promise<void> {
+  refus.value = ''
   const rendu = await forcerLaRetention(proprietes.compte)
   if (!rendu.fait) {
     refus.value = rendu.motif
     return
   }
+  note.value = `${rendu.rendu.trajets} trajets effacés, ${rendu.rendu.tranches} tranches.`
   await voirLeVerdict()
   await recharger()
   emet('change')
 }
 
 async function onReglerLAbandon(): Promise<void> {
+  refus.value = ''
+  note.value = ''
   const rendu = await reglerLAbandon(proprietes.compte)
   if (!rendu.fait) {
     refus.value = rendu.motif
     return
   }
-  // Le compte anonyme et vide a disparu ; les autres sont gardés, et la fiche
-  // le dira d'elle-même en se rechargeant.
-  emet('efface')
-  emet('change')
+
+  // **La règle ne s'applique qu'à un compte anonyme et vide.** Un compte nommé,
+  // ou qui porte quelque chose, est gardé — et l'écran doit le dire plutôt que
+  // de se refermer, ce qui se lirait comme un effacement.
+  if (rendu.rendu.sort === 'efface') {
+    emet('efface')
+    emet('change')
+    return
+  }
+  note.value =
+    'Ce compte est gardé : la règle n’efface qu’un compte anonyme qui ne porte rien.'
+  await recharger()
 }
 
 /** Le plafond qu'on pose, en gibioctets — l'unité dans laquelle on décide. */
@@ -164,6 +207,7 @@ function porte(role: string): boolean {
 
 async function basculerLaBanque(banque: string): Promise<void> {
   refus.value = ''
+  note.value = ''
   const accordee = fiche.value?.banques.includes(banque) === true
   const rendu = accordee
     ? await retirerUneBanque(proprietes.compte, banque)
@@ -172,20 +216,32 @@ async function basculerLaBanque(banque: string): Promise<void> {
     refus.value = rendu.motif
     return
   }
-  // On relit : un accord posé par la pile tient même après un retrait, et
-  // l'écran doit dire ce que le serveur fait, pas ce qu'on a demandé.
+  // **Un accord posé par la pile tient même après un retrait.** Le serveur le
+  // dit ; le taire laisserait un bouton qui ne se relève pas, sans raison
+  // visible.
+  if ('peutEncore' in rendu.rendu && rendu.rendu.peutEncore) {
+    note.value = `${banque} reste jouable : la configuration de la pile l’accorde à ce compte, et cela ne se retire pas d’ici.`
+  }
   await recharger()
   emet('change')
 }
 
 async function basculerLeRole(role: string): Promise<void> {
   refus.value = ''
+  note.value = ''
   const rendu = porte(role)
     ? await reprendreUnRole(proprietes.compte, role)
     : await donnerUnRole(proprietes.compte, role)
   if (!rendu.fait) {
     refus.value = rendu.motif
     return
+  }
+
+  // **Un rôle offert à tout le monde ne se reprend pas d'ici.** C'est le cas par
+  // défaut — la pile offre les trois —, et sans ce mot les trois boutons
+  // paraissent pressés en permanence et chaque clic semble ne rien faire.
+  if ('offertAtous' in rendu.rendu && rendu.rendu.offertAtous) {
+    note.value = `Le rôle ${role} est offert à tout le monde par la configuration de la pile : le reprendre ici ne le referme pas.`
   }
   // On relit plutôt que de deviner : ce que le serveur accorde vraiment dépend
   // aussi de ce que la pile offre à tout le monde.
@@ -349,14 +405,47 @@ async function basculerLeRole(role: string): Promise<void> {
     -->
     <template v-if="fiche.assistance.ouverte">
       <h3>Ce qu’il porte, en détail</h3>
-      <p v-if="donnees === null" class="muet">Chargement…</p>
+      <p v-if="donneesEnPanne !== ''" class="muet">
+        Rien à montrer : {{ donneesEnPanne }}.
+      </p>
+      <p v-else-if="donnees === null" class="muet">Chargement…</p>
       <dl v-else>
         <dt>Profils</dt>
-        <dd>{{ donnees.profils.map((entree) => entree.name).join(', ') || '—' }}</dd>
+        <dd class="fichiers">
+          <button
+            v-for="entree in donnees.profils"
+            :key="entree.name"
+            type="button"
+            @click="ouvrirUnContenu('profils', entree.name)"
+          >
+            {{ entree.name }}
+          </button>
+          <span v-if="donnees.profils.length === 0" class="muet">—</span>
+        </dd>
         <dt>Moteurs</dt>
-        <dd>{{ donnees.moteurs.map((entree) => entree.name).join(', ') || '—' }}</dd>
+        <dd class="fichiers">
+          <button
+            v-for="entree in donnees.moteurs"
+            :key="entree.name"
+            type="button"
+            @click="ouvrirUnContenu('moteurs', entree.name)"
+          >
+            {{ entree.name }}
+          </button>
+          <span v-if="donnees.moteurs.length === 0" class="muet">—</span>
+        </dd>
         <dt>Boîtes</dt>
-        <dd>{{ donnees.boites.map((entree) => entree.name).join(', ') || '—' }}</dd>
+        <dd class="fichiers">
+          <button
+            v-for="entree in donnees.boites"
+            :key="entree.name"
+            type="button"
+            @click="ouvrirUnContenu('boites', entree.name)"
+          >
+            {{ entree.name }}
+          </button>
+          <span v-if="donnees.boites.length === 0" class="muet">—</span>
+        </dd>
         <dt>Trajets</dt>
         <dd>{{ donnees.trajets.map((trajet) => trajet.cle).join(', ') || '—' }}</dd>
         <dt>Journal</dt>
@@ -364,6 +453,13 @@ async function basculerLeRole(role: string): Promise<void> {
         <dt>Relevés</dt>
         <dd class="muet">{{ donnees.mesures.length }} fichiers</dd>
       </dl>
+
+      <!-- Le réglage qu'on vient chercher : lisible sans demander l'archive. -->
+      <template v-if="contenu !== null">
+        <h3>{{ contenu.nom }}</h3>
+        <pre class="contenu">{{ contenu.texte }}</pre>
+      </template>
+
       <p class="note">
         Cette consultation est inscrite, et le conducteur peut la relire.
       </p>
@@ -451,6 +547,30 @@ ul {
 .danger {
   border-color: var(--warn);
   color: var(--warn);
+}
+
+.fichiers {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.fichiers button {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* Un contenu se lit, il ne se parcourt pas : borné en hauteur, et il défile. */
+.contenu {
+  max-height: 22rem;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .refus {

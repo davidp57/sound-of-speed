@@ -55,8 +55,11 @@ export interface LigneDeTrace {
 /**
  * Inscrit un geste.
  *
- * **Appelée avant le geste quand celui-ci efface le compte visé** : l'écrire
- * après reviendrait à ne pas l'écrire du tout, la cascade étant déjà passée.
+ * **Appelée avant le geste quand celui-ci efface le compte visé.** Non parce que
+ * la cascade emporterait la ligne — cette table n'a pas de clé étrangère, c'est
+ * tout son intérêt —, mais parce qu'un serveur qui tombe entre les deux doit
+ * laisser la trace d'un effacement qui n'a pas eu lieu plutôt qu'un effacement
+ * dont il ne reste rien.
  */
 export async function inscrire(
   base: Base,

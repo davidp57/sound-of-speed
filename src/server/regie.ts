@@ -545,8 +545,13 @@ export function creerRegie(options: OptionsDeLaRegie): RegieHono {
   /**
    * Effacer un compte, et tout ce qu'il portait.
    *
-   * **La ligne de trace s'écrit avant**, sinon la cascade l'emporte. Une
-   * confirmation suffit, et il n'y a ni délai de grâce ni nom à recopier : le
+   * **La ligne de trace s'écrit avant**, et ce n'est pas la cascade qui l'impose :
+   * la table de trace n'a aucune clé étrangère vers le compte, précisément pour
+   * survivre à son effacement. La raison est plus simple — un serveur qui tombe
+   * entre les deux doit laisser la trace d'un effacement qui n'a pas eu lieu
+   * plutôt qu'un effacement dont il ne reste rien.
+   *
+   * Une confirmation suffit, et il n'y a ni délai de grâce ni nom à recopier : le
    * bouton que l'utilisateur a déjà sur son propre écran est immédiat, et on ne
    * fabrique pas un second comportement pour le même mot. La confirmation est à
    * l'écran ; le serveur, lui, fait ce qu'on lui demande.

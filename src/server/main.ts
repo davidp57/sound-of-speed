@@ -42,9 +42,11 @@ const anciensDossiers = process.env['SPEED_REPRISE']
 const adressePublique = process.env['SPEED_URL']?.trim() || undefined
 const secretDIdentite = process.env['SPEED_AUTH_SECRET']
 const epingles = nombreOuRien(process.env['SPEED_EPINGLES'])
-// Les rôles offerts à n'importe quel compte. Absente, les trois : tout le monde
-// a tout, rien n'étant encaissé. Vide, aucun — ce qui ferme tout, et c'est la
-// façon de vérifier la mécanique sur un serveur qui tourne.
+// Les rôles offerts à n'importe quel compte. Absente **ou vide**, les trois :
+// tout le monde a tout, rien n'étant encaissé — et une variable déclarée dans
+// une pile sans être saisie arrive vide. Pour tout fermer et vérifier la
+// mécanique sur un serveur qui tourne, il faut une valeur qui ne nomme aucun
+// rôle : `aucun`.
 const roles = offertsDeLEnvironnement(process.env['SPEED_ROLES_OFFERTS'])
 // Les comptes tenus ailleurs : deux variables par fournisseur, et rien du tout
 // par défaut. Voir `tiers.ts` pour les noms.

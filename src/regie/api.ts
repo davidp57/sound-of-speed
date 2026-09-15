@@ -85,6 +85,29 @@ export function chargerLesDonnees(compte: string): Promise<Rendu<Donnees>> {
   return demander<Donnees>(`/api/regie/comptes/${encodeURIComponent(compte)}/donnees`)
 }
 
+/**
+ * Le contenu d'un profil, d'un moteur ou d'une boîte du compte visé.
+ *
+ * C'est ce pour quoi l'accord existe : comprendre un défaut sans demander à
+ * quelqu'un de nous envoyer toute son archive.
+ */
+export async function chargerUnContenu(
+  compte: string,
+  registre: 'profils' | 'moteurs' | 'boites',
+  nom: string,
+): Promise<Rendu<string>> {
+  try {
+    const reponse = await fetch(
+      `/api/regie/comptes/${encodeURIComponent(compte)}/donnees/${registre}/${encodeURIComponent(nom)}`,
+    )
+    if (reponse.status === 404) return { etat: 'fermee' }
+    if (!reponse.ok) return { etat: 'panne', motif: `code ${reponse.status}` }
+    return { etat: 'ouverte', valeur: await reponse.text() }
+  } catch (erreur) {
+    return { etat: 'panne', motif: String(erreur) }
+  }
+}
+
 /** Ce que la règle de rétention emporterait, sans rien effacer. */
 export interface Verdict {
   aEffacer: { cle: string; octets: number; enregistreLe: number }[]
@@ -103,11 +126,14 @@ export function effacerLeCompte(compte: string) {
 }
 
 export function forcerLaRetention(compte: string) {
-  return agir(`${surLeCompte(compte)}/retention`, 'POST')
+  return agir<{ trajets: number; tranches: number }>(`${surLeCompte(compte)}/retention`, 'POST')
 }
 
+/** Ce que l'abandon a fait : le compte était vide et part, ou il est gardé. */
+export type SortDeLAbandon = 'efface' | 'garde' | 'aucun'
+
 export function reglerLAbandon(compte: string) {
-  return agir(`${surLeCompte(compte)}/abandon`, 'POST')
+  return agir<{ sort: SortDeLAbandon }>(`${surLeCompte(compte)}/abandon`, 'POST')
 }
 
 export function poserUnPlafond(compte: string, gio: number) {
@@ -134,14 +160,22 @@ export function chargerLaTrace(): Promise<Rendu<LigneDeTrace[]>> {
 /**
  * Un geste qui change quelque chose.
  *
- * Rend le motif quand le serveur refuse : un bouton qui ne fait rien sans rien
+ * **Rend ce que le serveur a répondu**, et pas seulement qu'il a répondu. Les
+ * routes de régie disent ce que le geste a vraiment fait — un rôle repris qui
+ * reste offert à tout le monde, une banque encore jouable par la configuration,
+ * un compte gardé plutôt qu'effacé —, et jeter cette réponse fait des boutons
+ * qui semblent agir sans agir.
+ *
+ * Le motif sort quand le serveur refuse : un bouton qui ne fait rien sans rien
  * dire envoie chercher la panne au mauvais endroit.
  */
-export async function agir(
+export type Geste<T> = { fait: true; rendu: T } | { fait: false; motif: string }
+
+export async function agir<T = unknown>(
   chemin: string,
   methode: 'PUT' | 'DELETE' | 'POST',
   corps?: unknown,
-): Promise<{ fait: true } | { fait: false; motif: string }> {
+): Promise<Geste<T>> {
   try {
     const reponse = await fetch(chemin, {
       method: methode,
@@ -150,29 +184,35 @@ export async function agir(
         : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }),
     })
     if (!reponse.ok) return { fait: false, motif: `le serveur a répondu ${reponse.status}` }
-    return { fait: true }
+    return { fait: true, rendu: (await reponse.json()) as T }
   } catch (erreur) {
     return { fait: false, motif: String(erreur) }
   }
 }
 
 export function donnerUnRole(compte: string, role: string) {
-  return agir(`/api/regie/comptes/${encodeURIComponent(compte)}/roles/${role}`, 'PUT')
+  return agir<{ donne: boolean }>(
+    `/api/regie/comptes/${encodeURIComponent(compte)}/roles/${role}`,
+    'PUT',
+  )
 }
 
 export function reprendreUnRole(compte: string, role: string) {
-  return agir(`/api/regie/comptes/${encodeURIComponent(compte)}/roles/${role}`, 'DELETE')
+  return agir<{ repris: boolean; offertAtous: boolean }>(
+    `/api/regie/comptes/${encodeURIComponent(compte)}/roles/${role}`,
+    'DELETE',
+  )
 }
 
 export function accorderUneBanque(compte: string, banque: string) {
-  return agir(
+  return agir<{ accordee: boolean }>(
     `/api/regie/comptes/${encodeURIComponent(compte)}/banques/${encodeURIComponent(banque)}`,
     'PUT',
   )
 }
 
 export function retirerUneBanque(compte: string, banque: string) {
-  return agir(
+  return agir<{ retiree: boolean; peutEncore: boolean }>(
     `/api/regie/comptes/${encodeURIComponent(compte)}/banques/${encodeURIComponent(banque)}`,
     'DELETE',
   )
