@@ -498,6 +498,32 @@ export function cas({ nom, administre = false }) {
       attend: (r) => vrai(r.ok, `un code de succès, reçu ${r.status}`),
     },
     {
+      nom: 'un dépôt accepté dit où en est la place du compte',
+      part: 'durcissement',
+      // La voiture dépose toutes les cinq minutes : c'est par là que
+      // l'information arrive, sans sondage ni route à interroger. Des en-têtes
+      // et non un code, pour que le client continue de lire `response.ok`.
+      requete: {
+        chemin: `/mesures/${releve}`,
+        methode: 'PUT',
+        corps: '{"place":1}',
+        entetes: { 'Content-Type': 'application/json' },
+        compte: true,
+      },
+      attend: (r) => {
+        vrai(r.ok, `un code de succès, reçu ${r.status}`)
+        const etat = r.headers.get('speed-place')
+        vrai(
+          etat === 'libre' || etat === 'bientot' || etat === 'rotation',
+          `un état de place lisible, reçu ${etat ?? 'rien'}`,
+        )
+        const octets = Number(r.headers.get('speed-place-octets'))
+        const plafond = Number(r.headers.get('speed-place-plafond'))
+        vrai(Number.isFinite(octets) && octets > 0, 'la place prise, en octets')
+        vrai(Number.isFinite(plafond) && plafond >= octets, 'le plafond, au moins aussi grand')
+      },
+    },
+    {
       nom: 'la trace déposée se liste sous son nom exact',
       part: 'depots',
       requete: { chemin: '/traces/', compte: true, entetes: { Accept: 'application/json' } },

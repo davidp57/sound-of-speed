@@ -8,6 +8,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Chaque dépôt accepté dit où en est la place du compte** : trois en-têtes sur
+  la réponse — l'état (`libre`, `bientot` dès les trois quarts du plafond), la
+  place prise et le plafond. La voiture dépose toutes les cinq minutes, donc
+  l'information arrive toute seule, sans sondage ni route à interroger.
+
+  Des en-têtes plutôt qu'un code par état : le client teste `response.ok` et
+  traite tout le reste comme un échec, un proxy inversé peut normaliser un code
+  inhabituel, et le contrat fige déjà `201` sur un dépôt réussi. Un client qui ne
+  les lit pas ne voit aucune différence.
+
 - **Une régie, pour administrer les comptes depuis un écran.** Une troisième
   page, `/regie`, qui liste les comptes du serveur — les derniers créés en haut,
   avec nom, adresse, date, rôles et poids déposé — et une recherche par nom ou

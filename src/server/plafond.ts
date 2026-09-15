@@ -57,7 +57,32 @@ export async function plafondDuCompte(
 }
 
 /**
- * Ce dépôt ferait-il dépasser le plafond ?
+ * À partir d'où l'on prévient : trois quarts du plafond.
+ *
+ * En dur, et nommé : rien ne demande encore à le bouger, et une variable de pile
+ * de plus se paierait en configuration à saisir sans rien ouvrir.
+ */
+export const SEUIL_D_ALERTE = 0.75
+
+/**
+ * Où en est un compte, une fois ce dépôt écrit.
+ *
+ * **C'est ce que la réponse annonce**, et c'est pourquoi la mesure porte sur
+ * l'après : dire « libre » en écrivant la tranche qui fait passer le seuil
+ * ferait attendre cinq minutes de plus pour une information qu'on avait.
+ */
+export interface Place {
+  /** Ce que le compte pèse, ce dépôt compris. */
+  octets: number
+  plafond: number
+  /** Ce qu'on annonce : `rotation` viendra avec la rotation, pas avant. */
+  etat: 'libre' | 'bientot'
+  /** Ce dépôt fait-il dépasser le plafond ? */
+  depasse: boolean
+}
+
+/**
+ * Ce que pèserait le compte avec ce dépôt, et ce qu'on en dit.
  *
  * **Un dépôt qui en remplace un autre ne compte qu'une fois** : la voiture rejoue
  * un envoi au même nom, et compter les deux refuserait un dépôt qui ne fait rien
@@ -70,15 +95,18 @@ export async function plafondDuCompte(
  * dépôts pesant 60 Mio, soit les trois quarts du temps d'un dépôt. Séparée en
  * deux lectures qui tiennent dans leurs index, elle tombe à **0,44 ms**, pour un
  * dépôt complet à 8,6 ms — 5 %.
+ *
+ * **Une seule mesure sert aux deux usages** : décider du refus, et dire la place.
+ * En faire une seconde pour l'en-tête doublerait le seul coût qu'on a mesuré.
  */
-export async function depasseraitLePlafond(
+export async function placeApresLeDepot(
   base: Base,
   compte: string,
   dossier: string,
   nom: string,
   octets: number,
   plafond: number,
-): Promise<boolean> {
+): Promise<Place> {
   const [somme] = await base
     .select({ total: sql<number>`coalesce(sum(${deposits.bytes}), 0)` })
     .from(deposits)
@@ -98,5 +126,12 @@ export async function depasseraitLePlafond(
     )
     .limit(1)
 
-  return (somme?.total ?? 0) - (remplace?.octets ?? 0) + octets > plafond
+  const apres = (somme?.total ?? 0) - (remplace?.octets ?? 0) + octets
+
+  return {
+    octets: apres,
+    plafond,
+    etat: apres >= plafond * SEUIL_D_ALERTE ? 'bientot' : 'libre',
+    depasse: apres > plafond,
+  }
 }

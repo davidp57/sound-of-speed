@@ -35,11 +35,7 @@ import { cheminSur, estUnNomSimple, fichierOuRien, servirFichier, typeDe } from 
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
 import { assistanceDuCompte, fermerLAssistance, ouvrirLAssistance } from './assistance'
-import {
-  depasseraitLePlafond,
-  PLAFOND_PAR_DEFAUT,
-  plafondDuCompte,
-} from './plafond'
+import { PLAFOND_PAR_DEFAUT, placeApresLeDepot, plafondDuCompte, type Place } from './plafond'
 import { creerRegie } from './regie'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
 import { inscrire, lireLaTrace } from './trace'
@@ -603,7 +599,15 @@ export function creerServeur(options: OptionsDuServeur): Hono {
         // plutôt qu'au ménage, parce qu'un seuil qui efface fait disparaître des
         // données sans que rien ne rougisse.
         const plafond = await plafondDuCompte(base, compte, options.plafond ?? PLAFOND_PAR_DEFAUT)
-        if (await depasseraitLePlafond(base, compte, dossier, nom, octets.length, plafond.octets)) {
+        const place = await placeApresLeDepot(
+          base,
+          compte,
+          dossier,
+          nom,
+          octets.length,
+          plafond.octets,
+        )
+        if (place.depasse) {
           // 507, et le client ne le rejoue pas : un code de panne passagère
           // ferait réessayer la voiture indéfiniment pour un envoi qui ne
           // passera jamais — c'est exactement ce qui a produit 726 tentatives en
@@ -638,7 +642,16 @@ export function creerServeur(options: OptionsDuServeur): Hono {
           }
         }
 
-        return c.text('', 201)
+        // **Ce que la réponse dit de la place**, sur chaque dépôt accepté. La
+        // voiture en envoie un toutes les cinq minutes : l'information arrive
+        // donc toute seule, sans sondage ni route à interroger, et l'application
+        // peut prévenir à n'importe quel moment.
+        //
+        // Des en-têtes et non un code : le client teste `response.ok` et traite
+        // tout le reste comme un échec, un proxy inversé peut normaliser un code
+        // inhabituel, et le jeu d'accord fige déjà 201 sur un dépôt réussi.
+        // Absents, un client plus ancien ne voit aucune différence.
+        return c.text('', 201, enTetesDePlace(place))
       }
 
       const octets = await lireDepot(base, compte, dossier, nom)
@@ -816,6 +829,20 @@ function pageDeRepli(chemin: string): string {
   if (chemin.startsWith('/relecteur')) return '/relecteur.html'
   if (chemin.startsWith('/regie')) return '/regie.html'
   return '/index.html'
+}
+
+/**
+ * Ce que la réponse d'un dépôt dit de la place qui reste.
+ *
+ * Les chiffres accompagnent l'état plutôt que de le remplacer : un écran doit
+ * pouvoir dire « 182 Mio sur 250 », et un adjectif seul ne le permettrait pas.
+ */
+function enTetesDePlace(place: Place): Record<string, string> {
+  return {
+    'Speed-Place': place.etat,
+    'Speed-Place-Octets': String(place.octets),
+    'Speed-Place-Plafond': String(place.plafond),
+  }
 }
 
 function cachePour(chemin: string): string | undefined {

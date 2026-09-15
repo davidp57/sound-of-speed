@@ -1759,9 +1759,26 @@ changeant une valeur dans la pile. **250 Mio, décidés le 15 septembre 2026** �
 n'est pas une mesure, c'est un choix ; ce qu'il vaut en trajets se lira quand le
 relevé de dépense quotidien aura dit ce qu'un compte dépose.
 
-**Aujourd'hui, rien ne fait de place à la voiture** : le plafond atteint, les
-dépôts sont refusés jusqu'à ce qu'on efface des trajets à la main. La rotation
-automatique est le [ticket 06 de DURCIR](.backlog/DURCIR/tickets/06-faire-de-la-place-plutot-que-refuser.md).
+**Chaque dépôt accepté dit où en est la place**, par trois en-têtes :
+
+```
+Speed-Place: libre | bientot
+Speed-Place-Octets: 190840832
+Speed-Place-Plafond: 262144000
+```
+
+`bientot` dès les trois quarts du plafond. La voiture dépose toutes les cinq
+minutes : l'information arrive donc toute seule, sans sondage ni route à
+interroger, et l'application peut prévenir à n'importe quel moment. Des en-têtes
+et non un code : le client teste `response.ok` et traite tout le reste comme un
+échec, un proxy inversé peut normaliser un code inhabituel, et le jeu d'accord
+fige déjà `201` sur un dépôt réussi. Absents, un client plus ancien ne voit aucune
+différence.
+
+**Aujourd'hui, rien ne fait encore de place à la voiture** : le plafond atteint,
+les dépôts sont refusés jusqu'à ce qu'on efface des trajets à la main. La
+rotation est le [ticket 08 de DURCIR](.backlog/DURCIR/tickets/08-la-rotation-fait-de-la-place.md),
+et l'écran qui prévient le [09](.backlog/DURCIR/tickets/09-le-bandeau-et-la-telemetrie.md).
 
 Un compte au-delà voit son dépôt refusé en **507**, un code que la voiture ne
 rejoue pas — un code de panne passagère la ferait réessayer indéfiniment pour un
