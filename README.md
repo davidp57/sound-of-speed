@@ -1660,6 +1660,15 @@ administrateur. C'est le principe déjà retenu pour les banques restreintes.
 Un compte **sans adresse enregistrée** ne peut donc pas administrer — c'était déjà
 vrai des banques restreintes.
 
+**Déclarer une adresse après que son titulaire a ouvert son compte, et pas
+avant.** Une adresse n'est pas vérifiée sur ce serveur — aucun courriel ne part —
+et tant qu'aucun compte ne la porte, n'importe quel visiteur peut se la donner
+depuis son écran de compte : il deviendrait administrateur avec elle. La même
+faiblesse vaut depuis toujours pour les banques restreintes, qui se nomment aussi
+par adresse ; ce qui change ici est ce qu'elle ouvre. La refermer demanderait
+d'exiger une adresse prouvée — donc un relais de courriel, ou un compte tenu
+ailleurs —, et **ce n'est pas tranché**.
+
 **Un refus se donne en 404, jamais en 403**, et un visiteur sans session reçoit le
 même : l'existence de la régie n'a pas à être une information gratuite. Ce n'est
 pas ce qui protège — l'adresse se trouve, et le dépôt est public —, c'est le

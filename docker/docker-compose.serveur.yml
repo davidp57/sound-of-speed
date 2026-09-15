@@ -103,6 +103,11 @@ services:
       # fabriquer un administrateur, et c'est ce qui rend l'écran sûr. Un compte
       # sans adresse enregistrée ne peut pas administrer.
       #
+      # **Déclarer une adresse APRÈS que son titulaire a ouvert son compte**, et
+      # pas avant : une adresse n'est pas vérifiée — aucun courriel ne part —, et
+      # tant qu'aucun compte ne la porte, n'importe quel visiteur peut se la
+      # donner depuis l'écran du compte. Il deviendrait administrateur avec.
+      #
       # Absente, personne n'administre et la régie répond 404 à tout le monde.
       SPEED_ADMINS: ${SPEED_ADMINS:-}
       # Les rôles offerts à n'importe quel compte, séparés par des virgules :
