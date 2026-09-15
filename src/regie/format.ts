@@ -20,6 +20,9 @@ export function dateLisible(iso: string): string {
 /** Dans l'unité qui se lit : on repère un compte qui fait grossir le serveur. */
 export function poidsLisible(octets: number): string {
   if (octets === 0) return '—'
+  // Sous le kibioctet, on donne les octets : arrondir douze octets à « 0 Kio »
+  // ferait lire « rien » là où il y a quelque chose.
+  if (octets < 1024) return `${octets} o`
   if (octets < 1024 * 1024) return `${Math.round(octets / 1024)} Kio`
   if (octets < 1024 * 1024 * 1024) return `${(octets / (1024 * 1024)).toFixed(1)} Mio`
   return `${(octets / (1024 * 1024 * 1024)).toFixed(2)} Gio`

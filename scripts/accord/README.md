@@ -7,7 +7,13 @@ qui se rejoue contre n'importe quelle adresse.
 npm run accord -- http://localhost:8088
 npm run accord -- http://localhost:8088 --verbeux
 npm run accord -- http://localhost:8088 --compte essai:essai   # ancien serveur
+npm run accord -- http://localhost:8088 --admin moi@exemple.fr:son-mot-de-passe
 ```
+
+`--admin` ouvre les deux cas de régie qui demandent un **administrateur
+déclaré** : le jeu prend d'ordinaire un compte anonyme, qui ne peut jamais
+administrer — l'administration vient d'une adresse listée dans `SPEED_ADMINS`.
+Sans l'option, on ne vérifie que la moitié du contrôle, celle qui refuse.
 
 Il rend 0 quand tout passe, 1 sinon, et dit pour chaque échec ce qu'il attendait.
 

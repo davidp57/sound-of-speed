@@ -24,12 +24,15 @@
 import { cas, marque } from './contrat.mjs'
 
 function lireArguments(argv) {
-  const options = { base: null, compte: null, verbeux: false, part: null }
+  const options = { base: null, compte: null, verbeux: false, part: null, admin: null }
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i]
     if (arg === '--compte') {
       i += 1
       options.compte = argv[i] ?? null
+    } else if (arg === '--admin') {
+      i += 1
+      options.admin = argv[i] ?? null
     } else if (arg === '--part') {
       i += 1
       options.part = argv[i] ?? null
@@ -45,7 +48,8 @@ function lireArguments(argv) {
 const options = lireArguments(process.argv.slice(2))
 if (options.base === null) {
   console.error(
-    'Usage : npm run accord -- <adresse> [--part publique,profils] [--compte nom:motdepasse] [--verbeux]',
+    'Usage : npm run accord -- <adresse> [--part publique,profils] [--compte nom:motdepasse]' +
+      ' [--admin adresse:motdepasse] [--verbeux]',
   )
   process.exit(2)
 }
@@ -74,6 +78,37 @@ const identifiants = options.compte ?? process.env['SPEED_COMPTE'] ?? null
 
 const temoin = identifiants === null ? await prendreUnCompte(options.base) : null
 
+/**
+ * Le témoin d'un compte **administrateur**, quand on en donne un.
+ *
+ * Le jeu prend d'ordinaire un compte anonyme, qui ne peut jamais administrer :
+ * l'administration vient d'une adresse déclarée dans la pile. Pour vérifier
+ * l'autre moitié du contrôle — que la porte s'ouvre pour qui est déclaré —, il
+ * faut donc un vrai compte, et son mot de passe.
+ *
+ * ```bash
+ * npm run accord -- http://localhost:8088 --admin moi@exemple.fr:son-mot-de-passe
+ * ```
+ */
+async function seConnecter(base, identifiants) {
+  const separateur = identifiants.indexOf(':')
+  const email = identifiants.slice(0, separateur)
+  const motDePasse = identifiants.slice(separateur + 1)
+
+  const reponse = await fetch(`${base}/api/auth/compte/connexion`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: base },
+    body: JSON.stringify({ email, motDePasse }),
+  })
+  if (!reponse.ok) {
+    console.error(`Ce compte ne s'ouvre pas : ${reponse.status}.`)
+    process.exit(2)
+  }
+  return (reponse.headers.get('set-cookie') ?? '').split(';')[0] ?? ''
+}
+
+const temoinAdmin = options.admin === null ? null : await seConnecter(options.base, options.admin)
+
 function entetesDe(requete) {
   const entetes = { ...(requete.entetes ?? {}) }
   // La bibliothèque d'identité refuse un POST sans `Origin` — sa protection
@@ -83,6 +118,13 @@ function entetesDe(requete) {
   // pour vérifier qu'une requête venue d'ailleurs se fait refouler.
   if (requete.origine === true) entetes['Origin'] = options.base
   else if (typeof requete.origine === 'string') entetes['Origin'] = requete.origine
+  // Un cas d'administration s'annonce avec le compte déclaré dans la pile, et
+  // non avec le compte anonyme du jeu.
+  if (requete.administrateur === true && temoinAdmin !== null) {
+    entetes['Cookie'] = temoinAdmin
+    return entetes
+  }
+
   // Les cas qui vérifient le refus ne s'annoncent pas : c'est justement ce
   // qu'ils mesurent.
   if (requete.compte !== true) return entetes
@@ -121,7 +163,7 @@ function entetesDe(requete) {
  * le serveur en service.
  */
 const partsVoulues = options.part === null ? null : options.part.split(',').map((p) => p.trim())
-const jeu = cas({ nom: marque() }).filter(
+const jeu = cas({ nom: marque(), administre: options.admin !== null }).filter(
   (unCas) => partsVoulues === null || partsVoulues.includes(unCas.part ?? 'publique'),
 )
 const resultats = []

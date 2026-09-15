@@ -73,6 +73,13 @@ Toutes les évolutions notables du projet. Format
   Un index qui porte la taille à côté du compte l'a réglé, et la liste des
   comptes de la régie en profite aussi.
 
+- **Le contrat rejoué en HTTP couvre la régie** : sa page est bien servie, et
+  ses routes répondent 404 sans administrateur — y compris sans session. Une
+  option `--admin` ouvre les deux cas qui demandent un administrateur déclaré,
+  que le jeu ne peut pas être lui-même : il prend un compte anonyme, et
+  l'administration vient d'une adresse listée dans la pile. Soixante-cinq cas
+  passent contre un serveur qui tourne.
+
 ### Modifié
 
 - **Les accords de banque réservée passent en base.** Ils se posaient par

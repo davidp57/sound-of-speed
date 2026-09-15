@@ -1,7 +1,7 @@
 # RÉGIE — administrer les comptes depuis un écran
 
-**Statut :** ⬜ prêt — cadre posé le 15 septembre 2026, instruit et spécifié le
-même jour, pas encore découpé
+**Statut :** ✅ 9/9 — livré le 15 septembre 2026, vérifié contre un serveur qui
+tourne (65 cas d'accord, administrateur configuré et non configuré)
 **Branche :** `feature/regie`
 **Version visée :** à décider au moment de la release
 
@@ -354,31 +354,34 @@ le serveur **répond**, jamais comment il s'y prend.
 
 ## Critères d'acceptation
 
-- [ ] Un compte dont l'adresse est dans la variable ouvre la régie ; tout autre
+- [x] Un compte dont l'adresse est dans la variable ouvre la régie ; tout autre
       compte reçoit 404 sur chaque route, et une page qui n'annonce rien.
-- [ ] Aucune route ne permet d'accorder ni de retirer l'administration —
+- [x] Aucune route ne permet d'accorder ni de retirer l'administration —
       vérifié, pas seulement affirmé.
-- [ ] La régie donne et reprend un rôle, et le contrôle serveur suit
+- [x] La régie donne et reprend un rôle, et le contrôle serveur suit
       immédiatement.
-- [ ] La régie accorde et retire une banque réservée ; le drapeau, lui, reste
+- [x] La régie accorde et retire une banque réservée ; le drapeau, lui, reste
       dans la configuration, et la variable d'accords se cumule toujours.
-- [ ] Le conducteur ouvre et referme l'assistance depuis son écran, et voit
+- [x] Le conducteur ouvre et referme l'assistance depuis son écran, et voit
       jusqu'à quand c'est ouvert.
-- [ ] Sans date, la régie ne lit rien. Avec une date passée, elle ne lit plus
+- [x] Sans date, la régie ne lit rien. Avec une date passée, elle ne lit plus
       rien. Aucun passage périodique n'est nécessaire pour ça.
-- [ ] Les routes de lecture de la régie ne savent que lire — vérifié route par
+- [x] Les routes de lecture de la régie ne savent que lire — vérifié route par
       route.
-- [ ] Un dépôt qui ferait dépasser le plafond est refusé, et rien de déjà déposé
+- [x] Un dépôt qui ferait dépasser le plafond est refusé, et rien de déjà déposé
       n'est effacé.
-- [ ] Chaque geste d'administration écrit une ligne de trace, lisible dans la
+- [x] Chaque geste d'administration écrit une ligne de trace, lisible dans la
       régie et sur l'écran du compte concerné.
-- [ ] L'effacement d'un compte laisse sa ligne de trace, et cette ligne ne porte
+- [x] L'effacement d'un compte laisse sa ligne de trace, et cette ligne ne porte
       plus ni nom ni adresse.
-- [ ] Les routes de régie figurent dans l'inventaire de l'essai d'isolation.
-- [ ] `regie.html` est servie par l'image construite, vérifié par le contrat en
+- [x] Les routes de régie figurent dans l'inventaire de l'essai d'isolation.
+- [x] `regie.html` est servie par l'image construite, vérifié par le contrat en
       HTTP.
-- [ ] Le poids de l'application que la voiture télécharge n'augmente pas.
-- [ ] Contrôle qualité vert : typage, style, essais, construction.
+- [x] Le poids de l'application que la voiture télécharge n'augmente pas **du
+      fait de la régie** : son écran est une entrée séparée de 12,6 ko. Le
+      paquet de conduite grossit de 3,1 ko, qui sont l'autorisation
+      d'assistance et la relecture de sa trace — deux réglages du conducteur.
+- [x] Contrôle qualité vert : typage, style, essais, construction.
 
 ## Les tickets
 

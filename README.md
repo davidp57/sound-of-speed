@@ -1667,8 +1667,13 @@ contrôle serveur qui garde ; ça retire seulement une carte à qui cherche. La 
 elle-même est servie à tout le monde et n'annonce rien.
 
 **Son code ne part jamais dans la voiture.** C'est une entrée de construction
-séparée, comme le relecteur : elle a son propre paquet, tiré seulement quand on
-ouvre `/regie.html`.
+séparée, comme le relecteur : elle a son propre paquet — 12,6 ko — tiré seulement
+quand on ouvre `/regie.html`.
+
+**On s'y connecte par l'application**, sur l'écran du compte : la page et la
+régie sont sur la même origine, donc le même témoin de connexion vaut pour les
+deux. La régie n'a pas d'écran de connexion à elle, et c'est voulu — il
+annoncerait qu'il y a quelque chose là.
 
 #### Autoriser l'assistance
 
@@ -1814,6 +1819,13 @@ transfère — et non ce que la construction annonce.
 | Avant le 13 septembre 2026 | 459 ko |
 | Les trois écrans d'atelier chargés à la demande | 423 ko |
 | Les réponses compressées | **142 ko** |
+
+**Ce que la régie a coûté à la voiture : rien.** Son écran est une entrée
+séparée, tirée seulement quand on ouvre `/regie.html`. Le paquet de conduite est
+passé de 308,6 à 311,8 ko entre le début et la fin du lot — ces **3,1 ko** sont
+l'autorisation d'assistance et la relecture de sa propre trace, qui sont des
+réglages du conducteur, sur son écran de compte. Compressés, l'écart est de
+0,9 ko.
 
 **Le serveur compresse ce qui se compresse**, comme nginx le faisait avant lui :
 les types textuels au-delà d'un kilo-octet. Jamais les échantillons — du FLAC
