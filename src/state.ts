@@ -1958,11 +1958,15 @@ export async function seConnecterAvecUnCompteTenuAilleurs(fournisseur: string): 
  * redescendre ce que le nouveau porte.
  */
 async function acheverLeRetourDuTiers(): Promise<void> {
+  // Les deux refus disent lequel des deux gestes a manqué — donc lequel aurait
+  // marché. Depuis que l'intention se déclare avant de partir, se tromper
+  // d'intention est le cas qui arrive : le message propose l'autre plutôt que
+  // de renvoyer à une impasse.
   if (retourDuTiers === 'refus-connexion') {
     liaison.value = {
       etat: 'refusee',
       detail:
-        'Ce compte tenu ailleurs n’a encore été rattaché à aucun compte d’ici, et il n’en crée jamais : il n’ouvre donc rien. Pour vous en servir, rattachez-le depuis l’appareil qui porte déjà votre compte — ce qui suppose d’y être.',
+        'Aucun compte ne s’ouvre avec celui-ci : il n’a encore été rattaché à rien, et il n’en crée jamais. Si vous n’avez pas encore de compte, choisissez « Je n’ai pas encore de compte » — le même bouton le rattachera à celui de cet appareil.',
     }
     return
   }
@@ -1970,7 +1974,7 @@ async function acheverLeRetourDuTiers(): Promise<void> {
     liaison.value = {
       etat: 'refusee',
       detail:
-        'Le rattachement a échoué. Deux causes possibles : ce compte tenu ailleurs est déjà rattaché à un autre compte d’ici, ou le fournisseur a refusé — son écran le dit quand c’est lui.',
+        'Ce compte tenu ailleurs ouvre déjà un compte d’ici : il ne peut pas en rattacher un second. Choisissez « J’ai déjà un compte » pour ouvrir celui-là. Si ce n’est pas ce que vous attendiez, le fournisseur a peut-être refusé — son écran le dit quand c’est lui.',
     }
     return
   }

@@ -31,6 +31,7 @@ import { betterAuth } from 'better-auth'
 import { eq } from 'drizzle-orm'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { anonymous } from 'better-auth/plugins'
+import { adresseARetenir, lireLeJeton } from './jeton-tiers'
 import { genericOAuth } from 'better-auth/plugins/generic-oauth'
 
 import { tirerUneEtiquette } from '../core/identity/etiquette'
@@ -266,9 +267,34 @@ export function creerIdentite({ base, secret, adresse, tiers }: OptionsDIdentite
               // d'appel qu'elle passe à ce crochet vaut `null` dès que la preuve
               // se pose hors d'une requête, et on ne veut pas d'un anonymat qui
               // se lève seulement quand la pile a la bonne forme.
+              // Ce que le fournisseur dit de la personne : son adresse, son
+              // portrait. Sans cela le compte cessait d'être anonyme en gardant
+              // l'adresse de remplacement que le greffon lui avait fabriquée —
+              // David, le 14 septembre 2026 : « j'ai mes profils mais pas mon
+              // email ni mon gravatar ».
+              //
+              // Une adresse choisie ne se fait jamais remplacer : un tiers est
+              // une preuve de plus, pas un remplacement. C'est
+              // `adresseARetenir` qui tranche.
+              const dit = lireLeJeton(preuve.idToken)
+              const [avant] = await base
+                .select({ email: accounts.email, image: accounts.image })
+                .from(accounts)
+                .where(eq(accounts.id, compteVise))
+                .limit(1)
+
+              const adresse = adresseARetenir(avant?.email, dit)
+
               await base
                 .update(accounts)
-                .set({ isAnonymous: false })
+                .set({
+                  isAnonymous: false,
+                  ...(adresse !== null ? { email: adresse } : {}),
+                  // Le portrait ne s'impose qu'à un compte qui n'en a pas : on
+                  // ne remplace pas celui d'un fournisseur déjà rattaché par
+                  // celui du suivant.
+                  ...(dit.image !== null && !avant?.image ? { image: dit.image } : {}),
+                })
                 .where(eq(accounts.id, compteVise))
             } catch (erreur) {
               // Un compte resté marqué anonyme reste utilisable : ce qui est en
