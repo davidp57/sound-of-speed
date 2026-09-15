@@ -22,6 +22,12 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import qrcode from 'qrcode-generator'
 
 import { APPAREILS, lireLAppareilChoisi, NOMS_DAPPAREIL, type Appareil } from '../core/appareil'
+import {
+  fermerLAssistance,
+  lireLAssistance,
+  ouvrirLAssistance,
+  type Assistance,
+} from '../core/identity/assistance'
 import { empreinteDeLAdresse, initialeDe, lienDeGravatar } from '../core/identity/avatar'
 import { demanderUnCode } from '../core/identity/client'
 import {
@@ -544,6 +550,49 @@ async function onSupprimer(): Promise<void> {
   }
 }
 
+/**
+ * Autoriser l'assistance : ouvrir ses données à qui administre, pour 24 heures.
+ *
+ * **On ne reçoit aucune demande** : le serveur ne sait pas parler à une voiture,
+ * et la voiture roule souvent hors réseau. C'est donc de vive voix qu'on nous
+ * l'aura demandé, et ce bouton-ci est la réponse.
+ *
+ * `null` veut dire « on ne sait pas » — hors réseau, l'écran ne doit pas
+ * affirmer que rien n'est ouvert.
+ */
+const assistance = ref<Assistance | null>(null)
+const assistanceEnCours = ref(false)
+
+/** Une échéance dite comme on la lit : le jour et l'heure, pas la seconde. */
+function quandLisible(iso: string): string {
+  return new Date(iso).toLocaleString('fr-FR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+async function onBasculerLAssistance(): Promise<void> {
+  if (assistanceEnCours.value) return
+  assistanceEnCours.value = true
+  try {
+    const rendu =
+      assistance.value?.ouverte === true ? await fermerLAssistance() : await ouvrirLAssistance()
+    assistance.value = rendu
+    if (rendu === null) {
+      noteDeTenue.value = 'Sans réseau, on ne change pas cette autorisation : elle vit sur le serveur.'
+    }
+  } finally {
+    assistanceEnCours.value = false
+  }
+}
+
+onMounted(async () => {
+  assistance.value = await lireLAssistance()
+})
+
 onUnmounted(() => {
   masquerLeCode()
 })
@@ -732,6 +781,36 @@ onUnmounted(() => {
       <strong>{{ NOMS_DAPPAREIL[appareil] }}</strong> — {{ CE_QUE_LAPPAREIL_OUVRE[appareil] }}.
       <template v-if="!appareilCorrige">Deviné d’après ce navigateur.</template>
     </p>
+
+    <!--
+      Autoriser l'assistance. Placée avant « emporter » et « supprimer », parce
+      qu'elle se coche le jour où l'on vient de signaler un défaut.
+    -->
+    <h3>Autoriser l’assistance</h3>
+    <p class="note">
+      Quand quelque chose ne marche pas et qu’on nous le signale, personne ne
+      peut regarder ce que ce compte porte : il n’y a pas de porte pour ça. Ce
+      bouton en ouvre une pour <strong>24 heures</strong>, et elle se referme
+      toute seule.
+    </p>
+    <div class="choices">
+      <button
+        :aria-pressed="assistance?.ouverte === true"
+        :disabled="assistanceEnCours"
+        @click="onBasculerLAssistance()"
+      >
+        {{ assistance?.ouverte === true ? 'Refermer maintenant' : 'Autoriser pour 24 heures' }}
+      </button>
+    </div>
+    <p v-if="assistance === null" class="note">
+      Sans réseau, on ne sait pas si c’est ouvert : cette autorisation vit sur le
+      serveur.
+    </p>
+    <p v-else-if="assistance.ouverte && assistance.jusquau !== null" class="note">
+      <strong>Ouvert jusqu’au {{ quandLisible(assistance.jusquau) }}.</strong> Ce
+      qui sera regardé s’inscrira, et vous pourrez le relire.
+    </p>
+    <p v-else class="note">Fermé. Rien de ce compte n’est visible d’ailleurs.</p>
 
     <h3>Emporter ses données</h3>
     <p class="note">

@@ -28,6 +28,17 @@ Toutes les évolutions notables du projet. Format
   et on **accorde ou retire une banque réservée**, sans redéployer. Chaque geste
   laisse une ligne de trace : quand, quel administrateur, quel compte, quoi.
 
+- **Le conducteur peut autoriser l'assistance, pour 24 heures.** Sur son écran
+  de compte, un interrupteur ouvre ses données à qui administre le serveur, et
+  dit en clair jusqu'à quand ; il se referme à tout moment, et tout seul à
+  l'échéance.
+
+  **Aucun canal de demande** : le serveur ne sait pas parler à une voiture, et
+  la voiture roule souvent hors réseau. On demande de vive voix. **Un seul
+  interrupteur, tout ou rien** — celui qui accorde n'a aucun choix à faire, donc
+  aucun mauvais choix à faire. Et la régie ne peut pas se l'accorder : elle n'a
+  aucune route pour l'ouvrir.
+
 ### Modifié
 
 - **Les accords de banque réservée passent en base.** Ils se posaient par

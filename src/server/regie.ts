@@ -19,6 +19,7 @@ import { Hono } from 'hono'
 import { estUnRole, type Role } from '../core/identity/roles'
 
 import { estAdministrateur } from './administration'
+import { assistanceDuCompte, type Assistance } from './assistance'
 import { accordsDuCompte, peutJouer, type DroitsSurLesBanques } from './banques'
 import type { Base } from './base/base'
 import { accounts, authIdentities, authSessions, bankGrants, deposits, rights } from './base/schema'
@@ -175,6 +176,8 @@ export interface Fiche {
    * pourrait proposer que ce qui est déjà accordé.
    */
   banquesReservees: string[]
+  /** L'assistance qu'il a autorisée, et jusqu'à quand. Rien ne se lit encore ici. */
+  assistance: Assistance
   /** Ce qu'il porte, en nombres. */
   porte: {
     profils: number
@@ -261,6 +264,7 @@ export async function ficheDuCompte(
       await accordsDuCompte(base, compte),
     ),
     banquesReservees: [...(options.banques?.restreintes ?? [])].sort(),
+    assistance: await assistanceDuCompte(base, compte, options.maintenant ?? Date.now()),
     porte: {
       profils: porte.profils,
       moteurs: porte.moteurs,

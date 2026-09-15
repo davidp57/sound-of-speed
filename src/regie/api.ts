@@ -31,6 +31,7 @@ export interface Fiche {
   roles: { role: string; expireLe: string | null }[]
   banques: string[]
   banquesReservees: string[]
+  assistance: { ouverte: boolean; jusquau: string | null }
   porte: {
     profils: number
     moteurs: number

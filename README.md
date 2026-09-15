@@ -1670,6 +1670,30 @@ elle-même est servie à tout le monde et n'annonce rien.
 séparée, comme le relecteur : elle a son propre paquet, tiré seulement quand on
 ouvre `/regie.html`.
 
+#### Autoriser l'assistance
+
+Quand quelque chose ne marche pas chez quelqu'un, le serveur ne sait lire que le
+compte de la session en cours : il n'existe **aucun** moyen de regarder ce qu'un
+autre compte porte. La seule sortie était de lui demander d'exporter son archive
+et de l'envoyer — ce qui lui livre tout, sans durée et sans trace.
+
+Sur son écran de compte, le conducteur trouve donc un interrupteur : **autoriser
+l'assistance**, pour 24 heures, refermable à tout moment. L'écran dit en clair
+jusqu'à quand.
+
+**Il n'y a aucun canal de demande**, et c'est délibéré : le serveur ne sait pas
+parler à une voiture — pas de sondage, pas de connexion ouverte —, et la voiture
+roule souvent hors réseau. Construire ce canal coûterait du trafic permanent dans
+l'application qui en veut le moins. On demande de vive voix.
+
+**Un seul interrupteur, tout ou rien** : celui qui accorde n'a aucun choix à
+faire, donc aucun mauvais choix à faire. L'accord est une date d'échéance, et
+rien d'autre : le droit tombe dès qu'elle est dépassée, sans qu'aucun passage
+périodique n'ait à s'exécuter. **Pas de date, pas de droit.**
+
+La régie voit l'état de l'accord sur la fiche, et **ne peut pas se l'accorder** :
+elle n'a aucune route pour l'ouvrir.
+
 ### Ce qui change, vu de l'application
 
 Rien de ce qui existait. Mêmes adresses, même forme de listage, mêmes codes, même

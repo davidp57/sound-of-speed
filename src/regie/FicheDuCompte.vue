@@ -151,6 +151,17 @@ async function basculerLeRole(role: string): Promise<void> {
           {{ banque }}
         </button>
       </dd>
+
+      <dt>Assistance</dt>
+      <dd v-if="fiche.assistance.ouverte && fiche.assistance.jusquau !== null">
+        ouverte jusqu’au
+        <span class="numeric">{{ dateLisible(fiche.assistance.jusquau) }}</span>
+      </dd>
+      <!--
+        Rien à cliquer ici : l'accord appartient au conducteur, et la régie n'a
+        aucune route pour l'ouvrir. On le lui demande de vive voix.
+      -->
+      <dd v-else class="muet">fermée — à demander au conducteur</dd>
     </dl>
 
     <p v-if="refus !== ''" class="refus">{{ refus }}</p>

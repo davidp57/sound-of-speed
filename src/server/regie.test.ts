@@ -21,7 +21,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { administrateursDeLEnvironnement } from './administration'
 import { ouvrirBase, type Base } from './base/base'
-import { accounts } from './base/schema'
+import { accounts, assistanceGrants } from './base/schema'
 import { creerIdentite, type Identite } from './identite'
 import { appliquerLaRegle } from './retention'
 import { creerServeur } from './serveur'
@@ -549,6 +549,106 @@ describe('accorder une banque réservée', () => {
     )
 
     expect(reponse.status).toBe(404)
+  })
+})
+
+describe('l’accord d’assistance', () => {
+  async function etat(qui: Appareil): Promise<{ ouverte: boolean; jusquau: string | null }> {
+    const reponse = await serveur().request('/mon-compte/assistance', { headers: qui.annonce })
+    expect(reponse.status).toBe(200)
+    return (await reponse.json()) as { ouverte: boolean; jusquau: string | null }
+  }
+
+  async function basculer(qui: Appareil, methode: 'PUT' | 'DELETE'): Promise<Response> {
+    return serveur().request('/mon-compte/assistance', { method: methode, headers: qui.annonce })
+  }
+
+  it('est fermé par défaut, sans qu’on ait rien écrit chez lui', async () => {
+    expect(await etat(conducteur)).toEqual({ ouverte: false, jusquau: null })
+    expect(await base.select().from(assistanceGrants)).toEqual([])
+  })
+
+  it('s’ouvre pour vingt-quatre heures, et dit jusqu’à quand', async () => {
+    const avant = Date.now()
+    const reponse = await basculer(conducteur, 'PUT')
+    const accord = (await reponse.json()) as { ouverte: boolean; jusquau: string }
+
+    expect(reponse.status).toBe(200)
+    expect(accord.ouverte).toBe(true)
+    const restant = new Date(accord.jusquau).getTime() - avant
+    expect(restant).toBeGreaterThan(23.9 * 60 * 60 * 1000)
+    expect(restant).toBeLessThanOrEqual(24 * 60 * 60 * 1000)
+  })
+
+  it('se referme avant l’échéance', async () => {
+    await basculer(conducteur, 'PUT')
+    expect((await etat(conducteur)).ouverte).toBe(true)
+
+    await basculer(conducteur, 'DELETE')
+
+    expect(await etat(conducteur)).toEqual({ ouverte: false, jusquau: null })
+  })
+
+  it('vaut fermé dès que l’heure passe, sans qu’aucune tâche n’ait tourné', async () => {
+    await basculer(conducteur, 'PUT')
+    // On recule l'échéance dans la base, comme le ferait le temps qui passe.
+    await base
+      .update(assistanceGrants)
+      .set({ expiresAt: Math.floor(Date.now() / 1000) - 1 })
+      .where(eq(assistanceGrants.accountId, conducteur.compte))
+
+    expect(await etat(conducteur)).toEqual({ ouverte: false, jusquau: null })
+    // La ligne est toujours là : c'est la lecture qui écarte, pas un ménage.
+    expect(await base.select().from(assistanceGrants)).toHaveLength(1)
+  })
+
+  it('n’appartient qu’à son titulaire : la régie n’a aucune route pour l’ouvrir', async () => {
+    // Vérifié sur les routes elles-mêmes : aucune de la régie ne touche à
+    // l'assistance, et c'est la séparation qui le garantit, pas une discipline.
+    const deLaRegie = serveur()
+      .routes.filter((route) => route.path.startsWith('/api/regie'))
+      .map((route) => route.path)
+
+    expect(deLaRegie.filter((chemin) => chemin.includes('assistance'))).toEqual([])
+
+    // Et la route du conducteur n'accepte pas qu'on désigne quelqu'un d'autre :
+    // elle n'agit que sur le compte de la session.
+    await basculer(patronne, 'PUT')
+    expect((await etat(conducteur)).ouverte).toBe(false)
+  })
+
+  it('exige un compte, et le dit en 401 comme partout ailleurs', async () => {
+    expect((await serveur().request('/mon-compte/assistance')).status).toBe(401)
+  })
+
+  it('montre son état sur la fiche de la régie', async () => {
+    await basculer(conducteur, 'PUT')
+
+    const fiche = (await (
+      await serveur().request(`/api/regie/comptes/${conducteur.compte}`, {
+        headers: patronne.annonce,
+      })
+    ).json()) as { assistance: { ouverte: boolean; jusquau: string | null } }
+
+    expect(fiche.assistance.ouverte).toBe(true)
+    expect(fiche.assistance.jusquau).not.toBeNull()
+  })
+
+  it('inscrit l’ouverture et la fermeture dans la trace', async () => {
+    await basculer(conducteur, 'PUT')
+    await basculer(conducteur, 'DELETE')
+
+    const lignes = (await (
+      await serveur().request('/api/regie/trace', { headers: patronne.annonce })
+    ).json()) as LigneDeTrace[]
+
+    expect(lignes.map((ligne) => ligne.geste)).toEqual([
+      'assistance-fermee',
+      'assistance-ouverte',
+    ])
+    // C'est le conducteur qui a agi : la trace le nomme des deux côtés.
+    expect(lignes[0]?.admin.id).toBe(conducteur.compte)
+    expect(lignes[0]?.cible.id).toBe(conducteur.compte)
   })
 })
 

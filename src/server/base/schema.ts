@@ -376,6 +376,28 @@ export const deposits = sqliteTable(
 )
 
 /**
+ * L'assistance qu'un conducteur a autorisée, et jusqu'à quand.
+ *
+ * **Une date d'échéance, et rien d'autre.** Le droit de regarder ses données
+ * tombe dès qu'elle est dépassée, sans qu'aucun passage périodique n'ait à
+ * s'exécuter : c'est la lecture qui écarte, comme pour les droits.
+ *
+ * **Pas de ligne, pas de droit** — l'absence est l'état normal, et c'est
+ * pourquoi l'échéance est obligatoire ici. Dans la table des droits, une échéance
+ * nulle veut dire « sans échéance » ; deux colonnes qui se ressemblent diraient
+ * alors le contraire, et la seconde s'écrirait un jour en copiant la première.
+ * Une table à part, avec une colonne obligatoire, retire la question.
+ */
+export const assistanceGrants = sqliteTable('assistance_grants', {
+  accountId: text('account_id')
+    .primaryKey()
+    .references(() => accounts.id, { onDelete: 'cascade' }),
+  /** Jusqu'à quand, en secondes. Jamais nulle : une ligne est un accord ouvert. */
+  expiresAt: integer('expires_at').notNull(),
+  createdAt: integer('created_at').notNull().default(maintenant),
+})
+
+/**
  * Qui a le droit d'écouter quelle banque réservée.
  *
  * **Les accords sont en base, le drapeau reste dans la pile.** C'est la

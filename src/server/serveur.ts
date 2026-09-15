@@ -34,8 +34,10 @@ import { archiveDuCompte } from './emporter'
 import { cheminSur, estUnNomSimple, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
+import { assistanceDuCompte, fermerLAssistance, ouvrirLAssistance } from './assistance'
 import { creerRegie } from './regie'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
+import { inscrire } from './trace'
 
 export interface OptionsDuServeur {
   /** L'application construite : `dist/`. */
@@ -456,6 +458,34 @@ export function creerServeur(options: OptionsDuServeur): Hono {
           'Cache-Control': 'no-store',
         },
       })
+    })
+
+    // --- L'assistance : « regardez ce qui cloche chez moi » -----------------
+    //
+    // **Aucun rôle n'est exigé ici, et seul le titulaire décide.** C'est le
+    // pendant de l'archive : ce sont ses données, et l'autorisation de les
+    // regarder est à lui seul. La régie ne peut pas se l'accorder — elle n'a
+    // aucune route pour écrire là-dedans, et c'est la séparation qui le garantit,
+    // pas une discipline.
+    app.on(['GET', 'PUT', 'DELETE'], '/mon-compte/assistance', async (c) => {
+      const compte = await compteDe(c.req.raw.headers)
+      if (compte === null) return sansCompte()
+
+      if (c.req.method === 'PUT') {
+        const accord = await ouvrirLAssistance(base, compte)
+        // L'administrateur de la ligne est le conducteur lui-même : c'est lui
+        // qui a agi, et la trace doit le dire.
+        await inscrire(base, 'assistance-ouverte', compte, compte, accord.jusquau ?? undefined)
+        return c.json(accord, 200, { 'Cache-Control': 'no-store' })
+      }
+
+      if (c.req.method === 'DELETE') {
+        await fermerLAssistance(base, compte)
+        await inscrire(base, 'assistance-fermee', compte, compte)
+        return c.json({ ouverte: false, jusquau: null }, 200, { 'Cache-Control': 'no-store' })
+      }
+
+      return c.json(await assistanceDuCompte(base, compte), 200, { 'Cache-Control': 'no-store' })
     })
 
     // Ce que la règle emporterait, sans rien effacer.

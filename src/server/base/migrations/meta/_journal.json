@@ -64,6 +64,13 @@
       "when": 1789497554852,
       "tag": "0008_la-trace-et-les-accords-de-banque",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789497637417,
+      "tag": "0009_l-accord-d-assistance",
+      "breakpoints": true
     }
   ]
 }

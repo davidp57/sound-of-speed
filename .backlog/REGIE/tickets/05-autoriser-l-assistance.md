@@ -1,6 +1,6 @@
 # 05 — Le conducteur autorise l'assistance, et ça expire
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 02 — la fiche d'un compte
 
@@ -31,17 +31,17 @@ qui se ressemblent et disent le contraire.
 
 ## Critères d'acceptation
 
-- [ ] Le conducteur ouvre l'assistance depuis son écran de compte et voit
+- [x] Le conducteur ouvre l'assistance depuis son écran de compte et voit
       l'heure de fin en clair.
-- [ ] La durée par défaut est de 24 heures.
-- [ ] Il peut refermer avant l'échéance, et l'écran le reflète aussitôt.
-- [ ] La régie affiche l'état de l'accord sur la fiche, échéance comprise.
-- [ ] Un compte sans date d'accord est dans l'état fermé, sans qu'on ait rien
+- [x] La durée par défaut est de 24 heures.
+- [x] Il peut refermer avant l'échéance, et l'écran le reflète aussitôt.
+- [x] La régie affiche l'état de l'accord sur la fiche, échéance comprise.
+- [x] Un compte sans date d'accord est dans l'état fermé, sans qu'on ait rien
       écrit chez lui.
-- [ ] Une date passée vaut fermé, sans qu'aucune tâche périodique n'intervienne.
-- [ ] Seul le titulaire du compte pose et retire sa date : la régie ne peut pas
+- [x] Une date passée vaut fermé, sans qu'aucune tâche périodique n'intervienne.
+- [x] Seul le titulaire du compte pose et retire sa date : la régie ne peut pas
       s'accorder l'accès, vérifié.
-- [ ] L'ouverture et la fermeture par le conducteur s'inscrivent dans la trace.
-- [ ] Les routes ajoutées sont inscrites dans l'inventaire de l'essai
+- [x] L'ouverture et la fermeture par le conducteur s'inscrivent dans la trace.
+- [x] Les routes ajoutées sont inscrites dans l'inventaire de l'essai
       d'isolation.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

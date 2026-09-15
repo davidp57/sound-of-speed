@@ -398,6 +398,7 @@ describe('l’inventaire des routes', () => {
     '/sessions/',
     '/sessions/:cle/archive.zip',
     '/mon-compte/archive.zip',
+    '/mon-compte/assistance',
     '/retention',
     '/sessions/:cle/epingle',
     '/sessions/:cle',
