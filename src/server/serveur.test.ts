@@ -330,4 +330,47 @@ describe('les trajets, vus du réseau', () => {
       expect((await avecBase().request('/api/droits')).status).toBe(401)
     })
   })
+
+  describe('les échantillons, une fois l’identité montée', () => {
+    it('ne descend un échantillon que chez qui s’annonce', async () => {
+      // C'était la seule ressource que rien ne gardait, et c'est le plus gros
+      // poste de trafic du serveur.
+      const anonyme = await avecBase().request('/audio/gm-ls/on-750.flac')
+      expect(anonyme.status).toBe(401)
+
+      const annonce = await avecBase().request('/audio/gm-ls/on-750.flac', { headers: ANNONCE })
+      expect(annonce.status).toBe(200)
+      expect((await annonce.text()).length).toBeGreaterThan(0)
+    })
+
+    it('ne liste pas davantage les banques à qui ne s’annonce pas', async () => {
+      // Le listage dit quelles banques existent : le fermer aussi, sinon on
+      // cache les octets en laissant les noms.
+      expect((await avecBase().request('/audio/')).status).toBe(401)
+      expect((await avecBase().request('/audio/gm-ls/')).status).toBe(401)
+
+      const liste = await avecBase().request('/audio/', { headers: ANNONCE })
+      expect(liste.status).toBe(200)
+      expect((await liste.json()) as unknown[]).toContainEqual({
+        name: 'gm-ls',
+        type: 'directory',
+      })
+    })
+
+    it('n’exige aucun rôle, seulement un compte', async () => {
+      // Un rôle refermé ferait taire la voiture : elle n'aurait plus de son à
+      // jouer. Le compte suffit, et l'application s'en crée un toute seule.
+      const reponse = await avecBase([]).request('/audio/gm-ls/on-750.flac', { headers: ANNONCE })
+
+      expect(reponse.status).toBe(200)
+    })
+
+    it('sert sans rien demander quand aucune identité n’est montée', async () => {
+      // La configuration d'un poste de développement : sans identité, il n'y a
+      // pas de session à lire, et rien ne peut être gardé.
+      const reponse = await creerServeur({ application }).request('/audio/gm-ls/on-750.flac')
+
+      expect(reponse.status).toBe(200)
+    })
+  })
 })

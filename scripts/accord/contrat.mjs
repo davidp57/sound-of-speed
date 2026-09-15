@@ -130,6 +130,21 @@ export function cas({ nom }) {
 
     // --- Les banques -------------------------------------------------------
     {
+      nom: 'un échantillon ne descend pas sans compte',
+      // Les échantillons sont le plus gros poste de trafic du serveur, et ils se
+      // servaient à qui connaissait l'adresse. Un compte suffit — l'application
+      // s'en crée un au démarrage — mais il en faut un.
+      requete: { chemin: '/audio/gm-ls/on-750.flac' },
+      attend: (r) => egal(r.status, 401, 'statut'),
+    },
+    {
+      nom: 'le listage des banques ne se lit pas sans compte',
+      // Le fermer aussi : le listage dit quelles banques existent, et cacher les
+      // octets en laissant les noms ne cacherait rien.
+      requete: { chemin: '/audio/', entetes: { Accept: 'application/json' } },
+      attend: (r) => egal(r.status, 401, 'statut'),
+    },
+    {
       nom: 'le listage des banques, au format autoindex',
       // Quatre modules du cœur lisent cette forme, et le service worker
       // distingue un listage d'un échantillon à la seule barre oblique finale.
@@ -138,7 +153,7 @@ export function cas({ nom }) {
       // ce qui a été déposé sur le serveur interrogé, et la banque de
       // démonstration n'y figure pas — elle vit dans l'image, derrière un alias,
       // parce que le volume des échantillons masque ce que l'image place là.
-      requete: { chemin: '/audio/', entetes: { Accept: 'application/json' } },
+      requete: { chemin: '/audio/', compte: true, entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
         autoindex(corps)
@@ -146,7 +161,7 @@ export function cas({ nom }) {
     },
     {
       nom: "le listage d'une banque",
-      requete: { chemin: '/audio/gm-ls/', entetes: { Accept: 'application/json' } },
+      requete: { chemin: '/audio/gm-ls/', compte: true, entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
         const entrees = autoindex(corps)
@@ -158,7 +173,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'un échantillon se télécharge',
-      requete: { chemin: '/audio/gm-ls/on-750.flac' },
+      requete: { chemin: '/audio/gm-ls/on-750.flac', compte: true },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
         vrai(corps.length > 1000, 'le corps a la taille d’un échantillon')
@@ -169,7 +184,7 @@ export function cas({ nom }) {
       // Le navigateur le fait de lui-même sur les médias. Un serveur qui rend
       // 200 avec tout le fichier n'est pas faux, mais un qui rend 206 doit
       // rendre la bonne plage.
-      requete: { chemin: '/audio/gm-ls/on-750.flac', entetes: { Range: 'bytes=0-99' } },
+      requete: { chemin: '/audio/gm-ls/on-750.flac', compte: true, entetes: { Range: 'bytes=0-99' } },
       attend: (r, corps) => {
         vrai([200, 206].includes(r.status), `statut 200 ou 206, reçu ${r.status}`)
         if (r.status === 206) {

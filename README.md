@@ -2820,6 +2820,13 @@ vraie voiture appartient à qui l'a faite. Les banques enregistrées restent don
 hors du dépôt et hors de l'image, dans un volume — voir la section
 [Licence](#licence).
 
+**Les échantillons demandent un compte.** C'est le plus gros poste de trafic du
+serveur, et c'était la seule chose qu'il servait à qui connaissait l'adresse.
+Un compte suffit — l'application s'en ouvre un toute seule au premier
+démarrage —, et aucun rôle n'est exigé : un droit refermé doit fermer un écran,
+pas faire taire la voiture. Un serveur monté sans identité, comme un poste de
+développement, sert comme avant : il n'y a pas de session à lire.
+
 Dans l'image, elles sont rangées **hors de** `audio/`, et nginx les ramène sous
 `/audio/<banque>/` par un alias, un par banque. Le volume des échantillons se
 monte sur `/usr/share/nginx/html/audio` et masquerait tout ce que l'image y

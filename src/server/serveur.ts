@@ -103,6 +103,15 @@ export const DONNEES = [
 export function creerServeur(options: OptionsDuServeur): Hono {
   const app = new Hono()
 
+  /**
+   * De quoi savoir si une requête porte un compte, même hors des dossiers de
+   * données. Les échantillons en ont besoin, et ils se servent sans base.
+   *
+   * `null` quand aucune identité n'est montée : il n'y a alors pas de session à
+   * lire, et rien ne peut être gardé.
+   */
+  const sessionDe = options.identite === undefined ? null : lecteurDeCompte(options.identite)
+
   // --- L'identité -----------------------------------------------------------
   //
   // Déclarée en premier, parce que Hono rend la première route qui correspond et
@@ -124,23 +133,7 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     const base = options.base
     const identite = options.identite
 
-    /**
-     * À qui appartient cette requête ?
-     *
-     * Rend le compte de la session, ou `null` quand il n'y en a pas. Le témoin
-     * voyage tout seul — la page et le serveur sont sur la même origine —, il
-     * n'y a donc rien à saisir ni à composer.
-     */
-    const compteDe = async (entetes: Headers): Promise<string | null> => {
-      try {
-        const session = await identite.api.getSession({ headers: entetes })
-        return session?.user.id ?? null
-      } catch {
-        // Une session illisible n'est pas une panne du serveur : c'est une
-        // requête sans compte, et elle se traite comme telle.
-        return null
-      }
-    }
+    const compteDe = lecteurDeCompte(identite)
 
     const offerts = options.roles ?? ROLES_OFFERTS_PAR_DEFAUT
 
@@ -469,7 +462,19 @@ export function creerServeur(options: OptionsDuServeur): Hono {
   // le dossier des échantillons et masquait donc la démonstration, qui a dû être
   // rangée ailleurs et ramenée par un alias — au prix de son absence dans le
   // listage des banques. Ici, on regarde dans les deux, et le listage les réunit.
-  app.get('/audio/*', (c) => {
+  app.get('/audio/*', async (c) => {
+    // **Un compte, et pas un rôle.** Les échantillons sont le plus gros poste de
+    // trafic du serveur, et ils se servaient à qui connaissait l'adresse : c'est
+    // la seule ressource que rien ne gardait. L'application s'ouvre un compte
+    // toute seule au démarrage, donc une voiture ne voit aucune différence ;
+    // exiger un rôle, en revanche, fermerait la banque à qui n'a plus le sien,
+    // et la voiture se tairait.
+    //
+    // Sans identité montée, il n'y a pas de session à lire et on sert comme
+    // avant : c'est la configuration d'un poste de développement, pas celle d'un
+    // serveur exposé.
+    if (sessionDe !== null && (await sessionDe(c.req.raw.headers)) === null) return sansCompte()
+
     const chemin = new URL(c.req.url).pathname
 
     if (chemin.endsWith('/')) {
@@ -508,6 +513,30 @@ export function creerServeur(options: OptionsDuServeur): Hono {
   })
 
   return app
+}
+
+/**
+ * À qui appartient cette requête ?
+ *
+ * Rend le compte de la session, ou `null` quand il n'y en a pas. Le témoin
+ * voyage tout seul — la page et le serveur sont sur la même origine —, il n'y a
+ * donc rien à saisir ni à composer.
+ *
+ * Hors de `creerServeur` parce que deux endroits en ont besoin, et qu'ils n'ont
+ * pas les mêmes conditions : les dossiers de données exigent une base, les
+ * échantillons non.
+ */
+function lecteurDeCompte(identite: Identite): (entetes: Headers) => Promise<string | null> {
+  return async (entetes) => {
+    try {
+      const session = await identite.api.getSession({ headers: entetes })
+      return session?.user.id ?? null
+    } catch {
+      // Une session illisible n'est pas une panne du serveur : c'est une requête
+      // sans compte, et elle se traite comme telle.
+      return null
+    }
+  }
 }
 
 /**

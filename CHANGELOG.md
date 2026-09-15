@@ -6,6 +6,22 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Sécurité
+
+- **Les échantillons ne descendent plus sans compte.** C'est le plus gros poste
+  de trafic du serveur — c'est pour leur poids que les banques vivent dans un
+  volume et non dans l'image — et c'était la seule ressource que rien ne
+  gardait : qui connaissait l'adresse tirait toute la banque.
+
+  Un **compte** suffit, et pas un rôle. L'application s'en ouvre un toute seule
+  au premier démarrage, donc une voiture ne voit aucune différence ; exiger un
+  rôle, en revanche, ferait taire celle dont le droit s'est refermé. Un serveur
+  monté sans identité — un poste de développement — sert comme avant, n'ayant
+  pas de session à lire.
+
+  Le listage des banques est fermé de la même façon : cacher les octets en
+  laissant les noms ne cacherait rien.
+
 ### Retiré
 
 - **Le panneau d'étalonnage manuel s'en va**, avec son protocole en six étapes.

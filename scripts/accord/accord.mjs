@@ -92,8 +92,10 @@ function entetesDe(requete) {
 /**
  * Quatre parts, parce qu'un serveur se reprend en plusieurs fois.
  *
- * `publique` est ce qui se sert sans compte : l'application, ses ressources, les
- * échantillons, et les 404 qu'un chemin de données absent doit rendre.
+ * `publique` est ce qui se sert sans base : l'application, ses ressources, les
+ * échantillons, et les 404 qu'un chemin de données absent doit rendre. Elle ne
+ * se sert plus entièrement sans compte — les échantillons en demandent un depuis
+ * qu'ils ont cessé d'être la seule ressource que rien ne gardait.
  * `profils` est la bibliothèque. `depots` est ce que la voiture envoie en
  * roulant — traces, journal, relevés. `entites` est le registre des moteurs et
  * des boîtes, qui n'a jamais existé sur le serveur de fichiers : la demander à
