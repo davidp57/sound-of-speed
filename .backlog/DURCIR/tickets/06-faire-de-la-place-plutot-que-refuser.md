@@ -1,7 +1,7 @@
 # 06 — Prévenir avant le plafond, et faire de la place plutôt que refuser
 
-**Statut :** 🧑 attend David — conception posée par lui le 15 septembre 2026 ;
-deux points restent à trancher avant de découper
+**Statut :** ⬜ prêt — conception posée par David le 15 septembre 2026, les
+points de conception sont tranchés ; reste à découper en tickets
 
 **Bloqué par :** rien ; le plafond lui-même est livré (REGIE, ticket 08)
 
@@ -51,38 +51,61 @@ pas la rotation, qui manque de place. Tranché par David le 15 septembre 2026 :
 il est seul sur ce serveur, et le cas ne mérite pas un second garde-fou. Un
 compte qui n'a plus que des épingles tombe sur le refus.
 
-## Les points à trancher
+## Comment le serveur dit l'état — **tranché : des en-têtes**
 
-### 1. Sous quelle forme le serveur dit-il l'état ? — *désaccord à arbitrer*
-
-
-David a dit « un code ». Si c'est un **code HTTP**, j'y vois trois défauts :
-le client teste `response.ok` et traite tout le reste comme un échec, un proxy
-inversé peut normaliser un code inhabituel, et le jeu d'accord fige déjà `201`
-sur un dépôt réussi — le changer casse le contrat pour un serveur plus ancien.
-
-**Proposition : des en-têtes sur la réponse, et le code reste `201`.**
+Le code reste `201`, et trois en-têtes portent l'état :
 
 ```
 Speed-Place: libre | bientot | rotation
-Speed-Place-Octets: 8153726976
-Speed-Place-Plafond: 10737418240
+Speed-Place-Octets: 190840832
+Speed-Place-Plafond: 262144000
 ```
 
 Trois en-têtes plats, rien à décoder. Absents, l'application ne sait pas et
 n'affiche rien — c'est le cas d'un serveur d'avant, et il ne casse rien. Les
-chiffres sont là pour que l'écran dise « 7,6 Go sur 10 » plutôt qu'un adjectif.
+chiffres sont là pour que l'écran dise « 182 Mio sur 250 » plutôt qu'un adjectif.
+
+Un **code HTTP** par état avait trois défauts : le client teste `response.ok` et
+traite tout le reste comme un échec, un proxy inversé peut normaliser un code
+inhabituel, et le jeu d'accord fige déjà `201` sur un dépôt réussi — le changer
+casse le contrat pour un serveur plus ancien.
 
 Le refus final, lui, garde son code : **507**, avec un message qui dit ce qui
 bloque — « tout est épinglé » et non plus « effacez des trajets ».
 
-### 2. Où l'application prévient-elle ?
+## Où l'application prévient — **tranché : un bandeau, et la télémétrie**
 
-L'écran du compte porte déjà « emporter ses données », donc l'endroit est tout
-trouvé pour le détail. Reste à savoir si l'écran de conduite doit en dire un mot
-— il est fait pour se lire d'un coup d'œil en roulant, et rien n'y bouge.
-Proposition : **rien en conduite tant qu'on n'est pas au refus**, un mot dans les
-paramètres avant.
+**Le bandeau existe déjà** : `.banner` dans `App.vue`, au-dessus de tous les
+écrans, avec quatre usages — une version prête, le hors-réseau, un profil reçu,
+le rappel d'enregistrer son compte. Deux d'entre eux se ferment d'un bouton. Il
+n'y a donc rien à inventer : le quota s'y greffe comme les autres.
+
+**La télémétrie porte le doublon**, et sous la forme qui lui convient : une
+valeur, pas un message — « 182 Mio sur 250 ». C'est l'écran des chiffres, et
+celui-là reste lisible quand le bandeau a été fermé.
+
+**Rien sur l'écran de conduite.** Il se lit d'un coup d'œil, rien n'y bouge, et
+un compte plein ne se règle pas en roulant.
+
+### Quand un bandeau fermé revient-il ?
+
+**À chaque changement d'état, et pas avant.** Franchir 75 %, puis 95 %, puis
+tomber au refus sont trois faits neufs, et chacun mérite d'être dit une fois.
+Entre deux, le chiffre reste en télémétrie et sur l'écran du compte : fermer le
+bandeau ne doit pas être un piège, et le laisser revenir en boucle serait
+harceler au lieu de prévenir — c'est déjà le mot du rappel de compte.
+
+## Ce qui n'est pas dans ce ticket
+
+David : « ça serait bien que tous les messages importants soient affichés comme
+ça ». C'est juste, et c'est un manque réel — les erreurs de dépôt et de journal
+se disent aujourd'hui dans un coin de l'écran de configuration, là où personne ne
+les voit en roulant.
+
+Mais c'est **un lot à part** : il touche tous les écrans, et il demande une file
+de messages là où le bandeau porte aujourd'hui quatre cas écrits à la main.
+Ici, on ajoute un cinquième cas de la même façon. Unifier quand il y en aura
+assez pour voir la bonne forme, pas avant.
 
 ## Ce qu'on ne construit pas
 
