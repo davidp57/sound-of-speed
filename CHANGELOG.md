@@ -8,6 +8,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Sécurité
 
+- **Une banque d'échantillons peut être réservée à quelques comptes.** Deux
+  variables de la pile disent lesquelles demandent un droit et qui l'a ; le
+  serveur refuse le fichier aux autres, **et retire la banque de leur listage** —
+  cacher les octets en laissant les noms ne cacherait rien. Le refus se donne en
+  404 plutôt qu'en 403 : dire « interdit » confirmerait l'existence de ce qu'on
+  tait, et l'écran sait déjà traiter une banque absente.
+
+  Ça se déclare dans la pile et **jamais par une route** : aucun appel ne peut
+  s'accorder ce droit. Absentes, rien n'est restreint — le cas de qui déploie
+  chez lui.
+
 - **Le serveur annonce enfin ce qu'il autorise.** Toutes les réponses portent une
   politique de contenu, `nosniff`, et une politique de provenance qui retient
   l'adresse complète — un profil partagé y voyage. La page refuse d'être encadrée

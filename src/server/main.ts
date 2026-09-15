@@ -14,6 +14,7 @@ import { listerLesComptes, ouvrirBase } from './base/base'
 import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
 import { ANCIEN_COMPTE_UNIQUE, semerLAncienCompte } from './heritage'
+import { banquesAccordees, banquesRestreintes } from './banques'
 import { creerIdentite, secretPersistant } from './identite'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { appliquerLaRegle, DELAIS_PAR_DEFAUT, formaterPassage, type Delais } from './retention'
@@ -40,6 +41,13 @@ const roles = offertsDeLEnvironnement(process.env['SPEED_ROLES_OFFERTS'])
 // Les comptes tenus ailleurs : deux variables par fournisseur, et rien du tout
 // par défaut. Voir `tiers.ts` pour les noms.
 const tiers = comptesTenusAilleurs(process.env)
+// Les banques qui ne sont pas à nous, et qui a le droit de les jouer. Déclarées
+// ici et **jamais par une route** : aucun appel ne peut donc s'accorder ce
+// droit. Absentes, aucune banque n'est restreinte.
+const banques = {
+  restreintes: banquesRestreintes(process.env['SPEED_BANQUES_RESTREINTES']),
+  accordees: banquesAccordees(process.env['SPEED_BANQUES_ACCORDEES']),
+}
 const delais: Delais = {
   traces: nombreOuRien(process.env['SPEED_RETENTION_TRACES']) ?? DELAIS_PAR_DEFAUT.traces,
   journal: nombreOuRien(process.env['SPEED_RETENTION_JOURNAL']) ?? DELAIS_PAR_DEFAUT.journal,
@@ -207,6 +215,7 @@ const serveur = serve(
       ...(epingles === undefined ? {} : { epingles }),
       roles,
       delais,
+      banques,
       ...(echantillons === undefined ? {} : { echantillons }),
     }).fetch,
     port,

@@ -74,6 +74,22 @@ services:
       # revenir sur le site, c'est cette adresse-là qu'il lui faut — et derrière
       # un proxy inversé, elle ne se devine pas.
       SPEED_URL: ${SPEED_URL:-}
+      # Les banques d'échantillons qu'on ne sert pas à tout le monde.
+      #
+      # `SPEED_BANQUES_RESTREINTES` liste les dossiers qui demandent un droit,
+      # séparés par des virgules. `SPEED_BANQUES_ACCORDEES` dit qui a le droit
+      # de quoi : `adresse=banque,banque;adresse=banque`, avec `*` à la place
+      # des banques pour les accorder toutes.
+      #
+      # **Ça se déclare ici et jamais par une route** : aucun appel ne peut donc
+      # s'accorder ce droit, et c'est ce qui rend le contrôle sûr tant qu'il n'y
+      # a pas d'écran d'administration. Une banque restreinte disparaît aussi du
+      # listage des comptes qui n'y ont pas droit.
+      #
+      # Absentes, aucune banque n'est restreinte — le cas de qui déploie chez
+      # lui avec ses propres enregistrements.
+      SPEED_BANQUES_RESTREINTES: ${SPEED_BANQUES_RESTREINTES:-}
+      SPEED_BANQUES_ACCORDEES: ${SPEED_BANQUES_ACCORDEES:-}
       # Les comptes tenus ailleurs — Tesla, Google, Apple.
       #
       # **Les deux d'un fournisseur, ou aucune.** La moitié d'une paire ne monte

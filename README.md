@@ -2880,6 +2880,27 @@ démarrage —, et aucun rôle n'est exigé : un droit refermé doit fermer un �
 pas faire taire la voiture. Un serveur monté sans identité, comme un poste de
 développement, sert comme avant : il n'y a pas de session à lire.
 
+#### Une banque qu'on ne sert pas à tout le monde
+
+Toutes les banques ne vous appartiennent pas forcément. Celles-là se déclarent
+**restreintes**, et le serveur ne les sert qu'aux comptes nommés — et les retire
+du listage des autres : cacher les octets en laissant les noms ne cacherait rien.
+Un refus se donne en 404 plutôt qu'en 403, parce que dire « interdit »
+confirmerait l'existence de ce qu'on cherche à taire.
+
+| Variable | Défaut | Ce qu'elle règle |
+|---|---|---|
+| `SPEED_BANQUES_RESTREINTES` | aucune | Les dossiers de banques qui demandent un droit, séparés par des virgules. |
+| `SPEED_BANQUES_ACCORDEES` | personne | Qui a le droit de quoi : `adresse=banque,banque;adresse=banque`. `*` à la place des banques les accorde toutes. |
+
+**Ça se déclare dans la pile, jamais par une route** : aucun appel ne peut donc
+s'accorder ce droit, et c'est ce qui rend le contrôle sûr sans écran
+d'administration. L'adresse plutôt que l'identifiant du compte, parce qu'un
+identifiant fait trente-deux caractères tirés au sort et se recopie de travers.
+
+Un compte sans adresse rattachée n'a jamais droit à une banque restreinte : il
+n'y a rien pour le nommer.
+
 Dans l'image, elles sont rangées **hors de** `audio/`, et nginx les ramène sous
 `/audio/<banque>/` par un alias, un par banque. Le volume des échantillons se
 monte sur `/usr/share/nginx/html/audio` et masquerait tout ce que l'image y

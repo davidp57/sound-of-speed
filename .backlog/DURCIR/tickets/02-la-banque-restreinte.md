@@ -1,6 +1,7 @@
 # 02 — Une banque restreinte ne descend que chez qui y a droit
 
-**Statut :** ⬜ prêt
+**Statut :** 🧑 attend David — le mécanisme est fait ; ce qu'il faut y mettre
+n'est pas dans le dépôt
 
 **Bloqué par :** 01 — La banque d'échantillons ne descend plus sans compte
 
@@ -24,13 +25,50 @@ Rien dans le dépôt ne doit dire quelle banque est concernée.
 
 ## Critères d'acceptation
 
-- [ ] Une banque déclarée restreinte est absente du listage servi à un compte qui
+- [x] Une banque déclarée restreinte est absente du listage servi à un compte qui
       n'y a pas droit.
-- [ ] Un fichier de cette banque, demandé directement par un tel compte, reçoit
+- [x] Un fichier de cette banque, demandé directement par un tel compte, reçoit
       un refus.
-- [ ] Un compte qui y a droit la voit et la joue comme n'importe quelle autre.
-- [ ] Aucune route ne permet d'accorder ni de s'accorder ce droit.
-- [ ] Ni le nom de la banque ni la liste des comptes n'apparaissent dans le
+- [x] Un compte qui y a droit la voit et la joue comme n'importe quelle autre.
+- [x] Aucune route ne permet d'accorder ni de s'accorder ce droit.
+- [x] Ni le nom de la banque ni la liste des comptes n'apparaissent dans le
       dépôt.
-- [ ] Un profil qui désigne une banque à laquelle le compte n'a pas droit se
+- [x] Un profil qui désigne une banque à laquelle le compte n'a pas droit se
       comporte comme devant une banque absente, et non comme devant une panne.
+
+## Comment ça se déclare
+
+Deux variables de la pile, et rien d'autre :
+
+| Variable | Ce qu'elle dit |
+|---|---|
+| `SPEED_BANQUES_RESTREINTES` | les dossiers qui demandent un droit, séparés par des virgules |
+| `SPEED_BANQUES_ACCORDEES` | qui a droit à quoi : `adresse=banque,banque;adresse=banque`, `*` accordant toutes les restreintes |
+
+**L'adresse plutôt que l'identifiant du compte** : un identifiant fait
+trente-deux caractères tirés au sort, et se recopierait de travers un jour sur
+deux. Conséquence assumée : un compte sans adresse rattachée n'a jamais droit à
+une banque restreinte, n'ayant rien pour le nommer.
+
+**Un refus se donne en 404, pas en 403.** Dire « interdit » confirmerait
+l'existence de ce qu'on cherche à taire — et c'est exactement ce que le profil
+côté client sait déjà traiter : une banque absente, pas une panne.
+
+## Ce qui a été vérifié
+
+Sept cas : le fichier refusé et la banque absente du listage chez qui n'y a pas
+droit, servie et listée chez le compte nommé, une banque nommée qui n'en accorde
+pas une autre, le refus quand personne n'est nommé, et l'absence totale d'effet
+quand rien n'est déclaré. Plus la lecture de la déclaration — espaces, entrées
+sans forme, et une adresse qui revient deux fois et dont les droits s'ajoutent
+au lieu de s'écraser.
+
+## Ce qui attend David
+
+**Rien à écrire dans le dépôt, et c'est voulu.** Il reste à poser les deux
+variables dans l'écran de la pile : le dossier de la banque concernée, et les
+adresses qui y ont droit. C'est le seul endroit où ces noms doivent exister.
+
+Le ticket 03 — les identifiants opaques — n'est pas fait, et il porte le reste du
+sujet : le nom voyage encore dans un profil partagé, dans une archive exportée et
+dans le journal, là où cette porte-ci ne ferme rien.

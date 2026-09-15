@@ -17,6 +17,7 @@ import { Hono } from 'hono'
 import type { Role } from '../core/identity/roles'
 
 import type { Base } from './base/base'
+import { banquesInterdites, peutJouer, type DroitsSurLesBanques } from './banques'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
 import { DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } from './retention'
 import {
@@ -65,6 +66,14 @@ export interface OptionsDuServeur {
    * d'une installation neuve, qui doit quand même faire du son.
    */
   echantillons?: string
+  /**
+   * Les banques qui ne sont pas à nous, et qui a le droit de les jouer.
+   *
+   * Absente : aucune n'est restreinte, et c'est le cas de qui déploie chez lui.
+   * Elle se déclare par l'environnement et **jamais par une route** — c'est ce
+   * qui fait qu'aucun appel ne peut s'accorder ce droit.
+   */
+  banques?: DroitsSurLesBanques
 }
 
 /**
@@ -148,6 +157,11 @@ export function creerServeur(options: OptionsDuServeur): Hono {
    * lire, et rien ne peut être gardé.
    */
   const sessionDe = options.identite === undefined ? null : lecteurDeCompte(options.identite)
+
+  const droitsSurLesBanques: DroitsSurLesBanques = options.banques ?? {
+    restreintes: new Set<string>(),
+    accordees: new Map<string, ReadonlySet<string>>(),
+  }
 
   // --- Ce que le serveur dit de lui-même ------------------------------------
   //
@@ -542,9 +556,35 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     // Sans identité montée, il n'y a pas de session à lire et on sert comme
     // avant : c'est la configuration d'un poste de développement, pas celle d'un
     // serveur exposé.
-    if (sessionDe !== null && (await sessionDe(c.req.raw.headers)) === null) return sansCompte()
+    const compte = sessionDe === null ? null : await sessionDe(c.req.raw.headers)
+    if (sessionDe !== null && compte === null) return sansCompte()
 
     const chemin = new URL(c.req.url).pathname
+    // `/audio/<banque>/<fichier>` — le nom voyage encodé dans l'adresse.
+    const banque = nomDeLaBanque(chemin)
+
+    // **Une banque qui n'est pas à nous ne descend que chez qui y a droit**, et
+    // elle disparaît du listage des autres : cacher les octets en laissant les
+    // noms ne cacherait rien. Un refus se donne en 404 et non en 403 — dire
+    // « interdit » confirmerait l'existence de ce qu'on cherche à taire.
+    if (options.base !== undefined && compte !== null && droitsSurLesBanques.restreintes.size > 0) {
+      const base = options.base
+
+      if (chemin === '/audio/') {
+        const entrees = listerLesDeux(options, '/')
+        if (entrees === null) return c.notFound()
+        const interdites = await banquesInterdites(base, droitsSurLesBanques, compte)
+        return c.json(
+          entrees.filter((entree) => !interdites.has(entree.name)),
+          200,
+          { 'Cache-Control': 'no-store' },
+        )
+      }
+
+      if (banque !== null && !(await peutJouer(base, droitsSurLesBanques, compte, banque))) {
+        return c.notFound()
+      }
+    }
 
     if (chemin.endsWith('/')) {
       const entrees = listerLesDeux(options, chemin.slice('/audio'.length))
@@ -676,6 +716,22 @@ function servirDepuis(
   if (info === null) return null
 
   return servirFichier(fichier, info.taille, entetes, cache === undefined ? {} : { cache })
+}
+
+/**
+ * Le nom de la banque que ce chemin désigne, ou rien.
+ *
+ * `/audio/<banque>/…`. Rend `null` sur `/audio/` lui-même, qui ne désigne pas
+ * une banque mais leur liste.
+ */
+function nomDeLaBanque(chemin: string): string | null {
+  const [, , banque = ''] = chemin.split('/')
+  if (banque === '') return null
+  try {
+    return decodeURIComponent(banque)
+  } catch {
+    return null
+  }
 }
 
 /** Les échantillons déposés d'abord, ceux de l'application ensuite. */
