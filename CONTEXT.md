@@ -532,9 +532,19 @@ et c'est ce que tout le monde porte aujourd'hui : rien n'est encaissé.
 
 **Rôle** (_role_) :
 Ce qu'un droit ouvre : `conduite`, `atelier` ou `synthese`. Ils se cumulent — un
-compte en porte zéro à trois — et le serveur refuse ce qu'ils n'ouvrent pas.
+compte en porte zéro à trois.
 _Attention_ : `conduite` et non `user`, la bibliothèque d'identité appelant déjà
 `user` ce que ce dépôt appelle un **compte**.
+_Attention_ : **deux d'entre eux sont gardés par le serveur, le troisième non.**
+`conduite` et `atelier` commandent des routes, et le serveur refuse ce qu'elles
+n'ouvrent pas. `synthese` n'en commande aucune : ce qu'il ouvre se calcule
+entièrement dans le navigateur et ne coûte rien au serveur, qui n'a donc rien à
+refuser. C'est un **verrou d'affichage, assumé** — effacer la copie des rôles
+rangée dans le navigateur suffit à ouvrir l'écran, et ça ne donne accès à aucune
+donnée ni à aucune ressource. Prétendre le garder serait du théâtre : le dépôt
+est public, et le code de cet écran se lit. Le jour où un rôle se vendra, c'est à
+savoir avant de le vendre. Une table de `serveur.test.ts` tient cet inventaire et
+rougit si un rôle change de camp.
 _À ne pas confondre_ avec l'**appareil** — voiture, téléphone, poste de travail —,
 qui est l'autre axe : il dit ce qui a un sens là où l'on est, ne protège rien, et
 reste local.

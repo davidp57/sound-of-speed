@@ -6,6 +6,80 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Sécurité
+
+- **Une banque d'échantillons peut être réservée à quelques comptes.** Deux
+  variables de la pile disent lesquelles demandent un droit et qui l'a ; le
+  serveur refuse le fichier aux autres, **et retire la banque de leur listage** —
+  cacher les octets en laissant les noms ne cacherait rien. Le refus se donne en
+  404 plutôt qu'en 403 : dire « interdit » confirmerait l'existence de ce qu'on
+  tait, et l'écran sait déjà traiter une banque absente.
+
+  Ça se déclare dans la pile et **jamais par une route** : aucun appel ne peut
+  s'accorder ce droit. Absentes, rien n'est restreint — le cas de qui déploie
+  chez lui.
+
+- **Le serveur annonce enfin ce qu'il autorise.** Toutes les réponses portent une
+  politique de contenu, `nosniff`, et une politique de provenance qui retient
+  l'adresse complète — un profil partagé y voyage. La page refuse d'être encadrée
+  dans une autre, donc la moitié d'un détournement de clic.
+
+  Deux desserrages la rendent viable, et le jeu de requêtes d'accord les vérifie
+  nommément parce que les perdre couperait le son **en silence** : le
+  WebAssembly, sans quoi le moteur simulé ne s'instancie pas, et les modules de
+  worklet fabriqués à la volée, sans quoi l'horloge audio et le joueur de
+  synthèse ne se chargent pas. Mesuré dans un navigateur avant d'être écrit.
+
+- **Un seul code de liaison vivant par compte.** Chaque demande ajoutait un code,
+  et tous restaient ouverts vingt-quatre heures : un code aperçu par-dessus une
+  épaule survivait à sa régénération, et l'écran qui en montrait un nouveau
+  laissait croire que l'ancien était mort. Demander un code retire désormais le
+  précédent.
+
+  La borne de dix tentatives par minute a été mesurée pour la première fois,
+  contre un serveur en production : sur vingt essais d'affilée, dix passent et la
+  onzième est refoulée. Le calcul écrit à côté du code tient.
+
+- **La copie des rôles dit de quel compte elle parle.** L'application retient les
+  rôles du compte pour les savoir hors réseau ; cette copie ne portait pas le nom
+  du compte, et survivait donc à un changement de compte. Elle était bien effacée
+  aux trois endroits où l'on change de compte, mais par discipline — et une
+  quatrième route finirait par l'oublier. Une copie qui parle d'un autre compte
+  est maintenant écartée sur le chemin que tout le monde emprunte.
+
+  Écrit au passage, parce que ça ne se devinait nulle part : **`synthese` n'est
+  pas gardé par le serveur**, et c'est délibéré. Le volet Synthèse ne lui parle
+  pas — tout son calcul est dans le navigateur —, il n'y a donc aucune route à
+  refuser. C'est un verrou d'affichage, et il n'ouvre aucune donnée ni aucune
+  ressource. Une table de tests tient l'inventaire rôle par rôle et rougit si
+  l'un change de camp.
+
+- **Un nom déposé ne peut plus composer un chemin.** Déposer sous
+  `..%2F..%2Fdehors.txt` était accepté, et l'archive du compte portait alors
+  l'entrée `traces/../../dehors.txt` — qu'un extracteur ordinaire écrit **hors
+  du dossier** qu'on lui a désigné. Le nom ne touchait aucun disque sur le
+  serveur ; il en touchait un chez celui qui ouvre l'archive, sur son poste de
+  travail.
+
+  Refusé à l'entrée sur les profils, les registres et les dépôts, et écarté une
+  seconde fois au moment de l'archive — la base peut porter un nom entré avant
+  ce contrôle, ou versé par la reprise d'un ancien dossier. Aucun nom légitime
+  n'est concerné : la voiture dépose des noms plats.
+
+- **Les échantillons ne descendent plus sans compte.** C'est le plus gros poste
+  de trafic du serveur — c'est pour leur poids que les banques vivent dans un
+  volume et non dans l'image — et c'était la seule ressource que rien ne
+  gardait : qui connaissait l'adresse tirait toute la banque.
+
+  Un **compte** suffit, et pas un rôle. L'application s'en ouvre un toute seule
+  au premier démarrage, donc une voiture ne voit aucune différence ; exiger un
+  rôle, en revanche, ferait taire celle dont le droit s'est refermé. Un serveur
+  monté sans identité — un poste de développement — sert comme avant, n'ayant
+  pas de session à lire.
+
+  Le listage des banques est fermé de la même façon : cacher les octets en
+  laissant les noms ne cacherait rien.
+
 ### Retiré
 
 - **Le panneau d'étalonnage manuel s'en va**, avec son protocole en six étapes.

@@ -1,6 +1,6 @@
 # 07 — Les deux gestes qui font changer un compte de mains
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait
 
 **Bloqué par :** 06 — Prouver l'isolation entre comptes, route par route
 
@@ -18,11 +18,30 @@ s'approprier celui d'à côté.
 
 ## Critères d'acceptation
 
-- [ ] Rattacher une adresse déjà portée par un autre compte ne donne accès à rien
+- [x] Rattacher une adresse déjà portée par un autre compte ne donne accès à rien
       de ce que celui-ci porte.
-- [ ] Une adresse rendue par un fournisseur ne remplace pas une adresse choisie,
+- [x] Une adresse rendue par un fournisseur ne remplace pas une adresse choisie,
       et le test le montre depuis la requête, pas depuis la fonction.
-- [ ] Le compte abandonné pendant un rattachement ne peut pas être celui de
+- [x] Le compte abandonné pendant un rattachement ne peut pas être celui de
       quelqu'un d'autre.
-- [ ] Un rattachement qui échoue laisse les deux comptes dans l'état où il les a
+- [x] Un rattachement qui échoue laisse les deux comptes dans l'état où il les a
       trouvés.
+
+## Ce ticket était trop large, et le dire vaut mieux que le refaire
+
+**Trois des quatre critères étaient déjà tenus.** Le ticket a été écrit depuis un
+relevé de noms de fichiers, pas depuis les tests : la couverture réelle est bien
+meilleure. Étaient déjà vérifiés, et depuis l'adresse et non depuis la fonction :
+l'adresse déjà prise refusée, le changement d'adresse d'un compte qui en a une
+refusé, le mot de passe faux refusé sans dire lequel des deux est faux, le compte
+abandonné gardé dès qu'il porte quelque chose ou qu'il a une adresse, le compte
+de l'appelant jamais effacé, et l'adresse d'un fournisseur qui ne remplace pas
+une adresse choisie.
+
+**Ce qui manquait tenait sur un angle : celui d'en face.** Tout était regardé du
+point de vue de qui appelle la route ; personne n'avait vérifié que la **cible** —
+le compte dont l'adresse ou l'identifiant sert d'appât — ne bouge pas. Trois cas
+ajoutés, sur le banc à deux comptes du ticket 06 : un refus de rattachement
+n'ouvre rien et ne déplace rien, une connexion refusée n'abîme pas la cible et ne
+déplace pas l'appelant, et faire passer un compte garni pour un ancien ne
+l'efface pas.

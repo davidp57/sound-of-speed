@@ -65,6 +65,24 @@ export function cheminSur(racine: string, chemin: string): string | null {
   return join(racine, relatif)
 }
 
+/**
+ * Ce nom déposé est-il un nom, et non un chemin ?
+ *
+ * Les noms arrivent de l'extérieur — ils sont pris dans l'adresse — et ils
+ * ressortent **concaténés** dans les entrées de l'archive d'un compte. Un nom
+ * qui porte une remontée y produit `traces/../../dehors.txt` : mesuré, et un
+ * extracteur ordinaire écrit alors hors du dossier qu'on lui a désigné. Le nom
+ * ne touche aucun disque ici — il ne fait qu'aller en base —, mais il en touche
+ * un chez celui qui ouvre l'archive.
+ *
+ * Rien de légitime n'en a besoin : la voiture dépose des noms plats, et la
+ * reprise verse ce qu'elle lit dans un dossier, donc des noms plats aussi.
+ */
+export function estUnNomSimple(nom: string): boolean {
+  if (nom === '' || nom === '.' || nom === '..') return false
+  return !nom.includes('/') && !nom.includes('\\') && !nom.includes('\0')
+}
+
 /** Ce qu'on sait d'un fichier, ou rien s'il n'en est pas un. */
 export function fichierOuRien(chemin: string): { taille: number } | null {
   try {

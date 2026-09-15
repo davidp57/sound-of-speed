@@ -1504,11 +1504,44 @@ grossit — elle y est installée comme dépendance de production.
 seul, dans le volume de données : il survit au remplacement du conteneur, ce qui
 est la condition pour qu'une connexion survive à une mise à jour.
 
+#### Ce que le serveur annonce de lui-même
+
+Toutes les réponses portent une **politique de contenu**, `nosniff`, et une
+politique de provenance qui ne laisse pas partir l'adresse complète chez un tiers
+— un profil partagé voyage dans l'adresse. La politique refuse l'encadrement de
+la page, donc la moitié d'un détournement de clic.
+
+Deux desserrages la rendent viable, et ils sont vérifiés nommément par le jeu de
+requêtes d'accord : **le WebAssembly** reste permis, sans quoi le moteur simulé ne
+s'instancie pas du tout ; et les **modules de worklet fabriqués à la volée**
+aussi, l'horloge audio et le joueur de synthèse étant chargés depuis une adresse
+`blob:`. Le second est celui qui coûte le plus, et le retirer demanderait de
+livrer ces deux modules en fichiers — à reprendre le jour où l'on y touchera pour
+autre chose.
+
+Une politique posée à l'aveugle **coupe le son sans rien dire** : le navigateur
+refuse en silence et l'application démarre muette. Elle a donc été mesurée dans
+un navigateur avant d'être écrite ici.
+
 `SPEED_URL` n'est pas obligatoire non plus, mais elle se renseigne dans l'écran
 de la pile dès qu'on sait sous quel nom on atteindra le serveur : **derrière un
 proxy inversé, l'adresse publique ne se devine pas** depuis le conteneur, qui ne
 voit qu'un port local. Le jour où un fournisseur d'identité tiers doit revenir
 sur le site, c'est cette adresse-là qu'il lui faut.
+
+**Ce qu'elle change pour le refus des requêtes venues d'un autre site :** ce
+refus marche dans les deux cas — mesuré le 15 septembre 2026, avec et sans elle.
+Sans elle, l'origine annoncée est comparée à l'**hôte** de la requête, ce qui est
+le bon contrôle mais dépend de l'hôte que le proxy inversé transmet ; avec elle,
+la comparaison se fait sur une adresse connue et ne dépend plus de rien. Le
+serveur signale son absence à chaque démarrage.
+
+**Et surtout, elle décide du témoin de connexion.** Mesuré le même jour : avec une
+`SPEED_URL` en `https`, le témoin part en `__Secure-better-auth.session_token`,
+avec `Secure`, `HttpOnly` et `SameSite=Lax`. Sans elle, le conteneur ne voit
+qu'un port local en clair et le témoin **n'obtient pas `Secure`** — il pourrait
+alors repartir sur une requête non chiffrée. C'est la meilleure raison de la
+renseigner.
 
 ### Deux axes pour ouvrir un écran
 
@@ -1524,11 +1557,19 @@ donc l'appareil ne fait que ranger l'écran, et le serveur l'ignore.
 Un compte porte des **rôles**, et un rôle ouvre des écrans. Ils se cumulent : un
 compte en porte zéro à trois.
 
-| Rôle | Ce qu'il ouvre |
-|---|---|
-| `conduite` | conduire, la télémétrie, les réglages simples et avancés |
-| `atelier` | l'écran **Atelier** : créer et tenir les profils, régler le son, fabriquer des moteurs et des boîtes — et déposer sur `/engines/` et `/gearboxes/` |
-| `synthese` | le volet **Synthèse** de l'atelier : régler un timbre |
+| Rôle | Ce qu'il ouvre | Gardé par le serveur |
+|---|---|---|
+| `conduite` | conduire, la télémétrie, les réglages simples et avancés | oui |
+| `atelier` | l'écran **Atelier** : créer et tenir les profils, régler le son, fabriquer des moteurs et des boîtes — et déposer sur `/engines/` et `/gearboxes/` | oui |
+| `synthese` | le volet **Synthèse** de l'atelier : régler un timbre | **non** |
+
+**Le troisième n'est pas gardé, et c'est délibéré.** Le volet Synthèse ne parle
+pas au serveur : tout son calcul se fait dans le navigateur. Il n'y a donc aucune
+route à refuser, et rien à garder — c'est un **verrou d'affichage**. Effacer la
+copie des rôles rangée par le navigateur suffit à ouvrir ce volet, et ça ne donne
+accès à aucune donnée ni à aucune ressource du serveur. Prétendre le garder
+serait du théâtre : le dépôt est public, et le code de cet écran se lit. Le jour
+où un rôle se vendra, c'est à savoir avant de le vendre.
 
 **Tout le monde a tout, et rien n'est encaissé.** Ce qui est offert à n'importe
 quel compte est une valeur, pas une règle :
@@ -1551,6 +1592,18 @@ est offert à tout le monde. Un appareil qui n'a jamais rien pu relever n'interd
 rien : ce qui protège est le refus du serveur, pas l'écran. Cette copie est
 contournable par qui veut — le code est public — et c'est assumé : l'objectif est
 de ne pas perdre d'argent, pas d'en gagner.
+
+**La copie dit de quel compte elle parle**, et une copie qui parle d'un autre est
+écartée. Sans ce nom, elle survivait à un changement de compte : elle était bien
+effacée aux trois endroits où l'on change de compte, mais par discipline, et une
+quatrième route finirait par l'oublier. Le contrôle est maintenant sur le chemin
+que tout le monde emprunte.
+
+**L'échéance se juge sur l'horloge de l'appareil**, et c'est accepté. Reculer
+l'horloge rouvre donc un droit expiré — et ça n'ouvre rien : le serveur relit les
+droits à chaque requête, et l'écran ainsi rouvert n'obtiendra que des refus. La
+juger sur une heure rendue par le serveur coûterait exactement ce qu'on refuse de
+payer : il faudrait le réseau pour savoir ce qu'on ouvre.
 
 #### L'appareil
 
@@ -2819,6 +2872,34 @@ Elles sont simulées pour une raison précise, et pas par goût : une prise sur 
 vraie voiture appartient à qui l'a faite. Les banques enregistrées restent donc
 hors du dépôt et hors de l'image, dans un volume — voir la section
 [Licence](#licence).
+
+**Les échantillons demandent un compte.** C'est le plus gros poste de trafic du
+serveur, et c'était la seule chose qu'il servait à qui connaissait l'adresse.
+Un compte suffit — l'application s'en ouvre un toute seule au premier
+démarrage —, et aucun rôle n'est exigé : un droit refermé doit fermer un écran,
+pas faire taire la voiture. Un serveur monté sans identité, comme un poste de
+développement, sert comme avant : il n'y a pas de session à lire.
+
+#### Une banque qu'on ne sert pas à tout le monde
+
+Toutes les banques ne vous appartiennent pas forcément. Celles-là se déclarent
+**restreintes**, et le serveur ne les sert qu'aux comptes nommés — et les retire
+du listage des autres : cacher les octets en laissant les noms ne cacherait rien.
+Un refus se donne en 404 plutôt qu'en 403, parce que dire « interdit »
+confirmerait l'existence de ce qu'on cherche à taire.
+
+| Variable | Défaut | Ce qu'elle règle |
+|---|---|---|
+| `SPEED_BANQUES_RESTREINTES` | aucune | Les dossiers de banques qui demandent un droit, séparés par des virgules. |
+| `SPEED_BANQUES_ACCORDEES` | personne | Qui a le droit de quoi : `adresse=banque,banque;adresse=banque`. `*` à la place des banques les accorde toutes. |
+
+**Ça se déclare dans la pile, jamais par une route** : aucun appel ne peut donc
+s'accorder ce droit, et c'est ce qui rend le contrôle sûr sans écran
+d'administration. L'adresse plutôt que l'identifiant du compte, parce qu'un
+identifiant fait trente-deux caractères tirés au sort et se recopie de travers.
+
+Un compte sans adresse rattachée n'a jamais droit à une banque restreinte : il
+n'y a rien pour le nommer.
 
 Dans l'image, elles sont rangées **hors de** `audio/`, et nginx les ramène sous
 `/audio/<banque>/` par un alias, un par banque. Le volume des échantillons se

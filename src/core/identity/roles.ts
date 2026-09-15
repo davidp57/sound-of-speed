@@ -43,6 +43,15 @@ export interface Droit {
  * reste le refus du serveur.
  */
 export interface CopieDesRoles {
+  /**
+   * De quel compte elle parle.
+   *
+   * **Sans lui, une copie survit à un changement de compte** et referme ou
+   * ouvre des écrans au nom de quelqu'un d'autre. Elle était bien effacée aux
+   * trois endroits où le compte change — mais par discipline, dans un domaine
+   * qui ajoute des chemins. Portée ici, la discordance se voit toute seule.
+   */
+  compte: string
   /** Ce que le compte portait au dernier relevé, échéances comprises. */
   droits: Droit[]
   /** Ce qui est offert à tout compte, et qui survit à la péremption de la copie. */
@@ -62,6 +71,15 @@ export const VALIDITE_COPIE_MS = 30 * 24 * 60 * 60 * 1000
 /**
  * Les rôles ouverts à cet instant.
  *
+ * **L'échéance se juge sur l'horloge de l'appareil, et c'est accepté.** Reculer
+ * l'horloge rouvre donc un droit expiré, et empêche la copie de périmer. Ça ne
+ * donne rien, et c'est ce qui rend la question close : la copie ne protège rien,
+ * le serveur relit les droits en base à chaque requête, et ce qui s'ouvrirait est
+ * un écran dont toutes les routes répondront non. L'alternative — juger sur une
+ * heure rendue par le serveur — coûterait précisément ce qu'on refuse de payer :
+ * il faudrait le réseau pour savoir ce qu'on ouvre, dans une application dont la
+ * règle est de démarrer et de faire du son sans lui.
+ *
  * Trois situations, et trois conduites :
  *
  * - **Aucune copie** — premier lancement dans un tunnel : on n'interdit rien.
@@ -72,8 +90,26 @@ export const VALIDITE_COPIE_MS = 30 * 24 * 60 * 60 * 1000
  *   passée. C'est ce qui referme un droit expiré **sans redémarrage**, l'instant
  *   présent étant redonné à chaque appel.
  */
-export function rolesOuverts(copie: CopieDesRoles | null, maintenant: number): Role[] {
+export function rolesOuverts(
+  copie: CopieDesRoles | null,
+  maintenant: number,
+  /**
+   * Le compte de cet appareil, quand on le sait déjà.
+   *
+   * **Une copie qui parle d'un autre compte ne vaut rien**, et elle se détecte
+   * ici plutôt qu'à chaque endroit qui change de compte : le contrôle est sur le
+   * chemin que tout le monde emprunte, au lieu d'être une consigne qu'on peut
+   * oublier d'appliquer sur une route ajoutée plus tard.
+   *
+   * `null` au démarrage, avant que l'identité soit redescendue : on se sert alors
+   * de ce qu'on avait retenu, ce qui est exactement le cas hors réseau.
+   */
+  compte: string | null = null,
+): Role[] {
   if (copie === null) return [...ROLES]
+  // Discordance : on se comporte comme sans copie, donc on n'interdit rien. Le
+  // serveur, lui, refusera ce que ce compte n'ouvre pas.
+  if (compte !== null && copie.compte !== compte) return [...ROLES]
   if (maintenant - copie.releveLe > VALIDITE_COPIE_MS) return trier(copie.offerts)
 
   const ouverts = copie.droits

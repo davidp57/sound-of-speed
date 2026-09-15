@@ -113,4 +113,20 @@ describe('emporter ce qu’un compte porte', () => {
     const quand = new Date('2026-09-13T15:30:00Z')
     expect(archiveDuCompte(base, 'solo', quand).nom).toBe('sound-of-speed-2026-09-13-15-30-00.zip')
   })
+
+  it('écarte un nom qui remonte l’arborescence, d’où qu’il vienne', async () => {
+    // L'adresse refuse désormais un tel nom, mais la base peut en porter un :
+    // versé avant ce contrôle, ou remonté par la reprise d'un ancien dossier.
+    // L'entrée `traces/../../dehors.txt` s'écrit hors du dossier désigné chez
+    // celui qui extrait — et il extrait sur son poste de travail, pas ici.
+    await ecrireDepot(base, 'solo', 'traces', '../../dehors.txt', Buffer.from('charge'))
+    await ecrireProfil(base, 'solo', 'reste.json', '{"name":"Reste"}')
+
+    const noms = await nomsDe('solo')
+
+    expect(noms).not.toContain('traces/../../dehors.txt')
+    expect(noms.some((nom) => nom.includes('..'))).toBe(false)
+    // Le reste de l'archive est intact : on écarte une entrée, pas l'archive.
+    expect(noms).toContain('profiles/reste.json')
+  })
 })

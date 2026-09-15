@@ -17,7 +17,12 @@ import type { IdentityOptions } from './client'
 /** Le chemin sous lequel le serveur dit ce qu'un compte ouvre. */
 const DROITS = '/api/droits'
 
-const CLE = 'speed.roles.v1'
+/**
+ * La version compte : depuis la `v2`, une copie dit **de quel compte** elle
+ * parle. Une `v1` ne peut pas le dire, donc elle ne se relit pas — l'appareil
+ * se comporte comme s'il n'avait rien retenu, ce qui n'interdit rien.
+ */
+const CLE = 'speed.roles.v2'
 
 export function lireLaCopie(): CopieDesRoles | null {
   try {
@@ -80,8 +85,13 @@ export async function releverLesRoles(
   const champs = charge as Record<string, unknown>
   const droits = Array.isArray(champs['droits']) ? champs['droits'].map(unDroit) : []
   const offerts = Array.isArray(champs['offerts']) ? champs['offerts'].filter(estUnRole) : []
+  // Sans le compte, on ne range rien : une copie qu'on ne saurait pas rattacher
+  // vaut moins que pas de copie, puisqu'elle parlerait peut-être d'un autre.
+  const compte = champs['compte']
+  if (typeof compte !== 'string' || compte === '') return null
 
   const copie: CopieDesRoles = {
+    compte,
     droits: droits.filter((droit): droit is Droit => droit !== null),
     offerts,
     releveLe: now(),
@@ -108,6 +118,7 @@ function unDroit(valeur: unknown): Droit | null {
 function estUneCopie(valeur: unknown): valeur is CopieDesRoles {
   if (typeof valeur !== 'object' || valeur === null) return false
   const entree = valeur as Record<string, unknown>
+  if (typeof entree['compte'] !== 'string' || entree['compte'] === '') return false
   if (typeof entree['releveLe'] !== 'number') return false
   if (!Array.isArray(entree['offerts']) || !entree['offerts'].every(estUnRole)) return false
   if (!Array.isArray(entree['droits'])) return false

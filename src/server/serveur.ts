@@ -17,6 +17,7 @@ import { Hono } from 'hono'
 import type { Role } from '../core/identity/roles'
 
 import type { Base } from './base/base'
+import { banquesInterdites, peutJouer, type DroitsSurLesBanques } from './banques'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
 import { DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } from './retention'
 import {
@@ -29,7 +30,7 @@ import {
 import { ecrireEntite, estUnRegistre, lireEntite, listerEntites } from './entites'
 import { CHEMIN_IDENTITE, type Identite } from './identite'
 import { archiveDuCompte } from './emporter'
-import { cheminSur, fichierOuRien, servirFichier, typeDe } from './fichiers'
+import { cheminSur, estUnNomSimple, fichierOuRien, servirFichier, typeDe } from './fichiers'
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
@@ -65,7 +66,52 @@ export interface OptionsDuServeur {
    * d'une installation neuve, qui doit quand même faire du son.
    */
   echantillons?: string
+  /**
+   * Les banques qui ne sont pas à nous, et qui a le droit de les jouer.
+   *
+   * Absente : aucune n'est restreinte, et c'est le cas de qui déploie chez lui.
+   * Elle se déclare par l'environnement et **jamais par une route** — c'est ce
+   * qui fait qu'aucun appel ne peut s'accorder ce droit.
+   */
+  banques?: DroitsSurLesBanques
 }
+
+/**
+ * La politique de contenu, et pourquoi chaque morceau est là.
+ *
+ * Une politique posée à l'aveugle coupe le son **sans rien dire** : le navigateur
+ * refuse en silence et l'application démarre muette. Chaque desserrage ci-dessous
+ * a donc une raison nommée, et le jeu de requêtes d'accord plus l'essai dans un
+ * navigateur sont ce qui a permis de l'écrire.
+ *
+ * - `'wasm-unsafe-eval'` — le moteur simulé est un module WebAssembly, et sans
+ *   ce mot il ne s'instancie pas du tout.
+ * - `blob:` dans `script-src` — **l'horloge audio et le joueur de synthèse sont
+ *   fabriqués à la volée** et chargés par `audioWorklet.addModule` depuis une
+ *   adresse `blob:`. C'est le desserrage qui coûte le plus cher, et le retirer
+ *   demanderait de livrer ces deux modules en fichiers, ce qui touche une pièce
+ *   délicate du projet. À reprendre le jour où l'on y touchera pour autre chose.
+ * - `'unsafe-inline'` dans `style-src` — les liaisons de style de Vue posent des
+ *   attributs `style`. Le risque est sans commune mesure avec celui d'un script.
+ * - `https:` dans `img-src` — le portrait d'un compte tenu ailleurs vient de chez
+ *   le fournisseur.
+ * - `frame-ancestors 'none'` — rien n'a de raison d'encadrer cette application,
+ *   et l'encadrer est la moitié d'un détournement de clic.
+ */
+const POLITIQUE_DE_CONTENU = [
+  "default-src 'self'",
+  "script-src 'self' blob: 'wasm-unsafe-eval'",
+  "worker-src 'self' blob:",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' data: blob:",
+  "connect-src 'self'",
+  "font-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ')
 
 /** Une semaine, avec revalidation : un échantillon se remplace sans changer de nom. */
 const CACHE_ECHANTILLONS = 'public, must-revalidate, max-age=604800'
@@ -103,6 +149,37 @@ export const DONNEES = [
 export function creerServeur(options: OptionsDuServeur): Hono {
   const app = new Hono()
 
+  /**
+   * De quoi savoir si une requête porte un compte, même hors des dossiers de
+   * données. Les échantillons en ont besoin, et ils se servent sans base.
+   *
+   * `null` quand aucune identité n'est montée : il n'y a alors pas de session à
+   * lire, et rien ne peut être gardé.
+   */
+  const sessionDe = options.identite === undefined ? null : lecteurDeCompte(options.identite)
+
+  const droitsSurLesBanques: DroitsSurLesBanques = options.banques ?? {
+    restreintes: new Set<string>(),
+    accordees: new Map<string, ReadonlySet<string>>(),
+  }
+
+  // --- Ce que le serveur dit de lui-même ------------------------------------
+  //
+  // **En premier, et sur tout** : une réponse servie par une route déclarée plus
+  // bas doit les porter aussi, et il n'y a pas de raison d'en exempter une.
+  //
+  // `nosniff` n'est pas décoratif ici : le serveur annonce des types que le
+  // navigateur **exige** — un module WebAssembly deviné autrement ne démarre
+  // pas — et un navigateur qui devine finit par deviner de travers.
+  app.use('*', async (c, next) => {
+    await next()
+    c.header('Content-Security-Policy', POLITIQUE_DE_CONTENU)
+    c.header('X-Content-Type-Options', 'nosniff')
+    // L'adresse complète ne part pas chez un tiers : un profil partagé voyage
+    // dans l'adresse, et elle n'a rien à faire dans le journal de quelqu'un.
+    c.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+  })
+
   // --- L'identité -----------------------------------------------------------
   //
   // Déclarée en premier, parce que Hono rend la première route qui correspond et
@@ -124,23 +201,7 @@ export function creerServeur(options: OptionsDuServeur): Hono {
     const base = options.base
     const identite = options.identite
 
-    /**
-     * À qui appartient cette requête ?
-     *
-     * Rend le compte de la session, ou `null` quand il n'y en a pas. Le témoin
-     * voyage tout seul — la page et le serveur sont sur la même origine —, il
-     * n'y a donc rien à saisir ni à composer.
-     */
-    const compteDe = async (entetes: Headers): Promise<string | null> => {
-      try {
-        const session = await identite.api.getSession({ headers: entetes })
-        return session?.user.id ?? null
-      } catch {
-        // Une session illisible n'est pas une panne du serveur : c'est une
-        // requête sans compte, et elle se traite comme telle.
-        return null
-      }
-    }
+    const compteDe = lecteurDeCompte(identite)
 
     const offerts = options.roles ?? ROLES_OFFERTS_PAR_DEFAUT
 
@@ -176,6 +237,12 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       const droits = await droitsDuCompte(base, compte, Date.now(), offerts)
       return c.json(
         {
+          // À qui appartiennent ces droits. L'écran range la réponse et s'en
+          // sert hors réseau : sans ce nom, une copie survit à un changement de
+          // compte et parle de l'autre. Elle était effacée aux trois endroits où
+          // le compte change, mais par discipline — et une quatrième route
+          // arrivera. Ici, la discordance se voit toute seule.
+          compte,
           droits: droits.map(({ role, expireLe }) => ({
             role,
             expireLe: expireLe === null ? null : new Date(expireLe).toISOString(),
@@ -206,6 +273,9 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       } catch {
         return c.notFound()
       }
+      // Un nom, et non un chemin : voir `estUnNomSimple`. Refusé ici, à l'entrée,
+      // plutôt que rattrapé plus tard par ce qui le relit.
+      if (!estUnNomSimple(nom)) return c.notFound()
 
       if (c.req.method === 'PUT') {
         const ecrit = await ecrireProfil(base, compte, nom, await c.req.text())
@@ -256,6 +326,9 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       } catch {
         return c.notFound()
       }
+      // Un nom, et non un chemin : voir `estUnNomSimple`. Refusé ici, à l'entrée,
+      // plutôt que rattrapé plus tard par ce qui le relit.
+      if (!estUnNomSimple(nom)) return c.notFound()
 
       if (c.req.method === 'PUT') {
         const ecrit = await ecrireEntite(base, registre, compte, nom, await c.req.text())
@@ -422,6 +495,9 @@ export function creerServeur(options: OptionsDuServeur): Hono {
       } catch {
         return c.notFound()
       }
+      // Un nom, et non un chemin : voir `estUnNomSimple`. Refusé ici, à l'entrée,
+      // plutôt que rattrapé plus tard par ce qui le relit.
+      if (!estUnNomSimple(nom)) return c.notFound()
 
       if (c.req.method === 'PUT') {
         const octets = Buffer.from(await c.req.arrayBuffer())
@@ -469,8 +545,46 @@ export function creerServeur(options: OptionsDuServeur): Hono {
   // le dossier des échantillons et masquait donc la démonstration, qui a dû être
   // rangée ailleurs et ramenée par un alias — au prix de son absence dans le
   // listage des banques. Ici, on regarde dans les deux, et le listage les réunit.
-  app.get('/audio/*', (c) => {
+  app.get('/audio/*', async (c) => {
+    // **Un compte, et pas un rôle.** Les échantillons sont le plus gros poste de
+    // trafic du serveur, et ils se servaient à qui connaissait l'adresse : c'est
+    // la seule ressource que rien ne gardait. L'application s'ouvre un compte
+    // toute seule au démarrage, donc une voiture ne voit aucune différence ;
+    // exiger un rôle, en revanche, fermerait la banque à qui n'a plus le sien,
+    // et la voiture se tairait.
+    //
+    // Sans identité montée, il n'y a pas de session à lire et on sert comme
+    // avant : c'est la configuration d'un poste de développement, pas celle d'un
+    // serveur exposé.
+    const compte = sessionDe === null ? null : await sessionDe(c.req.raw.headers)
+    if (sessionDe !== null && compte === null) return sansCompte()
+
     const chemin = new URL(c.req.url).pathname
+    // `/audio/<banque>/<fichier>` — le nom voyage encodé dans l'adresse.
+    const banque = nomDeLaBanque(chemin)
+
+    // **Une banque qui n'est pas à nous ne descend que chez qui y a droit**, et
+    // elle disparaît du listage des autres : cacher les octets en laissant les
+    // noms ne cacherait rien. Un refus se donne en 404 et non en 403 — dire
+    // « interdit » confirmerait l'existence de ce qu'on cherche à taire.
+    if (options.base !== undefined && compte !== null && droitsSurLesBanques.restreintes.size > 0) {
+      const base = options.base
+
+      if (chemin === '/audio/') {
+        const entrees = listerLesDeux(options, '/')
+        if (entrees === null) return c.notFound()
+        const interdites = await banquesInterdites(base, droitsSurLesBanques, compte)
+        return c.json(
+          entrees.filter((entree) => !interdites.has(entree.name)),
+          200,
+          { 'Cache-Control': 'no-store' },
+        )
+      }
+
+      if (banque !== null && !(await peutJouer(base, droitsSurLesBanques, compte, banque))) {
+        return c.notFound()
+      }
+    }
 
     if (chemin.endsWith('/')) {
       const entrees = listerLesDeux(options, chemin.slice('/audio'.length))
@@ -508,6 +622,30 @@ export function creerServeur(options: OptionsDuServeur): Hono {
   })
 
   return app
+}
+
+/**
+ * À qui appartient cette requête ?
+ *
+ * Rend le compte de la session, ou `null` quand il n'y en a pas. Le témoin
+ * voyage tout seul — la page et le serveur sont sur la même origine —, il n'y a
+ * donc rien à saisir ni à composer.
+ *
+ * Hors de `creerServeur` parce que deux endroits en ont besoin, et qu'ils n'ont
+ * pas les mêmes conditions : les dossiers de données exigent une base, les
+ * échantillons non.
+ */
+function lecteurDeCompte(identite: Identite): (entetes: Headers) => Promise<string | null> {
+  return async (entetes) => {
+    try {
+      const session = await identite.api.getSession({ headers: entetes })
+      return session?.user.id ?? null
+    } catch {
+      // Une session illisible n'est pas une panne du serveur : c'est une requête
+      // sans compte, et elle se traite comme telle.
+      return null
+    }
+  }
 }
 
 /**
@@ -578,6 +716,22 @@ function servirDepuis(
   if (info === null) return null
 
   return servirFichier(fichier, info.taille, entetes, cache === undefined ? {} : { cache })
+}
+
+/**
+ * Le nom de la banque que ce chemin désigne, ou rien.
+ *
+ * `/audio/<banque>/…`. Rend `null` sur `/audio/` lui-même, qui ne désigne pas
+ * une banque mais leur liste.
+ */
+function nomDeLaBanque(chemin: string): string | null {
+  const [, , banque = ''] = chemin.split('/')
+  if (banque === '') return null
+  try {
+    return decodeURIComponent(banque)
+  } catch {
+    return null
+  }
 }
 
 /** Les échantillons déposés d'abord, ceux de l'application ensuite. */

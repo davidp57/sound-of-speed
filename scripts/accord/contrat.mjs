@@ -128,7 +128,45 @@ export function cas({ nom }) {
       attend: (r) => egal(r.status, 200, 'statut'),
     },
 
+    {
+      nom: 'le serveur dit ce qu’il autorise, et refuse d’être encadré',
+      part: 'durcissement',
+      // Une politique de contenu posée à l'aveugle coupe le son sans rien dire :
+      // le navigateur refuse en silence et l'application démarre muette. Les
+      // deux desserrages qui la rendent viable sont donc vérifiés nommément.
+      requete: { chemin: '/', entetes: { Accept: 'text/html' } },
+      attend: (r) => {
+        egal(r.status, 200, 'statut')
+        egal(r.headers.get('x-content-type-options'), 'nosniff', 'nosniff')
+        vrai(r.headers.get('referrer-policy') !== null, 'une politique de provenance est servie')
+        const politique = r.headers.get('content-security-policy') ?? ''
+        vrai(politique.includes("frame-ancestors 'none'"), 'l’encadrement est refusé')
+        vrai(politique.includes("object-src 'none'"), 'les objets sont refusés')
+        // Sans lui, le moteur simulé ne s'instancie pas du tout.
+        vrai(politique.includes("'wasm-unsafe-eval'"), 'le WebAssembly reste permis')
+        // Sans lui, l'horloge audio et le joueur de synthèse ne se chargent pas.
+        vrai(/script-src[^;]*blob:/.test(politique), 'les modules de worklet restent permis')
+      },
+    },
+
     // --- Les banques -------------------------------------------------------
+    {
+      nom: 'un échantillon ne descend pas sans compte',
+      part: 'durcissement',
+      // Les échantillons sont le plus gros poste de trafic du serveur, et ils se
+      // servaient à qui connaissait l'adresse. Un compte suffit — l'application
+      // s'en crée un au démarrage — mais il en faut un.
+      requete: { chemin: '/audio/gm-ls/on-750.flac' },
+      attend: (r) => egal(r.status, 401, 'statut'),
+    },
+    {
+      nom: 'le listage des banques ne se lit pas sans compte',
+      part: 'durcissement',
+      // Le fermer aussi : le listage dit quelles banques existent, et cacher les
+      // octets en laissant les noms ne cacherait rien.
+      requete: { chemin: '/audio/', entetes: { Accept: 'application/json' } },
+      attend: (r) => egal(r.status, 401, 'statut'),
+    },
     {
       nom: 'le listage des banques, au format autoindex',
       // Quatre modules du cœur lisent cette forme, et le service worker
@@ -138,7 +176,7 @@ export function cas({ nom }) {
       // ce qui a été déposé sur le serveur interrogé, et la banque de
       // démonstration n'y figure pas — elle vit dans l'image, derrière un alias,
       // parce que le volume des échantillons masque ce que l'image place là.
-      requete: { chemin: '/audio/', entetes: { Accept: 'application/json' } },
+      requete: { chemin: '/audio/', compte: true, entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
         autoindex(corps)
@@ -146,7 +184,7 @@ export function cas({ nom }) {
     },
     {
       nom: "le listage d'une banque",
-      requete: { chemin: '/audio/gm-ls/', entetes: { Accept: 'application/json' } },
+      requete: { chemin: '/audio/gm-ls/', compte: true, entetes: { Accept: 'application/json' } },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
         const entrees = autoindex(corps)
@@ -158,7 +196,7 @@ export function cas({ nom }) {
     },
     {
       nom: 'un échantillon se télécharge',
-      requete: { chemin: '/audio/gm-ls/on-750.flac' },
+      requete: { chemin: '/audio/gm-ls/on-750.flac', compte: true },
       attend: (r, corps) => {
         egal(r.status, 200, 'statut')
         vrai(corps.length > 1000, 'le corps a la taille d’un échantillon')
@@ -169,7 +207,7 @@ export function cas({ nom }) {
       // Le navigateur le fait de lui-même sur les médias. Un serveur qui rend
       // 200 avec tout le fichier n'est pas faux, mais un qui rend 206 doit
       // rendre la bonne plage.
-      requete: { chemin: '/audio/gm-ls/on-750.flac', entetes: { Range: 'bytes=0-99' } },
+      requete: { chemin: '/audio/gm-ls/on-750.flac', compte: true, entetes: { Range: 'bytes=0-99' } },
       attend: (r, corps) => {
         vrai([200, 206].includes(r.status), `statut 200 ou 206, reçu ${r.status}`)
         if (r.status === 206) {
@@ -195,6 +233,19 @@ export function cas({ nom }) {
       nom: 'une trace absente rend un vrai 404',
       part: 'depots',
       requete: { chemin: '/traces/rien-du-tout.jsonl', compte: true },
+      attend: (r) => egal(r.status, 404, 'statut'),
+    },
+    {
+      nom: 'un nom qui compose un chemin n’entre pas',
+      part: 'durcissement',
+      // Le nom ressort concaténé dans l'archive du compte, et une remontée y
+      // produit une entrée qui s'écrit hors du dossier chez celui qui extrait.
+      requete: {
+        chemin: '/traces/..%2F..%2Fdehors.txt',
+        compte: true,
+        methode: 'PUT',
+        corps: 'charge',
+      },
       attend: (r) => egal(r.status, 404, 'statut'),
     },
 
@@ -579,6 +630,28 @@ export function cas({ nom }) {
         origine: true,
       },
       attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
+    },
+    {
+      nom: 'une requête d’identité venue d’un autre site est refoulée',
+      part: 'identite',
+      // Le scénario classique : une page hostile fait faire à un navigateur déjà
+      // connecté chez nous une requête qui change quelque chose. Le témoin part
+      // tout seul — c'est ce qui rend l'attaque possible —, donc seule l'origine
+      // annoncée sépare la requête légitime de l'autre.
+      //
+      // **Vérifié ici et pas dans la suite de tests**, parce que la bibliothèque
+      // désarme cette garde hors production et fige la lecture de
+      // l'environnement à son import : sous vitest, le contrôle est éteint et un
+      // test passerait au vert sans rien mesurer.
+      requete: {
+        chemin: '/api/auth/liaison/code',
+        methode: 'POST',
+        corps: '{}',
+        entetes: { 'Content-Type': 'application/json' },
+        origine: 'https://site-hostile.test',
+        compte: true,
+      },
+      attend: (r) => egal(r.status, 403, 'statut'),
     },
     {
       nom: 'un code de liaison se lit à bout de bras et se dicte',

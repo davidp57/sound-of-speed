@@ -14,6 +14,7 @@ import { listerLesComptes, ouvrirBase } from './base/base'
 import { remplirLesDatesDEnregistrement } from './depots'
 import { reprendreTout, tracesNonAnalysees } from './profil-mesure'
 import { ANCIEN_COMPTE_UNIQUE, semerLAncienCompte } from './heritage'
+import { banquesAccordees, banquesRestreintes } from './banques'
 import { creerIdentite, secretPersistant } from './identite'
 import { formaterDecompte, reprendreLesDossiers } from './reprise'
 import { appliquerLaRegle, DELAIS_PAR_DEFAUT, formaterPassage, type Delais } from './retention'
@@ -40,6 +41,13 @@ const roles = offertsDeLEnvironnement(process.env['SPEED_ROLES_OFFERTS'])
 // Les comptes tenus ailleurs : deux variables par fournisseur, et rien du tout
 // par défaut. Voir `tiers.ts` pour les noms.
 const tiers = comptesTenusAilleurs(process.env)
+// Les banques qui ne sont pas à nous, et qui a le droit de les jouer. Déclarées
+// ici et **jamais par une route** : aucun appel ne peut donc s'accorder ce
+// droit. Absentes, aucune banque n'est restreinte.
+const banques = {
+  restreintes: banquesRestreintes(process.env['SPEED_BANQUES_RESTREINTES']),
+  accordees: banquesAccordees(process.env['SPEED_BANQUES_ACCORDEES']),
+}
 const delais: Delais = {
   traces: nombreOuRien(process.env['SPEED_RETENTION_TRACES']) ?? DELAIS_PAR_DEFAUT.traces,
   journal: nombreOuRien(process.env['SPEED_RETENTION_JOURNAL']) ?? DELAIS_PAR_DEFAUT.journal,
@@ -186,6 +194,16 @@ if (nombreDeTiers > 0 && adressePublique === undefined) {
   console.warn(
     `${nombreDeTiers} compte(s) tenu(s) ailleurs configuré(s) sans SPEED_URL : l'adresse de retour sera déduite de la requête, ce qui est faux derrière un proxy inversé.`,
   )
+} else if (adressePublique === undefined) {
+  // Sans elle, la garde qui refuse les requêtes venues d'un autre site marche
+  // quand même : l'origine annoncée est alors comparée à l'**hôte** de la
+  // requête, ce qui est le bon contrôle. Mesuré le 15 septembre 2026.
+  //
+  // Ce qu'on perd est plus étroit, et réel : ce contrôle dépend alors de l'hôte
+  // que le proxy inversé transmet. Le fixer ici supprime cette dépendance.
+  console.warn(
+    'SPEED_URL n’est pas renseignée : le refus des requêtes venues d’un autre site se fonde alors sur l’hôte transmis par le proxy inversé, et non sur une adresse connue.',
+  )
 }
 
 const serveur = serve(
@@ -197,6 +215,7 @@ const serveur = serve(
       ...(epingles === undefined ? {} : { epingles }),
       roles,
       delais,
+      banques,
       ...(echantillons === undefined ? {} : { echantillons }),
     }).fetch,
     port,

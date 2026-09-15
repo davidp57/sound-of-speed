@@ -116,16 +116,38 @@ describe('le code de liaison', () => {
     expect(code).toMatch(/^[2-9A-HJKMNP-TV-Z]{4}-[2-9A-HJKMNP-TV-Z]{4}$/)
   })
 
+  it('n’en laisse qu’un vivant : demander le suivant tue le précédent', async () => {
+    // Sans ça, tous les codes demandés restent ouverts vingt-quatre heures. Un
+    // code aperçu par-dessus une épaule survivrait à sa régénération, et l'écran
+    // qui en montre un nouveau laisserait croire que l'ancien est mort.
+    const voiture = await appareilNeuf()
+    const { code: premier } = await demanderUnCode(voiture)
+    const { code: second } = await demanderUnCode(voiture)
+
+    expect(premier).not.toBe(second)
+    expect((await relier(await appareilNeuf(), premier ?? '')).statut).toBe(401)
+    expect((await relier(await appareilNeuf(), second ?? '')).statut).toBe(200)
+  })
+
   it('ne laisse pas de quoi ouvrir un compte dans la base', async () => {
     // Une base qu'on recopie pour la regarder — c'est ce que fait `npm run
     // verdict` — ne doit pas livrer de quoi entrer chez les gens.
     const voiture = await appareilNeuf()
     const { code } = await demanderUnCode(voiture)
 
+    // Deux rangées : le jeton, rangé sous l'empreinte du code, et le renvoi qui
+    // dit quel code est celui de ce compte — lui aussi ne porte qu'une
+    // empreinte. Ni l'une ni l'autre ne doit livrer le code.
     const rangees = await base.select().from(authVerifications)
-    expect(rangees).toHaveLength(1)
-    expect(rangees[0]?.identifier).not.toContain(code)
-    expect(rangees[0]?.identifier).not.toContain(code.replace('-', ''))
+    expect(rangees).toHaveLength(2)
+
+    const nu = code.replace('-', '')
+    for (const rangee of rangees) {
+      for (const champ of [rangee.identifier, rangee.value]) {
+        expect(champ).not.toContain(code)
+        expect(champ).not.toContain(nu)
+      }
+    }
   })
 
   it('n’est pas donné à qui n’a pas de compte', async () => {
