@@ -1510,6 +1510,13 @@ proxy inversé, l'adresse publique ne se devine pas** depuis le conteneur, qui n
 voit qu'un port local. Le jour où un fournisseur d'identité tiers doit revenir
 sur le site, c'est cette adresse-là qu'il lui faut.
 
+**Ce qu'elle change pour le refus des requêtes venues d'un autre site :** ce
+refus marche dans les deux cas — mesuré le 15 septembre 2026, avec et sans elle.
+Sans elle, l'origine annoncée est comparée à l'**hôte** de la requête, ce qui est
+le bon contrôle mais dépend de l'hôte que le proxy inversé transmet ; avec elle,
+la comparaison se fait sur une adresse connue et ne dépend plus de rien. Le
+serveur signale son absence à chaque démarrage.
+
 ### Deux axes pour ouvrir un écran
 
 Ce qu'un écran demande tient sur deux axes, et ils se croisent par un **et** : le

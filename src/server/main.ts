@@ -186,6 +186,16 @@ if (nombreDeTiers > 0 && adressePublique === undefined) {
   console.warn(
     `${nombreDeTiers} compte(s) tenu(s) ailleurs configuré(s) sans SPEED_URL : l'adresse de retour sera déduite de la requête, ce qui est faux derrière un proxy inversé.`,
   )
+} else if (adressePublique === undefined) {
+  // Sans elle, la garde qui refuse les requêtes venues d'un autre site marche
+  // quand même : l'origine annoncée est alors comparée à l'**hôte** de la
+  // requête, ce qui est le bon contrôle. Mesuré le 15 septembre 2026.
+  //
+  // Ce qu'on perd est plus étroit, et réel : ce contrôle dépend alors de l'hôte
+  // que le proxy inversé transmet. Le fixer ici supprime cette dépendance.
+  console.warn(
+    'SPEED_URL n’est pas renseignée : le refus des requêtes venues d’un autre site se fonde alors sur l’hôte transmis par le proxy inversé, et non sur une adresse connue.',
+  )
 }
 
 const serveur = serve(

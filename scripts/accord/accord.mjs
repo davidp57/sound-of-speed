@@ -79,7 +79,10 @@ function entetesDe(requete) {
   // La bibliothèque d'identité refuse un POST sans `Origin` — sa protection
   // contre les requêtes venues d'un autre site. Un navigateur en met un tout
   // seul ; ici, il faut le composer.
+  // `true` : la nôtre, celle qu'un navigateur mettrait. Une chaîne : celle-là,
+  // pour vérifier qu'une requête venue d'ailleurs se fait refouler.
   if (requete.origine === true) entetes['Origin'] = options.base
+  else if (typeof requete.origine === 'string') entetes['Origin'] = requete.origine
   // Les cas qui vérifient le refus ne s'annoncent pas : c'est justement ce
   // qu'ils mesurent.
   if (requete.compte !== true) return entetes

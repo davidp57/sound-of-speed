@@ -609,6 +609,28 @@ export function cas({ nom }) {
       attend: (r) => vrai([401, 403].includes(r.status), `401 ou 403, reçu ${r.status}`),
     },
     {
+      nom: 'une requête d’identité venue d’un autre site est refoulée',
+      part: 'identite',
+      // Le scénario classique : une page hostile fait faire à un navigateur déjà
+      // connecté chez nous une requête qui change quelque chose. Le témoin part
+      // tout seul — c'est ce qui rend l'attaque possible —, donc seule l'origine
+      // annoncée sépare la requête légitime de l'autre.
+      //
+      // **Vérifié ici et pas dans la suite de tests**, parce que la bibliothèque
+      // désarme cette garde hors production et fige la lecture de
+      // l'environnement à son import : sous vitest, le contrôle est éteint et un
+      // test passerait au vert sans rien mesurer.
+      requete: {
+        chemin: '/api/auth/liaison/code',
+        methode: 'POST',
+        corps: '{}',
+        entetes: { 'Content-Type': 'application/json' },
+        origine: 'https://site-hostile.test',
+        compte: true,
+      },
+      attend: (r) => egal(r.status, 403, 'statut'),
+    },
+    {
       nom: 'un code de liaison se lit à bout de bras et se dicte',
       part: 'identite',
       requete: {
