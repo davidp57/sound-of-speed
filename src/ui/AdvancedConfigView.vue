@@ -420,14 +420,6 @@ const delaysText = computed<string>({
       </div>
       <template v-if="profile.feel.kickdown.enabled">
         <NumberField
-          v-model="profile.feel.kickdown.loadThreshold"
-          label="Déclenché au-delà de"
-          :min="0.3"
-          :max="1"
-          :step="0.05"
-          hint="Charge à partir de laquelle la demande est jugée franche."
-        />
-        <NumberField
           v-model="profile.feel.kickdown.targetRpmFraction"
           label="Régime visé"
           :min="0.3"

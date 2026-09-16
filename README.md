@@ -2384,8 +2384,7 @@ qu'on remarque surtout par leur absence. Chacun s'active séparément.
 
 | Réglage | Ce qu'il fait |
 |---|---|
-| **Rétrogradage forcé** | Enfoncer la pédale fait descendre chercher le couple, au lieu d'attendre le seuil de passage. Mesuré : 6<sup>e</sup> à 1927 tr/min → 4<sup>e</sup> à 2724 en une demi-seconde |
-| **Déclenché au-delà de** | Charge à partir de laquelle la demande est jugée franche. Le niveau ne suffit pas : il faut aussi que la charge ait **monté** franchement dans la seconde et demie écoulée. Sans cette condition, le rétrogradage partait dès 3,6 km/h par seconde — c'est-à-dire en remettant délicatement les gaz — puisque, faute de pédale, la charge est déduite de l'accélération. **Ce curseur n'agit plus** : depuis le lot PLANCHER, le seuil vient du mode de conduite — 0,75 en Route, 0,65 en Sport. Ce qu'il faut en faire n'est pas tranché |
+| **Rétrogradage forcé** | Enfoncer la pédale fait descendre chercher le couple, au lieu d'attendre le seuil de passage. Mesuré : 6<sup>e</sup> à 1927 tr/min → 4<sup>e</sup> à 2724 en une demi-seconde. Le seuil qui le déclenche n'est pas un réglage de profil : il appartient au mode de conduite, 0,75 de charge en Route et 0,65 en Sport, et il faut en plus que la charge ait **monté** de 0,25 dans la seconde et demie écoulée |
 | **Régime visé** | Ce qu'on cherche à retrouver après la descente, en fraction du rupteur |
 | **Rapports descendus au plus** | Deux suffisent sur un profil routier, trois donnent une réponse plus vive |
 | **Pétarade** | Claquements à l'échappement au lever de pied. Synthétisés, la banque sonore n'en contenant pas |

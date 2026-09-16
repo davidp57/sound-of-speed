@@ -142,6 +142,20 @@ Toutes les évolutions notables du projet. Format
   Une banque ordinaire, elle, ne coûte toujours aucune requête — c'est le chemin
   le plus chargé du serveur, et c'est mesuré.
 
+### Retiré
+
+- **Le curseur « Déclenché au-delà de » a quitté l'écran Avancé.** Il affichait
+  le seuil de charge du rétrogradage forcé, réglable de 0,3 à 1 — et la boîte ne
+  le lisait plus depuis le lot PLANCHER, le 11 septembre 2026, où le seuil est
+  passé au mode de conduite. Un curseur qui ne commandait rien, et qui a trompé
+  son premier lecteur : c'est en le croyant actif qu'on a d'abord cherché le
+  défaut du rétrogradage forcé au mauvais endroit.
+
+  Le seuil vit désormais au seul endroit où il est lu, avec la marge de passage
+  dont il n'est qu'une autre face. La clé est effacée des profils déjà
+  enregistrés plutôt que laissée morte — `PROFILE_FORMAT_VERSION` passe à 11 —,
+  et le reste du rétrogradage forcé ne bouge pas.
+
 ### Corrigé
 
 - **Le rétrogradage forcé ne se déclenchait presque jamais.** David, après

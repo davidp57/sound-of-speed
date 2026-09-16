@@ -654,8 +654,13 @@ export interface FeelPreset {
    */
   kickdown: {
     enabled: boolean
-    /** Charge à partir de laquelle la demande est jugée franche, de 0 à 1. */
-    loadThreshold: number
+    /**
+     * Le seuil de charge n'est plus ici : il appartient au mode de conduite,
+     * dans `core/drivetrain/drive-mode.ts`, avec la marge de passage dont il
+     * n'est qu'une autre face. Le profil en a porté un jusqu'au 16 septembre
+     * 2026, mais la boîte ne le lisait plus depuis le lot PLANCHER — un curseur
+     * qui ne commandait rien, et qui a trompé son premier lecteur.
+     */
     /** Régime visé après rétrogradage, en fraction du rupteur. */
     targetRpmFraction: number
     /** Nombre maximal de rapports descendus d'un coup. */
@@ -908,7 +913,12 @@ export type ProfileOrigin = Pick<
  * Version dix : la boîte est passée à sept rapports le 11 septembre 2026, et
  * les tableaux qui se comptent par rapport ont changé de longueur avec elle.
  */
-export const PROFILE_FORMAT_VERSION = 10
+/**
+ * Version onze : le seuil du rétrogradage forcé quitte le profil, le
+ * 16 septembre 2026. Il appartient au mode de conduite, et la boîte ne lisait
+ * plus celui du profil depuis la version dix.
+ */
+export const PROFILE_FORMAT_VERSION = 11
 
 export interface ProfileFile {
   version: number

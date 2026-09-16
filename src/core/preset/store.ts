@@ -514,7 +514,7 @@ function reconcile(profile: Partial<Profile>): Profile {
     speed: migrateSpeed(base, profile.speed),
     mix: migrateMix(base, profile.mix),
     feel: {
-      kickdown: { ...base.feel.kickdown, ...(profile.feel?.kickdown ?? {}) },
+      kickdown: migrateKickdown(base, profile.feel?.kickdown),
       backfire: { ...base.feel.backfire, ...(profile.feel?.backfire ?? {}) },
       shiftJolt: { ...base.feel.shiftJolt, ...(profile.feel?.shiftJolt ?? {}) },
     },
@@ -561,6 +561,26 @@ function reconcile(profile: Partial<Profile>): Profile {
   } as SynthRendering)
 
   return complet
+}
+
+/**
+ * Reprend un rétrogradage forcé enregistré par une version antérieure.
+ *
+ * Le seuil de charge a quitté le profil : il appartient au mode de conduite, et
+ * la boîte ne lisait plus celui du profil depuis le lot PLANCHER. Le curseur qui
+ * l'affichait ne commandait donc rien, et David l'a lu comme s'il commandait —
+ * c'est ce qui a décidé de son retrait. La clé est effacée du stockage plutôt
+ * que laissée morte, pour la même raison que le volume général : sans quoi le
+ * schéma mentirait à qui le lit.
+ */
+function migrateKickdown(
+  base: Profile,
+  stored: Partial<Profile['feel']['kickdown']> | undefined,
+): Profile['feel']['kickdown'] {
+  const merged: Record<string, unknown> = { ...base.feel.kickdown, ...(stored ?? {}) }
+  delete merged.loadThreshold
+
+  return merged as unknown as Profile['feel']['kickdown']
 }
 
 /**
