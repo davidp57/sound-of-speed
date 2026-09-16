@@ -144,6 +144,27 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le rétrogradage forcé ne se déclenchait presque jamais.** David, après
+  l'essai du 16 septembre 2026 : « j'ai jamais eu de kickback ». Vérifié sur les
+  58 000 relevés de ses trois trajets du jour, il avait raison — l'automate
+  rejoué sur ses traces ne rend que **deux** déclenchements en 2 h 25, et aucun
+  sur les deux trajets du soir.
+
+  La cause tient à ce à quoi la charge est rapportée. `mix.fullLoadAccelMs2`
+  est fixé par l'étalonnage au pic de la reprise franche — 5,5 m/s² sur sa
+  voiture —, si bien qu'une charge de 1 vaut « aussi fort que le jour de
+  l'étalonnage ». Une conduite ordinaire ne reproduit pas ce pic : ses trois
+  trajets ont plafonné à 5,18, 4,49 et 3,51 m/s², soit 0,97, 0,82 et 0,64 de
+  charge, contre un seuil à 0,95 en mode Route.
+
+  Baisser ce seul seuil n'aurait rendu qu'un rétrogradage de plus : la montée de
+  charge exigée, 0,35 sur une fenêtre d'une seconde et demie, bloquait en
+  second. Les deux conditions étaient chacune au bord et leur conjonction ne
+  tombait presque jamais. Elles descendent donc ensemble — **0,75 de charge en
+  Route** (0,65 en Sport, l'écart est conservé) et **0,25 de montée** —, ce qui
+  rend onze rétrogradages forcés sur les mêmes 2 h 25, soit un toutes les treize
+  minutes.
+
 - **Un identifiant de profil tenait sur cinq caractères de hasard.** Deux profils
   créés dans la même milliseconde ne se distinguent que par eux : soixante
   millions de possibilités, assez pour l'usage, pas assez pour le test qui en

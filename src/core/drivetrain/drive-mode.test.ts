@@ -108,12 +108,28 @@ describe('le premier passage', () => {
 })
 
 describe('le rétrogradage forcé', () => {
-  it('demande le pied au plancher en route, et moins en sport', () => {
+  it('demande une reprise plus franche en route qu’en sport', () => {
     expect(kickdownLoadFor('road')).toBeGreaterThan(kickdownLoadFor('sport'))
     // Sur l'échelle réelle de la charge, centrée sur 0,5 : les deux seuils
     // désignent une accélération franche, pas une relance ordinaire.
-    expect(kickdownLoadFor('sport')).toBeGreaterThan(0.75)
+    expect(kickdownLoadFor('sport')).toBeGreaterThan(0.5)
     expect(kickdownLoadFor('road')).toBeLessThanOrEqual(1)
+  })
+
+  /**
+   * Le seuil doit rester **sous** ce qu'une conduite ordinaire produit, sans
+   * quoi il ne se déclenche jamais — c'est le défaut relevé le 16 septembre
+   * 2026.
+   *
+   * La charge est rapportée à la reprise d'étalonnage, pied au plancher : une
+   * conduite ordinaire plafonne bien en dessous. Sur les trois trajets de ce
+   * jour-là, la charge maximale valait 0,97, 0,82 et 0,64 — un seuil à 0,95
+   * n'était atteint que par le premier.
+   */
+  it('reste atteignable par une conduite ordinaire', () => {
+    const CHARGE_MAX_MESUREE = 0.82
+    expect(kickdownLoadFor('road')).toBeLessThan(CHARGE_MAX_MESUREE)
+    expect(kickdownLoadFor('sport')).toBeLessThan(CHARGE_MAX_MESUREE)
   })
 })
 

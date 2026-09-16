@@ -58,8 +58,15 @@ const UPSHIFT_OVERSHOOT_RPM = 400
  *
  * Ce qui distingue « j'écrase » de « je remets délicatement les gaz », c'est la
  * **montée** : la pédale qui bouge.
+ *
+ * Elle valait 0,35 jusqu'à l'essai du 16 septembre 2026, et c'est elle qui
+ * bloquait en second : baisser le seuil de charge seul ne rendait qu'un
+ * rétrogradage de plus sur 2 h 25 de conduite réelle. Les deux conditions
+ * étaient chacune au bord — aux vingt plus fortes charges du trajet du matin,
+ * la montée médiane valait 0,36 pour un seuil à 0,35 —, donc leur conjonction
+ * ne tombait presque jamais. Elles se descendent ensemble.
  */
-const KICKDOWN_RISE_LOAD = 0.35
+const KICKDOWN_RISE_LOAD = 0.25
 /**
  * Fenêtre sur laquelle cette montée est mesurée, en secondes.
  *
