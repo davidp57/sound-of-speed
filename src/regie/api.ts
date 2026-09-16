@@ -28,8 +28,8 @@ export interface Fiche {
   fournisseurs: { id: string; nom: string }[]
   motDePasse: boolean
   sessions: { ouverteLe: string; expireLe: string }[]
-  roles: { role: string; expireLe: string | null }[]
-  banques: string[]
+  roles: { role: string; expireLe: string | null; source: 'pile' | 'compte' }[]
+  banques: { banque: string; source: 'pile' | 'compte' }[]
   banquesReservees: string[]
   assistance: { ouverte: boolean; jusquau: string | null }
   plafond: { octets: number; particulier: boolean }

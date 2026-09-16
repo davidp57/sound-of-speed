@@ -245,6 +245,9 @@ describe('la fiche d’un compte', () => {
     expect(fiche.fournisseurs).toEqual([])
     expect(fiche.sessions).toHaveLength(1)
     expect(fiche.roles.map((droit) => droit.role)).toEqual(['conduite', 'atelier', 'synthese'])
+    // Les trois viennent de la pile tant que rien n'est encaissé : la régie ne
+    // les reprend pas, et l'écran doit pouvoir le dire avant le clic.
+    expect(fiche.roles.every((droit) => droit.source === 'pile')).toBe(true)
   })
 
   it('montre ce que le compte porte, en nombres', async () => {
@@ -327,9 +330,9 @@ describe('la fiche d’un compte', () => {
     const reponse = await avecBanques.request(`/api/regie/comptes/${conducteur.compte}`, {
       headers: patronne.annonce,
     })
-    const fiche = (await reponse.json()) as { banques: string[] }
+    const fiche = (await reponse.json()) as { banques: { banque: string; source: string }[] }
 
-    expect(fiche.banques).toEqual(['ferrari'])
+    expect(fiche.banques).toEqual([{ banque: 'ferrari', source: 'pile' }])
   })
 
   it('refuse la fiche à qui n’administre pas, et le compte inconnu de la même façon', async () => {
@@ -394,8 +397,8 @@ describe('donner et reprendre un rôle', () => {
 
     const fiche = (await (
       await ferme().request(`/api/regie/comptes/${conducteur.compte}`, { headers: patronne.annonce })
-    ).json()) as { roles: { role: string }[] }
-    expect(fiche.roles.map((droit) => droit.role)).toEqual(['synthese'])
+    ).json()) as { roles: { role: string; source: string }[] }
+    expect(fiche.roles).toEqual([{ role: 'synthese', expireLe: null, source: 'compte' }])
 
     // Le rôle de synthèse est un verrou d'affichage : il n'ouvre aucune route,
     // et la conduite reste fermée.
@@ -509,6 +512,36 @@ describe('accorder une banque réservée', () => {
     expect(reponse.status).toBe(404)
   })
 
+  it('dit d’où vient chaque accord : de la pile, ou de la table', async () => {
+    // **Ce que l'écran a besoin de savoir avant le clic.** Un accord venu de la
+    // configuration ne se retire pas depuis la régie : un bouton qui prétendrait
+    // le faire resterait pressé, ce qui s'est vu le 16 septembre 2026.
+    const parLaPile = avecBanque(new Map([[ADRESSE_CONDUCTEUR, new Set([RESERVEE])]]))
+
+    const duConducteur = (await (
+      await parLaPile.request(`/api/regie/comptes/${conducteur.compte}`, {
+        headers: patronne.annonce,
+      })
+    ).json()) as { banques: { banque: string; source: string }[] }
+    expect(duConducteur.banques).toEqual([{ banque: RESERVEE, source: 'pile' }])
+
+    // La patronne, elle, n'est pas nommée dans la variable : rien ne lui est
+    // accordé tant que la régie ne l'a pas fait.
+    const avant = (await (
+      await parLaPile.request(`/api/regie/comptes/${patronne.compte}`, { headers: patronne.annonce })
+    ).json()) as { banques: unknown[] }
+    expect(avant.banques).toEqual([])
+
+    await parLaPile.request(`/api/regie/comptes/${patronne.compte}/banques/${RESERVEE}`, {
+      method: 'PUT',
+      headers: patronne.annonce,
+    })
+    const apres = (await (
+      await parLaPile.request(`/api/regie/comptes/${patronne.compte}`, { headers: patronne.annonce })
+    ).json()) as { banques: { banque: string; source: string }[] }
+    expect(apres.banques).toEqual([{ banque: RESERVEE, source: 'compte' }])
+  })
+
   it('montre sur la fiche ce qui est accordé et ce qui peut l’être', async () => {
     await avecBanque().request(`/api/regie/comptes/${conducteur.compte}/banques/${RESERVEE}`, {
       method: 'PUT',
@@ -519,9 +552,9 @@ describe('accorder une banque réservée', () => {
       await avecBanque().request(`/api/regie/comptes/${conducteur.compte}`, {
         headers: patronne.annonce,
       })
-    ).json()) as { banques: string[]; banquesReservees: string[] }
+    ).json()) as { banques: { banque: string; source: string }[]; banquesReservees: string[] }
 
-    expect(fiche.banques).toEqual([RESERVEE])
+    expect(fiche.banques).toEqual([{ banque: RESERVEE, source: 'compte' }])
     expect(fiche.banquesReservees).toEqual([RESERVEE])
   })
 
