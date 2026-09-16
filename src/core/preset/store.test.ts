@@ -1044,7 +1044,27 @@ describe('reprise de la boîte à sept rapports', () => {
     expect(reçu.drivetrain.shiftDelaysS).toHaveLength(7)
   })
 
+  it('retire le seuil du rétrogradage forcé d’un profil enregistré', () => {
+    // La boîte ne le lisait plus depuis le lot PLANCHER : il appartient au mode
+    // de conduite. Un profil de la version précédente le porte encore ; il est
+    // retiré, sans quoi le schéma mentirait à qui le lit.
+    type AvecSeuil = Profile & { feel: { kickdown: { loadThreshold?: number } } }
+    const ancien = { ...createRoadProfile() } as AvecSeuil
+    ancien.feel = {
+      ...ancien.feel,
+      kickdown: { ...ancien.feel.kickdown, loadThreshold: 0.75 },
+    }
+    saveProfiles([ancien as Profile])
+
+    const relu = loadProfiles()[0] as AvecSeuil
+
+    expect(relu.feel.kickdown.loadThreshold).toBeUndefined()
+    // Le reste du rétrogradage est intact : on ne retire que ce champ.
+    expect(relu.feel.kickdown.enabled).toBe(createRoadProfile().feel.kickdown.enabled)
+    expect(relu.feel.kickdown.maxGears).toBe(createRoadProfile().feel.kickdown.maxGears)
+  })
+
   it('monte la version du format, pour que la reprise soit datée', () => {
-    expect(PROFILE_FORMAT_VERSION).toBe(10)
+    expect(PROFILE_FORMAT_VERSION).toBe(11)
   })
 })

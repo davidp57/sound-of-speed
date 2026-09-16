@@ -603,7 +603,6 @@ export function createDefaultProfile(): Profile {
     feel: {
       kickdown: {
         enabled: true,
-        loadThreshold: 0.75,
         // On vise le milieu haut de la plage : assez pour que ça pousse, sans
         // aller chercher le rupteur à chaque sollicitation.
         targetRpmFraction: 0.62,
