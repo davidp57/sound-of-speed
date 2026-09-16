@@ -233,8 +233,8 @@ describe('la fiche d’un compte', () => {
       motDePasse: boolean
       fournisseurs: unknown[]
       sessions: { ouverteLe: string; expireLe: string }[]
-      roles: { role: string; expireLe: string | null }[]
-      banques: string[]
+      roles: { role: string; expireLe: string | null; source: string }[]
+      banques: { banque: string; source: string }[]
     }
 
     expect(reponse.status).toBe(200)
