@@ -205,10 +205,27 @@ function porte(role: string): boolean {
   return fiche.value?.roles.some((droit) => droit.role === role) === true
 }
 
+/**
+ * Ce droit vient-il de la configuration de la pile ?
+ *
+ * **Alors il ne se touche pas d'ici**, et le bouton doit le dire avant le clic
+ * plutôt qu'après : un interrupteur qui reste pressé quoi qu'on fasse est un
+ * interrupteur qui ment. Relevé par David le 16 septembre 2026, sur les trois
+ * rôles offerts par défaut et sur une banque accordée par l'environnement.
+ */
+function vientDeLaPile(role: string): boolean {
+  return fiche.value?.roles.some((droit) => droit.role === role && droit.source === 'pile') === true
+}
+
+function banqueAccordee(banque: string): { accordee: boolean; pile: boolean } {
+  const trouvee = fiche.value?.banques.find((accord) => accord.banque === banque)
+  return { accordee: trouvee !== undefined, pile: trouvee?.source === 'pile' }
+}
+
 async function basculerLaBanque(banque: string): Promise<void> {
   refus.value = ''
   note.value = ''
-  const accordee = fiche.value?.banques.includes(banque) === true
+  const accordee = banqueAccordee(banque).accordee
   const rendu = accordee
     ? await retirerUneBanque(proprietes.compte, banque)
     : await accorderUneBanque(proprietes.compte, banque)
@@ -294,9 +311,15 @@ async function basculerLeRole(role: string): Promise<void> {
           :key="role"
           type="button"
           :aria-pressed="porte(role)"
+          :disabled="vientDeLaPile(role)"
+          :title="
+            vientDeLaPile(role)
+              ? 'Offert à tout le monde par la configuration de la pile : ne se reprend pas ici.'
+              : ''
+          "
           @click="basculerLeRole(role)"
         >
-          {{ role }}
+          {{ role }}<span v-if="vientDeLaPile(role)"> · pile</span>
         </button>
       </dd>
 
@@ -309,10 +332,16 @@ async function basculerLeRole(role: string): Promise<void> {
           v-for="banque in fiche.banquesReservees"
           :key="banque"
           type="button"
-          :aria-pressed="fiche.banques.includes(banque)"
+          :aria-pressed="banqueAccordee(banque).accordee"
+          :disabled="banqueAccordee(banque).pile"
+          :title="
+            banqueAccordee(banque).pile
+              ? 'Accordée par la configuration de la pile : ne se retire pas ici.'
+              : ''
+          "
           @click="basculerLaBanque(banque)"
         >
-          {{ banque }}
+          {{ banque }}<span v-if="banqueAccordee(banque).pile"> · pile</span>
         </button>
       </dd>
 
@@ -333,6 +362,15 @@ async function basculerLeRole(role: string): Promise<void> {
         <span class="muet">{{ fiche.plafond.particulier ? ' — particulier' : ' — commun' }}</span>
       </dd>
     </dl>
+
+    <!--
+      Ce qu'un geste a répondu, **juste sous les boutons qui l'ont déclenché**.
+      En bas de fiche, on ne le voit pas : c'est ce qui est arrivé le 16
+      septembre 2026, où deux clics ont paru sans effet alors que l'écran
+      l'expliquait — vingt lignes plus bas.
+    -->
+    <p v-if="note !== ''" class="note">{{ note }}</p>
+    <p v-if="refus !== ''" class="refus">{{ refus }}</p>
 
     <h3>Agir sur ce compte</h3>
     <div class="gestes">
@@ -379,8 +417,7 @@ async function basculerLeRole(role: string): Promise<void> {
       trace reste, sans son nom ni son adresse.
     </p>
 
-    <p v-if="note !== ''" class="note">{{ note }}</p>
-    <p v-if="refus !== ''" class="refus">{{ refus }}</p>
+
 
     <h3>Ce qu’il porte</h3>
     <dl>
@@ -547,6 +584,12 @@ ul {
 .danger {
   border-color: var(--warn);
   color: var(--warn);
+}
+
+/* Un droit qui vient de la pile se lit, il ne se clique pas. */
+.roles button:disabled {
+  opacity: 0.75;
+  cursor: default;
 }
 
 .fichiers {

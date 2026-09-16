@@ -1675,6 +1675,12 @@ pas ce qui protège — l'adresse se trouve, et le dépôt est public —, c'est
 contrôle serveur qui garde ; ça retire seulement une carte à qui cherche. La page
 elle-même est servie à tout le monde et n'annonce rien.
 
+**Un droit qui vient de la pile se lit, il ne se clique pas.** Les rôles offerts à
+tout le monde par `SPEED_ROLES_OFFERTS` et les banques accordées par
+`SPEED_BANQUES_ACCORDEES` apparaissent marqués « · pile » et désactivés : la régie
+ne les reprend pas, puisqu'ils ne viennent pas de sa table. Sans cette
+distinction, le bouton restait pressé après le clic — un interrupteur qui ment.
+
 **Son code ne part jamais dans la voiture.** C'est une entrée de construction
 séparée, comme le relecteur : elle a son propre paquet — 12,6 ko — tiré seulement
 quand on ouvre `/regie.html`.

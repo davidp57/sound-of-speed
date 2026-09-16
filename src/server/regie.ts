@@ -186,9 +186,17 @@ export interface Fiche {
   motDePasse: boolean
   /** Les sessions encore ouvertes — combien d'appareils, et jusqu'à quand. */
   sessions: { ouverteLe: string; expireLe: string }[]
-  roles: { role: Role; expireLe: string | null }[]
-  /** Les banques restreintes que ce compte peut écouter, des deux sources. */
-  banques: string[]
+  /**
+   * Les rôles, **et d'où ils viennent**.
+   *
+   * La distinction n'est pas décorative : un rôle offert par la pile à tout le
+   * monde ne se reprend pas depuis la régie, et un bouton qui prétendrait le
+   * faire resterait pressé après le clic — ce qu'il a fait, relevé par David le
+   * 16 septembre 2026. L'écran a besoin de le savoir **avant** qu'on clique.
+   */
+  roles: { role: Role; expireLe: string | null; source: 'pile' | 'compte' }[]
+  /** Les banques restreintes que ce compte peut écouter, et d'où l'accord vient. */
+  banques: { banque: string; source: 'pile' | 'compte' }[]
   /**
    * Toutes les banques que la pile déclare réservées.
    *
@@ -246,12 +254,8 @@ export async function ficheDuCompte(
     .where(eq(authSessions.accountId, compte))
     .orderBy(desc(authSessions.createdAt))
 
-  const droits = await droitsDuCompte(
-    base,
-    compte,
-    options.maintenant ?? Date.now(),
-    options.offerts ?? ROLES_OFFERTS_PAR_DEFAUT,
-  )
+  const offerts = options.offerts ?? ROLES_OFFERTS_PAR_DEFAUT
+  const droits = await droitsDuCompte(base, compte, options.maintenant ?? Date.now(), offerts)
   const porte = await ceQuePorte(base, compte)
   const adresse = adresseVisible(ligne.adresse, ligne.anonyme)
 
@@ -284,12 +288,12 @@ export async function ficheDuCompte(
     roles: droits.map(({ role, expireLe }) => ({
       role,
       expireLe: expireLe === null ? null : new Date(expireLe).toISOString(),
+      // Ce que la pile offre à tout le monde prime sur la table, et ne se
+      // reprend pas d'ici : c'est `droitsDuCompte` qui en décide, et l'écran
+      // doit dire la même chose que lui.
+      source: offerts.includes(role) ? ('pile' as const) : ('compte' as const),
     })),
-    banques: banquesDuCompte(
-      options.banques,
-      adresse,
-      await accordsDuCompte(base, compte),
-    ),
+    banques: banquesDuCompte(options.banques, adresse, await accordsDuCompte(base, compte)),
     banquesReservees: [...(options.banques?.restreintes ?? [])].sort(),
     assistance: await assistanceDuCompte(base, compte, options.maintenant ?? Date.now()),
     plafond: await plafondDuCompte(base, compte, options.plafond ?? PLAFOND_PAR_DEFAUT),
@@ -315,13 +319,18 @@ function banquesDuCompte(
   droits: DroitsSurLesBanques | undefined,
   adresse: string | null,
   enBase: ReadonlySet<string>,
-): string[] {
+): { banque: string; source: 'pile' | 'compte' }[] {
   if (droits === undefined) return []
   const siennes = adresse === null ? undefined : droits.accordees.get(adresse.toLowerCase())
-  if (siennes?.has('*') === true) return [...droits.restreintes].sort()
+  const parLaPile = (banque: string) => siennes?.has('*') === true || siennes?.has(banque) === true
+
   return [...droits.restreintes]
-    .filter((banque) => enBase.has(banque) || siennes?.has(banque) === true)
+    .filter((banque) => enBase.has(banque) || parLaPile(banque))
     .sort()
+    // **La pile l'emporte sur la table**, et c'est ce qui décide du bouton : un
+    // accord venu de la configuration ne se retire pas d'ici, quoi qu'il y ait
+    // en base.
+    .map((banque) => ({ banque, source: parLaPile(banque) ? ('pile' as const) : ('compte' as const) }))
 }
 
 /**

@@ -6,6 +6,19 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Corrigé
+
+- **Dans la régie, un droit venu de la pile se présentait comme un interrupteur.**
+  Les trois rôles sont offerts à tout le monde par défaut, et une banque peut être
+  accordée par `SPEED_BANQUES_ACCORDEES` : le bouton paraissait pressé, le clic
+  n'y changeait rien, et le bouton restait pressé. L'écran l'expliquait — vingt
+  lignes plus bas, là où personne ne regarde.
+
+  La fiche dit maintenant **d'où vient chaque droit** : ce qui vient de la
+  configuration est marqué « · pile » et ne se clique pas, ce qui vient de la
+  table reste un interrupteur. Et ce qu'un geste répond s'affiche sous les boutons
+  qui l'ont déclenché. Relevé par David en essayant la régie sur le serveur.
+
 ### Ajouté
 
 - **Chaque dépôt accepté dit où en est la place du compte** : trois en-têtes sur
