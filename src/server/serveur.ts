@@ -20,7 +20,13 @@ import type { Base } from './base/base'
 import { banquesInterdites, peutJouer, type DroitsSurLesBanques } from './banques'
 import type { CompteurDeDepense } from './depense'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
-import { DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } from './retention'
+import {
+  DELAIS_PAR_DEFAUT,
+  faireDeLaPlace,
+  rotationPossible,
+  verdictDuCompte,
+  type Delais,
+} from './retention'
 import {
   archiveDeLaSession,
   effacerSession,
@@ -607,16 +613,21 @@ export function creerServeur(options: OptionsDuServeur): Hono {
           octets.length,
           plafond.octets,
         )
-        if (place.depasse) {
+        // **Au-delà du plafond, on ne refuse que ce qu'on ne saura pas ranger.**
+        // Le dépassement est temporaire : on accepte, puis la rotation fait la
+        // place. Le refus ne reste que pour un compte dont tout est épinglé —
+        // et là, effacer est justement ce qu'on ne peut pas faire.
+        if (place.depasse && !(await rotationPossible(base, compte, place.octets, plafond.octets))) {
           // 507, et le client ne le rejoue pas : un code de panne passagère
           // ferait réessayer la voiture indéfiniment pour un envoi qui ne
           // passera jamais — c'est exactement ce qui a produit 726 tentatives en
           // 137 secondes le 11 septembre 2026.
           console.warn(
             `plafond atteint pour ${compte} : ${plafond.octets} octets` +
-              `${plafond.particulier ? ' (plafond particulier)' : ''}, dépôt refusé`,
+              `${plafond.particulier ? ' (plafond particulier)' : ''},` +
+              ' tout est épinglé, dépôt refusé',
           )
-          return c.text('compte plein', 507)
+          return c.text('tout est épinglé', 507)
         }
         // `?reprise=1` dit « ceci n'est pas un dépôt du jour, c'est un
         // déménagement » : le fichier entre archivé, comme ceux que la reprise
@@ -642,6 +653,26 @@ export function creerServeur(options: OptionsDuServeur): Hono {
           }
         }
 
+        // La place manque : on la fait, **après avoir écrit**. La voiture ne
+        // perd jamais ce qu'elle vient d'enregistrer, et un ménage qui échoue ne
+        // fait pas échouer le dépôt — c'est déjà le motif de la reprise du
+        // profil mesuré, juste au-dessus.
+        let apres = place.octets
+        if (place.etat === 'rotation') {
+          try {
+            const libere = await faireDeLaPlace(base, compte, place.octets, plafond.octets)
+            apres = place.octets - libere.octets
+            if (libere.trajets > 0) {
+              console.log(
+                `rotation pour ${compte} : ${libere.trajets} trajets effacés,` +
+                  ` ${Math.round(libere.octets / 1024)} Kio rendus`,
+              )
+            }
+          } catch (erreur) {
+            console.error(`rotation : ${String(erreur)}`)
+          }
+        }
+
         // **Ce que la réponse dit de la place**, sur chaque dépôt accepté. La
         // voiture en envoie un toutes les cinq minutes : l'information arrive
         // donc toute seule, sans sondage ni route à interroger, et l'application
@@ -651,7 +682,10 @@ export function creerServeur(options: OptionsDuServeur): Hono {
         // tout le reste comme un échec, un proxy inversé peut normaliser un code
         // inhabituel, et le jeu d'accord fige déjà 201 sur un dépôt réussi.
         // Absents, un client plus ancien ne voit aucune différence.
-        return c.text('', 201, enTetesDePlace(place))
+        // L'état reste celui d'avant le ménage — « la rotation est activée »,
+        // et non « regardez comme c'est rangé » —, mais les octets sont ceux
+        // d'après : c'est la place qui reste, la seule qui serve à l'écran.
+        return c.text('', 201, enTetesDePlace({ ...place, octets: apres }))
       }
 
       const octets = await lireDepot(base, compte, dossier, nom)

@@ -45,6 +45,20 @@ async function deposer(nom: string, taille: number, plafond?: number): Promise<R
   })
 }
 
+/**
+ * Dépose une tranche dont le nom fait un trajet.
+ *
+ * C'est la clé de session que la rotation manipule : un dépôt au nom libre est
+ * un « dépôt seul », et il ne se range pas de la même façon.
+ */
+async function deposerUnTrajet(session: string, taille: number, plafond?: number): Promise<Response> {
+  return serveur(plafond).request(`/traces/${session}_001.jsonl`, {
+    method: 'PUT',
+    headers: { ...annonce, 'Content-Type': 'application/json' },
+    body: 'x'.repeat(taille),
+  })
+}
+
 /** Ce que la réponse dit de la place. */
 function place(reponse: Response) {
   return {
@@ -108,13 +122,44 @@ describe('ce que le dépôt dit de la place', () => {
     expect(place(rejeu)).toEqual({ etat: 'libre', octets: 400, plafond: 1000 })
   })
 
-  it('refuse en 507 au-delà du plafond, sans poser d’en-tête de place', async () => {
-    await deposer('un.json', 900, 1000)
-    const refus = await deposer('deux.json', 200, 1000)
+  it('accepte au-delà du plafond, puis fait la place', async () => {
+    // Deux trajets anciens, et un dépôt qui fait déborder : la voiture ne perd
+    // pas ce qu'elle vient d'enregistrer, c'est le passé qui s'efface.
+    expect((await deposerUnTrajet('2026-08-01-06-00-00_aaa', 400, 1000)).status).toBe(201)
+    expect((await deposerUnTrajet('2026-08-02-06-00-00_bbb', 400, 1000)).status).toBe(201)
+
+    const depassement = await deposerUnTrajet('2026-09-14-06-00-00_ccc', 300, 1000)
+
+    expect(depassement.status).toBe(201)
+    // L'état dit que la rotation est armée ; les octets sont ceux d'après.
+    expect(place(depassement).etat).toBe('rotation')
+    expect(place(depassement).octets).toBeLessThanOrEqual(900)
+
+    // Le plus ancien est parti, le plus récent est là.
+    const restants = (await (
+      await serveur(1000).request('/sessions/', { headers: annonce })
+    ).json()) as { cle: string }[]
+    expect(restants.map((session) => session.cle)).toContain('2026-09-14-06-00-00_ccc')
+    expect(restants.map((session) => session.cle)).not.toContain('2026-08-01-06-00-00_aaa')
+  })
+
+  it('refuse en 507 quand tout est épinglé, et le dit', async () => {
+    expect((await deposerUnTrajet('2026-08-01-06-00-00_aaa', 900, 1000)).status).toBe(201)
+    const epingle = await serveur(1000).request('/sessions/2026-08-01-06-00-00_aaa/epingle', {
+      method: 'PUT',
+      headers: annonce,
+    })
+    expect(epingle.status).toBe(200)
+
+    const refus = await deposerUnTrajet('2026-09-14-06-00-00_ccc', 300, 1000)
 
     expect(refus.status).toBe(507)
-    // Rien de déjà déposé n'a bougé : le plafond refuse, il n'efface jamais.
-    expect(place(await deposer('un.json', 900, 1000)).octets).toBe(900)
+    expect(await refus.text()).toContain('épinglé')
+    // Rien de déjà déposé n'a bougé : la rotation n'efface pas une épingle.
+    const restants = (await (
+      await serveur(1000).request('/sessions/', { headers: annonce })
+    ).json()) as { cle: string }[]
+    expect(restants.map((session) => session.cle)).toContain('2026-08-01-06-00-00_aaa')
   })
 
   it('suit le plafond particulier d’un compte plutôt que le commun', async () => {

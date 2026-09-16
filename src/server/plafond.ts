@@ -18,6 +18,8 @@
 
 import { and, eq, sql } from 'drizzle-orm'
 
+import { etatDeLaPlace } from '../core/retention/rotation'
+
 import type { Base } from './base/base'
 import { deposits, storageQuotas } from './base/schema'
 
@@ -57,14 +59,6 @@ export async function plafondDuCompte(
 }
 
 /**
- * À partir d'où l'on prévient : trois quarts du plafond.
- *
- * En dur, et nommé : rien ne demande encore à le bouger, et une variable de pile
- * de plus se paierait en configuration à saisir sans rien ouvrir.
- */
-export const SEUIL_D_ALERTE = 0.75
-
-/**
  * Où en est un compte, une fois ce dépôt écrit.
  *
  * **C'est ce que la réponse annonce**, et c'est pourquoi la mesure porte sur
@@ -75,8 +69,8 @@ export interface Place {
   /** Ce que le compte pèse, ce dépôt compris. */
   octets: number
   plafond: number
-  /** Ce qu'on annonce : `rotation` viendra avec la rotation, pas avant. */
-  etat: 'libre' | 'bientot'
+  /** Ce qu'on annonce : les seuils vivent dans le cœur, avec la rotation. */
+  etat: 'libre' | 'bientot' | 'rotation'
   /** Ce dépôt fait-il dépasser le plafond ? */
   depasse: boolean
 }
@@ -131,7 +125,7 @@ export async function placeApresLeDepot(
   return {
     octets: apres,
     plafond,
-    etat: apres >= plafond * SEUIL_D_ALERTE ? 'bientot' : 'libre',
+    etat: etatDeLaPlace(apres, plafond),
     depasse: apres > plafond,
   }
 }

@@ -1775,10 +1775,33 @@ et non un code : le client teste `response.ok` et traite tout le reste comme un
 fige déjà `201` sur un dépôt réussi. Absents, un client plus ancien ne voit aucune
 différence.
 
-**Aujourd'hui, rien ne fait encore de place à la voiture** : le plafond atteint,
-les dépôts sont refusés jusqu'à ce qu'on efface des trajets à la main. La
-rotation est le [ticket 08 de DURCIR](.backlog/DURCIR/tickets/08-la-rotation-fait-de-la-place.md),
-et l'écran qui prévient le [09](.backlog/DURCIR/tickets/09-le-bandeau-et-la-telemetrie.md).
+#### La rotation : faire de la place au lieu de refuser
+
+Au-delà de **95 %**, le serveur accepte quand même le dépôt, **puis** efface les
+trajets les plus anciens jusqu'à redescendre à 90 %. La voiture ne perd jamais ce
+qu'elle vient d'enregistrer : le dépassement est temporaire, borné par la taille
+d'une tranche. `Speed-Place` vaut alors `rotation`.
+
+**Ce n'est pas la rétention**, et les deux ne se remplacent pas : la rétention
+juge sur l'âge, donc elle ne libère rien quand tout est récent — ce qui est le cas
+d'une voiture qui roule beaucoup. La rotation juge sur la place. Mais ce qui est
+protégé se lit au même endroit, dans le cœur.
+
+**Seule l'épingle protège**, et à aucun seuil elle ne cède. Les trajets repris de
+l'ancien serveur de fichiers, eux, retiennent la rétention mais pas la rotation.
+
+Un compte qui n'a plus que des épingles reste plein : son dépôt est refusé en
+**507**, et le message dit de **décrocher** une épingle — envoyer effacer serait
+envoyer buter sur ce que le serveur vient de ne pas pouvoir faire.
+
+Pourquoi redescendre à 90 % et pas juste sous le seuil : à peine dessous, la
+rotation tournerait à chaque dépôt ; beaucoup plus bas, elle emporterait un gros
+paquet d'un coup. À 90 %, sur 250 Mio et le débit d'une voiture, un passage libère
+de quoi tenir une dizaine d'heures de route.
+
+**Ce qui prévient le conducteur** est le
+[ticket 09 de DURCIR](.backlog/DURCIR/tickets/09-le-bandeau-et-la-telemetrie.md) :
+aujourd'hui la rotation tourne sans qu'il le sache.
 
 Un compte au-delà voit son dépôt refusé en **507**, un code que la voiture ne
 rejoue pas — un code de panne passagère la ferait réessayer indéfiniment pour un

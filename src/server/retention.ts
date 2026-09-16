@@ -17,6 +17,7 @@ import {
   type TrajetJuge,
   type Verdict,
 } from '../core/retention/regle'
+import { rotationDeRetention } from '../core/retention/rotation'
 
 import type { Base } from './base/base'
 import { effacerSession, listerSessions } from './sessions'
@@ -44,6 +45,74 @@ export async function verdictDuCompte(
   }))
 
   return verdictDeRetention(trajets, maintenant, delais)
+}
+
+/**
+ * Fait de la place, quand elle manque.
+ *
+ * **Ce n'est pas le ménage de rétention**, et les deux ne se remplacent pas : la
+ * rétention juge sur l'âge et ne libère rien quand tout est récent, ce qui est le
+ * cas d'une voiture qui roule beaucoup. La règle est celle du cœur, et ce module
+ * ne fait que lui donner l'état des trajets et appliquer ce qu'elle rend.
+ *
+ * Rend ce qui a été libéré, et si le compte reste malgré tout au-dessus du
+ * plafond — un compte qui n'a plus que des épingles.
+ */
+export async function faireDeLaPlace(
+  base: Base,
+  compte: string,
+  occupe: number,
+  plafond: number,
+): Promise<{ trajets: number; octets: number; bloque: boolean }> {
+  const trajets: TrajetJuge[] = (await listerSessions(base, compte)).map((session) => ({
+    cle: session.cle,
+    isole: session.isole,
+    enregistreLe: session.enregistreLe,
+    octets: session.octets,
+    tranches: session.tranches.length,
+    traces: session.traces,
+    journal: session.journal,
+    aVoir: session.aVoir,
+    exemption: session.exemption,
+  }))
+
+  const rotation = rotationDeRetention(trajets, occupe, plafond)
+  for (const trajet of rotation.aEffacer) {
+    await effacerSession(base, compte, trajet.cle)
+  }
+
+  return { trajets: rotation.aEffacer.length, octets: rotation.octets, bloque: rotation.bloque }
+}
+
+/**
+ * Ce qu'une rotation aurait à faire, sans rien effacer.
+ *
+ * Sert avant d'écrire : un dépôt qui ferait dépasser le plafond n'est refusé que
+ * si **rien** ne pourra être libéré ensuite. Autrement dit, on ne refuse pas ce
+ * qu'on saura ranger.
+ */
+export async function rotationPossible(
+  base: Base,
+  compte: string,
+  occupe: number,
+  plafond: number,
+): Promise<boolean> {
+  const trajets = await listerSessions(base, compte)
+  return !rotationDeRetention(
+    trajets.map((session) => ({
+      cle: session.cle,
+      isole: session.isole,
+      enregistreLe: session.enregistreLe,
+      octets: session.octets,
+      tranches: session.tranches.length,
+      traces: session.traces,
+      journal: session.journal,
+      aVoir: session.aVoir,
+      exemption: session.exemption,
+    })),
+    occupe,
+    plafond,
+  ).bloque
 }
 
 /** Ce qu'un passage de la règle a fait. */

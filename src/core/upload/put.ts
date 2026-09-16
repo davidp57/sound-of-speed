@@ -17,14 +17,20 @@
  */
 
 /**
- * Ce qu'on dit quand le serveur est plein pour ce compte.
+ * Ce qu'on dit quand le serveur refuse un dépôt faute de place.
  *
- * Le message part vers l'écran de configuration, qui l'affiche tel quel : il
- * doit donc dire quoi faire, et non seulement ce qui s'est passé. Il vit ici
- * parce que les deux façons de déposer — un fichier, une tranche — le donnent.
+ * **Il ne dit plus « effacez des trajets », et c'est la rotation qui l'impose** :
+ * le serveur efface désormais les plus anciens tout seul quand la place manque.
+ * S'il refuse quand même, c'est qu'il ne restait que des trajets épinglés — et
+ * effacer est justement ce qu'il vient de ne pas pouvoir faire. Envoyer le
+ * conducteur effacer serait l'envoyer buter sur la même chose.
+ *
+ * Le message part vers l'écran, qui l'affiche tel quel : il doit donc dire quoi
+ * faire, et non seulement ce qui s'est passé. Il vit ici parce que les deux
+ * façons de déposer — un fichier, une tranche — le donnent.
  */
 export const PLEIN =
-  'Le serveur est plein pour ce compte : effacez des trajets depuis l’écran du compte — en les emportant d’abord si vous voulez les garder. Emporter seul ne libère rien.'
+  'Le serveur est plein pour ce compte, et tous les trajets qui restent sont épinglés : décrochez-en un depuis l’écran des trajets — en l’emportant d’abord si vous voulez le garder.'
 
 /**
  * Pourquoi cela n'est pas parti.

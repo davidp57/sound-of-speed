@@ -18,6 +18,21 @@ Toutes les évolutions notables du projet. Format
   inhabituel, et le contrat fige déjà `201` sur un dépôt réussi. Un client qui ne
   les lit pas ne voit aucune différence.
 
+- **Le serveur fait de la place au lieu de refuser.** Au-delà de 95 % du plafond,
+  il accepte le dépôt **puis** efface les trajets les plus anciens jusqu'à
+  redescendre à 90 %. La voiture ne perd jamais ce qu'elle vient d'enregistrer ;
+  c'est le passé qui cède, et le refus fait perdre le présent pour garder le
+  passé.
+
+  **Seule l'épingle protège**, à aucun seuil elle ne cède. Un compte qui n'a plus
+  qu'elles reste plein : son dépôt est refusé en 507, avec un message qui dit de
+  **décrocher** — envoyer effacer serait envoyer buter sur ce que le serveur vient
+  de ne pas pouvoir faire.
+
+  La rotation n'est pas la rétention : celle-ci juge sur l'âge et ne libère rien
+  quand tout est récent, ce qui est le cas d'une voiture qui roule beaucoup. Mais
+  ce qui est protégé reste défini à un seul endroit.
+
 - **Une régie, pour administrer les comptes depuis un écran.** Une troisième
   page, `/regie`, qui liste les comptes du serveur — les derniers créés en haut,
   avec nom, adresse, date, rôles et poids déposé — et une recherche par nom ou
