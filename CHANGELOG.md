@@ -24,10 +24,17 @@ Toutes les évolutions notables du projet. Format
   c'est le passé qui cède, et le refus fait perdre le présent pour garder le
   passé.
 
-  **Seule l'épingle protège**, à aucun seuil elle ne cède. Un compte qui n'a plus
-  qu'elles reste plein : son dépôt est refusé en 507, avec un message qui dit de
-  **décrocher** — envoyer effacer serait envoyer buter sur ce que le serveur vient
-  de ne pas pouvoir faire.
+  **Seule l'épingle protège**, à aucun seuil elle ne cède. Un compte dont rien ne
+  peut être libéré reste plein : son dépôt est refusé en 507, avec un message qui
+  donne les deux issues — décrocher une épingle, ou effacer des données. Il ne dit
+  pas « tout est épinglé », qui serait faux : le plafond pèse tous les dépôts,
+  alors que la rotation ne range que les trajets.
+
+  **Le dépôt qui arrive n'est jamais emporté par sa propre rotation.** Les trajets
+  sont classés par leur date d'enregistrement, lue dans le nom de la tranche : une
+  trace de mars remontée aujourd'hui est le trajet le plus ancien du compte. Elle
+  partait, et le client recevait un `201` — trouvé en relisant la branche, avant
+  que ça roule.
 
   La rotation n'est pas la rétention : celle-ci juge sur l'âge et ne libère rien
   quand tout est récent, ce qui est le cas d'une voiture qui roule beaucoup. Mais

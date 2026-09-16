@@ -42,11 +42,17 @@ export interface Rotation {
   /** Ce que cela rendrait, en octets. */
   octets: number
   /**
-   * Reste-t-il au-delà du plafond une fois tout cela parti ?
+   * Reste-t-il au-delà du plafond une fois tout l'effaçable parti ?
    *
-   * Vrai quand il n'y a plus rien d'effaçable : tout est épinglé. C'est le seul
-   * cas où un dépôt se refuse encore, et le refus doit alors dire de décrocher
-   * une épingle — effacer est justement ce qu'on vient de ne pas pouvoir faire.
+   * **Ce n'est pas la même chose que « tout est épinglé »**, et l'écrire ainsi
+   * serait faux : le plafond pèse **tous** les dépôts d'un compte, alors que la
+   * rotation ne range que ce qui forme un trajet — les traces et le journal. Un
+   * compte alourdi par ses relevés de mesure est donc bloqué sans avoir une seule
+   * épingle. Le refus doit dire ce qui est vrai : rien ne peut être libéré
+   * automatiquement.
+   *
+   * Quand c'est vrai, **rien n'est effacé** : perdre des trajets sans repasser
+   * sous le plafond serait payer sans rien obtenir.
    */
   bloque: boolean
 }
@@ -63,12 +69,17 @@ export function rotationDeRetention(
   plafond: number,
 ): Rotation {
   const cible = plafond * CIBLE_APRES_ROTATION
-  if (occupe <= plafond * SEUIL_DE_ROTATION) {
+  // **Strictement en dessous du seuil, on ne fait rien** — et la comparaison est
+  // la même que celle qui annonce l'état, sans quoi le serveur dirait « rotation »
+  // sur un dépôt où rien ne tourne.
+  if (occupe < plafond * SEUIL_DE_ROTATION) {
     return { aEffacer: [], octets: 0, bloque: false }
   }
 
   const candidats = [...trajets]
-    .filter((trajet) => trajet.exemption !== 'epingle')
+    // Un trajet qui ne pèse rien ne rend rien : le prendre serait l'effacer pour
+    // le principe.
+    .filter((trajet) => trajet.exemption !== 'epingle' && trajet.octets > 0)
     .sort((a, b) => a.enregistreLe - b.enregistreLe)
 
   const aEffacer: TrajetJuge[] = []
@@ -80,13 +91,20 @@ export function rotationDeRetention(
     restant -= trajet.octets
   }
 
+  // Ce qui compte pour refuser n'est pas d'avoir atteint la cible — on peut s'en
+  // approcher sans l'atteindre et continuer de servir — mais de rester au-dessus
+  // du plafond une fois tout l'effaçable parti.
+  const bloque = restant > plafond
+
+  // **Bloqué, on n'efface rien.** Emporter tous les trajets non épinglés d'un
+  // compte pour rester quand même au-dessus du plafond, c'est payer sans rien
+  // obtenir : le dépôt sera refusé de toute façon.
+  if (bloque) return { aEffacer: [], octets: 0, bloque: true }
+
   return {
     aEffacer,
     octets: aEffacer.reduce((somme, trajet) => somme + trajet.octets, 0),
-    // Ce qui compte pour refuser n'est pas d'avoir atteint la cible — on peut
-    // s'en approcher sans l'atteindre et continuer de servir — mais de rester
-    // au-dessus du plafond une fois tout l'effaçable parti.
-    bloque: restant > plafond,
+    bloque: false,
   }
 }
 

@@ -33,9 +33,9 @@ describe('un dépôt de tranche refusé', () => {
     expect(rendu.retry).toBe(false)
     // Mais la tranche reste : effacer deux trajets suffit à tout faire repartir.
     expect(rendu.garder).toBe(true)
-    // Le message ne dit plus d'effacer : le serveur vient justement de ne pas
-    // pouvoir le faire, et il ne reste que des trajets épinglés.
-    expect(rendu.detail).toContain('épinglés')
+    // Le message ne promet pas que tout est épinglé — le plafond pèse aussi ce
+    // que la rotation ne sait pas ranger — et il donne les deux issues.
+    expect(rendu.detail).toContain('rien pu libérer')
     expect(rendu.detail).toContain('décrochez')
   })
 

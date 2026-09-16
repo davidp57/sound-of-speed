@@ -21,9 +21,9 @@ import { banquesInterdites, peutJouer, type DroitsSurLesBanques } from './banque
 import type { CompteurDeDepense } from './depense'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
 import {
+  appliquerLaRotation,
   DELAIS_PAR_DEFAUT,
-  faireDeLaPlace,
-  rotationPossible,
+  rotationAvantEcriture,
   verdictDuCompte,
   type Delais,
 } from './retention'
@@ -613,11 +613,23 @@ export function creerServeur(options: OptionsDuServeur): Hono {
           octets.length,
           plafond.octets,
         )
+        // **Ce que la rotation ferait, décidé avant d'écrire.** Deux raisons, et
+        // la seconde a été mesurée : une seule lecture des trajets sert au refus
+        // et au ménage, là où deux doubleraient le parcours le plus coûteux du
+        // dépôt ; et la liste d'avant l'écriture **ne contient pas le dépôt qui
+        // arrive**, donc il ne peut pas être emporté par sa propre rotation. Une
+        // trace de mars remontée aujourd'hui est le trajet le plus ancien du
+        // compte : elle partait, et le client recevait un 201.
+        const rotation =
+          place.etat === 'rotation' || place.depasse
+            ? await rotationAvantEcriture(base, compte, place.octets, plafond.octets)
+            : null
+
         // **Au-delà du plafond, on ne refuse que ce qu'on ne saura pas ranger.**
         // Le dépassement est temporaire : on accepte, puis la rotation fait la
-        // place. Le refus ne reste que pour un compte dont tout est épinglé —
-        // et là, effacer est justement ce qu'on ne peut pas faire.
-        if (place.depasse && !(await rotationPossible(base, compte, place.octets, plafond.octets))) {
+        // place. Le refus ne reste que pour un compte dont rien ne peut être
+        // libéré — tout est épinglé, ou le poids ne vient pas des trajets.
+        if (place.depasse && rotation?.bloque === true) {
           // 507, et le client ne le rejoue pas : un code de panne passagère
           // ferait réessayer la voiture indéfiniment pour un envoi qui ne
           // passera jamais — c'est exactement ce qui a produit 726 tentatives en
@@ -625,11 +637,11 @@ export function creerServeur(options: OptionsDuServeur): Hono {
           console.warn(
             `plafond atteint pour ${compte} : ${plafond.octets} octets` +
               `${plafond.particulier ? ' (plafond particulier)' : ''},` +
-              ' tout est épinglé, dépôt refusé',
+              ' rien à libérer, dépôt refusé',
           )
           // Le refus dit la place lui aussi : c'est la réponse que l'écran a le
           // plus besoin de comprendre, et la taire l'obligerait à deviner.
-          return c.text('tout est épinglé', 507, enTetesDePlace(place))
+          return c.text('rien à libérer', 507, enTetesDePlace(place))
         }
         // `?reprise=1` dit « ceci n'est pas un dépôt du jour, c'est un
         // déménagement » : le fichier entre archivé, comme ceux que la reprise
@@ -655,21 +667,19 @@ export function creerServeur(options: OptionsDuServeur): Hono {
           }
         }
 
-        // La place manque : on la fait, **après avoir écrit**. La voiture ne
-        // perd jamais ce qu'elle vient d'enregistrer, et un ménage qui échoue ne
-        // fait pas échouer le dépôt — c'est déjà le motif de la reprise du
-        // profil mesuré, juste au-dessus.
+        // La place manque : on la fait, **après avoir écrit**, en appliquant ce
+        // qui a été décidé plus haut. La voiture ne perd jamais ce qu'elle vient
+        // d'enregistrer, et un ménage qui échoue ne fait pas échouer le dépôt —
+        // c'est déjà le motif de la reprise du profil mesuré, juste au-dessus.
         let apres = place.octets
-        if (place.etat === 'rotation') {
+        if (rotation !== null && rotation.aEffacer.length > 0) {
           try {
-            const libere = await faireDeLaPlace(base, compte, place.octets, plafond.octets)
+            const libere = await appliquerLaRotation(base, compte, rotation)
             apres = place.octets - libere.octets
-            if (libere.trajets > 0) {
-              console.log(
-                `rotation pour ${compte} : ${libere.trajets} trajets effacés,` +
-                  ` ${Math.round(libere.octets / 1024)} Kio rendus`,
-              )
-            }
+            console.log(
+              `rotation pour ${compte} : ${libere.trajets} trajets effacés,` +
+                ` ${Math.round(libere.octets / 1024)} Kio rendus`,
+            )
           } catch (erreur) {
             console.error(`rotation : ${String(erreur)}`)
           }

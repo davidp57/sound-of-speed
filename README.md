@@ -1797,7 +1797,22 @@ envoyer buter sur ce que le serveur vient de ne pas pouvoir faire.
 Pourquoi redescendre à 90 % et pas juste sous le seuil : à peine dessous, la
 rotation tournerait à chaque dépôt ; beaucoup plus bas, elle emporterait un gros
 paquet d'un coup. À 90 %, sur 250 Mio et le débit d'une voiture, un passage libère
-de quoi tenir une dizaine d'heures de route.
+de quoi tenir une dizaine d'heures de route — et **deux dépôts sur cent** la
+déclenchent, mesuré sur un compte volontairement serré. C'est ce qui rend son coût
+négligeable : la lecture des trajets vaut environ le double d'un dépôt ordinaire,
+mais elle ne court que deux fois sur cent.
+
+**Ce que la rotation ne peut pas ranger.** Elle n'efface que des trajets — des
+traces et du journal —, alors que le plafond pèse **tous** les dépôts, relevés de
+mesure compris. Un compte alourdi par ses relevés est donc bloqué sans avoir une
+seule épingle, et c'est pourquoi le refus ne dit pas « tout est épinglé » mais
+« rien n'a pu être libéré », en donnant les deux issues.
+
+**Le dépôt qui arrive n'est jamais emporté par sa propre rotation.** Les trajets
+sont classés par leur date d'enregistrement, lue dans le nom de la tranche : une
+trace de mars remontée aujourd'hui est le trajet le plus ancien du compte. Elle
+partait, et le client recevait un `201` — mesuré, puis corrigé en décidant la
+rotation **avant** l'écriture, sur une liste qui ne contient pas encore le dépôt.
 
 #### Ce que le conducteur en voit
 

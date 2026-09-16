@@ -86,6 +86,37 @@ describe('la rotation', () => {
     expect(rendu.bloque).toBe(true)
   })
 
+  it('n’efface rien quand ça ne suffirait pas à repasser sous le plafond', () => {
+    // Dix petits trajets et une grosse épingle : les emporter tous ferait perdre
+    // dix trajets sans débloquer quoi que ce soit. Le dépôt sera refusé de toute
+    // façon.
+    // 1090 occupés, plafond 1000 : il faudrait en libérer 90. Les dix petits
+    // trajets n'en rendent que 50, et le reste est épinglé.
+    const epingle = trajet('gros-epingle', 60, 940, true)
+    const petits = Array.from({ length: 10 }, (_, rang) => trajet(`p${rang}`, 40 - rang, 5))
+
+    const rendu = rotationDeRetention([epingle, ...petits], 1090, PLAFOND)
+
+    expect(rendu.aEffacer).toEqual([])
+    expect(rendu.bloque).toBe(true)
+  })
+
+  it('ne prend pas un trajet qui ne pèse rien', () => {
+    const vide = trajet('vide', 90, 0)
+    const rendu = rotationDeRetention([vide, trajet('utile', 50, 200)], 960, PLAFOND)
+
+    expect(rendu.aEffacer.map((t) => t.cle)).toEqual(['utile'])
+  })
+
+  it('tourne dès le seuil, et pas un octet plus haut', () => {
+    // La comparaison doit être la même que celle qui annonce l'état : sinon le
+    // serveur dit « rotation » sur un dépôt où rien ne tourne.
+    const trajets = [trajet('a', 40, 100), trajet('b', 10, 100)]
+
+    expect(etatDeLaPlace(950, PLAFOND)).toBe('rotation')
+    expect(rotationDeRetention(trajets, 950, PLAFOND).aEffacer).not.toEqual([])
+  })
+
   it('n’est pas bloquée quand elle libère assez pour repasser sous le plafond', () => {
     // Elle n'atteint pas la cible de 900 — il n'y a pas assez d'effaçable —,
     // mais elle repasse sous le plafond, et c'est cela qui décide du refus.

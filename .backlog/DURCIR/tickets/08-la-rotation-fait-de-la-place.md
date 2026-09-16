@@ -43,6 +43,12 @@ effacer est justement ce qu'on vient de ne pas pouvoir faire.
 - [x] Les trajets partent du plus ancien au plus récent, jusqu'à repasser sous le
       seuil, et pas au-delà.
 - [x] Un trajet épinglé ne part jamais, à aucun seuil.
+- [x] **Le dépôt qui vient d'arriver ne part jamais non plus.** Ajouté après
+      relecture : les trajets sont classés par date d'enregistrement, donc une
+      trace ancienne remontée aujourd'hui était la première candidate de sa propre
+      rotation. Mesuré : elle partait, le client recevait un 201.
+- [x] **Rien n'est effacé quand ça ne suffirait pas à repasser sous le plafond** :
+      perdre des trajets sans débloquer serait payer sans rien obtenir.
 - [x] Un trajet repris de l'ancien serveur peut partir : seule l'épingle protège.
 - [x] `Speed-Place` vaut `rotation` quand le ménage est armé.
 - [x] Un compte qui n'a plus que des épingles reçoit 507, avec un message qui dit

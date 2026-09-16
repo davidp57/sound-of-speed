@@ -154,7 +154,7 @@ describe('ce que le dépôt dit de la place', () => {
     const refus = await deposerUnTrajet('2026-09-14-06-00-00_ccc', 300, 1000)
 
     expect(refus.status).toBe(507)
-    expect(await refus.text()).toContain('épinglé')
+    expect(await refus.text()).toContain('rien à libérer')
     // Rien de déjà déposé n'a bougé : la rotation n'efface pas une épingle.
     const restants = (await (
       await serveur(1000).request('/sessions/', { headers: annonce })
@@ -192,5 +192,23 @@ describe('le plafond lu dans l’environnement', () => {
   it('se lit en mébioctets', () => {
     expect(plafondDeLEnvironnement('500')).toBe(500 * 1024 * 1024)
     expect(plafondDeLEnvironnement(' 1.5 ')).toBe(Math.round(1.5 * 1024 * 1024))
+  })
+})
+
+describe('ce que la rotation ne doit pas emporter', () => {
+  it('n’efface pas le dépôt qui vient d’arriver, même s’il porte une date ancienne', async () => {
+    // Une trace enregistrée en mars et remontée aujourd'hui — hors réseau, ou
+    // reprise d'un ancien serveur. Elle est le trajet le plus ancien du compte,
+    // donc la première candidate de sa propre rotation : mesuré, elle partait, et
+    // le client recevait un 201.
+    expect((await deposerUnTrajet('2026-09-10-06-00-00_recent', 700, 1000)).status).toBe(201)
+
+    const ancien = await deposerUnTrajet('2026-03-01-06-00-00_vieux', 300, 1000)
+
+    expect(ancien.status).toBe(201)
+    const restants = (await (
+      await serveur(1000).request('/sessions/', { headers: annonce })
+    ).json()) as { cle: string }[]
+    expect(restants.map((session) => session.cle)).toContain('2026-03-01-06-00-00_vieux')
   })
 })

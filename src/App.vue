@@ -263,7 +263,7 @@ const messageDeLaPlace = computed(() => {
   }
 
   if (place.etat === 'plein') {
-    return 'Le serveur est plein, et tous vos trajets sont épinglés : décrochez-en un pour que la voiture puisse déposer de nouveau.'
+    return 'Le serveur est plein et n’a rien pu libérer : décrochez un trajet épinglé, ou effacez des données depuis l’écran du compte.'
   }
   if (place.etat === 'rotation') {
     return 'Le serveur est presque plein : vos trajets les plus anciens s’effacent à mesure que de nouveaux arrivent. Épinglez ceux que vous voulez garder.'
@@ -275,7 +275,13 @@ function ecarterLaPlace(): void {
   const etat = placeDuCompte.value?.etat ?? ''
   placeEcartee.value = etat
   try {
-    localStorage.setItem(PLACE_ECARTEE_KEY, etat)
+    // **Le refus ne se range pas**, et c'est le seul état dans ce cas : il ne
+    // s'améliore pas tout seul — rien ne peut être libéré —, donc un bandeau
+    // écarté pour de bon laisserait la voiture ne plus rien déposer en silence.
+    // Écarté, il se tait jusqu'à la prochaine ouverture ; c'est assez pour ne
+    // pas gêner, et trop peu pour être oublié.
+    if (etat === 'plein') localStorage.removeItem(PLACE_ECARTEE_KEY)
+    else localStorage.setItem(PLACE_ECARTEE_KEY, etat)
   } catch {
     // Sans conséquence : le bandeau se remontrera à la prochaine ouverture.
   }
@@ -681,11 +687,13 @@ onBeforeUnmount(() => {
     </main>
 
     <!--
-      La place qui manque. Au-dessus des écrans comme les autres bandeaux, et
-      jamais sur l'écran de conduite seul : un compte plein ne se règle pas en
-      roulant, mais il se lit partout ailleurs.
+      La place qui manque. **Jamais sur l'écran de conduite ni en plein écran** :
+      il se lit d'un coup d'œil en roulant, rien n'y bouge, et un compte plein ne
+      se règle pas au volant. Or c'est précisément en roulant que l'information
+      arrive, puisqu'elle voyage sur la réponse des dépôts — sans cette garde, le
+      bandeau tomberait sur les cadrans.
     -->
-    <div v-if="messageDeLaPlace !== null" class="banner">
+    <div v-if="messageDeLaPlace !== null && !immersive && tab !== 'drive'" class="banner">
       <span>{{ messageDeLaPlace }}</span>
       <button @click="ecarterLaPlace()">Fermer</button>
     </div>
