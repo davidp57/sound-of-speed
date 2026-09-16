@@ -77,9 +77,22 @@ export interface DriveModeFeel {
 }
 
 export const DRIVE_MODE_FEEL: Record<DriveMode, DriveModeFeel> = {
-  // Route : on cherche le rapport long, et le rétrogradage forcé demande le
-  // pied au plancher. 0,95 de charge, c'est +1,8 m/s² sur le profil Route —
-  // six relevés sur deux cent dix-huit lors de l'essai du 10 septembre.
+  // Route : on cherche le rapport long, et le rétrogradage forcé demande une
+  // reprise franche.
+  //
+  // Le seuil valait 0,95 jusqu'à l'essai du 16 septembre 2026 — David : « j'ai
+  // jamais eu de kickback ». Mesuré sur les 58 000 relevés de ses trois trajets
+  // du jour, il ne pouvait quasiment pas se déclencher : la charge est
+  // rapportée à `mix.fullLoadAccelMs2`, que l'étalonnage fixe au pic de la
+  // reprise franche — 5,5 m/s² sur sa voiture. Une conduite ordinaire ne
+  // reproduit jamais ce pic : ses trajets ont plafonné à 5,18, 4,49 et
+  // 3,51 m/s², soit 0,97, 0,82 et 0,64 de charge. Deux des trois n'atteignaient
+  // donc pas le seuil une seule fois.
+  //
+  // 0,75 est le haut de ce qu'une conduite ordinaire produit chez lui : le
+  // p99,9 de son accélération vaut 3,2 à 4,25 m/s². En rejouant l'automate sur
+  // ses traces, le couple (0,75 ; 0,25) rend onze rétrogradages forcés sur
+  // 2 h 25, soit un toutes les treize minutes ; 0,70 en rendait vingt-cinq.
   //
   // La marge est passée de 900 à 640 après la sortie du 11 septembre 2026 —
   // David : « ça reste trop longtemps en deux », et « que les vitesses passent
@@ -87,9 +100,11 @@ export const DRIVE_MODE_FEEL: Record<DriveMode, DriveModeFeel> = {
   // plancher fixe, la baisse ne se reporte pas telle quelle sur le seuil : elle
   // vaut −20 % pied au plancher, où il l'a demandée, et −15 % en conduite
   // ordinaire.
-  road: { upshiftMarginRpm: 640, downshiftMarginRpm: 400, kickdownLoad: 0.95 },
+  road: { upshiftMarginRpm: 640, downshiftMarginRpm: 400, kickdownLoad: 0.75 },
   // Sport : on garde le régime, et une demande forte suffit à faire descendre.
-  sport: { upshiftMarginRpm: 2200, downshiftMarginRpm: 700, kickdownLoad: 0.85 },
+  // L'écart de dix centièmes avec Route est conservé : il n'a pas été remis en
+  // cause par l'essai, qui s'est fait en Route.
+  sport: { upshiftMarginRpm: 2200, downshiftMarginRpm: 700, kickdownLoad: 0.65 },
 }
 
 /**
