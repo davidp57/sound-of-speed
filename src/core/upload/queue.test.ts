@@ -23,18 +23,22 @@ function item(id: string, extra: Partial<QueuedUpload> = {}): QueuedUpload {
   }
 }
 
-const SENT: PutOutcome = { ok: true, bytes: 2 }
+// `place: null` partout ici : ce fichier juge la file, pas ce que le serveur dit
+// de la place — un serveur d'avant ne la dit pas non plus.
+const SENT: PutOutcome = { ok: true, bytes: 2, place: null }
 const OFFLINE: PutOutcome = {
   ok: false,
   reason: 'network',
   detail: 'Dépôt impossible : le serveur est injoignable.',
   retry: true,
+  place: null,
 }
 const REFUSED: PutOutcome = {
   ok: false,
   reason: 'refused',
   detail: 'Refusé : le nom ou le mot de passe ne correspond pas.',
   retry: false,
+  place: null,
 }
 
 describe('la file de dépôt', () => {

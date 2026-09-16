@@ -16,15 +16,27 @@
  * `fetch` est injecté pour que tout ceci se vérifie sans réseau ni serveur.
  */
 
+import { lirePlace, type Place } from './place'
+
 /**
- * Ce qu'on dit quand le serveur est plein pour ce compte.
+ * Ce qu'on dit quand le serveur refuse un dépôt faute de place.
  *
- * Le message part vers l'écran de configuration, qui l'affiche tel quel : il
- * doit donc dire quoi faire, et non seulement ce qui s'est passé. Il vit ici
- * parce que les deux façons de déposer — un fichier, une tranche — le donnent.
+ * **Il ne dit plus « effacez des trajets », et c'est la rotation qui l'impose** :
+ * le serveur efface désormais les plus anciens tout seul quand la place manque.
+ * S'il refuse quand même, c'est que rien ne pouvait être libéré.
+ *
+ * **Et il ne dit pas non plus « tout est épinglé »**, parce que ce n'est pas
+ * toujours vrai : le plafond pèse tous les dépôts d'un compte, alors que la
+ * rotation ne range que ce qui forme un trajet. Un compte alourdi par ses relevés
+ * de mesure est bloqué sans avoir une seule épingle, et lui dire d'en décrocher
+ * une l'enverrait chercher ce qui n'existe pas.
+ *
+ * Le message part vers l'écran, qui l'affiche tel quel : il doit donc dire quoi
+ * faire, et non seulement ce qui s'est passé. Il vit ici parce que les deux
+ * façons de déposer — un fichier, une tranche — le donnent.
  */
 export const PLEIN =
-  'Le serveur est plein pour ce compte : effacez des trajets depuis l’écran du compte — en les emportant d’abord si vous voulez les garder. Emporter seul ne libère rien.'
+  'Le serveur est plein pour ce compte et n’a rien pu libérer : décrochez un trajet épinglé, ou emportez puis effacez des données depuis l’écran du compte.'
 
 /**
  * Pourquoi cela n'est pas parti.
@@ -38,8 +50,8 @@ export const PLEIN =
 export type PutFailure = 'refused' | 'network'
 
 export type PutOutcome =
-  | { ok: true; bytes: number }
-  | { ok: false; reason: PutFailure; detail: string; retry: boolean }
+  | { ok: true; bytes: number; place: Place | null }
+  | { ok: false; reason: PutFailure; detail: string; retry: boolean; place: Place | null }
 
 /**
  * Dépose un fichier, et dit précisément ce qui a échoué.
@@ -78,7 +90,7 @@ export async function putFile(
   try {
     const adresse = folder + encodeURIComponent(name) + (epingle ? '?reprise=1' : '')
     const response = await fetchImpl(adresse, { method: 'PUT', body })
-    if (response.ok) return { ok: true, bytes: byteLength(body) }
+    if (response.ok) return { ok: true, bytes: byteLength(body), place: lirePlace(response) }
     if (response.status === 401 || response.status === 403) {
       return {
         ok: false,
@@ -90,18 +102,26 @@ export async function putFile(
         // Le même envoi échouera de la même façon tant que l'appareil n'aura pas
         // repris un compte. Réessayer en boucle ne ferait que masquer le message.
         retry: false,
+        place: lirePlace(response),
       }
     }
     // Le compte est plein : ni une panne, ni une charge trop grosse. Réessayer
     // ne passera jamais tant que rien n'est libéré.
     if (response.status === 507) {
-      return { ok: false, reason: 'refused', detail: PLEIN, retry: false }
+      return {
+        ok: false,
+        reason: 'refused',
+        detail: PLEIN,
+        retry: false,
+        place: lirePlace(response, true),
+      }
     }
     return {
       ok: false,
       reason: 'network',
       detail: `Le serveur a répondu ${response.status}.`,
       retry: true,
+      place: lirePlace(response),
     }
   } catch (error) {
     return {
@@ -112,6 +132,8 @@ export async function putFile(
           ? `Dépôt impossible : ${error.message}`
           : 'Dépôt impossible : le serveur est injoignable.',
       retry: true,
+      // Sans réponse, on ne sait rien de la place : on ne l'invente pas.
+      place: null,
     }
   }
 }

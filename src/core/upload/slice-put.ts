@@ -1,3 +1,4 @@
+import { lirePlace, type Place } from './place'
 import { byteLength, PLEIN } from './put'
 import { pack } from './compress'
 import type { Slice } from './slicing'
@@ -23,7 +24,13 @@ import type { Slice } from './slicing'
  */
 
 export type SliceOutcome =
-  | { ok: true; name: string; bytes: number }
+  | {
+      ok: true
+      name: string
+      bytes: number
+      /** Où en est la place du compte, si le serveur l'a dite. */
+      place: Place | null
+    }
   | {
       ok: false
       /**
@@ -36,6 +43,8 @@ export type SliceOutcome =
        */
       reason: 'refused' | 'network'
       detail: string
+      /** Où en est la place du compte, si le serveur l'a dite. */
+      place: Place | null
       /** Vrai quand il vaut la peine de réessayer **bientôt** avec la même tranche. */
       retry: boolean
       /**
@@ -92,7 +101,12 @@ export async function putSlice(
     })
 
     if (response.ok) {
-      return { ok: true, name: packed.name, bytes: byteLength(packed.body) }
+      return {
+        ok: true,
+        name: packed.name,
+        bytes: byteLength(packed.body),
+        place: lirePlace(response),
+      }
     }
 
     if (response.status === 401 || response.status === 403) {
@@ -103,6 +117,7 @@ export async function putSlice(
           response.status === 401
             ? "Refusé : cet appareil n'a plus de compte reconnu par le serveur."
             : "Le serveur reconnaît cet appareil mais lui refuse l'écriture ici.",
+        place: lirePlace(response),
         // Réessayer donnerait le même refus tant qu'aucun compte n'est repris.
         retry: false,
         // Et rien ne repartira jamais sous ce compte-là : la garder ferait
@@ -120,6 +135,9 @@ export async function putSlice(
       return {
         ok: false,
         reason: 'refused',
+        // Le refus est un état à afficher, et le seul que l'en-tête ne dit pas
+        // seul : le serveur donne la place, le code donne le refus.
+        place: lirePlace(response, true),
         detail: PLEIN,
         // Pas de rejeu serré : tant que rien n'est libéré, la réponse ne
         // changera pas, et c'est ce qui a produit 726 tentatives en 137 s.
@@ -139,6 +157,7 @@ export async function putSlice(
       ok: false,
       reason: 'network',
       detail: `Le serveur a répondu ${response.status}.`,
+      place: lirePlace(response),
       retry: response.status !== 413,
       // Un 413 ne repassera pas tel quel : la tranche est trop grosse pour ce
       // serveur, et la garder n'y changerait rien.
@@ -149,6 +168,8 @@ export async function putSlice(
       ok: false,
       reason: 'network',
       detail: error instanceof Error ? error.message : 'Dépôt impossible.',
+      // Sans réponse, on ne sait rien de la place : on ne l'invente pas.
+      place: null,
       retry: true,
       garder: true,
     }

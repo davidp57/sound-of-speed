@@ -8,6 +8,51 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Chaque dépôt accepté dit où en est la place du compte** : trois en-têtes sur
+  la réponse — l'état (`libre`, `bientot` dès les trois quarts du plafond), la
+  place prise et le plafond. La voiture dépose toutes les cinq minutes, donc
+  l'information arrive toute seule, sans sondage ni route à interroger.
+
+  Des en-têtes plutôt qu'un code par état : le client teste `response.ok` et
+  traite tout le reste comme un échec, un proxy inversé peut normaliser un code
+  inhabituel, et le contrat fige déjà `201` sur un dépôt réussi. Un client qui ne
+  les lit pas ne voit aucune différence.
+
+- **Le serveur fait de la place au lieu de refuser.** Au-delà de 95 % du plafond,
+  il accepte le dépôt **puis** efface les trajets les plus anciens jusqu'à
+  redescendre à 90 %. La voiture ne perd jamais ce qu'elle vient d'enregistrer ;
+  c'est le passé qui cède, et le refus fait perdre le présent pour garder le
+  passé.
+
+  **Seule l'épingle protège**, à aucun seuil elle ne cède. Un compte dont rien ne
+  peut être libéré reste plein : son dépôt est refusé en 507, avec un message qui
+  donne les deux issues — décrocher une épingle, ou effacer des données. Il ne dit
+  pas « tout est épinglé », qui serait faux : le plafond pèse tous les dépôts,
+  alors que la rotation ne range que les trajets.
+
+  **Le dépôt qui arrive n'est jamais emporté par sa propre rotation.** Les trajets
+  sont classés par leur date d'enregistrement, lue dans le nom de la tranche : une
+  trace de mars remontée aujourd'hui est le trajet le plus ancien du compte. Elle
+  partait, et le client recevait un `201` — trouvé en relisant la branche, avant
+  que ça roule.
+
+  La rotation n'est pas la rétention : celle-ci juge sur l'âge et ne libère rien
+  quand tout est récent, ce qui est le cas d'une voiture qui roule beaucoup. Mais
+  ce qui est protégé reste défini à un seul endroit.
+
+- **L'application prévient quand la place se réduit.** Un bandeau se lève aux
+  trois quarts du plafond, puis à l'entrée en rotation, puis au refus ; il se
+  ferme d'un bouton. La télémétrie porte la valeur en permanence — occupée, part
+  du plafond, et ce que le dernier dépôt a rencontré.
+
+  **Le bandeau ne revient que si la situation empire**, et c'est un essai qui l'a
+  imposé : la rotation fait retomber le compte sous son seuil dès le dépôt
+  suivant, donc l'état va et vient. Un bandeau qui se relèverait à chaque
+  changement se relèverait tout le temps.
+
+  Rien n'est demandé au serveur pour cela : l'état arrive sur la réponse de
+  chaque dépôt, et la voiture en fait un toutes les cinq minutes.
+
 - **Une régie, pour administrer les comptes depuis un écran.** Une troisième
   page, `/regie`, qui liste les comptes du serveur — les derniers créés en haut,
   avec nom, adresse, date, rôles et poids déposé — et une recherche par nom ou

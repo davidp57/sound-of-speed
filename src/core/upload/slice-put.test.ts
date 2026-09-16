@@ -24,7 +24,7 @@ function serveurQuiRepond(code: number): typeof fetch {
 }
 
 describe('un dépôt de tranche refusé', () => {
-  it('garde la tranche quand le compte est plein, sans la rejouer tout de suite', async () => {
+  it('garde la tranche quand il ne reste que des épingles, sans la rejouer tout de suite', async () => {
     const rendu = await putSlice('/journal/', TRANCHE, serveurQuiRepond(507))
 
     expect(rendu.ok).toBe(false)
@@ -33,7 +33,10 @@ describe('un dépôt de tranche refusé', () => {
     expect(rendu.retry).toBe(false)
     // Mais la tranche reste : effacer deux trajets suffit à tout faire repartir.
     expect(rendu.garder).toBe(true)
-    expect(rendu.detail).toContain('plein')
+    // Le message ne promet pas que tout est épinglé — le plafond pèse aussi ce
+    // que la rotation ne sait pas ranger — et il donne les deux issues.
+    expect(rendu.detail).toContain('rien pu libérer')
+    expect(rendu.detail).toContain('décrochez')
   })
 
   it('jette la tranche quand l’appareil n’a plus de compte', async () => {

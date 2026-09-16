@@ -52,6 +52,7 @@ import { StandstillFlush } from './core/capture/standstill'
 import { JournalCollector, type SoundCost } from './core/journal/collect'
 import { detailActif, eteintA, type DetailActiveA } from './core/journal/detail'
 import { Backoff, SLICE_BACKOFF } from './core/upload/backoff'
+import { type Place } from './core/upload/place'
 import { InFlight } from './core/upload/inflight'
 import { sendsAutomatically, type UploadConsent } from './core/upload/consent'
 import { toWav } from './bench/wav'
@@ -1287,6 +1288,21 @@ function noterLAppareil(): void {
 
 noterLAppareil()
 
+/**
+ * Où en est la place du compte sur le serveur.
+ *
+ * **Elle arrive avec les dépôts**, sans qu'on demande rien : la voiture en envoie
+ * un toutes les cinq minutes, et chaque réponse porte l'état. `null` tant qu'on
+ * n'a rien déposé, ou quand le serveur ne le dit pas — une version d'avant —, et
+ * l'écran n'affiche alors rien plutôt que d'inventer.
+ */
+export const placeDuCompte = ref<Place | null>(null)
+
+/** Ce que le dernier dépôt a appris de la place, quand il l'a appris. */
+function noterLaPlace(place: Place | null): void {
+  if (place !== null) placeDuCompte.value = place
+}
+
 /** Tranches déposées, pour que l'écran dise ce qui est parti. */
 export const journalDeposits = ref<{ name: string; bytes: number }[]>([])
 /** Dernier échec de dépôt, à afficher tel quel. */
@@ -1340,6 +1356,7 @@ function depositJournalIfDue(nowMs: number): void {
 
   void depositSlice(slice, fetch, journalFlight.begin(Date.now()))
     .then((outcome) => {
+      noterLaPlace(outcome.place)
       if (outcome.ok) {
         journalRetry.succeeded()
         journalError.value = ''
@@ -1564,6 +1581,7 @@ function depositCaptureIfDue(nowMs: number, force = false): void {
 
   void depositCaptureSlice(slice, fetch, captureFlight.begin(Date.now()))
     .then((outcome) => {
+      noterLaPlace(outcome.place)
       if (outcome.ok) {
         captureRetry.succeeded()
         captureError.value = ''
@@ -1676,11 +1694,15 @@ export async function flushUploads(nowMs: number, force = false): Promise<void> 
 
   flushing = true
   try {
-    await uploads.flush(nowMs, (item) =>
-      putFile(item.folder, item.name, item.body, {
+    await uploads.flush(nowMs, async (item) => {
+      const rendu = await putFile(item.folder, item.name, item.body, {
         epingle: item.epingle === true,
-      }),
-    )
+      })
+      // La file porte les traces et les profils : c'est le plus gros volume qui
+      // monte, et il informe de la place comme les tranches le font.
+      noterLaPlace(rendu.place)
+      return rendu
+    })
   } finally {
     flushing = false
     rememberQueue()

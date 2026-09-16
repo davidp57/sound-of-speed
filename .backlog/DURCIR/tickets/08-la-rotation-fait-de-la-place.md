@@ -1,6 +1,6 @@
 # 08 — La rotation fait de la place, et le refus dit ce qui bloque
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — vérifié contre un serveur qui tourne : sur un plafond de 1 Mio, le trajet de juillet est parti et les deux récents sont restés ; tous épinglés, le dépôt suivant a pris un 507 « tout est épinglé »
 
 **Bloqué par :** 07 — le serveur dit la place sur chaque dépôt
 
@@ -38,16 +38,22 @@ effacer est justement ce qu'on vient de ne pas pouvoir faire.
 
 ## Critères d'acceptation
 
-- [ ] Au-delà de 95 %, le dépôt est accepté **puis** la place est faite, dans cet
+- [x] Au-delà de 95 %, le dépôt est accepté **puis** la place est faite, dans cet
       ordre — vérifié par un dépôt qui passe alors que le compte était plein.
-- [ ] Les trajets partent du plus ancien au plus récent, jusqu'à repasser sous le
+- [x] Les trajets partent du plus ancien au plus récent, jusqu'à repasser sous le
       seuil, et pas au-delà.
-- [ ] Un trajet épinglé ne part jamais, à aucun seuil.
-- [ ] Un trajet repris de l'ancien serveur peut partir : seule l'épingle protège.
-- [ ] `Speed-Place` vaut `rotation` quand le ménage est armé.
-- [ ] Un compte qui n'a plus que des épingles reçoit 507, avec un message qui dit
+- [x] Un trajet épinglé ne part jamais, à aucun seuil.
+- [x] **Le dépôt qui vient d'arriver ne part jamais non plus.** Ajouté après
+      relecture : les trajets sont classés par date d'enregistrement, donc une
+      trace ancienne remontée aujourd'hui était la première candidate de sa propre
+      rotation. Mesuré : elle partait, le client recevait un 201.
+- [x] **Rien n'est effacé quand ça ne suffirait pas à repasser sous le plafond** :
+      perdre des trajets sans débloquer serait payer sans rien obtenir.
+- [x] Un trajet repris de l'ancien serveur peut partir : seule l'épingle protège.
+- [x] `Speed-Place` vaut `rotation` quand le ménage est armé.
+- [x] Un compte qui n'a plus que des épingles reçoit 507, avec un message qui dit
       de décrocher.
-- [ ] Le ménage qui échoue ne fait pas échouer le dépôt.
-- [ ] La rotation ne réécrit pas la notion de ce qui est protégé : elle lit celle
+- [x] Le ménage qui échoue ne fait pas échouer le dépôt.
+- [x] La rotation ne réécrit pas la notion de ce qui est protégé : elle lit celle
       du cœur.
-- [ ] Contrôle qualité vert.
+- [x] Contrôle qualité vert.

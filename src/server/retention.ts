@@ -17,6 +17,7 @@ import {
   type TrajetJuge,
   type Verdict,
 } from '../core/retention/regle'
+import { rotationDeRetention, type Rotation } from '../core/retention/rotation'
 
 import type { Base } from './base/base'
 import { effacerSession, listerSessions } from './sessions'
@@ -44,6 +45,69 @@ export async function verdictDuCompte(
   }))
 
   return verdictDeRetention(trajets, maintenant, delais)
+}
+
+/**
+ * Ce que la rotation ferait, **avant** d'écrire le dépôt qui arrive.
+ *
+ * **Une seule lecture des trajets, et elle sert aux deux usages** : décider si
+ * l'on refuse, puis effacer ce qu'elle a décidé. En faire deux doublerait le
+ * parcours le plus coûteux du dépôt.
+ *
+ * **Ce qu'elle coûte, mesuré** : un dépôt ordinaire prend quelques dizaines de
+ * millisecondes, celui qui déclenche la rotation environ le double. Mais il n'y
+ * en a que **deux sur cent** — après un ménage le compte retombe à 90 %, et il
+ * faut re-remplir cinq points avant que la lecture soit refaite. En moyenne, le
+ * surcoût est de l'ordre de la milliseconde par dépôt, sur un dépôt toutes les
+ * cinq minutes.
+ *
+ * **Et elle se fait avant l'écriture, ce qui protège le dépôt qui arrive.** Les
+ * trajets sont classés par leur date d'enregistrement, lue dans le nom de la
+ * tranche : une trace de mars remontée aujourd'hui — hors réseau, ou reprise
+ * d'un ancien serveur — est le trajet le plus ancien du compte, donc la première
+ * candidate de sa propre rotation. Mesuré : elle partait, et le client recevait
+ * un 201. Ne lister qu'avant l'écriture l'exclut par construction, plutôt que par
+ * une exception à ne pas oublier.
+ *
+ * `occupe` est la place **une fois ce dépôt écrit** : c'est bien elle qui décide
+ * de ce qu'il faut libérer.
+ */
+export async function rotationAvantEcriture(
+  base: Base,
+  compte: string,
+  occupe: number,
+  plafond: number,
+): Promise<Rotation> {
+  const trajets: TrajetJuge[] = (await listerSessions(base, compte)).map((session) => ({
+    cle: session.cle,
+    isole: session.isole,
+    enregistreLe: session.enregistreLe,
+    octets: session.octets,
+    tranches: session.tranches.length,
+    traces: session.traces,
+    journal: session.journal,
+    aVoir: session.aVoir,
+    exemption: session.exemption,
+  }))
+
+  return rotationDeRetention(trajets, occupe, plafond)
+}
+
+/**
+ * Efface ce que la rotation a décidé.
+ *
+ * Rien n'est recalculé ici : ce qui efface applique ce qu'on a lu, sinon la
+ * décision relue ne serait pas celle qui agit.
+ */
+export async function appliquerLaRotation(
+  base: Base,
+  compte: string,
+  rotation: Rotation,
+): Promise<{ trajets: number; octets: number }> {
+  for (const trajet of rotation.aEffacer) {
+    await effacerSession(base, compte, trajet.cle)
+  }
+  return { trajets: rotation.aEffacer.length, octets: rotation.octets }
 }
 
 /** Ce qu'un passage de la règle a fait. */

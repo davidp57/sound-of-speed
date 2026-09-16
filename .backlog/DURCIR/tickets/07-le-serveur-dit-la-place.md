@@ -1,6 +1,6 @@
 # 07 — Le serveur dit la place sur chaque dépôt
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — vérifié contre un serveur qui tourne : `libre` à 700 ko, `bientot` à 800 ko sur 1 Mio, 507 au-delà
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -34,13 +34,13 @@ Rien ne change à l'écran. Ce ticket se démontre d'un `curl -D -`.
 
 ## Critères d'acceptation
 
-- [ ] Un dépôt accepté porte les trois en-têtes, et le code reste `201`.
-- [ ] `Speed-Place` vaut `libre` sous 75 % du plafond, `bientot` au-delà.
-- [ ] Les octets annoncés sont ceux que le compte pèse vraiment, plafond
+- [x] Un dépôt accepté porte les trois en-têtes, et le code reste `201`.
+- [x] `Speed-Place` vaut `libre` sous 75 % du plafond, `bientot` au-delà.
+- [x] Les octets annoncés sont ceux que le compte pèse vraiment, plafond
       particulier compris quand la régie en a posé un.
-- [ ] La mesure ne rend pas le dépôt sensiblement plus coûteux : elle est déjà
+- [x] La mesure ne rend pas le dépôt sensiblement plus coûteux : elle est déjà
       faite pour le plafond, et ne doit pas être refaite une seconde fois.
-- [ ] Le jeu de requêtes d'accord vérifie les en-têtes contre un serveur qui
+- [x] Le jeu de requêtes d'accord vérifie les en-têtes contre un serveur qui
       tourne.
-- [ ] Un client qui ne les lit pas ne voit aucune différence.
-- [ ] Contrôle qualité vert.
+- [x] Un client qui ne les lit pas ne voit aucune différence.
+- [x] Contrôle qualité vert.

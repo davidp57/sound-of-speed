@@ -20,7 +20,13 @@ import type { Base } from './base/base'
 import { banquesInterdites, peutJouer, type DroitsSurLesBanques } from './banques'
 import type { CompteurDeDepense } from './depense'
 import { ecrireDepot, estUnDossier, lireDepot, listerDepots } from './depots'
-import { DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } from './retention'
+import {
+  appliquerLaRotation,
+  DELAIS_PAR_DEFAUT,
+  rotationAvantEcriture,
+  verdictDuCompte,
+  type Delais,
+} from './retention'
 import {
   archiveDeLaSession,
   effacerSession,
@@ -35,11 +41,7 @@ import { cheminSur, estUnNomSimple, fichierOuRien, servirFichier, typeDe } from 
 import { lireProfilMesure, reprendreApresDepot } from './profil-mesure'
 import { ecrireProfil, listerProfils, lireProfil } from './profils'
 import { assistanceDuCompte, fermerLAssistance, ouvrirLAssistance } from './assistance'
-import {
-  depasseraitLePlafond,
-  PLAFOND_PAR_DEFAUT,
-  plafondDuCompte,
-} from './plafond'
+import { PLAFOND_PAR_DEFAUT, placeApresLeDepot, plafondDuCompte, type Place } from './plafond'
 import { creerRegie } from './regie'
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
 import { inscrire, lireLaTrace } from './trace'
@@ -603,16 +605,43 @@ export function creerServeur(options: OptionsDuServeur): Hono {
         // plutôt qu'au ménage, parce qu'un seuil qui efface fait disparaître des
         // données sans que rien ne rougisse.
         const plafond = await plafondDuCompte(base, compte, options.plafond ?? PLAFOND_PAR_DEFAUT)
-        if (await depasseraitLePlafond(base, compte, dossier, nom, octets.length, plafond.octets)) {
+        const place = await placeApresLeDepot(
+          base,
+          compte,
+          dossier,
+          nom,
+          octets.length,
+          plafond.octets,
+        )
+        // **Ce que la rotation ferait, décidé avant d'écrire.** Deux raisons, et
+        // la seconde a été mesurée : une seule lecture des trajets sert au refus
+        // et au ménage, là où deux doubleraient le parcours le plus coûteux du
+        // dépôt ; et la liste d'avant l'écriture **ne contient pas le dépôt qui
+        // arrive**, donc il ne peut pas être emporté par sa propre rotation. Une
+        // trace de mars remontée aujourd'hui est le trajet le plus ancien du
+        // compte : elle partait, et le client recevait un 201.
+        const rotation =
+          place.etat === 'rotation' || place.depasse
+            ? await rotationAvantEcriture(base, compte, place.octets, plafond.octets)
+            : null
+
+        // **Au-delà du plafond, on ne refuse que ce qu'on ne saura pas ranger.**
+        // Le dépassement est temporaire : on accepte, puis la rotation fait la
+        // place. Le refus ne reste que pour un compte dont rien ne peut être
+        // libéré — tout est épinglé, ou le poids ne vient pas des trajets.
+        if (place.depasse && rotation?.bloque === true) {
           // 507, et le client ne le rejoue pas : un code de panne passagère
           // ferait réessayer la voiture indéfiniment pour un envoi qui ne
           // passera jamais — c'est exactement ce qui a produit 726 tentatives en
           // 137 secondes le 11 septembre 2026.
           console.warn(
             `plafond atteint pour ${compte} : ${plafond.octets} octets` +
-              `${plafond.particulier ? ' (plafond particulier)' : ''}, dépôt refusé`,
+              `${plafond.particulier ? ' (plafond particulier)' : ''},` +
+              ' rien à libérer, dépôt refusé',
           )
-          return c.text('compte plein', 507)
+          // Le refus dit la place lui aussi : c'est la réponse que l'écran a le
+          // plus besoin de comprendre, et la taire l'obligerait à deviner.
+          return c.text('rien à libérer', 507, enTetesDePlace(place))
         }
         // `?reprise=1` dit « ceci n'est pas un dépôt du jour, c'est un
         // déménagement » : le fichier entre archivé, comme ceux que la reprise
@@ -638,7 +667,37 @@ export function creerServeur(options: OptionsDuServeur): Hono {
           }
         }
 
-        return c.text('', 201)
+        // La place manque : on la fait, **après avoir écrit**, en appliquant ce
+        // qui a été décidé plus haut. La voiture ne perd jamais ce qu'elle vient
+        // d'enregistrer, et un ménage qui échoue ne fait pas échouer le dépôt —
+        // c'est déjà le motif de la reprise du profil mesuré, juste au-dessus.
+        let apres = place.octets
+        if (rotation !== null && rotation.aEffacer.length > 0) {
+          try {
+            const libere = await appliquerLaRotation(base, compte, rotation)
+            apres = place.octets - libere.octets
+            console.log(
+              `rotation pour ${compte} : ${libere.trajets} trajets effacés,` +
+                ` ${Math.round(libere.octets / 1024)} Kio rendus`,
+            )
+          } catch (erreur) {
+            console.error(`rotation : ${String(erreur)}`)
+          }
+        }
+
+        // **Ce que la réponse dit de la place**, sur chaque dépôt accepté. La
+        // voiture en envoie un toutes les cinq minutes : l'information arrive
+        // donc toute seule, sans sondage ni route à interroger, et l'application
+        // peut prévenir à n'importe quel moment.
+        //
+        // Des en-têtes et non un code : le client teste `response.ok` et traite
+        // tout le reste comme un échec, un proxy inversé peut normaliser un code
+        // inhabituel, et le jeu d'accord fige déjà 201 sur un dépôt réussi.
+        // Absents, un client plus ancien ne voit aucune différence.
+        // L'état reste celui d'avant le ménage — « la rotation est activée »,
+        // et non « regardez comme c'est rangé » —, mais les octets sont ceux
+        // d'après : c'est la place qui reste, la seule qui serve à l'écran.
+        return c.text('', 201, enTetesDePlace({ ...place, octets: apres }))
       }
 
       const octets = await lireDepot(base, compte, dossier, nom)
@@ -816,6 +875,20 @@ function pageDeRepli(chemin: string): string {
   if (chemin.startsWith('/relecteur')) return '/relecteur.html'
   if (chemin.startsWith('/regie')) return '/regie.html'
   return '/index.html'
+}
+
+/**
+ * Ce que la réponse d'un dépôt dit de la place qui reste.
+ *
+ * Les chiffres accompagnent l'état plutôt que de le remplacer : un écran doit
+ * pouvoir dire « 182 Mio sur 250 », et un adjectif seul ne le permettrait pas.
+ */
+function enTetesDePlace(place: Place): Record<string, string> {
+  return {
+    'Speed-Place': place.etat,
+    'Speed-Place-Octets': String(place.octets),
+    'Speed-Place-Plafond': String(place.plafond),
+  }
 }
 
 function cachePour(chemin: string): string | undefined {
