@@ -627,7 +627,9 @@ export function creerServeur(options: OptionsDuServeur): Hono {
               `${plafond.particulier ? ' (plafond particulier)' : ''},` +
               ' tout est épinglé, dépôt refusé',
           )
-          return c.text('tout est épinglé', 507)
+          // Le refus dit la place lui aussi : c'est la réponse que l'écran a le
+          // plus besoin de comprendre, et la taire l'obligerait à deviner.
+          return c.text('tout est épinglé', 507, enTetesDePlace(place))
         }
         // `?reprise=1` dit « ceci n'est pas un dépôt du jour, c'est un
         // déménagement » : le fichier entre archivé, comme ceux que la reprise

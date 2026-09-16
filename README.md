@@ -1799,9 +1799,26 @@ rotation tournerait à chaque dépôt ; beaucoup plus bas, elle emporterait un g
 paquet d'un coup. À 90 %, sur 250 Mio et le débit d'une voiture, un passage libère
 de quoi tenir une dizaine d'heures de route.
 
-**Ce qui prévient le conducteur** est le
-[ticket 09 de DURCIR](.backlog/DURCIR/tickets/09-le-bandeau-et-la-telemetrie.md) :
-aujourd'hui la rotation tourne sans qu'il le sache.
+#### Ce que le conducteur en voit
+
+Un **bandeau** se lève au-dessus des écrans quand la place se réduit : aux trois
+quarts, puis à l'entrée en rotation, puis au refus. Il se ferme d'un bouton.
+
+**Il ne revient que si la situation empire**, et c'est un essai qui l'a imposé :
+la rotation fait retomber le compte sous son seuil dès le dépôt suivant, donc
+l'état va et vient entre « le plafond approche » et « les plus anciens
+s'effacent ». Un bandeau qui se relèverait à chaque changement se relèverait donc
+tout le temps. Quand la situation s'améliore, il se réarme en silence :
+redescendre puis remonter mérite d'être dit une fois de plus.
+
+La **télémétrie** porte la valeur en permanence — occupée, part du plafond, et ce
+que le dernier dépôt a rencontré. Au passé, celui-là : l'état vient du serveur au
+moment du dépôt, les octets sont ceux d'après son ménage, et « les plus anciens
+s'effacent » à côté de « 57 % » se lirait comme une contradiction alors que les
+deux sont vrais.
+
+**Rien sur l'écran de conduite** : il se lit d'un coup d'œil, et un compte plein
+ne se règle pas en roulant.
 
 Un compte au-delà voit son dépôt refusé en **507**, un code que la voiture ne
 rejoue pas — un code de panne passagère la ferait réessayer indéfiniment pour un

@@ -1,6 +1,6 @@
 # 09 — L'application prévient : bandeau et télémétrie
 
-**Statut :** ⬜ prêt
+**Statut :** ✅ fait — vérifié dans un navigateur contre un serveur qui tourne : bandeau levé aux trois quarts, fermé, relevé à l’entrée en rotation, et la télémétrie qui suit
 
 **Bloqué par :** 07 — le serveur dit la place ; 08 — la rotation fait de la place
 
@@ -36,16 +36,19 @@ on unifiera quand il y en aura assez pour voir la bonne forme.
 
 ## Critères d'acceptation
 
-- [ ] Le client lit les trois en-têtes à chaque dépôt, journal et capture
+- [x] Le client lit les trois en-têtes à chaque dépôt, journal et capture
       compris, et range ce qu'il a lu.
-- [ ] Un serveur qui ne les envoie pas ne fait rien apparaître, et ne casse rien.
-- [ ] Le bandeau se lève au passage de 75 %, dit ce qui se passe et ce qu'on peut
+- [x] Un serveur qui ne les envoie pas ne fait rien apparaître, et ne casse rien.
+- [x] Le bandeau se lève au passage de 75 %, dit ce qui se passe et ce qu'on peut
       y faire.
-- [ ] Il se lève de nouveau au passage à la rotation, puis au refus, avec un
-      texte qui distingue les trois.
-- [ ] Fermé, il ne revient pas tant que l'état ne change pas — y compris après un
+- [x] Il se lève de nouveau au passage à la rotation, puis au refus, avec un
+      texte qui distingue les trois. **Corrigé après essai** : il ne se relève
+      que si la situation **empire**, la rotation faisant retomber l'état sous
+      son seuil dès le dépôt suivant — un bandeau qui suivrait chaque changement
+      se relèverait tout le temps.
+- [x] Fermé, il ne revient pas tant que l'état ne change pas — y compris après un
       rechargement de l'application.
-- [ ] La télémétrie montre la place prise et le plafond, en permanence.
-- [ ] L'écran de conduite ne montre rien.
-- [ ] Hors réseau, l'écran n'affirme pas un état qu'il n'a pas pu relever.
-- [ ] Contrôle qualité vert.
+- [x] La télémétrie montre la place prise et le plafond, en permanence.
+- [x] L'écran de conduite ne montre rien.
+- [x] Hors réseau, l'écran n'affirme pas un état qu'il n'a pas pu relever.
+- [x] Contrôle qualité vert.

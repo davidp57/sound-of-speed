@@ -16,6 +16,8 @@
  * `fetch` est injecté pour que tout ceci se vérifie sans réseau ni serveur.
  */
 
+import { lirePlace, type Place } from './place'
+
 /**
  * Ce qu'on dit quand le serveur refuse un dépôt faute de place.
  *
@@ -44,8 +46,8 @@ export const PLEIN =
 export type PutFailure = 'refused' | 'network'
 
 export type PutOutcome =
-  | { ok: true; bytes: number }
-  | { ok: false; reason: PutFailure; detail: string; retry: boolean }
+  | { ok: true; bytes: number; place: Place | null }
+  | { ok: false; reason: PutFailure; detail: string; retry: boolean; place: Place | null }
 
 /**
  * Dépose un fichier, et dit précisément ce qui a échoué.
@@ -84,7 +86,7 @@ export async function putFile(
   try {
     const adresse = folder + encodeURIComponent(name) + (epingle ? '?reprise=1' : '')
     const response = await fetchImpl(adresse, { method: 'PUT', body })
-    if (response.ok) return { ok: true, bytes: byteLength(body) }
+    if (response.ok) return { ok: true, bytes: byteLength(body), place: lirePlace(response) }
     if (response.status === 401 || response.status === 403) {
       return {
         ok: false,
@@ -96,18 +98,26 @@ export async function putFile(
         // Le même envoi échouera de la même façon tant que l'appareil n'aura pas
         // repris un compte. Réessayer en boucle ne ferait que masquer le message.
         retry: false,
+        place: lirePlace(response),
       }
     }
     // Le compte est plein : ni une panne, ni une charge trop grosse. Réessayer
     // ne passera jamais tant que rien n'est libéré.
     if (response.status === 507) {
-      return { ok: false, reason: 'refused', detail: PLEIN, retry: false }
+      return {
+        ok: false,
+        reason: 'refused',
+        detail: PLEIN,
+        retry: false,
+        place: lirePlace(response, true),
+      }
     }
     return {
       ok: false,
       reason: 'network',
       detail: `Le serveur a répondu ${response.status}.`,
       retry: true,
+      place: lirePlace(response),
     }
   } catch (error) {
     return {
@@ -118,6 +128,8 @@ export async function putFile(
           ? `Dépôt impossible : ${error.message}`
           : 'Dépôt impossible : le serveur est injoignable.',
       retry: true,
+      // Sans réponse, on ne sait rien de la place : on ne l'invente pas.
+      place: null,
     }
   }
 }

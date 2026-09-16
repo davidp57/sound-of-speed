@@ -33,6 +33,19 @@ Toutes les évolutions notables du projet. Format
   quand tout est récent, ce qui est le cas d'une voiture qui roule beaucoup. Mais
   ce qui est protégé reste défini à un seul endroit.
 
+- **L'application prévient quand la place se réduit.** Un bandeau se lève aux
+  trois quarts du plafond, puis à l'entrée en rotation, puis au refus ; il se
+  ferme d'un bouton. La télémétrie porte la valeur en permanence — occupée, part
+  du plafond, et ce que le dernier dépôt a rencontré.
+
+  **Le bandeau ne revient que si la situation empire**, et c'est un essai qui l'a
+  imposé : la rotation fait retomber le compte sous son seuil dès le dépôt
+  suivant, donc l'état va et vient. Un bandeau qui se relèverait à chaque
+  changement se relèverait tout le temps.
+
+  Rien n'est demandé au serveur pour cela : l'état arrive sur la réponse de
+  chaque dépôt, et la voiture en fait un toutes les cinq minutes.
+
 - **Une régie, pour administrer les comptes depuis un écran.** Une troisième
   page, `/regie`, qui liste les comptes du serveur — les derniers créés en haut,
   avec nom, adresse, date, rôles et poids déposé — et une recherche par nom ou

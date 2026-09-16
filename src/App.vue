@@ -42,6 +42,7 @@ import {
   importFromUrl,
   liaison,
   ouvertPar,
+  placeDuCompte,
   setThrottle,
   shiftDown,
   shiftUp,
@@ -128,6 +129,8 @@ const HELP_SEEN_KEY = 'speed.helpSeen.v1'
  */
 const OUVERTURES_KEY = 'speed.ouvertures.v1'
 const COMPTE_SIGNALE_KEY = 'speed.compteSignale.v1'
+/** Le dernier état de place dont le bandeau a été écarté. */
+const PLACE_ECARTEE_KEY = 'speed.place.ecartee.v1'
 const helpOpen = ref(false)
 const welcomeOpen = ref(false)
 
@@ -192,6 +195,89 @@ function fermerLeRappel(): void {
     localStorage.setItem(COMPTE_SIGNALE_KEY, localStorage.getItem(OUVERTURES_KEY) ?? '0')
   } catch {
     // Sans conséquence : l'onglet reste là, et le rappel se reposera peut-être.
+  }
+}
+
+/**
+ * Le bandeau de la place, et quand il revient.
+ *
+ * **Il se lève quand la situation empire, et pas quand elle change.** La nuance
+ * est venue d'un essai : la rotation fait retomber le compte sous son seuil dès
+ * le dépôt suivant, donc l'état va et vient entre « le plafond approche » et
+ * « les plus anciens s'effacent ». Un bandeau qui se relève à chaque changement
+ * se relèverait donc à chaque retour en arrière, c'est-à-dire tout le temps —
+ * harceler au lieu de prévenir.
+ *
+ * Il ne dit donc que l'aggravation. Et quand la situation s'améliore, il se
+ * réarme en silence : redescendre puis remonter est un fait neuf, qui mérite
+ * d'être dit une fois de plus.
+ *
+ * Ce qui est rangé est **l'état écarté**, pas un « fermé » : c'est ce qui le
+ * fait revenir au bon moment, y compris après un rechargement — une voiture
+ * redémarre plus souvent qu'elle ne se remplit.
+ */
+const RANG_DE_LA_PLACE: Record<string, number> = {
+  '': -1,
+  libre: 0,
+  bientot: 1,
+  rotation: 2,
+  plein: 3,
+}
+const placeEcartee = ref(lireLaPlaceEcartee())
+
+function lireLaPlaceEcartee(): string {
+  try {
+    return localStorage.getItem(PLACE_ECARTEE_KEY) ?? ''
+  } catch {
+    // Stockage fermé : le bandeau se remontrera, ce qui est le défaut du bon côté.
+    return ''
+  }
+}
+
+/**
+ * La situation s'améliore : on oublie ce qu'on avait écarté.
+ *
+ * Sans cela, redescendre à « libre » puis remonter aux trois quarts ne dirait
+ * plus rien — l'état écarté serait resté au-dessus.
+ */
+watch(placeDuCompte, (place) => {
+  if (place === null) return
+  const rang = RANG_DE_LA_PLACE[place.etat] ?? 0
+  if (rang < (RANG_DE_LA_PLACE[placeEcartee.value] ?? -1)) {
+    placeEcartee.value = place.etat === 'libre' ? '' : place.etat
+    try {
+      localStorage.setItem(PLACE_ECARTEE_KEY, placeEcartee.value)
+    } catch {
+      // Sans conséquence : le bandeau se remontrera, ce qui est le bon défaut.
+    }
+  }
+})
+
+/** Ce que le bandeau dit, ou rien quand il n'y a rien à dire. */
+const messageDeLaPlace = computed(() => {
+  const place = placeDuCompte.value
+  if (place === null || place.etat === 'libre') return null
+  // Seule l'aggravation se dit : voir plus haut.
+  if ((RANG_DE_LA_PLACE[place.etat] ?? 0) <= (RANG_DE_LA_PLACE[placeEcartee.value] ?? -1)) {
+    return null
+  }
+
+  if (place.etat === 'plein') {
+    return 'Le serveur est plein, et tous vos trajets sont épinglés : décrochez-en un pour que la voiture puisse déposer de nouveau.'
+  }
+  if (place.etat === 'rotation') {
+    return 'Le serveur est presque plein : vos trajets les plus anciens s’effacent à mesure que de nouveaux arrivent. Épinglez ceux que vous voulez garder.'
+  }
+  return 'Le serveur se remplit : passé un seuil, les trajets les plus anciens s’effaceront à mesure. Épinglez ceux que vous voulez garder.'
+})
+
+function ecarterLaPlace(): void {
+  const etat = placeDuCompte.value?.etat ?? ''
+  placeEcartee.value = etat
+  try {
+    localStorage.setItem(PLACE_ECARTEE_KEY, etat)
+  } catch {
+    // Sans conséquence : le bandeau se remontrera à la prochaine ouverture.
   }
 }
 
@@ -593,6 +679,16 @@ onBeforeUnmount(() => {
         <AccountView v-else />
       </div>
     </main>
+
+    <!--
+      La place qui manque. Au-dessus des écrans comme les autres bandeaux, et
+      jamais sur l'écran de conduite seul : un compte plein ne se règle pas en
+      roulant, mais il se lit partout ailleurs.
+    -->
+    <div v-if="messageDeLaPlace !== null" class="banner">
+      <span>{{ messageDeLaPlace }}</span>
+      <button @click="ecarterLaPlace()">Fermer</button>
+    </div>
 
     <div v-if="received" class="banner">
       <span>{{ received }}</span>

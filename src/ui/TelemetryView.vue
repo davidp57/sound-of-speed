@@ -5,6 +5,7 @@ import ValueRow from './components/ValueRow.vue'
 import { computeMix } from '../core/audio/mix'
 import { MotionProbe } from '../core/input/motion'
 import type { PaceState } from '../core/speed/pace'
+import { partPrise } from '../core/upload/place'
 import { rpmAtSpeed } from '../core/preset/defaults'
 import {
   activeProfile,
@@ -26,10 +27,57 @@ import {
   isRunning,
   measuredCar,
   measuredCarStatus,
+  placeDuCompte,
   restartGeolocation,
   soundState,
   telemetry,
 } from '../state'
+
+/**
+ * La place sur le serveur, dite en chiffres.
+ *
+ * Elle arrive avec les dépôts : rien n'est demandé pour l'afficher, et `null`
+ * tant qu'on n'a rien déposé — ou quand le serveur ne la dit pas.
+ */
+const place = placeDuCompte
+
+const placeOccupee = computed(() => {
+  const valeur = place.value
+  if (valeur === null) return '—'
+  return `${mio(valeur.octets)} sur ${mio(valeur.plafond)} Mio`
+})
+
+const placePart = computed(() =>
+  place.value === null ? '—' : `${Math.round(partPrise(place.value) * 100)} %`,
+)
+
+/**
+ * Ce que le dernier dépôt a rencontré — **au passé**, et c'est voulu.
+ *
+ * L'état vient du serveur au moment du dépôt ; les octets, eux, sont ceux
+ * d'après son ménage. Dire « les plus anciens s'effacent » à côté de « 57 % »
+ * se lirait comme une contradiction, alors que les deux sont vrais : la place a
+ * été faite, et c'est bien pour cela qu'il en reste.
+ */
+const placeEtat = computed(() => {
+  switch (place.value?.etat) {
+    case 'libre':
+      return 'de la place'
+    case 'bientot':
+      return 'le plafond approchait'
+    case 'rotation':
+      return 'des trajets anciens ont été effacés'
+    case 'plein':
+      return 'refusé — tout est épinglé'
+    default:
+      return '—'
+  }
+})
+
+/** En mébioctets, l'unité dans laquelle le plafond se règle. */
+function mio(octets: number): string {
+  return (octets / (1024 * 1024)).toFixed(1)
+}
 
 /**
  * Écran avancé : tout ce qui alimente le son, y compris le mixage des couches,
@@ -849,6 +897,36 @@ function onRateChange(event: Event): void {
       />
       <ValueRow v-if="measuredCar" label="Couverture" :value="measuredCoverage" />
       <p v-if="measuredCarWarning" class="error">{{ measuredCarWarning }}</p>
+    </section>
+
+    <!--
+      La place qui reste sur le serveur.
+
+      Une valeur, et non un message : le bandeau prévient au franchissement d'un
+      seuil et se ferme, celle-ci reste lisible ensuite. Elle arrive avec les
+      dépôts — la voiture en envoie un toutes les cinq minutes —, donc rien n'est
+      demandé au serveur pour l'afficher.
+    -->
+    <section class="panel">
+      <h2>Place sur le serveur</h2>
+      <p v-if="place === null" class="note">
+        Rien de déposé depuis l'ouverture, ou un serveur qui ne le dit pas : la
+        place ne se devine pas.
+      </p>
+      <template v-else>
+        <ValueRow label="Occupée" :value="placeOccupee" />
+        <ValueRow label="Part du plafond" :value="placePart" />
+        <ValueRow label="Au dernier dépôt" :value="placeEtat" />
+        <p v-if="place.etat === 'rotation'" class="note">
+          Le compte a dépassé son seuil : les trajets les plus anciens s'effacent
+          à mesure que de nouveaux arrivent, et la place ci-dessus est celle qui
+          reste après. Un trajet épinglé ne part jamais.
+        </p>
+        <p v-else-if="place.etat === 'plein'" class="error">
+          Le serveur n'accepte plus de dépôt : tous les trajets qui restent sont
+          épinglés. En décrocher un suffit à relancer la remontée.
+        </p>
+      </template>
     </section>
 
     <!--
