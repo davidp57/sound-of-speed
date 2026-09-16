@@ -1,7 +1,7 @@
 # ESSAI-16 — ce que la sortie du 16 septembre a montré
 
-**Statut :** 🔄 en cours — le rétrogradage forcé est corrigé ; le reste est à
-instruire
+**Statut :** 🔄 en cours — le rétrogradage forcé est corrigé ; les six autres
+points sont à instruire
 **Branche :** `fix/seuils-kickdown` pour le ticket 01, le reste à ouvrir
 **Version visée :** 0.2.88 pour le ticket 01
 
@@ -33,6 +33,7 @@ reconstruit l'instant correctement, et le relecteur affiche l'heure locale.
 | [04 — le suivi se relance toutes les cinquante-deux secondes](tickets/04-relances-du-suivi.md) | ⬜ |
 | [05 — un curseur de réglage qui n'agit plus](tickets/05-curseur-sans-effet.md) | ⬜ |
 | [06 — la régie affiche l'heure universelle](tickets/06-heure-universelle-en-regie.md) | ⬜ |
+| [07 — le réarmement du rétrogradage forcé travaille à l'envers en Sport](tickets/07-rearmement-proportionnel.md) | ⬜ |
 
 ## Ce qui est observé sans être tranché
 
