@@ -1,9 +1,9 @@
 # ESSAI-16 — ce que la sortie du 16 septembre a montré
 
 **Statut :** 🔄 en cours — le rétrogradage forcé est corrigé et le curseur mort
-retiré ; les cinq autres points sont à instruire
-**Branche :** `fix/seuils-kickdown` pour le ticket 01, le reste à ouvrir
-**Version visée :** 0.2.88 pour le ticket 01
+retiré ; les huit autres points sont à faire le 17 septembre 2026
+**Branches :** `fix/seuils-kickdown` (ticket 01, version 0.2.88),
+`fix/retirer-le-curseur-de-seuil` (ticket 05, version 0.2.89) ; le reste à ouvrir
 
 David a roulé le 16 septembre 2026 avec la version **0.2.76** déployée, trois
 trajets, 2 h 25 en tout : 98 minutes le matin à partir de 8 h 25, puis treize et
@@ -34,6 +34,9 @@ reconstruit l'instant correctement, et le relecteur affiche l'heure locale.
 | [05 — un curseur de réglage qui n'agit plus](tickets/05-curseur-sans-effet.md) | ✅ |
 | [06 — la régie affiche l'heure universelle](tickets/06-heure-universelle-en-regie.md) | ⬜ |
 | [07 — le réarmement du rétrogradage forcé travaille à l'envers en Sport](tickets/07-rearmement-proportionnel.md) | ⬜ |
+| [08 — le volume maximal est plaqué contre le limiteur](tickets/08-volume-plaque-contre-le-limiteur.md) | ⬜ |
+| [09 — au ralenti, le tremblement est amputé de moitié](tickets/09-tremblement-ampute-au-ralenti.md) | ⬜ |
+| [10 — l'aiguille ne montre jamais le tremblement](tickets/10-aiguille-sans-tremblement.md) | ⬜ |
 
 ## Ce qui est observé sans être tranché
 
@@ -47,6 +50,8 @@ instruire dans ETAGEMENT.
 
 ## Hors périmètre
 
-- **Le son.** Rien n'a été relevé sur le rendu sonore lors de cette sortie.
 - **Le décalage entre l'intention d'ETAGEMENT et ce qui roule.** Voir ci-dessus :
   cela se tranche dans ETAGEMENT, pas ici.
+- **Le rendu sonore lui-même.** Les tickets 08 à 10 portent sur le niveau et sur
+  le tremblement du régime, deux choses mesurables hors de la voiture. Rien n'a
+  été relevé sur le timbre, les boucles ou les passages lors de cette sortie.
