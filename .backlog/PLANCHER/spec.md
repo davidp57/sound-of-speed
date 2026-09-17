@@ -1,6 +1,6 @@
 # PLANCHER — la boîte se décide sur un seul plancher de régime
 
-**Statut :** 🧑 attend David — la règle est livrée en version allégée, il reste
+**Statut :** ✅ clôture confirmée le 17 septembre 2026 — écouté le 11 au soir, puis mesuré sur les trajets du 16 : 0,16 et 0,09 aller-retour par minute contre 0,53 au repère. **Réserve** : en accordéon d'autoroute on monte à 1,23, ce que reprend [MOUVEMENT/04](../MOUVEMENT/tickets/04-verifie-en-roulant.md)
 l'écoute en roulant et le nettoyage du format de profil
 **Branche :** `feature/plancher`
 **Version visée :** à décider

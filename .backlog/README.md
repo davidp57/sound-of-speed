@@ -25,13 +25,13 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 |-----|--------|
 | [FIX-CORE](FIX-CORE/spec.md) — les quatre défauts que la mise sous test a trouvés | 🧑 |
 | [BOITE-VIVANTE](BOITE-VIVANTE/spec.md) — une boîte qui regarde la vitesse, pas seulement le régime | 🧑 |
-| [FIX-BOITE](FIX-BOITE/spec.md) — ralentir n'est pas croiser : deux défauts de la boîte, relevés en roulant | 🧑 |
+| [FIX-BOITE](FIX-BOITE/spec.md) — ralentir n'est pas croiser : deux défauts de la boîte, relevés en roulant | ✅ validé en roulant le 16 septembre, avec un bémol devenu ESSAI-16/12 |
 | [MOTEURS-EN-VOITURE](MOTEURS-EN-VOITURE/spec.md) — choisir moteur, échappement et point d'écoute au volant | 🧑 |
 | [RELIEF](RELIEF/spec.md) — faire entendre l'effort : relief de charge, de régime, et niveau au ralenti | ✅ validé en roulant le 16 septembre |
 | [UI-DEFILEMENT](UI-DEFILEMENT/spec.md) — faire défiler l'écran de configuration sans dérégler un curseur | ✅ clos le 17 septembre — deux tickets livrés, les deux vérifications restantes reprises par [INTERFACE](INTERFACE/spec.md) |
 | [MODE-SIMPLE](MODE-SIMPLE/spec.md) — quelques curseurs globaux qui commandent les quarante-huit autres | 🧑 |
 | [DEPOSER](DEPOSER/spec.md) — sortir un profil ou une trace d'une voiture qui refuse les fichiers | 🧑 |
-| [ETALONNAGE](ETALONNAGE/spec.md) — mesurer la vraie voiture pour régler les virtuelles | 🧑 |
+| [ETALONNAGE](ETALONNAGE/spec.md) — mesurer la vraie voiture pour régler les virtuelles | 🚫 parcours manuel abandonné le 17 septembre ; seule la couche survit, et elle est prouvée |
 | [TABLEAU-DE-BORD](TABLEAU-DE-BORD/spec.md) — un vrai tableau de bord ; le paysage qui défile est abandonné | ✅ clos le 17 septembre — trois tickets livrés, le cadran de régime repris par [INTERFACE](INTERFACE/spec.md) |
 | [BANQUES](BANQUES/spec.md) — accueillir plusieurs banques de son : découverte, mesure outillée, choix par profil | 🧑 |
 | [PENTE](PENTE/spec.md) — le GPS de la Tesla livre dix fois par seconde, et le conditionneur en attend une | 🧑 |
@@ -50,7 +50,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [REFONTE](REFONTE/spec.md) — le cadre de la refonte du 10 septembre : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en trois, et un compte fait le lien | 🔄 |
 | [RELECTURE](RELECTURE/spec.md) — revoir un trajet au bureau au lieu de le raconter de mémoire : une seule capture, automatique, et un relecteur avec timeline et carte | 🧑 les huit tickets sont livrés, les 46 critères établis le 12 septembre ; reste l'écoute du rejeu |
 | [PLANCHER](PLANCHER/spec.md) — la boîte se décide sur un seul plancher de régime : on monte dès que le rapport suivant tient, on ne descend qu'en ralentissant, et le rétrogradage forcé redevient exceptionnel | ✅ écouté le 11 septembre au soir : le va-et-vient a disparu, le départ est conforme ; la suite est dans RETOUR-11 et ETAGEMENT |
-| [COMMANDES](COMMANDES/spec.md) — un interrupteur qui a la forme d'un sélecteur de boîte : D démarre, P met au repos, et la boîte remonte les rapports après un arrêt | 🧑 livré, reste l'essai en roulant |
+| [COMMANDES](COMMANDES/spec.md) — un interrupteur qui a la forme d'un sélecteur de boîte : D démarre, P met au repos, et la boîte remonte les rapports après un arrêt | ✅ validé en roulant le 16 septembre ; un défaut relevé au passage devient ESSAI-16/13 |
 | [PROFIL-REEL](PROFIL-REEL/spec.md) — le serveur apprend la vraie voiture depuis les traces ordinaires et propose son profil | 🧑 neuf tickets livrés ; la chaîne servie est réparée, reste à recoller la pile dans Portainer |
 | [SUITE-ESSAI-11](SUITE-ESSAI-11/spec.md) — deux points de l'essai du 11 septembre : un dépôt qui repartait en boucle à l'arrêt, et une relance GPS de secours | 🧑 2/2 — ce n'étaient pas 726 dépôts manqués mais une tranche réessayée 726 fois en 137 s, faute de recul après échec ; ni à l'arrêt ni rien de perdu, mesuré sur les tranches du NAS ; reste l'essai en roulant |
 | [RETOUR-11](RETOUR-11/spec.md) — trois demandes de la sortie du 11 septembre au soir : le rétrogradage forcé qui rend le rapport, le claquement à la montée, l'aiguille du rapport suivant | 🧑 les trois sont livrés ; deux s'écoutent en roulant |
@@ -69,7 +69,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [REGIE](REGIE/spec.md) — administrer les comptes depuis un écran : rôle d'administrateur, attribution des rôles et des banques, plafond de volume, effacement, et lecture des données d'un compte quand il l'autorise | ✅ 9/9 — instruit, découpé et livré le 15 septembre ; vérifié contre un serveur qui tourne, plafond compris |
 | [ACCUEILLIR](ACCUEILLIR/spec.md) — l'écran d'aide du premier lancement, revu : un accueil court le compte en tête, une visite à bulles sur l'interface, et une aide de référence derrière le `?` | 🧑 5/5 — instruit, découpé et livré le 14 septembre ; reste l'essai au volant |
 | [INSTRUMENTER](INSTRUMENTER/spec.md) — savoir ce que le récepteur donne, et pouvoir en demander plus le jour d'un essai : le bruit du GPS mesuré à bord, et un journal détaillé qui s'éteint tout seul | 🧑 3/4 — livrés et vérifiés dans l'application ; reste le chiffre à relever en roulant |
-| [ESSAI-16](ESSAI-16/spec.md) — dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait jamais, des bandeaux qui recouvrent les commandes, un suivi GPS qui se relance sans cesse | 🔄 2/11 — le rétrogradage forcé est corrigé et le curseur mort retiré ; neuf restent, dont les fréquences parasites des deux V8 relevées à l'écoute du 16 |
+| [ESSAI-16](ESSAI-16/spec.md) — dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait jamais, des bandeaux qui recouvrent les commandes, un suivi GPS qui se relance sans cesse | 🔄 2/13 — le rétrogradage forcé est corrigé et le curseur mort retiré ; onze restent, dont les fréquences parasites des deux V8 et le son qui repart au repos |
 | [INTERFACE](INTERFACE/spec.md) — refaire l'écran pour la taille qu'il a vraiment : 773 × 575 px utiles dans la voiture, et non la fenêtre d'un poste de travail. Absorbe TABLEAU-DE-BORD et UI-DEFILEMENT | ⬜ 0/1 — mesurer d'abord, le reste du périmètre est à cuisiner avec David |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,

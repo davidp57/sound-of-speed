@@ -1,6 +1,6 @@
 # 01 — Les sept rapports, et tout ce qui se compte par rapport
 
-**Statut :** 🧑 attend David — livré, reste l'écoute en roulant
+**Statut :** ✅ conforme, mesuré le 17 septembre 2026 sur les 245 passages du 16 — quatrième engagée à 53 km/h médians, cinquième à 73, sixième à 95, septième à 130. L'intention du lot — 50 en quatrième, 80 en cinquième, 110 en sixième — est tenue, la cinquième arrivant sept km/h plus tôt que visé
 
 ## Ce qu'il faut obtenir
 

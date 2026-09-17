@@ -1,6 +1,6 @@
 # COMMANDES — un interrupteur qui a la forme d'un sélecteur de boîte
 
-**Statut :** 🧑 attend David — le code est livré, la preuve demande la voiture
+**Statut :** ✅ validé en roulant le 16 septembre 2026 — David : « oui ». Un défaut relevé au passage devient le ticket [ESSAI-16/13](../ESSAI-16/tickets/13-jamais-de-son-au-repos.md) : le son repart quand on change de profil au repos
 **Branche :** `feature/commandes`
 **Version visée :** 0.1.100
 

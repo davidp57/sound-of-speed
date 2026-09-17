@@ -1,6 +1,6 @@
 # FIX-BOITE — ralentir n'est pas croiser
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ validé en roulant le 16 septembre 2026 — David : « oui », avec un bémol qui devient le ticket [ESSAI-16/12](../ESSAI-16/tickets/12-retrograder-plus-tot-en-ralentissant.md) : le rétrogradage au ralentissement pourrait se produire plus tôt
 **Branche :** `fix/croisiere-en-deceleration`
 **Version visée :** 0.2
 

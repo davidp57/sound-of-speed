@@ -38,6 +38,8 @@ reconstruit l'instant correctement, et le relecteur affiche l'heure locale.
 | [09 — au ralenti, le tremblement est amputé de moitié](tickets/09-tremblement-ampute-au-ralenti.md) | ⬜ |
 | [10 — l'aiguille ne montre jamais le tremblement](tickets/10-aiguille-sans-tremblement.md) | ⬜ |
 | [11 — des fréquences parasites sur les deux V8, à moyen régime](tickets/11-frequences-parasites-sur-les-v8.md) | ⬜ |
+| [12 — rétrograder plus tôt en ralentissant, sans traîner un rapport en croisière](tickets/12-retrograder-plus-tot-en-ralentissant.md) | ⬜ |
+| [13 — le son ne doit jamais repartir au repos](tickets/13-jamais-de-son-au-repos.md) | ⬜ |
 
 ## Une observation levée par David
 
