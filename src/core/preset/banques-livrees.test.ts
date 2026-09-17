@@ -169,6 +169,36 @@ describe('une banque livrée est déclarée partout où il faut', () => {
     }
   })
 
+  it('ne déclare sa règle nginx qu’une fois, et la conf reste équilibrée', () => {
+    // nginx **refuse de démarrer** sur une règle en double ou une accolade
+    // manquante, et le conteneur ne répond alors sur rien. Vu le 17 septembre
+    // 2026 : un script d'édition avait recopié un bloc au lieu de le déplacer,
+    // rien ne l'a signalé, et la chaîne d'intégration a mis deux minutes à le
+    // dire sous la forme d'un port qui ne répond pas. Un fichier de
+    // configuration ne passe ni par le typage ni par le style : ce test est tout
+    // ce qu'il y a entre lui et la construction de l'image.
+    const conf = readFileSync('docker/nginx.conf', 'utf8')
+
+    const regles = [...conf.matchAll(/location \^~ (\/audio\/[a-z0-9-]+\/)/g)].map((m) => m[1])
+    expect(regles.length).toBe(new Set(regles).size)
+
+    const sansCommentaires = conf
+      .split('\n')
+      .map((ligne) => ligne.split('#')[0] ?? '')
+      .join('\n')
+    let profondeur = 0
+    let minimum = 0
+    for (const caractere of sansCommentaires) {
+      if (caractere === '{') profondeur += 1
+      else if (caractere === '}') {
+        profondeur -= 1
+        minimum = Math.min(minimum, profondeur)
+      }
+    }
+    expect(profondeur).toBe(0)
+    expect(minimum).toBe(0)
+  })
+
   it('est vérifiée par la chaîne d’intégration', () => {
     // La chaîne monte l'image et demande chaque banque : c'est la seule preuve
     // qu'elle est servie malgré le montage du volume d'échantillons. Une liste
