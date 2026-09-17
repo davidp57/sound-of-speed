@@ -55,6 +55,13 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **La régie affichait les heures en temps universel.** David : « les heures sont
+  fausses : je suis parti à 19 h, pas à 17 h ». La fiche d'un compte listait ses
+  trajets par leur clé, qui porte l'horodatage en universel — c'est délibéré,
+  sans quoi une même tranche daterait de deux heures différentes selon la machine
+  qui la relit. Elle affiche maintenant l'heure locale, comme le relecteur le
+  faisait déjà.
+
 - **Une banque absente disait le nom d'un fichier.** « on-1021.flac : 404 » : ni
   de quelle banque il s'agissait — le même nom de prise existe dans plusieurs —,
   ni que le profil n'était pas jouable ici, ni quoi faire. Le message nomme

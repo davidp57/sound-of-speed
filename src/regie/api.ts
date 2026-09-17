@@ -76,7 +76,15 @@ export interface Donnees {
   profils: Entree[]
   moteurs: Entree[]
   boites: Entree[]
-  trajets: { cle: string; octets: number; tranches: unknown[] }[]
+  /**
+   * Les trajets, avec l'instant où ils ont été enregistrés.
+   *
+   * La clé porte cet instant, mais en **temps universel** — c'est voulu, sans
+   * quoi une même tranche daterait de deux heures différentes selon la machine
+   * qui la relit. Elle ne s'affiche donc pas telle quelle : David est parti à
+   * 19 h et la fiche annonçait 17 h.
+   */
+  trajets: { cle: string; enregistreLe: number; octets: number; tranches: unknown[] }[]
   journal: Entree[]
   mesures: Entree[]
 }
