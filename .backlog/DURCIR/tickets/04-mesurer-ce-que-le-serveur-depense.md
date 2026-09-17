@@ -1,5 +1,5 @@
 **Statut :** 🧑 attend David — le relevé est réparé et vérifié contre un
-serveur qui tourne ; reste à recoller la pile sur le NAS et à lire une ligne
+serveur qui tourne ; reste à laisser tourner quelques jours et à lire la régie
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -91,6 +91,17 @@ tient la route de la régie — 200 pour qui administre, 404 pour qui ne le fait
 
 ### Ce qui reste, et qui appartient à David
 
-Tirer l'image sur le NAS, laisser rouler quelques jours, ouvrir la régie. Les
-quatre chiffres de production s'écriront ici à ce moment-là, et le ticket 05 s'en
-servira pour poser une borne qui ne soit pas inventée.
+**Rien à installer.** Il n'y a ni service ni volume nouveau : le relevé s'écrit
+dans la base qui existe déjà. Un serveur qui tourne en **0.2.99 ou au-delà**
+écrit une ligne par heure sans qu'on lui demande rien.
+
+*Le premier état de ce ticket disait « recoller la pile », repris du README sans
+le traduire. C'est le terme fort, et il désigne autre chose : recréer la pile
+entière depuis le fichier compose, ce qu'il faut quand la composition change — un
+service ajouté, un volume nouveau. Ici, tirer l'image suffit, et c'était déjà
+fait.*
+
+Donc : laisser tourner quelques jours, puis ouvrir la **régie** et lire la section
+« Ce que le serveur dépense », en bas de page. Les quatre chiffres de production
+s'écriront ici à ce moment-là, et le ticket 05 s'en servira pour poser une borne
+qui ne soit pas inventée.
