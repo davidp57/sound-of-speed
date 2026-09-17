@@ -119,10 +119,10 @@ lieu d'être renvoyés aux deux bords de l'écran. C'est cohérent avec le reste
 lot : la hauteur est la dimension qui manque, et ces deux blocs sont les seuls à
 la consommer alors qu'il y a de la place à côté d'eux.
 
-**À cuisiner avant de coder** : l'ordre vertical des deux (le rapport au-dessus
-du sélecteur, ou l'inverse), et ce qu'il advient du bandeau d'alerte, qui est
-aujourd'hui sous le tout et qui recouvre justement ces commandes
-([ESSAI-16/02](../ESSAI-16/tickets/02-bandeaux-sous-les-commandes.md)).
+**L'ordre est tranché** par David le 17 septembre 2026 : **le rapport au-dessus
+du sélecteur**, les deux entre les compteurs. Reste à décider ce qu'il advient
+du bandeau d'alerte, aujourd'hui sous le tout et qui recouvre justement ces
+commandes ([ESSAI-16/02](../ESSAI-16/tickets/02-bandeaux-sous-les-commandes.md)).
 
 ## Ce qu'il faut trancher
 
