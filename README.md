@@ -113,7 +113,8 @@ seulement : c'est d'abord l'interrupteur de l'application.
 | Touche | Ce qu'elle fait |
 |---|---|
 | **D** | démarre tout : localisation, son, enregistrement du trajet. Une fois en route, le même bouton bascule le tempérament et affiche **S** — un appui de plus revient à D. Au repos il affiche toujours **D**. |
-| **P** | met tout au repos, et dépose ce que la capture gardait. L'affichage reste allumé : c'est par lui qu'on redémarre. Il fonctionne **aussi en roulant**. |
+| **P** | met tout au repos, et dépose ce que la capture gardait. L'affichage reste allumé : c'est par lui qu'on redémarre. Il fonctionne **aussi en roulant**. **Au repos, rien ne sonne** : ni un changement de profil, ni un changement de banque, ni un changement d'origine du son ne rallume quoi que ce soit, et le bouton du son est grisé. |
+
 | **AUTO** / **MAN** | choisissent la boîte. Chaque étiquette porte au-dessus d'elle les commandes de son mode : la touche de marche pour l'automatique, `+` et `−` pour la manuelle. |
 
 **L'application s'ouvre au repos**, et ce n'est pas une précaution d'usage. Elle
@@ -144,6 +145,14 @@ conduite* :
   rupteur dépasse 300 km/h sur les deux profils livrés, une échelle qui
   laisserait l'aiguille dans un coin. En portrait, les cadrans s'empilent,
   chacun sur toute la largeur, et le rapport se lit entre les deux.
+
+  **Le compte-tours affiche le régime entendu**, aiguille et nombre — celui qui
+  porte le tremblement du ralenti, et non le régime net. Un moteur qui tourne
+  frémit ; un cadran rigoureusement fixe à 800 dit qu'il est arrêté. La boîte,
+  ses seuils de passage et l'écran Télémétrie, eux, travaillent sur le **régime
+  net** : quelques dizaines de tours suffiraient à les faire osciller, et un seuil
+  franchi par le tremblement produirait des passages parasites. Le compteur de
+  vitesse, lui, affiche la vitesse conditionnée, celle qui pilote tout le reste.
 
   **Le rapport est posé par-dessus, pas rangé dans une rangée à lui**, et ce
   n'est pas un détail de mise en page : il occupait avant une colonne centrale
@@ -3885,7 +3894,7 @@ suit pas.
 | 54 | Une seule notion de « est-ce qu'on ralentit ? » : cinq lectures de l'accélération cohabitaient dans la boîte, avec cinq seuils qui ne s'accordaient pas | **unifiée en une lecture, mesurée au banc : la boîte encaisse une moitié de bruit en plus avant d'osciller, contre un quart ; l'allure se lit à l'écran, au journal et au relecteur — reste l'essai en roulant** |
 | 55 | Savoir ce que le récepteur donne : le bruit du GPS mesuré à bord et inscrit au journal, et un journal détaillé qui s'éteint tout seul au bout de vingt-quatre heures | **livré ; reste le chiffre à relever en roulant, qui dira si la boîte a de la marge** |
 | 56 | Deux points de l'essai du 11 septembre : un dépôt qui repartait en boucle, pendait sans fin et ne se voyait pas, et une relance de la localisation quand le GPS ne démarre pas | **livré ; reste l'essai en roulant** |
-| 57 | Dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait presque jamais, un curseur de seuil qui ne commandait plus rien, un volume plaqué contre le limiteur, un ralenti sans tremblement | **deux livrés et mesurés sur 58 000 relevés ; huit à instruire** |
+| 57 | Dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait presque jamais, un curseur de seuil qui ne commandait plus rien, un volume plaqué contre le limiteur, un ralenti sans tremblement | **quatre livrés : le son ne repart plus au parking — mesuré sur le signal, au volume coupé — et le compte-tours frémit comme celui d'une vraie voiture ; dix restent** |
 | 58 | Refaire l'écran pour la taille qu'il a vraiment : 773 × 575 px utiles dans la voiture, et non la fenêtre d'un poste de travail. Absorbe le tableau de bord et le défilement | mesurer d'abord ; le reste du périmètre est à trancher |
 | 59 | Choisir le moteur, l'échappement et le point d'écoute au volant, sans passer par la configuration | à essayer en roulant |
 | 60 | Un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | à écouter en roulant |

@@ -1,6 +1,6 @@
 # 10 — L'aiguille ne montre jamais le tremblement
 
-**Statut :** ⬜ prêt — demande un arbitrage
+**Statut :** ✅ fait — arbitrage rendu par David le 17 septembre 2026, et livré
 
 Trouvé en instruisant le ticket 09. Le tremblement vit dans une grandeur à part,
 `audibleRpm`, et le commentaire du moteur est explicite : il « n'atteint ni la
@@ -37,7 +37,26 @@ nombre illisible, et elle ne demande aucun réglage nouveau.
 
 ## Critères d'acceptation
 
-- [ ] L'arbitrage est rendu par David.
-- [ ] Si l'aiguille bouge, le README dit laquelle des deux grandeurs chaque
+- [x] L'arbitrage est rendu par David.
+- [x] Si l'aiguille bouge, le README dit laquelle des deux grandeurs chaque
       élément du cadran affiche.
-- [ ] La boîte et ses seuils continuent de travailler sur le régime net.
+- [x] La boîte et ses seuils continuent de travailler sur le régime net.
+
+## L'arbitrage rendu
+
+David, le 17 septembre 2026, a choisi la **première** option et non la voie
+moyenne que je recommandais : **l'aiguille et le nombre suivent tous deux le
+régime entendu**. Le compte-tours dit ce qu'on entend, sans exception interne.
+
+La boîte, ses seuils de passage et l'écran Télémétrie continuent de travailler sur
+le régime net : c'est ce qui était bien séparé, et cela le reste.
+
+**Ce que ça change à l'écran**, mesuré au ralenti dans l'application : le cadran
+affichait 750 fixe, il affiche maintenant des valeurs entre 750 et 768 — relevé
+à 758 à l'instant de la capture. Les deux faces de l'écran de conduite sont
+concernées, cadrans comme chiffres, ainsi que la barre de remplissage.
+
+**Au passage, une mesure pour le ticket 09.** Sur vingt-cinq relevés au ralenti,
+l'écart entre régime entendu et régime net va de 0 à +20,9 tr/min, et **jamais en
+dessous de zéro**. Un tremblement devrait osciller autour du régime, pas au-dessus
+de lui : c'est le chiffre que le ticket 09 cherchait.

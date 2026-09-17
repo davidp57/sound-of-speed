@@ -1,6 +1,6 @@
 # 09 — Au ralenti, le tremblement est amputé de moitié
 
-**Statut :** ⬜ prêt
+**Statut :** ⬜ prêt — le chiffre est relevé, voir en fin de ticket
 
 David : « j'ai pas l'impression que les oscillations aléatoires de rpm qui sont
 censées être codées soient là. En particulier au ralenti, le moteur est à
@@ -62,3 +62,14 @@ peut avoir un domaine jouable qui commence au ralenti.
 
 L'affichage, lui, ne montrera toujours rien : voir le ticket 10. Ce ticket-ci ne
 traite que ce qui s'entend.
+
+## Le chiffre, relevé le 17 septembre 2026
+
+Trouvé en vérifiant le ticket 10, dans l'application, au ralenti : sur
+vingt-cinq relevés consécutifs, l'écart entre le régime entendu et le régime net
+va de **0 à +20,9 tr/min**, et ne descend **jamais sous zéro**. Une seconde série
+de dix relevés donne la même chose : 0 à +18,1, aucun négatif.
+
+Un tremblement oscille autour d'une valeur ; celui-ci ne fait que s'ajouter. C'est
+bien la moitié manquante que le titre du ticket annonce, et elle est mesurée, plus
+seulement entendue.
