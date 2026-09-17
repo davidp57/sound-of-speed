@@ -1,6 +1,6 @@
 # BANQUES — plusieurs banques de son, sans y passer la soirée
 
-**Statut :** 🧑 attend David — les quatre tickets sont livrés, reste l'essai hors réseau
+**Statut :** 🧑 attend David — les quatre premiers tickets sont livrés, reste l'essai hors réseau ; un cinquième s'est ajouté le 17 septembre 2026, sur ce que l'écran dit d'une banque absente
 **Branche :** `feature/banques`
 **Version visée :** 0.3
 

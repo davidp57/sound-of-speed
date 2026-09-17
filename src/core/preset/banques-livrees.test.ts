@@ -114,7 +114,7 @@ describe('les profils d’usine', () => {
 })
 
 /**
- * Les quatre endroits où une banque livrée doit être déclarée.
+ * Les quatre listes où une banque livrée doit être déclarée.
  *
  * Ajouter une banque au dépôt ne suffit pas à la faire arriver chez qui déploie :
  * elle doit être exceptée dans `.gitignore` pour entrer dans le dépôt, et dans
@@ -129,8 +129,14 @@ describe('les profils d’usine', () => {
  * vérification de la chaîne d'intégration existait pourtant — mais elle listait
  * les banques en dur, donc elle ignorait la nouvelle.
  *
- * Ces trois tests sont ce qui manquait : ils partent des profils livrés et
- * vérifient que chaque déclaration suit.
+ * Ces tests sont ce qui manquait : ils partent des profils livrés et vérifient
+ * que chaque déclaration suit.
+ *
+ * **Il y en avait trois, il en fallait quatre.** Écrits sur trois listes, ils
+ * ont laissé passer la quatrième — la pile nginx, que j'avais crue morte parce
+ * que l'image publiée vient d'ailleurs. La chaîne d'intégration la monte
+ * pourtant, et c'est elle qui a rougi. Une garde écrite d'après ce qu'on croit
+ * savoir vaut ce que vaut cette croyance.
  */
 describe('une banque livrée est déclarée partout où il faut', () => {
   const dossiers = [...new Set(createFactoryProfiles().map((profil) => profil.sampleDir))]
@@ -148,6 +154,18 @@ describe('une banque livrée est déclarée partout où il faut', () => {
     const regles = readFileSync('.dockerignore', 'utf8')
     for (const dossier of dossiers) {
       expect(regles).toContain(`!public/audio/${dossier}`)
+    }
+  })
+
+  it('est servie par la pile nginx, qui la nomme un bloc à la fois', () => {
+    // Le volume des échantillons se monte **sur** le dossier `audio` de l'image
+    // et masque tout ce qu'il contient. nginx ne ramène sous `/audio/` que les
+    // banques qu'il nomme, une par une — celle qu'on oublie est invisible, sans
+    // que rien ne le signale.
+    const conf = readFileSync('docker/nginx.conf', 'utf8')
+    for (const dossier of dossiers) {
+      expect(conf).toContain(`/audio/${dossier}/`)
+      expect(conf).toContain(`_banques/${dossier}/`)
     }
   })
 
