@@ -1,6 +1,6 @@
 # 03 — La télémétrie se chevauche sur l'écran de la voiture
 
-**Statut :** ⬜ prêt — **repris par [CADRAGE](../../CADRAGE/spec.md)**, même
+**Statut :** ⬜ prêt — **repris par [INTERFACE](../../INTERFACE/spec.md)**, même
 cause que le ticket 02
 
 Sur la photo de l'écran Télémétrie, le bouton « Écouter l'accéléromètre »

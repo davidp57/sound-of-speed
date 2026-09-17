@@ -1,6 +1,6 @@
 # 01 — Un glissement vertical fait défiler, et ne dérègle rien
 
-**Statut :** 🧑 attend David
+**Statut :** 🧑 **repris par [INTERFACE](../../INTERFACE/spec.md)**
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 

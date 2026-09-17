@@ -104,7 +104,7 @@ Un relevé en roulant, par David :
    qui décidera du seuil définitif ;
 2. la largeur utile, pour caler la mise en page — **répondu le 16 septembre
    2026 : 773 × 575 px utiles**, pour 1 254 × 784 annoncés et une densité de
-   1,53. Le chiffre a ouvert le lot [CADRAGE](../CADRAGE/spec.md) ;
+   1,53. Le chiffre a ouvert le lot [INTERFACE](../INTERFACE/spec.md) ;
 3. la réponse du verrou d'écran, et si l'autorisation de géolocalisation est
    retenue au démarrage suivant.
 

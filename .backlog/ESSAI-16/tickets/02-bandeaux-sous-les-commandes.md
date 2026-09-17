@@ -1,6 +1,6 @@
 # 02 — Les bandeaux du bas passent sous les commandes
 
-**Statut :** ⬜ prêt — **repris par [CADRAGE](../../CADRAGE/spec.md)** : le
+**Statut :** ⬜ prêt — **repris par [INTERFACE](../../INTERFACE/spec.md)** : le
 rustiner seul donnerait un correctif qui ne tient que jusqu'au prochain bandeau
 
 David, photos à l'appui : le bandeau « Plus aucune position depuis 7 s. Suivi

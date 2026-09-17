@@ -1,6 +1,9 @@
 # TABLEAU-DE-BORD — un vrai tableau de bord, et un paysage qui défile
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ clos le 17 septembre 2026 — trois tickets livrés, le paysage
+abandonné, et le cadran de régime **repris par
+[INTERFACE](../INTERFACE/spec.md)** : sa vérification se fera sur l'écran refait,
+pas sur celui qu'on remplace
 **Branches :** `feature/tableau-de-bord`, `feature/cadrans-en-grand`
 **Version visée :** 0.4
 
@@ -99,10 +102,14 @@ disponible parce qu'on supposait qu'on roulait en plein écran. David n'y passe
 jamais. Le disque est passé de 296 à 434 pixels sur un écran de 1024 × 768 ;
 le détail est dans le [ticket 05](tickets/05-les-cadrans-occupent-l-ecran.md).
 
-**Le paysage n'est pas abandonné.** La mesure qui conditionnait sa réalisation est
-favorable : la durée d'image ne bouge pas, et le décor coûte 0,13 ms de temps de
-tâche par image, un peu plus d'un centième d'image. Le chiffre et ses réserves
-sont dans le ticket 04.
+**Le paysage est abandonné**, et cette spécification a affirmé le contraire
+jusqu'au 17 septembre 2026 — son propre [ticket 04](tickets/04-le-paysage-qui-defile.md)
+le marquait pourtant abandonné depuis le 7 septembre, et
+[`CLAUDE.md`](../../CLAUDE.md) disait que la règle « aucune animation » n'avait
+plus d'exception. David a tranché le 17 septembre : « on a abandonné l'idée du
+paysage qui défile. » La mesure de coût qui figurait ici — 0,13 ms de temps de
+tâche par image — reste dans le ticket 04 ; elle n'a jamais été la raison de la
+décision, qui est une règle d'ergonomie.
 
 Deux décisions ont été prises en écrivant le code, faute d'avoir été tranchées
 dans la spécification :

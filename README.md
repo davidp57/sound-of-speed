@@ -3885,6 +3885,8 @@ suit pas.
 | 54 | Une seule notion de « est-ce qu'on ralentit ? » : cinq lectures de l'accélération cohabitaient dans la boîte, avec cinq seuils qui ne s'accordaient pas | **unifiée en une lecture, mesurée au banc : la boîte encaisse une moitié de bruit en plus avant d'osciller, contre un quart ; l'allure se lit à l'écran, au journal et au relecteur — reste l'essai en roulant** |
 | 55 | Savoir ce que le récepteur donne : le bruit du GPS mesuré à bord et inscrit au journal, et un journal détaillé qui s'éteint tout seul au bout de vingt-quatre heures | **livré ; reste le chiffre à relever en roulant, qui dira si la boîte a de la marge** |
 | 56 | Deux points de l'essai du 11 septembre : un dépôt qui repartait en boucle, pendait sans fin et ne se voyait pas, et une relance de la localisation quand le GPS ne démarre pas | **livré ; reste l'essai en roulant** |
+| 57 | Dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait presque jamais, un curseur de seuil qui ne commandait plus rien, un volume plaqué contre le limiteur, un ralenti sans tremblement | **deux livrés et mesurés sur 58 000 relevés ; huit à instruire** |
+| 58 | Refaire l'écran pour la taille qu'il a vraiment : 773 × 575 px utiles dans la voiture, et non la fenêtre d'un poste de travail. Absorbe le tableau de bord et le défilement | mesurer d'abord ; le reste du périmètre est à trancher |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les

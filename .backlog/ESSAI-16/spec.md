@@ -28,8 +28,8 @@ reconstruit l'instant correctement, et le relecteur affiche l'heure locale.
 | Ticket | Statut |
 |---|---|
 | [01 — le rétrogradage forcé ne se déclenchait presque jamais](tickets/01-kickdown-inatteignable.md) | ✅ |
-| [02 — les bandeaux du bas passent sous les commandes](tickets/02-bandeaux-sous-les-commandes.md) | ⬜ repris par [CADRAGE](../CADRAGE/spec.md) |
-| [03 — la télémétrie se chevauche sur l'écran de la voiture](tickets/03-telemetrie-qui-se-chevauche.md) | ⬜ repris par [CADRAGE](../CADRAGE/spec.md) |
+| [02 — les bandeaux du bas passent sous les commandes](tickets/02-bandeaux-sous-les-commandes.md) | ⬜ repris par [INTERFACE](../INTERFACE/spec.md) |
+| [03 — la télémétrie se chevauche sur l'écran de la voiture](tickets/03-telemetrie-qui-se-chevauche.md) | ⬜ repris par [INTERFACE](../INTERFACE/spec.md) |
 | [04 — le suivi se relance toutes les cinquante-deux secondes](tickets/04-relances-du-suivi.md) | ⬜ |
 | [05 — un curseur de réglage qui n'agit plus](tickets/05-curseur-sans-effet.md) | ✅ |
 | [06 — la régie affiche l'heure universelle](tickets/06-heure-universelle-en-regie.md) | ⬜ |

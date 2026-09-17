@@ -1,6 +1,6 @@
 # 02 — Une bande de défilement à gauche, trouvable sans regarder
 
-**Statut :** 🧑 attend David
+**Statut :** 🧑 **repris par [INTERFACE](../../INTERFACE/spec.md)**
 
 **Bloqué par :** aucun, peut démarrer tout de suite — mais n'a de sens qu'après
 avoir constaté ce que donne le 01 dans la voiture

@@ -1,6 +1,8 @@
 # UI-DEFILEMENT — faire défiler sans dérégler
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ clos le 17 septembre 2026 — deux tickets livrés, et les deux
+vérifications qui restaient **reprises par [INTERFACE](../INTERFACE/spec.md)** :
+les mener sur un écran qu'on va refaire serait les mener deux fois
 **Branches :** `fix/defilement`, `fix/defilement-partout`
 **Version visée :** 0.3
 

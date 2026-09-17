@@ -1,6 +1,7 @@
 # 01 — Un cadran de régime, à la place de la réglette
 
-**Statut :** 🧑 attend David
+**Statut :** 🧑 **repris par [INTERFACE](../../INTERFACE/spec.md)** — la lecture
+en roulant se vérifiera sur l'écran refait, pas sur celui qu'on remplace
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
