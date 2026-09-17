@@ -478,17 +478,38 @@ describe('Engine — tremblement de régime', () => {
   const vite = { kmh: 80, atStandstill: false, throttle: 0 }
   const viteEnCharge = { kmh: 80, atStandstill: false, throttle: 1 }
 
-  it('fait trembler le régime au ralenti', () => {
+  it('fait trembler le régime au ralenti, des deux côtés', () => {
     const { lo, hi, span } = excursion(makeEngine(), ralenti)
 
-    // Mesuré sur le profil Sport, réglé à 35 tr/min : 0 à +33,9 tr/min. Le
-    // creux est nul parce que le régime est exactement à son plancher au
-    // ralenti et que le tremblement ne descend pas sous le ralenti —
-    // l'excursion y est donc à sens unique.
-    expect(lo).toBe(0)
+    // L'excursion était à sens unique jusqu'au 17 septembre 2026 : le régime
+    // étant exactement à son plancher au ralenti, la demi-oscillation vers le
+    // bas était écrasée contre la borne. David l'entendait — « au ralenti, le
+    // moteur est à 800 rpm stables » — et c'était mesurable : 0 à +20,9 tr/min
+    // dans l'application, jamais un tour en dessous.
+    expect(lo).toBeLessThan(-32)
     expect(hi).toBeGreaterThan(32)
+    expect(Math.abs(lo)).toBeLessThanOrEqual(profile.engine.flutterRpm)
     expect(hi).toBeLessThanOrEqual(profile.engine.flutterRpm)
-    expect(span).toBeGreaterThan(32)
+    // Symétrique à quelques tours près : c'est ce que « des deux côtés » veut
+    // dire, et un creux deux fois plus petit que la bosse passerait sans ça.
+    expect(Math.abs(hi + lo)).toBeLessThan(0.15 * span)
+  })
+
+  it('ne reste pas collé à sa consigne au ralenti', () => {
+    // Le défaut ne se voyait pas dans l'étendue mais dans le **temps passé** à
+    // la borne : une seconde sur deux, le moteur était rigoureusement stable.
+    const engine = makeEngine()
+    for (let f = 0; f * FRAME_S <= 2; f += 1) engine.tick(FRAME_S, input(ralenti))
+
+    let colles = 0
+    let total = 0
+    for (let f = 0; f * FRAME_S <= 30; f += 1) {
+      const state = engine.tick(FRAME_S, input(ralenti))
+      if (Math.abs(state.audibleRpm - state.rpm) < 0.5) colles += 1
+      total += 1
+    }
+
+    expect(colles / total).toBeLessThan(0.05)
   })
 
   it('tremble de part et d’autre dès que le moteur est entraîné', () => {
@@ -569,19 +590,40 @@ describe('Engine — tremblement de régime', () => {
     expect(second).toEqual(premier)
   })
 
-  it('ne franchit ni le rupteur ni le ralenti', () => {
+  it('ne franchit pas le rupteur, et ne fait jamais caler le moteur', () => {
     const base = createDefaultProfile()
     // Amplitude absurde : elle dépasse la plage entière du moteur, donc si le
-    // bornage manquait, on le verrait tout de suite.
+    // bornage manquait, on le verrait tout de suite. Le curseur s'arrête à 150,
+    // mais un profil importé ne passe pas par le curseur.
     const engine = new Engine({ ...base.engine, flutterRpm: 4000 }, base.mix)
 
     for (const over of [ralenti, lent, { kmh: 400, atStandstill: false, throttle: 1 }]) {
       for (let f = 0; f * FRAME_S <= 10; f += 1) {
         const state = engine.tick(FRAME_S, input(over))
         expect(state.audibleRpm).toBeLessThanOrEqual(base.engine.redlineRpm)
-        expect(state.audibleRpm).toBeGreaterThanOrEqual(base.engine.idleRpm)
+        // Le plancher n'est plus le ralenti — le tremblement doit pouvoir
+        // passer dessous — mais un moteur sous la moitié de son ralenti a calé,
+        // et les couches se joueraient une octave trop bas.
+        expect(state.audibleRpm).toBeGreaterThanOrEqual(base.engine.idleRpm / 2)
       }
     }
+  })
+
+  it('laisse le tremblement passer sous le ralenti, mais pas de beaucoup', () => {
+    const base = createDefaultProfile()
+    const engine = new Engine({ ...base.engine, flutterRpm: 40 }, base.mix)
+    for (let f = 0; f * FRAME_S <= 2; f += 1) engine.tick(FRAME_S, input(ralenti))
+
+    let plancher = Infinity
+    for (let f = 0; f * FRAME_S <= 30; f += 1) {
+      plancher = Math.min(plancher, engine.tick(FRAME_S, input(ralenti)).audibleRpm)
+    }
+
+    // Sous le ralenti, mais du montant du tremblement et pas d'un tour de plus :
+    // c'est ce qui distingue « le moteur oscille autour de sa consigne » de « le
+    // moteur descend ».
+    expect(plancher).toBeLessThan(base.engine.idleRpm)
+    expect(plancher).toBeGreaterThanOrEqual(base.engine.idleRpm - 40)
   })
 
   it('n’atteint pas la boîte : le régime net reste lisse', () => {
@@ -607,9 +649,14 @@ describe('Engine — tremblement de régime', () => {
 
     // Un moteur de sport a un ralenti plus instable qu'un moteur de série.
     expect(sport.engine.flutterRpm).toBeGreaterThan(route.engine.flutterRpm)
-    // Mesuré : 24,2 tr/min d'excursion au ralenti sur Route, 33,9 sur Sport.
-    expect(excursion(new Engine(route.engine, route.mix), ralenti).span).toBeCloseTo(24.2, 0)
-    expect(excursion(new Engine(sport.engine, sport.mix), ralenti).span).toBeCloseTo(33.9, 0)
+    // Mesuré : 48,3 tr/min d'excursion au ralenti sur Route, 67,7 sur Sport.
+    //
+    // Ces chiffres ont **doublé** le 17 septembre 2026, et c'est la preuve du
+    // correctif plutôt qu'un changement de réglage : ils valaient 24,2 et 33,9,
+    // soit exactement la moitié, parce que la demi-oscillation vers le bas était
+    // écrasée contre le plancher. L'amplitude réglée, elle, n'a pas bougé.
+    expect(excursion(new Engine(route.engine, route.mix), ralenti).span).toBeCloseTo(48.3, 0)
+    expect(excursion(new Engine(sport.engine, sport.mix), ralenti).span).toBeCloseTo(67.7, 0)
   })
 })
 
