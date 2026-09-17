@@ -7,6 +7,11 @@ mais les gestes, parce que c'est ainsi qu'on conduit.
 **Il se périme.** Chaque ligne renvoie à son ticket ; c'est le ticket qui fait
 foi, et ce document se réécrit quand le reliquat change.
 
+*Revu le 17 septembre 2026, tard* : le son ne sature plus, l'écran a changé de
+disposition et le rétrogradage forcé se réarme en roulant. Trois points entrent,
+et ce qui était « à ne pas tester parce qu'on va refaire l'écran » redevient
+testable.
+
 *Revu le 17 septembre 2026 au soir* : les points à l'arrêt passent de deux à
 cinq. Le relevé du taux d'échantillonnage y entre — c'est le chiffre qui
 manque pour comprendre pourquoi les parasites s'entendent dans la voiture et
@@ -97,6 +102,19 @@ touché — sa mesure ne montre pas d'écart de niveau —, donc s'il paraît en
 plus faible, c'est autre chose que du volume.
 → [BANQUES/06](BANQUES/tickets/06-les-banques-ne-sonnent-pas-au-meme-niveau.md)
 
+**5 ter · Le son à fort volume.** Mettre le volume général au maximum et
+accélérer franchement. Le son ne doit plus se salir quand ça monte : la chaîne
+écrêtait un échantillon sur onze à ce niveau, et c'est corrigé. **Si les
+fréquences parasites des V8 disparaissent, la cause était là** — c'est la
+réponse au ticket qui traîne depuis l'essai du 16.
+→ [ESSAI-16/08](ESSAI-16/tickets/08-volume-plaque-contre-le-limiteur.md),
+[ESSAI-16/11](ESSAI-16/tickets/11-frequences-parasites-sur-les-v8.md)
+
+**5 quater · Deux rétrogradages forcés de suite, en mode Sport.**
+Écraser, relâcher, écraser à nouveau quelques secondes plus tard. Les deux
+doivent partir. Avant, la boîte restait désarmée 86 % du temps en Sport et le
+second ne venait pas. → [ESSAI-16/07](ESSAI-16/tickets/07-rearmement-proportionnel.md)
+
 ## Sur autoroute, à allure stabilisée
 
 **6 · Tenir 50 km/h une minute, puis tenir 130 une minute.**
@@ -135,12 +153,37 @@ nom. Il efface les profils de l'appareil et prend ceux du serveur à la place, e
 deux appuis. Vérifié contre un serveur simulé ; ce qui reste à voir est le
 chemin réel, compte compris. → [REMONTEE/08](REMONTEE/tickets/08-reprendre-du-serveur-sans-dupliquer.md)
 
+## L'écran, qui vient de changer
+
+**12 · La nouvelle disposition.** Le rapport et le sélecteur de boîte sont
+maintenant **entre les deux compteurs**, le rapport au-dessus. Les cadrans ont
+gagné : 213 pixels de diamètre au lieu de 176, et 277 en plein écran. Deux
+choses à juger d'un coup d'œil, à l'arrêt puis en roulant :
+
+- le rapport se lit-il encore assez gros ? Son chiffre a été réduit pour tenir
+  dans la colonne ;
+- le sélecteur tombe-t-il bien sous le pouce, au milieu de l'écran plutôt qu'en
+  bas ?
+
+Et le bandeau d'alerte du bas ne doit plus être recouvert par les commandes.
+→ [INTERFACE](INTERFACE/spec.md), [ESSAI-16/02](ESSAI-16/tickets/02-bandeaux-sous-les-commandes.md)
+
+**13 · La mire, une fois, avec une carte bancaire.** Atelier, volet *Écran*,
+« Ouvrir la mire ». Régler le curseur jusqu'à ce que la carte recouvre le
+rectangle, puis « Retenir ». C'est le seul moyen de savoir ce qu'un pixel fait en
+millimètres. → [INTERFACE/01](INTERFACE/tickets/01-mesurer-l-espace-reel.md)
+
+**14 · Un appui sur *Plein écran* pendant le trajet.** Rien d'autre : le relevé
+se reprend tout seul, et l'écart entre les deux états dira si les pixels
+manquants sont une barre ou un zoom.
+
 ## Ce qu'il ne faut pas tester, et pourquoi
 
-**Tout ce qui touche l'écran.** Le cadran de régime en plein soleil, le
-défilement, l'accueil du premier lancement, le choix du moteur au volant, les
-curseurs globaux. David, le 17 septembre : « on va d'abord refaire l'écran
-proprement et on testera ça ensuite ». → [INTERFACE](INTERFACE/spec.md)
+**Le reste de l'écran attend le lot INTERFACE.** Le cadran de régime en plein
+soleil, le défilement, l'accueil du premier lancement, le choix du moteur au
+volant, les curseurs globaux. David, le 17 septembre : « on va d'abord refaire
+l'écran proprement et on testera ça ensuite ». La colonne du milieu est faite ;
+le reste du lot ne l'est pas. → [INTERFACE](INTERFACE/spec.md)
 
 ## Ce qui ne se teste plus du tout
 
