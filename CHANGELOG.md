@@ -8,6 +8,24 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le profil « V8 adouci » rendait l'application muette.** Sa banque n'était pas
+  excéptée dans `.dockerignore` : elle entrait dans le dépôt mais pas dans
+  l'image, et le serveur rendait 404 sur chacune de ses prises — « on-1021.flac :
+  404 » en bas de l'écran, aucun son, et le bouton du haut-parleur qui relançait
+  un chargement voué à échouer. Relevé par David le 17 septembre 2026.
+
+  Une banque livrée doit être déclarée à **trois** endroits, et rien ne rougissait
+  quand l'un manquait : le contrôle qualité passait, l'image se construisait, et
+  le défaut ne se voyait qu'en touchant le profil. Le commentaire du
+  `.dockerignore` disait déjà que c'était arrivé le 14 septembre ; la vérification
+  de la chaîne d'intégration existait mais listait les banques en dur, donc elle
+  ignorait la nouvelle. **Quatre tests partent maintenant des profils
+  livrés** et vérifient que chaque déclaration suit — éprouvés des deux côtés : la
+  déclaration retirée, ils rougissent en nommant la banque. Ils étaient trois
+  d'abord, et il en fallait quatre : la quatrième liste est celle de la pile
+  nginx, crue morte alors que la chaîne d'intégration la monte encore. C'est elle
+  qui l'a montré, en rougissant.
+
 - **La bibliothèque du serveur donnait un identifiant neuf à chaque profil lu.**
   Conséquence : reprendre un profil qu'on avait déjà en fabriquait un second, du
   même nom, que rien ne distinguait à l'écran — et la sélection prenait le premier
