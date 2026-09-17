@@ -48,9 +48,14 @@ l'exige pour accepter un dépôt.
 
 ## La garde : une seule règle
 
-**Si la source est le GPS, un écran gardé est fermé — sauf vitesse nulle depuis
-trente secondes et application au repos.** Sous simulateur ou rejeu, il n'y a
-pas de garde.
+**Si la source est le GPS et que cet appareil est déclaré comme la voiture, un
+écran gardé est fermé — sauf vitesse nulle depuis trente secondes et application
+au repos.** Sous simulateur ou rejeu, il n'y a pas de garde.
+
+**La condition d'appareil a été ajoutée le 17 septembre 2026**, sur demande de
+David — la deuxième fois qu'il la formulait. Ce qui suit dit pourquoi ce lot
+avait tranché l'inverse ; l'argument reste valable et David a choisi de payer ce
+qu'il coûte.
 
 L'onglet gardé reste **visible et grisé** plutôt que de disparaître. Sélectionné,
 il s'ouvre sur un écran vide qui dit « disponible uniquement à l'arrêt ». Un
@@ -59,11 +64,19 @@ disparaît en déplace un autre sous le doigt.
 
 Trois raisons à cette forme.
 
-**La garde ne repose sur aucune devinette.** L'application sait de source sûre
-d'où vient son chiffre de vitesse. Reconnaître une voiture à la chaîne d'agent
-du navigateur est un pari que `core/appareil.ts` annonce lui-même comme non
-vérifié sur la vraie Tesla ; une détection ratée ouvrirait en roulant l'écran
-que la garde devait fermer.
+**~~La garde ne repose sur aucune devinette.~~** — *revu le 17 septembre 2026.*
+L'application sait de source sûre d'où vient son chiffre de vitesse, et
+reconnaître une voiture à la chaîne d'agent du navigateur est un pari que
+`core/appareil.ts` annonce lui-même comme non vérifié sur la vraie Tesla : une
+détection ratée ouvre en roulant l'écran que la garde devait fermer. Ce qui a
+changé : la garde consulte la **déclaration** et non la devinette, celle que
+l'écran Compte laisse corriger. Le pari porte désormais sur ce que quelqu'un a
+dit de son appareil.
+
+Et ce que l'argument oubliait : un poste de travail dont le navigateur donne une
+position par le réseau était pris pour une voiture à l'arrêt, et faisait attendre
+trente secondes au bureau. La garde se trompait donc déjà, dans l'autre sens, et
+tous les jours.
 
 **Elle ne ferme pas le simulateur sur lui-même.** Une garde qui regarderait la
 vitesse de la chaîne se déclencherait dès qu'on simule 90 km/h, c'est-à-dire
@@ -73,9 +86,10 @@ exactement quand on règle.
 cumulent : un écran réservé au poste porte quand même la garde, parce que
 l'appareil est déclaré par celui qui s'en sert et qu'une déclaration se trompe.
 
-Il reste un trou, et il est assumé : quelqu'un installé en voiture qui déclare
-un poste **et** passe au simulateur échappe à tout. Il n'entend alors plus sa
-propre vitesse, donc il ne conduit plus avec.
+Le trou s'élargit et reste assumé : depuis le 17 septembre 2026, il suffit de
+déclarer un poste pour échapper à la garde — le passage au simulateur n'est plus
+nécessaire. C'est le prix de ne plus attendre au bureau, et David l'a choisi en
+connaissance.
 
 ## Décisions
 

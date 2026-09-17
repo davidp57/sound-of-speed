@@ -259,17 +259,27 @@ garde » ci-dessous.
 ### La garde
 
 Un écran de réglage de fond se règle posé, pas au volant. L'onglet **Avancé** est
-donc fermé tant que la vitesse vient du GPS, sauf si elle est nulle depuis trente
-secondes **et** que l'application est au repos. Sous simulateur ou rejeu, il n'y
-a pas de garde : c'est précisément quand on règle que la vitesse n'est pas nulle.
+donc fermé quand la vitesse vient du GPS **et** que cet appareil est déclaré
+comme la voiture, sauf si elle est nulle depuis trente secondes **et** que
+l'application est au repos. Sous simulateur ou rejeu, il n'y a pas de garde :
+c'est précisément quand on règle que la vitesse n'est pas nulle.
 
 L'onglet reste **visible et grisé** plutôt que de disparaître — un onglet qui va
 et vient déplace ses voisins sous le doigt. Il reste cliquable, et son écran dit
 la raison et le temps restant.
 
-La garde regarde d'où vient la vitesse, jamais quel appareil on croit être :
-l'application le sait de source sûre, là où reconnaître une voiture à la chaîne
-d'agent du navigateur reste un pari non vérifié.
+**Elle ne se déclenche qu'en voiture**, et c'est un arbitrage rendu le
+17 septembre 2026. Elle regardait le seul GPS : un poste de travail dont le
+navigateur donne une position par le réseau, sans satellite, se voyait fermer ses
+écrans de réglage et devait patienter trente secondes au bureau, devant une
+voiture qui n'existe pas.
+
+Ce que l'ancienne règle invoquait contre reste vrai : reconnaître une voiture à
+la chaîne d'agent du navigateur est un pari non vérifié sur la vraie Tesla. Mais
+ce n'est pas la devinette que la garde consulte, c'est la **déclaration**, celle
+que l'écran Compte laisse corriger. Le trou s'élargit et reste assumé : qui
+conduit avec un appareil déclaré poste n'a plus de garde. C'est le prix de ne
+plus attendre au bureau.
 
 **Une bande de défilement longe le bord gauche de chaque écran qui se lit en
 colonne** — paramètres, télémétrie, atelier, compte, aide : le glissement
