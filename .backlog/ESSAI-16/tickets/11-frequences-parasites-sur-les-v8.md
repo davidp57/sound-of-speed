@@ -1,6 +1,4 @@
-# 11 — Des fréquences parasites sur les deux V8, à moyen régime
-
-**Statut :** 🧑 attend David — mesuré et **une banque adoucie livrée à écouter** ; ce qui reste est un arbitrage, pas une mesure
+**Statut :** 🔄 rouvert autrement le 17 septembre 2026 — le son n'est pas en cause, la **restitution** l'est. Voir « Ce que l'essai a montré »
 
 David, après avoir essayé trois banques lors de la sortie du 16 septembre 2026 :
 « j'ai testé le V8 (GM), le V8-long (GM collecteur long) et le L4. Ils sonnent
@@ -193,3 +191,51 @@ Trois réponses possibles, et chacune close le ticket :
 | l'adouci est meilleur | il remplace `gm-ls`, et l'original s'en va |
 | l'original est meilleur | la banque adoucie et son script s'en vont, le ticket se ferme en « ce n'est pas un défaut » |
 | l'adouci est trop lisse, mais l'original gêne | on dose — le dosage est un seul nombre dans `scripts/adoucir-banque.mjs` |
+
+## Ce que l'essai a montré, le 17 septembre 2026
+
+David a écouté, et il a déplacé la question :
+
+> « je préfère l'original à l'adouci »
+>
+> « l'original, sur mon PC, n'a pas les fréquences désagréables. Je pense à un
+> défaut de restitution du son sur la Tesla ; je mets de côté le CPU plus faible
+> parce qu'à mon avis ça ne joue pas sur la restitution du son »
+
+**La banque adoucie est retirée** — dossier, profil livré, script, et les quatre
+déclarations. Elle existait pour trancher, elle a tranché.
+
+### Ce que ça change au diagnostic
+
+Les composantes inharmoniques que j'ai mesurées dans les fichiers sont bien
+réelles — 30 à 70 dB au-dessus des moteurs à un banc de cylindres. **Mais elles
+ne s'entendent pas sur un PC.** Donc ce n'est pas elles qui gênent : le grondement
+inégal d'un V8 croisé passe très bien sur une bonne restitution, et c'est même ce
+qu'on lui demande.
+
+Ce qui se passe dans la voiture et pas au bureau se cherche donc **dans la
+chaîne de restitution**, pas dans la banque. Deux pistes, par ordre de ce
+qu'elles coûtent à vérifier :
+
+1. **Le rééchantillonnage.** Les couches sont jouées à une vitesse de lecture
+   variable, donc interpolées en continu. Un interpolateur sans filtre
+   anti-repliement produit des fréquences qui **n'existent pas dans le fichier**
+   — exactement « des fréquences parasites », et d'autant plus à moyen régime que
+   le facteur de lecture s'y éloigne de un. Le navigateur de bord n'a aucune
+   raison d'avoir le même interpolateur qu'un navigateur de bureau. **La
+   télémétrie affiche déjà le taux d'échantillonnage du contexte audio** : s'il
+   diffère de 44 100 Hz, toute la banque est rééchantillonnée en plus.
+2. **L'égaliseur ou le rendu de la voiture.** Une bande accentuée par la chaîne
+   audio de la Tesla rendrait audible ce qui passe inaperçu ailleurs.
+
+**Le CPU, que David écarte, mérite une nuance** : il ne change pas le timbre,
+c'est juste. Mais un fil audio affamé produit des ruptures — clics, hachures —
+qui ne ressemblent pas à « des fréquences ». Son élimination tient donc, à ceci
+près que le relevé de charge du banc reste le moyen de le vérifier plutôt que de
+le supposer.
+
+### Ce qu'il faut pour avancer
+
+Le taux d'échantillonnage du contexte audio **dans la Tesla**, lu sur l'écran
+Télémétrie. C'est une valeur, elle est déjà affichée, et elle discrimine à elle
+seule la première piste.

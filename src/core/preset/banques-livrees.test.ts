@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest'
 import {
   createFactoryProfiles,
   createBmwI6Profile,
-  createGmLsAdouciProfile,
   createGmLsLongHeaderProfile,
   createGmLsProfile,
   createSubaruEj25Profile,
@@ -22,7 +21,7 @@ import { fromFile } from './store'
  * Il y en avait une, la démonstration. Il y en a trois depuis le 14 septembre
  * 2026 : David les a écoutées et les a jugées livrables.
  */
-const BANQUES = ['gm-ls', 'gm-ls-long-header', 'gm-ls-adouci', 'bmw-i6-3l', 'subaru-ej25'] as const
+const BANQUES = ['gm-ls', 'gm-ls-long-header', 'bmw-i6-3l', 'subaru-ej25'] as const
 
 describe.each(BANQUES)('la banque livrée %s', (banque) => {
   const profile = fromFile(readFileSync(`public/audio/${banque}/profil.json`, 'utf8'))
@@ -75,7 +74,6 @@ describe('les profils d’usine', () => {
   it.each([
     ['gm-ls', createGmLsProfile],
     ['gm-ls-long-header', createGmLsLongHeaderProfile],
-    ['gm-ls-adouci', createGmLsAdouciProfile],
     ['bmw-i6-3l', createBmwI6Profile],
     ['subaru-ej25', createSubaruEj25Profile],
   ])('%s désigne la banque livrée, fichier par fichier', (banque, creer) => {
@@ -94,7 +92,6 @@ describe('les profils d’usine', () => {
     expect(livres.map((p) => p.id)).toEqual([
       'gm-ls',
       'gm-ls-long-header',
-      'gm-ls-adouci',
       'bmw-i6-3l',
       'subaru-ej25',
     ])
