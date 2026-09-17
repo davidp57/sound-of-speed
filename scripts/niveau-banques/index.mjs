@@ -178,7 +178,9 @@ function niveauJoue(profil, fichiers) {
   }
   // La crête est le pire cas : toutes les couches en phase au même instant. Elle
   // ne se produit pas — les phases sont tirées au sort — mais elle se compare
-  // d'une banque à l'autre, et c'est ce qu'on lui demande.
+  // d'une banque à l'autre, et c'est ce qu'on lui demande. Elle est donnée telle
+  // qu'elle est, gains actuels : après `--ecrire`, c'est le second passage qui
+  // dit ce que la correction a fait.
   return { db: toDb(Math.sqrt(energie / Math.max(1, points))), creteDb: toDb(crete) }
 }
 
@@ -241,7 +243,7 @@ for (const mesure of mesures) {
   console.log(
     `${mesure.banque.padEnd(20)} ${mesure.fichiersDb.toFixed(1).padStart(8)} ${mesure.joueDb
       .toFixed(1)
-      .padStart(7)} ${(mesure.creteDb + (facteur > 1 ? toDb(facteur) : 0)).toFixed(1).padStart(7)} ${ecart
+      .padStart(7)} ${mesure.creteDb.toFixed(1).padStart(7)} ${ecart
       .toFixed(1)
       .padStart(8)} ${facteur.toFixed(3).padStart(9)}`,
   )

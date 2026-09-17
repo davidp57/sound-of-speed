@@ -76,8 +76,14 @@ pied levé et pleine charge — sur les fichiers décodés par ffmpeg
 |---|---|---|---|---|
 | `gm-ls` | −10,2 dB | −13,4 dB | +2,1 dB | référence |
 | `gm-ls-long-header` | −10,2 | −12,6 | +3,0 | +0,8 |
-| `bmw-i6-3l` | −8,4 | −19,1 | −2,3 | **−5,7** |
-| `subaru-ej25` | −8,7 | −14,1 | +1,3 | −0,8 |
+| `bmw-i6-3l` **avant** | −8,4 | −19,1 | −6,1 | **−5,7** |
+| `bmw-i6-3l` après | −8,4 | −13,4 | −0,4 | 0,0 |
+| `subaru-ej25` | −8,7 | −14,1 | +0,5 | −0,8 |
+
+La colonne « joué » est le niveau efficace moyen sur la grille ; la colonne
+« crête » est le pire cas, toutes couches supposées en phase — elle ne se
+produit pas, les phases étant tirées au sort, mais elle se compare d'une banque
+à l'autre.
 
 **Une seule banque était en cause**, le six en ligne, et l'écart est net.
 L'estimation du ticket disait −4,3 dB ; la mesure à travers le mixage donne
