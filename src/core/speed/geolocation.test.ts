@@ -319,12 +319,23 @@ describe('GeolocationSource — la précision des positions', () => {
   })
 
   it('ne rejette rien d’ordinaire au réglage livré', () => {
-    // Le seuil livré est volontairement large : les valeurs réelles de la
-    // voiture ne sont pas connues, et un seuil trop serré ferait taire la
-    // source — le défaut qu'on vient de corriger. Ce test est là pour qu'un
-    // resserrement au doigt mouillé se voie tout de suite : 100 mètres est un
-    // relevé médiocre mais crédible sur un récepteur qui voit peu de ciel.
-    for (const accuracyM of [5, 25, 60, 100]) {
+    // Ce test existe pour qu'un resserrement au doigt mouillé se voie tout de
+    // suite, et il a joué son rôle : le seuil est passé de 250 à 50 mètres le
+    // 17 septembre 2026, et il a fait rougir les cas à 60 et 100.
+    //
+    // Le resserrement n'est pas au jugé — mesuré sur les 56 000 relevés des
+    // trois trajets du 16 septembre, la précision annoncée par la Tesla vaut
+    // 1,2 à 1,4 m en médiane, p95 sous 3,5 m, maximum utile 25,9 m, et rien
+    // entre 26 m et la sentinelle à 9 999,99. Cinquante laisse donc le double
+    // du pire cas observé.
+    //
+    // **Ce qu'on assume en échange** : un relevé à 60 ou 100 mètres est
+    // médiocre mais crédible sur un récepteur qui voit peu de ciel — un
+    // parking couvert, un tunnel. Ces positions-là sont désormais rejetées.
+    // Elles ne sont jamais apparues sur les trajets mesurés ; si le bandeau
+    // « plus aucune position » se met à sortir dans ces endroits, c'est ce
+    // seuil qu'il faut relâcher en premier.
+    for (const accuracyM of [5, 25, 40]) {
       const { samples, source } = drive({
         kmh: 110,
         cadenceMs: 200,
