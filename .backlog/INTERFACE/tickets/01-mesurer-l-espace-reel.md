@@ -1,6 +1,7 @@
 # 01 — Mesurer vraiment l'espace dont on dispose
 
-**Statut :** ⬜ prêt — premier geste du lot, avant tout découpage
+**Statut :** 🧑 attend David le 17 septembre 2026 — les trois volets sont
+livrés ; il reste à ouvrir la mire une fois, carte en main, et à faire un trajet
 
 David : « j'aimerais qu'on puisse mesurer vraiment l'espace d'affichage dont on
 dispose ». Tant que ce ticket n'est pas fait, toute décision de mise en page
@@ -81,14 +82,16 @@ un trajet.
 
 ## Critères d'acceptation
 
-- [ ] Un trajet ordinaire suffit à connaître, sans que David note quoi que ce
+- [x] Un trajet ordinaire suffit à connaître, sans que David note quoi que ce
       soit, la page, la fenêtre, l'écran, le facteur de pixels et l'échelle du
       viewport visuel.
-- [ ] Le relevé est repris à chaque changement d'état, et non seulement au
+- [x] Le relevé est repris à chaque changement d'état, et non seulement au
       chargement.
-- [ ] On sait si les 481 et 209 px manquants viennent des barres ou du zoom.
-- [ ] On sait ce qu'un pixel CSS fait en millimètres, vérifié sur un étalon et
-      non calculé depuis une diagonale lue ailleurs.
+- [ ] On sait si les 481 et 209 px manquants viennent des barres ou du zoom —
+      **le relevé le dira au premier trajet** : c'est l'écart entre la page et
+      le châssis, et l'échelle du viewport visuel à côté.
+- [ ] On sait ce qu'un pixel CSS fait en millimètres — la mire est là, il faut
+      l'ouvrir une fois avec une carte.
 - [ ] La valeur en millimètres est écrite quelque part où la conception du lot
       ira la chercher — spec ou README, pas une conversation.
 
@@ -97,3 +100,32 @@ un trajet.
 La refonte de l'écran elle-même, qui est l'objet du lot. Ce ticket ne change rien
 à ce qui s'affiche : il donne les chiffres sans lesquels la refonte se ferait à
 l'estime.
+
+## Ce qui est livré, et ce qu'il reste à faire
+
+**Les trois volets sont en place.**
+
+| Volet | Où |
+|---|---|
+| a. le relevé qui remonte tout seul | `core/appareil.ts`, `mesurerLEcran` et `entreeDAppareil` ; l'émission et sa reprise dans `state.ts` |
+| b. la mire à la carte bancaire | `ui/components/MireDEcran.vue`, atelier, volet *Écran* |
+| c. le même relevé en plein écran | gratuit : la bascule ré-émet |
+
+**Un piège trouvé en vérifiant, et il valait le détour.** La première ouverture
+de la mire a tout affiché à zéro — page, fenêtre, écran, jusqu'à la densité
+retombée à 1. Le navigateur suspend le rendu d'un onglet masqué, et le volet de
+prévisualisation l'était. Une ligne pareille au journal ne dit pas « l'écran
+fait zéro pixel » mais « personne ne regardait », et rien ne les distinguerait
+une fois écrite : `mesureUtilisable()` la refuse, et la mesure se reprend au
+retour au premier plan.
+
+**Ce qui reste demande David, deux fois et brièvement :**
+
+1. **Ouvrir la mire une fois, une carte bancaire à la main** (atelier, volet
+   Écran), régler le curseur, appuyer sur « Retenir ». La valeur part au journal.
+2. **Rouler**, en appuyant une fois sur *Plein écran* pendant le trajet : le
+   relevé se reprend de lui-même, et l'écart entre les deux dit si les 481 points
+   manquants sont une barre ou un zoom.
+
+Ensuite seulement la valeur en millimètres s'écrit dans la spec, et le lot peut
+se découper.

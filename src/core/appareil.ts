@@ -55,24 +55,129 @@ export function devinerLAppareil({ agent, largeur, tactile }: IndicesDAppareil):
 }
 
 /**
+ * La place dont l'application dispose vraiment, à cet instant.
+ *
+ * **Trois cadres emboîtés, et il faut les trois.** Il manquait 481 px de large
+ * et 209 px de haut entre l'écran que la voiture annonce — 1 254 × 784 — et la
+ * page que David a mesurée à 773 × 575. De la place que prend une barre n'est
+ * pas de la place qu'on n'aura jamais : la première se récupère en plein écran,
+ * la seconde jamais. Un seul chiffre ne permet pas de les distinguer.
+ *
+ * `echelle` est celle du viewport visuel, et c'est elle qui **dénonce un
+ * zoom** : le navigateur de la Tesla ne le laisse pas régler, et sa valeur par
+ * défaut a changé avec le logiciel de bord.
+ */
+export interface MesureDEcran {
+  /** La page : `documentElement.clientWidth` / `clientHeight`. */
+  page: { largeur: number; hauteur: number }
+  /** La fenêtre, barres du navigateur comprises ou non selon le cadre. */
+  fenetre: { largeur: number; hauteur: number }
+  /** Le châssis de la fenêtre, tout compris. */
+  chassis: { largeur: number; hauteur: number }
+  /** L'écran annoncé par le système, et ce qu'il en laisse. */
+  ecran: { largeur: number; hauteur: number; utileLargeur: number; utileHauteur: number }
+  /** Pixels physiques par pixel CSS. */
+  densite: number
+  /** Échelle du viewport visuel : au-delà de 1, quelqu'un a zoomé. */
+  echelle: number
+  orientation: string
+  pleinEcran: boolean
+}
+
+/** La fenêtre, réduite à ce qu'on lui demande — de quoi mesurer sans navigateur. */
+export interface FenetreMesurable {
+  document?: {
+    documentElement?: { clientWidth?: number; clientHeight?: number }
+    fullscreenElement?: unknown
+  }
+  innerWidth?: number
+  innerHeight?: number
+  outerWidth?: number
+  outerHeight?: number
+  screen?: {
+    width?: number
+    height?: number
+    availWidth?: number
+    availHeight?: number
+    orientation?: { type?: string }
+  }
+  devicePixelRatio?: number
+  visualViewport?: { scale?: number } | null
+}
+
+export function mesurerLEcran(fenetre: FenetreMesurable): MesureDEcran {
+  const racine = fenetre.document?.documentElement
+  const ecran = fenetre.screen
+  return {
+    page: { largeur: racine?.clientWidth ?? 0, hauteur: racine?.clientHeight ?? 0 },
+    fenetre: { largeur: fenetre.innerWidth ?? 0, hauteur: fenetre.innerHeight ?? 0 },
+    chassis: { largeur: fenetre.outerWidth ?? 0, hauteur: fenetre.outerHeight ?? 0 },
+    ecran: {
+      largeur: ecran?.width ?? 0,
+      hauteur: ecran?.height ?? 0,
+      utileLargeur: ecran?.availWidth ?? 0,
+      utileHauteur: ecran?.availHeight ?? 0,
+    },
+    densite: fenetre.devicePixelRatio ?? 1,
+    // Absent sur les navigateurs anciens : 1 est alors la seule chose honnête à
+    // dire, et le zoom ne se distinguera pas. Mieux vaut le savoir que
+    // l'inventer.
+    echelle: fenetre.visualViewport?.scale ?? 1,
+    orientation: ecran?.orientation?.type ?? 'inconnue',
+    pleinEcran: fenetre.document?.fullscreenElement != null,
+  }
+}
+
+/**
+ * La mesure vaut-elle quelque chose ?
+ *
+ * **Une page masquée mesure zéro.** Le navigateur suspend le rendu d'un volet
+ * qu'on ne voit pas, et tout en sort à zéro — page, fenêtre, écran, jusqu'à la
+ * densité qui retombe à 1. Une telle ligne au journal ne dit pas « l'écran fait
+ * zéro pixel », elle dit « personne ne regardait », et rien ne l'en
+ * distinguerait une fois écrite. On ne l'écrit donc pas.
+ *
+ * Le cas n'est pas théorique : il s'est produit dès la première vérification de
+ * cette mesure, dans le navigateur de prévisualisation replié.
+ */
+export function mesureUtilisable(mesure: MesureDEcran): boolean {
+  return mesure.page.largeur > 0 && mesure.page.hauteur > 0
+}
+
+/**
  * Ce que le navigateur dit de lui-même, tel que le journal l'enregistre.
  *
  * **Deviné et appliqué, les deux.** Un écart entre les deux dit que quelqu'un a
  * dû corriger à la main — donc que la détection s'est trompée, et c'est
  * exactement ce qu'on cherche à savoir en relisant un trajet.
+ *
+ * **En clés courtes et plates.** Le journal se relit dans un tableau, colonne
+ * par colonne ; un objet imbriqué y devient une cellule qu'on ne trie pas.
  */
 export function entreeDAppareil(
   indices: IndicesDAppareil,
   applique: Appareil,
-  hauteur: number,
+  mesure: MesureDEcran,
 ): Record<string, string | number | boolean> {
   return {
     agent: indices.agent,
-    largeur: indices.largeur,
-    hauteur,
+    largeur: mesure.ecran.largeur,
+    hauteur: mesure.ecran.hauteur,
     tactile: indices.tactile,
     devine: devinerLAppareil(indices),
     appareil: applique,
+    pageL: mesure.page.largeur,
+    pageH: mesure.page.hauteur,
+    fenetreL: mesure.fenetre.largeur,
+    fenetreH: mesure.fenetre.hauteur,
+    chassisL: mesure.chassis.largeur,
+    chassisH: mesure.chassis.hauteur,
+    utileL: mesure.ecran.utileLargeur,
+    utileH: mesure.ecran.utileHauteur,
+    densite: mesure.densite,
+    echelle: mesure.echelle,
+    orientation: mesure.orientation,
+    pleinEcran: mesure.pleinEcran,
   }
 }
 
@@ -112,6 +217,34 @@ export function oublierLAppareilChoisi(): void {
     localStorage.removeItem(CLE)
   } catch {
     // Rien à faire.
+  }
+}
+
+const CLE_ETALON = 'speed.etalonEcran.v1'
+
+/**
+ * Ce qu'un pixel CSS fait en millimètres sur cet écran, s'il a été étalonné.
+ *
+ * Mesuré à la carte bancaire dans la mire de l'atelier, parce qu'aucune API ne
+ * le donne : les unités physiques du CSS sont fixées à 96 px par pouce quelle
+ * que soit la dalle. Local à l'appareil, comme le choix d'appareil — deux
+ * écrans du même compte n'ont pas la même taille de pixel.
+ */
+export function lireLEtalonDEcran(): number | null {
+  try {
+    const brut = Number(localStorage.getItem(CLE_ETALON))
+    return Number.isFinite(brut) && brut > 0 ? brut : null
+  } catch {
+    return null
+  }
+}
+
+export function rangerLEtalonDEcran(mmParPixel: number): void {
+  try {
+    localStorage.setItem(CLE_ETALON, String(mmParPixel))
+  } catch {
+    // Stockage fermé : la valeur part quand même au journal, qui est ce qui
+    // compte — c'est au bureau qu'on la relira.
   }
 }
 

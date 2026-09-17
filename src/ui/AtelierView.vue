@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
 
 import NumberField from './components/NumberField.vue'
+import MireDEcran from './components/MireDEcran.vue'
 import { ProfileImportError, fromFile, toFile } from '../core/preset/store'
 import type { ProfileSection } from '../core/preset/store'
 import { isComfortable, isReachableOrigin, shareUrl } from '../core/preset/share'
@@ -86,7 +87,7 @@ import {
  */
 const SynthView = defineAsyncComponent(() => import('./SynthView.vue'))
 
-type Volet = 'profils' | 'son' | 'synthese'
+type Volet = 'profils' | 'son' | 'ecran' | 'synthese'
 
 /**
  * Les volets ouverts ici.
@@ -97,10 +98,19 @@ type Volet = 'profils' | 'son' | 'synthese'
 const VOLETS = computed<{ id: Volet; label: string }[]>(() => [
   { id: 'profils', label: 'Profils' },
   { id: 'son', label: 'Son' },
+  { id: 'ecran', label: 'Écran' },
   ...(ouvertPar('synthese') ? [{ id: 'synthese' as const, label: 'Synthèse' }] : []),
 ])
 
 const volet = ref<Volet>('profils')
+
+/**
+ * La mire, ouverte par-dessus tout.
+ *
+ * Elle doit occuper la page entière pour dire où celle-ci s'arrête : une mire
+ * dans un panneau ne mesurerait que le panneau.
+ */
+const mireOuverte = ref(false)
 
 // Un droit qui expire referme son volet sans redémarrage, comme un onglet.
 watch(VOLETS, (ouverts) => {
@@ -638,6 +648,8 @@ function impliedCylinders(index: number): number | null {
       {{ entree.label }}
     </button>
   </nav>
+
+  <MireDEcran v-if="mireOuverte" @fermer="mireOuverte = false" />
 
   <SynthView v-if="volet === 'synthese'" />
 
@@ -1188,6 +1200,23 @@ function impliedCylinders(index: number): number | null {
         recouper : d'un même moteur, la prise haut régime a forcément le timbre le
         plus aigu.
       </p>
+    </section>
+
+    <section v-if="volet === 'ecran'" class="panel wide">
+      <h2>Écran</h2>
+      <p class="note">
+        La place dont l'application dispose est relevée à chaque changement — passage en plein
+        écran, rotation, zoom — et part au journal avec le trajet. Il n'y a rien à noter : les
+        chiffres se lisent au bureau.
+      </p>
+      <p class="note">
+        Ce qu'aucune mesure ne donne, c'est la taille <em>physique</em> d'un pixel : les unités
+        du CSS sont fixées à 96 points par pouce quelle que soit la dalle. La mire la fait
+        mesurer avec une carte bancaire, qui est un étalon normalisé à 85,60 × 53,98 mm.
+      </p>
+      <div class="profiles">
+        <button type="button" @click="mireOuverte = true">Ouvrir la mire</button>
+      </div>
     </section>
   </div>
 </template>

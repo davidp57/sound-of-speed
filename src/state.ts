@@ -105,6 +105,8 @@ import {
 import {
   appareilCourant,
   entreeDAppareil,
+  mesurerLEcran,
+  mesureUtilisable,
   rangerLAppareilChoisi,
   type Appareil,
 } from './core/appareil'
@@ -1162,7 +1164,7 @@ export function setUploadConsent(consent: UploadConsent): void {
   uploadConsent.value = consent
   // Accorder la remontée en cours de route ouvre un journal qui n'a pas encore
   // dit sur quoi il tourne. C'est précisément la session qu'on voudra lire.
-  noterLAppareil()
+  noterLAppareil(true)
   writePreference(JOURNAL_KEY, consent)
   collector.setConsent(consent)
   // Un accord qui s'ouvre fait partir ce qui attendait, sans attendre le
@@ -1267,32 +1269,93 @@ const collector = new JournalCollector(
 )
 
 /**
- * Ce que le navigateur dit de lui-même, écrit **une fois** en tête de session.
+ * Ce que le navigateur dit de lui-même, et la place dont on dispose.
  *
  * Reconnaître une voiture à sa chaîne d'agent est un pari, et rien ne permettait
  * de le vérifier : le journal déposé ne portait pas cette chaîne, et le volume du
  * NAS n'a pas de base à interroger. Il la porte désormais, et le premier trajet
  * dira si le marqueur est le bon.
  *
+ * **Et la place, à chaque fois qu'elle change.** Une seule ligne au chargement
+ * ne disait rien de ce qui bouge : passer en plein écran, tourner l'écran,
+ * zoomer. Or c'est exactement la question du lot INTERFACE — les 481 px de large
+ * qui manquent viennent-ils d'une barre, qu'on récupère, ou d'un zoom, qu'on ne
+ * récupérera jamais ? Une ligne à chaque bascule y répond, et David n'a rien à
+ * noter.
+ *
+ * **Seulement quand la mesure change vraiment.** Un redimensionnement arrive en
+ * rafale, et un journal noyé ne se relit pas : on compare à la dernière ligne
+ * écrite, après un temps de repos.
+ *
  * Il suit le consentement comme le reste du journal : rien n'est écrit quand on
  * n'a rien accordé.
  */
-let appareilNote = false
+let derniereMesure = ''
+let repos: ReturnType<typeof setTimeout> | null = null
 
-function noterLAppareil(): void {
-  if (appareilNote || typeof window === 'undefined' || uploadConsent.value === 'none') return
-  appareilNote = true
+function noterLAppareil(forcer = false): void {
+  if (typeof window === 'undefined' || uploadConsent.value === 'none') return
+  // Un accord qui s'ouvre repart d'un journal vide : la ligne précédente n'y est
+  // plus, et la comparaison ne doit pas la croire encore là.
+  if (forcer) derniereMesure = ''
 
   const indices = {
     agent: navigator.userAgent,
     largeur: window.screen?.width ?? window.innerWidth,
     tactile: window.matchMedia?.('(pointer: coarse)').matches === true,
   }
-  const hauteur = window.screen?.height ?? window.innerHeight
-  journal.add(journalElapsedMs, 'device', entreeDAppareil(indices, appareil.value, hauteur))
+  const mesure = mesurerLEcran(window)
+  // Une page masquée mesure zéro : ce n'est pas un écran minuscule, c'est
+  // personne qui regarde. On attend le prochain changement.
+  if (!mesureUtilisable(mesure)) return
+  const entree = entreeDAppareil(indices, appareil.value, mesure)
+  const signature = JSON.stringify(entree)
+  if (signature === derniereMesure) return
+  derniereMesure = signature
+  journal.add(journalElapsedMs, 'device', entree)
+}
+
+/** Le temps de repos après lequel on considère la mise en page stabilisée. */
+const REPOS_DE_MESURE_MS = 400
+
+function noterLAppareilApresRepos(): void {
+  if (repos !== null) clearTimeout(repos)
+  repos = setTimeout(() => {
+    repos = null
+    noterLAppareil()
+  }, REPOS_DE_MESURE_MS)
 }
 
 noterLAppareil()
+
+/**
+ * L'étalon mesuré à la carte bancaire, versé au journal.
+ *
+ * La mire de l'atelier l'appelle quand David retient une valeur. Sans ce
+ * passage, le chiffre resterait dans le stockage d'une voiture — c'est-à-dire
+ * nulle part, puisque c'est au bureau qu'on conçoit l'écran.
+ */
+export function noterLEtalonDEcran(mmParPixel: number): void {
+  if (uploadConsent.value === 'none') return
+  journal.add(journalElapsedMs, 'device', {
+    mesure: 'etalon',
+    mmParPixel,
+    // La densité rend la valeur comparable d'un appareil à l'autre : c'est elle
+    // qui relie le pixel CSS au pixel de la dalle.
+    densite: typeof window === 'undefined' ? 1 : window.devicePixelRatio,
+  })
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', noterLAppareilApresRepos)
+  // Un onglet masqué mesure zéro, et rien n'est écrit : c'est en revenant au
+  // premier plan qu'on obtient la première mesure de la session.
+  document.addEventListener('visibilitychange', noterLAppareilApresRepos)
+  window.addEventListener('orientationchange', noterLAppareilApresRepos)
+  document.addEventListener('fullscreenchange', noterLAppareilApresRepos)
+  // Le zoom ne redimensionne pas la fenêtre : il ne se voit que là.
+  window.visualViewport?.addEventListener('resize', noterLAppareilApresRepos)
+}
 
 /**
  * Ce que la sonde d'accéléromètre a vu, versé au journal.

@@ -79,12 +79,18 @@ export type JournalEventKind =
    */
   | 'motion'
   /**
-   * Ce que le navigateur dit de lui-même, une fois par session.
+   * Ce que le navigateur dit de lui-même, et la place dont il dispose.
    *
    * C'est la seule façon de savoir **pour de bon** sur quoi l'application
    * tourne : la détection d'appareil est un pari sur une chaîne d'agent, et
    * rien jusqu'ici ne permettait de le vérifier — le journal que la voiture
    * dépose ne portait pas la sienne.
+   *
+   * **Plus d'une ligne par session.** Une par changement de mise en page —
+   * plein écran, rotation, zoom —, parce que c'est l'écart entre deux états qui
+   * dit si la place manquante est une barre ou un zoom. Une ligne aussi quand
+   * l'écran est étalonné à la carte bancaire. Cela reste rare : en roulant, rien
+   * ne bouge, et une mesure identique à la précédente n'est pas écrite.
    */
   | 'device'
 
