@@ -75,20 +75,22 @@ const CONFIGS: BenchConfig[] = [
   { label: 'volume 1,0', bypassShaper: false, bypassLimiter: false, volume: 1 },
   { label: 'volume 0,5', bypassShaper: false, bypassLimiter: false, volume: 0.5 },
   { label: 'volume 0,25', bypassShaper: false, bypassLimiter: false, volume: 0.25 },
-  // L'ordre proposé en correction : le limiteur en dernier, donc après le gain
-  // qui fait dépasser la pleine échelle. C'est la seule ligne qui dit ce que la
-  // correction changerait, et à quel prix sur le niveau.
+  // L'ordre d'avant le 17 septembre 2026, gardé comme ligne de comparaison : le
+  // limiteur passait avant le rattrapage, donc rien ne rattrapait ce que le
+  // rattrapage faisait dépasser. C'est cette ligne qui dit ce que le
+  // déplacement a changé, et à quel prix sur le niveau.
   {
-    label: 'limiteur en dernier',
+    label: 'limiteur avant le rattrapage (ordre d’avant)',
     bypassShaper: false,
     bypassLimiter: false,
     volume: DEFAULT_VOLUME,
-    limiterLast: true,
+    limiterBeforeMakeup: true,
   },
-  // Troisième voie : au lieu de rattraper l'écrêtage, ne pas le produire. Le
-  // rattrapage descend de 1,8 à 1,25 — juste ce qu'il faut pour que la crête
-  // repasse sous la pleine échelle en accélération franche — et le limiteur en
-  // dernier ne sert plus que de filet quand le volume monte.
+  // Ce qui resterait à prendre si le limiteur en dernier ne suffisait pas : au
+  // lieu de rattraper l'écrêtage, ne pas le produire. Le rattrapage descend de
+  // 1,8 à 1,25 — juste ce qu'il faut pour que la crête repasse sous la pleine
+  // échelle en accélération franche. David a pris le déplacement seul le
+  // 17 septembre 2026 ; ces deux lignes disent ce que le cran de plus donnerait.
   {
     label: 'rattrapage 1,25',
     bypassShaper: false,
@@ -97,27 +99,20 @@ const CONFIGS: BenchConfig[] = [
     makeup: 1.25,
   },
   {
-    label: 'rattrapage 1,25 + limiteur en dernier',
-    bypassShaper: false,
-    bypassLimiter: false,
-    volume: DEFAULT_VOLUME,
-    makeup: 1.25,
-    limiterLast: true,
-  },
-  {
-    label: 'rattrapage 1,25 + limiteur en dernier, volume 1,0',
+    label: 'rattrapage 1,25, volume 1,0',
     bypassShaper: false,
     bypassLimiter: false,
     volume: 1,
     makeup: 1.25,
-    limiterLast: true,
   },
+  // La comparaison qui compte, à fond : l'ordre d'avant y rognait un
+  // échantillon sur onze.
   {
-    label: 'limiteur en dernier, volume 1,0',
+    label: 'limiteur avant le rattrapage, volume 1,0',
     bypassShaper: false,
     bypassLimiter: false,
     volume: 1,
-    limiterLast: true,
+    limiterBeforeMakeup: true,
   },
   // Très en dessous du seuil, un limiteur ne doit rien faire du tout : ces deux
   // lignes doivent donc donner le même niveau. Si elles diffèrent, c'est que le
@@ -219,21 +214,20 @@ async function buildExtract(profile: Profile, layers: BenchLayer[]): Promise<Blo
     profile,
     layers,
     state,
-    { label: 'actuel', bypassShaper: false, bypassLimiter: false, volume: DEFAULT_VOLUME },
+    {
+      label: 'ordre d’avant',
+      bypassShaper: false,
+      bypassLimiter: false,
+      volume: DEFAULT_VOLUME,
+      limiterBeforeMakeup: true,
+    },
     EXTRAIT_S,
   )
   const fixed = await renderBuffer(
     profile,
     layers,
     state,
-    {
-      label: 'corrigé',
-      bypassShaper: false,
-      bypassLimiter: false,
-      volume: DEFAULT_VOLUME,
-      makeup: 1.25,
-      limiterLast: true,
-    },
+    { label: 'ordre livré', bypassShaper: false, bypassLimiter: false, volume: DEFAULT_VOLUME },
     EXTRAIT_S,
   )
 
@@ -251,7 +245,7 @@ function offerExtract(blob: Blob): void {
   link.href = URL.createObjectURL(blob)
   link.download = 'chaine-de-sortie-avant-apres.wav'
   link.textContent =
-    'Télécharger l’extrait : 4 s telle qu’elle sort aujourd’hui, puis 4 s corrigée, au même niveau'
+    'Télécharger l’extrait : 4 s dans l’ordre d’avant, puis 4 s telle qu’elle sort aujourd’hui, au même niveau'
   const holder = document.querySelector('#extrait')
   holder?.replaceChildren(link)
 }

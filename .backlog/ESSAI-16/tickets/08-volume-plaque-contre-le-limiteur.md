@@ -1,8 +1,7 @@
 # 08 — Le volume maximal est plaqué contre le limiteur
 
-**Statut :** 🧑 attend David le 17 septembre 2026 — **mesuré**, et la mesure
-dit que la demande littérale ne peut pas être satisfaite ; trois voies chiffrées
-plus bas, c'est à David de trancher
+**Statut :** ✅ fait le 17 septembre 2026 — mesuré, arbitré par David (« prends
+la b »), livré et remesuré
 
 David : « le volume max n'est pas suffisant ; quand j'écoute un podcast mixé un
 peu fort, j'entends à peine le moteur. On peut augmenter le pic du curseur de
@@ -113,3 +112,29 @@ en sachant maintenant ce qu'il contient ?
 
 Et si c'est « plus fort » qu'il veut avant tout, la piste à instruire est le
 relief, pas la chaîne.
+
+## Ce qui a été livré, et ce que ça donne
+
+David, le 17 septembre 2026 : « prends la b ». Le limiteur ferme maintenant la
+marche : il passe **après** le gain de rattrapage, donc il voit enfin ce qui
+sort. Remesuré au banc, accélération franche à 2 600 tr/min :
+
+| | Niveau | Crête | Rogné | Distorsion |
+|---|---|---|---|---|
+| volume 0,7 — avant | −7,2 dB | +2,7 dBFS | 1,09 % | −31 dB |
+| **volume 0,7 — après** | **−7,7** | **+0,6** | **0,25 %** | **−48 dB** |
+| volume 1,0 — avant | −4,6 | +5,0 | 9,26 % | −18 dB |
+| **volume 1,0 — après** | **−6,5** | **+1,2** | **1,12 %** | **−37 dB** |
+
+Au volume livré, cela coûte un demi-décibel et divise la distorsion par
+cinquante. À fond, cela coûte 1,9 dB et divise le rognage par huit.
+
+**Il reste 1,12 % de rognage à fond**, et c'est attendu : le nœud de limitation
+du navigateur n'est pas un mur — genou de 3 dB, attaque de 2 ms, rapport de 12.
+Pour aller à zéro il faudrait le cran de plus, le rattrapage à 1,25 : mesuré à
+−7,7 dB et 0,19 % de rognage à volume 1,0, soit 1,2 dB de moins encore. Il
+n'est pas pris ; la ligne reste au banc pour qu'on puisse y revenir.
+
+L'ordre d'avant est gardé au banc sous le nom « limiteur avant le rattrapage » :
+c'est la ligne de comparaison, et l'extrait téléchargeable fait entendre les
+deux à niveau égal.

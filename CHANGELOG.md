@@ -55,6 +55,24 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le son écrêtait dès que le volume dépassait la moitié de la course.** Le gain
+  de rattrapage de 1,8 était placé **après** le limiteur : rien ne rattrapait ce
+  qu'il faisait dépasser, et le limiteur, qui ne voyait pas la sortie, ne servait
+  à rien — le retirer complètement ne changeait la crête que de 0,4 dB. Mesuré au
+  banc sur une accélération franche, à volume maximal : crête à +5,0 dBFS, **un
+  échantillon sur onze rogné** par le convertisseur, distorsion à −18 dB.
+
+  Le limiteur ferme maintenant la marche. Au volume livré, cela coûte un demi
+  décibel et divise la distorsion par cinquante ; à fond, 1,9 dB et le rognage
+  passe de 9,3 % à 1,1 %. Il en reste un peu, le nœud du navigateur n'étant pas
+  un mur : le cran suivant — un rattrapage plus bas — est mesuré au banc et
+  n'attend qu'une décision.
+
+  C'est peut-être aussi l'explication des fréquences parasites entendues sur les
+  V8 dans la voiture et pas au bureau : l'écrêtage fabrique des fréquences
+  absentes des fichiers, il n'apparaît qu'en charge, et il dépend d'un volume qui
+  n'est pas le même dans les deux cas.
+
 - **La régie affichait les heures en temps universel.** David : « les heures sont
   fausses : je suis parti à 19 h, pas à 17 h ». La fiche d'un compte listait ses
   trajets par leur clé, qui porte l'horodatage en universel — c'est délibéré,

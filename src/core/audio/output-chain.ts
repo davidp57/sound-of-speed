@@ -51,14 +51,20 @@ export interface OutputChainOptions {
   /** Gain de rattrapage. Séparé pour pouvoir le mesurer neutre. */
   makeup?: number
   /**
-   * Place le limiteur **après** le gain de rattrapage.
+   * L'ordre d'avant le 17 septembre 2026 : le limiteur **avant** le rattrapage.
    *
-   * Dans l'ordre livré, le rattrapage est le dernier étage : rien ne rattrape ce
-   * qu'il fait dépasser, et le limiteur, placé avant lui, ne peut pas empêcher
-   * l'écrêtage qu'il est censé empêcher. Cette option sert à mesurer l'autre
-   * ordre avant de décider s'il devient celui du projet.
+   * Il est gardé pour une seule raison, le banc : c'est la ligne de comparaison
+   * qui dit ce que le déplacement a changé. Rien dans l'application ne le
+   * demande.
+   *
+   * Pourquoi il a été abandonné : le rattrapage de 1,8 ajoute 5,1 dB **après**
+   * le limiteur, donc rien ne rattrapait ce qu'il faisait dépasser. Mesuré au
+   * banc sur une accélération franche, volume 1 : la crête montait à +5,0 dBFS,
+   * un échantillon sur onze était rogné par le convertisseur, et la distorsion
+   * atteignait −18 dB. Retirer complètement le limiteur ne changeait la crête
+   * que de 0,4 dB — il ne servait à rien là où il était.
    */
-  limiterLast?: boolean
+  limiterBeforeMakeup?: boolean
 }
 
 /**
@@ -91,8 +97,9 @@ export function buildOutputChain(
   limiter.release.value = LIMITER_RELEASE_S
 
   const makeup = context.createGain()
-  // Le limiteur ramène les crêtes bien en dessous du plafond ; ce gain rend le
-  // niveau perdu, sans risque d'écrêtage puisqu'il vient après lui.
+  // Le rattrapage rend le niveau que le limiteur a pris. Il passe **avant** lui
+  // depuis le 17 septembre 2026 : placé après, rien ne rattrapait ce qu'il
+  // faisait dépasser, et c'est le limiteur qui devenait décoratif.
   makeup.gain.value = options.makeup ?? MAKEUP_GAIN
 
   // Un court-circuit laisse le nœud dans le graphe et le contourne : le retirer
@@ -106,15 +113,16 @@ export function buildOutputChain(
     return { input, highpass, shaper, limiter, makeup, output: makeup }
   }
 
-  if (options.limiterLast) {
-    afterFilter.connect(makeup)
-    makeup.connect(limiter)
-    return { input, highpass, shaper, limiter, makeup, output: limiter }
+  if (options.limiterBeforeMakeup) {
+    afterFilter.connect(limiter)
+    limiter.connect(makeup)
+    return { input, highpass, shaper, limiter, makeup, output: makeup }
   }
 
-  afterFilter.connect(limiter)
-  limiter.connect(makeup)
-  return { input, highpass, shaper, limiter, makeup, output: makeup }
+  // L'ordre livré : le limiteur ferme la marche, donc il voit tout ce qui sort.
+  afterFilter.connect(makeup)
+  makeup.connect(limiter)
+  return { input, highpass, shaper, limiter, makeup, output: limiter }
 }
 
 /** Courbe de saturation douce. À 0, la courbe est droite et n'altère rien. */

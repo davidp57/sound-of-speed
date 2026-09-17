@@ -2412,30 +2412,37 @@ où l'on touche un réglage en roulant, et il peut dépasser 1 — au prix d'un
 
 #### Ce que la chaîne de sortie fait au niveau
 
-Le son passe par un coupe-bas, un saturateur, un limiteur, puis un gain de
-rattrapage fixe de 1,8. Mesuré sur le profil Route, cinq couches, par le banc
+Le son passe par un coupe-bas, un saturateur, un gain de rattrapage fixe de 1,8,
+puis un limiteur. Mesuré sur le profil Route, cinq couches, par le banc
 `banc/sortie.html` :
 
 - **Le relief survit à la chaîne.** L'écart entre croisière et accélération
-  franche vaut 6,58 dB en entrée et 6,49 en sortie, au volume livré de 0,70.
-  L'ensemble coûte 0,09 dB.
-- **Le limiteur ne limite presque rien** : 0,2 dB d'atténuation au maximum. Le
-  niveau efficace du son reste bien sous son seuil ; seules des crêtes brèves le
-  touchent. Il n'empêche donc pas la saturation, contrairement à ce que son nom
-  laisse croire.
-- **C'est l'écrêtage qui écrase**, et il vient du rattrapage placé après le
-  limiteur. Au volume livré, 1 % des échantillons sont rognés en accélération
-  franche ; à volume 1,0, 8 %, et le relief entendu tombe alors à 6,0 dB.
+  franche vaut 6,58 dB en entrée et 6,07 en sortie, au volume livré de 0,70.
+- **Le limiteur ferme la marche depuis le 17 septembre 2026**, et c'est ce qui a
+  changé. Il était placé **avant** le rattrapage : celui-ci ajoutait 5,1 dB que
+  plus rien ne contrôlait, et le limiteur devenait décoratif — le retirer
+  complètement ne changeait la crête que de 0,4 dB.
+- **Ce que l'ordre d'avant coûtait**, en accélération franche : au volume livré,
+  1,1 % des échantillons rognés par le convertisseur et une distorsion de
+  −31 dB ; à volume 1,0, **9,3 % et −18 dB**, soit un échantillon sur onze.
+- **Ce que l'ordre actuel donne** : 0,25 % et −48 dB au volume livré, 1,1 % et
+  −37 dB à fond. Il en reste un peu parce que le nœud de limitation du navigateur
+  n'est pas un mur — genou de 3 dB, attaque de 2 ms.
 
-Monter le volume général au-delà de 0,7 gagne donc du niveau et perd de la
-dynamique. En dessous de 0,5, plus rien n'est rogné.
+Le déplacement coûte un demi-décibel au volume livré, 1,9 dB à fond. C'est le
+prix payé, et il est assumé : ce que le volume maximal rendait « plus fort »
+était pour partie de la distorsion.
 
-**Cet écrêtage ne s'entend pas**, et c'est pourquoi il n'est pas corrigé. Les
-deux versions — telle qu'elle sort, et une chaîne réglée pour ne rien rogner —
-ont été comparées au même niveau sur un extrait de huit secondes : « quasiment
-aucune différence ». Le supprimer coûterait 3,1 dB de niveau pour un gain
-inaudible. C'est le même constat qu'au banc du moteur synthétisé, où l'écrêtage
-avait déjà été essayé deux fois sans qu'aucune différence s'entende.
+**Ce que disait cette section avant, et pourquoi c'est resté vrai un temps.**
+L'écrêtage avait été jugé inaudible en septembre, sur une comparaison à niveau
+égal d'un extrait de huit secondes — « quasiment aucune différence ». L'extrait
+était rendu **au volume livré**, où le rognage vaut 1 %. Dans la voiture, David
+pousse le curseur pour couvrir le roulement, et c'est là que la mesure donne
+neuf fois plus. L'ancien constat n'était pas faux, il portait sur l'autre bout
+du curseur.
+
+Le banc garde l'ordre d'avant sous le nom « limiteur avant le rattrapage », et
+l'extrait téléchargeable fait entendre les deux à niveau égal.
 
 | Réglage | Ce qu'il fait |
 |---|---|
@@ -2450,7 +2457,7 @@ avait déjà été essayé deux fois sans qu'aucune différence s'entende.
 | **Lissage de la charge** | Évite que le fondu papillonne sur le bruit d'accélération |
 | **Effacement du ralenti** | Régime au-dessus duquel la couche de ralenti disparaît |
 | **Gain pied levé** | Curseur de goût sur toute la famille « pied levé ». La compensation des prises plus douces vit dans le gain de chaque couche, où le déficit se mesure — 9,6 dB pour la basse, 6,5 pour la haute : à laisser à 1 sauf pour forcer le trait |
-| **Coupe-bas**, **Saturation**, **Seuil du limiteur** | Chaîne de sortie, décrite plus haut. Le seuil du limiteur n'a presque pas d'effet au niveau où le son sort : il ne travaille que sur des crêtes brèves |
+| **Coupe-bas**, **Saturation**, **Seuil du limiteur** | Chaîne de sortie, décrite plus haut. Le seuil du limiteur compte depuis qu'il ferme la marche : c'est lui qui décide où la sortie est tenue |
 
 ### Caractère
 

@@ -51,8 +51,8 @@ export interface BenchConfig {
   volume: number
   /** Gain de rattrapage. Le neutraliser sépare ce que la chaîne écrase de ce qu'elle rend. */
   makeup?: number
-  /** Place le limiteur après le rattrapage, l'ordre proposé en correction. */
-  limiterLast?: boolean
+  /** L'ordre d'avant le 17 septembre 2026 : le limiteur avant le rattrapage. */
+  limiterBeforeMakeup?: boolean
 }
 
 export interface BenchPoint {
@@ -176,7 +176,9 @@ export async function renderBuffer(
     bypassShaper: config.bypassShaper,
     bypassLimiter: config.bypassLimiter,
     ...(config.makeup === undefined ? {} : { makeup: config.makeup }),
-    ...(config.limiterLast === undefined ? {} : { limiterLast: config.limiterLast }),
+    ...(config.limiterBeforeMakeup === undefined
+      ? {}
+      : { limiterBeforeMakeup: config.limiterBeforeMakeup }),
   })
   chain.highpass.frequency.value = profile.mix.highpassHz
   chain.limiter.threshold.value = profile.mix.limiterThresholdDb
