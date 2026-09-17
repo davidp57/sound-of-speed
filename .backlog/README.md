@@ -19,6 +19,14 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 - **🧑 attend David** est le statut des tickets dont la vérification demande la
   voiture : le code est prêt, la preuve ne l'est pas.
 
+## Le protocole d'essai
+
+Ce qui reste à vérifier au volant est rassemblé dans
+[PROTOCOLE-ESSAI.md](PROTOCOLE-ESSAI.md) — par geste et non par lot, parce que
+c'est ainsi qu'on conduit. Dix points, dont cinq se soldent dans une seule
+accélération franche et cinq autres dans un passage en parking souterrain. Écrit
+le 17 septembre 2026 ; il se réécrit quand le reliquat change.
+
 ## Lots actifs
 
 | Lot | Statut |

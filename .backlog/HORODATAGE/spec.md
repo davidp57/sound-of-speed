@@ -1,6 +1,6 @@
 # HORODATAGE — la Tesla compte en microsecondes
 
-**Statut :** 🧑 attend David — corrigé et mesuré, reste l'écoute en roulant
+**Statut :** ✅ clos le 17 septembre 2026 — corrigé et mesuré ; l'écoute qui restait n'appartient pas à ce lot mais à [MOUVEMENT](../MOUVEMENT/spec.md), qui la porte déjà. La cadence réelle est confirmée sur les trajets du 16 : 100 ms médians sur 54 760 intervalles
 **Branche :** `fix/mouvement`
 **Version visée :** 0.1.85
 

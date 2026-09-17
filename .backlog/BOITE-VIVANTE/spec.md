@@ -1,6 +1,6 @@
 # BOITE-VIVANTE — une boîte qui regarde la vitesse, pas seulement le régime
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ validé en roulant le 16 septembre 2026 — David sur le comportement d'ensemble : « oui », avec le bémol du rétrogradage au ralentissement, devenu [ESSAI-16/12](../ESSAI-16/tickets/12-retrograder-plus-tot-en-ralentissant.md)
 **Branche :** `feature/boite-comportement`
 **Version visée :** 0.2
 

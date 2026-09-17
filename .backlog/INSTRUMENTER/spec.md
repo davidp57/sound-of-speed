@@ -1,6 +1,6 @@
 # INSTRUMENTER — savoir ce que le récepteur donne, et pouvoir en demander plus le jour d'un essai
 
-**Statut :** 🧑 attend David — 3/4 livrés le 15 septembre 2026, reste le chiffre à relever en roulant
+**Statut :** ✅ clos le 17 septembre 2026 — 4/4. Le chiffre que le lot cherchait est relevé sur les traces déposées : bruit du récepteur entre 0,27 et 0,42 km/h, contre un seuil de 1,5
 **Branche :** `feature/instrumenter`
 **Version visée :** 0.2.63
 

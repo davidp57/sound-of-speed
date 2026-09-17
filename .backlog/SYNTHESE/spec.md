@@ -1,6 +1,6 @@
 # SYNTHESE — produire le son au lieu de le rejouer
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ clos le 17 septembre 2026 — le son en direct dans la voiture est abandonné (le processeur ne tient pas, verdict de David), et les banques produites au banc sont validées en roulant : « ils sonnent bien, je trouve ». Un défaut reste, hors de ce lot : [ESSAI-16/11](../ESSAI-16/tickets/11-frequences-parasites-sur-les-v8.md)
 **Branche :** `feature/synthese-sonde` puis suivantes
 **Version visée :** 0.3
 
