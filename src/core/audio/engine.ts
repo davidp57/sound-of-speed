@@ -535,7 +535,14 @@ export class AudioEngine {
     this.status.contextState = context.state
   }
 
-  /** Applique le mixage calculé pour l'image courante. */
+  /**
+   * Applique le mixage calculé pour l'image courante.
+   *
+   * `running` descend jusqu'à `computeMix`, qui rend des gains nuls au repos. Ce
+   * n'est pas un raccourci pour `mute()` : les couches gardent leur ordre et leur
+   * hauteur, seul le niveau tombe, et la règle vit dans la fonction pure plutôt
+   * que dans le graphe.
+   */
   update(
     profile: Profile,
     state: EngineState,

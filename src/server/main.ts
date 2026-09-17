@@ -218,7 +218,6 @@ async function releveDeDepense(motif: MotifDuReleve = 'periodique'): Promise<voi
 await menageDeRetention()
 
 const UN_JOUR = 24 * 60 * 60 * 1000
-const UNE_HEURE = 60 * 60 * 1000
 const minuteurDuMenage = setInterval(() => {
   void menageDeRetention()
 }, UN_JOUR)
@@ -236,8 +235,9 @@ const minuteurDuMenage = setInterval(() => {
  * de la fréquence des redéploiements, que le code ne connaît pas — et parce
  * qu'un minuteur d'une heure ne se vérifie autrement qu'en attendant une heure.
  */
-const cadenceDuReleve =
-  (nombreOuRien(process.env['SPEED_RELEVE_MINUTES']) ?? 60) * 60 * 1000 || UNE_HEURE
+// `nombreOuRien` écarte déjà zéro, le négatif et ce qui n'est pas un nombre : ce
+// qui arrive ici est une durée utilisable, ou rien.
+const cadenceDuReleve = (nombreOuRien(process.env['SPEED_RELEVE_MINUTES']) ?? 60) * 60 * 1000
 const minuteurDuReleve = setInterval(() => {
   void releveDeDepense()
 }, cadenceDuReleve)
