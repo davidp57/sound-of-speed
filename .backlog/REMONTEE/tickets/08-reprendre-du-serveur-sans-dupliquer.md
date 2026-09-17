@@ -64,6 +64,16 @@ sans retour.
 emportés, et le rattachement retrouve celui qui correspond plutôt que d'en créer
 un second : reprendre deux fois de suite ne fait pas grossir la liste.
 
+**Deux décisions prises par défaut, validées par David le 17 septembre 2026** —
+elles ne se déduisaient pas de sa demande, et ce ticket les inscrit pour qu'on ne
+les rouvre pas sans raison :
+
+1. **Les moteurs et les boîtes ne sont pas effacés**, par cohérence avec
+   « Supprimer », qui ne les a jamais emportés non plus.
+2. **Sur deux fichiers du même profil, le premier listé gagne.** Il n'y a pas de
+   date dans le listage de la bibliothèque pour les départager ; le nombre
+   d'écartés est dit à l'écran plutôt que taire le choix.
+
 ## La vraie cause du doublon, trouvée en vérifiant
 
 Le premier jet de ce ticket disait que le bouton « Ajouter » dupliquait. C'était
