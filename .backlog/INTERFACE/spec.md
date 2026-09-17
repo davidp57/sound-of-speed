@@ -1,6 +1,7 @@
 # INTERFACE — refaire l'écran pour la taille qu'il a vraiment
 
-**Statut :** ⬜ prêt — mesurer d'abord, le reste du périmètre est à cuisiner
+**Statut :** 🔄 en cours — l'outil de mesure est livré, la mesure elle-même
+attend David ; le reste du périmètre est à cuisiner
 **Branche :** à ouvrir
 **Version visée :** à décider
 
@@ -78,7 +79,7 @@ Mesurer est donc le **premier geste** de ce lot, avant toute décision : c'est l
 
 | Ticket | Statut |
 |---|---|
-| [01 — mesurer vraiment l'espace dont on dispose](tickets/01-mesurer-l-espace-reel.md) | ⬜ |
+| [01 — mesurer vraiment l'espace dont on dispose](tickets/01-mesurer-l-espace-reel.md) | 🧑 |
 
 Le reste du découpage attend les réponses aux questions ouvertes, et les chiffres
 du ticket 01.

@@ -6,6 +6,27 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Ajouté
+
+- **On sait enfin quelle place l'application a vraiment.** Le journal ne portait
+  que l'écran annoncé — 1 254 × 784 dans la voiture —, alors que la page n'en
+  reçoit que 773 × 575 ; les 481 points manquants étaient une supposition. Il
+  porte maintenant les quatre cadres emboîtés (page, fenêtre, châssis, écran), la
+  densité de pixels et l'échelle du viewport visuel, qui est ce qui dénonce un
+  zoom. Et il les reprend **à chaque changement** — plein écran, rotation, zoom —
+  au lieu d'une ligne unique au chargement, sans rien à noter en roulant.
+
+  Une **mire** s'ouvre dans l'atelier, volet *Écran* : un cadre gradué tous les
+  cent pixels sur la zone utile, et un rectangle aux dimensions d'une carte
+  bancaire. C'est le seul moyen de savoir ce qu'un pixel fait en millimètres —
+  les unités physiques du CSS sont fixées à 96 points par pouce quelle que soit
+  la dalle —, et c'est la taille physique qui décide si un texte se lit en
+  conduisant.
+
+  **Une page masquée mesure zéro**, densité comprise : ce n'est pas un écran
+  minuscule, c'est personne qui regarde, et la ligne n'est pas écrite. Le cas
+  s'est produit à la première vérification.
+
 ### Modifié
 
 - **Les quatre banques livrées sonnent au même niveau.** David : « les profils

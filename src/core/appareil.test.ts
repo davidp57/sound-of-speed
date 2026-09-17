@@ -16,6 +16,7 @@ import {
   lireLAppareilChoisi,
   oublierLAppareilChoisi,
   rangerLAppareilChoisi,
+  mesurerLEcran,
   type IndicesDAppareil,
 } from './appareil'
 
@@ -61,28 +62,103 @@ describe('deviner l’appareil', () => {
   })
 })
 
-describe('ce que le journal retient du navigateur', () => {
-  it('porte la chaîne d’agent, l’écran et le pointeur', () => {
-    const entree = entreeDAppareil(
-      { agent: TESLA, largeur: 1200, tactile: true },
-      'voiture',
-      824,
+/** Une fenêtre de comptoir, aux chiffres relevés dans la voiture. */
+function fenetre(ecarts: Record<string, unknown> = {}) {
+  return {
+    document: { documentElement: { clientWidth: 773, clientHeight: 575 } },
+    innerWidth: 773,
+    innerHeight: 575,
+    outerWidth: 1254,
+    outerHeight: 784,
+    screen: {
+      width: 1254,
+      height: 784,
+      availWidth: 1254,
+      availHeight: 784,
+      orientation: { type: 'landscape-primary' },
+    },
+    devicePixelRatio: 1.53,
+    visualViewport: { scale: 1 },
+    ...ecarts,
+  }
+}
+
+describe('la place dont on dispose vraiment', () => {
+  it('sépare la page, la fenêtre, le châssis et l’écran', () => {
+    const mesure = mesurerLEcran(fenetre())
+
+    expect(mesure.page).toEqual({ largeur: 773, hauteur: 575 })
+    expect(mesure.ecran.largeur).toBe(1254)
+    expect(mesure.densite).toBe(1.53)
+  })
+
+  it('dit qu’on est en plein écran quand un élément l’occupe', () => {
+    const mesure = mesurerLEcran(
+      fenetre({ document: { documentElement: { clientWidth: 1254 }, fullscreenElement: {} } }),
     )
 
-    expect(entree).toEqual({
+    expect(mesure.pleinEcran).toBe(true)
+  })
+
+  it('rend une échelle de 1 quand le viewport visuel n’existe pas', () => {
+    // Sans lui, on ne distingue pas un zoom d'une barre. Le dire vaut mieux que
+    // rendre une valeur inventée.
+    expect(mesurerLEcran(fenetre({ visualViewport: null })).echelle).toBe(1)
+  })
+
+  it('ne suppose rien d’une fenêtre vide', () => {
+    const mesure = mesurerLEcran({})
+
+    expect(mesure.page).toEqual({ largeur: 0, hauteur: 0 })
+    expect(mesure.densite).toBe(1)
+    expect(mesure.orientation).toBe('inconnue')
+    expect(mesure.pleinEcran).toBe(false)
+  })
+})
+
+describe('ce que le journal retient du navigateur', () => {
+  it('porte la chaîne d’agent, les quatre cadres et le pointeur', () => {
+    const entree = entreeDAppareil(
+      { agent: TESLA, largeur: 1254, tactile: true },
+      'voiture',
+      mesurerLEcran(fenetre()),
+    )
+
+    expect(entree).toMatchObject({
       agent: TESLA,
-      largeur: 1200,
-      hauteur: 824,
+      largeur: 1254,
+      hauteur: 784,
       tactile: true,
       devine: 'voiture',
       appareil: 'voiture',
+      pageL: 773,
+      pageH: 575,
+      densite: 1.53,
+      echelle: 1,
+      pleinEcran: false,
     })
+  })
+
+  it('reste plat : le journal se relit en colonnes', () => {
+    const entree = entreeDAppareil(
+      { agent: TESLA, largeur: 1254, tactile: true },
+      'voiture',
+      mesurerLEcran(fenetre()),
+    )
+
+    for (const valeur of Object.values(entree)) {
+      expect(['string', 'number', 'boolean']).toContain(typeof valeur)
+    }
   })
 
   it('garde l’écart entre ce qu’on devine et ce qui s’applique', () => {
     // C'est le fait qu'on vient chercher : une détection ratée, corrigée à la
     // main. Les confondre rendrait le journal muet sur la seule question posée.
-    const entree = entreeDAppareil({ agent: BUREAU, largeur: 1920, tactile: false }, 'voiture', 1080)
+    const entree = entreeDAppareil(
+      { agent: BUREAU, largeur: 1920, tactile: false },
+      'voiture',
+      mesurerLEcran(fenetre()),
+    )
 
     expect(entree['devine']).toBe('poste')
     expect(entree['appareil']).toBe('voiture')

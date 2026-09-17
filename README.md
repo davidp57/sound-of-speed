@@ -256,6 +256,32 @@ Les deux écrans étaient un seul jusqu'au 14 septembre 2026, avec une bascule
 maintenant deux onglets, et le second **ne s'ouvre qu'à l'arrêt** — voir « La
 garde » ci-dessous.
 
+### Savoir quelle place on a — la mire
+
+L'écran de la voiture annonce 1 254 × 784 points et n'en laisse que 773 × 575 à
+la page. Savoir d'où viennent les 481 points manquants change la conception : de
+la place que prend une barre se récupère en plein écran, un zoom ne se récupère
+jamais.
+
+Le journal porte donc, **à chaque fois que cela change** — plein écran,
+rotation, zoom —, les quatre cadres emboîtés : la page, la fenêtre, le châssis,
+l'écran ; la densité de pixels ; et l'échelle du viewport visuel, qui est ce qui
+dénonce un zoom. Rien à noter : cela remonte avec le trajet.
+
+Ce qu'aucune mesure logicielle ne donne, c'est la taille **physique** d'un
+pixel : les unités du CSS sont fixées à 96 points par pouce quelle que soit la
+dalle. D'où la **mire**, dans l'atelier, volet *Écran* : elle dessine un cadre
+gradué tous les cent pixels sur la zone utile, et un rectangle aux dimensions
+d'une carte bancaire — 85,60 × 53,98 mm, norme ISO/IEC 7810 ID-1. On pose une
+carte dessus, on règle le curseur jusqu'à ce qu'elle le recouvre, et « Retenir »
+range la valeur et l'inscrit au journal.
+
+**Une page masquée mesure zéro.** Le navigateur suspend le rendu d'un onglet
+qu'on ne regarde pas : tout en sort à zéro, jusqu'à la densité. Une telle ligne
+ne dit pas « l'écran fait zéro pixel » mais « personne ne regardait », et rien ne
+les distinguerait une fois écrites — elle n'est donc pas écrite, et la mesure se
+reprend au retour au premier plan.
+
 ### La garde
 
 Un écran de réglage de fond se règle posé, pas au volant. L'onglet **Avancé** est
