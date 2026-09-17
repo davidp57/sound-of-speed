@@ -2497,9 +2497,19 @@ profil. Au premier lancement, il se déduit du profil actif.
 
 ### Profils
 
-**Quatre** profils sont livrés avec l'application — **V8**, **V8 collecteur
-long**, **L6** et **L4**, un par banque produite au banc —, et le bouton
-**Profils d'usine** réintroduit ceux qu'on a supprimés.
+**Cinq** profils sont livrés avec l'application — **V8**, **V8 collecteur
+long**, **V8 adouci**, **L6** et **L4**, un par banque produite au banc —, et le
+bouton **Profils d'usine** réintroduit ceux qu'on a supprimés.
+
+**« V8 adouci » est là pour trancher une question**, pas pour rester. Mesuré le
+17 septembre 2026, les deux banques de V8 portent, au niveau de leur allumage
+lui-même, des composantes qui n'en sont pas des multiples — là où le six en ligne
+et le quatre à plat sont 30 à 70 dB en dessous. C'est ce qui s'entend comme des
+fréquences parasites à moyen régime. Mais un V8 américain **sonne** ainsi, ses
+explosions n'étant pas régulièrement espacées à l'intérieur d'une rangée de
+cylindres : les retirer nettoie peut-être un défaut, peut-être la signature du
+moteur. Le profil met les deux côte à côte pour qu'on tranche à l'oreille ; celui
+qui perd s'en ira.
 
 Ce bouton propose aussi les profils d'usine réglés sur une banque **déposée**,
 mais seulement **quand le serveur liste cette banque**. Ces profils-là ne partent
@@ -3151,6 +3161,7 @@ banque.
 |---|---|---|---|
 | [`gm-ls`](public/audio/gm-ls/LISEZMOI.md) | V8 croisé, GM LS 5,7 L | 18 | 1,5 Mo |
 | [`gm-ls-long-header`](public/audio/gm-ls-long-header/LISEZMOI.md) | le même, collecteur long | 18 | 1,5 Mo |
+| [`gm-ls-adouci`](public/audio/gm-ls-adouci/LISEZMOI.md) | le même, sans ce qui n'est pas harmonique de son allumage | 18 | 1,5 Mo |
 | [`bmw-i6-3l`](public/audio/bmw-i6-3l/LISEZMOI.md) | six en ligne, 3,0 L | 18 | 1,3 Mo |
 | [`subaru-ej25`](public/audio/subaru-ej25/LISEZMOI.md) | quatre cylindres à plat | 15 | 1,2 Mo |
 

@@ -21,6 +21,7 @@ public/audio/*
 # voiture appartient à qui l'a faite, et `procar` vient d'une autre application.
 !public/audio/gm-ls/
 !public/audio/gm-ls-long-header/
+!public/audio/gm-ls-adouci/
 !public/audio/bmw-i6-3l/
 !public/audio/subaru-ej25/
 

@@ -46,6 +46,16 @@ Toutes les évolutions notables du projet. Format
 
 ### Ajouté
 
+- **Un cinquième profil livré, « V8 adouci », pour trancher une question à
+  l'oreille.** C'est le même GM LS que « V8 », débarrassé de ce qui n'est pas
+  harmonique de son allumage entre 120 et 1 200 Hz — de 14 à 26 dB selon la
+  prise. Ces composantes sont ce que David entend comme des fréquences parasites
+  à moyen régime ; elles viennent du vilebrequin croisé, dont chaque rangée voit
+  ses allumages espacés de 90 puis 180 degrés, et c'est aussi ce qui fait le
+  grondement d'un V8 américain. Les deux profils sont côte à côte dans la liste,
+  et celui qui perd s'en ira. La banque se refait par
+  `node scripts/adoucir-banque.mjs gm-ls gm-ls-adouci`.
+
 - **Le compte-tours frémit au ralenti**, comme celui d'une vraie voiture. Le
   tremblement du régime vivait dans une grandeur à part, qui ne servait qu'au son :
   le cadran affichait 800 pile quoi qu'il arrive. L'aiguille **et** le nombre

@@ -59,6 +59,7 @@ describe('profils livrés', () => {
     expect(profiles.map((p) => p.id)).toEqual([
       'gm-ls',
       'gm-ls-long-header',
+      'gm-ls-adouci',
       'bmw-i6-3l',
       'subaru-ej25',
     ])
@@ -83,6 +84,7 @@ describe('profils livrés', () => {
     expect(knownFactoryProfiles().map((p) => p.id)).toEqual([
       'gm-ls',
       'gm-ls-long-header',
+      'gm-ls-adouci',
       'bmw-i6-3l',
       'subaru-ej25',
       'v8',
@@ -103,7 +105,7 @@ describe('profils livrés', () => {
     }
 
     const cylindres = createFactoryProfiles().map((p) => p.engine.cylinders)
-    expect(cylindres).toEqual([8, 8, 6, 4])
+    expect(cylindres).toEqual([8, 8, 8, 6, 4])
   })
 
   it('rend des copies neuves à chaque appel', () => {
