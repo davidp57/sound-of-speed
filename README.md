@@ -81,8 +81,8 @@ Pour un NAS Synology et Portainer, la procédure détaillée est plus bas :
 
 ## Les écrans
 
-**Conduite** — la vitesse, le rapport, le régime, et les commandes de conduite
-sous les deux cadrans. Rien d'autre : le choix de l'affichage et celui de la
+**Conduite** — la vitesse et le régime en cadrans, et entre eux la colonne du
+milieu : le rapport au-dessus, le sélecteur de boîte en dessous. Rien d'autre : le choix de l'affichage et celui de la
 source sont passés en **Paramètres**, le son et le verrou d'écran en haut à
 droite avec l'aide — ce sont des commandes d'appareil, pas de conduite. Le
 volume reste sous les cadrans, c'est un réglage qu'on pose une fois.
@@ -144,7 +144,7 @@ conduite* :
   gradué jusqu'à 180 km/h — la vitesse à laquelle le dernier rapport touche le
   rupteur dépasse 300 km/h sur les deux profils livrés, une échelle qui
   laisserait l'aiguille dans un coin. En portrait, les cadrans s'empilent,
-  chacun sur toute la largeur, et le rapport se lit entre les deux.
+  chacun sur toute la largeur, et la colonne du milieu passe dessous, en bande.
 
   **Le compte-tours affiche le régime entendu**, aiguille et nombre — celui qui
   porte le tremblement du ralenti, et non le régime net. Un moteur qui tourne
@@ -154,18 +154,29 @@ conduite* :
   franchi par le tremblement produirait des passages parasites. Le compteur de
   vitesse, lui, affiche la vitesse conditionnée, celle qui pilote tout le reste.
 
-  **Le rapport est posé par-dessus, pas rangé dans une rangée à lui**, et ce
-  n'est pas un détail de mise en page : il occupait avant une colonne centrale
-  qui prenait 263 des 920 pixels disponibles. Un disque ne profite pas de la
-  hauteur libre — il ne grandit qu'en largeur —, donc tout ce qui occupe le
-  milieu de la rangée se paie en taille de cadran. Mesuré sur un écran de
-  1024 × 768 : **296 pixels de diamètre avant, 434 après**, et 594 sur un écran
-  de 1400 × 900. Une rangée propre pour le rapport en aurait repris cent.
+  **Le rapport et le sélecteur de boîte sont dans la colonne du milieu**, le
+  rapport au-dessus. C'est un choix de David du 17 septembre 2026, et c'est le
+  contraire de ce qui avait été décidé trois jours plus tôt — la raison a changé
+  entre-temps.
 
-  Les deux rangées ont un **plancher**. Sans lui, la rangée des cadrans se
-  comprime sans limite quand la fenêtre est courte : mesuré sur 790 × 590, le
-  disque tombait à 106 pixels, illisible et sans qu'on puisse faire défiler pour
-  le retrouver. Sous le plancher, l'écran déborde et défile — le moindre mal.
+  Un disque est borné par la plus petite des deux dimensions de sa cellule. Sur
+  un écran de bureau, c'est la largeur : la colonne centrale prenait alors 263
+  des 920 pixels disponibles et bornait les disques à 296 pixels quand la place
+  en permettait 434. Dans la voiture, c'est la **hauteur** — 575 pixels utiles
+  contre 773 de large —, et la bande des commandes sous les cadrans y coûtait
+  plus cher que la colonne : elle demandait 150 pixels dans une rangée qui n'en
+  avait que 229 à partager avec les cadrans. Mesuré à la taille réelle de
+  l'écran de bord, le disque passe de **176 à 213 pixels**, et de 213 à 277 en
+  plein écran.
+
+  Cela corrige aussi un débordement : la bande ne tenant pas dans sa rangée,
+  elle passait **par-dessus le bandeau d'alerte**, qui devenait illisible, et ses
+  boutons disparaissaient sous le bandeau du compte.
+
+  La rangée a un **plancher**. Sans lui, elle se comprime sans limite quand la
+  fenêtre est courte : mesuré sur 790 × 590, le disque tombait à 106 pixels,
+  illisible et sans qu'on puisse faire défiler pour le retrouver. Sous le
+  plancher, l'écran déborde et défile — le moindre mal.
 - **Chiffres** — la vitesse, le rapport et le régime en nombres, avec la
   réglette de régime. C'est cette vue qui sert à régler : cent tours d'écart se
   lisent sur un nombre et ne se voient pas sur une aiguille.

@@ -121,9 +121,21 @@ lot : la hauteur est la dimension qui manque, et ces deux blocs sont les seuls �
 la consommer alors qu'il y a de la place à côté d'eux.
 
 **L'ordre est tranché** par David le 17 septembre 2026 : **le rapport au-dessus
-du sélecteur**, les deux entre les compteurs. Reste à décider ce qu'il advient
-du bandeau d'alerte, aujourd'hui sous le tout et qui recouvre justement ces
-commandes ([ESSAI-16/02](../ESSAI-16/tickets/02-bandeaux-sous-les-commandes.md)).
+du sélecteur**, les deux entre les compteurs. **Livré le soir même**, et mesuré à
+la taille réelle : le disque passe de 176 à 213 pixels, et de 213 à 277 en plein
+écran.
+
+Le bandeau d'alerte n'avait finalement rien à arbitrer : il était recouvert parce
+que la bande des commandes demandait 150 pixels dans une rangée qui n'en avait
+que 229 à partager avec les cadrans, donc elle débordait. Le sélecteur parti dans
+la colonne, le débordement n'existe plus
+([ESSAI-16/02](../ESSAI-16/tickets/02-bandeaux-sous-les-commandes.md), clos).
+
+**Ce que la mesure a montré au passage**, et qui cadre la suite du lot : sur les
+575 pixels de haut, la rangée des cadrans n'en reçoit que **229**. Le reste part
+en barre du haut (**111**, parce que les onglets tiennent sur deux rangs à cette
+largeur), rangée des profils épinglés (64) et bandeau du bas (61). C'est là que
+se trouvent les pixels à reprendre.
 
 ## Ce qu'il faut trancher
 

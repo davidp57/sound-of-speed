@@ -329,17 +329,6 @@ const SPEED_STEP_KMH = 20
     </div>
 
     <section v-if="driveFace === 'dials'" class="dashboard">
-      <!--
-        Le rapport est en haut, au milieu, entre les deux cadrans — David, le
-        14 septembre 2026. Il occupait avant une colonne centrale qui prenait
-        263 des 920 pixels de la rangée : les cadrans sont passés de 296 à
-        448 pixels de diamètre en l'en sortant, mesuré sur un écran de 1024.
-      -->
-      <div class="gear-read">
-        <div class="gear-value numeric">{{ gearLabel }}</div>
-        <div class="unit">rapport</div>
-      </div>
-
       <div class="cell speed">
         <DialGauge
           :value="telemetry.speed.kmh"
@@ -362,11 +351,22 @@ const SPEED_STEP_KMH = 20
       </div>
 
       <!--
-        Les commandes de boîte passent sous les cadrans : il n'y a plus de
-        colonne centrale pour les tenir, et la bande leur donne des touches
-        plus larges qu'elles ne l'étaient entre les deux disques.
+        La colonne du milieu : le rapport, puis le sélecteur de boîte. David, le
+        17 septembre 2026, schéma à l'appui — « le rapport au-dessus du
+        sélecteur, les deux entre les compteurs ».
+
+        Elle prend la largeur de son contenu et rien de plus, et elle rend aux
+        cadrans toute la hauteur que la bande des commandes leur prenait. C'est
+        la hauteur qui manque dans la voiture — 575 pixels utiles —, et un
+        disque bridé par la hauteur ne profite pas d'un pixel de largeur de plus.
       -->
-      <DriveSelector class="commandes" />
+      <div class="colonne">
+        <div class="gear-read">
+          <div class="gear-value numeric">{{ gearLabel }}</div>
+          <div class="unit">rapport</div>
+        </div>
+        <DriveSelector class="commandes" />
+      </div>
     </section>
 
     <section v-else class="readout">
@@ -690,15 +690,20 @@ const SPEED_STEP_KMH = 20
 /*
  * Tableau de bord.
  *
- * Deux cadrans côte à côte, le rapport au-dessus entre les deux, les commandes
- * de boîte en bande dessous.
+ * Deux cadrans côte à côte, et entre eux une colonne : le rapport au-dessus du
+ * sélecteur de boîte. David, le 17 septembre 2026, schéma à l'appui.
  *
- * **Le rapport a quitté la rangée** le 14 septembre 2026, sur décision de
- * David : entre les deux cadrans, il leur prenait 263 des 920 pixels
- * disponibles, et les bornait à 296 pixels de diamètre quand la place en
- * permettait 448. Un disque ne peut pas profiter de la hauteur libre — il ne
- * grandit qu'en largeur —, donc tout ce qui occupe le milieu de la rangée se
- * paie en taille de cadran.
+ * **C'est le contraire de ce qui avait été décidé le 14 septembre**, et la
+ * raison a changé entre-temps. Ce jour-là, la colonne centrale prenait 263 des
+ * 920 pixels d'un écran de bureau et bornait les disques à 296 pixels quand la
+ * place en permettait 448 : la largeur était la ressource rare. Dans la voiture,
+ * c'est la **hauteur** — 575 pixels utiles contre 773 de large —, et la bande
+ * des commandes sous les cadrans y coûtait plus cher que la colonne.
+ *
+ * Un disque est borné par la plus petite des deux dimensions de sa cellule.
+ * Rendre la hauteur de la bande aux cadrans les agrandit tant que la hauteur
+ * borne ; la colonne ne leur coûte que ce que son contenu demande, et elle ne
+ * demande que la largeur du sélecteur.
  *
  * Les cellules n'ont ni fond ni bordure ici : les cadrans portent déjà leur
  * propre disque opaque.
@@ -714,7 +719,11 @@ const SPEED_STEP_KMH = 20
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /*
+   * La colonne du milieu prend la largeur de son contenu, et rien de plus : le
+   * sélecteur en fixe la mesure, les cadrans se partagent le reste.
+   */
+  grid-template-columns: 1fr auto 1fr;
   /*
    * La rangée des cadrans est élastique, celle des commandes garde sa taille :
    * ce qui reste revient aux disques.
@@ -725,10 +734,8 @@ const SPEED_STEP_KMH = 20
    * défiler pour le retrouver. Sous ce plancher, l'écran déborde et défile,
    * ce qui est le moindre mal.
    */
-  grid-template-rows: minmax(11rem, 1fr) auto;
-  grid-template-areas:
-    'speed rpm'
-    'commandes commandes';
+  grid-template-rows: minmax(11rem, 1fr);
+  grid-template-areas: 'speed centre rpm';
   align-items: center;
   justify-items: center;
   gap: 0.5rem 0.75rem;
@@ -770,24 +777,39 @@ const SPEED_STEP_KMH = 20
 }
 
 /*
- * Le rapport est en haut, au milieu, **posé par-dessus** plutôt que rangé dans
- * une rangée à lui : le cadran est dessiné dans un repère plus large que son
- * disque, si bien que le haut de l'écran entre les deux est vide. Une rangée
- * propre lui aurait coûté cent pixels, pris aux disques — c'est exactement ce
- * qu'on cherchait à leur rendre.
+ * La colonne du milieu, centrée verticalement entre les deux disques : le
+ * rapport se lit à hauteur des aiguilles, et le sélecteur tombe sous le pouce
+ * au même endroit qu'un vrai levier — au milieu, pas au bord de l'écran.
  */
-.dashboard .gear-read {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1;
+.dashboard .colonne {
+  grid-area: centre;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 100%;
+}
+
+/*
+ * Le rapport se cale sur ce que la colonne laisse, et non sur l'écran entier.
+ *
+ * Mesuré dans la voiture — 774 × 575 —, la rangée des cadrans dispose de
+ * 229 pixels de haut. Le sélecteur en prend 150, qui ne se compriment pas : ses
+ * touches font 44 pixels, la taille d'un doigt. Le rapport a donc 70 pixels, et
+ * un chiffre dimensionné sur la hauteur de la fenêtre en demandait 92 — il
+ * débordait par le haut, sur la rangée des profils épinglés.
+ */
+.dashboard .gear-value {
+  font-size: clamp(1.5rem, 6.5vh, 4rem);
+}
+
+.dashboard .gear-read .unit {
+  font-size: 0.7rem;
 }
 
 .dashboard .commandes {
-  grid-area: commandes;
   width: 100%;
-  max-width: 32rem;
 }
 
 .gear-read {
@@ -969,9 +991,9 @@ const SPEED_STEP_KMH = 20
  *
  * Côte à côte, chacun est borné par la moitié de la largeur — 165 pixels
  * mesurés sur un téléphone de 375 —, et la hauteur libre reste vide. L'un sous
- * l'autre, ils font toute la largeur. Le rapport garde sa place en haut et les
- * commandes la leur en bas, comme en paysage : c'est la même planche de bord,
- * pas une autre disposition à apprendre.
+ * l'autre, ils font toute la largeur, et la colonne du milieu passe dessous en
+ * bande : entre deux disques pleine largeur, il n'y a plus de milieu où la
+ * mettre.
  */
 @media (max-width: 640px) {
   .dashboard {
@@ -986,18 +1008,22 @@ const SPEED_STEP_KMH = 20
     grid-template-areas:
       'speed'
       'rpm'
-      'commandes';
+      'centre';
   }
 
   /*
-   * Empilés, les deux disques ne laissent plus de creux commun : le rapport se
-   * met entre eux, à droite, là où les deux cadrans ont leur coin vide.
+   * Empilés, les deux disques prennent toute la largeur : la colonne repasse
+   * sous eux, en bande, et le rapport se remet à côté du sélecteur plutôt
+   * qu'au-dessus — sur un téléphone, la hauteur est encore plus rare.
    */
-  .dashboard .gear-read {
-    top: 50%;
-    left: auto;
-    right: 0.5rem;
-    transform: translateY(-50%);
+  .dashboard .colonne {
+    flex-direction: row;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .dashboard .commandes {
+    max-width: 24rem;
   }
 }
 

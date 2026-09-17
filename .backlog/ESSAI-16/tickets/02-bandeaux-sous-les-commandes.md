@@ -1,7 +1,7 @@
 # 02 — Les bandeaux du bas passent sous les commandes
 
-**Statut :** ⬜ prêt — **repris par [INTERFACE](../../INTERFACE/spec.md)** : le
-rustiner seul donnerait un correctif qui ne tient que jusqu'au prochain bandeau
+**Statut :** ✅ fait le 17 septembre 2026 — réglé par la colonne du milieu, sans
+être traité pour lui-même
 
 David, photos à l'appui : le bandeau « Plus aucune position depuis 7 s. Suivi
 relancé 1 fois. » s'affiche **par-dessus** les boutons P, AUTO et MAN de l'écran
@@ -28,3 +28,16 @@ ailleurs ; il ne se superpose pas.
 - [ ] Les deux bandeaux à la fois ne se recouvrent pas non plus l'un l'autre.
 - [ ] Vérifié dans le navigateur de prévisualisation à cette taille exacte, et
       pas seulement sur un écran de bureau.
+
+## Comment il s'est réglé
+
+Le déplacement du sélecteur entre les compteurs le supprime par construction.
+Mesuré à la taille réelle de l'écran de bord, 774 × 575 : la rangée des cadrans
+disposait de **229 pixels** de haut, et la bande des commandes en demandait
+**150** à elle seule, en plus des cadrans. Elle ne tenait pas, donc elle
+débordait — par-dessus le bandeau d'alerte, qui devenait illisible, et ses
+boutons passaient sous le bandeau du compte.
+
+Ce n'était donc pas un problème de superposition à arbitrer, mais un contenu qui
+ne tenait pas dans sa rangée. Le sélecteur étant maintenant dans la colonne du
+milieu, la rangée n'a plus qu'une hauteur à servir.
