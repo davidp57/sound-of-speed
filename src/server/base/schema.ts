@@ -512,6 +512,49 @@ export const adminActions = sqliteTable(
 )
 
 /**
+ * Ce que le serveur a dépensé, période par période.
+ *
+ * **En base parce que le journal du conteneur ne survit pas au conteneur.** Le
+ * relevé partait dans `console.log` toutes les vingt-quatre heures, ou à l'arrêt ;
+ * une pile qu'on redéploie plusieurs fois par jour n'atteint jamais vingt-quatre
+ * heures, et la ligne d'adieu meurt dans le journal du conteneur qu'on remplace.
+ * Constaté par David le 17 septembre 2026 : `docker logs` ne rendait rien.
+ *
+ * **Chaque ligne est une différence, jamais un cumul.** Elle couvre l'intervalle
+ * qu'elle porte, et les compteurs repartent de zéro derrière elle : un compteur
+ * depuis le démarrage divisé par une durée montrerait une moyenne là où il faut
+ * une tendance.
+ *
+ * Les deux poids, eux, sont des **états** à l'instant du relevé et non des
+ * différences : ce que les banques et la base pesaient ce jour-là.
+ */
+export const expenseReports = sqliteTable('expense_reports', {
+  id: text('id').primaryKey(),
+  /** Début de la période couverte, en millisecondes. */
+  since: integer('since').notNull(),
+  /** Fin de la période, donc l'instant du relevé, en millisecondes. */
+  until: integer('until').notNull(),
+  /** Octets d'échantillons servis sur la période, et nombre de demandes. */
+  sampleBytes: integer('sample_bytes').notNull(),
+  sampleRequests: integer('sample_requests').notNull(),
+  /** Temps passé à analyser des traces, et combien l'ont été. */
+  analysisMs: integer('analysis_ms').notNull(),
+  analysisTraces: integer('analysis_traces').notNull(),
+  /** État à l'instant du relevé : ce que les banques pèsent, et en combien de dossiers. */
+  bankBytes: integer('bank_bytes').notNull(),
+  bankCount: integer('bank_count').notNull(),
+  /** État à l'instant du relevé : le fichier de base sur le disque. */
+  databaseBytes: integer('database_bytes').notNull(),
+  /**
+   * Ce qui a provoqué le relevé : `periodique` ou `arret`.
+   *
+   * Le distinguer sert à lire une série de périodes courtes sans se demander si
+   * le serveur a beaucoup redémarré ou si le minuteur s'emballe.
+   */
+  reason: text('reason').notNull(),
+})
+
+/**
  * Ce que le serveur a appris de la vraie voiture.
  *
  * Un seul enregistrement par compte : c'est un cumul, pas une collection. Il

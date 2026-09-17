@@ -535,17 +535,25 @@ export class AudioEngine {
     this.status.contextState = context.state
   }
 
-  /** Applique le mixage calculé pour l'image courante. */
+  /**
+   * Applique le mixage calculé pour l'image courante.
+   *
+   * `running` descend jusqu'à `computeMix`, qui rend des gains nuls au repos. Ce
+   * n'est pas un raccourci pour `mute()` : les couches gardent leur ordre et leur
+   * hauteur, seul le niveau tombe, et la règle vit dans la fonction pure plutôt
+   * que dans le graphe.
+   */
   update(
     profile: Profile,
     state: EngineState,
     shift?: { isShifting: boolean; progress: number },
+    running = true,
   ): void {
     const context = this.context
     if (!context || this.status.phase !== 'ready') return
 
     const now = context.currentTime
-    const mix = computeMix(profile, state, shift)
+    const mix = computeMix(profile, state, shift, running)
 
     for (const entry of mix.layers) {
       const node = this.layers.find((layer) => layer.key === entry.key)

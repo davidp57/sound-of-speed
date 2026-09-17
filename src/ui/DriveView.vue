@@ -220,7 +220,7 @@ function toggleAudio(): void {
 }
 
 const rpmPercent = computed(() => {
-  const { rpm } = telemetry.value.engine
+  const rpm = telemetry.value.engine.audibleRpm
   const redline = activeProfile.value.engine.redlineRpm
   return Math.round((rpm / Math.max(1, redline)) * 100)
 })
@@ -343,7 +343,7 @@ const SPEED_STEP_KMH = 20
 
       <div class="cell rpm">
         <DialGauge
-          :value="telemetry.engine.rpm"
+          :value="telemetry.engine.audibleRpm"
           :max="rpmScale"
           :step="1000"
           :redline="activeProfile.engine.softLimitRpm"
@@ -376,7 +376,7 @@ const SPEED_STEP_KMH = 20
       </div>
 
       <div class="cell rpm">
-        <div class="value numeric">{{ Math.round(telemetry.engine.rpm) }}</div>
+        <div class="value numeric">{{ Math.round(telemetry.engine.audibleRpm) }}</div>
         <div class="unit">tr/min</div>
         <div class="gauge">
           <div
@@ -431,7 +431,7 @@ const SPEED_STEP_KMH = 20
         <span class="sr-only">Quitter le plein écran</span>
       </button>
       <div class="immersive-group">
-        <button :class="{ 'is-active': audioOn }" @click="toggleAudio()">
+        <button :class="{ 'is-active': audioOn }" :disabled="!isRunning" @click="toggleAudio()">
           {{ audioLabel }}
         </button>
       </div>

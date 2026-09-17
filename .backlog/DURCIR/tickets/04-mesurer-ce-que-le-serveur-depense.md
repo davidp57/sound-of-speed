@@ -1,7 +1,5 @@
-# 04 — Mesurer ce que le serveur dépense
-
-**Statut :** 🔁 rouvert le 17 septembre 2026 — le relèvement fonctionne mais **ne se lit jamais** : la ligne part toutes les 24 h ou à l'arrêt du conteneur, or une pile redéployée plusieurs fois par jour n'atteint jamais 24 h, et le relèvement d'adieu meurt dans le journal du conteneur qu'on remplace. Constaté par David le 17 septembre : `docker logs` ne rend rien, et le conteneur servait la 0.2.88, publiée la veille
-une fois par jour ; il reste à tirer l’image et à lire une ligne du journal
+**Statut :** 🧑 attend David — le relevé est réparé et vérifié contre un
+serveur qui tourne ; reste à recoller la pile sur le NAS et à lire une ligne
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 
@@ -56,3 +54,43 @@ comme « rien à signaler ».
 
 Reste à tirer l'image sur le NAS, laisser rouler quelques jours, et relire une
 ligne. C'est ce que le premier critère attend.
+
+## Ce qui a été réparé, le 17 septembre 2026
+
+Le relevé fonctionnait ; **il ne se lisait jamais**. Trois causes qui se
+composent, et une seule n'aurait pas suffi :
+
+1. Il partait dans `console.log`, donc dans le journal du conteneur — qui
+   disparaît avec lui.
+2. Il battait toutes les vingt-quatre heures, et la pile est redéployée
+   plusieurs fois par jour : l'échéance n'était jamais atteinte.
+3. Le relevé d'adieu, censé rattraper le point 2, écrivait dans le journal du
+   conteneur qu'on était précisément en train de remplacer.
+
+**Le relevé s'écrit en base** (`expense_reports`, migration 0012), **bat à
+l'heure** plutôt qu'au jour, et **se lit dans la régie** — une section en bas de
+page, une ligne par période. La cadence se règle par `SPEED_RELEVE_MINUTES`,
+parce qu'elle dépend de la fréquence des redéploiements, que le code ne connaît
+pas. La ligne reste écrite au journal : elle est commode devant un conteneur qui
+tourne, elle ne porte simplement plus la mémoire.
+
+**Le relevé d'arrêt ne suffit pas, et il a fallu le mesurer pour le savoir.**
+L'essai local n'écrivait rien : sous Windows, Node n'appelle pas le gestionnaire
+de `SIGTERM`. En production le signal est réel, mais un conteneur tué sans
+ménagement n'en envoie pas davantage — c'est le relevé périodique qui tient la
+mémoire, pas celui d'adieu.
+
+### La vérification
+
+Contre un serveur qui tourne, cadence forcée à trois secondes : **cinq relevés
+écrits en base**, chacun couvrant 3,02 s — la période demandée, au centième —,
+avec les poids mesurés sur le disque : 5,0 Mio de banques en 4 dossiers, 208 Kio
+de base. Six tests tiennent la persistance, dont celui qui **ferme et rouvre la
+base** : c'est exactement le geste d'un conteneur qu'on remplace. Un septième
+tient la route de la régie — 200 pour qui administre, 404 pour qui ne le fait pas.
+
+### Ce qui reste, et qui appartient à David
+
+Tirer l'image sur le NAS, laisser rouler quelques jours, ouvrir la régie. Les
+quatre chiffres de production s'écriront ici à ce moment-là, et le ticket 05 s'en
+servira pour poser une borne qui ne soit pas inventée.

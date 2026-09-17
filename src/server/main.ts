@@ -18,7 +18,9 @@ import { administrateursDeLEnvironnement } from './administration'
 import { banquesAccordees, banquesRestreintes } from './banques'
 import {
   compteurDeDepense,
+  enregistrerLaDepense,
   formaterDepense,
+  type MotifDuReleve,
   poidsDesBanques,
   poidsDesComptes,
 } from './depense'
@@ -196,15 +198,17 @@ async function menageDeRetention(): Promise<void> {
  */
 const depense = compteurDeDepense()
 
-async function releveDeDepense(): Promise<void> {
+async function releveDeDepense(motif: MotifDuReleve = 'periodique'): Promise<void> {
   try {
-    console.log(
-      formaterDepense(
-        depense.releverEtRepartir(),
-        poidsDesBanques(echantillons),
-        await poidsDesComptes(base, fichierDeBase),
-      ),
-    )
+    const periode = depense.releverEtRepartir()
+    const banques = poidsDesBanques(echantillons)
+    const comptes = await poidsDesComptes(base, fichierDeBase)
+    // **La base d'abord, le journal ensuite.** Le journal du conteneur est
+    // commode quand on regarde un conteneur qui tourne, mais il part avec lui :
+    // c'est la base qui porte la mémoire, et une écriture qui échoue doit se
+    // voir plutôt que d'être couverte par une ligne affichée.
+    await enregistrerLaDepense(base, periode, banques, comptes, motif)
+    console.log(formaterDepense(periode, banques, comptes))
   } catch (erreur) {
     // Un relevé qui échoue ne doit pas emporter le ménage qui le suit.
     console.error(`relevé de dépense : ${String(erreur)}`)
@@ -216,8 +220,28 @@ await menageDeRetention()
 const UN_JOUR = 24 * 60 * 60 * 1000
 const minuteurDuMenage = setInterval(() => {
   void menageDeRetention()
-  void releveDeDepense()
 }, UN_JOUR)
+/**
+ * Le relevé bat à l'heure, pas au jour.
+ *
+ * Il partait avec le ménage, donc toutes les vingt-quatre heures. Un conteneur
+ * qu'on remplace plus souvent que ça n'atteignait jamais l'échéance, et le
+ * relevé d'adieu ne suffit pas : un conteneur tué sans ménagement n'en envoie
+ * pas, et sous Windows le gestionnaire de signal n'est même pas appelé. À
+ * l'heure, une pile redéployée trois fois par jour laisse quand même une
+ * trentaine de lignes derrière elle.
+ *
+ * `SPEED_RELEVE_MINUTES` la règle. Elle existe parce que la bonne cadence dépend
+ * de la fréquence des redéploiements, que le code ne connaît pas — et parce
+ * qu'un minuteur d'une heure ne se vérifie autrement qu'en attendant une heure.
+ */
+// `nombreOuRien` écarte déjà zéro, le négatif et ce qui n'est pas un nombre : ce
+// qui arrive ici est une durée utilisable, ou rien.
+const cadenceDuReleve = (nombreOuRien(process.env['SPEED_RELEVE_MINUTES']) ?? 60) * 60 * 1000
+const minuteurDuReleve = setInterval(() => {
+  void releveDeDepense()
+}, cadenceDuReleve)
+minuteurDuReleve.unref()
 // Le minuteur ne doit pas retenir le processus : un conteneur qu'on remplace
 // envoie son signal, et le serveur doit pouvoir rendre la main tout de suite.
 minuteurDuMenage.unref()
@@ -293,11 +317,12 @@ const serveur = serve(
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
     clearInterval(minuteurDuMenage)
+    clearInterval(minuteurDuReleve)
     // **Le relevé part avant la fermeture**, sinon un conteneur qu'on remplace
     // emporte ses compteurs sans rien dire. Une pile qu'on redéploie plus
     // souvent que toutes les vingt-quatre heures ne montrerait alors **jamais**
     // une ligne, et le silence se lirait comme « rien à signaler ».
-    void releveDeDepense().finally(() => {
+    void releveDeDepense('arret').finally(() => {
       serveur.close(() => {
         fermer()
         process.exit(0)

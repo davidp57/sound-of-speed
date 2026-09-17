@@ -158,6 +158,27 @@ export function chargerLaTrace(): Promise<Rendu<LigneDeTrace[]>> {
 }
 
 /**
+ * Un relevé de dépense, tel que le serveur le rend.
+ *
+ * Les bornes sont en **millisecondes** et non en texte : une période se lit par
+ * sa durée autant que par sa date, et une soustraction vaut mieux que deux
+ * analyses de chaîne.
+ */
+export interface ReleveDeDepense {
+  depuis: number
+  jusqua: number
+  echantillons: { octets: number; demandes: number }
+  analyse: { millisecondes: number; traces: number }
+  banques: { octets: number; banques: number }
+  base: { octets: number }
+  motif: 'periodique' | 'arret'
+}
+
+export function chargerLaDepense(): Promise<Rendu<ReleveDeDepense[]>> {
+  return demander<ReleveDeDepense[]>('/api/regie/depense')
+}
+
+/**
  * Un geste qui change quelque chose.
  *
  * **Rend ce que le serveur a répondu**, et pas seulement qu'il a répondu. Les

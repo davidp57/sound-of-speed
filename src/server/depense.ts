@@ -21,10 +21,10 @@ import { statSync } from 'node:fs'
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { sql } from 'drizzle-orm'
+import { desc, sql } from 'drizzle-orm'
 
 import type { Base } from './base/base'
-import { deposits } from './base/schema'
+import { deposits, expenseReports } from './base/schema'
 
 /** Ce qu'une période a coûté. Des différences, pas des totaux depuis toujours. */
 export interface Depense {
@@ -179,4 +179,75 @@ function poidsDuDossier(chemin: string): number {
     octets += entree.isDirectory() ? poidsDuDossier(dedans) : tailleDe(dedans)
   }
   return octets
+}
+
+/**
+ * Un relevé écrit en base, pour qu'il survive au conteneur.
+ *
+ * Le journal du conteneur était le seul endroit où la ligne partait, et il
+ * disparaît avec lui. Le 17 septembre 2026, David a constaté que `docker logs`
+ * ne rendait rien : la pile est redéployée plusieurs fois par jour, donc les
+ * vingt-quatre heures ne sont jamais atteintes, et le relevé d'adieu meurt dans
+ * le journal du conteneur qu'on remplace. La ligne reste écrite au journal — elle
+ * est commode quand on regarde un conteneur qui tourne — mais ce n'est plus elle
+ * qui porte la mémoire.
+ */
+export type MotifDuReleve = 'periodique' | 'arret'
+
+export interface ReleveEnregistre {
+  /** Bornes de la période, en millisecondes. */
+  depuis: number
+  jusqua: number
+  echantillons: { octets: number; demandes: number }
+  analyse: { millisecondes: number; traces: number }
+  banques: { octets: number; banques: number }
+  base: { octets: number }
+  motif: MotifDuReleve
+}
+
+export async function enregistrerLaDepense(
+  base: Base,
+  depense: Depense,
+  banques: { octets: number; banques: number },
+  comptes: PoidsDesComptes,
+  motif: MotifDuReleve,
+  maintenant = Date.now(),
+): Promise<void> {
+  await base.insert(expenseReports).values({
+    id: crypto.randomUUID(),
+    since: depense.depuis,
+    until: maintenant,
+    sampleBytes: depense.echantillons.octets,
+    sampleRequests: depense.echantillons.demandes,
+    analysisMs: Math.round(depense.analyse.millisecondes),
+    analysisTraces: depense.analyse.traces,
+    bankBytes: banques.octets,
+    bankCount: banques.banques,
+    databaseBytes: comptes.fichier,
+    reason: motif,
+  })
+}
+
+/**
+ * Les derniers relevés, le plus récent en tête.
+ *
+ * Borné par défaut : on lit une tendance sur quelques jours, pas l'histoire du
+ * serveur. Une ligne par heure fait vingt-quatre lignes par jour.
+ */
+export async function lireLesDepenses(base: Base, limite = 72): Promise<ReleveEnregistre[]> {
+  const lignes = await base
+    .select()
+    .from(expenseReports)
+    .orderBy(desc(expenseReports.until))
+    .limit(limite)
+
+  return lignes.map((l) => ({
+    depuis: l.since,
+    jusqua: l.until,
+    echantillons: { octets: l.sampleBytes, demandes: l.sampleRequests },
+    analyse: { millisecondes: l.analysisMs, traces: l.analysisTraces },
+    banques: { octets: l.bankBytes, banques: l.bankCount },
+    base: { octets: l.databaseBytes },
+    motif: l.reason === 'arret' ? 'arret' : 'periodique',
+  }))
 }

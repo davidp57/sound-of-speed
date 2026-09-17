@@ -42,6 +42,7 @@ import { appliquerLaRegle, DELAIS_PAR_DEFAUT, verdictDuCompte, type Delais } fro
 import { droitsDuCompte, ROLES_OFFERTS_PAR_DEFAUT, rolesDe } from './roles'
 import { nomDuFournisseur } from './tiers'
 import { listerSessions } from './sessions'
+import { lireLesDepenses } from './depense'
 import { inscrire, inscrireUneConsultation, lireLaTrace } from './trace'
 
 /** Ce que la garde d'entrée range pour les routes qui suivent. */
@@ -661,6 +662,18 @@ export function creerRegie(options: OptionsDeLaRegie): RegieHono {
   /** Tout ce que la régie a fait, la plus récente en haut. */
   regie.get('/trace', async (c) =>
     c.json(await lireLaTrace(options.base), 200, { 'Cache-Control': 'no-store' }),
+  )
+
+  /**
+   * Ce que le serveur dépense, période par période, la plus récente en haut.
+   *
+   * Cette route existe parce que le journal du conteneur ne se lit pas : il part
+   * avec le conteneur, et la pile est redéployée plusieurs fois par jour. Les
+   * chiffres qui servent à poser une borne doivent survivre à un redéploiement,
+   * sinon la borne s'invente.
+   */
+  regie.get('/depense', async (c) =>
+    c.json(await lireLesDepenses(options.base), 200, { 'Cache-Control': 'no-store' }),
   )
 
   regie.get('/comptes/:compte', async (c) => {

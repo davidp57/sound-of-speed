@@ -724,3 +724,67 @@ describe('clackAmplitude', () => {
     expect(clackAmplitude(profil, true)).toBeCloseTo(0.2, 6)
   })
 })
+
+/**
+ * Le repos, et la règle que David a donnée après la sortie du 16 septembre
+ * 2026 : « on ne doit jamais allumer le son en mode P ».
+ *
+ * Elle vit ici plutôt que dans l'assemblage parce que c'est le seul point par
+ * lequel toutes les voies passent. Le défaut trouvé était ailleurs — un
+ * changement de profil au repos rebranchait l'horloge du fil audio —, mais le
+ * corriger là-bas ne tient que le chemin qu'on connaît : le prochain chemin
+ * ajouté rouvrirait la porte sans que rien ne rougisse.
+ */
+describe('computeMix — au repos, rien ne sonne', () => {
+  const chargé = state({ rpm: 3000, effort: 1, load: 1 })
+
+  it('rend tous les gains nuls, quel que soit le régime', () => {
+    for (const rpm of [800, 1500, 3000, 6000]) {
+      const mix = computeMix(profile, state({ rpm }), undefined, false)
+      for (const couche of mix.layers) expect(couche.gain).toBe(0)
+    }
+  })
+
+  it('efface aussi les quatre poids de famille', () => {
+    const mix = computeMix(profile, chargé, undefined, false)
+
+    expect(mix.onWeight).toBe(0)
+    expect(mix.offWeight).toBe(0)
+    expect(mix.idleWeight).toBe(0)
+    expect(mix.limiterWeight).toBe(0)
+  })
+
+  it('tient au ralenti, où le son est le plus tenace', () => {
+    const ralenti = state({ rpm: profile.engine.idleRpm, idling: true, effort: 0, load: 0 })
+
+    expect(computeMix(profile, ralenti).layers.some((l) => l.gain > 0)).toBe(true)
+    expect(computeMix(profile, ralenti, undefined, false).layers.every((l) => l.gain === 0)).toBe(
+      true,
+    )
+  })
+
+  it('tient pendant un passage de rapport, et sous le rupteur', () => {
+    const limité = state({ rpm: profile.engine.redlineRpm, limiterActive: true, effort: 1 })
+    const passage = { isShifting: true, progress: 0.5 }
+
+    for (const mix of [
+      computeMix(profile, chargé, passage, false),
+      computeMix(profile, limité, passage, false),
+    ]) {
+      for (const couche of mix.layers) expect(couche.gain).toBe(0)
+    }
+  })
+
+  it('garde les couches et leur hauteur : c’est le niveau qui tombe, pas le graphe', () => {
+    const marche = computeMix(profile, chargé)
+    const repos = computeMix(profile, chargé, undefined, false)
+
+    expect(repos.layers.map((l) => l.key)).toEqual(marche.layers.map((l) => l.key))
+    expect(repos.layers.map((l) => l.rate)).toEqual(marche.layers.map((l) => l.rate))
+  })
+
+  it('le son repart dès qu’on remet en marche', () => {
+    expect(computeMix(profile, chargé, undefined, true).layers.some((l) => l.gain > 0)).toBe(true)
+    expect(computeMix(profile, chargé).layers.some((l) => l.gain > 0)).toBe(true)
+  })
+})

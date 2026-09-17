@@ -8,6 +8,31 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le relevé de dépense ne se lisait jamais.** Il partait au journal du
+  conteneur toutes les vingt-quatre heures, ou à l'arrêt. Une pile redéployée
+  plusieurs fois par jour n'atteint jamais vingt-quatre heures, et la ligne
+  d'adieu meurt dans le journal du conteneur qu'on remplace — constaté par David
+  le 17 septembre 2026, `docker logs` ne rendait rien. Trois changements : le
+  relevé s'écrit **en base**, où il survit au redéploiement ; il bat **à l'heure**
+  plutôt qu'au jour, réglable par `SPEED_RELEVE_MINUTES` ; et il **se lit dans la
+  régie**, en bas de page, sans avoir à ouvrir un terminal. Vérifié contre un
+  serveur qui tourne : cinq relevés écrits, chacun couvrant exactement sa
+  période. La ligne reste au journal, elle ne porte simplement plus la mémoire.
+
+- **Le son repartait quand on changeait de profil au parking.** « On ne doit
+  jamais allumer le son en mode P » : la règle est de David, après la sortie du
+  16 septembre 2026. Deux gardes la tiennent, parce qu'une seule ne tenait que le
+  chemin connu. La cadence d'abord : « P » détachait bien l'horloge du fil audio,
+  mais ne l'arrêtait pas, et le rechargement des couches la rebranchait sans
+  demander si l'application était en marche — le ralenti se remettait à jouer
+  devant un écran qui affichait « P ». Le mixage ensuite : au repos il rend des
+  gains nuls, quelle que soit la voie empruntée. Mesuré au volume coupé, sur le
+  signal lui-même : avant, le niveau vivait au repos après un changement de
+  profil, huit relevés tous différents ; après, le pic est nul sur six relevés, et
+  aucune mesure n'est même prise en trois secondes. Le moteur simulé ne démarre
+  plus non plus en changeant d'origine au repos, et le bouton « Activer le son »
+  est grisé au parking.
+
 - **Dans la régie, un droit venu de la pile se présentait comme un interrupteur.**
   Les trois rôles sont offerts à tout le monde par défaut, et une banque peut être
   accordée par `SPEED_BANQUES_ACCORDEES` : le bouton paraissait pressé, le clic
@@ -20,6 +45,13 @@ Toutes les évolutions notables du projet. Format
   qui l'ont déclenché. Relevé par David en essayant la régie sur le serveur.
 
 ### Ajouté
+
+- **Le compte-tours frémit au ralenti**, comme celui d'une vraie voiture. Le
+  tremblement du régime vivait dans une grandeur à part, qui ne servait qu'au son :
+  le cadran affichait 800 pile quoi qu'il arrive. L'aiguille **et** le nombre
+  suivent maintenant le régime entendu — arbitrage de David, le 17 septembre 2026.
+  La boîte, ses seuils de passage et la télémétrie continuent de travailler sur le
+  régime net : quelques dizaines de tours suffiraient à les faire osciller.
 
 - **Chaque dépôt accepté dit où en est la place du compte** : trois en-têtes sur
   la réponse — l'état (`libre`, `bientot` dès les trois quarts du plafond), la

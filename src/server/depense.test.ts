@@ -15,7 +15,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ouvrirBase, type Base } from './base/base'
 import {
   compteurDeDepense,
+  enregistrerLaDepense,
   formaterDepense,
+  lireLesDepenses,
   poidsDesBanques,
   poidsDesComptes,
 } from './depense'
@@ -133,5 +135,93 @@ describe('la ligne du journal', () => {
     // une panne alors que c'est le cas normal d'une journée sans trajet.
     expect(ligne).toContain('aucune trace')
     expect(ligne).not.toContain('NaN')
+  })
+})
+
+/**
+ * Le relevé écrit en base.
+ *
+ * C'est ce qui manquait : la ligne partait au journal du conteneur, et le
+ * conteneur est remplacé plusieurs fois par jour. Ce que ces tests tiennent,
+ * c'est qu'un relevé survive à ce remplacement, et qu'il reste une **différence**
+ * une fois écrit.
+ */
+describe('le relevé en base', () => {
+  const banques = { octets: 40 * 1024 * 1024, banques: 3 }
+  const comptes = { fichier: 2 * 1024 * 1024, parCompte: [] }
+
+  it('garde ce que la période a coûté, et ses deux bornes', async () => {
+    const compteur = compteurDeDepense(1000)
+    compteur.echantillonServi(700)
+    compteur.traceAnalysee(120)
+
+    await enregistrerLaDepense(base, compteur.releverEtRepartir(5000), banques, comptes, 'periodique', 5000)
+
+    const [releve] = await lireLesDepenses(base)
+    expect(releve).toEqual({
+      depuis: 1000,
+      jusqua: 5000,
+      echantillons: { octets: 700, demandes: 1 },
+      analyse: { millisecondes: 120, traces: 1 },
+      banques: { octets: 40 * 1024 * 1024, banques: 3 },
+      base: { octets: 2 * 1024 * 1024 },
+      motif: 'periodique',
+    })
+  })
+
+  it('rend le plus récent en tête', async () => {
+    const compteur = compteurDeDepense(0)
+    for (const jusqua of [1000, 2000, 3000]) {
+      compteur.echantillonServi(jusqua)
+      await enregistrerLaDepense(base, compteur.releverEtRepartir(jusqua), banques, comptes, 'periodique', jusqua)
+    }
+
+    expect((await lireLesDepenses(base)).map((r) => r.jusqua)).toEqual([3000, 2000, 1000])
+  })
+
+  it('distingue le relevé d’arrêt du relevé périodique', async () => {
+    const compteur = compteurDeDepense(0)
+    await enregistrerLaDepense(base, compteur.releverEtRepartir(1000), banques, comptes, 'arret', 1000)
+
+    expect((await lireLesDepenses(base))[0]?.motif).toBe('arret')
+  })
+
+  it('écrit des différences : deux périodes ne se cumulent pas', async () => {
+    const compteur = compteurDeDepense(0)
+    compteur.echantillonServi(1000)
+    await enregistrerLaDepense(base, compteur.releverEtRepartir(1000), banques, comptes, 'periodique', 1000)
+    compteur.echantillonServi(300)
+    await enregistrerLaDepense(base, compteur.releverEtRepartir(2000), banques, comptes, 'periodique', 2000)
+
+    const releves = await lireLesDepenses(base)
+    expect(releves.map((r) => r.echantillons.octets)).toEqual([300, 1000])
+    // La seconde période part où la première s'arrête : aucune fenêtre perdue.
+    expect(releves[0]?.depuis).toBe(releves[1]?.jusqua)
+  })
+
+  it('borne ce qu’elle rend, pour lire une tendance et non une histoire', async () => {
+    const compteur = compteurDeDepense(0)
+    for (let i = 1; i <= 5; i += 1) {
+      await enregistrerLaDepense(base, compteur.releverEtRepartir(i * 1000), banques, comptes, 'periodique', i * 1000)
+    }
+
+    expect(await lireLesDepenses(base, 2)).toHaveLength(2)
+  })
+
+  it('survit à la fermeture de la base, qui est tout l’objet', async () => {
+    const compteur = compteurDeDepense(0)
+    compteur.echantillonServi(4242)
+    await enregistrerLaDepense(base, compteur.releverEtRepartir(1000), banques, comptes, 'arret', 1000)
+
+    // Ce que fait un conteneur qu'on remplace : il ferme, un autre rouvre.
+    fermer()
+    const rouverte = await ouvrirBase({
+      fichier: join(racine, 'speed.db'),
+      migrations: 'src/server/base/migrations',
+    })
+    base = rouverte.base
+    fermer = rouverte.fermer
+
+    expect((await lireLesDepenses(base))[0]?.echantillons.octets).toBe(4242)
   })
 })
