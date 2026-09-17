@@ -43,6 +43,7 @@ import {
   profileList,
   renameActive,
   resetActive,
+  reprendreLesProfilsDuServeur,
   restoreFactoryProfiles,
   selectProfile,
   selectedProfileId,
@@ -366,6 +367,42 @@ function onRestore(): void {
       : 'Tous les profils d’usine sont déjà présents.'
 }
 
+/**
+ * Reprendre les profils du serveur, qui efface ceux de l'appareil.
+ *
+ * **En deux temps**, comme la réinitialisation juste au-dessus : le geste est
+ * sans retour, et le second appui est ce qui distingue « je voulais » de « j'ai
+ * touché ». Le premier appui dit aussi **combien** de profils vont partir, parce
+ * qu'un nombre fait hésiter là où un avertissement général ne fait rien.
+ */
+const reprisePending = ref(false)
+const repriseEnCours = ref(false)
+
+async function onReprendre(): Promise<void> {
+  if (!reprisePending.value) {
+    reprisePending.value = true
+    return
+  }
+  reprisePending.value = false
+  repriseEnCours.value = true
+  try {
+    const bilan = await reprendreLesProfilsDuServeur()
+    if (!bilan.fait) {
+      restoreNote.value = bilan.motif
+      return
+    }
+    const ecartes =
+      bilan.ecartes > 0
+        ? ` ${bilan.ecartes} doublon${bilan.ecartes > 1 ? 's' : ''} du dossier écarté${bilan.ecartes > 1 ? 's' : ''}.`
+        : ''
+    const completes =
+      bilan.completes > 0 ? ` ${bilan.completes} profil d’usine réintroduit${bilan.completes > 1 ? 's' : ''}.` : ''
+    restoreNote.value = `${bilan.repris} profil${bilan.repris > 1 ? 's' : ''} repris du serveur, ${bilan.effaces} remplacé${bilan.effaces > 1 ? 's' : ''}.${completes}${ecartes}`
+  } finally {
+    repriseEnCours.value = false
+  }
+}
+
 function onExport(): void {
   const blob = new Blob([toFile(profile.value)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
@@ -632,6 +669,20 @@ function impliedCylinders(index: number): number | null {
         </button>
         <button :title="'Réintroduit les profils livrés avec l’application'" @click="onRestore()">
           Profils d'usine
+        </button>
+        <button
+          :class="{ 'is-warn': reprisePending }"
+          :disabled="repriseEnCours"
+          :title="'Efface les profils de cet appareil et prend ceux du serveur à la place'"
+          @click="onReprendre()"
+        >
+          {{
+            repriseEnCours
+              ? 'Reprise…'
+              : reprisePending
+                ? `Confirmer : remplacer les ${profileList.length} profils`
+                : 'Reprendre les profils du serveur'
+          }}
         </button>
         <button :class="{ 'is-active': !!shareLink }" @click="onShare()">Partager…</button>
         <button @click="onExport()">Exporter</button>
@@ -1142,6 +1193,13 @@ function impliedCylinders(index: number): number | null {
 </template>
 
 <style scoped>
+/* Un geste sans retour se signale, et seulement quand il est armé : coloré en
+   permanence, il crierait au loup à chaque ouverture de l'écran. */
+.is-warn {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
 /*
  * La bande de défilement était déclarée ici ; elle vit maintenant dans
  * `style.css` et se pose sur tous les écrans qui défilent, en voiture et sur

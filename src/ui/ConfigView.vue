@@ -15,7 +15,6 @@ import {
   selectProfile,
   selectedProfileId,
   toggleFavorite,
-  addProfile,
   backgroundAudio,
   setBackgroundAudio,
   offlineStatus,
@@ -30,6 +29,7 @@ import {
   library,
   libraryLoading,
   refreshLibrary,
+  reprendreUnProfil,
   refreshBanks,
   forgetUnusedBanks,
   calibrationOverrides,
@@ -386,7 +386,7 @@ function megabytes(bytes: number): string {
           <li v-for="entry in library" :key="entry.file">
             <span>{{ entry.profile.name }}</span>
             <span class="muted">{{ entry.file }}</span>
-            <button @click="addProfile(entry.profile)">Ajouter</button>
+            <button @click="reprendreUnProfil(entry.profile)">Reprendre</button>
           </li>
         </ul>
       </div>

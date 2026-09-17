@@ -76,6 +76,7 @@ import {
 } from './core/preset/gearbox-store'
 import { assembleProfile, partsFor } from './core/preset/assemble'
 import { realCarFromProfile, type RealCar } from './core/preset/real-car'
+import { reprendreDuServeur } from './core/preset/reprise-serveur'
 import { splitProfiles } from './core/preset/split'
 import {
   customEngines,
@@ -3662,6 +3663,99 @@ export async function refreshLibrary(): Promise<void> {
   }
 }
 
+/** Ce qu'une reprise a fait, pour que l'écran le dise au lieu de le taire. */
+export interface ResultatDeReprise {
+  fait: boolean
+  /** Pourquoi rien n'a été fait, quand rien n'a été fait. */
+  motif: string
+  /** Profils venus du serveur. */
+  repris: number
+  /** Profils d'usine réintroduits faute d'équivalent sur le serveur. */
+  completes: number
+  /** Entrées du serveur écartées parce qu'une autre portait leur identifiant. */
+  ecartes: number
+  /** Profils que l'appareil portait avant, et qui ont été remplacés. */
+  effaces: number
+}
+
+/**
+ * Reprend les profils du serveur, en remplaçant ceux de l'appareil.
+ *
+ * Demandé par David le 17 septembre 2026 : « un bouton unique qui efface tous
+ * les profils locaux et récupère ceux du serveur à la place ». Le serveur fait
+ * foi, donc rien à arbitrer et rien à comparer — c'est ce qui rend le geste
+ * lisible d'un coup d'œil.
+ *
+ * **Rien ne s'efface tant que le serveur n'a rien rendu.** Hors réseau, sans
+ * compte, ou sur un dossier vide, la bibliothèque rend une liste vide : ce n'est
+ * pas une instruction d'effacer. C'est la seule garde qui compte ici, l'effacement
+ * étant sans retour.
+ *
+ * **Les moteurs et les boîtes restent.** Supprimer un profil ne les a jamais
+ * emportés, et le rattachement retrouve celui qui correspond plutôt que d'en
+ * créer un second : reprendre deux fois de suite ne fait pas grossir la liste.
+ *
+ * **La remonte automatique est suspendue le temps du geste**, par le même drapeau
+ * que le rapatriement du lancement : sans lui, reprendre du serveur ferait
+ * aussitôt redeposer sur le serveur ce qu'on vient d'en tirer.
+ */
+export async function reprendreLesProfilsDuServeur(): Promise<ResultatDeReprise> {
+  const rien = { fait: false, repris: 0, completes: 0, ecartes: 0, effaces: 0 }
+  libraryLoading.value = true
+  try {
+    const entrees = await fetchLibrary()
+    library.value = entrees
+    if (entrees.length === 0) {
+      return {
+        ...rien,
+        motif:
+          'Le serveur ne rend aucun profil. Rien n’a été effacé — une bibliothèque vide ne veut pas dire « efface tout ».',
+      }
+    }
+
+    const usine = missingFactoryProfiles(
+      [],
+      banks.value.map((banque) => banque.name),
+    )
+    const reprise = reprendreDuServeur(
+      entrees.map((entree) => entree.profile),
+      usine,
+      engines.value,
+      gearboxes.value,
+      newId,
+    )
+
+    const effaces = profiles.value.length
+    const choisi = selectedId.value
+    pendantLeRapatriement = true
+    try {
+      profiles.value = reprise.profiles
+      engines.value = reprise.engines
+      gearboxes.value = reprise.gearboxes
+      // On garde le profil actif s'il a survécu : changer de son sous les pieds
+      // de qui vient d'appuyer sur un bouton de réglage serait une surprise.
+      selectedId.value = reprise.profiles.some((profil) => profil.id === choisi)
+        ? choisi
+        : (reprise.profiles[0]?.id ?? '')
+    } finally {
+      pendantLeRapatriement = false
+    }
+
+    return {
+      fait: true,
+      motif: '',
+      repris: reprise.repris,
+      completes: reprise.completes,
+      ecartes: reprise.ecartes,
+      effaces,
+    }
+  } catch (erreur) {
+    return { ...rien, motif: `Le serveur n’a pas répondu : ${String(erreur)}` }
+  } finally {
+    libraryLoading.value = false
+  }
+}
+
 /**
  * Importe un profil reçu par lien, s'il y en a un dans l'adresse.
  * Retourne son nom, pour pouvoir le dire à l'utilisateur.
@@ -3688,6 +3782,30 @@ export function addProfile(profile: Profile): void {
   engines.value = scinde.engines
   gearboxes.value = scinde.gearboxes
   selectedId.value = profile.id
+}
+
+/**
+ * Reprend **un** profil de la bibliothèque, sans en fabriquer un second.
+ *
+ * `addProfile` reste ce qu'il est — un fichier importé ou un profil reçu par lien
+ * vient de quelqu'un d'autre et mérite un identifiant neuf. Un profil de la
+ * bibliothèque, lui, est le **sien** qui redescend : il remplace sa version
+ * locale, exactement comme le rapatriement du lancement le fait déjà.
+ */
+export function reprendreUnProfil(profile: Profile): void {
+  const connu = profiles.value.some((candidat) => candidat.id === profile.id)
+  if (!connu) {
+    addProfile(profile)
+    return
+  }
+  const scinde = splitProfiles([profile], engines.value, gearboxes.value, newId)
+  const repris = scinde.profiles[0] ?? profile
+  profiles.value = profiles.value.map((candidat) =>
+    candidat.id === repris.id ? repris : candidat,
+  )
+  engines.value = scinde.engines
+  gearboxes.value = scinde.gearboxes
+  selectedId.value = repris.id
 }
 
 export function restoreFactoryProfiles(): number {

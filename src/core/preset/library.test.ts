@@ -77,3 +77,57 @@ describe('la bibliothèque du serveur', () => {
     expect(entrees[0]?.file).toBe('bon.json')
   })
 })
+
+/**
+ * L'identifiant, et pourquoi il ne doit pas changer à la lecture.
+ *
+ * Ce dossier est celui du compte de qui lit : ces profils sont les siens, qui
+ * redescendent. Leur donner un identifiant neuf à chaque lecture rendait tout
+ * rapprochement impossible — reprendre un profil qu'on avait déjà en fabriquait
+ * un second, portant le même nom et rien pour les distinguer à l'écran. Mesuré
+ * dans l'application le 17 septembre 2026, avant correction.
+ */
+describe('la bibliothèque et les identifiants', () => {
+  it('rend chaque profil avec l’identifiant de son fichier', async () => {
+    const profil = { ...createRoadProfile(), id: 'celui-du-bureau' }
+    const { impl } = reseau({
+      '/profiles/': JSON.stringify([{ name: 'bureau.json', type: 'file' }]),
+      '/profiles/bureau.json': toFile(profil),
+    })
+
+    const entrees = await fetchLibrary(impl)
+
+    expect(entrees).toHaveLength(1)
+    expect(entrees[0]?.profile.id).toBe('celui-du-bureau')
+  })
+
+  it('lire deux fois rend deux fois le même identifiant', async () => {
+    // C'est la propriété qui compte : sans elle, chaque relecture de la
+    // bibliothèque proposait des profils « neufs » qui étaient les mêmes.
+    const profil = { ...createRoadProfile(), id: 'stable' }
+    const { impl } = reseau({
+      '/profiles/': JSON.stringify([{ name: 'p.json', type: 'file' }]),
+      '/profiles/p.json': toFile(profil),
+    })
+
+    const une = await fetchLibrary(impl)
+    const deux = await fetchLibrary(impl)
+
+    expect(une[0]?.profile.id).toBe(deux[0]?.profile.id)
+  })
+
+  it('donne un identifiant neuf à un fichier qui n’en porte pas', async () => {
+    // Un export ancien, ou un fichier déposé à la main : il lui en faut un, et
+    // il ne doit surtout pas être vide.
+    const sansId = JSON.parse(toFile(createRoadProfile())) as Record<string, unknown>
+    delete sansId['id']
+    const { impl } = reseau({
+      '/profiles/': JSON.stringify([{ name: 'vieux.json', type: 'file' }]),
+      '/profiles/vieux.json': JSON.stringify(sansId),
+    })
+
+    const entrees = await fetchLibrary(impl)
+
+    expect(entrees[0]?.profile.id).toBeTruthy()
+  })
+})
