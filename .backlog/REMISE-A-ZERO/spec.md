@@ -96,3 +96,47 @@ zone à part, avec une confirmation qui énumère ce qui va disparaître.*
 | | Sujet |
 |---|---|
 | [01](tickets/01-tout-reinitialiser.md) | Le bouton, la confirmation, et ce qu'il efface |
+
+## Ce que David a précisé le 17 septembre 2026
+
+Le lot était écrit autour d'**un** bouton qui remet tout. David en demande
+**deux**, plus ciblés, et pour une raison de période :
+
+> « Pour le moment on est en période de développement et de test. Je souhaite
+> que, en permanence, les profils dont je dispose dans la voiture soient les
+> profils d'usine (ajustés par l'étalonnage de ma voiture bien sûr). Je pense
+> que ça serait bien d'avoir un bouton qui permettrait de faire ça simplement :
+> on clique, ça efface tous les profils locaux et ça les remplace par les
+> profils du serveur. Et d'ailleurs, comme on a une couche de paramètres […] il
+> faudrait un bouton pour remettre tous les paramètres à leur valeur par
+> défaut. »
+
+**Sa lecture des couches est juste**, vérifiée dans le code : il y en a trois —
+le profil, l'étalonnage (`core/calibration/onboard.ts`), et les ajustements du
+conducteur, qui pèsent trois nombres et se rangent à côté du profil sans y
+entrer (MENAGE-UI, ticket 06). Vider la couche d'ajustements est donc un geste
+propre, qui ne détruit aucun réglage de profil.
+
+**Mais il y a un piège, et c'est lui qui a motivé la demande.** « Les profils
+d'usine » et « les profils du serveur » ne sont pas la même chose :
+
+- les **profils d'usine** vivent dans le code (`knownFactoryProfiles()`) et
+  suivent chaque livraison ;
+- les **profils du serveur** sont des copies déposées, qui figent l'état du jour
+  où elles ont été écrites.
+
+Relevé le 17 septembre sur son serveur : `route.json` porte encore
+`clack: 0.5`, la valeur d'**avant** la baisse de 30 % demandée le 11 septembre.
+La copie serveur est donc périmée de six jours, et c'est exactement ce qui l'a
+privé d'une correction qu'il avait demandée. Un bouton qui recopie le serveur
+vers la voiture reproduirait le problème au lieu de le résoudre.
+
+**Ce qu'il faut trancher** : le bouton reprend-il les profils **livrés par
+l'application** — ce qui colle à son besoin, « suivre ce qui sort de l'atelier
+en période de test » — ou ceux du serveur ? Et que deviennent alors les profils
+qu'il a réellement fabriqués et déposés ?
+
+**Un troisième réglage échappe aux deux boutons**, et il faut le dire : les
+réglages fins de l'écran Avancé écrivent **dans le profil**, pas dans une
+couche. Les remettre à zéro, c'est reprendre le profil — donc le premier bouton.
+Seuls les curseurs globaux de l'écran Paramètres relèvent du second.

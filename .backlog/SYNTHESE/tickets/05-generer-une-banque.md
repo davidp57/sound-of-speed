@@ -1,6 +1,6 @@
 # 05 — Générer une banque avec engine-sim, ici, et la rejouer là-bas
 
-**Statut :** 🧑 attend David — l'outil est livré et mesuré, le timbre reste à
+**Statut :** ✅ validé en roulant le 16 septembre 2026 — David a écouté les trois banques produites au banc (`gm-ls`, `gm-ls-long-header`, `subaru-ej25`, livrées par `e63d4ab` le 14 septembre) : « ils sonnent bien, je trouve ». Un défaut reste, les fréquences parasites des deux V8 à moyen régime — ticket [ESSAI-16/11](../../ESSAI-16/tickets/11-frequences-parasites-sur-les-v8.md)
 juger à l'oreille
 
 **Bloqué par :** aucun — n'attend pas le verdict du temps réel
