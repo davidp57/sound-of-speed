@@ -1,7 +1,9 @@
 # DURCIR — sécuriser le code et les données
 
-**Statut :** 🔄 en cours — cadre posé le 13 septembre 2026, découpé et attaqué le
-15 septembre. 11 tickets faits, 2 en attente de David, 1 restant.
+**Statut :** 🧑 attend David — cadre posé le 13 septembre 2026, découpé et
+attaqué le 15. **Tous les tickets sont livrés** ; il reste deux vérifications qui
+ne se font pas depuis un poste : le cache hors réseau en voiture (01) et la
+lecture du relevé de dépense une fois que le serveur a tourné (04).
 **Branche :** `feature/durcir`
 **Version visée :** avant la 1.0
 
@@ -13,7 +15,7 @@
 | 02 la banque restreinte | ✅ vérifié sur le serveur ; un défaut d'adresse trouvé en le vérifiant, corrigé à part |
 | 03 identifiants opaques | ✅ le renommage était fait le 14 septembre ; les étiquettes audio sont mesurées et propres, le reste ne paie pas |
 | 04 mesurer ce que le serveur dépense | 🧑 le serveur relève ses quatre chiffres tout seul, une ligne par jour ; reste à tirer l'image et à lire |
-| 05 borner le volume par compte | ⬜ attend les chiffres du 04 |
+| 05 borner le volume par compte | ✅ livré par REGIE/08 : le plafond se règle par compte |
 | 06 isolation entre comptes | ✅ dix routes, deux comptes ; l'isolation était juste |
 | 07 changer un compte de mains | ✅ trois cas manquaient, vus du compte cible |
 | 08 l'archive du compte | ✅ un nom déposé pouvait composer un chemin |
@@ -23,6 +25,13 @@
 | 12 le code de liaison | ✅ borne mesurée, un seul code vivant par compte |
 | 13 les données en clair | ✅ on ne chiffre pas, et le README dit pourquoi |
 | 14 offrir la source | ✅ c'était déjà en place |
+| 07 le serveur dit la place | ✅ trois en-têtes sur chaque dépôt, vérifiés contre un serveur qui tourne |
+| 08 la rotation fait de la place | ✅ le plus ancien part, l'épinglé reste, et le refus dit ce qui bloque |
+| 09 le bandeau et la télémétrie | ✅ l'application prévient aux trois quarts, et dit quand la rotation a mordu |
+
+Les trois derniers sont ceux que le cadre du ticket 06 a fait naître le
+15 septembre. Ils portent les mêmes numéros que trois autres, parce qu'ils ont
+été découpés en parallèle ; leurs noms de fichiers les distinguent.
 
 ## D'où vient ce lot
 

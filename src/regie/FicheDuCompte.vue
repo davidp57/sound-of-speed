@@ -484,7 +484,13 @@ async function basculerLeRole(role: string): Promise<void> {
           <span v-if="donnees.boites.length === 0" class="muet">—</span>
         </dd>
         <dt>Trajets</dt>
-        <dd>{{ donnees.trajets.map((trajet) => trajet.cle).join(', ') || '—' }}</dd>
+        <!--
+          L'heure locale, et non la clé : celle-ci porte le temps universel, et
+          la fiche annonçait un départ à 17 h pour un trajet commencé à 19 h.
+        -->
+        <dd>
+          {{ donnees.trajets.map((trajet) => dateLisible(trajet.enregistreLe)).join(', ') || '—' }}
+        </dd>
         <dt>Journal</dt>
         <dd class="muet">{{ donnees.journal.length }} tranches</dd>
         <dt>Relevés</dt>

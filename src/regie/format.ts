@@ -6,8 +6,18 @@
  * les écrire.
  */
 
-/** À la minute : on cherche « celui de tout à l'heure », pas la seconde. */
-export function dateLisible(iso: string): string {
+/**
+ * À la minute : on cherche « celui de tout à l'heure », pas la seconde.
+ *
+ * **En heure locale**, et c'est le point : les noms de tranches portent le temps
+ * universel, délibérément — une même tranche daterait sinon de deux heures
+ * différentes selon la machine qui la relit. Ce qui s'affiche, lui, doit être
+ * l'heure qu'il était.
+ *
+ * Accepte une date ISO ou un instant en millisecondes, les deux formes qui
+ * circulent dans la régie.
+ */
+export function dateLisible(iso: string | number): string {
   return new Date(iso).toLocaleString('fr-FR', {
     day: '2-digit',
     month: '2-digit',

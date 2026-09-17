@@ -1,7 +1,10 @@
 # ESSAI-16 — ce que la sortie du 16 septembre a montré
 
-**Statut :** 🔄 en cours — le rétrogradage forcé est corrigé et le curseur mort
-retiré ; les huit autres points sont à faire le 17 septembre 2026
+**Statut :** 🔄 en cours — 7 points sur 14 soldés le 17 septembre 2026 : le son
+ne repart plus au repos, le compte-tours frémit, le ralenti a retrouvé son
+tremblement, la régie donne l'heure locale, et le volume est mesuré — la mesure
+dit que la demande ne peut pas être satisfaite telle quelle, trois voies sont
+chiffrées et attendent David
 **Branches :** `fix/seuils-kickdown` (ticket 01, version 0.2.88),
 `fix/retirer-le-curseur-de-seuil` (ticket 05, version 0.2.89) ; le reste à ouvrir
 

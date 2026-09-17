@@ -234,8 +234,38 @@ qui ne ressemblent pas à « des fréquences ». Son élimination tient donc, à
 près que le relevé de charge du banc reste le moyen de le vérifier plutôt que de
 le supposer.
 
+### Une troisième piste, mesurée le 17 septembre au soir
+
+**Le son écrête, et pas qu'un peu.** Le [ticket 08](08-volume-plaque-contre-le-limiteur.md)
+demandait de mesurer la chaîne de sortie avant de toucher au volume maximal. Le
+relevé du banc, sur une accélération franche à 2 600 tr/min :
+
+| Volume | Rogné par le convertisseur | Distorsion |
+|---|---|---|
+| 0,5 | 0 % | — |
+| 0,7 (livré) | 1,1 % | −31 dB |
+| 1,0 | 9,3 % | −18 dB |
+
+L'écrêtage fabrique des harmoniques et de l'intermodulation, c'est-à-dire
+exactement **des fréquences qui n'existent dans aucun fichier**. Et il n'apparaît
+qu'**en charge** : pied levé, la crête reste sous la pleine échelle à tous les
+régimes. « Surtout à moyen régime », c'est aussi là que l'accélération franche se
+pratique.
+
+Ce qui rend la piste crédible pour expliquer l'écart voiture / PC : ce n'est pas
+le même volume. David pousse le curseur dans la voiture, pour couvrir le bruit de
+roulement ; sur son PC, il n'en a pas besoin. À 0,5 la chaîne est propre, à 1,0
+un échantillon sur onze est rogné.
+
+**Elle ne remplace pas la première**, elle s'y ajoute : le taux
+d'échantillonnage reste à relever, et les deux causes peuvent coexister.
+
 ### Ce qu'il faut pour avancer
 
-Le taux d'échantillonnage du contexte audio **dans la Tesla**, lu sur l'écran
-Télémétrie. C'est une valeur, elle est déjà affichée, et elle discrimine à elle
-seule la première piste.
+Deux choses, et aucune ne demande d'ouvrir une console :
+
+1. Le **taux d'échantillonnage** du contexte audio dans la Tesla, lu sur l'écran
+   Télémétrie. Une valeur, déjà affichée, qui discrimine la première piste.
+2. **Réécouter à volume réduit** — 0,5 au lieu du maximum — sur la même route.
+   Si les parasites disparaissent, c'est l'écrêtage, et le ticket 08 devient
+   prioritaire.
