@@ -2678,7 +2678,11 @@ function step(dt: number): void {
     synth.setTarget(engineState.audibleRpm, engineState.effort * shiftCut(profile, shift))
   } else if (isMuted.value) audio.mute()
   else {
-    audio.update(profile, engineState, shift)
+    // L'état de marche descend jusqu'au mixage : au repos, il rend des gains
+    // nuls. La cadence est déjà censée s'arrêter — voir `syncDriver` —, et c'est
+    // bien la ceinture en plus des bretelles : une voie qui ferait battre un
+    // tour au repos ne produirait toujours aucun son.
+    audio.update(profile, engineState, shift, isRunning.value)
   }
 
   // Le niveau de sortie change à chaque image ; le reste du statut ne bouge
@@ -2810,13 +2814,28 @@ loop.add(step)
  */
 function syncDriver(): void {
   if (manualTiming) return
+  // Au repos, aucune des deux cadences ne bat.
+  //
+  // Seule la boucle d'affichage consultait l'état de marche ; la branche du fil
+  // audio, elle, rebranchait son horloge sans rien demander. Or `stop()` ne
+  // coupe pas l'horloge du fil audio, il se contente de détacher ce qu'elle
+  // appelle : il suffisait donc qu'une voie quelconque rappelle cette fonction
+  // pour que tout reparte. Changer de profil en « P » le faisait — le
+  // rechargement des couches finit par `refreshAudioStatus`, qui appelle ici —,
+  // et le ralenti se remettait à jouer devant un écran qui affichait « P ».
+  // Relevé par David le 16 septembre 2026.
+  if (!isRunning.value) {
+    loop.stop()
+    audio.onClockTick = null
+    return
+  }
   const audioDriven = audio.status.clockRunning && audio.isReady
   if (audioDriven) {
     loop.stop()
     audio.onClockTick = step
   } else {
     audio.onClockTick = null
-    if (isRunning.value) loop.start()
+    loop.start()
   }
 }
 
@@ -2934,7 +2953,11 @@ async function applySoundOrigin(direct: boolean): Promise<void> {
     // produisent plus.
     audio.unload()
     refreshAudioStatus()
-    if (soundWanted) await setSynthEnabled(true)
+    // Au repos, le moteur simulé ne démarre pas non plus : changer d'origine
+    // depuis l'écran de configuration l'aurait fait chanter au parking. La
+    // banque, elle, n'a pas besoin de cette garde — ses gains passent par le
+    // mixage, qui rend zéro au repos.
+    if (soundWanted && isRunning.value) await setSynthEnabled(true)
     return
   }
 
@@ -3198,6 +3221,13 @@ function refreshAudioStatus(): void {
  * refusent d'ouvrir un contexte audio autrement, et l'échec est silencieux.
  */
 export async function activateAudio(): Promise<void> {
+  // Rien ne s'allume au repos, pas même sur un geste.
+  //
+  // `start()` met l'application en marche avant d'appeler ici, donc le
+  // démarrage passe ; ce qui ne passe plus, c'est le bouton « Activer le son »
+  // touché au parking. Il est grisé dans les deux écrans, et cette garde tient
+  // la règle si un troisième chemin apparaît.
+  if (!isRunning.value) return
   soundWanted = true
   // Un profil « généré en direct » n'a pas de banque à charger : c'est le moteur
   // simulé qu'on allume. « Généré à l'avance », lui, passe par ici comme

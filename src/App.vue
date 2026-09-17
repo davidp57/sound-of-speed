@@ -609,6 +609,7 @@ onBeforeUnmount(() => {
           :title="SOUND_TITLES[soundState]"
           :aria-label="SOUND_TITLES[soundState]"
           :aria-pressed="soundState === 'on'"
+          :disabled="!isRunning"
           @click="toggleSound()"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">

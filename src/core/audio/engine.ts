@@ -540,12 +540,13 @@ export class AudioEngine {
     profile: Profile,
     state: EngineState,
     shift?: { isShifting: boolean; progress: number },
+    running = true,
   ): void {
     const context = this.context
     if (!context || this.status.phase !== 'ready') return
 
     const now = context.currentTime
-    const mix = computeMix(profile, state, shift)
+    const mix = computeMix(profile, state, shift, running)
 
     for (const entry of mix.layers) {
       const node = this.layers.find((layer) => layer.key === entry.key)

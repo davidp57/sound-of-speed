@@ -112,9 +112,24 @@ export function computeMix(
   profile: Profile,
   state: EngineState,
   shift?: { isShifting: boolean; progress: number },
+  running = true,
 ): MixResult {
   const { mix } = profile
   const enabled = profile.layers.filter((layer) => layer.enabled)
+
+  // Au repos, aucune couche ne sonne.
+  //
+  // La règle est ici parce que c'est le seul point par lequel toutes les voies
+  // passent. Le défaut du 16 septembre 2026 était ailleurs — changer de profil
+  // en « P » rebranchait l'horloge du fil audio, et le ralenti repartait —, mais
+  // le corriger là-bas seul ne tient que le chemin qu'on connaît. David a donné
+  // une règle et non un cas : « on ne doit jamais allumer le son en mode P ».
+  //
+  // Un facteur plutôt qu'un retour anticipé : les couches gardent leur ordre et
+  // leur hauteur, et seul le niveau tombe. Le moteur audio applique des valeurs,
+  // il ne démonte pas son graphe — lui rendre une liste vide lui ferait perdre
+  // les vitesses de lecture, et le son repartirait sur un saut de hauteur.
+  const silence = running ? 1 : 0
 
   // Charge : fondu à puissance constante entre pied levé et pleine charge.
   //
@@ -206,6 +221,7 @@ export function computeMix(
       const detuned = wanted * detune(family.length, index, mix.layerDetuneCents)
       const rate = clamp(detuned, layer.minRate, layer.maxRate)
       const gain =
+        silence *
         (blend[index] ?? 0) *
         familyWeight *
         layer.gain *
@@ -223,7 +239,13 @@ export function computeMix(
     })
   }
 
-  return { layers, onWeight, offWeight, idleWeight, limiterWeight }
+  return {
+    layers,
+    onWeight: silence * onWeight,
+    offWeight: silence * offWeight,
+    idleWeight: silence * idleWeight,
+    limiterWeight: silence * limiterWeight,
+  }
 }
 
 /**
