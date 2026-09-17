@@ -105,7 +105,7 @@ jobs:
       - name: Les banques livrées sont servies malgré le montage des échantillons
         run: |
           set -euo pipefail
-          for banque in gm-ls gm-ls-long-header bmw-i6-3l subaru-ej25; do
+          for banque in gm-ls gm-ls-long-header gm-ls-adouci bmw-i6-3l subaru-ej25; do
             curl -fsS -o /dev/null "http://localhost:8088/audio/$banque/profil.json"
             # Le listage, que l'alias perd si on ne le lui rend pas : sans lui
             # l'application ne peut plus énumérer les prises d'une banque.

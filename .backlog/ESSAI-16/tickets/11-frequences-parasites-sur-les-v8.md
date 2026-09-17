@@ -159,6 +159,24 @@ n'aurait vu ça.
 le son sort. Les boucles ne sont pas abîmées — dix-sept couches recollées au
 chargement contre **dix-huit sur dix-huit** pour la banque d'origine.
 
+### La banque n'arrivait pas jusqu'à la voiture
+
+Livrée le 17 septembre, elle a rendu l'application **muette** chez David : son
+dossier n'était pas excepté dans `.dockerignore`, donc il entrait dans le dépôt
+mais pas dans l'image, et le serveur rendait 404 sur chacune de ses prises. Le
+profil était sélectionné, il n'y avait plus de son, et le bouton du haut-parleur
+relançait un chargement voué à échouer.
+
+Une banque livrée se déclare à **trois** endroits — `.gitignore`, `.dockerignore`,
+et la vérification de la chaîne d'intégration — et rien ne rougissait quand l'un
+manquait. C'était déjà arrivé le 14 septembre 2026. Trois tests partent maintenant
+des profils livrés et vérifient que chaque déclaration suit.
+
+**Ce que ça laisse ouvert, et qui n'est pas de ce lot** : un profil dont la banque
+manque rend l'application muette en le disant mal. « on-1021.flac : 404 » ne dit
+ni de quelle banque il s'agit, ni qu'il suffit de changer de profil. Un message
+qui nommerait la banque absente vaudrait mieux.
+
 ### Comment l'écouter
 
 Les deux profils sont côte à côte dans la liste, « V8 » et « V8 adouci ».
