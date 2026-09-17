@@ -65,6 +65,20 @@ export type JournalEventKind =
   /** Une erreur, avec ce qu'on en sait. */
   | 'error'
   /**
+   * Ce que la sonde d'accéléromètre a vu, quand on l'écoute.
+   *
+   * Le relevé vivait à l'écran et n'en sortait pas : dans une voiture, cela
+   * revient à ne pas exister. David, le 17 septembre 2026 — « j'ai essayé
+   * d'activer l'accéléromètre, mais j'ai pas l'impression qu'il fonctionne » —
+   * ne pouvait rien en dire de plus, et personne ne pouvait savoir ce que la
+   * sonde avait reçu.
+   *
+   * Une ligne au démarrage de l'écoute, une au bout de la fenêtre
+   * d'observation, une à l'arrêt : de quoi distinguer « aucun capteur ne
+   * répond » de « l'autorisation est refusée » sans être dans la voiture.
+   */
+  | 'motion'
+  /**
    * Ce que le navigateur dit de lui-même, une fois par session.
    *
    * C'est la seule façon de savoir **pour de bon** sur quoi l'application

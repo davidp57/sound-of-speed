@@ -28,6 +28,7 @@ import {
   measuredCar,
   measuredCarStatus,
   placeDuCompte,
+  noterLAccelerometre,
   restartGeolocation,
   soundState,
   telemetry,
@@ -263,6 +264,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', readViewport)
   window.removeEventListener('devicemotion', onMotion)
+  if (bilanDuMouvement !== null) clearTimeout(bilanDuMouvement)
+  if (motionStatus.value === 'écoute') versLeJournal('arret')
 })
 
 /** Réponse de l'API de verrou d'écran, en clair plutôt qu'en trois booléens. */
@@ -319,6 +322,36 @@ function onMotion(event: DeviceMotionEvent): void {
   motionReading.value = motionProbe.reading
 }
 
+/**
+ * Ce qu'on verse au journal à chaque étape de l'écoute.
+ *
+ * Le statut seul ne suffit pas : « écoute » avec zéro relevé et « écoute » avec
+ * cinquante par seconde sont deux diagnostics opposés, et c'est exactement ce
+ * qu'on cherche à distinguer.
+ */
+function versLeJournal(etape: 'depart' | 'bilan' | 'arret'): void {
+  const r = motionProbe.reading
+  noterLAccelerometre({
+    etape,
+    statut: motionStatus.value,
+    count: r.count,
+    hz: r.hz,
+    announcedMs: r.announcedMs,
+    linear: r.linear,
+    peakMs2: r.peakMs2,
+    meanMs2: r.meanMs2,
+    erreur: motionError.value === '' ? null : motionError.value,
+  })
+}
+
+/**
+ * Le bilan part une fois, après la fenêtre d'observation de la sonde.
+ *
+ * Au démarrage, le compte vaut zéro quoi qu'il arrive : une ligne écrite là ne
+ * dirait rien de ce que l'appareil donne. Cinq secondes plus tard, elle tranche.
+ */
+let bilanDuMouvement: ReturnType<typeof setTimeout> | null = null
+
 async function listenToMotion(): Promise<void> {
   if (motionStatus.value === 'absent' || motionStatus.value === 'écoute') return
   const api = DeviceMotionEvent as unknown as MotionPermissionApi
@@ -331,16 +364,21 @@ async function listenToMotion(): Promise<void> {
       const réponse = await api.requestPermission()
       if (réponse !== 'granted') {
         motionStatus.value = 'refusée'
+        versLeJournal('depart')
         return
       }
     } catch (error) {
       motionStatus.value = 'refusée'
       motionError.value = error instanceof Error ? error.message : String(error)
+      versLeJournal('depart')
       return
     }
   }
   window.addEventListener('devicemotion', onMotion)
   motionStatus.value = 'écoute'
+  versLeJournal('depart')
+  if (bilanDuMouvement !== null) clearTimeout(bilanDuMouvement)
+  bilanDuMouvement = setTimeout(() => versLeJournal('bilan'), 5000)
 }
 
 /** Ce que la sonde a trouvé, en clair. */

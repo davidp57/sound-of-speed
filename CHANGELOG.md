@@ -138,6 +138,23 @@ Toutes les évolutions notables du projet. Format
   l'administration vient d'une adresse listée dans la pile. Soixante-cinq cas
   passent contre un serveur qui tourne.
 
+### Ajouté
+
+- **Ce que la sonde d'accéléromètre voit part au journal.** David, le
+  17 septembre 2026 : « j'ai essayé d'activer l'accéléromètre, mais j'ai pas
+  l'impression qu'il fonctionne ». Personne ne pouvait en dire plus : le relevé
+  vivait à l'écran de télémétrie et n'en sortait pas, ce qui, dans une voiture,
+  revient à ne pas exister.
+
+  Trois lignes désormais — au démarrage de l'écoute, cinq secondes plus tard, et
+  à l'arrêt — portant le statut, le nombre de relevés reçus, la cadence mesurée
+  et annoncée, la présence de l'accélération sans gravité, et les normes crête
+  et moyenne. Le bilan à cinq secondes est celui qui tranche : au démarrage, le
+  compte vaut zéro quoi qu'il arrive.
+
+  De quoi distinguer, sans être dans la voiture, « aucun capteur ne répond » de
+  « l'autorisation est refusée ».
+
 ### Modifié
 
 - **Les accords de banque réservée passent en base.** Ils se posaient par
