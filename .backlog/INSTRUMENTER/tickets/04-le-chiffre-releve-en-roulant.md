@@ -1,6 +1,6 @@
 # 04 — Le chiffre, relevé en roulant
 
-**Statut :** 🧑 attend David — le code du ticket 01 est livré
+**Statut :** ✅ relevé le 17 septembre 2026 sur les traces déposées — bruit du récepteur entre **0,27 et 0,42 km/h** sur six trajets, contre un seuil de 1,5. La marge du banc tient trois à cinq fois. Le chiffre est bien retrouvé dans les relevés déposés, puisqu'il en a été lu
 
 **Bloqué par :** plus rien — les trois autres tickets sont livrés le 15 septembre
 2026.

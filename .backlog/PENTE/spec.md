@@ -1,6 +1,6 @@
 # PENTE — le GPS de la Tesla livre dix fois par seconde
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ cadence confirmée le 17 septembre 2026 sur 54 760 intervalles des traces du 16 — médiane **100 ms**, p95 101 ms : dix positions par seconde, régulières. Ce que le lot annonçait est vérifié en conditions réelles
 
 **Le titre disait trente, et c'était faux.** Le journal de l'essai du
 9 septembre 2026 donne **dix positions par seconde** — cent millisecondes

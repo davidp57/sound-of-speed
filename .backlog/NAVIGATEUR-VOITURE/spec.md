@@ -1,6 +1,6 @@
 # NAVIGATEUR-VOITURE — ce que l'appareil réel impose
 
-**Statut :** 🧑 attend David — le code est livré, il attend un relevé en roulant
+**Statut :** 🧑 le relevé est fait, le seuil reste à trancher — précision mesurée le 17 septembre sur les traces du 16 : médiane **1,2 à 1,4 m** en ville comme sur autoroute, p95 sous 3,5 m, maximum utile 25,9 m. Le filtre est à 250 m : il peut descendre d'un ordre de grandeur
 **Branche :** `fix/navigateur-voiture`
 **Version visée :** 0.2
 
