@@ -1289,6 +1289,23 @@ function noterLAppareil(): void {
 noterLAppareil()
 
 /**
+ * Ce que la sonde d'accéléromètre a vu, versé au journal.
+ *
+ * L'écran de télémétrie l'appelle : c'est lui qui tient la sonde, et c'est le
+ * seul endroit où l'écoute se déclenche. Sans ce passage, le relevé reste à
+ * l'écran d'une voiture, ce qui revient à ne pas exister — voir le genre
+ * `motion` dans `core/journal/journal.ts`.
+ *
+ * Le cran de consentement décide, comme pour l'appareil : ce sont des faits de
+ * l'application et non des données de déplacement, mais un journal qui ne part
+ * pas n'a pas à se remplir.
+ */
+export function noterLAccelerometre(data: Record<string, number | string | boolean | null>): void {
+  if (uploadConsent.value === 'none') return
+  journal.add(journalElapsedMs, 'motion', data)
+}
+
+/**
  * Où en est la place du compte sur le serveur.
  *
  * **Elle arrive avec les dépôts**, sans qu'on demande rien : la voiture en envoie

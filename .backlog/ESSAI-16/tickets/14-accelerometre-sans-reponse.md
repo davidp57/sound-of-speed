@@ -1,6 +1,6 @@
 # 14 — L'accéléromètre ne répond pas, et on ne peut pas savoir pourquoi
 
-**Statut :** ⬜ prêt
+**Statut :** 🔁 le premier geste est fait le 17 septembre 2026 — la sonde verse désormais au journal ; reste à lire ce qu'elle dit au prochain trajet
 
 David, le 17 septembre 2026 : « hier j'ai essayé d'activer l'accéléromètre, mais
 j'ai pas l'impression qu'il fonctionne ».
@@ -62,7 +62,10 @@ le savoir écrit une fois pour toutes.
 
 ## Critères d'acceptation
 
-- [ ] Le journal porte ce que la sonde a vu, sans que David ait rien à noter.
+- [x] Le journal porte ce que la sonde a vu, sans que David ait rien à noter.
+      Fait le 17 septembre : genre `motion`, trois lignes — départ, bilan à cinq
+      secondes, arrêt. Le bilan est celui qui tranche, le compte valant zéro au
+      démarrage quoi qu'il arrive.
 - [ ] On sait laquelle des trois hypothèses est la bonne, chiffres à l'appui.
 - [ ] L'écran dit la vérité : soit la sonde donne quelque chose, soit elle
       annonce que cet appareil n'a pas d'accéléromètre.
