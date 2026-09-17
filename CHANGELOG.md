@@ -6,6 +6,25 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Modifié
+
+- **Le rapport et le sélecteur de boîte passent entre les deux compteurs.**
+  Demandé par David le 17 septembre 2026, schéma à l'appui : le rapport
+  au-dessus, le sélecteur en dessous, les deux dans la colonne du milieu.
+
+  C'est le contraire de ce qui avait été décidé le 14 septembre, et la raison a
+  changé entre-temps. Ce jour-là, la colonne prenait 263 des 920 pixels d'un
+  écran de bureau : la **largeur** était rare. Dans la voiture c'est la
+  **hauteur** — 575 pixels utiles contre 773 de large —, et la bande des
+  commandes sous les cadrans y coûtait plus cher que la colonne. Mesuré à la
+  taille réelle de l'écran de bord, le cadran passe de **176 à 213 pixels** de
+  diamètre, et de 213 à 277 en plein écran.
+
+  Cela corrige du même coup un défaut que David avait photographié : la bande des
+  commandes demandait 150 pixels dans une rangée qui n'en avait que 229 avec les
+  cadrans, elle débordait donc **par-dessus le bandeau d'alerte**, qui devenait
+  illisible et dont les boutons passaient sous le bandeau du compte.
+
 ### Ajouté
 
 - **On sait enfin quelle place l'application a vraiment.** Le journal ne portait
