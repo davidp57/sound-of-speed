@@ -70,6 +70,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [ACCUEILLIR](ACCUEILLIR/spec.md) — l'écran d'aide du premier lancement, revu : un accueil court le compte en tête, une visite à bulles sur l'interface, et une aide de référence derrière le `?` | 🧑 5/5 — instruit, découpé et livré le 14 septembre ; reste l'essai au volant |
 | [INSTRUMENTER](INSTRUMENTER/spec.md) — savoir ce que le récepteur donne, et pouvoir en demander plus le jour d'un essai : le bruit du GPS mesuré à bord, et un journal détaillé qui s'éteint tout seul | 🧑 3/4 — livrés et vérifiés dans l'application ; reste le chiffre à relever en roulant |
 | [ESSAI-16](ESSAI-16/spec.md) — dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait jamais, des bandeaux qui recouvrent les commandes, un suivi GPS qui se relance sans cesse | 🔄 2/10 — le rétrogradage forcé est corrigé, mesuré sur 58 000 relevés, et le curseur de seuil qui ne commandait plus rien est retiré ; les huit autres sont pour le 17 septembre |
+| [CADRAGE](CADRAGE/spec.md) — refaire l'écran de conduite à la taille qu'il a vraiment : 773 × 575 px utiles dans la voiture, et non la fenêtre d'un poste de travail | ⬜ le périmètre est à cuisiner avec David |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,
 VOLUME-GLOBAL, MODE-SIMPLE, DEPOSER, ETALONNAGE, TABLEAU-DE-BORD, puis PENTE,

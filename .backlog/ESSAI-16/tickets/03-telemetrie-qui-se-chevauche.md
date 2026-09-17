@@ -1,6 +1,7 @@
 # 03 — La télémétrie se chevauche sur l'écran de la voiture
 
-**Statut :** ⬜ prêt
+**Statut :** ⬜ prêt — **repris par [CADRAGE](../../CADRAGE/spec.md)**, même
+cause que le ticket 02
 
 Sur la photo de l'écran Télémétrie, le bouton « Écouter l'accéléromètre »
 recouvre la fin de la phrase qui l'explique : « … et ne démarre donc pas seule »
