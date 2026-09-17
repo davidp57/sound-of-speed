@@ -35,6 +35,13 @@ La période vient du régime **mesuré** de chaque prise, lu dans `mesures.json`
 une erreur d'un pour cent déplacerait les zéros du peigne et laisserait passer ce
 qu'on voulait retirer.
 
+**Chaque prise retrouve son niveau d'origine.** Retirer de l'énergie en retire
+un peu, et pas la même selon la prise : de 0,2 à 4,1 dB avant correction, soit
+quatre décibels d'écart entre les couches. Or cette banque porte les gains
+mesurés sur l'originale — sans renormaliser, le niveau aurait fait un creux vers
+4 800 tr/min. On aurait entendu une différence de niveau là où l'on veut juger un
+timbre. Après correction, l'écart est **nul sur les onze prises mesurées**.
+
 **La correction est bornée entre 120 et 1 200 Hz.** Appliquée partout, elle
 rendrait le son rigoureusement périodique à l'échelle du cycle et retirerait
 aussi le grain de turbulence. Au-delà de la bande, le souffle sort intact.

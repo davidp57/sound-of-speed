@@ -160,6 +160,13 @@ function garderLaBande(signal, sampleRate, [bas, haut]) {
   return re.subarray(0, signal.length)
 }
 
+/** Niveau efficace d'un signal. C'est ce que le profil a mesuré, et qu'on rend. */
+function niveauEfficace(signal) {
+  let somme = 0
+  for (let i = 0; i < signal.length; i += 1) somme += signal[i] * signal[i]
+  return Math.sqrt(somme / signal.length)
+}
+
 function decoder(flac, dossierTemporaire, nom) {
   const wav = join(dossierTemporaire, `${nom}.wav`)
   execFileSync('ffmpeg', ['-v', 'error', '-i', flac, '-ac', '1', '-ar', '44100', '-c:a', 'pcm_s16le', wav, '-y'])
@@ -248,6 +255,35 @@ function main() {
       const sortie = new Float32Array(samples.length)
       for (let i = 0; i < samples.length; i += 1) {
         sortie[i] = samples[i] - DOSAGE * dansLaBande[i]
+      }
+
+      // Chaque prise retrouve son niveau d'origine.
+      //
+      // Retirer de l'énergie en retire un peu, et pas la même selon la prise :
+      // mesuré avant cette correction, de 0,2 à 4,1 dB, soit **quatre décibels
+      // d'écart** entre les couches. Or le profil de cette banque porte les gains
+      // mesurés sur la banque d'origine : sans renormaliser, le niveau ferait un
+      // creux vers 4 800 tr/min et remonterait ensuite. On entendrait une
+      // différence de niveau là où l'on veut juger un timbre, et aucun test ne le
+      // verrait.
+      const avant = niveauEfficace(samples)
+      const apres = niveauEfficace(sortie)
+      if (apres > 0) {
+        const facteur = avant / apres
+        let pic = 0
+        for (let i = 0; i < sortie.length; i += 1) {
+          sortie[i] *= facteur
+          const magnitude = Math.abs(sortie[i])
+          if (magnitude > pic) pic = magnitude
+        }
+        // Remonter le niveau peut faire dépasser un pic : on redescend plutôt que
+        // d'écrêter, et on le dit — l'écart tenu par le gain de la couche vaut
+        // mieux qu'une distorsion muette.
+        if (pic > 0.999) {
+          const garde = 0.999 / pic
+          for (let i = 0; i < sortie.length; i += 1) sortie[i] *= garde
+          console.log(`  pic à ${pic.toFixed(3)} : niveau redescendu de ${(-20 * Math.log10(garde)).toFixed(2)} dB`)
+        }
       }
 
       encoder(writeWav(sortie, sampleRate), temporaire, nom, join(dossierCible, entree))

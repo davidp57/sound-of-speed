@@ -147,6 +147,14 @@ deviendrait rigoureusement périodique et synthétique.
 Le quatre cylindres, pour repère, est à −48 dB. La banque adoucie ne l'atteint pas
 et n'a pas à l'atteindre : à −20 dB, ce qui reste est sous la note du moteur.
 
+**Un défaut trouvé en relisant, et corrigé.** Le traitement ne retirait pas la
+même énergie à chaque prise — de 0,2 à 4,1 dB —, alors que la banque porte les
+gains mesurés sur l'originale. Le niveau aurait fait un creux vers 4 800 tr/min,
+et l'on aurait entendu une différence de niveau là où l'on veut juger un timbre.
+Chaque prise retrouve donc son niveau efficace d'origine : écart **nul sur les
+onze prises mesurées**, et la réduction des parasites est inchangée. Aucun test
+n'aurait vu ça.
+
 **Vérifié dans l'application** : les dix-huit couches se chargent, aucune erreur,
 le son sort. Les boucles ne sont pas abîmées — dix-sept couches recollées au
 chargement contre **dix-huit sur dix-huit** pour la banque d'origine.
