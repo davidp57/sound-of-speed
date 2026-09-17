@@ -1,6 +1,6 @@
 # SUITE-ESSAI-11 — ce que l'essai du 11 septembre a laissé de côté
 
-**Statut :** 🧑 attend David — les deux points sont livrés ; la relance de la
+**Statut :** ✅ prouvé le 17 septembre 2026 sur les trajets du 16 — la relance de la localisation mord (122 déclenchements), et le recul entre deux dépôts tient : 81 tranches arrivées proprement, aucune trace de la boucle à 726 essais
 localisation (commits `51b7af4` et `f2826d0`) et le recul entre deux dépôts
 restent à éprouver en roulant
 **Branche :** à ouvrir

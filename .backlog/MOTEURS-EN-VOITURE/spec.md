@@ -1,6 +1,6 @@
 # MOTEURS-EN-VOITURE — essayer les moteurs simulés au volant
 
-**Statut :** 🧑 attend David — le code est prêt, la preuve demande la voiture
+**Statut :** 🧑 essai **gelé jusqu'à la refonte** — David, 17 septembre 2026 : « on va d'abord refaire l'écran proprement et on testera ça ensuite ». Le code est livré ; juger la mise en page actuelle serait la juger deux fois, voir [INTERFACE](../INTERFACE/spec.md)
 
 ## Le besoin, dans les mots de David
 

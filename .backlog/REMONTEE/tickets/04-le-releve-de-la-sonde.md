@@ -1,6 +1,6 @@
 # 04 — Le relevé de la sonde arrive sur le NAS
 
-**Statut :** 🧑 attend David
+**Statut :** 🚫 sans objet le 17 septembre 2026 — la sonde devait rendre le chiffre qu'attendait le verdict de SYNTHESE. David a rendu ce verdict lui-même : le processeur de la voiture ne tient pas la synthèse en direct. Le dossier `/mesures/` du serveur est vide et peut le rester
 
 **Bloqué par :** aucun, peut démarrer tout de suite
 

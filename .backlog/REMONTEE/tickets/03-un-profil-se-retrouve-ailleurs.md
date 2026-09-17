@@ -1,6 +1,6 @@
 # 03 — Un profil réglé en voiture se retrouve sur les autres appareils
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ prouvé le 17 septembre 2026 — `l4-u-ej25.json` porte la date du 16 à 19 h : réglé en voiture, remonté tout seul. Et relu depuis le poste de travail, ce qui est exactement « se retrouve sur les autres appareils »
 
 **Bloqué par :** 02 — Une trace part toute seule, et repart au retour du réseau
 

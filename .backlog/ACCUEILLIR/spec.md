@@ -1,6 +1,6 @@
 # ACCUEILLIR — l'écran d'aide du premier lancement, revu
 
-**Statut :** 🧑 attend David — 5/5 livrés le 14 septembre 2026, reste l'essai au
+**Statut :** 🧑 essai **gelé jusqu'à la refonte** — David, 17 septembre 2026 : « on va d'abord refaire l'écran proprement et on testera ça ensuite ». Le code est livré ; juger la mise en page actuelle serait la juger deux fois, voir [INTERFACE](../INTERFACE/spec.md)
 volant
 **Branche :** `feature/accueillir` (PR #171) et `fix/textes-accueil` (PR #172),
 mergées dans `develop`

@@ -1,6 +1,6 @@
 # 02 — Une trace part toute seule, et repart au retour du réseau
 
-**Statut :** 🧑 attend David
+**Statut :** 🧑 à moitié prouvé le 17 septembre 2026 — une trace part bien toute seule : les trois trajets du 16 sont sur le serveur, 81 tranches, sans geste de David. Reste « et repart au retour du réseau », qui demande une vraie coupure : le parking souterrain
 
 **Bloqué par :** 01 — Un seul accord, qui dit tout ce qui part
 

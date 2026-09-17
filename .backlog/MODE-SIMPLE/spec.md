@@ -1,6 +1,6 @@
 # MODE-SIMPLE — quelques curseurs qui commandent les quarante-huit autres
 
-**Statut :** 🧑 attend David
+**Statut :** 🧑 essai **gelé jusqu'à la refonte** — David, 17 septembre 2026 : « on va d'abord refaire l'écran proprement et on testera ça ensuite ». Le code est livré ; juger la mise en page actuelle serait la juger deux fois, voir [INTERFACE](../INTERFACE/spec.md)
 **Branche :** `feature/mode-simple`
 **Version visée :** 0.3
 
