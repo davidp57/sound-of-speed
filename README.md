@@ -3887,12 +3887,23 @@ suit pas.
 | 56 | Deux points de l'essai du 11 septembre : un dépôt qui repartait en boucle, pendait sans fin et ne se voyait pas, et une relance de la localisation quand le GPS ne démarre pas | **livré ; reste l'essai en roulant** |
 | 57 | Dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait presque jamais, un curseur de seuil qui ne commandait plus rien, un volume plaqué contre le limiteur, un ralenti sans tremblement | **deux livrés et mesurés sur 58 000 relevés ; huit à instruire** |
 | 58 | Refaire l'écran pour la taille qu'il a vraiment : 773 × 575 px utiles dans la voiture, et non la fenêtre d'un poste de travail. Absorbe le tableau de bord et le défilement | mesurer d'abord ; le reste du périmètre est à trancher |
+| 59 | Choisir le moteur, l'échappement et le point d'écoute au volant, sans passer par la configuration | à essayer en roulant |
+| 60 | Un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | à écouter en roulant |
+| 61 | Quatre constats de l'essai du 8 septembre : GPS qui ne démarre pas, son faux en roulant, interface à consolider, dépôt qui refuse les identifiants | corrigé, reste à essayer |
+| 62 | L'image du serveur échouait une fois sur deux en arm64 | **la cause était une prémisse fausse : npm sait installer pour une autre architecture, et plus rien ne s'émule** |
+| 63 | Sécuriser le code et les données : échantillons fermés, banque réservable, isolation prouvée route par route, dépense relevée chaque jour | **11 tickets sur 17 ; la place à faire quand le plafond est atteint est découpée en trois** |
+| 64 | Administrer les comptes depuis un écran : rôles, banques, plafond de volume, effacement, et lecture des données d'un compte qui l'autorise | **livré et vérifié contre un serveur qui tourne** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et
 le statut de chaque ticket vivent dans [`.backlog/`](.backlog/README.md) ; les
 règles de travail du dépôt dans [`CLAUDE.md`](CLAUDE.md), son vocabulaire dans
 [`CONTEXT.md`](CONTEXT.md), et ce qui a été livré dans
 [`CHANGELOG.md`](CHANGELOG.md).
+
+**Les six derniers lots ont été ajoutés le 17 septembre 2026**, après qu'un
+recensement a montré qu'ils manquaient. Leur numéro suit l'ordre de cet ajout
+et non leur date : les insérer à leur place aurait renuméroté des lots que
+d'autres textes désignent par leur chiffre.
 
 **Les trente-trois premiers lots s'arrêtent au repère `avant-refonte`.** L'essai
 en voiture a rendu un verdict que les mesures au poste n'avaient pas vu : le
