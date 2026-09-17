@@ -104,6 +104,26 @@ volant, qu'il serait absurde de mener sur un écran qu'on va refaire.
 Leurs tickets clos restent chez eux : c'est l'histoire de ce qui a été fait, et
 la déplacer ne servirait personne. Les deux lots sont clos et renvoient ici.
 
+## Ce que David a montré : les deux blocs du milieu se rejoignent
+
+Le 17 septembre 2026 au soir, une capture annotée de l'écran de conduite, deux
+flèches rouges et pas un mot. Elles convergent vers la **colonne centrale entre
+les deux cadrans**, qui est aujourd'hui vide sur toute sa hauteur :
+
+- la vignette **RAPPORT**, aujourd'hui collée en haut, **descend** ;
+- le **sélecteur de boîte** (D/P, AUTO/MAN, + et −), aujourd'hui collé en bas,
+  **monte**.
+
+Les deux occuperaient donc le couloir du milieu, à hauteur des aiguilles, au
+lieu d'être renvoyés aux deux bords de l'écran. C'est cohérent avec le reste du
+lot : la hauteur est la dimension qui manque, et ces deux blocs sont les seuls à
+la consommer alors qu'il y a de la place à côté d'eux.
+
+**À cuisiner avant de coder** : l'ordre vertical des deux (le rapport au-dessus
+du sélecteur, ou l'inverse), et ce qu'il advient du bandeau d'alerte, qui est
+aujourd'hui sous le tout et qui recouvre justement ces commandes
+([ESSAI-16/02](../ESSAI-16/tickets/02-bandeaux-sous-les-commandes.md)).
+
 ## Ce qu'il faut trancher
 
 1. **Qu'est-ce qui doit tenir sans défiler ?** Les deux cadrans, le rapport, le
