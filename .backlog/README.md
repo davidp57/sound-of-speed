@@ -27,7 +27,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [BOITE-VIVANTE](BOITE-VIVANTE/spec.md) — une boîte qui regarde la vitesse, pas seulement le régime | 🧑 |
 | [FIX-BOITE](FIX-BOITE/spec.md) — ralentir n'est pas croiser : deux défauts de la boîte, relevés en roulant | 🧑 |
 | [MOTEURS-EN-VOITURE](MOTEURS-EN-VOITURE/spec.md) — choisir moteur, échappement et point d'écoute au volant | 🧑 |
-| [RELIEF](RELIEF/spec.md) — faire entendre l'effort : relief de charge, de régime, et niveau au ralenti | 🧑 |
+| [RELIEF](RELIEF/spec.md) — faire entendre l'effort : relief de charge, de régime, et niveau au ralenti | ✅ validé en roulant le 16 septembre |
 | [UI-DEFILEMENT](UI-DEFILEMENT/spec.md) — faire défiler l'écran de configuration sans dérégler un curseur | ✅ clos le 17 septembre — deux tickets livrés, les deux vérifications restantes reprises par [INTERFACE](INTERFACE/spec.md) |
 | [MODE-SIMPLE](MODE-SIMPLE/spec.md) — quelques curseurs globaux qui commandent les quarante-huit autres | 🧑 |
 | [DEPOSER](DEPOSER/spec.md) — sortir un profil ou une trace d'une voiture qui refuse les fichiers | 🧑 |
@@ -36,14 +36,14 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [BANQUES](BANQUES/spec.md) — accueillir plusieurs banques de son : découverte, mesure outillée, choix par profil | 🧑 |
 | [PENTE](PENTE/spec.md) — le GPS de la Tesla livre dix fois par seconde, et le conditionneur en attend une | 🧑 |
 | [EFFORT](EFFORT/spec.md) — la charge doit connaître la vitesse : tenir 50 km/h et tenir 130 ne sonnent pas pareil | 🧑 |
-| [PASSAGE](PASSAGE/spec.md) — un passage de rapport doit s'entendre comme un passage | 🧑 |
+| [PASSAGE](PASSAGE/spec.md) — un passage de rapport doit s'entendre comme un passage | ✅ validé en roulant le 16 septembre |
 | [JOURNAL](JOURNAL/spec.md) — savoir ce que la voiture a vécu, sans avoir à le demander : journal déposé tout seul, en deux crans d'accord | 🧑 |
 | [NAVIGATEUR-VOITURE](NAVIGATEUR-VOITURE/spec.md) — ce que l'appareil réel impose : filtrer sur la précision, mesurer la largeur utile | 🧑 |
 | [SYNTHESE](SYNTHESE/spec.md) — produire le son au lieu de le rejouer : engine-sim reste un outil d'atelier, qui fabrique des banques ; la génération en direct dans la voiture est abandonnée | 🧑 |
 | [REMONTEE](REMONTEE/spec.md) — tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils, sur un accord unique | 🧑 |
 | [ESSAI-08](ESSAI-08/spec.md) — quatre constats de l'essai du 8 septembre : GPS qui ne démarre pas, son faux en roulant, interface à consolider, dépôt qui refuse les identifiants | 🧑 |
 | [MENAGE-UI](MENAGE-UI/spec.md) — trois niveaux d'écran, et ce qui les sépare n'est pas un droit : conduire, régler à l'arrêt, fabriquer en atelier | ✅ 8/8 — la voiture télécharge 9 % de moins et montre cinq onglets ; reste à décider ailleurs si la couche d'ajustements suit le compte |
-| [DELISSER](DELISSER/spec.md) — un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | 🧑 |
+| [DELISSER](DELISSER/spec.md) — un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | ✅ validé en roulant le 16 septembre ; le battement du ralenti se poursuit dans ESSAI-16/09 |
 | [RAPATRIER](RAPATRIER/spec.md) — faire redescendre ce que la voiture a déposé : les quatre dossiers du serveur en un paquet, depuis un téléphone | 🧑 |
 | [MOUVEMENT](MOUVEMENT/spec.md) — une seule notion de « est-ce qu'on ralentit ? » : cinq lectures de l'accélération cohabitaient dans la boîte, avec cinq seuils qui ne s'accordaient pas | 🧑 3/4 — la lecture est unifiée, la boîte encaisse une moitié de bruit en plus, et l'allure se lit à l'écran, au journal et au relecteur ; reste l'essai en roulant |
 | [HORODATAGE](HORODATAGE/spec.md) — le navigateur de la Tesla compte en microsecondes : l'accélération sortait mille fois trop petite, et toute la chaîne travaillait sur zéro | 🧑 |
@@ -69,7 +69,7 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 | [REGIE](REGIE/spec.md) — administrer les comptes depuis un écran : rôle d'administrateur, attribution des rôles et des banques, plafond de volume, effacement, et lecture des données d'un compte quand il l'autorise | ✅ 9/9 — instruit, découpé et livré le 15 septembre ; vérifié contre un serveur qui tourne, plafond compris |
 | [ACCUEILLIR](ACCUEILLIR/spec.md) — l'écran d'aide du premier lancement, revu : un accueil court le compte en tête, une visite à bulles sur l'interface, et une aide de référence derrière le `?` | 🧑 5/5 — instruit, découpé et livré le 14 septembre ; reste l'essai au volant |
 | [INSTRUMENTER](INSTRUMENTER/spec.md) — savoir ce que le récepteur donne, et pouvoir en demander plus le jour d'un essai : le bruit du GPS mesuré à bord, et un journal détaillé qui s'éteint tout seul | 🧑 3/4 — livrés et vérifiés dans l'application ; reste le chiffre à relever en roulant |
-| [ESSAI-16](ESSAI-16/spec.md) — dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait jamais, des bandeaux qui recouvrent les commandes, un suivi GPS qui se relance sans cesse | 🔄 2/10 — le rétrogradage forcé est corrigé, mesuré sur 58 000 relevés, et le curseur de seuil qui ne commandait plus rien est retiré ; les huit autres sont pour le 17 septembre |
+| [ESSAI-16](ESSAI-16/spec.md) — dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait jamais, des bandeaux qui recouvrent les commandes, un suivi GPS qui se relance sans cesse | 🔄 2/11 — le rétrogradage forcé est corrigé et le curseur mort retiré ; neuf restent, dont les fréquences parasites des deux V8 relevées à l'écoute du 16 |
 | [INTERFACE](INTERFACE/spec.md) — refaire l'écran pour la taille qu'il a vraiment : 773 × 575 px utiles dans la voiture, et non la fenêtre d'un poste de travail. Absorbe TABLEAU-DE-BORD et UI-DEFILEMENT | ⬜ 0/1 — mesurer d'abord, le reste du périmètre est à cuisiner avec David |
 
 Neuf lots sont nés d'un essai sur route du 3 septembre 2026 — UI-DEFILEMENT,

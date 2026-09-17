@@ -1,6 +1,6 @@
 # 02 — Claquement à la montée, moins trente pour cent
 
-**Statut :** 🧑 attend David — livré, reste l'écoute en roulant
+**Statut :** 🔁 rouvert le 17 septembre 2026 — David a écouté : « ça claque encore un peu trop fort à la montée ; à affiner, réduire un peu ». Chiffre validé : `clack` 0,35 → 0,25 et `clackDownshift` 0,786 → 1,1, pour que le rétrogradage reste exactement à 0,275
 
 ## Ce qu'il faut obtenir
 

@@ -1,6 +1,6 @@
 # 09 — Servir le profil mesuré : la chaîne était coupée en trois
 
-**Statut :** 🧑 attend David — livré, reste à recoller la pile dans Portainer
+**Statut :** ✅ vérifié le 17 septembre 2026 — `/mesure-voiture/profil-voiture.json` répond, mis à jour la veille à 21h46, 6 trajets analysés
 
 **Bloqué par :** rien. C'est le défaut qui a empêché le ticket 07 de se voir.
 

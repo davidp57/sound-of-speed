@@ -1,6 +1,6 @@
 # 06 — Le service qui tourne sur le NAS
 
-**Statut :** 🧑 attend David — livré, mais le conteneur n'a jamais tourné sur le NAS
+**Statut :** ✅ sans objet le 17 septembre 2026 — le conteneur séparé n'existe plus depuis que SERVEUR a tout réuni en un service, et le profil mesuré est servi à jour : 6 trajets, `pushPeakMs2` 5,5455, relevé sur le serveur
 
 **Bloqué par :** 04 — il n'y a rien à faire tourner tant que le calcul ne sait
 pas se compléter.

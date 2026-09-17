@@ -1,6 +1,6 @@
 # RELIEF — faire entendre l'effort
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ validé en roulant le 16 septembre 2026 — David : « ça a l'air bien maintenant ; en tout cas rien ne m'a choqué »
 **Branche :** `feature/volume`
 **Version visée :** 0.2
 

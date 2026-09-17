@@ -1,6 +1,6 @@
 # 08 — La règle efface, au démarrage puis chaque jour
 
-**Statut :** 🧑 livré — à armer une fois le verdict lu en production
+**Statut :** 🧑 la règle est **déjà armée** — corrigé le 17 septembre 2026 : `menageDeRetention()` tourne au démarrage du conteneur puis toutes les 24 h, avec 30 jours pour les traces et 14 pour le journal. Elle n'a encore rien eu à effacer ; le premier passage utile tombe vers le 20 septembre
 
 **Bloqué par :** [07 — Voir ce que la règle emporterait, sans rien effacer](07-voir-ce-que-la-regle-emporterait.md).
 Le verdict doit avoir été regardé sur les vraies données avant qu'on l'exécute.

@@ -1,6 +1,6 @@
 # 04 — Le son sort, et suit le régime
 
-**Statut :** 🧑 attend David — le son sort et suit le régime ; le timbre est à
+**Statut :** ✅ sans objet en voiture, acté le 17 septembre 2026 — le processeur de la Tesla ne tient pas la synthèse en direct (une fois le temps réel à 6 kHz de simulation). Le timbre d'engine-sim se juge désormais sur une banque pré-rendue, ticket 05
 juger à l'oreille, et un défaut du modèle est relevé plus bas.
 
 **Bloqué par :** 02 — savoir jusqu'à combien de cylindres le direct tient

@@ -37,6 +37,7 @@ reconstruit l'instant correctement, et le relecteur affiche l'heure locale.
 | [08 — le volume maximal est plaqué contre le limiteur](tickets/08-volume-plaque-contre-le-limiteur.md) | ⬜ |
 | [09 — au ralenti, le tremblement est amputé de moitié](tickets/09-tremblement-ampute-au-ralenti.md) | ⬜ |
 | [10 — l'aiguille ne montre jamais le tremblement](tickets/10-aiguille-sans-tremblement.md) | ⬜ |
+| [11 — des fréquences parasites sur les deux V8, à moyen régime](tickets/11-frequences-parasites-sur-les-v8.md) | ⬜ |
 
 ## Une observation levée par David
 

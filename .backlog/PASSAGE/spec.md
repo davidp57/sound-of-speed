@@ -1,6 +1,6 @@
 # PASSAGE — un passage de rapport doit s'entendre comme un passage
 
-**Statut :** 🧑 attend David — livré et mergé, écouté au simulateur dans les deux origines de son, reste à rouler
+**Statut :** ✅ validé en roulant le 16 septembre 2026 — David : « on n'entend pas vraiment tous les temps mais c'est pas grave, le résultat est bon »
 **Branche :** `feature/passage-de-rapport`
 **Version visée :** 0.3
 

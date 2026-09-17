@@ -1,6 +1,6 @@
 # DELISSER — un régime qui ne soit pas une fréquence pure
 
-**Statut :** 🧑 attend David — livré, reste l'écoute en roulant
+**Statut :** ✅ validé en roulant le 16 septembre 2026 — David : « le ralenti est bien, et sera encore mieux avec un meilleur battement ». Ce battement est le ticket [ESSAI-16/09](../ESSAI-16/tickets/09-tremblement-ampute-au-ralenti.md)
 **Branche :** `feature/delisser-le-regime`
 **Version visée :** 0.1.69
 

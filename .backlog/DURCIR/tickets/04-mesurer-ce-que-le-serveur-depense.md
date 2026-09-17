@@ -1,6 +1,6 @@
 # 04 — Mesurer ce que le serveur dépense
 
-**Statut :** 🧑 attend David — le serveur relève les quatre chiffres tout seul,
+**Statut :** 🔁 rouvert le 17 septembre 2026 — le relèvement fonctionne mais **ne se lit jamais** : la ligne part toutes les 24 h ou à l'arrêt du conteneur, or une pile redéployée plusieurs fois par jour n'atteint jamais 24 h, et le relèvement d'adieu meurt dans le journal du conteneur qu'on remplace. Constaté par David le 17 septembre : `docker logs` ne rend rien, et le conteneur servait la 0.2.88, publiée la veille
 une fois par jour ; il reste à tirer l’image et à lire une ligne du journal
 
 **Bloqué par :** aucun, peut démarrer tout de suite
