@@ -2332,7 +2332,7 @@ l'échappement.
 | **Inertie** | Poids du volant moteur : temps de montée à vide |
 | **Montée à vide** | Prise de tours hors prise, en tr/min par seconde |
 | **Frein moteur** | Retombée pied levé |
-| **Tremblement au ralenti** | Amplitude du tremblement de régime, en tr/min, prise au ralenti et pied levé. Elle décroît ensuite quand le régime monte et quand la charge monte — un moteur se stabilise en poussant. Mesuré sur Sport, réglé à 35 : 34 tr/min d'excursion au ralenti, ±18 à 3000 tr/min pied levé, ±7 pied au plancher. Zéro donne un régime parfaitement lisse, ce qu'aucun moteur thermique n'est. **Il ne va que dans le son** : la boîte, ses seuils et la télémétrie gardent le régime net |
+| **Tremblement au ralenti** | Amplitude du tremblement de régime, en tr/min, prise au ralenti et pied levé. Elle décroît ensuite quand le régime monte et quand la charge monte — un moteur se stabilise en poussant. Mesuré sur Sport, réglé à 35 : 68 tr/min d'excursion au ralenti — ±34 autour de la consigne —, ±18 à 3000 tr/min pied levé, ±7 pied au plancher. Zéro donne un régime parfaitement lisse, ce qu'aucun moteur thermique n'est. **Il ne va que dans le son** : la boîte, ses seuils et la télémétrie gardent le régime net |
 | **Vitesse du tremblement** | Fréquence de la composante rapide. Une composante lente à un peu plus d'un dixième de cette valeur s'y ajoute — 0,70 Hz pour 6 Hz réglés : à une seule fréquence, le tremblement s'entend comme un vibrato |
 
 ### Transmission
@@ -3742,8 +3742,17 @@ qu'aucun moteur thermique n'a. On y ajoute un tremblement lent — trois
 sinusoïdes, dont deux dans un rapport irrationnel, si bien que la somme n'a pas
 de période — d'amplitude décroissante avec le régime et avec la charge : un moteur
 se stabilise en montant et sous couple, il tremble au ralenti et à vide. Mesuré
-sur Sport : 34 tr/min d'excursion au ralenti, ±18 à 3000 tr/min pied levé, ±7 à
+sur Sport : 68 tr/min d'excursion au ralenti, ±18 à 3000 tr/min pied levé, ±7 à
 3000 tr/min pied au plancher.
+
+**Au ralenti, il oscille autour de la consigne et non au-dessus.** Le plancher du
+bornage valait le régime de ralenti ; or c'est exactement là que le régime se
+trouve au ralenti, si bien que la demi-oscillation vers le bas était écrasée
+contre la borne. Le moteur passait **51 % du temps rigoureusement stable**, ce qui
+s'entendait comme une fréquence pure. Le plancher descend donc avec l'amplitude
+depuis le 17 septembre 2026 ; l'excursion au ralenti a doublé sans qu'aucun
+réglage ne bouge, et le temps passé collé à la consigne est tombé à 2 %. La moitié
+du ralenti reste un garde-fou : en dessous, un moteur a calé.
 
 Le moteur sort donc **deux** régimes, et c'est le point délicat. Le régime net
 alimente la boîte, ses seuils et la télémétrie ; le régime **entendu** porte le
@@ -3928,7 +3937,7 @@ suit pas.
 | 54 | Une seule notion de « est-ce qu'on ralentit ? » : cinq lectures de l'accélération cohabitaient dans la boîte, avec cinq seuils qui ne s'accordaient pas | **unifiée en une lecture, mesurée au banc : la boîte encaisse une moitié de bruit en plus avant d'osciller, contre un quart ; l'allure se lit à l'écran, au journal et au relecteur — reste l'essai en roulant** |
 | 55 | Savoir ce que le récepteur donne : le bruit du GPS mesuré à bord et inscrit au journal, et un journal détaillé qui s'éteint tout seul au bout de vingt-quatre heures | **livré ; reste le chiffre à relever en roulant, qui dira si la boîte a de la marge** |
 | 56 | Deux points de l'essai du 11 septembre : un dépôt qui repartait en boucle, pendait sans fin et ne se voyait pas, et une relance de la localisation quand le GPS ne démarre pas | **livré ; reste l'essai en roulant** |
-| 57 | Dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait presque jamais, un curseur de seuil qui ne commandait plus rien, un volume plaqué contre le limiteur, un ralenti sans tremblement | **quatre livrés : le son ne repart plus au parking — mesuré sur le signal, au volume coupé — et le compte-tours frémit comme celui d'une vraie voiture ; dix restent** |
+| 57 | Dix points de la sortie du 16 septembre : un rétrogradage forcé qui ne partait presque jamais, un curseur de seuil qui ne commandait plus rien, un volume plaqué contre le limiteur, un ralenti sans tremblement | **cinq livrés : le son ne repart plus au parking, le compte-tours frémit comme celui d'une vraie voiture, et le tremblement du ralenti a retrouvé la moitié qu'une borne lui mangeait ; neuf restent** |
 | 58 | Refaire l'écran pour la taille qu'il a vraiment : 773 × 575 px utiles dans la voiture, et non la fenêtre d'un poste de travail. Absorbe le tableau de bord et le défilement | mesurer d'abord ; le reste du périmètre est à trancher |
 | 59 | Choisir le moteur, l'échappement et le point d'écoute au volant, sans passer par la configuration | à essayer en roulant |
 | 60 | Un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | à écouter en roulant |

@@ -462,11 +462,21 @@ export class Engine {
       offset += part.weight * Math.sin(angle)
     }
 
-    // Borné au domaine du moteur : le tremblement ne doit ni franchir le rupteur
-    // ni descendre sous le ralenti. Au ralenti, où le régime est exactement à son
-    // plancher, l'excursion est donc à sens unique — mesuré, 0 à +24 tr/min sur
-    // Route.
-    return clamp(this.rpm + amplitude * offset, this.preset.idleRpm, this.preset.redlineRpm)
+    // Le plancher descend avec l'amplitude, et c'est tout l'objet.
+    //
+    // Il valait `idleRpm`. Or au ralenti le régime est **exactement** à cette
+    // valeur : toute la demi-oscillation vers le bas était écrasée contre la
+    // borne, et le moteur passait la moitié du temps rigoureusement stable —
+    // mesuré, 51 % des images. David l'entendait : « au ralenti, le moteur est à
+    // 800 rpm stables ». Un vrai ralenti descend sous sa consigne autant qu'il
+    // monte au-dessus ; le plancher suit donc le tremblement.
+    //
+    // La moitié du ralenti reste un garde-fou : en dessous, un moteur a calé, et
+    // les couches se joueraient près d'une octave trop bas. Le curseur s'arrête à
+    // 150 tr/min, donc il ne mord jamais — il n'est là que pour un profil importé
+    // qui n'est pas passé par le curseur.
+    const plancher = Math.max(this.preset.idleRpm - amplitude, this.preset.idleRpm / 2)
+    return clamp(this.rpm + amplitude * offset, plancher, this.preset.redlineRpm)
   }
 
   /**

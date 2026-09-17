@@ -8,6 +8,18 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Au ralenti, le tremblement du régime était amputé de moitié.** David :
+  « j'ai pas l'impression que les oscillations aléatoires de rpm soient là ; au
+  ralenti, le moteur est à 800 rpm stables. » Il avait raison, et la cause tenait
+  en une borne : le plancher du bornage valait le régime de ralenti, or c'est
+  exactement là que le régime se trouve au ralenti. Toute la demi-oscillation
+  vers le bas était écrasée contre la borne, et le moteur passait **51 % du temps
+  rigoureusement stable** — une seconde sur deux. Le plancher descend maintenant
+  avec l'amplitude : mesuré dans l'application, l'excursion va de −23,7 à
+  +23,6 tr/min au lieu de 0 à +21, la moitié du temps se passe sous la consigne,
+  et le temps collé à celle-ci tombe à **2 %**. Aucun réglage n'a bougé ;
+  l'excursion double parce qu'elle était réduite de moitié.
+
 - **Le relevé de dépense ne se lisait jamais.** Il partait au journal du
   conteneur toutes les vingt-quatre heures, ou à l'arrêt. Une pile redéployée
   plusieurs fois par jour n'atteint jamais vingt-quatre heures, et la ligne

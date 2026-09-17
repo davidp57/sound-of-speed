@@ -788,3 +788,67 @@ describe('computeMix — au repos, rien ne sonne', () => {
     expect(computeMix(profile, chargé).layers.some((l) => l.gain > 0)).toBe(true)
   })
 })
+
+/**
+ * Ce que le tremblement impose au mixage.
+ *
+ * Depuis le 17 septembre 2026, le régime entendu descend **sous le ralenti** —
+ * c'est le correctif du tremblement amputé. Le mixage efface une couche sortie de
+ * son domaine jouable, et le ticket demandait de vérifier qu'un régime légèrement
+ * en dessous n'en fasse pas disparaître.
+ *
+ * **Il n'en fait pas disparaître**, et la mesure dit pourquoi : le domaine se
+ * juge à la demi-octave, quand le tremblement vaut trois pour cent du régime.
+ * `off_low` était déjà bornée en vitesse de lecture à ralenti pile, avant tout
+ * correctif — ce n'est pas le tremblement qui l'y met.
+ */
+describe('computeMix — un régime sous le ralenti reste jouable', () => {
+  const profil = createRoadProfile()
+  const tremblement = profil.engine.flutterRpm
+  const auRalenti = (audibleRpm: number) => ({
+    ...state({ rpm: profil.engine.idleRpm, idling: true, effort: 0, load: 0 }),
+    audibleRpm,
+  })
+
+  it('n’efface aucune couche que le ralenti faisait entendre', () => {
+    const pile = computeMix(profil, auRalenti(profil.engine.idleRpm))
+    const bas = computeMix(profil, auRalenti(profil.engine.idleRpm - tremblement))
+
+    const audibles = pile.layers.filter((couche) => couche.gain > 0.001).map((couche) => couche.key)
+    expect(audibles.length).toBeGreaterThan(0)
+    for (const cle of audibles) {
+      expect(gainOf(bas.layers, cle)).toBeGreaterThan(0.001)
+    }
+  })
+
+  it('fait respirer le niveau des deux côtés, et à parts égales', () => {
+    // Le tremblement déplace le niveau d'ensemble parce que le fondu de régime
+    // est continu — c'est voulu, c'est ce qui s'entend. Ce qu'on vérifie est que
+    // le bas coûte ce que le haut rapporte : un creux d'un côté sans bosse de
+    // l'autre serait le défaut qu'on vient de corriger, déplacé dans le mixage.
+    const energie = (audibleRpm: number) =>
+      Math.sqrt(
+        computeMix(profil, auRalenti(audibleRpm)).layers.reduce(
+          (total, couche) => total + couche.gain * couche.gain,
+          0,
+        ),
+      )
+
+    const pile = energie(profil.engine.idleRpm)
+    const perdu = pile - energie(profil.engine.idleRpm - tremblement)
+    const gagne = energie(profil.engine.idleRpm + tremblement) - pile
+
+    expect(perdu).toBeGreaterThan(0)
+    expect(gagne).toBeGreaterThan(0)
+    expect(Math.abs(gagne - perdu) / gagne).toBeLessThan(0.1)
+  })
+
+  it('reste loin de la demi-octave qui efface une couche', () => {
+    // Trois pour cent de régime, là où la tolérance est d'une demi-octave : la
+    // marge est de plus d'un ordre de grandeur, et c'est elle qui rend le
+    // correctif sûr plutôt qu'un équilibre heureux.
+    const octaves = Math.log2(profil.engine.idleRpm / (profil.engine.idleRpm - tremblement))
+
+    expect(octaves).toBeLessThan(0.1)
+  })
+})
