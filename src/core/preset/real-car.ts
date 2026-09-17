@@ -53,7 +53,7 @@ export const DEFAULT_REAL_CAR: RealCar = {
   // Deux cent cinquante mètres, la valeur des profils livrés : large exprès,
   // faute d'un relevé dans la voiture. C'est un garde-fou contre une position
   // obtenue sans satellites, pas un réglage de précision.
-  maxAccuracyM: 250,
+  maxAccuracyM: 50,
   minAccelMs2: -14,
   maxAccelMs2: 14,
 }
@@ -77,7 +77,7 @@ export function clampRealCar(car: Partial<RealCar> | undefined): RealCar {
     springOmega: borne(nombre(lu.springOmega, 14), 1, 60),
     accelWindowMs: borne(nombre(lu.accelWindowMs, 1000), 100, 4000),
     maxPlausibleKmh: borne(nombre(lu.maxPlausibleKmh, 260), 30, 500),
-    maxAccuracyM: borne(nombre(lu.maxAccuracyM, 250), 1, 5000),
+    maxAccuracyM: borne(nombre(lu.maxAccuracyM, 50), 1, 5000),
     // Les deux bornes ne se croisent pas : une décélération maximale positive,
     // ou une accélération maximale négative, arrêterait tout net le signal.
     minAccelMs2: borne(nombre(lu.minAccelMs2, -14), -50, -0.5),

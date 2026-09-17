@@ -169,6 +169,29 @@ Toutes les évolutions notables du projet. Format
   enregistrés plutôt que laissée morte — `PROFILE_FORMAT_VERSION` passe à 11 —,
   et le reste du rétrogradage forcé ne bouge pas.
 
+### Modifié
+
+- **Le filtre de précision des positions passe de 250 à 50 mètres.** Il était
+  « volontairement large, et à resserrer sur relevé » depuis le lot
+  NAVIGATEUR-VOITURE : les valeurs de la voiture n'étaient pas connues. Elles le
+  sont. Mesurée sur les 56 000 relevés des trois trajets du 16 septembre 2026, la
+  précision annoncée par la Tesla vaut **1,2 à 1,4 mètre en médiane**, en ville
+  comme sur autoroute, avec un p95 sous 3,5 m et un maximum utile de 25,9 m. En
+  face, les positions rejetées portent toutes la même valeur — 9 999,99 m, une
+  sentinelle. Il n'y a rien entre les deux familles, et 50 laisse encore le
+  double du pire cas observé.
+
+  Ce qu'on assume : un relevé à 60 ou 100 mètres, médiocre mais crédible sous un
+  parking couvert ou dans un tunnel, est désormais rejeté. Le test qui garde ce
+  seuil le dit, pour qu'on sache quoi relâcher en premier si le bandeau « plus
+  aucune position » se met à sortir dans ces endroits.
+
+- **Le claquement à la montée perd encore un tiers.** David, après la sortie du
+  16 septembre : « ça claque encore un peu trop fort à la montée ; à affiner,
+  réduire un peu ». Il passe de 0,35 à 0,25, soit la moitié de sa valeur
+  d'origine, et le facteur de rétrogradage monte d'autant — 0,786 à 1,1 — pour
+  que le clac de descente reste exactement à 0,275, là où il le trouvait bon.
+
 ### Corrigé
 
 - **Le rétrogradage forcé ne se déclenchait presque jamais.** David, après

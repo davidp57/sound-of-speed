@@ -560,13 +560,18 @@ export function createDefaultProfile(): Profile {
       springOmega: 14,
       accelWindowMs: 1000,
       maxPlausibleKmh: 260,
-      // Volontairement large, et à resserrer sur relevé. Un point satellite
-      // s'annonce à quelques mètres ou quelques dizaines de mètres, même mal
-      // placé ; une position obtenue sans satellites, par le réseau, s'annonce
-      // à plusieurs centaines. Ce seuil passe entre les deux familles sans
-      // rejeter ce qu'un vrai point GPS produit. Les valeurs de la voiture, en
-      // revanche, ne sont pas encore mesurées : la télémétrie les affiche.
-      maxAccuracyM: 250,
+      // Resserré de 250 à 50 le 17 septembre 2026, sur relevé. Un point
+      // satellite s'annonce à quelques mètres ou quelques dizaines de mètres,
+      // même mal placé ; une position obtenue sans satellites s'annonce à
+      // plusieurs centaines. Ce seuil passe entre les deux familles.
+      //
+      // Mesuré sur les 56 000 relevés des trois trajets du 16 septembre : la
+      // précision annoncée par la Tesla vaut 1,2 à 1,4 m en médiane, en ville
+      // comme sur autoroute, avec un p95 sous 3,5 m et un maximum utile de
+      // 25,9 m. En face, les positions rejetées portent toutes la même valeur
+      // — 9 999,99 m, une sentinelle. Il n'y a rien entre les deux familles, et
+      // 50 laisse encore le double du pire cas utile.
+      maxAccuracyM: 50,
       minAccelMs2: -14,
       maxAccelMs2: 14,
     },
@@ -626,13 +631,15 @@ export function createDefaultProfile(): Profile {
         blipRpm: 550,
         // Le clac de la montée a perdu trente pour cent après la sortie du
         // 11 septembre 2026 — David : « diminuer le son du claquement quand on
-        // monte d'un rapport, quand on rétrograde c'est bien comme ça ».
+        // monte d'un rapport, quand on rétrograde c'est bien comme ça ». Puis
+        // encore un tiers après celle du 16 : « ça claque encore un peu trop
+        // fort à la montée ». Il est donc à la moitié de sa valeur d'origine.
         //
         // L'amplitude vaut `clack` à la montée et `clack × clackDownshift` à la
         // descente : baisser `clack` seul aurait baissé les deux. Le facteur de
         // descente monte donc d'autant, et le rétrogradage reste à 0,275.
-        clack: 0.35,
-        clackDownshift: 0.786,
+        clack: 0.25,
+        clackDownshift: 1.1,
         crackle: 0.35,
       },
     },

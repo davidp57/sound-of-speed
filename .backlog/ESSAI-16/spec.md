@@ -40,6 +40,7 @@ reconstruit l'instant correctement, et le relecteur affiche l'heure locale.
 | [11 — des fréquences parasites sur les deux V8, à moyen régime](tickets/11-frequences-parasites-sur-les-v8.md) | ⬜ |
 | [12 — rétrograder plus tôt en ralentissant, sans traîner un rapport en croisière](tickets/12-retrograder-plus-tot-en-ralentissant.md) | ⬜ |
 | [13 — le son ne doit jamais repartir au repos](tickets/13-jamais-de-son-au-repos.md) | ⬜ |
+| [14 — l'accéléromètre ne répond pas, et on ne peut pas savoir pourquoi](tickets/14-accelerometre-sans-reponse.md) | ⬜ |
 
 ## Une observation levée par David
 

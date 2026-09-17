@@ -140,3 +140,19 @@ qu'il a réellement fabriqués et déposés ?
 réglages fins de l'écran Avancé écrivent **dans le profil**, pas dans une
 couche. Les remettre à zéro, c'est reprendre le profil — donc le premier bouton.
 Seuls les curseurs globaux de l'écran Paramètres relèvent du second.
+
+## Deux valeurs attendent ce bouton, et c'est mesurable
+
+Le 17 septembre 2026, David a validé deux réglages qui sont écrits dans les
+profils d'usine — et qui **ne l'atteindront pas** tant que ses profils
+enregistrés priment :
+
+| Réglage | Avant | Après | Pourquoi |
+|---|---|---|---|
+| `feel.shiftJolt.clack` | 0,35 | **0,25** | « ça claque encore un peu trop fort à la montée » |
+| `feel.shiftJolt.clackDownshift` | 0,786 | **1,1** | pour que le rétrogradage reste à 0,275, là où il l'aime |
+| `speed.maxAccuracyM` | 250 | **50** | mesuré : la précision annoncée vaut 1,2 à 1,4 m, rien entre 26 m et la sentinelle |
+
+Ce sont les premiers cas concrets du problème que ce lot doit résoudre, et ils
+donnent de quoi le vérifier : après le bouton, ses profils doivent porter ces
+trois valeurs.
