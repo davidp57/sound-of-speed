@@ -69,6 +69,7 @@ npm run test:watch   # vitest en continu, pendant qu'on écrit
 npm run coverage     # couverture de core/
 npm run build        # typecheck + build de production
 npm run banque       # relevé d'une banque : ancrages et gains proposés
+npm run niveau-banques # niveau joué de chaque banque livrée, et alignement
 npm run verdict      # ce que la règle de rétention emporterait, sur une copie de la base
 npm run transcode    # compression des échantillons en FLAC
 npm run deploy       # recopie du build vers le NAS

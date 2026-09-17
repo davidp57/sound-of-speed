@@ -4,6 +4,7 @@ import { computeMix } from './mix'
 import { REFRESH_FADE_S, equalPowerCurves, nextRefreshDelayS } from './refresh'
 import { buildOutputChain, saturationCurve } from './output-chain'
 import { type EventTarget } from './events'
+import { type BankLoadCause, describeBankLoadFailure } from './banks'
 
 /**
  * Moteur audio à échantillons.
@@ -46,6 +47,21 @@ const SEARCH_SPAN_S = 0.4
 /** Poids de la forme d'onde devant l'écart de niveau, dans le choix du raccord. */
 const SHAPE_WEIGHT = 0.35
 
+/**
+ * Un téléchargement d'échantillon qui n'a pas abouti, avec de quoi le dire.
+ *
+ * Elle porte la banque et la cause, et non le message : la formulation vit dans
+ * `banks.ts`, où elle se teste sans contexte audio.
+ */
+class BankLoadError extends Error {
+  constructor(
+    readonly bank: string,
+    readonly reason: BankLoadCause,
+  ) {
+    super(`${bank} : ${reason}`)
+  }
+}
+
 export type AudioPhase = 'idle' | 'loading' | 'ready' | 'error'
 
 export interface AudioStatus {
@@ -53,6 +69,14 @@ export interface AudioStatus {
   loaded: number
   total: number
   error: string
+  /**
+   * Relancer le chargement peut-il aboutir ?
+   *
+   * Faux quand la banque n'est pas servie ici : le bouton du son relançait alors
+   * un chargement voué à échouer, et se présentait comme s'il pouvait rendre le
+   * son. Vrai partout ailleurs, y compris hors réseau — le réseau revient.
+   */
+  canRetry: boolean
   contextState: AudioContextState | 'none'
   sampleRate: number
   /** Vrai quand la cadence est fournie par le fil audio plutôt que par l'affichage. */
@@ -200,6 +224,7 @@ export class AudioEngine {
     loaded: 0,
     total: 0,
     error: '',
+    canRetry: true,
     contextState: 'none',
     sampleRate: 0,
     clockRunning: false,
@@ -482,6 +507,7 @@ export class AudioEngine {
     this.status.loaded = 0
     this.status.total = wanted.length
     this.status.error = ''
+    this.status.canRetry = true
     this.status.repaired = []
 
     let decoded: { layer: LayerPreset; buffer: AudioBuffer; repaired: boolean }[]
@@ -489,8 +515,15 @@ export class AudioEngine {
       decoded = await Promise.all(
         wanted.map(async (layer) => {
           const url = `/audio/${profile.sampleDir}/${layer.file}`
-          const response = await fetch(url)
-          if (!response.ok) throw new Error(`${layer.file} : ${response.status}`)
+          // Le serveur injoignable et le serveur qui refuse sont deux cas, et le
+          // `fetch` les sépare déjà : le premier rejette, le second répond.
+          let response: Response
+          try {
+            response = await fetch(url)
+          } catch {
+            throw new BankLoadError(profile.sampleDir, 'unreachable')
+          }
+          if (!response.ok) throw new BankLoadError(profile.sampleDir, response.status)
           const raw = await context.decodeAudioData(await response.arrayBuffer())
           const { buffer, repaired } = makeSeamless(context, raw)
           this.status.loaded += 1
@@ -499,6 +532,13 @@ export class AudioEngine {
       )
     } catch (error) {
       if (token !== this.loadToken) return
+      if (error instanceof BankLoadError) {
+        const { message, canRetry } = describeBankLoadFailure(error.bank, error.reason)
+        this.fail(message, canRetry)
+        return
+      }
+      // Un décodage raté : le fichier est là, il n'est pas lisible. Réessayer ne
+      // coûte qu'un téléchargement, et c'est le seul geste offert.
       this.fail(error instanceof Error ? error.message : 'Chargement impossible.')
       return
     }
@@ -865,10 +905,11 @@ export class AudioEngine {
    * C'est désagréable et c'est voulu : un silence se remarque, un défaut
    * silencieux se paie plus tard.
    */
-  private fail(message: string): void {
+  private fail(message: string, canRetry = true): void {
     this.disposeLayers()
     this.status.phase = 'error'
     this.status.error = message
+    this.status.canRetry = canRetry
   }
 }
 

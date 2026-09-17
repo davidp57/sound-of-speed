@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { fetchBanks, missingFiles, usedBanks } from './banks'
+import { describeBankLoadFailure, fetchBanks, missingFiles, usedBanks } from './banks'
 
 /**
  * Tests de la découverte des banques.
@@ -165,5 +165,48 @@ describe('les banques qu’un profil utilise', () => {
 
   it('rend une liste vide sans profil', () => {
     expect(usedBanks([])).toEqual([])
+  })
+})
+
+describe('ce qu’on dit d’une banque qui ne charge pas', () => {
+  it('nomme la banque, et non le fichier qui a échoué', () => {
+    const { message } = describeBankLoadFailure('gm-ls-adouci', 404)
+    expect(message).toContain('gm-ls-adouci')
+    expect(message).not.toContain('.flac')
+  })
+
+  it('dit le geste qui rend le son, quand la banque n’est pas là', () => {
+    const { message, canRetry } = describeBankLoadFailure('gm-ls-adouci', 404)
+    expect(message).toContain('autre profil')
+    // Relancer le chargement ne changerait rien : le bouton ne doit pas l'offrir.
+    expect(canRetry).toBe(false)
+  })
+
+  it('distingue un refus faute de compte d’une banque absente', () => {
+    const absente = describeBankLoadFailure('gm-ls', 404)
+    const sansCompte = describeBankLoadFailure('gm-ls', 401)
+    expect(sansCompte.message).not.toBe(absente.message)
+    expect(sansCompte.message).toContain('compte')
+  })
+
+  it('ne crie pas à la panne dans un tunnel, et laisse réessayer', () => {
+    const { message, canRetry } = describeBankLoadFailure('bmw-i6-3l', 'unreachable')
+    expect(message).toContain('réseau')
+    expect(message).toContain('bmw-i6-3l')
+    expect(canRetry).toBe(true)
+  })
+
+  it('rend le code sur une panne de serveur, qu’on peut réessayer', () => {
+    const { message, canRetry } = describeBankLoadFailure('gm-ls', 503)
+    expect(message).toContain('503')
+    expect(canRetry).toBe(true)
+  })
+
+  it('tient sur une ligne à la largeur de l’écran de la voiture', () => {
+    // 773 px utiles, et le message s'affiche à peu près à 16 px : au-delà de
+    // quatre-vingts caractères, il passe à la ligne et pousse les cadrans.
+    for (const cause of [404, 401, 503, 'unreachable'] as const) {
+      expect(describeBankLoadFailure('gm-ls-long-header', cause).message.length).toBeLessThan(80)
+    }
   })
 })

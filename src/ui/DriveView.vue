@@ -213,6 +213,14 @@ const audioLabel = computed(() => {
 
 const audioOn = computed(() => soundState.value === 'on')
 
+/**
+ * Même règle qu'en barre d'en-tête : un bouton qui relance un chargement voué à
+ * échouer ment. Le message, lui, est déjà sous les cadrans.
+ */
+const audioRetryable = computed(
+  () => soundState.value !== 'error' || synthIsOrigin.value || audioStatus.value.canRetry,
+)
+
 function toggleAudio(): void {
   if (soundState.value === 'on') setMuted(true)
   else if (soundState.value === 'muted') setMuted(false)
@@ -431,10 +439,22 @@ const SPEED_STEP_KMH = 20
         <span class="sr-only">Quitter le plein écran</span>
       </button>
       <div class="immersive-group">
-        <button :class="{ 'is-active': audioOn }" :disabled="!isRunning" @click="toggleAudio()">
+        <button
+          :class="{ 'is-active': audioOn }"
+          :disabled="!isRunning || !audioRetryable"
+          @click="toggleAudio()"
+        >
           {{ audioLabel }}
         </button>
       </div>
+      <!--
+        Le message d'erreur manquait ici : en plein écran, le bouton disait « Son
+        en erreur » et c'était tout. C'est pourtant l'écran où l'on conduit, donc
+        celui où l'on découvre qu'un profil ne sonne pas.
+      -->
+      <p v-if="audioPhase === 'error'" class="hint warn">
+        {{ synthIsOrigin ? synthStatus.error : audioStatus.error }}
+      </p>
     </section>
 
     <section v-else class="controls">

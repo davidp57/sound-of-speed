@@ -1,6 +1,7 @@
 # 06 — Deux banques ne sonnent pas au même niveau
 
-**Statut :** ⬜ prêt — relevé par David le 17 septembre 2026, cause mesurée
+**Statut :** 🧑 attend David le 17 septembre 2026 — mesuré et corrigé, reste
+l'oreille
 
 David, après avoir essayé les quatre profils livrés :
 
@@ -59,8 +60,41 @@ V8 à −18,8 sur le quatre à plat.
 
 ## Critères d'acceptation
 
-- [ ] Les quatre banques livrées sonnent au même niveau, à régime et charge
+- [x] Les quatre banques livrées sonnent au même niveau, à régime et charge
       comparables — mesuré, pas estimé
-- [ ] La mesure se refait : ce qui l'a produite est dans le dépôt
-- [ ] Passer d'un profil à l'autre ne demande plus de toucher au volume
+- [x] La mesure se refait : ce qui l'a produite est dans le dépôt
+- [x] Passer d'un profil à l'autre ne demande plus de toucher au volume
 - [ ] Jugé à l'oreille par David, en roulant ou au simulateur
+
+## Ce que la mesure a donné
+
+Faite à travers le vrai mixage — `computeMix` posant les gains à neuf régimes,
+pied levé et pleine charge — sur les fichiers décodés par ffmpeg
+(`npm run niveau-banques`) :
+
+| Banque | fichiers | joué | crête | écart |
+|---|---|---|---|---|
+| `gm-ls` | −10,2 dB | −13,4 dB | +2,1 dB | référence |
+| `gm-ls-long-header` | −10,2 | −12,6 | +3,0 | +0,8 |
+| `bmw-i6-3l` **avant** | −8,4 | −19,1 | −6,1 | **−5,7** |
+| `bmw-i6-3l` après | −8,4 | −13,4 | −0,4 | 0,0 |
+| `subaru-ej25` | −8,7 | −14,1 | +0,5 | −0,8 |
+
+La colonne « joué » est le niveau efficace moyen sur la grille ; la colonne
+« crête » est le pire cas, toutes couches supposées en phase — elle ne se
+produit pas, les phases étant tirées au sort, mais elle se compare d'une banque
+à l'autre.
+
+**Une seule banque était en cause**, le six en ligne, et l'écart est net.
+L'estimation du ticket disait −4,3 dB ; la mesure à travers le mixage donne
+−5,7. Ses gains ont été multipliés par 1,932.
+
+**Le quatre à plat n'a pas d'écart de niveau.** 0,8 dB, et le signe s'inverse
+selon la charge : −1,1 à pleine charge, +0,6 pied levé. Ses gains n'ont donc
+pas bougé — ce que David entend de moins sur lui vient d'ailleurs que du
+niveau, timbre ou contenu grave, et se traitera comme tel s'il le confirme.
+
+**Aligner vers le haut plutôt que vers le bas**, parce que le manque de volume
+est déjà un sujet ([ESSAI-16/08](../../ESSAI-16/tickets/08-volume-plaque-contre-le-limiteur.md)),
+et parce que cela ne crée aucun écrêtage nouveau : le six en ligne remonté reste
+sous les deux V8 en crête, toutes couches supposées en phase.
