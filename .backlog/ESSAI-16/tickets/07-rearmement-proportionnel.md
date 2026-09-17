@@ -1,8 +1,7 @@
 # 07 — Le réarmement du rétrogradage forcé travaille à l'envers en Sport
 
-**Statut :** 🧑 attend une donnée — les traces du 16 septembre ne sont pas sur
-ce poste, et le ticket demande de re-simuler dessus avant de proposer. Un code
-de liaison suffit (écran Compte, « Donner un code… »)
+**Statut :** ✅ fait le 17 septembre 2026 — traces rapatriées, règle rejouée
+dessus, correctif livré
 
 Après un rétrogradage forcé, la boîte attend que la charge redescende sous
 `seuil × 0,7` pour se réarmer (`gearbox.ts`). Le facteur est **proportionnel au
@@ -68,8 +67,31 @@ avant, puisque le nombre de déclenchements est justement ce que David a arbitr�
 
 ## Critères réécrits
 
-- [ ] Les deux modes se réarment au-dessus du neutre de l'échelle de charge,
+- [x] Les deux modes se réarment au-dessus du neutre de l'échelle de charge,
       c'est-à-dire en croisière ordinaire, et un test le tient.
-- [ ] La fréquence obtenue en Route est re-mesurée sur les traces du
-      16 septembre, et soumise à David si elle s'écarte d'un toutes les treize
-      minutes.
+- [x] La fréquence obtenue en Route est re-mesurée sur les traces du
+      16 septembre — elle ne bouge pas, donc rien à soumettre.
+
+## Ce que les traces disent
+
+Les trois trajets du 16 septembre, rapatriés par un code de liaison ; la règle de
+réarmement rejouée sur leur suite de charges réelles, 58 000 relevés, 92 minutes
+de roulage effectif.
+
+| Mode | Réarme sous | Déclenchements | Temps sous le niveau de réarmement |
+|---|---|---|---|
+| Route, avant | 0,525 | 11 | 75 % |
+| **Route, après** | **0,675** | **11** | **99 %** |
+| Sport, avant | 0,455 | 13 | 14 % |
+| **Sport, après** | **0,605** | **14** | **97 %** |
+
+**La fréquence ne bouge pas**, et c'était la seule crainte du ticket : onze
+contre onze en Route. Ce n'est pas le réarmement qui limite les déclenchements,
+mais la montée de charge exigée — 0,25 en une seconde et demie — et le temps mort
+de trois secondes entre deux.
+
+Ce qui change est l'autre bout : en Sport, la boîte restait désarmée 86 % du
+temps. Un rétrogradage forcé demandé deux fois de suite n'en donnait qu'un, sans
+que rien ne le dise.
+
+L'essai du 16 s'étant fait en Route, ce défaut n'a jamais été entendu.

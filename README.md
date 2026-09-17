@@ -3610,6 +3610,16 @@ pas une seule fois, et l'automate rejoué sur les 58 000 relevés ne rend que de
 rétrogradages forcés en 2 h 25. Les deux seuils sont descendus ensemble — 0,75
 de charge, 0,25 de montée —, ce qui en rend onze sur les mêmes trajets.
 
+**Son réarmement se rapporte au neutre de l'échelle**, et non à zéro. Après un
+rétrogradage forcé, il faut que la charge redescende avant d'en redéclencher un ;
+le facteur portait sur le seuil entier, ce qui donnait 0,525 en Route et 0,455 en
+Sport — deux valeurs **sous** le neutre, puisque rouler à vitesse stabilisée vaut
+0,5. Il fallait donc lever franchement le pied pour se réarmer, et Sport ne
+passait que 14 % du temps sous son niveau, contre 75 % pour Route. Rapporté à
+l'écart au neutre, on obtient 0,675 et 0,605 : 99 % et 97 % du temps sur les
+mêmes trajets, sans que le nombre de déclenchements bouge — onze contre onze. Ce
+sont la montée de charge et le temps mort qui le fixent, pas le réarmement.
+
 ### Ce qu'on entend d'un passage de rapport
 
 Un passage se déroule en cinq temps, et c'est la description que David en a
