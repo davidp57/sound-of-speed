@@ -52,10 +52,22 @@ pas la fenêtre d'un poste de travail.
 
 **Pas encore mesuré.** La mise en page n'a pas pu être inspectée dans le
 navigateur de prévisualisation le soir même : le volet était masqué, et toutes
-les dimensions y sortent à zéro — un rendu suspendu ne se mesure pas. Le relevé
-élément par élément à 773 × 575 est donc le **premier geste** de ce lot, avant
-toute décision. Tant qu'il n'est pas fait, on ne sait pas si le défaut est un
-débordement de quelques pixels ou une mise en page qui ne tient pas.
+les dimensions y sortent à zéro — un rendu suspendu ne se mesure pas. Et ce que
+la voiture remonte ne porte pas la page, seulement l'écran annoncé.
+
+Mesurer est donc le **premier geste** de ce lot, avant toute décision : c'est le
+[ticket 01](tickets/01-mesurer-l-espace-reel.md). Tant qu'il n'est pas fait, on
+ne sait ni si le défaut est un débordement de quelques pixels ou une mise en page
+qui ne tient pas, ni où passent les 481 et 209 px manquants.
+
+## Les tickets
+
+| Ticket | Statut |
+|---|---|
+| [01 — mesurer vraiment l'espace dont on dispose](tickets/01-mesurer-l-espace-reel.md) | ⬜ |
+
+Le reste du découpage attend les réponses ci-dessous, et les chiffres du
+ticket 01.
 
 ## Ce que ce lot reprend
 
