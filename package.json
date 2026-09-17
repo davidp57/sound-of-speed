@@ -2,7 +2,7 @@
   "name": "sound-of-speed",
   "private": true,
   "license": "AGPL-3.0-only",
-  "version": "0.2.103",
+  "version": "0.2.104",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,6 +21,7 @@
     "serveur": "npm run build:serveur && node dist-serveur/serveur.js",
     "coverage": "vitest run --coverage",
     "banque": "node scripts/banque.mjs",
+    "niveau-banques": "node scripts/niveau-banques/index.mjs",
     "transcode": "node scripts/transcode.mjs",
     "deploy": "node scripts/deploy.mjs",
     "icons": "node scripts/icons.mjs",

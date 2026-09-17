@@ -115,3 +115,59 @@ export async function fetchBanks(fetchImpl: typeof fetch = fetch): Promise<Bank[
 function compareNames(a: string, b: string): number {
   return a.localeCompare(b, 'fr')
 }
+
+/**
+ * Ce qu'on dit quand une banque ne se charge pas, et si relancer peut aboutir.
+ *
+ * Le message affiché était le nom du fichier suivi du code HTTP —
+ * `on-1021.flac : 404`. Il ne disait ni de quelle banque il s'agissait (le même
+ * nom de prise existe dans plusieurs), ni que le profil n'était pas jouable
+ * ici, ni quoi faire. Le diagnostic a demandé une conversation le 17 septembre
+ * 2026 ; il tenait dans une phrase.
+ *
+ * Les quatre cas ne mènent pas au même geste, et c'est pourquoi ils ne
+ * partagent pas une phrase :
+ *
+ * - **Absente** — 404. Changer de profil rend le son tout de suite. C'est aussi
+ *   ce que rend une banque réservée à d'autres comptes, et c'est voulu : dire
+ *   « interdit » confirmerait son existence (`serveur.ts`, route `/audio/*`).
+ * - **Sans compte** — 401. Le serveur ferme les échantillons depuis DURCIR ;
+ *   l'application s'ouvre un compte toute seule, donc ce cas veut dire que
+ *   l'ouverture a échoué, pas qu'il faut s'inscrire.
+ * - **Injoignable** — le `fetch` n'aboutit pas. Dans un tunnel, ce n'est pas
+ *   une panne : le cache sert les banques déjà écoutées, et seule une banque
+ *   jamais chargée manque à l'appel.
+ * - **Autre** — un 5xx. Réessayer a du sens, on ne sait pas plus.
+ */
+export interface BankLoadFailure {
+  /** Une phrase, qui nomme la banque et dit le geste. */
+  message: string
+  /** Vrai quand relancer le chargement peut aboutir sans rien changer d'autre. */
+  canRetry: boolean
+}
+
+/** Cause d'un chargement manqué : le code HTTP, ou l'absence de réponse. */
+export type BankLoadCause = number | 'unreachable'
+
+export function describeBankLoadFailure(bank: string, cause: BankLoadCause): BankLoadFailure {
+  const nom = bank === '' ? 'demandée' : bank
+  if (cause === 'unreachable') {
+    return {
+      message: `Pas de réseau, et la banque ${nom} n’a jamais été chargée ici.`,
+      canRetry: true,
+    }
+  }
+  if (cause === 404) {
+    return {
+      message: `Banque ${nom} absente de ce serveur : choisissez un autre profil.`,
+      canRetry: false,
+    }
+  }
+  if (cause === 401 || cause === 403) {
+    return {
+      message: `La banque ${nom} demande un compte : ouvrez l’écran Compte.`,
+      canRetry: false,
+    }
+  }
+  return { message: `La banque ${nom} n’a pas pu être chargée (erreur ${cause}).`, canRetry: true }
+}

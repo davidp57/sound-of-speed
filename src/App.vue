@@ -56,6 +56,8 @@ import {
   setKeepScreenOn,
   setMuted,
   soundState,
+  audioStatus,
+  synthIsOrigin,
 } from './state'
 
 /**
@@ -74,6 +76,24 @@ const SOUND_TITLES: Record<string, string> = {
   taken: 'Son pris par une autre application — toucher pour le rendre',
   on: 'Son actif — toucher pour le couper',
 }
+
+/**
+ * Le bouton s'offre-t-il encore à être touché ?
+ *
+ * Une banque absente de ce serveur ne descendra pas davantage au dixième appui :
+ * le bouton relançait un chargement voué à échouer, sans rien en dire. Il
+ * s'éteint alors, et donne le message en infobulle. Un profil généré en direct
+ * ne charge aucune banque — il n'y a rien à ne pas pouvoir reprendre.
+ */
+const soundRetryable = computed(
+  () => soundState.value !== 'error' || synthIsOrigin.value || audioStatus.value.canRetry,
+)
+
+const soundTitle = computed(() =>
+  soundState.value === 'error' && !soundRetryable.value
+    ? audioStatus.value.error
+    : (SOUND_TITLES[soundState.value] ?? 'Son'),
+)
 
 function toggleSound(): void {
   if (soundState.value === 'on') setMuted(true)
@@ -606,10 +626,10 @@ onBeforeUnmount(() => {
           class="icon-button"
           data-visite="son"
           :class="{ 'is-active': soundState === 'on', 'is-warn': soundState === 'taken' }"
-          :title="SOUND_TITLES[soundState]"
-          :aria-label="SOUND_TITLES[soundState]"
+          :title="soundTitle"
+          :aria-label="soundTitle"
           :aria-pressed="soundState === 'on'"
-          :disabled="!isRunning"
+          :disabled="!isRunning || !soundRetryable"
           @click="toggleSound()"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">

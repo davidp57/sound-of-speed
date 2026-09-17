@@ -6,6 +6,23 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Modifié
+
+- **Les quatre banques livrées sonnent au même niveau.** David : « les profils
+  L4 et L6 ont un volume audiblement plus faible que les V8 ». Ce n'étaient pas
+  les prises — mesurés sur les fichiers, les moteurs à un seul banc de cylindres
+  sont même plus forts. C'étaient les **gains du profil** : le générateur de
+  banque normalise à l'intérieur d'une banque, chacune prenant pour référence sa
+  propre prise la plus forte, et rien ne rapportait deux banques l'une à l'autre.
+
+  Mesure faite à travers le vrai mixage, sur neuf régimes, pied levé et pleine
+  charge : le six en ligne sortait **5,7 dB** sous le V8, et ses gains sont
+  remontés d'autant. Le quatre à plat, lui, n'a pas d'écart mesurable — 0,8 dB,
+  et le signe s'inverse selon la charge — donc ses gains n'ont pas bougé : ce
+  qu'on entend de moins sur lui vient d'ailleurs que du niveau. Aligner vers le
+  haut ne crée aucun écrêtage nouveau, le six en ligne restant sous les deux V8
+  en crête. La mesure se refait : `npm run niveau-banques`.
+
 ### Retiré
 
 - **La banque « V8 adouci » et son script.** Ils existaient pour trancher une
@@ -16,6 +33,24 @@ Toutes les évolutions notables du projet. Format
   ticket est rouvert sur cette piste.
 
 ### Corrigé
+
+- **Une banque absente disait le nom d'un fichier.** « on-1021.flac : 404 » : ni
+  de quelle banque il s'agissait — le même nom de prise existe dans plusieurs —,
+  ni que le profil n'était pas jouable ici, ni quoi faire. Le message nomme
+  maintenant la banque et dit le geste — « Banque gm-ls-adouci absente de ce
+  serveur : choisissez un autre profil » —, et il distingue quatre cas qui ne
+  mènent pas au même geste : absente, réclamée par un compte, serveur
+  injoignable, panne de serveur. Dans un tunnel, il ne crie plus à la panne.
+
+- **Le bouton du son relançait un chargement voué à échouer.** Il s'éteint quand
+  la banque n'est pas servie ici, et donne le message en infobulle ; il reste
+  actif hors réseau, où réessayer a un sens. L'erreur s'affiche aussi en plein
+  écran, où le bouton disait « Son en erreur » et rien d'autre.
+
+- **Changer de profil ne relançait rien après un échec de chargement.** Le
+  message conseille de choisir un autre profil : il fallait qu'il dise vrai. La
+  relecture des fichiers ne se déclenchait qu'à partir d'un son prêt ou en cours
+  de chargement, jamais depuis l'erreur.
 
 - **Les écrans de réglage ne se ferment plus qu'en voiture.** La garde regardait
   la seule source de vitesse : un poste de travail dont le navigateur donne une

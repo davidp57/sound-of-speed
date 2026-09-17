@@ -42,7 +42,7 @@ quand le reliquat change.
 | [DEPOSER](DEPOSER/spec.md) — sortir un profil ou une trace d'une voiture qui refuse les fichiers | 🧑 |
 | [ETALONNAGE](ETALONNAGE/spec.md) — mesurer la vraie voiture pour régler les virtuelles | 🚫 parcours manuel abandonné le 17 septembre ; seule la couche survit, et elle est prouvée |
 | [TABLEAU-DE-BORD](TABLEAU-DE-BORD/spec.md) — un vrai tableau de bord ; le paysage qui défile est abandonné | ✅ clos le 17 septembre — trois tickets livrés, le cadran de régime repris par [INTERFACE](INTERFACE/spec.md) |
-| [BANQUES](BANQUES/spec.md) — accueillir plusieurs banques de son : découverte, mesure outillée, choix par profil | 🧑 4/6 — deux tickets le 17 septembre : une banque absente se signale par le nom d'un fichier, et deux banques ne sonnent pas au même niveau — le six en ligne sort 4,3 dB sous le V8, par les gains du profil et non par les prises |
+| [BANQUES](BANQUES/spec.md) — accueillir plusieurs banques de son : découverte, mesure outillée, choix par profil | 🧑 6/6 — les deux tickets du 17 septembre sont livrés : une banque absente se nomme au lieu de rendre un nom de fichier, et les quatre banques livrées sonnent au même niveau — le six en ligne sortait 5,7 dB sous le V8, mesuré à travers le mixage, et ses gains sont remontés d'autant ; reste l'oreille |
 | [PENTE](PENTE/spec.md) — le GPS de la Tesla livre dix fois par seconde, et le conditionneur en attend une | 🧑 |
 | [EFFORT](EFFORT/spec.md) — la charge doit connaître la vitesse : tenir 50 km/h et tenir 130 ne sonnent pas pareil | 🧑 |
 | [PASSAGE](PASSAGE/spec.md) — un passage de rapport doit s'entendre comme un passage | ✅ validé en roulant le 16 septembre |

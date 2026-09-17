@@ -2916,7 +2916,12 @@ const sampleSignature = computed(() => {
 })
 
 watch(sampleSignature, () => {
-  if (audio.isReady || audio.status.phase === 'loading') {
+  // **Et après un échec aussi.** Un profil dont la banque manque laisse le
+  // moteur en erreur, et la phase d'erreur ne rentrait dans aucune des deux
+  // conditions : changer de profil ne relisait alors rien, et le message qui
+  // dit « choisissez un autre profil » aurait menti. Il faut un contexte audio
+  // déjà ouvert, ce qu'une erreur de chargement suppose.
+  if (audio.isReady || audio.status.phase === 'loading' || audio.status.phase === 'error') {
     void audio.load(activeProfile.value).then(refreshAudioStatus)
   }
 })

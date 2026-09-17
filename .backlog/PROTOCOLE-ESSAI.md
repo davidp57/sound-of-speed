@@ -89,6 +89,14 @@ Il a été baissé de 30 %, David le trouve encore trop fort et a validé une ba
 supplémentaire à 0,25. Vérifier après livraison.
 → [RETOUR-11/02](RETOUR-11/tickets/02-le-claquement-a-la-montee.md)
 
+**5 bis · Les quatre profils au même volume.**
+Passer de V8 à L6 puis à L4, sans toucher au volume. Les trois doivent sonner à
+la même force. Le six en ligne sortait 5,7 dB sous le V8, mesuré à travers le
+mixage ; ses gains ont été remontés d'autant. Le quatre à plat n'a pas été
+touché — sa mesure ne montre pas d'écart de niveau —, donc s'il paraît encore
+plus faible, c'est autre chose que du volume.
+→ [BANQUES/06](BANQUES/tickets/06-les-banques-ne-sonnent-pas-au-meme-niveau.md)
+
 ## Sur autoroute, à allure stabilisée
 
 **6 · Tenir 50 km/h une minute, puis tenir 130 une minute.**

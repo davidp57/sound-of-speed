@@ -1,6 +1,7 @@
 # 05 — Dire quelle banque manque, plutôt que le nom d'un fichier
 
-**Statut :** ⬜ prêt — demandé par David le 17 septembre 2026
+**Statut :** ✅ fait le 17 septembre 2026 — vérifié dans l'application sur les
+trois cas, en détournant le `fetch` des échantillons
 
 Le 17 septembre 2026, le profil « V8 adouci » a rendu l'application muette : sa
 banque n'était pas entrée dans l'image, et le serveur rendait 404 sur chacune de
@@ -50,11 +51,12 @@ Un message qui **nomme la banque** et dit le geste. Par exemple : « La banque
 
 ## Critères d'acceptation
 
-- [ ] Une banque absente du serveur nomme **la banque**, pas un fichier
-- [ ] Le message dit le geste qui rend le son
-- [ ] Un refus faute de compte dit autre chose qu'une banque absente
-- [ ] Le message tient sur une ligne à la largeur de l'écran de la voiture
-- [ ] Vérifié dans l'application, sur les trois cas : banque absente, compte
+- [x] Une banque absente du serveur nomme **la banque**, pas un fichier
+- [x] Le message dit le geste qui rend le son
+- [x] Un refus faute de compte dit autre chose qu'une banque absente
+- [x] Le message tient sur une ligne à la largeur de l'écran de la voiture —
+      un test le tient sous quatre-vingts caractères, nom de banque compris
+- [x] Vérifié dans l'application, sur les trois cas : banque absente, compte
       manquant, serveur injoignable
 
 ## Pourquoi ce ticket est ici
@@ -64,3 +66,16 @@ maintenant par trois tests. Mais l'intendance se retrompera un jour, et **un
 message juste aurait fait gagner le diagnostic** plutôt que de le faire
 dépendre d'une conversation. C'est un ticket de BANQUES parce que c'est une
 banque qu'il s'agit de nommer.
+
+## Ce que la vérification a trouvé en plus
+
+**Le conseil était faux.** « Choisissez un autre profil » n'aurait rien donné :
+la relecture des fichiers ne se déclenchait qu'à partir d'un son prêt ou en
+cours de chargement, jamais depuis l'erreur (`state.ts`, la veille sur la
+signature des couches). Changer de profil laissait donc le message précédent à
+l'écran et le son muet. Corrigé dans le même lot, sans quoi éteindre le bouton
+aurait enfermé le conducteur.
+
+Le bouton du son, lui, ne s'éteint que lorsque relancer ne peut pas aboutir —
+banque absente, ou compte réclamé. Hors réseau, il reste actif : le réseau
+revient.

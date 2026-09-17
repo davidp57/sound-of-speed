@@ -696,6 +696,7 @@ npm test             # les tests du cœur, une passe
 npm run test:watch   # les tests en continu, pendant qu'on écrit
 npm run coverage     # couverture de src/core/
 npm run banque       # relève une banque entière : ancrages et gains
+npm run niveau-banques # compare le niveau des banques livrées, et les aligne
 npm run transcode    # compresse les échantillons en FLAC
 npm run deploy       # recopie le build vers le NAS
 npm run icons        # régénère les icônes de l'application
@@ -3293,6 +3294,36 @@ en charge de leur registre, les deux prises « pied levé » retombent sur 3,03 
 **Le nombre de cylindres commande les régimes** : le passer faux les décale
 tous, sans que rien ne le signale. Huit par défaut, celui de la banque livrée.
 
+### Comparer deux banques entre elles
+
+Le relevé ci-dessus normalise **à l'intérieur** d'une banque : chacune prend
+pour référence sa propre prise la plus forte, et rien ne rapporte deux banques
+l'une à l'autre. Deux moteurs livrés pouvaient donc sonner à des niveaux
+différents sans que rien ne le dise — le six en ligne sortait 5,7 dB sous le V8,
+et cela s'entendait en changeant de profil.
+
+```bash
+npm run niveau-banques                        # le relevé
+npm run niveau-banques -- --charge 1          # à pleine charge seulement
+npm run niveau-banques -- --ecrire            # applique le correctif
+```
+
+Il mesure le niveau **joué** : le niveau efficace de chaque fichier, décodé par
+ffmpeg, multiplié par les gains que `computeMix` — le vrai mixage — pose à neuf
+régimes, pied levé et pleine charge. Les couches se somment en puissance, leurs
+phases étant tirées au sort au démarrage.
+
+Le niveau efficace, et non le pic : les fichiers sont déjà tous normalisés au
+même pic, et c'est le niveau perçu qui diffère — un V8 n'a pas le facteur de
+crête d'un quatre cylindres. La colonne **crête** donne le pire cas, toutes
+couches en phase : elle dit si remonter une banque la ferait écrêter.
+
+`--ecrire` multiplie les gains des couches dans les deux copies du profil de
+banque, celle du cœur et celle qui part avec les échantillons. En dessous d'un
+décibel d'écart, il ne touche à rien : un écart plus petit ne s'entend pas comme
+un écart de volume, et retoucher un profil déjà jugé à l'oreille coûterait plus
+que cela ne rendrait.
+
 ### Compression
 
 ```bash
@@ -3917,7 +3948,7 @@ suit pas.
 | 29 | Une banque produite ici par engine-sim, une prise par demi-octave, rejouée telle quelle dans la voiture | fait, reste à écouter |
 | 30 | engine-sim en WebAssembly : le son sort en direct et suit le régime | fait, reste à écouter |
 | 31 | Tout ce qui naît dans la voiture remonte tout seul : traces, journal, relevés de mesure, profils | fait, NAS en place, reste un essai en roulant |
-| 32 | Plusieurs banques de son : découvertes sur le serveur, mesurées par un outil, choisies par profil | fait, reste à essayer hors réseau |
+| 32 | Plusieurs banques de son : découvertes sur le serveur, mesurées par un outil, choisies par profil | fait, reste à essayer hors réseau ; les quatre banques livrées ont été alignées en niveau le 17 septembre — le six en ligne sortait 5,7 dB sous le V8 |
 | 33 | Le passage de rapport s'entend : couple coupé, plongée, coup de gaz, clac de boîte, et un seuil de montée qui suit la demande | écouté au simulateur, échantillons et synthèse, reste à rouler |
 | 34 | Le chemin du retour : les quatre dossiers du serveur se récupèrent en un paquet, depuis un téléphone | fait, reste l'essai de David |
 | 35 | Refonte : le son change d'origine, la boîte cesse de deviner de deux façons, l'application se sépare en deux, et un compte fait le lien | spécifié, en cours |
