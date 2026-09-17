@@ -21,10 +21,22 @@ arrivé, lu sur l'écran Télémétrie de la voiture :
 | Écran annoncé | 1 254 × 784 px |
 | Densité de pixels | 1,53 |
 
-L'écart entre l'annoncé et l'utile se voit sur les photos : la voiture garde pour
-elle une colonne à gauche, le bandeau « Vidéo bridée au son uniquement », la
-barre d'adresse du navigateur et sa barre d'icônes en bas. Il reste **moins des
-deux tiers de la largeur, et les trois quarts de la hauteur**.
+Les deux lignes sont en pixels CSS — `documentElement.clientWidth/Height` d'un
+côté, `screen.width/height` de l'autre —, donc l'écart se lit comme une
+soustraction : **481 px de largeur et 209 px de hauteur** ne reviennent pas à la
+page. Il lui reste 62 % de la largeur et 73 % de la hauteur.
+
+Les chiffres sont cohérents entre eux : 1 254 × 1,53 = 1 918 et 784 × 1,53 =
+1 199, soit la dalle de 1 920 × 1 200 de la Model 3 Highland.
+
+**Où passent ces 481 et 209 px n'est pas mesuré.** Les photos montrent une
+colonne à gauche, le bandeau « Vidéo bridée au son uniquement », la barre
+d'adresse et une barre d'icônes en bas — mais la part de chacun n'a été relevée
+nulle part, et le zoom par défaut du navigateur, que
+[NAVIGATEUR-VOITURE](../NAVIGATEUR-VOITURE/spec.md) signale comme non réglable et
+augmenté avec le logiciel 2026.26, peut en expliquer une partie. Le savoir
+changerait la conception : de la place reprise sur une barre n'est pas de la
+place qu'on n'aura jamais.
 
 C'est cette taille-là qui est la cible de conception. Pas 1 254 × 784, et surtout
 pas la fenêtre d'un poste de travail.
@@ -64,10 +76,12 @@ Rien de ceci n'est décidé, et le découpage en tickets attend ces réponses.
    bloc de commandes, le volume, les bandeaux, la barre d'onglets, la barre
    d'outils. En 575 px de haut, tout ne tiendra pas confortablement : qu'est-ce
    qui est vital en roulant, et qu'est-ce qui peut descendre d'un cran ?
-2. **Le plein écran change-t-il la donne ?** Le bouton existe. S'il récupère la
-   barre d'adresse et le bandeau vidéo, la hauteur utile n'est plus la même — et
-   la question devient : conçoit-on pour l'écran réduit, pour le plein écran, ou
-   pour les deux ?
+2. **Le plein écran change-t-il la donne ?** Le bouton existe, et la réponse se
+   mesure au lieu de se supposer : il suffit de relever la largeur et la hauteur
+   utiles une fois en plein écran, sur l'écran Télémétrie, pour savoir ce qu'il
+   rend. Si l'écart vient d'un zoom et non des barres, il ne rendra rien. La
+   question devient alors : conçoit-on pour l'écran réduit, pour le plein écran,
+   ou pour les deux ?
 3. **Les bandeaux : superposés ou dans le flux ?** Un bandeau qui pousse le
    contenu fait bouger les commandes sous le doigt en roulant. Un bandeau qui se
    superpose masque ce qu'il recouvre. Il y a un troisième terme — une zone
