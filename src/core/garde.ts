@@ -6,20 +6,29 @@
  * l'appareil (`appareil.ts`) dit ce qui a un sens là où l'on est ; celui-ci dit
  * ce qui a un sens **maintenant**. Les trois se croisent par un et.
  *
- * **Il ne repose sur aucune devinette.** L'application sait de source sûre d'où
- * vient son chiffre de vitesse. Reconnaître une voiture à la chaîne d'agent du
- * navigateur est un pari que `appareil.ts` annonce lui-même comme non vérifié
- * sur la vraie Tesla : une détection ratée ouvrirait en roulant l'écran que la
- * garde devait fermer.
+ * **Il ne se déclenche qu'en voiture, et c'est un arbitrage rendu.** Il regardait
+ * le seul GPS jusqu'au 17 septembre 2026 : un poste de travail dont le
+ * navigateur donne une position — par le réseau, sans satellite — se voyait
+ * fermer ses écrans de réglage et devait patienter trente secondes, au bureau,
+ * devant une voiture qui n'existe pas. David l'a demandé deux fois.
+ *
+ * Ce que l'ancienne version invoquait contre, et qui reste vrai : reconnaître
+ * une voiture à la chaîne d'agent du navigateur est un pari que `appareil.ts`
+ * annonce lui-même comme non vérifié sur la vraie Tesla, et une détection ratée
+ * ouvre en roulant l'écran que la garde devait fermer. **Ce n'est plus une
+ * devinette que la garde consulte, c'est la déclaration** — celle que l'écran du
+ * compte laisse corriger. Le pari change de nature : il porte sur ce que
+ * quelqu'un a dit de son appareil, pas sur ce qu'un agent laisse deviner.
  *
  * **Il regarde le GPS, jamais la chaîne.** Une garde qui lirait la vitesse
  * produite se fermerait sur elle-même dès qu'on simule 90 km/h — c'est-à-dire
  * exactement quand on règle. Sous simulateur ou rejeu, il n'y a donc pas de
  * garde du tout.
  *
- * Il reste un trou, et il est assumé : quelqu'un installé en voiture qui
- * déclare un poste **et** passe au simulateur échappe à tout. Il n'entend alors
- * plus sa propre vitesse, donc il ne conduit plus avec.
+ * Le trou s'élargit et reste assumé : qui conduit avec un appareil déclaré poste
+ * n'a plus de garde. Il n'en avait déjà plus s'il passait au simulateur ; il lui
+ * suffit maintenant de la déclaration. C'est le prix de ne plus attendre au
+ * bureau, et c'est celui que David a choisi de payer.
  */
 
 /** Ce qu'il faut d'immobilité avant qu'un écran gardé s'ouvre. */
@@ -61,6 +70,14 @@ export function observer(etat: EtatDeGarde, releve: Releve): EtatDeGarde {
 
 export interface Situation {
   auGps: boolean
+  /**
+   * L'appareil est-il **déclaré** comme la voiture ?
+   *
+   * Obligatoire, et pas optionnel avec une valeur par défaut : un appelant qui
+   * l'oublierait lèverait la garde en roulant, et c'est exactement ce qu'aucune
+   * valeur par défaut ne doit pouvoir faire arriver en silence.
+   */
+  enVoiture: boolean
   /** L'application produit-elle du son ? Au repos, elle n'en produit pas. */
   enMarche: boolean
   maintenantMs: number
@@ -77,6 +94,10 @@ export interface Situation {
  * ferait patienter une demi-minute pour une voiture qui n'existe pas.
  */
 export function ecranOuvert(etat: EtatDeGarde, situation: Situation): boolean {
+  // Hors de la voiture, rien à garder : les deux conditions se cumulent par un
+  // et, et c'est la règle que David a posée — « GPS actif **et** cet appareil
+  // est la voiture ».
+  if (!situation.enVoiture) return true
   if (!situation.auGps) return true
   if (situation.enMarche) return false
   if (etat === 'rien-recu') return true

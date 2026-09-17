@@ -8,6 +8,18 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Les écrans de réglage ne se ferment plus qu'en voiture.** La garde regardait
+  la seule source de vitesse : un poste de travail dont le navigateur donne une
+  position par le réseau, sans satellite, était pris pour une voiture à l'arrêt
+  et faisait patienter **trente secondes** avant d'ouvrir l'onglet Avancé. Elle
+  regarde maintenant la source **et** l'appareil déclaré : « GPS actif et cet
+  appareil est la voiture ». Demandé par David, et c'était la deuxième fois.
+
+  Ce lot avait tranché l'inverse, au motif qu'une détection d'appareil ratée
+  ouvrirait en roulant l'écran que la garde ferme. L'argument tient, mais la
+  garde consulte la **déclaration** — corrigeable dans l'écran Compte — et non la
+  devinette ; et elle se trompait déjà dans l'autre sens, tous les jours.
+
 - **Le profil « V8 adouci » rendait l'application muette.** Sa banque n'était pas
   excéptée dans `.dockerignore` : elle entrait dans le dépôt mais pas dans
   l'image, et le serveur rendait 404 sur chacune de ses prises — « on-1021.flac :

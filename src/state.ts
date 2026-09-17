@@ -679,9 +679,14 @@ export const isRunning = ref(false)
 const garde = ref<EtatDeGarde>(GARDE_AU_DEPART)
 const gardeHorlogeMs = ref(Date.now())
 
-/** Ce que la garde regarde : la source, le repos, et l'heure. */
+/** Ce que la garde regarde : la source, l'appareil, le repos, et l'heure. */
 const situationDeGarde = computed(() => ({
   auGps: sourceKind.value === 'geolocation',
+  // L'appareil **déclaré**, celui que l'écran du compte laisse corriger. Un
+  // poste de travail dont le navigateur donne une position par le réseau se
+  // voyait fermer ses écrans de réglage et patienter trente secondes au bureau ;
+  // David l'a demandé deux fois avant que ce soit écrit.
+  enVoiture: appareil.value === 'voiture',
   enMarche: isRunning.value,
   maintenantMs: gardeHorlogeMs.value,
 }))
