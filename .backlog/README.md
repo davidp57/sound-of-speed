@@ -23,9 +23,10 @@ générateur. Les artefacts naissent à `⬜ prêt`. La convention détaillée e
 
 Ce qui reste à vérifier au volant est rassemblé dans
 [PROTOCOLE-ESSAI.md](PROTOCOLE-ESSAI.md) — par geste et non par lot, parce que
-c'est ainsi qu'on conduit. Dix points, dont cinq se soldent dans une seule
-accélération franche et cinq autres dans un passage en parking souterrain. Écrit
-le 17 septembre 2026 ; il se réécrit quand le reliquat change.
+c'est ainsi qu'on conduit. Quatorze points : cinq se soldent à l'arrêt avant de
+partir, cinq dans une seule accélération franche, le reste au parking souterrain
+ou au bureau. Écrit le 17 septembre 2026 et revu le soir même ; il se réécrit
+quand le reliquat change.
 
 ## Lots actifs
 

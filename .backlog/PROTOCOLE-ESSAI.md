@@ -7,15 +7,50 @@ mais les gestes, parce que c'est ainsi qu'on conduit.
 **Il se périme.** Chaque ligne renvoie à son ticket ; c'est le ticket qui fait
 foi, et ce document se réécrit quand le reliquat change.
 
-## Avant de partir — trois minutes à l'arrêt
+*Revu le 17 septembre 2026 au soir* : les points à l'arrêt passent de deux à
+cinq. Le relevé du taux d'échantillonnage y entre — c'est le chiffre qui
+manque pour comprendre pourquoi les parasites s'entendent dans la voiture et
+pas sur un PC —, avec l'appareil déclaré, dont dépend désormais la garde des
+écrans, et le ralenti, qui a retrouvé la moitié de tremblement qu'une borne lui
+mangeait.
+
+## Avant de partir — cinq minutes à l'arrêt
 
 **0.1 · La version.** Écran Télémétrie, section Appareil. Elle doit être **au
-moins 0.2.88**. En dessous, les seuils du rétrogradage forcé sont les anciens et
-la moitié des écoutes ci-dessous ne veut rien dire.
+moins 0.2.103**. En dessous, les seuils du rétrogradage forcé sont les anciens,
+le tremblement du ralenti est amputé, et la moitié des écoutes ci-dessous ne
+veut rien dire.
 
-**0.2 · Le son au repos.** Mettre sur **P**, puis changer de profil. **Aucun son
-ne doit sortir.** S'il sort, c'est le défaut connu — rien à faire, le noter
-suffit. → [ESSAI-16/13](ESSAI-16/tickets/13-jamais-de-son-au-repos.md)
+**0.2 · Le taux d'échantillonnage.** Écran Télémétrie, section du son :
+relever la valeur, une seule fois. **C'est le chiffre le plus utile de cette
+liste.**
+
+S'il n'est **pas 44 100 Hz**, toute la banque est rééchantillonnée par le
+navigateur de bord en plus du rééchantillonnage que le régime impose déjà — et
+un interpolateur sans filtre anti-repliement fabrique des fréquences qui
+n'existent dans aucun fichier. Ce serait l'explication des « fréquences
+parasites » que David entend dans la voiture et **pas sur son PC**, sur la même
+banque.
+
+Cette valeur discrimine la piste à elle seule ; sans elle on en est aux
+hypothèses. → [ESSAI-16/11](ESSAI-16/tickets/11-frequences-parasites-sur-les-v8.md)
+
+**0.3 · L'appareil déclaré.** Écran Compte, « Cet appareil » : il doit dire
+**Voiture**. Depuis le 17 septembre 2026, c'est lui qui décide si les écrans de
+réglage se ferment en roulant — déclaré « poste », la voiture n'a plus de garde
+du tout. → [MENAGE-UI](MENAGE-UI/spec.md)
+
+**0.4 · Le son au repos.** Mettre sur **P**, puis changer de profil. **Aucun
+son ne doit sortir.** C'était le défaut du 16 septembre ; il est corrigé et
+mesuré au poste, ce geste le confirme dans la voiture.
+→ [ESSAI-16/13](ESSAI-16/tickets/13-jamais-de-son-au-repos.md)
+
+**0.5 · Le ralenti, moteur en marche, voiture arrêtée.** Écouter dix secondes :
+le ralenti ne doit plus sonner comme une **fréquence pure**. Le compte-tours
+doit frémir des deux côtés de 750, et non rester collé dessus. Les deux vont
+ensemble — c'est la même moitié de tremblement qu'une borne mangeait.
+→ [ESSAI-16/09](ESSAI-16/tickets/09-tremblement-ampute-au-ralenti.md),
+[ESSAI-16/10](ESSAI-16/tickets/10-aiguille-sans-tremblement.md)
 
 ## Pendant le trajet — rien à faire
 
@@ -31,13 +66,13 @@ Un seul aller-retour suffit, et il solde cinq points d'un coup.
 Le rétrogradage forcé doit descendre chercher du couple et **rendre le rapport
 dès que le pied se relâche**. C'est le correctif d'hier : avant, il ne partait
 que deux fois en deux heures et demie.
-→ [RETOUR-11/01](RETOUR-11/tickets/01-le-retrogradage-force.md),
+→ [RETOUR-11/01](RETOUR-11/tickets/01-borner-la-cible-du-kickdown.md),
 [ESSAI-16/01](ESSAI-16/tickets/01-kickdown-inatteignable.md)
 
 **2 · Dans la même accélération, écouter où les rapports passent.**
 Ils passent 15 à 20 % plus tôt qu'avant. La question est simple : **est-ce trop
 tôt ?** Un moteur qui n'a plus le temps de chanter serait le signe qu'on a trop
-baissé. → [ETAGEMENT/02](ETAGEMENT/tickets/02-passer-plus-tot-en-mode-route.md)
+baissé. → [ETAGEMENT/02](ETAGEMENT/tickets/02-passer-plus-tot-en-route.md)
 
 **3 · Lever le pied franchement, sans freiner, et laisser ralentir.**
 Les rapports doivent descendre l'un après l'autre sans remonter. David trouve
@@ -70,9 +105,9 @@ repartir en remontant.
 
 Ce geste unique solde **cinq tickets** :
 [COMPTES/07](COMPTES/tickets/07-hors-reseau-rien-ne-change.md),
-[BANQUES/04](BANQUES/tickets/04-la-banque-suit-le-profil.md),
+[BANQUES/04](BANQUES/tickets/04-cache-hors-reseau.md),
 [DURCIR/01](DURCIR/tickets/01-fermer-la-banque-derriere-un-compte.md),
-[SERVEUR/08](SERVEUR/tickets/08-un-conteneur-un-langage.md),
+[SERVEUR/08](SERVEUR/tickets/08-un-seul-service-sur-develop.md),
 [REMONTEE/02](REMONTEE/tickets/02-une-trace-part-toute-seule.md).
 
 ## Au bureau, sans voiture
@@ -82,10 +117,15 @@ laisser charger, couper le réseau, recharger. C'est 80 % du critère de
 SERVEUR/08, et cela ne demande pas la route.
 
 **9 · Le rejeu sonore d'une capture.** Ouvrir un des trajets du 16 dans le
-relecteur et l'écouter. → [RELECTURE/08](RELECTURE/tickets/08-le-rejeu-sonore.md)
+relecteur et l'écouter. → [RELECTURE/08](RELECTURE/tickets/08-rejeu-sonore.md)
 
 **10 · Le bouton de rapatriement.** Un appui depuis un appareil qui télécharge.
 David : « je testerai plus tard ». → [RAPATRIER](RAPATRIER/spec.md)
+
+**11 · Reprendre les profils du serveur.** Dans l'atelier, le bouton du même
+nom. Il efface les profils de l'appareil et prend ceux du serveur à la place, en
+deux appuis. Vérifié contre un serveur simulé ; ce qui reste à voir est le
+chemin réel, compte compris. → [REMONTEE/08](REMONTEE/tickets/08-reprendre-du-serveur-sans-dupliquer.md)
 
 ## Ce qu'il ne faut pas tester, et pourquoi
 
