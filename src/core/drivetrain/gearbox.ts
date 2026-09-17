@@ -4,6 +4,7 @@ import type { DrivetrainPreset, EnginePreset, FeelPreset } from '../preset/schem
 import {
   downshiftFloorRpm,
   kickdownLoadFor,
+  kickdownRearmLoadFor,
   upshiftFloorRpm,
   FIRST_UPSHIFT_FLOOR_RPM,
   type DriveMode,
@@ -548,7 +549,7 @@ export class Gearbox {
       const threshold = kickdownLoadFor(this.driveMode)
       // Le pied quitte le plancher : le rapport pris n'est plus retenu.
       if (load < threshold) this.kickdownHold = null
-      if (load < threshold * 0.7) this.kickdownArmed = true
+      if (load < kickdownRearmLoadFor(this.driveMode)) this.kickdownArmed = true
       else if (
         this.kickdownArmed &&
         load >= threshold &&

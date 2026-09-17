@@ -74,6 +74,19 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le rétrogradage forcé se réarme maintenant en roulant normalement.** Il
+  attendait que la charge redescende sous `seuil × 0,7`, un facteur appliqué à
+  une échelle dont zéro n'est pas l'origine : faute de pédale, la charge se
+  déduit de l'accélération et vaut 0,5 à vitesse stabilisée. Les deux points de
+  réarmement tombaient donc **sous** ce neutre — 0,525 en Route, 0,455 en Sport —
+  et il fallait lever franchement le pied pour redevenir armé. Mesuré sur les
+  traces du 16 septembre, Sport ne passait que 14 % du temps sous le sien.
+
+  Le facteur porte désormais sur l'écart au neutre : 0,675 et 0,605, soit 99 % et
+  97 % du temps. **La fréquence des déclenchements ne bouge pas** — onze contre
+  onze en Route sur les mêmes traces : ce sont la montée de charge exigée et le
+  temps mort qui la fixent.
+
 - **Le son écrêtait dès que le volume dépassait la moitié de la course.** Le gain
   de rattrapage de 1,8 était placé **après** le limiteur : rien ne rattrapait ce
   qu'il faisait dépasser, et le limiteur, qui ne voyait pas la sortie, ne servait

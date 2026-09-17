@@ -5,6 +5,8 @@ import {
   driveModeFromUpshiftRpm,
   isDriveMode,
   kickdownLoadFor,
+  kickdownRearmLoadFor,
+  NEUTRAL_LOAD,
   upshiftFloorRpm,
   FIRST_UPSHIFT_FLOOR_RPM,
   type DriveMode,
@@ -114,6 +116,23 @@ describe('le rétrogradage forcé', () => {
     // désignent une accélération franche, pas une relance ordinaire.
     expect(kickdownLoadFor('sport')).toBeGreaterThan(0.5)
     expect(kickdownLoadFor('road')).toBeLessThanOrEqual(1)
+  })
+
+  it('se réarme en roulant normalement, dans les deux modes', () => {
+    // Le facteur portait sur le seuil entier, donc sur une échelle dont zéro
+    // n'est pas l'origine : les deux points de réarmement tombaient **sous** le
+    // neutre, et il fallait lever franchement le pied pour se réarmer. Mesuré
+    // sur les traces du 16 septembre 2026, Sport ne passait que 14 % du temps
+    // sous le sien, contre 75 % pour Route.
+    for (const mode of MODES) {
+      expect(kickdownRearmLoadFor(mode)).toBeGreaterThan(NEUTRAL_LOAD)
+    }
+  })
+
+  it('garde l’hystérésis : on ne se réarme pas au niveau où l’on déclenche', () => {
+    for (const mode of MODES) {
+      expect(kickdownRearmLoadFor(mode)).toBeLessThan(kickdownLoadFor(mode))
+    }
   })
 
   /**

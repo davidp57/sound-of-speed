@@ -158,6 +158,50 @@ export function kickdownLoadFor(mode: DriveMode): number {
   return DRIVE_MODE_FEEL[mode].kickdownLoad
 }
 
+/**
+ * Le neutre de l'échelle de charge : ni accélération, ni décélération.
+ *
+ * Faute de pédale, la charge se déduit de l'accélération et vaut donc **0,5** en
+ * vitesse stabilisée (`engine.ts`, `advanceLoad`) — mesuré sur les traces du
+ * 16 septembre 2026, 0,5000000002 à 109 km/h tenus. Zéro, lui, est une
+ * décélération franche, pas un repos.
+ */
+export const NEUTRAL_LOAD = 0.5
+
+/**
+ * Part de l'écart au neutre sous laquelle le rétrogradage forcé se réarme.
+ *
+ * C'est une hystérésis : il faut redescendre franchement avant de pouvoir
+ * redéclencher, sinon une accélération soutenue en enchaînerait plusieurs.
+ */
+const KICKDOWN_REARM_SHARE = 0.7
+
+/**
+ * La charge sous laquelle le rétrogradage forcé se réarme.
+ *
+ * **Rapportée au neutre, et non à zéro.** Le facteur portait sur le seuil
+ * entier : 0,525 en Route et 0,455 en Sport, soit deux valeurs **sous** le
+ * neutre de l'échelle. Il fallait donc lever franchement le pied pour se
+ * réarmer, là où une croisière ordinaire devrait suffire — et l'effet était bien
+ * pire en Sport, qui passait 14 % du temps sous son niveau contre 75 % pour
+ * Route, mesuré sur les traces du 16 septembre 2026.
+ *
+ * Rapporté au neutre, on obtient 0,675 et 0,605 : les deux modes se réarment en
+ * roulant normalement, 99 % et 97 % du temps sur les mêmes traces.
+ *
+ * **Cela ne change pas la fréquence des déclenchements**, et c'était la crainte :
+ * rejoué sur ces traces, 11 contre 11 en Route et 14 contre 13 en Sport, sur
+ * 92 minutes. Ce n'est pas le réarmement qui limite, mais la montée de charge
+ * exigée et le temps mort entre deux.
+ *
+ * Sport reste plus bas que Route, et c'est inévitable : toute hystérésis
+ * retranche au seuil, et le seuil de Sport est par construction le plus bas.
+ */
+export function kickdownRearmLoadFor(mode: DriveMode): number {
+  const seuil = kickdownLoadFor(mode)
+  return NEUTRAL_LOAD + (seuil - NEUTRAL_LOAD) * KICKDOWN_REARM_SHARE
+}
+
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value))
 }
