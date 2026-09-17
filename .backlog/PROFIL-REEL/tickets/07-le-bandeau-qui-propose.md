@@ -1,6 +1,6 @@
 # 07 — Le bandeau qui propose, et la couche qui s'applique
 
-**Statut :** 🧑 attend David — livré, reste l'essai en roulant
+**Statut :** ✅ prouvé le 17 septembre 2026 — le bandeau s'affiche (David l'a signalé lui-même, caché sous les commandes : voir [INTERFACE](../../INTERFACE/spec.md)) et la couche s'applique vraiment : son profil tourne avec `fullLoadAccelMs2` à 5,5 quand l'usine dit 2 à 2,5, et le serveur a mesuré 5,5455 sur ses six trajets
 
 **Bloqué par :** 05 et 06 — il faut un verdict, et un résultat sur le serveur.
 

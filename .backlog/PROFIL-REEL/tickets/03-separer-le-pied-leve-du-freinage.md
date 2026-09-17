@@ -1,6 +1,6 @@
 # 03 — Séparer le pied levé du freinage, sans le demander
 
-**Statut :** 🧑 attend David — livré, mais la bimodalité reste à établir
+**Statut :** 🚫 tranché le 17 septembre 2026, et la réponse est **non** — mesuré sur 13 108 relevés des trajets du 16, bouchons d'autoroute compris : la distribution des ralentissements est monotone (65,8 % à −0,5 m/s², 20 % à −1, 8,8 % à −1,5…), une bosse et une queue, aucune rupture. La régénération d'une Tesla freine dès qu'on lève le pied : il n'y a pas de roue libre, donc pas deux populations à séparer. Le ticket ne se validera jamais tel qu'écrit
 
 **Bloqué par :** 01 — Lire une capture déposée.
 

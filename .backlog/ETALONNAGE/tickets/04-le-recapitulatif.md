@@ -1,6 +1,6 @@
 # 04 — Le récapitulatif : mesuré face à réglé
 
-**Statut :** ✅ fait
+**Statut :** 🚫 abandonné le 17 septembre 2026 — David : « ok on l'abandonne ». Le parcours manuel demandait un protocole au volant pour obtenir ce que six trajets ordinaires donnent déjà : l'étalonnage automatique est mesuré, servi et appliqué, vérifié le 17 septembre sur le serveur
 
 **Bloqué par :** 02 — Distinguer lever le pied d'un freinage ; 03 — Ville,
 route, autoroute : ce qu'on fait vraiment

@@ -1,6 +1,6 @@
 # 05 — L'étalonnage est une couche, pas une recopie
 
-**Statut :** 🧑 attend David
+**Statut :** ✅ prouvé le 17 septembre 2026 — la couche se compose bel et bien : le profil de David tourne avec `fullLoadAccelMs2` à 5,5 quand sa valeur d'usine vaut 2 à 2,5, et le serveur a mesuré `pushPeakMs2` à 5,5455 sur ses six trajets. **Ce ticket n'est pas abandonné avec le parcours manuel** : c'est le mécanisme qui marche
 
 **Bloqué par :** 04 — Le récapitulatif : mesuré face à réglé
 

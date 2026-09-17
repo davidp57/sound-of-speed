@@ -1,6 +1,6 @@
 # ETALONNAGE — mesurer la vraie voiture pour régler les virtuelles
 
-**Statut :** 🧑 attend David
+**Statut :** 🚫 le parcours manuel est abandonné le 17 septembre 2026 — l'étalonnage automatique depuis les trajets ordinaires le remplace entièrement, et sa couche est prouvée (ticket 05). Seul le ticket 05 survit ; les quatre autres tombent
 **Branche :** `feature/etalonnage`
 **Version visée :** 0.4
 

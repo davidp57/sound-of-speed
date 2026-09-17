@@ -1,6 +1,6 @@
 # 05 — Savoir dire qu'on en sait assez, et ce qui manque
 
-**Statut :** 🧑 attend David — livré, mais les comptes exigés sont sans doute trop bas
+**Statut :** 🔁 le doute écrit ici est confirmé, le 17 septembre 2026 — la couverture se déclare complète, mais sur des comptes sans commune mesure : 41 départs pour 3 exigés, 474 ralentissements pour 20… et **1 freinage net pour 1 exigé**. Le lot se déclare complet sur un échantillon de un, pour sa distinction la plus difficile — laquelle vient d'ailleurs d'être invalidée par le ticket 03
 
 **Bloqué par :** 02 et 03 — le verdict porte sur ce qu'ils savent reconnaître.
 

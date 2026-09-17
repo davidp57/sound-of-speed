@@ -1,6 +1,6 @@
 # 02 — Distinguer lever le pied d'un freinage
 
-**Statut :** 🧑 attend David
+**Statut :** 🚫 abandonné le 17 septembre 2026, et pour une raison de fond — mesuré sur 13 108 relevés de ralentissement des trajets du 16 : la distribution n'a **qu'une bosse et une queue**, sans rupture. Lever le pied dans une Tesla déclenche la régénération, qui freine déjà fort : il n'y a pas de roue libre, donc pas deux façons de ralentir à distinguer. Voir [PROFIL-REEL/03](../../PROFIL-REEL/tickets/03-separer-le-pied-leve-du-freinage.md)
 
 **Bloqué par :** 01 — Une étape, de la consigne à la valeur proposée
 
