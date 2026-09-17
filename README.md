@@ -2501,6 +2501,27 @@ profil. Au premier lancement, il se déduit du profil actif.
 long**, **V8 adouci**, **L6** et **L4**, un par banque produite au banc —, et le
 bouton **Profils d'usine** réintroduit ceux qu'on a supprimés.
 
+**« Reprendre les profils du serveur »**, dans l'atelier, efface les profils de
+cet appareil et prend ceux du serveur à la place. C'est un remplacement et non
+une fusion : le serveur fait foi, il n'y a donc ni arbitrage à rendre ni écart à
+comparer. Ce que le serveur ne porte pas est complété par les profils d'usine
+manquants, comme si l'on avait tout supprimé puis touché « Profils d'usine ».
+
+Le geste **demande deux appuis** et annonce au premier combien de profils vont
+partir. **Rien ne s'efface tant que le serveur n'a rien rendu** : hors réseau,
+sans compte ou sur un dossier vide, la bibliothèque rend une liste vide, et une
+liste vide ne veut pas dire « efface tout ». Les moteurs et les boîtes, eux,
+restent — supprimer un profil ne les a jamais emportés, et le rattachement
+retrouve celui qui correspond plutôt que d'en créer un second.
+
+La liste des profils du serveur, dans la configuration, propose aussi de
+**reprendre** un profil à l'unité. Elle proposait « Ajouter », et c'était un
+piège : reprendre un profil qu'on avait déjà en fabriquait un second, du même nom,
+que rien ne distinguait à l'écran. La cause était plus bas — la lecture de la
+bibliothèque donnait un identifiant neuf à chaque profil lu, si bien qu'aucun
+rapprochement n'était possible. Elle garde maintenant celui du fichier, comme le
+rapatriement du lancement le faisait déjà.
+
 **« V8 adouci » est là pour trancher une question**, pas pour rester. Mesuré le
 17 septembre 2026, les deux banques de V8 portent, au niveau de leur allumage
 lui-même, des composantes qui n'en sont pas des multiples — là où le six en ligne

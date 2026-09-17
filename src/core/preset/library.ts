@@ -1,4 +1,4 @@
-import { fromFile } from './store'
+import { fromFile, newId } from './store'
 import type { Profile } from './schema'
 
 /**
@@ -67,7 +67,12 @@ export async function fetchLibrary(
       try {
         const response = await fetchImpl(LIBRARY_PATH + encodeURIComponent(file), { headers })
         if (!response.ok) return null
-        return { file, profile: fromFile(await response.text()) }
+        // **L'identifiant d'origine est gardé**, comme pour le rapatriement du
+        // lancement : ce dossier est celui de son propre compte, et ces profils
+        // sont les siens qui redescendent. Leur en donner un neuf à chaque
+        // lecture rendait tout rapprochement impossible — reprendre un profil
+        // qu'on avait déjà en fabriquait un second, indiscernable du premier.
+        return { file, profile: fromFile(await response.text(), (origine) => origine ?? newId()) }
       } catch {
         // Un fichier illisible ne doit pas emporter toute la liste.
         return null

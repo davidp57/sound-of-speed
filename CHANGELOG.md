@@ -8,6 +8,14 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **La bibliothèque du serveur donnait un identifiant neuf à chaque profil lu.**
+  Conséquence : reprendre un profil qu'on avait déjà en fabriquait un second, du
+  même nom, que rien ne distinguait à l'écran — et la sélection prenait le premier
+  trouvé, pas forcément celui qu'on venait de reprendre. Elle garde maintenant
+  l'identifiant du fichier, comme le rapatriement du lancement le faisait déjà, et
+  le bouton de la liste dit « Reprendre » plutôt qu'« Ajouter » parce que c'est ce
+  qu'il fait : il remplace la version locale au lieu de s'y ajouter.
+
 - **Au ralenti, le tremblement du régime était amputé de moitié.** David :
   « j'ai pas l'impression que les oscillations aléatoires de rpm soient là ; au
   ralenti, le moteur est à 800 rpm stables. » Il avait raison, et la cause tenait
@@ -57,6 +65,14 @@ Toutes les évolutions notables du projet. Format
   qui l'ont déclenché. Relevé par David en essayant la régie sur le serveur.
 
 ### Ajouté
+
+- **Un bouton « Reprendre les profils du serveur »**, dans l'atelier : il efface
+  les profils de cet appareil et prend ceux du serveur à la place, en complétant
+  par les profils d'usine que le serveur ne porte pas. Demandé par David, qui le
+  décrivait comme « supprimer tous les profils puis profils d'usine », en un seul
+  geste. Deux appuis, le premier disant combien de profils vont partir, et **rien
+  ne s'efface tant que le serveur n'a rien rendu** — une bibliothèque vide ne veut
+  pas dire « efface tout ».
 
 - **Un cinquième profil livré, « V8 adouci », pour trancher une question à
   l'oreille.** C'est le même GM LS que « V8 », débarrassé de ce qui n'est pas
