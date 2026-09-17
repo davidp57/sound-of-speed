@@ -1,0 +1,232 @@
+{
+  "name": "V8 adouci",
+  "soundSource": "prerendered",
+  "engineDefinition": {
+    "cylinders": 8,
+    "bore": 3.78,
+    "stroke": 3.622,
+    "rodLength": 6.299,
+    "chamberVolume": 90,
+    "intakeRunnerVolume": 149.6,
+    "intakeRunnerArea": 4.84,
+    "exhaustRunnerVolume": 50,
+    "exhaustRunnerArea": 3.0625,
+    "lobeSeparation": 114,
+    "intakeLobeCenter": 116,
+    "exhaustLobeCenter": 116,
+    "intakeLift": 0.551,
+    "exhaustLift": 0.551,
+    "intakeDuration": 234,
+    "exhaustDuration": 235,
+    "plenumVolume": 1.325,
+    "intakeFlowRate": 700,
+    "idleThrottlePlate": 0.9985,
+    "primaryTubeLength": 29,
+    "primaryFlowRate": 500,
+    "outletFlowRate": 1000,
+    "collectorVolume": 100,
+    "exhaustAudioVolume": 4,
+    "revLimit": 6500,
+    "limiterDuration": 0.2,
+    "airNoise": 0.15,
+    "inputSampleNoise": 0,
+    "headerLength": 6.8
+  },
+  "sampleDir": "gm-ls-adouci",
+  "engine": {
+    "cylinders": 8,
+    "idleRpm": 750,
+    "redlineRpm": 6500
+  },
+  "mix": {
+    "loadReliefDb": 0,
+    "rpmReliefDb": 0,
+    "idleLevelDb": 0,
+    "offLoadGain": 1,
+    "crossfadeLowRpm": 750,
+    "crossfadeHighRpm": 1021,
+    "idleFadeOutRpm": 1021
+  },
+  "layers": [
+    {
+      "key": "on_750",
+      "file": "on-750.flac",
+      "role": "on",
+      "anchorRpm": 750,
+      "gain": 0.695,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "off_750",
+      "file": "off-750.flac",
+      "role": "off",
+      "anchorRpm": 750,
+      "gain": 0.2358,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "on_1021",
+      "file": "on-1021.flac",
+      "role": "on",
+      "anchorRpm": 1021,
+      "gain": 0.7283,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "off_1021",
+      "file": "off-1021.flac",
+      "role": "off",
+      "anchorRpm": 1021,
+      "gain": 0.25,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "on_1390",
+      "file": "on-1390.flac",
+      "role": "on",
+      "anchorRpm": 1390,
+      "gain": 0.8268,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "off_1390",
+      "file": "off-1390.flac",
+      "role": "off",
+      "anchorRpm": 1390,
+      "gain": 0.2882,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "on_1892",
+      "file": "on-1892.flac",
+      "role": "on",
+      "anchorRpm": 1892,
+      "gain": 1.1042,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "off_1892",
+      "file": "off-1892.flac",
+      "role": "off",
+      "anchorRpm": 1892,
+      "gain": 0.3151,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "on_2576",
+      "file": "on-2576.flac",
+      "role": "on",
+      "anchorRpm": 2576,
+      "gain": 0.8139,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "off_2576",
+      "file": "off-2576.flac",
+      "role": "off",
+      "anchorRpm": 2576,
+      "gain": 0.3853,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "on_3507",
+      "file": "on-3507.flac",
+      "role": "on",
+      "anchorRpm": 3507,
+      "gain": 0.939,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "off_3507",
+      "file": "off-3507.flac",
+      "role": "off",
+      "anchorRpm": 3507,
+      "gain": 0.3656,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "on_4775",
+      "file": "on-4775.flac",
+      "role": "on",
+      "anchorRpm": 4775,
+      "gain": 1,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "off_4775",
+      "file": "off-4775.flac",
+      "role": "off",
+      "anchorRpm": 4775,
+      "gain": 0.4164,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "on_6500",
+      "file": "on-6500.flac",
+      "role": "on",
+      "anchorRpm": 6500,
+      "gain": 0.6375,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "off_6500",
+      "file": "off-6500.flac",
+      "role": "off",
+      "anchorRpm": 6500,
+      "gain": 0.3932,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "idle_750",
+      "file": "idle-750.flac",
+      "role": "idle",
+      "anchorRpm": 750,
+      "gain": 0.2334,
+      "minRate": 0.671,
+      "maxRate": 1.492,
+      "enabled": true
+    },
+    {
+      "key": "limiter_6950",
+      "file": "limiter-6950.flac",
+      "role": "limiter",
+      "anchorRpm": 6950,
+      "gain": 0.5113,
+      "minRate": 0.8,
+      "maxRate": 1.25,
+      "enabled": true
+    }
+  ]
+}

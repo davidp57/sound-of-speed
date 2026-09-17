@@ -1,6 +1,6 @@
 # 11 — Des fréquences parasites sur les deux V8, à moyen régime
 
-**Statut :** 🧑 attend David — mesuré le 17 septembre 2026 ; ce qui reste est un arbitrage, pas une mesure
+**Statut :** 🧑 attend David — mesuré et **une banque adoucie livrée à écouter** ; ce qui reste est un arbitrage, pas une mesure
 
 David, après avoir essayé trois banques lors de la sortie du 16 septembre 2026 :
 « j'ai testé le V8 (GM), le V8-long (GM collecteur long) et le L4. Ils sonnent
@@ -97,11 +97,12 @@ aussi pour la même raison.
 
 ## Ce qui reste, et ce n'est pas une mesure
 
-**Hypothèse sur la cause, non vérifiée dans le code du banc** : un V8 à
-vilebrequin croisé n'envoie pas d'impulsions régulières *banc par banc* — c'est
-la symétrie des deux bancs réunis qui régularise l'échappement. Si le modèle rend
-les deux sorties séparément, chacune porte un motif irrégulier, et les ordres
-impairs apparaissent. À confirmer en lisant le modèle, pas en raisonnant.
+**La cause n'est plus une hypothèse : le dépôt la disait déjà.** Le LISEZMOI de
+la banque `gm-ls`, écrit le 14 septembre 2026, porte ceci : le vilebrequin croisé
+« donne le grondement inégal d'un V8 américain : **chaque banc voit ses allumages
+espacés de 90 puis 180 degrés** ». Des allumages inégalement espacés par rangée
+produisent exactement les ordres impairs mesurés. Ce n'est donc pas un défaut du
+modèle : c'est ce que le moteur fait, et ce pour quoi il a été choisi.
 
 **Et une question de conception, qui revient à David** : un V8 américain à
 vilebrequin croisé **sonne** ainsi, c'est même ce qui fait sa signature. Ce que la
@@ -122,3 +123,47 @@ deuxième voie se fait écouter en une banque refabriquée.
 - [x] On sait pourquoi elle touche les deux V8 et pas le L4 — et ce n'est pas le
       nombre de cylindres mais l'architecture en V.
 - [ ] Le correctif est jugé à l'oreille par David, dans l'application.
+
+## La banque adoucie, livrée le 17 septembre 2026
+
+`gm-ls-adouci`, cinquième profil livré, sous le nom **« V8 adouci »**. Produite
+à partir de `gm-ls` par `node scripts/adoucir-banque.mjs` : mêmes prises, mêmes
+boucles, mêmes réglages, seules les composantes visées changent. La comparaison
+est donc honnête — tout ce qu'on entend de différent vient de là.
+
+Un moyennage circulaire sur un cycle moteur, borné entre 120 et 1 200 Hz : au-delà
+de cette bande, le souffle et le grain sortent intacts, sans quoi le son
+deviendrait rigoureusement périodique et synthétique.
+
+| Prise | Avant | Après | Gagné |
+|---|---|---|---|
+| `on-1390` | −4,1 dB | −30,3 dB | 26,2 dB |
+| `on-1892` | **+0,8 dB** | −22,2 dB | 23,0 dB |
+| `on-2576` | −10,5 dB | −25,6 dB | 15,1 dB |
+| `on-3507` | −6,4 dB | −26,5 dB | 20,1 dB |
+| `on-4775` | −1,3 dB | −20,4 dB | 19,1 dB |
+| `on-6500` | −18,4 dB | −32,8 dB | 14,4 dB |
+
+Le quatre cylindres, pour repère, est à −48 dB. La banque adoucie ne l'atteint pas
+et n'a pas à l'atteindre : à −20 dB, ce qui reste est sous la note du moteur.
+
+**Vérifié dans l'application** : les dix-huit couches se chargent, aucune erreur,
+le son sort. Les boucles ne sont pas abîmées — dix-sept couches recollées au
+chargement contre **dix-huit sur dix-huit** pour la banque d'origine.
+
+### Comment l'écouter
+
+Les deux profils sont côte à côte dans la liste, « V8 » et « V8 adouci ».
+Basculer de l'un à l'autre recharge les couches, ce qui prend une seconde ; rien
+d'autre ne change entre les deux. À écouter **à moyen régime**, entre 1 400 et
+4 800 tr/min, là où l'écart mesuré est le plus grand.
+
+### La question, une fois écoutée
+
+Trois réponses possibles, et chacune close le ticket :
+
+| Ce que David entend | Ce qu'on fait |
+|---|---|
+| l'adouci est meilleur | il remplace `gm-ls`, et l'original s'en va |
+| l'original est meilleur | la banque adoucie et son script s'en vont, le ticket se ferme en « ce n'est pas un défaut » |
+| l'adouci est trop lisse, mais l'original gêne | on dose — le dosage est un seul nombre dans `scripts/adoucir-banque.mjs` |
