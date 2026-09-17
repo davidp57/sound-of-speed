@@ -38,15 +38,20 @@ reconstruit l'instant correctement, et le relecteur affiche l'heure locale.
 | [09 — au ralenti, le tremblement est amputé de moitié](tickets/09-tremblement-ampute-au-ralenti.md) | ⬜ |
 | [10 — l'aiguille ne montre jamais le tremblement](tickets/10-aiguille-sans-tremblement.md) | ⬜ |
 
-## Ce qui est observé sans être tranché
+## Une observation levée par David
 
-**Cent-dix km/h en septième, à 1 276 tr/min.** Vu sur une photo du trajet du
-matin, en L4. Le chiffre est cohérent avec l'étagement configuré — 884 tr/min à
-la roue, multipliés par le pont 3,7 et le rapport 0,39, donnent bien 1 276 —,
-mais le lot [ETAGEMENT](../ETAGEMENT/spec.md) visait « 110 en sixième ». Reste à
-savoir laquelle des deux intentions vaut, et si la photo montre un profil dont
-l'étagement n'est pas celui du lot. Aucun verdict ici : c'est une observation, à
-instruire dans ETAGEMENT.
+**Cent-dix km/h en septième, à 1 276 tr/min**, vu sur une photo du trajet du
+matin. Relevé ici comme un écart possible avec le lot
+[ETAGEMENT](../ETAGEMENT/spec.md), qui visait « 110 en sixième ».
+
+**Ce n'en est pas un**, et David l'a tranché le 17 septembre 2026 : « c'est de la
+croisière sur autoroute, c'est normal d'engager le rapport le plus haut
+possible ». Le chiffre est par ailleurs exact — 884 tr/min à la roue, multipliés
+par le pont 3,7 et le rapport 0,39, donnent bien 1 276.
+
+C'est noté plutôt qu'effacé pour que l'observation ne soit pas refaite : un
+rapport plus haut que celui qu'un lot nomme n'est pas un défaut quand la boîte
+fait exactement ce qu'on lui demande.
 
 ## Hors périmètre
 
