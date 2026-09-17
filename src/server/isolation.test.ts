@@ -152,6 +152,11 @@ describe('le voisin ne voit rien', () => {
         await serveur().request(`/api/regie/comptes/${anne.compte}`, { headers: boris.annonce })
       ).status,
     ).toBe(404)
+    // Le relevé de dépense dit ce que le serveur porte — le poids de la base, les
+    // banques servies —, donc il se garde comme le reste de la régie.
+    expect((await serveur().request('/api/regie/depense', { headers: boris.annonce })).status).toBe(
+      404,
+    )
   })
 
   it('ne lit pas le profil mesuré d’Anne', async () => {
@@ -392,6 +397,7 @@ describe('l’inventaire des routes', () => {
     '/api/regie/comptes/:compte/roles/:role',
     '/api/regie/comptes/:compte/banques/:banque',
     '/api/regie/trace',
+    '/api/regie/depense',
     '/api/regie/comptes/:compte/retention',
     '/api/regie/comptes/:compte/abandon',
     '/api/regie/comptes/:compte/plafond/:mio',

@@ -85,6 +85,13 @@
       "when": 1789499131688,
       "tag": "0011_peser-un-compte-sans-lire-ses-depots",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1789645030711,
+      "tag": "0012_le-releve-de-depense-en-base",
+      "breakpoints": true
     }
   ]
 }

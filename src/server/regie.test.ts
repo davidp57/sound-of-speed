@@ -20,6 +20,7 @@ import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { administrateursDeLEnvironnement } from './administration'
+import { compteurDeDepense, enregistrerLaDepense } from './depense'
 import { ouvrirBase, type Base } from './base/base'
 import { accounts, assistanceGrants } from './base/schema'
 import { creerIdentite, type Identite } from './identite'
@@ -433,6 +434,30 @@ describe('donner et reprendre un rôle', () => {
         })
       ).status,
     ).toBe(404)
+  })
+
+  it('rend les relevés de dépense à qui administre, et à personne d’autre', async () => {
+    // La route existe parce que le journal du conteneur ne se lit pas : il part
+    // avec le conteneur, et la pile est redéployée plusieurs fois par jour.
+    const compteur = compteurDeDepense(0)
+    compteur.echantillonServi(4096)
+    await enregistrerLaDepense(
+      base,
+      compteur.releverEtRepartir(1000),
+      { octets: 999, banques: 1 },
+      { fichier: 42, parCompte: [] },
+      'arret',
+      1000,
+    )
+
+    const refuse = await serveur().request('/api/regie/depense', { headers: conducteur.annonce })
+    expect(refuse.status).toBe(404)
+
+    const rendue = await serveur().request('/api/regie/depense', { headers: patronne.annonce })
+    expect(rendue.status).toBe(200)
+    const releves = (await rendue.json()) as { echantillons: { octets: number }; motif: string }[]
+    expect(releves[0]?.echantillons.octets).toBe(4096)
+    expect(releves[0]?.motif).toBe('arret')
   })
 
   it('refuse l’attribution et la trace à qui n’administre pas', async () => {

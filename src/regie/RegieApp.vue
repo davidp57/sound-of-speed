@@ -2,7 +2,14 @@
 import { computed, onMounted, ref } from 'vue'
 
 import FicheDuCompte from './FicheDuCompte.vue'
-import { chargerLaTrace, chargerLesComptes, type LigneDeCompte, type LigneDeTrace } from './api'
+import {
+  chargerLaDepense,
+  chargerLaTrace,
+  chargerLesComptes,
+  type LigneDeCompte,
+  type LigneDeTrace,
+  type ReleveDeDepense,
+} from './api'
 import { dateLisible, normaliser, poidsLisible } from './format'
 import { phraseDuGeste } from '../core/identity/gestes'
 
@@ -34,6 +41,29 @@ const filtres = computed(() => {
 
 const trace = ref<LigneDeTrace[]>([])
 
+/**
+ * Ce que le serveur dépense, période par période.
+ *
+ * Ces chiffres partaient au journal du conteneur, qui disparaît avec lui : la
+ * pile est redéployée plusieurs fois par jour et `docker logs` ne rendait rien.
+ * Ils vivent maintenant en base, et se lisent ici.
+ */
+const depense = ref<ReleveDeDepense[]>([])
+
+/** Une période se lit par sa durée : « 1,0 h » dit plus que deux horodatages. */
+function dureeLisible(depuis: number, jusqua: number): string {
+  const heures = Math.max(jusqua - depuis, 0) / 3_600_000
+  if (heures < 1) return `${Math.round(heures * 60)} min`
+  return `${heures.toFixed(1)} h`
+}
+
+/** Le coût d'une analyse, ou le mot qui dit qu'il n'y en a pas eu. */
+function analyseLisible(releve: ReleveDeDepense): string {
+  const { millisecondes, traces } = releve.analyse
+  if (traces === 0) return 'aucune trace'
+  return `${Math.round(millisecondes / traces)} ms × ${traces}`
+}
+
 async function recharger(): Promise<void> {
   const rendu = await chargerLesComptes()
   if (rendu.etat === 'fermee') {
@@ -50,6 +80,9 @@ async function recharger(): Promise<void> {
 
   const lignes = await chargerLaTrace()
   if (lignes.etat === 'ouverte') trace.value = lignes.valeur
+
+  const releves = await chargerLaDepense()
+  if (releves.etat === 'ouverte') depense.value = releves.valeur
 }
 
 onMounted(recharger)
@@ -109,6 +142,46 @@ onMounted(recharger)
         @change="recharger"
         @efface="choisi = null"
       />
+
+      <section class="depense">
+        <h2>Ce que le serveur dépense</h2>
+        <p v-if="depense.length === 0" class="vide">
+          Aucun relevé encore : le premier part au bout d’une heure, ou à l’arrêt.
+        </p>
+        <table v-else>
+          <thead>
+            <tr>
+              <th>Relevé</th>
+              <th>Sur</th>
+              <th class="nombre">Échantillons servis</th>
+              <th class="nombre">Banques</th>
+              <th class="nombre">Base</th>
+              <th class="nombre">Analyse</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="releve in depense" :key="releve.jusqua">
+              <td class="numeric">
+                {{ dateLisible(new Date(releve.jusqua).toISOString()) }}
+                <span v-if="releve.motif === 'arret'" class="muet"> · arrêt</span>
+              </td>
+              <td class="numeric muet">{{ dureeLisible(releve.depuis, releve.jusqua) }}</td>
+              <td class="nombre numeric">
+                {{ poidsLisible(releve.echantillons.octets) }}
+                <span class="muet"> en {{ releve.echantillons.demandes }}</span>
+              </td>
+              <td class="nombre numeric">{{ poidsLisible(releve.banques.octets) }}</td>
+              <td class="nombre numeric">{{ poidsLisible(releve.base.octets) }}</td>
+              <td class="nombre numeric">{{ analyseLisible(releve) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">
+          Chaque ligne est une <strong>différence</strong> : elle ne couvre que sa
+          période. Les deux poids, eux, sont ce que les banques et la base
+          pesaient à cet instant-là.
+        </p>
+      </section>
 
       <section class="trace">
         <h2>Ce qui a été fait</h2>
@@ -197,6 +270,41 @@ h1 {
 
 .detail {
   margin-top: 1.5rem;
+}
+
+.depense {
+  margin-top: 2rem;
+}
+
+.depense table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.depense th,
+.depense td {
+  text-align: left;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.depense th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.depense .note {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.depense h2,
+.trace h2 {
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .trace {

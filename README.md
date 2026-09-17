@@ -1774,6 +1774,29 @@ changeant une valeur dans la pile. **250 Mio, décidés le 15 septembre 2026** �
 n'est pas une mesure, c'est un choix ; ce qu'il vaut en trajets se lira quand le
 relevé de dépense quotidien aura dit ce qu'un compte dépose.
 
+#### Ce que le serveur dépense
+
+| Variable | Défaut | Ce qu'elle règle |
+|---|---|---|
+| `SPEED_RELEVE_MINUTES` | 60 | Tous les combien le serveur relève ce qu'il a dépensé. |
+
+Le relevé porte quatre chiffres : les octets d'échantillons servis et le nombre de
+demandes, le poids des banques sur le disque, celui de la base, et le temps moyen
+d'analyse d'une trace. **Chaque ligne est une différence**, jamais un cumul : elle
+ne couvre que sa période, et les compteurs repartent de zéro derrière elle.
+
+**Il s'écrit en base, et se lit dans la régie**, en bas de page. Il partait
+au journal du conteneur, ce qui revenait à ne pas le garder : la ligne ne sortait
+qu'au bout de vingt-quatre heures ou à l'arrêt, or une pile redéployée plusieurs
+fois par jour n'atteint jamais vingt-quatre heures et le relevé d'adieu meurt dans
+le journal du conteneur qu'on remplace. La ligne reste écrite au journal, elle est
+commode quand on regarde un conteneur qui tourne ; ce n'est simplement plus elle
+qui porte la mémoire.
+
+La cadence se règle parce qu'elle dépend de la fréquence des redéploiements, que
+le code ne connaît pas. Une heure convient à une pile qu'on remplace quelques fois
+par jour.
+
 **Chaque dépôt accepté dit où en est la place**, par trois en-têtes :
 
 ```
@@ -3900,7 +3923,7 @@ suit pas.
 | 60 | Un régime qui ne soit pas une fréquence pure : le moteur simulé tient la consigne au tour près, et ça s'entend | à écouter en roulant |
 | 61 | Quatre constats de l'essai du 8 septembre : GPS qui ne démarre pas, son faux en roulant, interface à consolider, dépôt qui refuse les identifiants | corrigé, reste à essayer |
 | 62 | L'image du serveur échouait une fois sur deux en arm64 | **la cause était une prémisse fausse : npm sait installer pour une autre architecture, et plus rien ne s'émule** |
-| 63 | Sécuriser le code et les données : échantillons fermés, banque réservable, isolation prouvée route par route, dépense relevée chaque jour | **11 tickets sur 17 ; la place à faire quand le plafond est atteint est découpée en trois** |
+| 63 | Sécuriser le code et les données : échantillons fermés, banque réservable, isolation prouvée route par route, dépense relevée et **lisible** | **11 tickets sur 17 ; le relevé de dépense s'écrit en base et se lit dans la régie — il partait au journal d'un conteneur remplacé plusieurs fois par jour** |
 | 64 | Administrer les comptes depuis un écran : rôles, banques, plafond de volume, effacement, et lecture des données d'un compte qui l'autorise | **livré et vérifié contre un serveur qui tourne** |
 
 Ce tableau donne l'ordre et l'avancement d'ensemble. Le détail du périmètre et

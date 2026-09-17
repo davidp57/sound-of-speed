@@ -8,6 +8,17 @@ Toutes les évolutions notables du projet. Format
 
 ### Corrigé
 
+- **Le relevé de dépense ne se lisait jamais.** Il partait au journal du
+  conteneur toutes les vingt-quatre heures, ou à l'arrêt. Une pile redéployée
+  plusieurs fois par jour n'atteint jamais vingt-quatre heures, et la ligne
+  d'adieu meurt dans le journal du conteneur qu'on remplace — constaté par David
+  le 17 septembre 2026, `docker logs` ne rendait rien. Trois changements : le
+  relevé s'écrit **en base**, où il survit au redéploiement ; il bat **à l'heure**
+  plutôt qu'au jour, réglable par `SPEED_RELEVE_MINUTES` ; et il **se lit dans la
+  régie**, en bas de page, sans avoir à ouvrir un terminal. Vérifié contre un
+  serveur qui tourne : cinq relevés écrits, chacun couvrant exactement sa
+  période. La ligne reste au journal, elle ne porte simplement plus la mémoire.
+
 - **Le son repartait quand on changeait de profil au parking.** « On ne doit
   jamais allumer le son en mode P » : la règle est de David, après la sortie du
   16 septembre 2026. Deux gardes la tiennent, parce qu'une seule ne tenait que le
