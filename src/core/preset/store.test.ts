@@ -95,13 +95,13 @@ describe('loadProfiles', () => {
     // l'application, et le V8, dont la banque se dépose sur le serveur. La
     // démonstration est première, donc c'est elle qui sonne au premier
     // lancement de quelqu'un qui n'a encore rien déposé.
-    expect(profiles.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'gm-ls-adouci', 'bmw-i6-3l', 'subaru-ej25'])
+    expect(profiles.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'bmw-i6-3l', 'subaru-ej25'])
   })
 
   it('rend les profils d’usine quand le stockage est illisible', () => {
     install(fakeStorage({ failReads: true }))
 
-    expect(loadProfiles().map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'gm-ls-adouci', 'bmw-i6-3l', 'subaru-ej25'])
+    expect(loadProfiles().map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'bmw-i6-3l', 'subaru-ej25'])
   })
 
   it('relit un profil enregistré à l’identique', () => {
@@ -405,7 +405,7 @@ describe('les profils d’usine d’une banque déposée', () => {
   it('ne se propose pas quand le serveur ne liste pas sa banque', () => {
     const manquants = missingFactoryProfiles([], [])
 
-    expect(manquants.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'gm-ls-adouci', 'bmw-i6-3l', 'subaru-ej25'])
+    expect(manquants.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'bmw-i6-3l', 'subaru-ej25'])
   })
 
   it('se propose quand la banque est là', () => {
@@ -414,7 +414,6 @@ describe('les profils d’usine d’une banque déposée', () => {
     expect(manquants.map((p) => p.id)).toEqual([
       'gm-ls',
       'gm-ls-long-header',
-      'gm-ls-adouci',
       'bmw-i6-3l',
       'subaru-ej25',
       'v8',
@@ -433,7 +432,7 @@ describe('les profils d’usine d’une banque déposée', () => {
     // les ancrages ni les gains d'échantillons qu'on n'a jamais mesurés.
     const manquants = missingFactoryProfiles([], ['une-banque-a-nous'])
 
-    expect(manquants.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'gm-ls-adouci', 'bmw-i6-3l', 'subaru-ej25'])
+    expect(manquants.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'bmw-i6-3l', 'subaru-ej25'])
   })
 })
 
@@ -441,7 +440,7 @@ describe('profils d’usine et duplication', () => {
   it('repère un profil livré absent de la liste', () => {
     const manquants = missingFactoryProfiles([createRoadProfile()])
 
-    expect(manquants.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'gm-ls-adouci', 'bmw-i6-3l', 'subaru-ej25'])
+    expect(manquants.map((p) => p.id)).toEqual(['gm-ls', 'gm-ls-long-header', 'bmw-i6-3l', 'subaru-ej25'])
   })
 
   it('n’en repère aucun quand ils sont tous là', () => {

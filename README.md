@@ -2507,40 +2507,15 @@ profil. Au premier lancement, il se déduit du profil actif.
 
 ### Profils
 
-**Cinq** profils sont livrés avec l'application — **V8**, **V8 collecteur
-long**, **V8 adouci**, **L6** et **L4**, un par banque produite au banc —, et le
-bouton **Profils d'usine** réintroduit ceux qu'on a supprimés.
+**Quatre** profils sont livrés avec l'application — **V8**, **V8 collecteur
+long**, **L6** et **L4**, un par banque produite au banc —, et le bouton
+**Profils d'usine** réintroduit ceux qu'on a supprimés.
 
-**« Reprendre les profils du serveur »**, dans l'atelier, efface les profils de
-cet appareil et prend ceux du serveur à la place. C'est un remplacement et non
-une fusion : le serveur fait foi, il n'y a donc ni arbitrage à rendre ni écart à
-comparer. Ce que le serveur ne porte pas est complété par les profils d'usine
-manquants, comme si l'on avait tout supprimé puis touché « Profils d'usine ».
-
-Le geste **demande deux appuis** et annonce au premier combien de profils vont
-partir. **Rien ne s'efface tant que le serveur n'a rien rendu** : hors réseau,
-sans compte ou sur un dossier vide, la bibliothèque rend une liste vide, et une
-liste vide ne veut pas dire « efface tout ». Les moteurs et les boîtes, eux,
-restent — supprimer un profil ne les a jamais emportés, et le rattachement
-retrouve celui qui correspond plutôt que d'en créer un second.
-
-La liste des profils du serveur, dans la configuration, propose aussi de
-**reprendre** un profil à l'unité. Elle proposait « Ajouter », et c'était un
-piège : reprendre un profil qu'on avait déjà en fabriquait un second, du même nom,
-que rien ne distinguait à l'écran. La cause était plus bas — la lecture de la
-bibliothèque donnait un identifiant neuf à chaque profil lu, si bien qu'aucun
-rapprochement n'était possible. Elle garde maintenant celui du fichier, comme le
-rapatriement du lancement le faisait déjà.
-
-**« V8 adouci » est là pour trancher une question**, pas pour rester. Mesuré le
-17 septembre 2026, les deux banques de V8 portent, au niveau de leur allumage
-lui-même, des composantes qui n'en sont pas des multiples — là où le six en ligne
-et le quatre à plat sont 30 à 70 dB en dessous. C'est ce qui s'entend comme des
-fréquences parasites à moyen régime. Mais un V8 américain **sonne** ainsi, ses
-explosions n'étant pas régulièrement espacées à l'intérieur d'une rangée de
-cylindres : les retirer nettoie peut-être un défaut, peut-être la signature du
-moteur. Le profil met les deux côte à côte pour qu'on tranche à l'oreille ; celui
-qui perd s'en ira.
+**Ils ne sonnent pas au même niveau**, et c'est un défaut connu : le six en ligne
+sort environ 4,3 dB sous le V8, le quatre à plat 1,4 dB. L'écart ne vient pas des
+prises — elles sont même plus fortes — mais des gains que le banc calcule, qui
+normalisent à l'intérieur d'une banque et jamais entre banques. Relevé par David
+le 17 septembre 2026, et à corriger.
 
 Ce bouton propose aussi les profils d'usine réglés sur une banque **déposée**,
 mais seulement **quand le serveur liste cette banque**. Ces profils-là ne partent
@@ -3192,7 +3167,6 @@ banque.
 |---|---|---|---|
 | [`gm-ls`](public/audio/gm-ls/LISEZMOI.md) | V8 croisé, GM LS 5,7 L | 18 | 1,5 Mo |
 | [`gm-ls-long-header`](public/audio/gm-ls-long-header/LISEZMOI.md) | le même, collecteur long | 18 | 1,5 Mo |
-| [`gm-ls-adouci`](public/audio/gm-ls-adouci/LISEZMOI.md) | le même, sans ce qui n'est pas harmonique de son allumage | 18 | 1,5 Mo |
 | [`bmw-i6-3l`](public/audio/bmw-i6-3l/LISEZMOI.md) | six en ligne, 3,0 L | 18 | 1,3 Mo |
 | [`subaru-ej25`](public/audio/subaru-ej25/LISEZMOI.md) | quatre cylindres à plat | 15 | 1,2 Mo |
 

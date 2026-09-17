@@ -1,7 +1,6 @@
 import { DEFAULT_RENDERING, type SynthRendering } from '../synth/rendering'
 // Le profil de la banque de démonstration, repris tel quel du fichier que le
 // générateur produit : ses gains et ses ancrages sont mesurés prise par prise.
-import GM_LS_ADOUCI_BANK from './gm-ls-adouci-profile.json'
 import GM_LS_BANK from './gm-ls-profile.json'
 import GM_LS_LONG_BANK from './gm-ls-long-header-profile.json'
 import BMW_I6_BANK from './bmw-i6-3l-profile.json'
@@ -399,30 +398,6 @@ export function createGmLsLongHeaderProfile(): Profile {
 }
 
 /**
- * Le même V8, débarrassé de ce qui n'est pas harmonique de son allumage.
- *
- * **Il existe pour trancher une question, pas pour rester.** Mesuré le
- * 17 septembre 2026 : les deux banques de V8 portent, au niveau de l'allumage
- * lui-même, des composantes qui n'en sont pas des multiples, là où le six en
- * ligne et le quatre à plat sont 30 à 70 dB en dessous. C'est ce que David
- * entend comme des « fréquences parasites, surtout à moyen régime ».
- *
- * Mais un V8 américain **sonne** ainsi : ses explosions ne sont pas
- * régulièrement espacées à l'intérieur d'une rangée de cylindres, et son
- * grondement vient de là. Les retirer nettoie peut-être un défaut du modèle,
- * peut-être la signature du moteur — et cela ne se tranche pas au spectre.
- * D'où ce profil, qui met les deux côte à côte dans la liste.
- *
- * La banque est produite par `scripts/adoucir-banque.mjs` à partir de `gm-ls` :
- * mêmes prises, mêmes boucles, mêmes réglages. Seules les composantes visées
- * changent, de 14 à 26 dB selon la prise — c'est ce qui rend la comparaison
- * honnête.
- */
-export function createGmLsAdouciProfile(): Profile {
-  return createBankProfile('gm-ls-adouci', GM_LS_ADOUCI_BANK)
-}
-
-/**
  * Le six en ligne, l'architecture des BMW.
  *
  * Livré depuis le 14 septembre 2026, à la demande de David. C'est le seul dont
@@ -462,7 +437,6 @@ export function createFactoryProfiles(): Profile[] {
   return [
     createGmLsProfile(),
     createGmLsLongHeaderProfile(),
-    createGmLsAdouciProfile(),
     createBmwI6Profile(),
     createSubaruEj25Profile(),
   ]
@@ -502,7 +476,6 @@ export function knownFactoryProfiles(): Profile[] {
   return [
     createGmLsProfile(),
     createGmLsLongHeaderProfile(),
-    createGmLsAdouciProfile(),
     createBmwI6Profile(),
     createSubaruEj25Profile(),
     createV8Profile(),
