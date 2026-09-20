@@ -319,9 +319,18 @@ export function applySportiness(profile: Profile, sportiness: number): Profile {
       shiftTimeMs: Math.round(680 - 240 * s),
       upshiftRpm: upshiftTableFor(count, redlineRpm, s),
       upshiftLoadSpreadRpm: Math.round(redlineRpm * between(0.2, 0.28, 0.34, s)),
-      // Le plancher garde une marge au-dessus du ralenti : sur un diesel, la
-      // fraction du rupteur seule tomberait trop près du régime de ralenti.
-      cruiseMinRpm: Math.round(Math.max(idleRpm * 1.4, redlineRpm * (0.2 + 0.1 * s))),
+      // **Une limite basse, et non une valeur visée.** Elle valait
+      // `max(idleRpm × 1,4 ; rupteur × (0,2 + 0,1 s))`, ce qui tombait juste
+      // tant que le facteur du plancher de montée était linéaire. Il suit
+      // désormais le carré de la demande, et les deux nombres ont divergé : la
+      // boîte croisait sous un seuil que ce réglage déclarait interdit — 1 276
+      // tr/min à 110 km/h pour un plancher annoncé à 1 690.
+      //
+      // Ce réglage ne pilote plus la boîte depuis le lot PLANCHER : il ne sert
+      // qu'au guide de création. Il doit donc rester **sous** ce que la boîte
+      // engage réellement, tout en montant avec le curseur — sans quoi le guide
+      // refuserait un profil que la boîte tient très bien.
+      cruiseMinRpm: Math.round(idleRpm * (1.2 + 0.15 * s)),
       cruiseUpshiftAfterS: round2(2 + 1.6 * s),
       brakeDownshiftAccelMs2: round3(-1.1 + 0.5 * s),
       shiftDelaysS: shiftDelaysFor(count, s, responsiveness),

@@ -2599,15 +2599,31 @@ ouverte.
 **Route** — calibré sur les vitesses que l'on pratique vraiment. **Sept
 rapports** depuis le 11 septembre 2026, dont une septième longue pour
 l'autoroute. Dès qu'on tient une vitesse, la boîte monte d'elle-même : mesuré,
-la quatrième à 50 km/h (1487 tr/min), la cinquième à 70 (1520), la sixième à 110
-(1734), et la septième vers 124 — 1508 tr/min à 130. Pied au plancher, les
-passages reculent : il reste de quoi s'amuser sans que ce soit le régime
-ordinaire.
+la troisième à 30 km/h (1213 tr/min), la quatrième à 50 (1487), la cinquième à
+70 (1520), la sixième à 90 (1419) et la septième à 110 — 1276 tr/min. Pied au
+plancher, les passages reculent : il reste de quoi s'amuser sans que ce soit le
+régime ordinaire.
 
-La croisière tient ainsi entre 1487 et 1954 tr/min de 50 à 130 km/h, là où elle
-allait de 1532 à 2355 avec six rapports. Les trois premiers rapports n'ont pas
-bougé — c'est le haut de la boîte qui a été redessiné, et les sauts y valent
-maintenant 1,36 à 1,38 au lieu de s'écraser à 1,19.
+La croisière tient ainsi entre 1103 et 1520 tr/min de 30 à 130 km/h. Les trois
+premiers rapports n'ont pas bougé — c'est le haut de la boîte qui a été
+redessiné, et les sauts y valent maintenant 1,36 à 1,38 au lieu de s'écraser à
+1,19.
+
+**Ce qui décide d'un rapport long, c'est le plancher de montée** : la boîte
+engage le rapport le plus long qui tourne au-dessus de lui. Il part du ralenti,
+et une marge l'en écarte d'autant plus qu'on demande. Cette marge suit le
+**carré** de la demande depuis le 20 septembre 2026, et non la demande : à
+vitesse tenue elle valait sa valeur pleine, ce qui bloquait la boîte en seconde
+à 30 km/h. Les deux bouts de l'échelle n'ont pas bougé — pied au plancher, les
+rapports s'étirent exactement comme avant.
+
+Une boîte qui prend le rapport le plus long s'installe par construction **juste
+au-dessus** de cette frontière, où le bruit du récepteur suffirait à la faire
+changer d'avis. Ce qui l'en empêche : la limite basse d'un rapport est celle qui
+l'a autorisé et non celle de l'instant, le frein moteur ne se relance que si
+l'on ralentit depuis une seconde, et un rapport ne se rend pas pendant qu'on
+accélère. Mesuré au banc sur un signal de récepteur : aucun changement de
+rapport en croisière tenue, jusqu'au double du bruit de référence.
 
 **Sport** — le calibrage d'origine, taillé pour une plage que l'on n'atteint
 jamais sur route. Il garde ses rapports plus longtemps et croise plus haut :

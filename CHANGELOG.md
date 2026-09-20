@@ -6,7 +6,61 @@ Toutes les évolutions notables du projet. Format
 
 ## [Non publié]
 
+### Corrigé
+
+- **La boîte garde ses rapports courts en croisière.** David, après avoir roulé
+  en ville le 20 septembre 2026 : « j'aurais aimé que ça passe la 3ème au lieu
+  de rester en 2de ». Mesuré sur son profil, la boîte tenait 1 820 tr/min en
+  seconde à 30 km/h là où la troisième en tournerait 1 213.
+
+  Ce n'était pas propre à la ville : à 70 km/h tenus elle restait en cinquième à
+  1 520 tr/min, à 90 en cinquième à 1 954, et à 110 en sixième à 1 734.
+
+  Le plancher de montée se déduisait d'un facteur **linéaire** en la demande,
+  ce qui plaçait le neutre — une vitesse tenue — à la marge pleine, soit
+  1 440 tr/min sur Route. Il suit désormais le **carré** de la demande : les
+  deux bouts de l'échelle sont inchangés, seul le milieu descend, si bien
+  qu'une accélération franche étire ses rapports exactement comme avant.
+
+  La croisière se tient maintenant entre 1 103 et 1 520 tr/min de 30 à 130 km/h,
+  et la septième entre à 110 au lieu de 130.
+
+- **La boîte ne fait plus l'aller-retour à vitesse tenue.** En prenant le
+  rapport le plus long qui tourne au-dessus du plancher, elle s'installe par
+  construction juste au-dessus de la frontière : le bruit du récepteur suffisait
+  alors à la faire repasser dessous. Relevé au banc, en croisière tenue sur un
+  signal de récepteur : **52 passages en deux minutes à 60 km/h**, 63 à 85.
+
+  Deux gardes, chacune tirée d'une mesure :
+
+  - le frein moteur ne se relance que si l'on ralentit **depuis une seconde** —
+    la lecture de l'allure bascule en « ralentit » le temps d'une image sur du
+    bruit, et cela relevait le plancher de descente jusqu'au régime engagé ;
+  - on ne rend pas un rapport **pendant qu'on accélère**, symétrique de
+    l'inhibition de montée au freinage qui existait déjà ; une reprise a sa
+    propre voie, le rétrogradage forcé.
+
+  Et la borne du plancher de descente devient celle **qui a autorisé le
+  rapport**, mémorisée à l'engagement, et non celle de l'instant.
+
+  Résultat : **zéro passage** aux cinq vitesses du banc, et la boîte tient
+  désormais le **double** du bruit de référence avant de décrocher, contre une
+  moitié en plus auparavant.
+
+- **Le plancher de descente était borné par la mauvaise grandeur.** Sa
+  documentation dit « reste sous le plancher de montée » ; il recevait le seuil
+  exprimé sur le rapport engagé, qui n'est pas la même chose. Le défaut dormait
+  tant que le plancher de montée était haut ; à 1 120 il passait dessous, et la
+  boîte engageait une sixième à 1 140 tr/min pour la rendre à l'image suivante.
+
 ### Modifié
+
+- **`cruiseMinRpm` descend de 1 400 à 1 050.** Ce réglage ne pilote plus la
+  boîte depuis le lot PLANCHER — il ne sert qu'au guide de création — et il
+  déclarait interdit un régime que la boîte tient très bien. Il se cale
+  maintenant sous le plus bas des moteurs livrés, dont le ralenti tourne à
+  750 tr/min. Sa loi de caractère suit : elle donnait jusqu'à 1 805 tr/min, au-
+  dessus de ce qu'une boîte à rapports longs engage réellement.
 
 - **Le rapport et le sélecteur de boîte passent entre les deux compteurs.**
   Demandé par David le 17 septembre 2026, schéma à l'appui : le rapport

@@ -235,7 +235,12 @@ describe('le curseur « calme ↔ sportif »', () => {
         // il ne sert qu'au guide de création — et sa loi de caractère le monte
         // à 1950 en plein sportif, au-dessus de ce qu'une boîte à rapports
         // longs peut tenir.
-        expect(tenue.rpm).toBeGreaterThanOrEqual(p.engine.idleRpm * 1.6)
+        // Un virgule cinq depuis le 20 septembre 2026, et non un virgule six : le
+        // plancher de montée a cessé de placer le neutre à la marge pleine, si
+        // bien qu'à 110 km/h la boîte engage la septième — 1 276 tr/min sur
+        // Route, contre 1 734 avant. C'est le comportement voulu, validé en
+        // roulant, et non une boîte qui dort.
+        expect(tenue.rpm).toBeGreaterThanOrEqual(p.engine.idleRpm * 1.5)
         expect(tenue.rpm).toBeLessThan(p.engine.redlineRpm * 0.6)
 
         // Et pied au plancher, elle n'attaque pas le rupteur. Mesuré : 93 % du
@@ -450,7 +455,12 @@ describe('le curseur « pépère ↔ nerveux »', () => {
         // La boîte ne brasse pas et ne dort pas, quelle que soit la combinaison.
         const tenue = cruise(p, 110)
         expect(tenue.shifts).toBeLessThanOrEqual(p.drivetrain.gearRatios.length)
-        expect(tenue.rpm).toBeGreaterThanOrEqual(p.engine.idleRpm * 1.6)
+        // Un virgule cinq depuis le 20 septembre 2026, et non un virgule six : le
+        // plancher de montée a cessé de placer le neutre à la marge pleine, si
+        // bien qu'à 110 km/h la boîte engage la septième — 1 276 tr/min sur
+        // Route, contre 1 734 avant. C'est le comportement voulu, validé en
+        // roulant, et non une boîte qui dort.
+        expect(tenue.rpm).toBeGreaterThanOrEqual(p.engine.idleRpm * 1.5)
         expect(fullThrottle(p).peakRpm).toBeLessThan(p.engine.redlineRpm)
 
         // Et le signal reste dans les bornes que l'écran de configuration
