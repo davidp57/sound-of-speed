@@ -201,13 +201,12 @@ Ce n'est pas ce lot qui l'a fait : le plancher de montée a cessé de placer une
 vitesse tenue à sa marge pleine, ce qui rend à la boîte les rapports longs en
 croisière. Elle s'installe alors **par construction** juste au-dessus de sa
 frontière, là où le bruit du récepteur la faisait changer d'avis — 52 passages
-en deux minutes à 60 km/h. Trois gardes l'en empêchent, et ce sont elles qui
-ont déplacé le chiffre :
+en deux minutes à 60 km/h. Ce qui l'en empêche, et qui a déplacé le chiffre :
 
-- le frein moteur ne se relance que si l'on ralentit **depuis une seconde** ;
-- un rapport ne se rend pas **pendant qu'on accélère** ;
 - la limite basse d'un rapport est **celle qui l'a autorisé**, pas celle de
-  l'instant.
+  l'instant — c'est elle qui fait l'essentiel ;
+- le frein moteur ne se relance que si l'on ralentit **depuis une seconde** ;
+- un rapport ne se rend pas **pendant qu'on accélère**.
 
 Relevé après, aux cinq vitesses tenues : **zéro passage jusqu'à 2 km/h de
 bruit**, 21 à 27 par vitesse à 2,5. Le banc du ticket 01 reste le juge, et

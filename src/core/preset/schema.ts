@@ -404,11 +404,18 @@ export interface DrivetrainPreset {
   /** Coupure de couple pendant le passage, en millisecondes. */
   shiftTimeMs: number
   /**
-   * Régime au-dessous duquel la boîte ne monte pas en croisière.
+   * Régime de croisière au-dessous duquel un profil est jugé injouable.
    *
-   * La montée à vitesse tenue n'a pas de seuil de régime à franchir — c'est
-   * tout son intérêt — donc il lui faut une limite basse, sans quoi 50 km/h
-   * tenus finiraient sur le dernier rapport à mille tours, ce qui broute.
+   * **Il ne pilote plus la boîte depuis le 10 septembre 2026**, date à laquelle
+   * la montée en croisière a cessé d'être un mécanisme à part : le plancher de
+   * montée fait entrer le rapport long de lui-même, et c'est lui qui décide.
+   * Ce que ce réglage garde, c'est le rôle de limite pour le guide de création
+   * et pour les bancs — « en dessous, ça broute ».
+   *
+   * Il doit donc rester **sous** ce que la boîte engage réellement, sans quoi
+   * il refuserait un profil qu'elle tient très bien. Les deux nombres ont
+   * divergé le 20 septembre 2026, quand le plancher de montée a cessé de placer
+   * une vitesse tenue à sa marge pleine.
    *
    * En tours par minute et non en fraction du rupteur : c'est une limite
    * mécanique, pas un rapport. Distinct de `minUpshiftRpm`, qui est le plancher

@@ -31,16 +31,17 @@ Toutes les évolutions notables du projet. Format
   alors à la faire repasser dessous. Relevé au banc, en croisière tenue sur un
   signal de récepteur : **52 passages en deux minutes à 60 km/h**, 63 à 85.
 
-  Trois gardes, chacune tirée d'une mesure :
+  Deux gardes, chacune tirée d'une mesure :
 
   - le frein moteur ne se relance que si l'on ralentit **depuis une seconde** —
     la lecture de l'allure bascule en « ralentit » le temps d'une image sur du
     bruit, et cela relevait le plancher de descente jusqu'au régime engagé ;
   - on ne rend pas un rapport **pendant qu'on accélère**, symétrique de
     l'inhibition de montée au freinage qui existait déjà ; une reprise a sa
-    propre voie, le rétrogradage forcé ;
-  - la borne du plancher de descente est celle **qui a autorisé le rapport**,
-    mémorisée à l'engagement, et non celle de l'instant.
+    propre voie, le rétrogradage forcé.
+
+  Et la borne du plancher de descente devient celle **qui a autorisé le
+  rapport**, mémorisée à l'engagement, et non celle de l'instant.
 
   Résultat : **zéro passage** aux cinq vitesses du banc, et la boîte tient
   désormais le **double** du bruit de référence avant de décrocher, contre une

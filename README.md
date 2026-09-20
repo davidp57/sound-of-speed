@@ -2619,10 +2619,10 @@ rapports s'étirent exactement comme avant.
 
 Une boîte qui prend le rapport le plus long s'installe par construction **juste
 au-dessus** de cette frontière, où le bruit du récepteur suffirait à la faire
-changer d'avis. Trois règles l'en empêchent : le frein moteur ne se relance que
-si l'on ralentit depuis une seconde, un rapport ne se rend pas pendant qu'on
-accélère, et la limite basse d'un rapport est celle qui l'a autorisé, pas celle
-de l'instant. Mesuré au banc sur un signal de récepteur : aucun changement de
+changer d'avis. Ce qui l'en empêche : la limite basse d'un rapport est celle qui
+l'a autorisé et non celle de l'instant, le frein moteur ne se relance que si
+l'on ralentit depuis une seconde, et un rapport ne se rend pas pendant qu'on
+accélère. Mesuré au banc sur un signal de récepteur : aucun changement de
 rapport en croisière tenue, jusqu'au double du bruit de référence.
 
 **Sport** — le calibrage d'origine, taillé pour une plage que l'on n'atteint

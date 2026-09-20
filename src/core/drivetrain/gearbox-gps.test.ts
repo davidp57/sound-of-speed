@@ -222,11 +222,11 @@ describe('la boîte sur un signal de récepteur', () => {
     // tient une croisière bruitée à 2 km/h et décroche à 2,5.
     //
     // Elle décrochait à 1,5 avant que la lecture du mouvement ne soit unifiée,
-    // puis à 1,75. Le 20 septembre 2026, les trois gardes posées avec le
-    // nouveau plancher de montée l'ont portée à 2 : le frein moteur ne se
-    // relance plus sur un « ralentit » d'une image, la boîte ne rend plus un
-    // rapport pendant qu'elle accélère, et la borne du plancher de descente est
-    // celle qui a autorisé le rapport et non celle de l'instant.
+    // puis à 1,75. Le 20 septembre 2026, les gardes posées avec le nouveau
+    // plancher de montée l'ont portée à 2 : la borne du plancher de descente
+    // est celle qui a autorisé le rapport et non celle de l'instant, le frein
+    // moteur ne se relance plus sur un « ralentit » d'une image, et la boîte ne
+    // rend plus un rapport pendant qu'elle accélère.
     const tient = VITESSES_TENUES.map((kmh) => passagesEnCroisiere(kmh, { noiseKmh: 2 }))
     expect(tient).toEqual([0, 0, 0, 0, 0])
 

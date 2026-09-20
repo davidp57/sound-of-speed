@@ -124,21 +124,6 @@ const BRAKE_HOLD_S = 1
 const DEMAND_FALL_PER_S = 1 / 3
 
 /**
- * Temps pendant lequel un rapport qu'on vient de monter est tenu, en secondes.
- *
- * Il ne vaut qu'à vitesse tenue, et il répare ce que la baisse du plancher de
- * montée a découvert : en prenant le rapport le plus long qui tourne au-dessus
- * du plancher, la boîte s'installe **par construction** juste au-dessus de la
- * frontière. L'hystérésis du plancher — dix pour cent — est alors du même ordre
- * que le bruit du récepteur, et la boîte fait l'aller-retour.
- *
- * Deux secondes, parce que c'est la durée d'un aller-retour de bruit et non
- * celle d'une décision : au-delà, on retiendrait un rapport que le conducteur a
- * vraiment cessé de tenir ; en deçà, le bruit repasse.
- */
-const HOLD_AFTER_UPSHIFT_S = 2
-
-/**
  * Durée pendant laquelle il faut ralentir pour que le rapport soit rendu plus
  * tôt, en secondes.
  *
@@ -280,8 +265,6 @@ export class Gearbox {
   private readonly pace = new PaceReader()
   /** Temps depuis la dernière descente, en secondes. */
   private sinceDownshiftS = Number.POSITIVE_INFINITY
-  /** Temps depuis la dernière montée, en secondes. Voir `HOLD_AFTER_UPSHIFT_S`. */
-  private sinceUpshiftS = Number.POSITIVE_INFINITY
   /**
    * Le plancher de montée qui a autorisé le rapport engagé, en tours.
    *
@@ -313,10 +296,16 @@ export class Gearbox {
     this.engine = engine
     this.feel = feel
     this.gear = clampInt(this.gear, 0, this.gearCount - 1)
+    // Le plancher mémorisé vient du ralenti et de la marge d'**avant** : le
+    // garder ferait rétrograder sur une limite que plus rien ne justifie. On
+    // l'oublie, et le prochain passage le rétablit.
+    this.floorAtUpshift = null
   }
 
   setDriveMode(mode: DriveMode): void {
     this.driveMode = mode
+    // Même raison : la marge du mode est la moitié du calcul.
+    this.floorAtUpshift = null
   }
 
   getDriveMode(): DriveMode {
@@ -355,7 +344,6 @@ export class Gearbox {
     this.sinceKickdownS = Number.POSITIVE_INFINITY
     this.pace.reset()
     this.sinceDownshiftS = Number.POSITIVE_INFINITY
-    this.sinceUpshiftS = Number.POSITIVE_INFINITY
     this.floorAtUpshift = null
   }
 
@@ -532,7 +520,6 @@ export class Gearbox {
   private applyShift(delta: number): void {
     if (delta < 0) this.sinceDownshiftS = 0
     else {
-      this.sinceUpshiftS = 0
       this.floorAtUpshift = upshiftFloorRpm(
         this.driveMode,
         clamp01(this.demand),
@@ -564,7 +551,6 @@ export class Gearbox {
     this.recordLoad(load)
     this.sinceKickdownS += dt
     this.sinceDownshiftS += dt
-    this.sinceUpshiftS += dt
     // Tenir une vitesse, c'est ne pas la perdre : la bande est asymétrique.
     // La demande suit la charge à la montée et la retient à la descente.
     this.demand =
@@ -682,18 +668,7 @@ export class Gearbox {
         rpm <= downThresholdSeen &&
         this.gear > this.downshiftFloor() &&
         !atStandstill &&
-        // L'hystérésis du plancher ne suffit plus **à vitesse tenue**, depuis
-        // que le rapport le plus long entre dès qu'il tourne au-dessus du
-        // plancher : la boîte s'y installe par construction juste au-dessus de
-        // la frontière, et le bruit du récepteur la fait repasser dessous. Sur
-        // le banc GPS, 52 allers-retours à 60 km/h tenus.
-        //
-        // La garde ne vaut donc **que** tant que la vitesse est tenue. Qui
-        // ralentit ou freine rétrograde sans attendre, ce qui est tout le
-        // propos du frein moteur ; et le rétrogradage forcé passe avant, plus
-        // haut, sans jamais rencontrer cette condition.
-        !(this.sinceUpshiftS < HOLD_AFTER_UPSHIFT_S && !isSlowing(pace.state)) &&
-        // **Et on ne descend pas en accélérant**, symétrique de l'inhibition de
+        // **On ne descend pas en accélérant**, symétrique de l'inhibition de
         // montée au freinage juste au-dessus. Rétrograder alors qu'on accélère
         // est une demande de reprise, et elle a sa propre voie — le
         // rétrogradage forcé, traité plus haut, qui ne passe pas par ici.
@@ -702,6 +677,12 @@ export class Gearbox {
         // fait monter la demande, qui relève le plancher de descente jusqu'au
         // régime du rapport engagé. Relevé à 72 km/h tenus — demande 0,61,
         // plancher 1 149, sixième à 1 146 tr/min.
+        //
+        // L'hystérésis du plancher, elle, ne suffit plus **à vitesse tenue** :
+        // depuis que le rapport le plus long entre dès qu'il tourne au-dessus
+        // du plancher, la boîte s'y installe par construction juste au-dessus
+        // de la frontière. Ce qui l'y tient est la borne du plancher de
+        // descente, celle qui a autorisé le rapport — voir `floorAtUpshift`.
         pace.state !== 'accelerating'
       ) {
         this.readyForS = 0
