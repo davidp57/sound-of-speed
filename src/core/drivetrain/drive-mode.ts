@@ -123,10 +123,28 @@ export const FIRST_UPSHIFT_FLOOR_RPM = 810
  *
  * La marge est **doublée à pleine charge** et de moitié pied levé : plus on
  * demande, plus on laisse monter dans les tours avant de passer.
+ *
+ * **Le facteur suit le carré de la demande, et non la demande.** Il était
+ * linéaire, ce qui plaçait le neutre — une vitesse tenue, demande 0,5 — à la
+ * marge pleine : 1 440 tr/min sur Route avec un ralenti à 800. David, le
+ * 20 septembre 2026, après avoir roulé en ville : « j'aurais aimé que ça passe
+ * la 3ème au lieu de rester en 2de ». Mesuré sur son profil, la troisième
+ * tourne à 1 213 tr/min à 30 km/h, sous ce plancher — la boîte la refusait donc,
+ * et tenait 1 820 tr/min en seconde.
+ *
+ * Ce n'était pas propre à la ville : à 70 km/h tenus elle restait en cinquième
+ * à 1 520 tr/min, et à 90 en cinquième à 1 954.
+ *
+ * Le carré ne déplace que le milieu de l'échelle. Les deux bouts sont
+ * inchangés — pied levé la borne basse tient toujours le facteur à 0,5, pleine
+ * demande le laisse à 2 — si bien qu'une accélération franche étire ses rapports
+ * exactement comme avant. Mesuré à demande 0,9 sur les sept rapports : rapport
+ * pour rapport, le même que le facteur linéaire.
  */
 export function upshiftFloorRpm(mode: DriveMode, demand: number, idleRpm: number): number {
   const marge = DRIVE_MODE_FEEL[mode].upshiftMarginRpm
-  const facteur = Math.min(2, Math.max(0.5, 2 * clamp01(demand)))
+  const d = clamp01(demand)
+  const facteur = Math.min(2, Math.max(0.5, 2 * d * d))
   return idleRpm + marge * facteur
 }
 

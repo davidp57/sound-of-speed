@@ -280,12 +280,22 @@ export function createRoadProfile(): Profile {
       launchUpshiftKmh: 5,
       downshiftAtRedlineRatio: 0.28,
       // Croisière basse, mais pas au point de brouter ni de jouer les
-      // échantillons trop grave. Passé de 1500 à 1400 avec les sept rapports :
-      // la croisière se tient maintenant entre 1487 et 1954 tr/min de 50 à
-      // 130 km/h, contre 1532 à 2355 avant. C'est la moitié basse de la prise
-      // bas régime, ancrée à 3128 tr/min — et ce que ça donne à l'oreille reste
-      // à écouter.
-      cruiseMinRpm: 1400,
+      // échantillons trop grave. Passé de 1500 à 1400 avec les sept rapports,
+      // puis à 1100 le 20 septembre 2026 quand le plancher de montée a cessé de
+      // placer le neutre à la marge pleine.
+      //
+      // La croisière se tient maintenant entre 1103 et 1520 tr/min de 30 à
+      // 130 km/h, contre 1487 à 1954 avant. David, après avoir roulé en
+      // ville : « j'aurais aimé que ça passe la 3ème au lieu de rester en
+      // 2de » — elle y tourne à 1213 tr/min, et il l'a validé : « 1213 c'est
+      // bien ».
+      //
+      // 1050 et non 1120, qui serait le plancher exact de ce profil : les
+      // banques livrées héritent de ce réglage avec **leur** ralenti, et le
+      // plus bas tourne à 750 tr/min — son plancher tombe alors à 1 070, et sa
+      // croisière à 1 085. Ce nombre est une limite à ne pas franchir, pas une
+      // valeur visée : il se cale sur le plus bas des moteurs livrés.
+      cruiseMinRpm: 1050,
       // Il monte volontiers : deux secondes et deux dixièmes de vitesse stable
       // suffisent.
       cruiseUpshiftAfterS: 2.2,

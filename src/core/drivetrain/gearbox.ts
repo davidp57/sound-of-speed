@@ -124,6 +124,32 @@ const BRAKE_HOLD_S = 1
 const DEMAND_FALL_PER_S = 1 / 3
 
 /**
+ * Temps pendant lequel un rapport qu'on vient de monter est tenu, en secondes.
+ *
+ * Il ne vaut qu'à vitesse tenue, et il répare ce que la baisse du plancher de
+ * montée a découvert : en prenant le rapport le plus long qui tourne au-dessus
+ * du plancher, la boîte s'installe **par construction** juste au-dessus de la
+ * frontière. L'hystérésis du plancher — dix pour cent — est alors du même ordre
+ * que le bruit du récepteur, et la boîte fait l'aller-retour.
+ *
+ * Deux secondes, parce que c'est la durée d'un aller-retour de bruit et non
+ * celle d'une décision : au-delà, on retiendrait un rapport que le conducteur a
+ * vraiment cessé de tenir ; en deçà, le bruit repasse.
+ */
+const HOLD_AFTER_UPSHIFT_S = 2
+
+/**
+ * Durée pendant laquelle il faut ralentir pour que le rapport soit rendu plus
+ * tôt, en secondes.
+ *
+ * Le plancher de descente remonte avec la décélération, pour donner le frein
+ * moteur. Mais la lecture de l'allure bascule en « ralentit » le temps d'une
+ * image sur un signal de récepteur bruité, et cela suffisait à relever le
+ * plancher jusqu'au régime du rapport engagé.
+ */
+const SLOWING_HOLD_S = 1
+
+/**
  * Ce que la boîte a besoin de savoir pour décider.
  *
  * Un objet plutôt que des paramètres positionnels : ils étaient cinq, l'ajout de
@@ -254,6 +280,18 @@ export class Gearbox {
   private readonly pace = new PaceReader()
   /** Temps depuis la dernière descente, en secondes. */
   private sinceDownshiftS = Number.POSITIVE_INFINITY
+  /** Temps depuis la dernière montée, en secondes. Voir `HOLD_AFTER_UPSHIFT_S`. */
+  private sinceUpshiftS = Number.POSITIVE_INFINITY
+  /**
+   * Le plancher de montée qui a autorisé le rapport engagé, en tours.
+   *
+   * C'est lui qui a permis d'entrer, c'est donc sous lui que la sortie doit
+   * rester. Le prendre à l'instant présent laissait la **demande** rendre le
+   * rapport : un pic de bruit la fait monter, elle relève le plancher, et la
+   * boîte rend un rapport qu'elle tenait très bien. Une demande qui monte est
+   * une reprise, et une reprise a sa propre voie — le rétrogradage forcé.
+   */
+  private floorAtUpshift: number | null = null
 
   constructor(
     private drivetrain: DrivetrainPreset,
@@ -317,6 +355,8 @@ export class Gearbox {
     this.sinceKickdownS = Number.POSITIVE_INFINITY
     this.pace.reset()
     this.sinceDownshiftS = Number.POSITIVE_INFINITY
+    this.sinceUpshiftS = Number.POSITIVE_INFINITY
+    this.floorAtUpshift = null
   }
 
   /**
@@ -418,9 +458,35 @@ export class Gearbox {
       // L'accélération que la lecture a retenue, et non celle de l'image : ce
       // plancher descend avec le ralentissement, et le faire suivre un signal
       // bruité le faisait trembler autant que lui.
-      pace.accelMs2,
+      //
+      // **Et seulement quand on ralentit vraiment.** Le lissage n'a pas suffi :
+      // à 60 km/h tenus sur un signal de récepteur, la lecture rend encore
+      // −0,4 à −0,7 m/s², ce qui relevait ce plancher de vingt à trente pour
+      // cent — jusqu'à 1 273 tr/min pour une cinquième qui en tourne 1 280.
+      // La boîte rendait alors le rapport sur du bruit, puis le reprenait :
+      // 52 allers-retours en deux minutes de croisière.
+      //
+      // Un rapport se rend pour **aider à ralentir**. Tant que l'allure est
+      // tenue, il n'y a rien à aider, et la relance n'a pas lieu d'être.
+      // `slowing` seul ne suffit pas : sur le bruit, la lecture y bascule le
+      // temps d'une image — relevé à chaque aller-retour, « slowing 0,0 s ».
+      // Un vrai ralentissement dure ; celui-là non.
+      isSlowing(pace.state) && pace.forS >= SLOWING_HOLD_S ? pace.accelMs2 : 0,
       this.engine.idleRpm,
-      this.upshiftThreshold(this.gear),
+      // **Le plancher de montée, et non le seuil exprimé sur le rapport
+      // engagé.** Ce sont deux grandeurs différentes : le seuil dit à quel
+      // régime *ce* rapport cède la place, le plancher dit au-dessus de quoi un
+      // rapport a sa place. C'est le second qui décide d'une montée, donc c'est
+      // sous le second que la descente doit rester — sans quoi la boîte engage
+      // un rapport qu'elle doit rendre à l'image suivante.
+      //
+      // Le défaut dormait : tant que le plancher de montée valait 1 440 tr/min
+      // au neutre, il dépassait le plancher de descente et l'invariant tenait
+      // par accident. À 1 120, il passe dessous — et à 72 km/h la boîte montait
+      // une sixième à 1 140 tr/min pour la rendre aussitôt, 28 fois en deux
+      // minutes.
+      this.floorAtUpshift ??
+        upshiftFloorRpm(this.driveMode, clamp01(this.demand), this.engine.idleRpm),
     )
   }
 
@@ -465,6 +531,14 @@ export class Gearbox {
 
   private applyShift(delta: number): void {
     if (delta < 0) this.sinceDownshiftS = 0
+    else {
+      this.sinceUpshiftS = 0
+      this.floorAtUpshift = upshiftFloorRpm(
+        this.driveMode,
+        clamp01(this.demand),
+        this.engine.idleRpm,
+      )
+    }
     this.gear = clampInt(this.gear + delta, 0, this.gearCount - 1)
     this.shiftRemainingS = this.drivetrain.shiftTimeMs / 1000
     this.shiftDirection = delta > 0 ? 'up' : 'down'
@@ -490,6 +564,7 @@ export class Gearbox {
     this.recordLoad(load)
     this.sinceKickdownS += dt
     this.sinceDownshiftS += dt
+    this.sinceUpshiftS += dt
     // Tenir une vitesse, c'est ne pas la perdre : la bande est asymétrique.
     // La demande suit la charge à la montée et la retient à la descente.
     this.demand =
@@ -606,11 +681,28 @@ export class Gearbox {
       } else if (
         rpm <= downThresholdSeen &&
         this.gear > this.downshiftFloor() &&
-        !atStandstill
-        // Plus de garde contre le va-et-vient, et c'est le propos : le plancher
-        // de descente est tenu sous le seuil de montée du même rapport, donc un
-        // rapport qu'on vient d'engager ne peut pas être rendu dans la foulée.
-        // L'hystérésis se démontre au lieu de s'entourer de conditions.
+        !atStandstill &&
+        // L'hystérésis du plancher ne suffit plus **à vitesse tenue**, depuis
+        // que le rapport le plus long entre dès qu'il tourne au-dessus du
+        // plancher : la boîte s'y installe par construction juste au-dessus de
+        // la frontière, et le bruit du récepteur la fait repasser dessous. Sur
+        // le banc GPS, 52 allers-retours à 60 km/h tenus.
+        //
+        // La garde ne vaut donc **que** tant que la vitesse est tenue. Qui
+        // ralentit ou freine rétrograde sans attendre, ce qui est tout le
+        // propos du frein moteur ; et le rétrogradage forcé passe avant, plus
+        // haut, sans jamais rencontrer cette condition.
+        !(this.sinceUpshiftS < HOLD_AFTER_UPSHIFT_S && !isSlowing(pace.state)) &&
+        // **Et on ne descend pas en accélérant**, symétrique de l'inhibition de
+        // montée au freinage juste au-dessus. Rétrograder alors qu'on accélère
+        // est une demande de reprise, et elle a sa propre voie — le
+        // rétrogradage forcé, traité plus haut, qui ne passe pas par ici.
+        //
+        // Sans elle, le bruit du récepteur suffisait : une accélération lue
+        // fait monter la demande, qui relève le plancher de descente jusqu'au
+        // régime du rapport engagé. Relevé à 72 km/h tenus — demande 0,61,
+        // plancher 1 149, sixième à 1 146 tr/min.
+        pace.state !== 'accelerating'
       ) {
         this.readyForS = 0
         this.applyShift(-1)

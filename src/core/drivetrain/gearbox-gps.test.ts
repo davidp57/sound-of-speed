@@ -217,20 +217,22 @@ describe('la boîte sur un signal de récepteur', () => {
     }
   })
 
-  it('tient jusqu à moitié de bruit en plus, et décroche au-delà', () => {
+  it('tient le double du bruit de référence, et décroche au-delà', () => {
     // **Le chiffre de référence du lot.** À la cadence de la voiture, la boîte
-    // tient une croisière bruitée à 1,5 km/h et décroche à 1,75.
+    // tient une croisière bruitée à 2 km/h et décroche à 2,5.
     //
-    // Elle décrochait à 1,5 avant que la lecture du mouvement ne soit unifiée :
-    // la marge est passée d'un quart à une moitié. Elle est bornée par la
-    // réactivité et non par cette lecture — voir `smoothS` dans
-    // `core/speed/motion.ts`, qui gagnerait encore un cran au prix d'un lever de
-    // pied vu trop tard.
-    const tient = VITESSES_TENUES.map((kmh) => passagesEnCroisiere(kmh, { noiseKmh: 1.5 }))
+    // Elle décrochait à 1,5 avant que la lecture du mouvement ne soit unifiée,
+    // puis à 1,75. Le 20 septembre 2026, les trois gardes posées avec le
+    // nouveau plancher de montée l'ont portée à 2 : le frein moteur ne se
+    // relance plus sur un « ralentit » d'une image, la boîte ne rend plus un
+    // rapport pendant qu'elle accélère, et la borne du plancher de descente est
+    // celle qui a autorisé le rapport et non celle de l'instant.
+    const tient = VITESSES_TENUES.map((kmh) => passagesEnCroisiere(kmh, { noiseKmh: 2 }))
     expect(tient).toEqual([0, 0, 0, 0, 0])
 
     // Et le banc reproduit toujours le défaut, sans quoi il ne prouverait rien.
-    const decroche = VITESSES_TENUES.map((kmh) => passagesEnCroisiere(kmh, { noiseKmh: 1.75 }))
+    // Mesuré à 2,5 : de 21 à 27 passages par vitesse.
+    const decroche = VITESSES_TENUES.map((kmh) => passagesEnCroisiere(kmh, { noiseKmh: 2.5 }))
     expect(decroche.reduce((a, b) => a + b, 0)).toBeGreaterThan(0)
   })
 
@@ -248,7 +250,12 @@ describe('la boîte sur un signal de récepteur', () => {
 
     const enDeceleration = passages.filter((passage) => passage.t >= depart)
     expect(enDeceleration.filter((p) => p.vers > p.de)).toHaveLength(0)
+    // Depuis le 20 septembre 2026, la croisière à 110 km/h se fait en septième
+    // et non en sixième — 1 276 tr/min contre 1 734 —, d'où une descente de
+    // plus. C'est le comportement voulu, pas un aller-retour : aucune montée
+    // n'apparaît dans la séquence, ce que vérifie l'assertion au-dessus.
     expect(enDeceleration.map((p) => `${p.de + 1}->${p.vers + 1}`)).toEqual([
+      '7->6',
       '6->5',
       '5->4',
       '4->3',

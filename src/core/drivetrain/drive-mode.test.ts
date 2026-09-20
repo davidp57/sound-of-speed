@@ -48,10 +48,31 @@ describe('le plancher de montée', () => {
       const levé = upshiftFloorRpm(mode, 0, IDLE)
       const croisière = upshiftFloorRpm(mode, 0.5, IDLE)
       const plancher = upshiftFloorRpm(mode, 1, IDLE)
-      expect(levé).toBeLessThan(croisière)
+      // **La moitié basse de l'échelle rend le même plancher**, depuis que le
+      // facteur suit le carré de la demande : sa borne inférieure la couvre
+      // entière. C'est voulu, et c'est ce qui rendait la croisière trop haute
+      // quand le facteur était linéaire — le neutre y valait la marge pleine.
+      //
+      // La borne ne disparaît pas pour autant. Sans elle, un plancher
+      // proportionnel tomberait vers le ralenti pied levé, et la boîte
+      // monterait un rapport qui tourne à neuf cents tours : elle brouterait.
+      expect(levé).toBe(croisière)
       expect(croisière).toBeLessThan(plancher)
-      // La marge double à pleine charge, par rapport à la charge moyenne.
-      expect(plancher - IDLE).toBeCloseTo(2 * (croisière - IDLE), 6)
+      // La marge quadruple à pleine charge, par rapport au neutre — elle
+      // doublait quand le facteur était linéaire.
+      expect(plancher - IDLE).toBeCloseTo(4 * (croisière - IDLE), 6)
+    }
+  })
+
+  it('ne bouge plus dès que la demande dépasse le neutre', () => {
+    // La frontière du carré : sous le neutre la borne tient, au-dessus le
+    // plancher monte franchement. C'est ce qui sépare une croisière d'une
+    // accélération, là où le facteur linéaire ne faisait que les nuancer.
+    for (const mode of MODES) {
+      expect(upshiftFloorRpm(mode, 0.6, IDLE)).toBeGreaterThan(
+        upshiftFloorRpm(mode, 0.5, IDLE),
+      )
+      expect(upshiftFloorRpm(mode, 0.4, IDLE)).toBe(upshiftFloorRpm(mode, 0.5, IDLE))
     }
   })
 
@@ -86,11 +107,32 @@ describe('le plancher de descente', () => {
 
   it('remonte avec la décélération : on rétrograde plus tôt en freinant', () => {
     for (const mode of MODES) {
-      const montée = upshiftFloorRpm(mode, 0.5, IDLE)
+      // Sous un rapport engagé en demandant, là où la borne laisse de la place.
+      const montée = upshiftFloorRpm(mode, 1, IDLE)
       const roueLibre = downshiftFloorRpm(mode, 0, IDLE, montée)
       const freinage = downshiftFloorRpm(mode, -2, IDLE, montée)
       expect(freinage).toBeGreaterThan(roueLibre)
     }
+  })
+
+  it('cesse de remonter sous un rapport engagé en croisière, et c’est la garde', () => {
+    // Au plancher du neutre, la borne des quatre-vingt-dix pour cent absorbe
+    // toute la relance : roue libre et freinage rendent la même valeur. C'est
+    // exactement ce qui interdit l'aller-retour à vitesse tenue — le bruit du
+    // récepteur fabrique des décélérations qui n'existent pas, et sans cette
+    // borne elles relevaient le plancher jusqu'au régime du rapport engagé.
+    for (const mode of MODES) {
+      const montée = upshiftFloorRpm(mode, 0.5, IDLE)
+      // La relance bute sur la borne : elle ne peut pas rapprocher le plancher
+      // de descente du régime auquel le rapport a été engagé.
+      expect(downshiftFloorRpm(mode, -2, IDLE, montée)).toBe(montée * 0.9)
+    }
+    // Sur Route, elle est même entièrement absorbée : roue libre et freinage
+    // rendent la même valeur sous un rapport engagé en croisière.
+    const routeEnCroisiere = upshiftFloorRpm('road', 0.5, IDLE)
+    expect(downshiftFloorRpm('road', -2, IDLE, routeEnCroisiere)).toBe(
+      downshiftFloorRpm('road', 0, IDLE, routeEnCroisiere),
+    )
   })
 
   it('ne descend pas sous le ralenti', () => {
@@ -210,15 +252,21 @@ describe('le mode Route passe ses rapports plus tôt', () => {
     expect(upshiftFloorRpm('road', 1, idle)).toBeCloseTo(2080, 0)
     expect(upshiftFloorRpm('road', 1, idle) / avant(1)).toBeCloseTo(0.8, 2)
 
-    expect(upshiftFloorRpm('road', 0.5, idle)).toBeCloseTo(1440, 0)
-    expect(upshiftFloorRpm('road', 0.5, idle) / avant(0.5)).toBeCloseTo(0.85, 2)
+    // Le neutre, lui, a bougé une seconde fois le 20 septembre 2026 : le
+    // facteur suit désormais le carré de la demande, et sa borne basse tient
+    // tout le bas de l'échelle. La croisière est passée de 1 440 à 1 120 tr/min,
+    // ce qui rend à la boîte les rapports longs que David n'obtenait pas.
+    expect(upshiftFloorRpm('road', 0.5, idle)).toBeCloseTo(1120, 0)
+    expect(upshiftFloorRpm('road', 0.5, idle) / avant(0.5)).toBeCloseTo(0.66, 2)
   })
 
   it('ne touche pas au mode Sport', () => {
     const idle = 780
 
     expect(upshiftFloorRpm('sport', 1, idle)).toBeCloseTo(idle + 2200 * 2, 0)
-    expect(upshiftFloorRpm('sport', 0.5, idle)).toBeCloseTo(idle + 2200, 0)
+    // Sport suit la même courbe — c'est la forme du facteur qui a changé, pas
+    // la marge du mode. Au neutre, sa borne basse donne la moitié de la marge.
+    expect(upshiftFloorRpm('sport', 0.5, idle)).toBeCloseTo(idle + 2200 * 0.5, 0)
   })
 
   it('garde le mode Route sous le mode Sport, à toute demande', () => {

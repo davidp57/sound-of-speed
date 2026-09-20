@@ -193,6 +193,26 @@ dixièmes déjà, le lever de pied arrive après qu'un passage s'est engagé —
 défaut que David avait relevé en roulant. Le compromis est mesuré, il n'est pas
 choisi au jugé.
 
+## Le chiffre a rebougé, le 20 septembre 2026
+
+Il n'est plus **1,5 mais 2 km/h**, et le décrochage est passé de 1,75 à 2,5.
+
+Ce n'est pas ce lot qui l'a fait : le plancher de montée a cessé de placer une
+vitesse tenue à sa marge pleine, ce qui rend à la boîte les rapports longs en
+croisière. Elle s'installe alors **par construction** juste au-dessus de sa
+frontière, là où le bruit du récepteur la faisait changer d'avis — 52 passages
+en deux minutes à 60 km/h. Trois gardes l'en empêchent, et ce sont elles qui
+ont déplacé le chiffre :
+
+- le frein moteur ne se relance que si l'on ralentit **depuis une seconde** ;
+- un rapport ne se rend pas **pendant qu'on accélère** ;
+- la limite basse d'un rapport est **celle qui l'a autorisé**, pas celle de
+  l'instant.
+
+Relevé après, aux cinq vitesses tenues : **zéro passage jusqu'à 2 km/h de
+bruit**, 21 à 27 par vitesse à 2,5. Le banc du ticket 01 reste le juge, et
+c'est lui qui a mesuré les deux états.
+
 **Et les oscillations résiduelles ne viennent plus de là.** À 50 km/h, la vitesse
 la plus fragile, les alternances restantes sont espacées de dix à trente-six
 secondes quand le bruit bat dix fois par seconde : c'est une dérive lente, pas un
